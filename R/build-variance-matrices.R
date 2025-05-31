@@ -1,4 +1,4 @@
-
+#' @importFrom stats complete.cases
 get_cor_grouping <- function(mod, levels = NULL) {
   if (!is.null(mod$groups)) {
     struct <- mod$modelStruct$corStruct
@@ -57,7 +57,7 @@ build_var_cor_mats <- function(mod, R_list = build_corr_mats(mod), sigma_scale =
   } else {
     1
   }
-  
+
   if (is.null(R_list)) {
     # if there is no correlation structure,
     # then build block-diagonals with first available grouping variable
@@ -101,7 +101,7 @@ build_var_cor_mats <- function(mod, R_list = build_corr_mats(mod), sigma_scale =
     }
     attr(V_list, "groups") <- attr(R_list, "groups")
   }
-  
+
   return(V_list)
 }
 
@@ -114,7 +114,7 @@ ZDZt <- function(D, Z_list) {
 build_RE_mats <- function(mod, sigma_scale = FALSE) {
   # Get random effects structure
   all_groups <- rev(mod$groups)
-  
+
   if (length(all_groups) == 1) {
     D_mat <- as.matrix(mod$modelStruct$reStruct[[1]])
     if (sigma_scale) {
@@ -140,13 +140,13 @@ build_RE_mats <- function(mod, sigma_scale = FALSE) {
     Z_levels <- Map(matrix_list, x = Z_levels, fac = all_groups, dim = "row")
     ZDZ_lists <- Map(ZDZt, D = D_list, Z_list = Z_levels)
     # ZDZ_lists <- Map(function(x,fac) x[order(fac)], x = ZDZ_lists, fac = all_groups)
-    
+
     for (i in 2:length(all_groups)) {
       ZDZ_lists[[i]] <- add_bdiag(small_mats = ZDZ_lists[[i-1]],
                                   big_mats = ZDZ_lists[[i]],
                                   crosswalk = all_groups[c(i-1,i)])
     }
-    
+
     ZDZ_list <- ZDZ_lists[[i]]
     attr(ZDZ_list, "groups") <- all_groups[[i]]
   }
@@ -158,41 +158,47 @@ build_Sigma_mats <- function(mod, invert = FALSE, sigma_scale = FALSE) {
   UseMethod("build_Sigma_mats")
 }
 
+#' @export
+#' @keywords internal
 build_Sigma_mats.default <- function(mod, invert = FALSE, sigma_scale = FALSE) {
   mod_class <- paste(class(mod), collapse = "-")
   stop(paste0("Sigma matrices not available for models of class ", mod_class, "."))
 }
 
+#' @export
+#' @keywords internal
 build_Sigma_mats.gls <- function(mod, invert = FALSE, sigma_scale = FALSE) {
   # lowest-level covariance structure
   V_list <- build_var_cor_mats(mod, sigma_scale = sigma_scale)
   V_grps <- attr(V_list, "groups")
-  
+
   if (invert) {
     V_list <- lapply(V_list, function(x) chol2inv(chol(x)))
     attr(V_list, "groups") <- V_grps
   }
-  
+
   return(V_list)
 }
 
+#' @export
+#' @keywords internal
 build_Sigma_mats.lme <- function(mod, invert = FALSE, sigma_scale = FALSE) {
   if (inherits(mod, "nlme")) {
     stop("not implemented for \"nlme\" objects")
   }
-  
+
   # lowest-level covariance structure
   V_list <- build_var_cor_mats(mod, sigma_scale = sigma_scale)
-  
+
   # random effects covariance structure
   ZDZ_list <- build_RE_mats(mod, sigma_scale = sigma_scale)
   V_grps <- attr(V_list, "groups")
-  
+
   # Check if lowest-level covariance structure is nested within RE structure
   ZDZ_grps <- attr(ZDZ_list, "groups")
   group_mapping <- tapply(ZDZ_grps, V_grps, function(x) length(unique(x)))
   nested <- all(group_mapping == 1L)
-  
+
   if (nested) {
     Sigma_list <- add_bdiag(V_list, ZDZ_list, data.frame(V_grps, ZDZ_grps))
     Sigma_grps <- attr(ZDZ_list, "groups")
@@ -202,7 +208,7 @@ build_Sigma_mats.lme <- function(mod, invert = FALSE, sigma_scale = FALSE) {
     Sigma_list <- V_mat + ZDZ_mat
     Sigma_grps <- factor(rep("A", nrow(Sigma_list)))
   }
-  
+
   if (invert) {
     Sigma_list <- lapply(Sigma_list, function(x) chol2inv(chol(x)))
   }

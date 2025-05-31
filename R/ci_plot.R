@@ -1,3 +1,4 @@
+#' @importFrom ggplot2 scale_y_discrete
 ci_plot <- function(plot_mt, mod_df=NULL, resp_name=NULL, jitterv=0.2, basesz = 12) {
 
   plot_mt <- na.omit(plot_mt)

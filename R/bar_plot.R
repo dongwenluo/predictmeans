@@ -1,3 +1,8 @@
+#' @importFrom ggplot2 element_line facet_grid geom_errorbarh
+#' @importFrom ggplot2 geom_bar geom_errorbar guides guide_legend
+#' @importFrom ggplot2 position_dodge scale_fill_brewer xlim ylim
+#' @importFrom rlang .data
+#' @importFrom stats aov dist
 bar_plot <- function(plot_mt, x_var, y_var, se_var, col_var = NULL, panel_var = NULL, title = NULL, xlab=NULL, ylab=NULL, scales="fixed", basesz = 12) {
 
   # custom_colors <- c(
