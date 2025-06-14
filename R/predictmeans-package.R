@@ -80,6 +80,3 @@ NULL
 #' Journal of Statistics, 46(3), 325-347.
 #' @keywords internal
 "_PACKAGE"
-
-
-

@@ -15,8 +15,8 @@
 #' @references This function is modified from function 'se.ranef' at package 'arm'.
 #' @export
 
-se_ranef <- function (object,
-                      rand_term=NULL) {
+se_ranef <- function(object,
+                     rand_term = NULL) {
   stopifnot(inherits(object, c("glmmTMB", "lmerModLmerTest", "merMod")))
   if (inherits(object, "glmmTMB")) {
     se.bygroup <- ranef(object, condVar = TRUE)[["cond"]]
@@ -41,7 +41,7 @@ se_ranef <- function (object,
     names.full <- dimnames(se.bygroup[[m]])
     se.bygroup[[m]] <- array(NA, c(J, K))
     for (j in 1:J) {
-      se.bygroup[[m]][j, ] <- sqrt(diag(as.matrix(vars.m[ , , j])))
+      se.bygroup[[m]][j, ] <- sqrt(diag(as.matrix(vars.m[, , j])))
     }
     dimnames(se.bygroup[[m]]) <- list(names.full[[1]], names.full[[2]])
   }

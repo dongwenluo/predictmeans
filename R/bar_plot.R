@@ -1,7 +1,9 @@
 #' Produce a bar plot for predicted means
 #'
 #'
-#' @param plot_mt Data frame of the mean table which is the output of \code{mean_table} or \code{mean_table$Table} from function \code{predictmeans}.
+#' @param plot_mt Data frame of the mean table which is the output of
+#'   \code{mean_table} or \code{mean_table$Table} from function
+#'   \code{predictmeans}.
 #'
 #' @param x_var Name (in "quotes") for the x axis variable on the plot.
 #' @param y_var Name (in "quotes") for the y axis variable on the plot.
@@ -9,9 +11,12 @@
 #' @param col_var Name (in "quotes") for the color group variable on the plot.
 #' @param panel_var Name (in "quotes") for the panel variable on the plot.
 #' @param title The text for the title.
-#' @param xlab The title of the respective axis (for xlab() or ylab()) or of the plot (for ggtitle()).
-#' @param ylab The title of the respective axis (for xlab() or ylab()) or of the plot (for ggtitle()).
-#' @param scales Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?
+#' @param xlab The title of the respective axis (for xlab() or ylab()) or of the
+#'   plot (for ggtitle()).
+#' @param ylab The title of the respective axis (for xlab() or ylab()) or of the
+#'   plot (for ggtitle()).
+#' @param scales Should scales be fixed ("fixed", the default), free ("free"),
+#'   or free in one dimension ("free_x", "free_y") in a trellis graph?
 #' @param basesz Base font size, given in pts.
 #'
 #' @author Dongwen Luo

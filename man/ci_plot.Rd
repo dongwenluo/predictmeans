@@ -7,7 +7,8 @@
 ci_plot(plot_mt, mod_df = NULL, resp_name = NULL, jitterv = 0.2, basesz = 12)
 }
 \arguments{
-\item{plot_mt}{Data frame of the mean table which is the output of \code{mean_table} or \code{mean_table$Table} from function \code{predictmeans}.}
+\item{plot_mt}{Data frame of the mean table which is the output of \code{mean_table} or \code{mean_table$Table} from
+function \code{predictmeans}.}
 
 \item{mod_df}{Data frame of the data used in the modelling. The default is NULL, then plot will has CIs only.}
 

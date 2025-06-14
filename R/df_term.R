@@ -55,11 +55,10 @@
 
 df_term <- function(model,
                     modelterm,
-                    covariate=NULL,
-                    ctrmatrix=NULL,
-                    ctrnames=NULL,
-                    type=c("Kenward-Roger", "Satterthwaite")) {
-
+                    covariate = NULL,
+                    ctrmatrix = NULL,
+                    ctrnames = NULL,
+                    type = c("Kenward-Roger", "Satterthwaite")) {
   stopifnot(inherits(model, "lmerMod"))
 
   if (!getME(model, "is_REML")) {
@@ -67,11 +66,11 @@ df_term <- function(model,
   }
   if (!is.null(ctrmatrix)) {
     if (is.vector(ctrmatrix)) {
-      Lc <- matrix(ctrmatrix, nrow=1)
+      Lc <- matrix(ctrmatrix, nrow = 1)
     } else {
       Lc <- ctrmatrix
     }
-    stopifnot(is.numeric(Lc), ncol(Lc)==length(fixef(model)))
+    stopifnot(is.numeric(Lc), ncol(Lc) == length(fixef(model)))
 
     if (!is.null(ctrnames)) {
       rownames(Lc) <- ctrnames
@@ -83,19 +82,20 @@ df_term <- function(model,
   type <- as.character(type)
   type <- match.arg(type)
 
-  if (type=="Kenward-Roger") {
-    vcov_beta_adj <- try(pbkrtest::vcovAdj(model), silent=TRUE) # Adjusted vcov(beta)
-    ddf <- try(apply(Lc, 1, function(x) pbkrtest::Lb_ddf(x, V0=vcov(model),
-                                                         Vadj=vcov_beta_adj)), silent=TRUE) # vcov_beta_adj need to be dgeMatrix!
+  if (type == "Kenward-Roger") {
+    vcov_beta_adj <- try(pbkrtest::vcovAdj(model), silent = TRUE)
+    # Adjusted vcov(beta)
+    ddf <- try(apply(Lc, 1, function(x) {
+      pbkrtest::Lb_ddf(x, V0 = vcov(model), Vadj = vcov_beta_adj)
+    }), silent = TRUE)
+    # vcov_beta_adj need to be dgeMatrix!
 
-    if (
-      any(
-        inherits(vcov_beta_adj, "try-error"),
-        inherits(ddf, "try-error"),
-        ddf >= nrow(model.frame(model)),
-        ddf <= 0
-      )
-    ) {
+    if (any(
+      inherits(vcov_beta_adj, "try-error"),
+      inherits(ddf, "try-error"),
+      ddf >= nrow(model.frame(model)),
+      ddf <= 0
+    )) {
       warning("Unable to compute Kenward-Roger Df: using Satterthwaite instead")
       type <- "Satterthwaite"
     }
@@ -105,7 +105,9 @@ df_term <- function(model,
     if (!inherits(model, "lmerModLmerTest")) {
       model <- as_lmerModLmerTest(model)
     }
-    ddf <- apply(Lc, 1, function(x) suppressMessages(lmerTest::calcSatterth(model, x)$denom))
+    ddf <- apply(Lc, 1, function(x) {
+      suppressMessages(lmerTest::calcSatterth(model, x)$denom)
+    })
   }
   return(ddf)
 }

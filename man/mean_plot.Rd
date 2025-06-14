@@ -22,7 +22,8 @@ mean_plot(
 )
 }
 \arguments{
-\item{plot_mt}{Data frame of the mean table which is the output of \code{mean_table} or \code{mean_table$Table} from function \code{predictmeans}.}
+\item{plot_mt}{Data frame of the mean table which is the output of \code{mean_table} or \code{mean_table$Table} from
+function \code{predictmeans}.}
 
 \item{x_var}{Name (in "quotes") for the x axis variable on the plot.}
 
@@ -38,7 +39,8 @@ mean_plot(
 
 \item{ylab}{The title of the respective axis (for xlab() or ylab()) or of the plot (for ggtitle()).}
 
-\item{scales}{Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?}
+\item{scales}{Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x",
+"free_y") in a trellis graph?}
 
 \item{bar_value}{The length of the bar with default value of zero.}
 

@@ -1,11 +1,12 @@
-mymodelparm <- function(model, coef., vcov., df, ...)
+mymodelparm <- function(model, coef., vcov., df, ...) {
   UseMethod("mymodelparm")
+}
 
 #' @export
 #' @keywords internal
 mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   ### extract coefficients and their covariance matrix
-  if(inherits(model, "glmmTMB")) {
+  if (inherits(model, "glmmTMB")) {
     beta <- try(coef.(model)[["cond"]])
   } else {
     beta <- try(coef.(model))
@@ -14,7 +15,7 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
     stop("no ", sQuote("coef"), " method for ", sQuote("model"), " found!")
   }
 
-  if(inherits(model, "glmmTMB")) {
+  if (inherits(model, "glmmTMB")) {
     sigma <- try(Matrix::as.matrix(vcov.(model)[["cond"]]))
   } else {
     sigma <- try(vcov.(model))
@@ -25,7 +26,7 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
   sigma <- as.matrix(sigma)
 
   if (any(length(beta) != dim(sigma))) {
-    beta = na.omit(beta)
+    beta <- na.omit(beta)
   }
   # stop("dimensions of coefficients and covariance matrix don't match")
 
@@ -60,7 +61,7 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
   ### try to identify non-estimable coefficients
   ### coef.aov removes NAs, thus touch coefficients
   ### directly
-  if(inherits(model, "glmmTMB")) {
+  if (inherits(model, "glmmTMB")) {
     ocoef <- coef.(model)[["cond"]]
   } else {
     ocoef <- coef.(model)
@@ -72,7 +73,7 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
   if (any(is.na(ocoef))) {
     estimable[is.na(ocoef)] <- FALSE
     beta <- ocoef[estimable]
-    if (dim(sigma)[1]==length(estimable)) {
+    if (dim(sigma)[1] == length(estimable)) {
       sigma <- sigma[estimable, estimable]
     }
   }
@@ -88,30 +89,36 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
 
 #' @export
 #' @keywords internal
-mymodelparm.aovlist <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
+mymodelparm.aovlist <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   stop("This function does not support objects of class ", sQuote("aovlist"))
+}
 
 #' @export
 #' @keywords internal
-mymodelparm.lme <- function(model, coef. = nlme::fixef, vcov. = vcov, df = NULL, ...)
+mymodelparm.lme <- function(model, coef. = nlme::fixef, vcov. = vcov, df = NULL, ...) {
   mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+}
 
 #' @export
 #' @keywords internal
-mymodelparm.lmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
+mymodelparm.lmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...) {
   mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+}
 
 #' @export
 #' @keywords internal
-mymodelparm.glmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
+mymodelparm.glmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...) {
   mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+}
 
 #' @export
 #' @keywords internal
-mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
+mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+}
 
 #' @export
 #' @keywords internal
-mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...)
+mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...) {
   mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+}

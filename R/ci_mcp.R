@@ -30,18 +30,15 @@
 #'
 #' @export
 
-ci_mcp <- function(LL,
-                   UL,
-                   trt_n=NULL) {
-
-  stopifnot("Check your LL and UL input!"={
+ci_mcp <- function(LL, UL, trt_n = NULL) {
+  stopifnot("Check your LL and UL input!" = {
     is.numeric(LL)
     is.numeric(UL)
-    length(LL)==length(UL)
+    length(LL) == length(UL)
     all(LL <= UL)
   })
   trt_len <- length(LL)
-  if (is.null(trt_n) || length(unique(trt_n))!=trt_len) {
+  if (is.null(trt_n) || length(unique(trt_n)) != trt_len) {
     trt_n <- as.character(1:trt_len)
   }
 
@@ -51,27 +48,26 @@ ci_mcp <- function(LL,
   results <- matrix(NA_real_, nrow = trt_len, ncol = trt_len)
 
   for (i in 1:trt_len) {
-    for (j in (i+1):trt_len) {
+    for (j in (i + 1):trt_len) {
       if (j > trt_len) {
         break
       }
-      ci1 <- c(LL[i],  UL[i])
-      ci2 <-  c(LL[j],  UL[j])
+      ci1 <- c(LL[i], UL[i])
+      ci2 <-  c(LL[j], UL[j])
       if (max(ci1) < min(ci2) || max(ci2) < min(ci1)) {
-        results[i,j] <- 0.01
+        results[i, j] <- 0.01
       } else {
-        results[i,j] <- 0.08
+        results[i, j] <- 0.08
       }
     }
   }
 
-  if (all(unique(na.omit(as.vector(results)))==0.08)) {
+  if (all(unique(na.omit(as.vector(results))) == 0.08)) {
     ci_mcp_letters <- ci_mcp_letters_0
   } else {
     rownames(results) <- colnames(results) <- trt_n
     results[lower.tri(results)] <- t(results)[lower.tri(results)]
-    ci_mcp_letters <- multcompLetters(results, Letters=LETTERS)
+    ci_mcp_letters <- multcompLetters(results, Letters = LETTERS)
   }
   return(ci_mcp_letters)
 }
-

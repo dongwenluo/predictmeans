@@ -10,7 +10,7 @@
 #' @method model.frame gls
 #' @export
 model.frame.gls <- function(formula, ...) {
-  model.frame(formula(formula), nlme::getData(formula),...)
+  model.frame(formula(formula), nlme::getData(formula), ...)
 }
 
 #' model.frame method for objects of class 'lme'
@@ -39,9 +39,11 @@ model.frame.lme <- function(formula, ...) {
 #' @method model.matrix aovlist
 #' @export
 model.matrix.aovlist <- function(object, ...) {
-  stop(sQuote("predicted.means"),
-       " does not support objects of class ",
-       sQuote("aovlist"))
+  stop(
+    sQuote("predicted.means"),
+    " does not support objects of class ",
+    sQuote("aovlist")
+  )
 }
 
 #' model.matrix method for objects of class 'gls'
@@ -54,9 +56,11 @@ model.matrix.aovlist <- function(object, ...) {
 #' @method model.matrix gls
 #' @export
 model.matrix.gls <- function(object, ...) {
-  model.matrix(object = terms(object),
-               data = nlme::getData(object),
-               ...)
+  model.matrix(
+    object = terms(object),
+    data = nlme::getData(object),
+    ...
+  )
 }
 
 #' model.matrix method for objects of class 'lme'
@@ -116,9 +120,10 @@ terms.lme <- function(x, ...) {
 }
 
 
-#terms.merMod <- function (object, ...) {
+# terms.merMod <- function (object, ...) {
 #  v <- terms(object)
-#  attr(v, "dataClasses") <- sapply(all.vars(formula(object, fixed.only=TRUE)),function(x) class(model.frame(object)[[x]])[1])
+#  attr(v, "dataClasses") <- sapply(all.vars(formula(object, fixed.only=TRUE)),
+# function(x) class(model.frame(object)[[x]])[1])
 #  return(v)
-#}
+# }
 #
