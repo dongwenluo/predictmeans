@@ -2,6 +2,8 @@
 % Please edit documentation in R/predictmeansN.R
 \name{predictmeansN}
 \alias{predictmeansN}
+\alias{pm}
+\alias{predmeans}
 \title{Predicted Means of a Linear Model}
 \usage{
 predictmeansN(
@@ -10,7 +12,51 @@ predictmeansN(
   data = NULL,
   pairwise = FALSE,
   atvar = NULL,
-  adj = "none",
+  adj = c("none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"),
+  Df = NULL,
+  level = 0.05,
+  covariate = NULL,
+  meandecr = NULL,
+  letterCI = FALSE,
+  trans = I,
+  transOff = 0,
+  responsen = NULL,
+  count = FALSE,
+  prtnum = TRUE,
+  permlist = NULL,
+  ncore = 3L,
+  ndecimal = 4L
+)
+
+pm(
+  model,
+  modelterm,
+  data = NULL,
+  pairwise = FALSE,
+  atvar = NULL,
+  adj = c("none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"),
+  Df = NULL,
+  level = 0.05,
+  covariate = NULL,
+  meandecr = NULL,
+  letterCI = FALSE,
+  trans = I,
+  transOff = 0,
+  responsen = NULL,
+  count = FALSE,
+  prtnum = TRUE,
+  permlist = NULL,
+  ncore = 3L,
+  ndecimal = 4L
+)
+
+predmeans(
+  model,
+  modelterm,
+  data = NULL,
+  pairwise = FALSE,
+  atvar = NULL,
+  adj = c("none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"),
   Df = NULL,
   level = 0.05,
   covariate = NULL,

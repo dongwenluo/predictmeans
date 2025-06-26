@@ -425,25 +425,30 @@ vcov_lmerMod <- function(object, ...) {
   dotdotdot <- list(...)
   if ("full" %in% names(dotdotdot)) {
     full <- dotdotdot$full
+    if (!is.logical(full)) {
+      stop("Argument full should be a logical value: TRUE or FALSE.")
+    }
   } else {
     full <- FALSE
   }
+
   if ("information" %in% names(dotdotdot)) {
-    information <- dotdotdot$information
+    ## allows partial argument matching
+    ## doesn't need further argument checking
+    information <- match.arg(
+      dotdotdot$information,
+      c("expected", "observed")
+    )
   } else {
     information <- "expected"
   }
-  if (!(full %in% c("TRUE", "FALSE"))) {
-    stop("invalid 'full' argument supplied")
-  }
-  if (!(information %in% c("expected", "observed"))) {
-    stop("invalid 'information' argument supplied")
-  }
+
   if ("ranpar" %in% names(dotdotdot)) {
     ranpar <- dotdotdot$ranpar
   } else {
     ranpar <- "var"
   }
+
   parts <- getME(object, "ALL")
   yXbe <- parts$y - tcrossprod(parts$X, t(parts$beta))
   uluti <- length(parts$theta)
@@ -457,6 +462,7 @@ vcov_lmerMod <- function(object, ...) {
   Pmid <- solve(crossprod(parts$X, t(invVX)))
   P <- invV - tcrossprod(crossprod(invVX, Pmid), t(invVX))
   fixvar <- solve(tcrossprod(crossprod(parts$X, invV), t(parts$X)))
+
   if (full == FALSE) {
     fixvar
   } else {
@@ -465,24 +471,30 @@ vcov_lmerMod <- function(object, ...) {
     devV <- vector("list", (uluti + 1))
     devLambda <- vector("list", uluti)
     score_varcov <- matrix(NA, nrow = length(parts$y), ncol = uluti)
+
     for (i in 1:uluti) {
       devLambda[[i]] <- Matrix::forceSymmetric(LambdaInd == i, uplo = "L")
       devV[[i]] <- tcrossprod(tcrossprod(parts$Z, t(devLambda[[i]])), parts$Z)
     }
+
     devV[[(uluti + 1)]] <- Matrix::Diagonal(nrow(parts$X), 1)
     ranhes <- matrix(NA, nrow = (uluti + 1), ncol = (uluti + 1))
-    entries <- rbind(matrix(rep(1:(uluti + 1), each = 2), (uluti + 1), 2, byrow = TRUE),
-                     t(combn((uluti + 1), 2)))
+    entries <- rbind(
+      matrix(rep(1:(uluti + 1), each = 2), (uluti + 1), 2, byrow = TRUE),
+      t(combn((uluti + 1), 2))
+    )
     entries <- entries[order(entries[, 1], entries[, 2]), ]
+
     if (parts$devcomp$dims[["REML"]] == 0) {
       if (information == "expected") {
         ranhes[lower.tri(ranhes, diag = TRUE)] <-
           apply(entries, 1, function(x) {
-            as.numeric(0.5 * lav_matrix_trace(tcrossprod(tcrossprod(crossprod(invV, devV[[x[1]]]), invV),
-                                                         t(devV[[x[2]]]))))
+            as.numeric(0.5 * lav_matrix_trace(tcrossprod(
+              tcrossprod(crossprod(invV, devV[[x[1]]]), invV),
+              t(devV[[x[2]]])
+            )))
           })
-      }
-      if (information == "observed") {
+      } else if (information == "observed") {
         ranhes[lower.tri(ranhes, diag = TRUE)] <- unlist(apply(
           entries,
           1, function(x) {
@@ -502,6 +514,7 @@ vcov_lmerMod <- function(object, ...) {
         ))
       }
     }
+
     if (parts$devcomp$dims[["REML"]] > 0) {
       if (information == "expected") {
         ranhes[lower.tri(ranhes, diag = TRUE)] <- apply(
@@ -513,8 +526,7 @@ vcov_lmerMod <- function(object, ...) {
             ), P), t(devV[[x[2]]]))))
           }
         )
-      }
-      if (information == "observed") {
+      } else if (information == "observed") {
         ranhes[lower.tri(ranhes, diag = TRUE)] <- apply(
           entries,
           1, function(x) {
@@ -532,11 +544,11 @@ vcov_lmerMod <- function(object, ...) {
         )
       }
     }
+
     ranhes <- Matrix::forceSymmetric(ranhes, uplo = "L")
     if (information == "expected") {
       varcov_beta <- matrix(0, length(devV), length(parts$beta))
-    }
-    if (information == "observed") {
+    } else if (information == "observed") {
       varcov_beta <- matrix(NA, length(devV), length(parts$beta))
       for (j in seq_along(devV)) {
         varcov_beta[j, ] <- as.vector(tcrossprod(
@@ -548,6 +560,7 @@ vcov_lmerMod <- function(object, ...) {
         ))
       }
     }
+
     if (ranpar == "var") {
       ranhes <- ranhes
       varcov_beta <- varcov_beta
@@ -570,17 +583,23 @@ vcov_lmerMod <- function(object, ...) {
     } else {
       stop("ranpar needs to be var or sd for lmerMod object.")
     }
+
     full_varcov <- solve(rbind(
       cbind(fixhes, t(varcov_beta)),
       cbind(varcov_beta, ranhes)
     ))
-    colnames(full_varcov) <- c(names(parts$fixef),
-                               paste("cov", names(parts$theta), sep = "_"),
-                               "residual")
+
+    colnames(full_varcov) <- c(
+      names(parts$fixef),
+      paste("cov", names(parts$theta), sep = "_"),
+      "residual"
+    )
+
     callingFun <- try(deparse(sys.call(-2)), silent = TRUE)
     if (length(callingFun) > 1) {
       callingFun <- paste(callingFun, collapse = "")
     }
+
     if (!inherits(callingFun, "try-error") && grepl("summary.merMod", callingFun)) {
       return(fixvar)
     } else {
@@ -677,7 +696,7 @@ vcov_glmerMod <- function(object, ...) {
       idx <- is.na(sdcormat$var2)
       ## TODO: Couldn't we just replace this with 0.5 / sqrt(sdcormat$sdcor[which(dx)])?
       ## TODO: Also, I don't think we need which
-      sdcormat$sdcor2[which(idx)] <-  0.5 * (sdcormat$sdcor[which(idx)])^(-0.5)
+      sdcormat$sdcor2[which(idx)] <- 0.5 * (sdcormat$sdcor[which(idx)])^(-0.5)
       ## TODO: this looks like - (x/y)^-1 which we could just write out as -y/x
       sdcormat$sdcor2[which(!idx)] <- (-1) * (sdcormat$vcov[which(!idx)] / sdcormat$sdcor[which(!idx)])^(-1)
       hh[((pran + 1):p), (1:pran)] <- sweep(as.matrix(hh[((pran + 1):p), (1:pran)]), MARGIN = 2, sdcormat$sdcor2, `*`)
@@ -1036,8 +1055,10 @@ plot.pdmlist <- function(x, ...) {
     if (is.character(plotord)) {
       i <- match(plotord, facts)
       if (any(is.na(i))) {
-        stop(paste("The entries", paste0(plotord[is.na(i)], sep = ", "), "do not match any term in ",
-                   paste(facts, collapse = ", "), "\n"))
+        stop(paste(
+          "The entries", paste0(plotord[is.na(i)], sep = ", "), "do not match any term in ",
+          paste(facts, collapse = ", "), "\n"
+        ))
       } else {
         plotord <- i
       }

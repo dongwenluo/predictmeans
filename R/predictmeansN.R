@@ -116,14 +116,16 @@
 #' @importFrom numDeriv hessian
 #' @importFrom stats family ftable make.link p.adjust pnorm pt ptukey qt
 #' @importFrom stats xtabs
-
+#'
+#' @aliases pm predmeans
 #' @export
 predictmeansN <- function(model,
                           modelterm,
                           data = NULL,
                           pairwise = FALSE,
                           atvar = NULL,
-                          adj = "none",
+                          adj = c("none", "tukey", "holm", "hochberg", "hommel",
+                                  "bonferroni", "BH", "BY", "fdr"),
                           Df = NULL,
                           level = 0.05,
                           covariate = NULL,
@@ -141,26 +143,36 @@ predictmeansN <- function(model,
   if (any(missing(model), missing(modelterm))) {
     stop("The arguments 'model', and 'modelterm' must be provided!")
   }
-  if (!(modelterm %in% attr(terms(model), "term.labels"))) {
-    stop(paste("The", modelterm, "must be exactly a term in the model (especially check the order of interaction)."))
+
+  # if (!(modelterm %in% attr(terms(model), "term.labels"))) {
+  #  stop(paste("The", modelterm, "must be exactly a term in the model (especially check the order of interaction)."))
+  # }
+  ## This should provide the user with friendlier feedback about the model
+  ## terms.
+  ## DONGWEN: We could change this so it also prints a list of valid choices?
+  if (!isValidTerm(model, modelterm)) {
+    stop("")
   }
 
   # if (inherits(model, "aovlist")) stop("Plese use model 'lme' instead of ???'aov'!")
   if (inherits(model, "aovlist")) {
     model <- aovlist_lmer(model)
   }
+
   if (identical(trans, I) && inherits(model, "glm")) {
     trans <- model$family$linkinv # identical(trans, make.link("log")$linkinv)
     if (model$family$family %in% c("poisson", "quasipoisson")) {
       count <- TRUE
     }
   }
+
   if (identical(trans, I) && inherits(model, "glmerMod")) {
     trans <- slot(model, "resp")$family$linkinv
     if (slot(model, "resp")$family$family %in% c("poisson", "quasipoisson")) {
       count <- TRUE
     }
   }
+
   if (identical(trans, I) && inherits(model, "glmmTMB")) {
     trans <- model$modelInfo$family$linkinv
     if (model$modelInfo$family$family %in% c("poisson", "quasipoisson")) {
@@ -173,10 +185,14 @@ predictmeansN <- function(model,
   if (any(!base::is.element(vars, names(mdf)[sapply(mdf, is.factor)]))) {
     stop(paste(vars, "must be factor(s)!"))
   }
+
+  adj <- match.arg(adj)
+
   # option checking
   if (length(vars) == 1) {
     atvar <- NULL
   }
+
   if (!is.null(permlist) && !any(c("NULL", "") %in% permlist)) {
     pairwise <- TRUE
     if (adj == "tukey") {
@@ -287,9 +303,11 @@ predictmeansN <- function(model,
       level <- level / length(dses) # The reson we need slevel
     }
 
-    SED.out <- c(Max.SED = max(dses[!is.nan(dses)]),
-                 Min.SED = min(dses[!is.nan(dses)]),
-                 Aveg.SED = mean(dses[!is.nan(dses)]))
+    SED.out <- c(
+      Max.SED = max(dses[!is.nan(dses)]),
+      Min.SED = min(dses[!is.nan(dses)]),
+      Aveg.SED = mean(dses[!is.nan(dses)])
+    )
     dses.df <- data.frame(
       matrix(unlist(strsplit(varn1, "\\:")), byrow = TRUE, nrow = length(varn1)),
       matrix(unlist(strsplit(varn2, "\\:")), byrow = TRUE, nrow = length(varn2)), dses
@@ -455,12 +473,15 @@ predictmeansN <- function(model,
           attr(LSDm, "Significant level") <- pmlevel
           attr(LSDm, "Degree of freedom") <- Df
           attr(LSDm, "Note") <- paste("LSDs matrix has mean differences (row-col) above the diagonal,",
-                                      "LSDs (adjusted by '", adj, "' method) below the diagonal",
-                                      sep = "")
+            "LSDs (adjusted by '", adj, "' method) below the diagonal",
+            sep = ""
+          )
         } else {
           attr(t.p.valuem, "Note") <- paste("The matrix has t-value above the diagonal, and ",
-                                            nsim, " times permutation p-value (adjusted by '",
-                                            adj, "' method) below the diagonal", sep = "")
+            nsim, " times permutation p-value (adjusted by '",
+            adj, "' method) below the diagonal",
+            sep = ""
+          )
         } # end of if (is.null(permlist))
 
         if (!is.null(meandecr) && is.logical(meandecr)) {
@@ -644,11 +665,15 @@ predictmeansN <- function(model,
     ## function(x) x, ignore.environment=TRUE), !identical(trans, I, ignore.environment=TRUE))) {
     if (any(meanTable$Mean != bkmt$Mean)) {
       meanTable <- cbind(meanTable, round(bkmt[, (ncol(bkmt) - 2):ncol(bkmt)], ndecimal))
-      colnames(meanTable)[(ncol(meanTable) - 2):ncol(meanTable)] <- c("Bk_Mean",
-                                                                      paste("Bk_LL(", (1 - slevel) * 100, "%)",
-                                                                            sep = ""),
-                                                                      paste("Bk_UL(", (1 - slevel) * 100, "%)",
-                                                                            sep = ""))
+      colnames(meanTable)[(ncol(meanTable) - 2):ncol(meanTable)] <- c(
+        "Bk_Mean",
+        paste("Bk_LL(", (1 - slevel) * 100, "%)",
+          sep = ""
+        ),
+        paste("Bk_UL(", (1 - slevel) * 100, "%)",
+          sep = ""
+        )
+      )
     }
 
     if (pairwise) {
@@ -657,8 +682,10 @@ predictmeansN <- function(model,
           meanTable <- meanTable[order(meanTable$Mean, decreasing = meandecr), ]
         }
         if (letterCI) {
-          meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],
-                                        meanTable[, grepl("^UL", names(meanTable))])
+          meanTable$LetterGrp <- ci_mcp(
+            meanTable[, grepl("^LL", names(meanTable))],
+            meanTable[, grepl("^UL", names(meanTable))]
+          )
           meanTable <- list(
             Table = meanTable,
             Note = paste("Letter-based representation of pairwise comparisons based on (",
@@ -673,7 +700,9 @@ predictmeansN <- function(model,
           meanTable <- list(
             Table = meanTable,
             Note = paste("Letter-based representation of pairwise comparisons at significant level '", slevel,
-                         "'", sep = "")
+              "'",
+              sep = ""
+            )
           )
         }
       } else {
@@ -730,16 +759,36 @@ predictmeansN <- function(model,
         return(outputlist)
       }
     } else {
-      outputlist <- vector("list", listlength + 7)
-      outputlist[[1]] <- mean.table
-      outputlist[[2]] <- se.table
-      outputlist[[3]] <- SED.out
-      outputlist[[4]] <- LSD
-      outputlist[[5]] <- paste("For variable '", paste(resvar, collapse = " and "), "' at each level of '",
-                               paste(atvar, collapse = " and "), "'", sep = "")
-      for (i in 6:(listlength + 5)) outputlist[[i]] <- pmlistTab[[i - 5]]
-      outputlist[[listlength + 6]] <- meanTable
-      outputlist[[listlength + 7]] <- p_valueMatrix
+      # outputlist <- vector("list", listlength + 7)
+      # outputlist[[1]] <- mean.table
+      # outputlist[[2]] <- se.table
+      # outputlist[[3]] <- SED.out
+      # outputlist[[4]] <- LSD
+      # outputlist[[5]] <- paste("For variable '", paste(resvar, collapse = " and "), "' at each level of '",
+      #   paste(atvar, collapse = " and "), "'",
+      #   sep = ""
+      # )
+      # for (i in 6:(listlength + 5)) outputlist[[i]] <- pmlistTab[[i - 5]]
+      # outputlist[[listlength + 6]] <- meanTable
+      # outputlist[[listlength + 7]] <- p_valueMatrix
+      outputlist <- c(
+        list(
+          mean.table,
+          se.table,
+          SED.out,
+          LSD,
+          paste("For variable '", paste(resvar, collapse = " and "), "' at each level of '",
+            paste(atvar, collapse = " and "), "'",
+            sep = ""
+          )
+        ),
+        pmlistTab[seq_len(listlength)],
+        list(
+          meanTable,
+          p_valueMatrix
+        )
+      )
+
       if (is.null(permlist) || any(c("NULL", "") %in% permlist)) {
         names(outputlist) <- c(
           "Predicted Means", "Standard Error of Means", "Standard Error of Differences",
@@ -767,4 +816,96 @@ predictmeansN <- function(model,
     return(outputlist)
   }
   #  }
+}
+
+## Shortcut ways to call predictmeansN
+
+#' @rdname predictmeansN
+#' @export
+pm <- function(model,
+               modelterm,
+               data = NULL,
+               pairwise = FALSE,
+               atvar = NULL,
+               adj = c("none", "tukey", "holm", "hochberg", "hommel",
+                       "bonferroni", "BH", "BY", "fdr"),
+               Df = NULL,
+               level = 0.05,
+               covariate = NULL,
+               meandecr = NULL,
+               letterCI = FALSE,
+               trans = I,
+               transOff = 0,
+               responsen = NULL,
+               count = FALSE,
+               prtnum = TRUE,
+               permlist = NULL,
+               ncore = 3L,
+               ndecimal = 4L) {
+  predictmeansN(
+    model,
+    modelterm,
+    data,
+    pairwise,
+    atvar,
+    adj = match.arg(adj),
+    Df,
+    level,
+    covariate,
+    meandecr,
+    letterCI,
+    trans,
+    transOff,
+    responsen,
+    count,
+    prtnum,
+    permlist,
+    ncore,
+    ndecimal
+  )
+}
+
+#' @rdname predictmeansN
+#' @export
+predmeans <- function(model,
+                      modelterm,
+                      data = NULL,
+                      pairwise = FALSE,
+                      atvar = NULL,
+                      adj = c("none", "tukey", "holm", "hochberg", "hommel",
+                              "bonferroni", "BH", "BY", "fdr"),
+                      Df = NULL,
+                      level = 0.05,
+                      covariate = NULL,
+                      meandecr = NULL,
+                      letterCI = FALSE,
+                      trans = I,
+                      transOff = 0,
+                      responsen = NULL,
+                      count = FALSE,
+                      prtnum = TRUE,
+                      permlist = NULL,
+                      ncore = 3L,
+                      ndecimal = 4L) {
+  predictmeansN(
+    model,
+    modelterm,
+    data,
+    pairwise,
+    atvar,
+    adj = match.arg(adj),
+    Df,
+    level,
+    covariate,
+    meandecr,
+    letterCI,
+    trans,
+    transOff,
+    responsen,
+    count,
+    prtnum,
+    permlist,
+    ncore,
+    ndecimal
+  )
 }

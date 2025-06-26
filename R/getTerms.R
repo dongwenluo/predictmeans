@@ -5,6 +5,8 @@
 #' is \code{y ~ A*B}, then this function will expand the formula to
 #' \code{y ~ A + B + A:B} and return a vector containing \code{"A"},
 #' \code{"B"}, and \code{"A:B"}.
+#' @param model A fitted object from one of \code{aov}, \code{glm},
+#' \code{glmm_TMB}, \code{gls}, \code{lm}, \code{lmer}, or \code{nlme}.
 #'
 #' @examples
 #' ## A simple example without a model

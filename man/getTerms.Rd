@@ -6,6 +6,10 @@
 \usage{
 getTerms(model)
 }
+\arguments{
+\item{model}{A fitted object from one of \code{aov}, \code{glm},
+\code{glmm_TMB}, \code{gls}, \code{lm}, \code{lmer}, or \code{nlme}.}
+}
 \description{
 Gets the expanded set of terms from a model specified using
 Wilkinson-Rogers (1973) notation. For example, if your formula
@@ -15,7 +19,7 @@ is \code{y ~ A*B}, then this function will expand the formula to
 }
 \examples{
 ## A simple example without a model
-f <- formula(y ~ A*B)
+f <- formula(y ~ A * B)
 predictmeans:::getTerms(f)
 
 ## A more complex example with a fitted \code{lmerMod} object
