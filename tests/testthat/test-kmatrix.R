@@ -184,6 +184,7 @@ test_that("predictmeans() works with transformed covariates", {
 })
 
 test_that("vectorised Kenward-Roger df equal pbkrtest::Lb_ddf() row by row", {
+  skip_if_not_installed("pbkrtest")
   data("ATP", package = "predictmeans", envir = environment())
   fm <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
   Va <- pbkrtest::vcovAdj(fm)

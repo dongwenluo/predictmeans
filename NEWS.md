@@ -188,6 +188,12 @@
 
 ## Fewer dependencies
 
+* `pbkrtest` moved from Imports to Suggests. Kenward-Roger adjusted
+  covariances, df and F tests are computed by a port of pbkrtest's
+  `vcovAdj()` and `KRmodcomp()` that gives the same results in the tests.
+  pbkrtest alone brought 11 tidyverse packages (dplyr, broom, tidyr, ...).
+  Installing predictmeans now pulls in 56 packages (112 for 1.1.1).
+
 * `car` moved from Imports to Suggests. `permmodels()` computes its Type II
   and III tests itself: lm F; glm LR, Wald and F; lme and gls Wald
   chi-square; lmer Wald chi-square and Kenward-Roger F. They are ported from

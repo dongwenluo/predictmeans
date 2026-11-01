@@ -171,7 +171,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   if (inherits(model, "lmerMod")) {
     if (getME(model, "is_REML")) {
       df_type <- "Kenward-Roger"
-      vcov_adj <- tryCatch(pbkrtest::vcovAdj(model), error = function(e) NULL)
+      vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
     } else {
       df_type <- "Satterthwaite"
       message("The model was fitted by ML: using Satterthwaite df.")

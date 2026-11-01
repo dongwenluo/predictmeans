@@ -30,9 +30,6 @@ importMethodsFrom("Matrix",
                   "chol")
 }
 
-if (requireNamespace("pbkrtest", quietly = TRUE)) {
-    import(pbkrtest)
-}
 
   import(parallel)
   import(lme4)

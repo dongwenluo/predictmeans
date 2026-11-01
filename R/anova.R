@@ -86,7 +86,12 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   } else {
     pm_vcov(model)
   }
-  if (layout == "mer" && test == "F") V <- as.matrix(pbkrtest::vcovAdj(model, details = 0))
+  PhiA <- NULL
+  if (layout == "mer" && test == "F") {
+    PhiA <- pm_vcov_kr(model)
+    V <- as.matrix(PhiA)
+    attributes(V) <- attributes(V)[c("dim", "dimnames")]
+  }
   mm <- stats::model.matrix(model)
   assign <- attr(mm, "assign")
   if (layout == "lme") {
@@ -111,8 +116,8 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
         next
       }
       if (test == "F") {
-        kr <- pbkrtest::KRmodcomp(model, H)$test
-        stat[i] <- kr["Ftest", "stat"]; res_df[i] <- kr["Ftest", "ddf"]
+        kr <- pm_kr_ftest(model, H, PhiA)
+        stat[i] <- kr[["stat"]]; res_df[i] <- kr[["ddf"]]
       } else {
         stat[i] <- pm_wald_chisq(H, b, V)
       }
@@ -130,8 +135,8 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
         next
       }
       if (test == "F") {
-        kr <- pbkrtest::KRmodcomp(model, H)$test
-        stat[term] <- kr["Ftest", "stat"]; res_df[term] <- kr["Ftest", "ddf"]
+        kr <- pm_kr_ftest(model, H, PhiA)
+        stat[term] <- kr[["stat"]]; res_df[term] <- kr[["ddf"]]
       } else {
         stat[term] <- pm_wald_chisq(H, b, V)
       }

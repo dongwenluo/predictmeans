@@ -69,7 +69,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   df_type <- vcov_adj <- NULL
   if (inherits(model, "lmerMod")) {
     df_type <- if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
-    if (df_type == "Kenward-Roger") vcov_adj <- tryCatch(pbkrtest::vcovAdj(model), error = function(e) NULL)
+    if (df_type == "Kenward-Roger") vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   }
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
