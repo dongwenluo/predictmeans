@@ -15,6 +15,20 @@
   printed output are unchanged, and the result has class
   `c("predictmeans", "pdmlist")`.
 
+## Plots and summaries from the result tables
+
+* `autoplot()` for `predictmeans()` results gives ggplot objects that work
+  in Shiny, reports and `plotly::ggplotly()`:
+  * `type = "means"`, with confidence limits, half-LSD bars or no bars;
+  * `type = "pvalue"`, a heatmap of the adjusted pairwise p-values in the
+    colour bands of `PMplot()`, one panel per `atvar` level;
+  * `type = "response"`, the back-transformed means.
+* `summary()` prints the means with a footer stating the model and df
+  method, the SED and LSD ranges, the p-value method and adjustment, what the
+  letters mean, and the covariate values used.
+* Both read only the `means` and `pairs` tables: they compute nothing new,
+  open no graphics device and print nothing unless printed.
+
 ## Supporting new model classes
 
 * `Kmatrix()`, `predictmeans()`, `contrastmeans()` and `covariatemeans()`

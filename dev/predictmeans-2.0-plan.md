@@ -37,7 +37,8 @@ predictmeans 2.0 has three aims, with equal weight:
 | Frozen reference extended to permutation, R², variance components, contrasts (58 cases) | **Done** |
 | Phase 1, part 1: stable result tables (`means`, `pairs`, `settings`, `tidy()`), vectorised and cached Kenward–Roger df, `vcov_adjust`, `cov_reduce`/`exclude` pass-through; B6, B15–B17 fixed | **Done** — commits `a763b7d`, `83d287a` |
 | Phase 1, part 2: `weights =` (SAS OM; matches emmeans), `specify_contrast()`, model adapter (`?pm_coef`); B18 fixed | **Done** — commits `2986851`, `1f8b4f4`, and the adapter commit |
-| Phase 1, part 3: `autoplot()`/`summary()`, own Type II/III tests (car → Suggests), splitting `predictmeans()` | Next |
+| `autoplot()` (means, p-value heatmap, back-transformed) and `summary()` with a self-describing footer | **Done** |
+| Phase 1, part 3: own Type II/III tests (car → Suggests), splitting `predictmeans()` | Next |
 
 ### What changed from the blueprint
 
@@ -381,7 +382,7 @@ part-time person).
 | Kmatrix v2 (reference grid, complex covariates, estimability, weights) | L | **Done** except `weights =` |
 | Split `predictmeans()` into compute steps; plot builders | L | Open |
 | Model adapter; KR-adjusted SEs (D6); KR/Satterthwaite cached and vectorised | M | **KR done** (vectorised, cached, `vcov_adjust`); Satterthwaite and adapter open |
-| New result object with `print`, `summary`, `tidy`, `autoplot` | M | **Tables and `tidy()` done**; `summary`, `autoplot` open |
+| New result object with `print`, `summary`, `tidy`, `autoplot` | M | **Done** |
 | Stable internal level keys (fixes B4); B6 | M | B6 **done**; B4 safe in new tables, legacy open |
 | Non-estimable means shown as NA with a note | S | Open |
 | `specify_contrast()` | S | Open |

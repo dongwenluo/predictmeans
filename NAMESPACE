@@ -16,6 +16,9 @@ S3method(pm_linkinv, glmerMod)
 S3method(pm_linkinv, glmmTMB)
 S3method(as.data.frame, predictmeans)
 S3method(generics::tidy, predictmeans)
+S3method(ggplot2::autoplot, predictmeans)
+S3method(summary, predictmeans)
+S3method(print, summary.predictmeans)
 
 if (requireNamespace("ggplot2", quietly = TRUE)) {
     import(ggplot2)
