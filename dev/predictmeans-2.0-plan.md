@@ -35,7 +35,8 @@ predictmeans 2.0 has three aims, with equal weight:
 | Phase 0 bug fixes (B1–B3, B5, B11–B14), options/interactive hygiene, packaging, CI | **Done** — commit `364d733` |
 | Speed fixes that don't change numbers (KR in refits, R² memory, sparse Cholesky) | **Done** — `364d733` (§1.3) |
 | Frozen reference extended to permutation, R², variance components, contrasts (58 cases) | **Done** |
-| Phase 1: engine and result object | Next |
+| Phase 1, part 1: stable result tables (`means`, `pairs`, `settings`, `tidy()`), vectorised and cached Kenward–Roger df, `vcov_adjust`, `cov_reduce`/`exclude` pass-through; B6, B15–B17 fixed | **Done** — commits `a763b7d`, `83d287a` |
+| Phase 1, part 2: `autoplot()`/`summary()`, `weights =`, `specify_contrast()`, splitting `predictmeans()` | Next |
 
 ### What changed from the blueprint
 
@@ -81,9 +82,12 @@ structures.
 | B1 | `R/predictmeans.R:43,46` | Passing two or more legacy plot args (`mplot`, …) errors: `vars` resolves to `ggplot2::vars`. | **Fixed** |
 | B2 | `R/predictmeans.R:821` vs `:969` | `trans = NULL` errors at return. | **Fixed** |
 | B3 | `R/contrastmeans.R:87,89` vs `R/predictmeans.R:369` | Permutation p-values count `>` in `contrastmeans()` but `>=` in `predictmeans()`. | **Fixed** (both use `>=`) |
-| B4 | `R/predictmeans.R:238,251,472` | Factor levels containing `":"` corrupt the pairwise tables. | Phase 1 |
+| B4 | `R/predictmeans.R:238,251,472` | Factor levels containing `":"` corrupt the pairwise tables. | New `means`/`pairs` tables are safe; legacy tables in Phase 1 part 2 |
 | B5 | `R/permmodels.R:13,165-189` | Dead glmer branch; tests `"gamma"` instead of `"Gamma"`. | **Fixed** (typo); branch revived by `bootmodels()` in Phase 2 |
-| B6 | `R/predictmeans.R:465` | Tukey within `atvar` uses one averaged df for lmer. | Phase 1 |
+| B6 | `R/predictmeans.R:465` | Tukey within `atvar` uses one averaged df for lmer. | **Fixed** (per-pair df; matches emmeans) |
+| B15 | `predictmeans()` | Failed for every lmer model with a missing cell ("replacement has 12 rows, data has 11"). | **Fixed** |
+| B16 | `predictmeans()` | Failed for lmer models fitted by ML. | **Fixed** (Satterthwaite df for ML fits) |
+| B17 | `predictmeans()` | Tukey within `atvar` used the number of pairs as the number of means: 0.350 instead of 0.197 in the Oats example **(measured)**. | **Fixed**; matches emmeans |
 | B7 | `R/Kmatrix.R` 1.1.1 | Missing cells relied on `merge(sort = FALSE)` row order. | **Not reproduced; removed** (Kmatrix v2 matches by key) |
 | B8 | Kmatrix 1.1.1 | A matrix `covariateV` (documented as prediction points) was silently ignored. | **Fixed** |
 | B9 | Kmatrix 1.1.1 | 16 of 22 complex-covariate cases failed (§11). | **Fixed** |
@@ -98,7 +102,7 @@ structures.
 | Where | Cost | Fix | Status |
 |---|---|---|---|
 | `R/mymodelparm.R:45-47` | Every lmer fit computes Kenward–Roger df for every term (`pbkrtest::vcovAdj`, O(n³)). `permmodels()` does this on every refit, then discards it. | Refits skip df. | **Done**: 99 permutations on Oats 21.8 s → 2.2 s, same p-values **(measured)** |
-| `predictmeans()` | KR computed separately for terms, means and every pairwise contrast. | Cache once per model. | Phase 1 |
+| `predictmeans()` | KR computed separately for terms, means and every pairwise contrast, one contrast at a time. | Adjusted covariance computed once per call; KR df for all contrasts at once (identical to `pbkrtest::Lb_ddf`). | **Done**: Oats 0.96 s → 0.09 s; 780 pairs 5.3 s → 0.1 s **(measured)** |
 | `R/permmodels.R:161`, `R/permlmer.R:54` | Dense n×n V, dense Cholesky, `solve()`. | Sparse Cholesky and triangular solves. | **Done** |
 | `R/R2_glmm.R:71-72` | Dense n×n `V` and `P`; ~800 MB each at n = 10,000. | Traces without n×n matrices. | **Done**: n = 4,000 4.4 s / 529 MB → 0.01 s; n = 100,000 in 0.02 s **(measured)** |
 | `permmodels()` lm branch | `update()` per permutation. | QR fast path; all permutations at once. | Phase 2 |
@@ -106,7 +110,7 @@ structures.
 
 ### 1.4 Engineering and CRAN hygiene
 
-- **Tests:** a testthat suite now exists (27 tests, 120 checks). The examples
+- **Tests:** a testthat suite now exists (38 tests, 167 checks). The examples
   for permutation and semiparametric functions are still commented out.
 - **Global side effects:** `options(scipen = 6)` is never restored
   (`predictmeans`, `contrastmeans`, `permmodels`). `cat()` is used in
@@ -160,13 +164,13 @@ SAS from the PROC MIXED/GLIMMIX documentation.
 | Joint tests / slices | `joint_tests()`, `test(joint = TRUE)` | `hypotheses(joint = )` | `SLICE`, `CONTRAST` | — | `pm_joint()` slice F-tests with chosen df — Phase 2 |
 | Multiplicity | tukey, scheffe, sidak, bonferroni, dunnettx, mvt | `p_adjust` (p.adjust methods) | TUKEY(-Kramer), BON, SCHEFFE, SIDAK, DUNNETT, SIMULATE | p.adjust methods + Tukey | Add sidak, scheffe, dunnett and single-step multivariate t (exact counterpart of SAS `SIMULATE`) — Phase 2 |
 | df for mixed models | KR, Satterthwaite, asymptotic | KR/Satterthwaite only for unit-level predictions; refused for averaged means **(measured)** | CONTAIN, BETWITHIN, RESIDUAL, SATTERTHWAITE, KR, KR2 | KR (falls back to Satterthwaite) for lmer; nlme inner–outer for lme | Explicit `df_method`, adding containment and between-within for lmer (rare in R) — Phase 2 |
-| SE paired with KR df | KR-adjusted covariance | (unit level) | KR-adjusted covariance | **Unadjusted** covariance with KR df: SE 7.8868 vs 7.8962 on unbalanced Oats **(measured)** | Use adjusted covariance when `df_method = "kenward-roger"` — Phase 1, decision D6 |
+| SE paired with KR df | KR-adjusted covariance | (unit level) | KR-adjusted covariance | **Unadjusted** covariance with KR df: SE 7.8868 vs 7.8962 on unbalanced Oats **(measured)** | **Done as an option** (`vcov_adjust = TRUE`; matches emmeans); default per decision D6 |
 | Response scale | `regrid()`, `type = "response"`, `bias.adjust` | `type = "response"`, `transform`, ratio/lnor comparisons | `ILINK` | Back-transformed means and CIs; no response-scale SEs | Delta-method SEs, ratio/odds-ratio contrasts, GLMM bias adjustment — Phase 2 |
 | Averaged (counterfactual) predictions, AME | `counterfactuals` | `avg_predictions`, `avg_comparisons`, `avg_slopes` | `OM` (link scale) | — | **Done** on the link scale (`cov_reduce = "average"`); response-scale averaging and AME — Phase 2 |
 | Slopes by group | `emtrends()` | `slopes()` | `ESTIMATE` on slope terms | Plots only | `pm_slopes()` — Phase 2 |
 | Robust / clustered vcov | `vcov.` argument | `vcov = "HC3"`, `~cluster` | `EMPIRICAL` | — | `vcov =` argument (matrix or function) — Phase 2 |
 | Equivalence tests | `test(delta, side)` | `equivalence =` | TOST via `ESTIMATE` | — | Phase 2 |
-| Tidy, stable output | `as.data.frame` | Consistent data frames | ODS tables with stable names | Title-case list; dynamic names | §7.2 object — Phase 1 |
+| Tidy, stable output | `as.data.frame` | Consistent data frames | ODS tables with stable names | Title-case list; dynamic names | **Done**: `means`, `pairs`, `settings`; `tidy()`, `as.data.frame()`; checked against emmeans |
 | Model coverage | Many classes, extension API | 100+ classes via insight | — | 9 classes; gam added | Adapter contract (§7.1); vglm, ordinal later |
 
 **What only predictmeans offers** (none of the three has all of it):
@@ -362,12 +366,12 @@ part-time person).
 |---|---|---|
 | Kmatrix v2 (reference grid, complex covariates, estimability, weights) | L | **Done** except `weights =` |
 | Split `predictmeans()` into compute steps; plot builders | L | Open |
-| Model adapter; KR-adjusted SEs (D6); KR/Satterthwaite cached and vectorised | M | Open |
-| New result object with `print`, `summary`, `tidy`, `autoplot` | M | Open |
-| Stable internal level keys (fixes B4); B6 | M | Open |
+| Model adapter; KR-adjusted SEs (D6); KR/Satterthwaite cached and vectorised | M | **KR done** (vectorised, cached, `vcov_adjust`); Satterthwaite and adapter open |
+| New result object with `print`, `summary`, `tidy`, `autoplot` | M | **Tables and `tidy()` done**; `summary`, `autoplot` open |
+| Stable internal level keys (fixes B4); B6 | M | B6 **done**; B4 safe in new tables, legacy open |
 | Non-estimable means shown as NA with a note | S | Open |
 | `specify_contrast()` | S | Open |
-| Pass `cov_reduce`/`exclude` through `predictmeans()`/`covariatemeans()` | S | Open |
+| Pass `cov_reduce`/`exclude` through `predictmeans()`/`covariatemeans()` | S | **Done** |
 | pkgdown site, "Getting started", "Migrating from 1.x" | M | Open |
 
 ### Phase 2 — Statistics → 2.1.0
