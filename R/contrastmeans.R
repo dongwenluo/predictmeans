@@ -1,5 +1,6 @@
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
-                          weights=c("equal", "proportional", "outer", "cells", "flat")) {
+                          weights=c("equal", "proportional", "outer", "cells", "flat"),
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -67,14 +68,17 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
          paste(termsLabel[bad_row][used_bad], collapse=", "))
   }
   KK[bad_row, ] <- 0
-  df_type <- vcov_adj <- NULL
-  if (inherits(model, "lmerMod")) {
-    df_type <- if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
-    if (df_type == "Kenward-Roger") vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
-  }
+  df_method <- match.arg(df_method)
+  dfm <- pm_df_method(model, df_method)
+  df_type <- dfm$df_type
+  vcov_adj <- dfm$vcov_adj
+  if (identical(df_type, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
+  # containment df with the adjusted covariance only when asked for explicitly
+  if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
+    vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
-    if (is.null(vcov_adj)) {
+    if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
       # the default applies to REML lmer fits only; say so only when asked for
       if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
     } else {
@@ -100,7 +104,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
 			  sQuote(modelterm), "and its marginal terms vary between", sQuote(Df), "and",
 			  sQuote(mDf), ".\n","Probabilities will be calculated using", sQuote(Df), "Df.",  "\n")
 		  } else if (inherits(model, "lmerMod")) {
-			  Df <- df_term(model, ctrmatrix = rK, type = df_type, vcov_adj = vcov_adj)
+			  Df <- df_term(model, modelterm, ctrmatrix = rK, type = df_type, vcov_adj = vcov_adj)
       } else {
         stop("You need provide Df for the model!")
       }

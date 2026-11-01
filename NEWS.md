@@ -169,6 +169,18 @@
   goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
   now takes 0.02 s.
 
+## Containment df
+
+* New argument `df_method` in `predictmeans()` and `contrastmeans()` (and
+  `type = "containment"` in `df_term()`) for lmer models: `"auto"` (the
+  default, unchanged: Kenward-Roger for REML fits, Satterthwaite for ML fits),
+  `"Kenward-Roger"`, `"Satterthwaite"` or `"containment"`. Containment gives
+  the SAS `DDFM=CONTAIN` df (the smallest rank contribution to [X Z] of the
+  random effects containing the term, else the residual df), with the
+  unadjusted covariance unless `vcov_adjust = TRUE` is given. For the oats
+  split plot this is 10 for Variety and 45 for Nitro and Variety:Nitro; with
+  a whole plot missing, 9 and 42.
+
 ## Bug fixes found by the refactor
 
 * `predictmeans()` with both `permlist` and `atvar` failed with "undefined

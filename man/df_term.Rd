@@ -7,7 +7,7 @@
 }
 \usage{
   df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite"), vcov_adj=NULL)
+          type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL)
 }
 \arguments{
   \item{model}{
@@ -27,8 +27,9 @@
   \item{ctrnames}{ Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...) 
 }
   \item{type}{   Name (in "quote") for indicating a method for claculating degree of freedom. 
-  The choices are "Kenward-Roger" and "Satterthwaite". The default method is "Kenward-Roger".
+  The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
+  "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row.
 }  
   \item{vcov_adj}{
   Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by

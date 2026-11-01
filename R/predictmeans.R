@@ -6,7 +6,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
-                          weights=c("equal", "proportional", "outer", "cells", "flat")) {
+                          weights=c("equal", "proportional", "outer", "cells", "flat"),
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {
   vcov_adjust_default <- missing(vcov_adjust)
 
   ## Bias output towards fixed notation. See ?options for more info
@@ -18,6 +19,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   }
 
   weights <- match.arg(weights)
+  df_method <- match.arg(df_method)
+  # SAS DDFM=CONTAIN uses the unadjusted covariance
+  if (df_method == "containment" && vcov_adjust_default) vcov_adjust <- FALSE
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

@@ -332,7 +332,7 @@ doolittle <- function(x, eps = 1e-6) {
 
 ########################
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
@@ -342,6 +342,15 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
     warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
     type <- "Satterthwaite"
+  }
+
+  if (type == "containment") {
+    # one df per term (SAS DDFM=CONTAIN): every row gets the df of 'modelterm'
+    if (missing(modelterm)) stop("containment df need 'modelterm'")
+    cdf <- pm_containment_df(model)
+    if (!modelterm %in% names(cdf)) stop("'", modelterm, "' is not a term of the model")
+    n_row <- if (is.null(ctrmatrix)) nrow(Kmatrix(model, modelterm, covariate)$K) else NROW(rbind(ctrmatrix))
+    return(rep(unname(cdf[modelterm]), n_row))
   }
 
   if (!is.null(ctrmatrix)) {
@@ -1138,3 +1147,25 @@ aovlist_lmer <- function(object) {
 }
 
 
+
+## Resolve the df method for an lmer model: "auto" is Kenward-Roger for REML
+## fits and Satterthwaite for ML fits. Returns list(df_type, vcov_adj).
+pm_df_method <- function(model, df_method) {
+  if (!inherits(model, "lmerMod")) {
+    if (df_method != "auto") warning("'df_method' applies to lmer models only; ignored.")
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
+  reml <- lme4::getME(model, "is_REML")
+  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite",
+                    df_method)
+  if (df_type == "Kenward-Roger" && !reml) {
+    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+    df_type <- "Satterthwaite"
+  }
+  if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
+  vcov_adj <- switch(df_type,
+    "Kenward-Roger" = tryCatch(pm_vcov_kr(model), error = function(e) NULL),
+    "Satterthwaite" = pm_satt_parts(model),
+    NULL)
+  list(df_type = df_type, vcov_adj = vcov_adj)
+}

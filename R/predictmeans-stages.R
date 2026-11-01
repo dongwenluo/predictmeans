@@ -172,17 +172,12 @@ pm_code_estimate <- quote({
   response <- ctr.matrix$response
   # lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits). The
   # adjusted covariance is computed once and shared by all df calculations.
-  df_type <- vcov_adj <- NULL
-  if (inherits(model, "lmerMod")) {
-    if (getME(model, "is_REML")) {
-      df_type <- "Kenward-Roger"
-      vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
-    } else {
-      df_type <- "Satterthwaite"
-      vcov_adj <- pm_satt_parts(model)
-      message("The model was fitted by ML: using Satterthwaite df.")
-    }
-  }
+  dfm <- pm_df_method(model, df_method)
+  df_type <- dfm$df_type
+  vcov_adj <- dfm$vcov_adj
+  # containment df with the adjusted covariance only when asked for explicitly
+  if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
+    vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
     if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
@@ -320,10 +315,10 @@ pm_code_compare <- quote({
         #  Df <- median(df_term(model, modelterm), na.rm=TRUE)
     		  Df <- mp$df[modelterm]
     		  names(Df) <- NULL
-    		  pm_df_raw <- df_term(model, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj)
+    		  pm_df_raw <- df_term(model, modelterm, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj)
     		  mt$Df <- round(pm_df_raw, 2)
     		 # if (any(mt$Df <= 0)) mt$Df <- Df
-    		  Df_diff <- df_term(model, ctrmatrix=rK, type=df_type, vcov_adj=vcov_adj)
+    		  Df_diff <- df_term(model, modelterm, ctrmatrix=rK, type=df_type, vcov_adj=vcov_adj)
     		  pairDf <- round(mean(Df_diff), 2)
     		 # Df_diff[Df_diff <= 0] <- 1
         } else {

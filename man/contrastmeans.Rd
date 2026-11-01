@@ -8,7 +8,8 @@
 }
 \usage{
   contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
-                vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"))
+                vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 }
 \arguments{
   \item{model}{
@@ -43,6 +44,11 @@
   \item{weights}{
   Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
   over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).
+}
+  \item{df_method}{
+  Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
+  fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
+  \code{\link{predictmeans}}).
 }
 }
 \value{

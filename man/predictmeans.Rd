@@ -16,7 +16,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
-  weights=c("equal", "proportional", "outer", "cells", "flat"))
+  weights=c("equal", "proportional", "outer", "cells", "flat"),
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 }
 \arguments{
   \item{model}{
@@ -161,6 +162,13 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+}
+  \item{df_method}{
+  Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
+  REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+  smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
+  residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
+  covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other model classes.
 }
 }
 
