@@ -1,15 +1,20 @@
-## The stages of predictmeans(). Each stage runs on the state of one
-## predictmeans() call (its evaluation frame, 'st'), reading what earlier
-## stages computed and adding its own results, in this order:
+## The stages of predictmeans(), in this order:
 ##   setup          check arguments and options; link function; plot choices
-##   estimate       K matrix, predicted means, standard errors, legacy tables
-##   compare        SEDs, LSDs, degrees of freedom, pairwise tests (overall or
-##                  within atvar levels), letters within atvar levels
-##   mean_table     the mean table with confidence limits
-##   backtransform  back-transformed means; letters
-##   plots          all graphics (only when plot = TRUE)
-##   assemble       the stable tables and the returned list (pm_out)
-## Each stage's code is a quoted expression evaluated in that state.
+##   estimate       pm_model_parms(), pm_estimate_means(): K matrix,
+##                  predicted means, SEs, legacy tables
+##   compare        pm_compare_sed(), pm_compare_df(), pm_compare_lsd(),
+##                  pm_pair_pvalues(), pm_pairs_overall() / pm_pairs_atvar()
+##   mean_table     pm_mean_table(): the mean table with confidence limits
+##   backtransform  pm_back_transform(), pm_final_mean_table(): response
+##                  scale; letters
+##   plots          pm_make_plots(): all graphics (only when plot = TRUE)
+##   assemble       pm_tidy_parts(), pm_legacy_output(), pm_finish()
+## The work is done by the pure functions named above: they take their
+## inputs as arguments and return their results. Each stage is a short
+## quoted expression, evaluated in the state of one predictmeans() call
+## ('st'), that calls them and stores what later stages use. Only setup
+## works on the state directly, because it rewrites the call's arguments
+## (pairwise, atvar, adj, level, the plot choices).
 ## All statistics are computed before any plotting, so plot = FALSE skips
 ## all graphics work.
 
@@ -756,6 +761,31 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
 ## All graphics: p-value plots, mean and bar plots, back-transformed plot.
 pm_stage_plots <- function(st) eval(pm_code_plots, st)
 pm_code_plots <- quote({
+  plots <- pm_make_plots(mget(pm_plot_inputs, envir = environment(), ifnotfound = list(NULL)))
+  meanPlot <- plots$meanPlot
+  ciPlot <- plots$ciPlot
+  predictmeansBarPlot <- plots$predictmeansBarPlot
+})
+
+## Values the plots are drawn from.
+pm_plot_inputs <- c("LL", "LSD", "Mean", "SED.out", "Trt", "UL", "adj", "atvar", "barplot", "basesz",
+                    "bkmt", "bkplot", "ciPlot", "jitterv", "lineplot", "lsd_bar", "mdf", "meanPlot",
+                    "model", "modelterm", "mplot", "mt", "nK", "nc", "newwd", "nrow.pm", "pairwise",
+                    "plot", "plotord", "plottitle", "plotxlab", "plotylab", "pm", "pmlist", "pplot",
+                    "predictmeansBarPlot", "prtplt", "rcnplotm", "response", "responsen", "resvar",
+                    "ses", "slevel", "t.p.valuep", "trans", "vars")
+
+## All graphics of predictmeans(): draws the requested plots and returns
+## list(meanPlot, ciPlot, predictmeansBarPlot). 'x' is a named list of the
+## values in pm_plot_inputs; the drawing code runs in a new environment that
+## holds only those values.
+pm_make_plots <- function(x) {
+  env <- list2env(x, envir = new.env(parent = environment(pm_make_plots)))
+  eval(pm_code_draw, env)
+  mget(c("meanPlot", "ciPlot", "predictmeansBarPlot"), envir = env)
+}
+
+pm_code_draw <- quote({
   # p-value level plots (base graphics)
   if (pairwise && nK > 1) {
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {

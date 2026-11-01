@@ -198,8 +198,10 @@
 
 * `predictmeans()` is split into stages (setup, estimate, compare, mean table,
   back-transform, plots, assemble). All statistics are computed before any
-  plotting, so `plot = FALSE` skips all graphics work. Results are
-  unchanged.
+  plotting, so `plot = FALSE` skips all graphics work. The work of each
+  stage is done by functions that take their inputs as arguments and return
+  their results, so they can be tested and changed one at a time. Results
+  are unchanged.
 
 ## Packaging
 
