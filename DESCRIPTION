@@ -1,5 +1,5 @@
 Package: predictmeans
-Version: 1.1.1
+Version: 1.1.1.9000
 Author: Dongwen Luo, Siva Ganesh and John Koolaard
 Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
 Title: Predicted Means for Linear and Semiparametric Models
@@ -12,11 +12,9 @@ Imports: car, ggplot2, graphics, grDevices, Matrix, MASS, methods, numDeriv, par
 Suggests: emmeans, HRW, lmeInfo, lmeSplines, mgcv, plotly, splines2, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 License: GPL (>= 2)
-Packaged: 2024-04-03
-URL: https://CRAN.R-project.org/package=predictmeans
-Repository: CRAN
+URL: https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans
+BugReports: https://github.com/dongwenluo/predictmeans/issues
 LazyLoad: yes
-NeedsCompilation: yes
+NeedsCompilation: no
 Encoding: UTF-8
 ByteCompile: true
-Date/Publication: 2024-04-03

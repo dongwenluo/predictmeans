@@ -1,5 +1,55 @@
 # predictmeans (development version)
 
+## Bug fixes
+
+* `permmodels()` and `CookD()` refitted `lme`/`gls` models by re-evaluating
+  the model call from inside the package. Data fitted inside a function were
+  not found, and a data set with the same name elsewhere on the search path
+  could be used silently. For example, a local `Oats` with `nitro` as a factor
+  was replaced by `nlme::Oats`, so the permutation tests were for a different
+  model. Refits now use the model's own data and check that they reproduce
+  its coefficients.
+* `Kmatrix()`, `predictmeans()`, `permmodels()` and `CookD()` now find the
+  data of `gls` models fitted inside a function; `nlme::getData()` does not.
+* `CookD()` failed for every `lmer` model: it refitted with ML and then asked
+  for Kenward-Roger df, which needs REML. It now works and agrees with `lme`.
+* `permmodels()` failed for `gls` models without a correlation structure.
+* `R2_glmm()`:
+  * for `glmmTMB` models it now finds data that are not in the global
+    environment;
+  * `over_disp = TRUE` gives a clear message when the model has no
+    observation-level random effect.
+* `predictmeans()`:
+  * passing two or more of the deprecated `mplot`, `barplot`, `pplot`,
+    `bkplot` arguments gave an error instead of a deprecation warning;
+  * `trans = NULL` gave an error.
+* `contrastmeans()` with `permlist` counted permuted statistics strictly
+  greater than the observed one. It now counts "greater or equal" (after
+  rounding), as `predictmeans()` does, so both give the same permutation
+  p-value for the same contrast.
+* `predictmeans()`, `contrastmeans()` and `permmodels()` no longer leave
+  `options(scipen = 6)` set after they return; printed results look the same.
+* `contrastmeans()` without `ctrmatrix` only opens the contrast editor in an
+  interactive session.
+
+## Speed
+
+* `permmodels()` no longer computes Kenward-Roger df for every permutation
+  refit (the df were discarded). About 10x faster for `lmer` models
+  (99 permutations of the Oats split-plot: 21.8 s -> 2.2 s), with identical
+  permutation p-values.
+* `permmodels()` and `permlmer()` use a sparse Cholesky factor and
+  triangular solves instead of a dense n x n inverse.
+* `R2_glmm()` computes its traces without n x n matrices. For n = 4,000 it
+  goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
+  now takes 0.02 s.
+
+## Packaging
+
+* `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
+  fields, and `NeedsCompilation` is "no".
+* GitHub Actions R CMD check on Linux, macOS and Windows.
+
 ## Kmatrix() and semipred()
 
 * `Kmatrix()` now builds predicted means from a reference grid evaluated with

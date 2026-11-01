@@ -174,7 +174,8 @@ pm_recover_data <- function(info) {
   if (!is.null(info$data) && (info$data_first || !(is_nlme || is_mer))) {
     cands$data <- function() info$data
   }
-  if (is_nlme || is_mer) cands$getData <- function() nlme::getData(model)
+  if (is_nlme) cands$getData <- function() pm_get_data(model)
+  if (is_mer) cands$getData <- function() nlme::getData(model)
   if (!is.null(info$data) && is.null(cands$data)) cands$data <- function() info$data
   if (is.null(info$data)) {
     if (!is.null(info$thecall$data)) {

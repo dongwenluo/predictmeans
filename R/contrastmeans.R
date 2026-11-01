@@ -1,5 +1,6 @@
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist) {
-  options(scipen=6)
+  op <- options(scipen = 6)
+  on.exit(options(op), add = TRUE)
 
   if (inherits(model, "aovlist")) {
     model <- aovlist_lmer(model)
@@ -11,6 +12,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   K <- Kmatrix(model, modelterm)$K
   termsLabel <- rownames(K)
   if (missing(ctrmatrix)) {
+    if (!interactive()) {
+      stop("Please supply 'ctrmatrix'; the contrast editor needs an interactive session.")
+    }
     ques <- paste("\nHow many contrasts you want set up for ", sQuote(modelterm), "? ", sep="")
     nctr <- as.integer(readline(ques))
     nrK <- length(termsLabel)
@@ -84,9 +88,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
 
   if (nctr==1) {
-    per.p <- (sum(sapply(permlist[[1]], function(x) abs(tValue(x, rK)) > abs(t.v)))+1)/(nsim + 1)
+    per.p <- (sum(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
   } else {
-    per.p <- (rowSums(sapply(permlist[[1]], function(x) abs(tValue(x, rK)) > abs(t.v)))+1)/(nsim + 1)
+    per.p <- (rowSums(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
   }
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")

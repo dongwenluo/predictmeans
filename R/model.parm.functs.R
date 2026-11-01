@@ -1,6 +1,6 @@
 
 model.frame.gls <- function(formula, ...) {
-  model.frame(formula(formula), nlme::getData(formula),...)
+  model.frame(formula(formula), pm_get_data(formula),...)
 }
 
 model.frame.lme <- function(formula, ...) {
@@ -13,7 +13,7 @@ model.matrix.aovlist <- function(object, ...) {
 }
 
 model.matrix.gls <- function(object, ...) {
-    model.matrix(terms(object), data = nlme::getData(object), ...)
+    model.matrix(terms(object), data = pm_get_data(object), ...)
 }
 
 model.matrix.lme <- function(object, ...) {

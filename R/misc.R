@@ -512,8 +512,10 @@ get_covbeta <- function(varpar, devfun) {
 
 ###################### for print
 print.pdmlist = function(x, ...){
+  op <- options(scipen = 6)
+  on.exit(options(op), add = TRUE)
   pos = grep('predictmeansPlot|predictmeansBKPlot|predictmeansBarPlot|p_valueMatrix', names(x))
-  x = x[names(x)[-pos]]
+  if (length(pos)) x = x[names(x)[-pos]]
   NextMethod()
 }
 ######################

@@ -13,13 +13,14 @@ Predicted Means of a Linear Model
 predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
-  plotxlab=NULL, plotylab=NULL, mplot=TRUE, barplot=FALSE, pplot=TRUE, bkplot=TRUE, 
-  plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+  plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
+  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=3, ndecimal=4)
 }
 \arguments{
   \item{model}{
-  Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+  Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+  \code{glmmTMB} and \code{gam} (package \pkg{mgcv}).
 }
   \item{modelterm}{
   Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
@@ -92,17 +93,22 @@ When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.
   \item{plotylab}{
   A character vector specifying the y label for plot(s). The default is NULL. 
 }
+  \item{which.plots}{
+  Which plots to draw: any of \code{"mean"} (means plot), \code{"bar"} (bar chart), \code{"pval"}
+  (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed plot).
+  The default is \code{c("mean", "pval", "back")}.
+}
   \item{mplot}{
-  An option for drawing a means plot, or not. The default is TRUE.
+  Deprecated, use \code{which.plots}. An option for drawing a means plot, or not.
 } 
   \item{barplot}{
-  An option for drawing a bar chart, or not. The default is FALSE.
+  Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.
 }
   \item{pplot}{
-  An option for drawing a p-values plot, or not when there are more than six p-values. The default is TRUE.
+  Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.
 }
   \item{bkplot}{
-  An option for drawing back transformed plot, or not. The default is TRUE.
+  Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.
 }
   \item{plot}{
   An option for drawing plots, or not. The default is TRUE.

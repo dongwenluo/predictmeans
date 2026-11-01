@@ -28,7 +28,7 @@ reference_cases <- function() {
   cap("ex_cov2", covariatemeans(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
 
   Oats$nitro <- factor(Oats$nitro); Oats$Whole_plot <- Oats$Variety
-  fm_lmer <- lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)
+  fm_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)
   fm_lme <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
   fm_lm <- lm(yield ~ Block + nitro*Variety, data = Oats)
   fm_aov <- aov(yield ~ nitro*Variety + Error(Block/Variety), data = Oats)
@@ -46,7 +46,7 @@ reference_cases <- function() {
 
   Om <- Oats[!(Oats$nitro == "0.6" & Oats$Variety == "Victory"), ]
   fm_miss <- lm(yield ~ nitro*Variety, data = Om)
-  fm_miss_lmer <- lmer(yield ~ nitro*Variety + (1|Block), data = Om)
+  fm_miss_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block), data = Om)
   cap("miss_lm_K_int", km(fm_miss, "nitro:Variety"))
   cap("miss_lm_K_nitro", km(fm_miss, "nitro"))
   cap("miss_lm_K_var", km(fm_miss, "Variety"))
@@ -54,7 +54,7 @@ reference_cases <- function() {
   cap("miss_pm", pmo(fm_miss, "nitro:Variety", pairwise = TRUE))
 
   data("ATP", package = "predictmeans", envir = environment())
-  fm_atp <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
+  fm_atp <- lmerTest::lmer(ATP ~ A*B*time + (1|heart), data = ATP)
   cap("atp_K_ABt", km(fm_atp, "A:B:time"))
   cap("atp_pm_At", pmo(fm_atp, "A:time", atvar = "time", adj = "BH"))
 
@@ -94,6 +94,26 @@ reference_cases <- function() {
                  smoothZ = list(gc = smZ(construction.date, k = 10)), data = W, prt = FALSE))
   cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", prt = FALSE)$pred_df)
   cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", prt = FALSE)$pred_df)
+
+  ## Permutation tests, R2, variance components and contrasts
+  perm_lmer <- suppressWarnings(permmodels(fm_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
+  cap("perm_lmer", perm_lmer)
+  cap("perm_lmer_III", permmodels(fm_lmer, nperm = 9, type = "III", prt = FALSE, ncore = 1, seed = 2)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lme", permmodels(fm_lme, nperm = 9, prt = FALSE, ncore = 1, seed = 3)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lm", permmodels(fm_lm, nperm = 19, prt = FALSE, ncore = 1, seed = 4)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lm_II", permmodels(fm_lm, nperm = 9, type = "II", prt = FALSE, ncore = 1, seed = 5)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_pm_lmer", pmo(fm_lmer, "nitro", permlist = perm_lmer, adj = "BH", ncore = 1))
+  fm_lmer0 <- lmerTest::lmer(yield ~ nitro + Variety + (1|Block/Whole_plot), data = Oats)
+  cap("permlmer", permlmer(fm_lmer0, fm_lmer, nperm = 19, ncore = 1, seed = 6))
+  cap("r2_lmer", R2_glmm(fm_lmer))
+  cap("r2_lmer_od", R2_glmm(fm_lmer, over_disp = TRUE))
+  cap("r2_glmer", R2_glmm(fm_clin))
+  cap("r2_tmb", R2_glmm(fm_tmb))
+  cap("varcomp_lmer", varcomp(fm_lmer))
+  cap("varcomp_lme", varcomp(fm_lme))
+  cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
+  cap("contr_lmer", contrastmeans(fm_lmer, "nitro", ctrmatrix = cm))
+  cap("contr_lme", contrastmeans(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"))
   R
 }
 

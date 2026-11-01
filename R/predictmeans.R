@@ -7,7 +7,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4) {
 
   ## Bias output towards fixed notation. See ?options for more info
-  options(scipen = 6)
+  op <- options(scipen = 6)
+  on.exit(options(op), add = TRUE)
 
   if(any(missing(model), missing(modelterm))){
     stop("The arguments 'model', and 'modelterm' must be provided!")
@@ -32,31 +33,33 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   }else{
     ## Once you remove the old arguments you remove the if statement and delete this
 
-    i = which(sapply(list(mplot, barplot, pplot, bkplot), is.null))
-    notnull = c("mplot", "barplot", "pplot", "bkplot")[-i]
-    verb = "are"
+    old_args = c("mplot", "barplot", "pplot", "bkplot")
+    is_null = vapply(list(mplot, barplot, pplot, bkplot), is.null, logical(1))
+    notnull = old_args[!is_null]
+    nn = length(notnull)
 
-    if(length(notnull) == 1){
-      vars = notnull
+    if(nn == 1){
+      arg_list = notnull
       verb = "is"
-    }else if(length(notnull) == 2){
-      vars = paste0(vars[1], " and ", vars[2])
     }else{
-      nn = length(notnull)
-      vars = paste0(paste0(vars[1:(nn-1)], sep = ", "), ", and", vars[nn])
+      arg_list = paste(paste(notnull[-nn], collapse = ", "), "and", notnull[nn])
+      verb = "are"
     }
 
     ## set all NULL values to FALSE
-    for(v in c("mplot", "barplot", "pplot", "bkplot")[i]){
-      stmt = paste0(v, " = FALSE")
-      eval(parse(text = stmt))
+    for(v in old_args[is_null]){
+      assign(v, FALSE)
     }
 
-    warnMessage = paste0(vars, " ", verb, " deprecated. Use which.plots in the future. The value will be honored for now, but may not always be")
+    warnMessage = paste0(arg_list, " ", verb, " deprecated. Use which.plots in the future. The value will be honored for now, but may not always be")
     warning(warnMessage)
   }
 
   meanPlot <- ciPlot <- predictmeansBarPlot <- NULL
+
+  if (is.null(trans)) {
+    trans <- I
+  }
 
   # if (inherits(model, "aovlist")) stop("Plese use model 'lme' instead of 'aov'!")
   if (inherits(model, "aovlist")){
