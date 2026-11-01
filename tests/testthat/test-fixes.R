@@ -56,7 +56,7 @@ test_that("CookD() works for lmer models and agrees with lme", {
 
 test_that("R2_glmm(): glmmTMB data found outside the global environment; clear over_disp error", {
   data("Clinical", package = "predictmeans", envir = environment())
-  local_fit <- function(dat) glmmTMB(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
+  local_fit <- function(dat) glmmTMB::glmmTMB(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
                                      family = binomial, data = dat)
   r <- suppressMessages(capture.output(val <- R2_glmm(local_fit(Clinical))))
   expect_identical(unname(val), c("75.71%", "4.77%", "70.94%", "70.94%"))
@@ -118,7 +118,7 @@ test_that("vcov_adjust = TRUE gives Kenward-Roger adjusted SEs, as emmeans", {
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
   em <- summary(emmeans::emmeans(fm, ~Variety, lmer.df = "kenward-roger"))
   adj <- predictmeans(fm, "Variety", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)$mean_table
-  unadj <- predictmeans(fm, "Variety", plot = FALSE, prtnum = FALSE)$mean_table
+  unadj <- predictmeans(fm, "Variety", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)$mean_table
   expect_equal(adj$SE, round(em$SE, 5))
   expect_equal(adj$Df, round(em$df, 2))
   expect_equal(adj$Mean, unadj$Mean)
@@ -139,4 +139,25 @@ test_that("predictmeans() passes cov_reduce and exclude to Kmatrix()", {
   K <- Kmatrix(g, "A", cov_reduce = "average")$K
   pm <- predictmeans(g, "A", cov_reduce = "average", plot = FALSE, prtnum = FALSE)
   expect_equal(pm$mean_table$Mean, round(as.vector(K %*% coef(g)), 4))
+})
+
+test_that("Kenward-Roger adjusted SEs are the default for REML lmer fits", {
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats())
+  a <- predictmeans(fm, "Variety", plot = FALSE, prtnum = FALSE)
+  b <- predictmeans(fm, "Variety", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)
+  expect_equal(a$means, b$means)
+  expect_true(a$settings$vcov_adjust)
+  ml <- lmer(yield ~ nitro + (1|Block), data = oats(), REML = FALSE)
+  expect_no_warning(suppressMessages(predictmeans(ml, "nitro", plot = FALSE, prtnum = FALSE)))
+})
+
+test_that("permmodels() gives the same tables for lme4 and lmerTest fits", {
+  d <- oats()
+  f1 <- lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
+  f2 <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
+  p1 <- suppressWarnings(permmodels(f1, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  p2 <- suppressWarnings(permmodels(f2, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  expect_equal(p1$ANOVA, p2$ANOVA)
+  expect_equal(p1$COEFFICENTS, p2$COEFFICENTS)
+  expect_true("Pr(>F)" %in% names(p1$ANOVA))
 })

@@ -61,7 +61,7 @@ test_that("mixed models with transformed covariates match emmeans", {
   expect_K_matches_emmeans(suppressMessages(lmer(y ~ A + poly(x, 2) + (1|blk), d)), "A", ~A)
   expect_K_matches_emmeans(suppressMessages(lmer(y ~ A + A:x + (1|blk), d)), "A", ~A)
   expect_K_matches_emmeans(lme(y ~ A + poly(x, 2), random = ~1|blk, data = d), "A", ~A)
-  expect_K_matches_emmeans(glmmTMB(y ~ A + poly(x, 2) + (1|blk), data = d), "A", ~A)
+  expect_K_matches_emmeans(glmmTMB::glmmTMB(y ~ A + poly(x, 2) + (1|blk), data = d), "A", ~A)
 })
 
 test_that("varied covariates and cov_reduce match emmeans", {

@@ -14,7 +14,9 @@ reference_cases <- function() {
     list(K = unclass(k$K)[, , drop = FALSE], fctnames = k$fctnames, response = k$response)
   }
   pmo <- function(...) {
-    p <- predictmeans(..., plot = FALSE, prtnum = FALSE)
+    # 1.1.1 used unadjusted SEs; newer versions need vcov_adjust = FALSE for that
+    extra <- if ("vcov_adjust" %in% names(formals(predictmeans))) list(vcov_adjust = FALSE) else list()
+    p <- do.call(predictmeans, c(list(...), plot = FALSE, prtnum = FALSE, extra))
     # legacy slots only (the stable means/pairs/settings slots are newer)
     p[!grepl("Plot|plot", names(p)) & !names(p) %in% c("means", "pairs", "settings")]
   }
@@ -69,7 +71,7 @@ reference_cases <- function() {
   fm_clin <- glmer(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
   cap("clin_K", km(fm_clin, "Treatment"))
   cap("clin_pm", pmo(fm_clin, "Treatment", pairwise = TRUE))
-  fm_tmb <- glmmTMB(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
+  fm_tmb <- glmmTMB::glmmTMB(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
   cap("clin_tmb_K", km(fm_tmb, "Treatment"))
 
   set.seed(2)
@@ -113,7 +115,7 @@ reference_cases <- function() {
   cap("varcomp_lmer", varcomp(fm_lmer))
   cap("varcomp_lme", varcomp(fm_lme))
   cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
-  cap("contr_lmer", contrastmeans(fm_lmer, "nitro", ctrmatrix = cm))
+  cap("contr_lmer", do.call(contrastmeans, c(list(fm_lmer, "nitro", ctrmatrix = cm), if ("vcov_adjust" %in% names(formals(contrastmeans))) list(vcov_adjust = FALSE))))
   cap("contr_lme", contrastmeans(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"))
   R
 }

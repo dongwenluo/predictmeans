@@ -5,8 +5,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  which.plots = c("mean", "pval", "back"),
 						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4,
-                          cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE,
+                          cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat")) {
+  vcov_adjust_default <- missing(vcov_adjust)
 
   ## Bias output towards fixed notation. See ?options for more info
   op <- options(scipen = 6)
@@ -180,7 +181,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
     if (is.null(vcov_adj)) {
-      warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
+      # the default applies to REML lmer fits only; say so only when asked for
+      if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
     } else {
       mp$vcov <- as.matrix(vcov_adj)
     }

@@ -1,5 +1,21 @@
 # predictmeans (development version)
 
+## Changes that affect results or scripts
+
+* **Kenward-Roger adjusted standard errors are now the default** for `lmer`
+  models fitted by REML, in `predictmeans()` and `contrastmeans()`
+  (`vcov_adjust = TRUE`). This matches SAS `DDFM=KR` and emmeans. Standard
+  errors, confidence limits, SEDs, LSDs and p-values can differ slightly
+  from predictmeans 1.x (e.g. 7.896 instead of 7.887 for an unbalanced Oats
+  example); balanced designs barely change. Use `vcov_adjust = FALSE` to
+  reproduce 1.x results.
+* **glmmTMB is no longer attached** by `library(predictmeans)`; it moved
+  from Depends to Imports. Scripts that fit models with `glmmTMB()` need
+  `library(glmmTMB)`. lme4, nlme and lmerTest are still attached.
+* `permmodels()` gives the same tables (including Satterthwaite df and
+  p-values) whether an lmer model was fitted with `lme4::lmer()` or
+  `lmerTest::lmer()`.
+
 ## Stable result tables
 
 * `predictmeans()` results gain three slots with fixed names and unrounded

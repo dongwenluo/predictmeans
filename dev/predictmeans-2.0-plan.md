@@ -446,7 +446,7 @@ part-time person).
 | D3 | Shiny modules in core or companion | Companion package |
 | D4 | When to stop auto-printing plots | Option in 2.0, default off in 2.1 |
 | D5 | Paper timing | After 2.1 |
-| D6 | SEs with KR df: adjusted (SAS, emmeans) or unadjusted (1.1.1)? | Adjusted by default in 2.0, `vcov_adjust = FALSE` restores 1.1.1; NEWS entry |
+| D6 (decided: adjusted is the default; done) | SEs with KR df: adjusted (SAS, emmeans) or unadjusted (1.1.1)? | Adjusted by default in 2.0, `vcov_adjust = FALSE` restores 1.1.1; NEWS entry |
 | D7 | ggplot2 in Imports or Suggests | Imports for 2.0; reconsider once plots are built only by `autoplot()` |
 | D8 | Version numbering | Development versions as `1.1.1.9000`, release 1.2.0 after Phase 0 |
 

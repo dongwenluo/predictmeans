@@ -1,5 +1,6 @@
-contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=FALSE,
+contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat")) {
+  vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
@@ -74,7 +75,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
     if (is.null(vcov_adj)) {
-      warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
+      # the default applies to REML lmer fits only; say so only when asked for
+      if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
     } else {
       mp$vcov <- as.matrix(vcov_adj)
     }

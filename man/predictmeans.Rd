@@ -15,7 +15,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE,
+  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
@@ -150,10 +150,10 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
   smooths. See \code{\link{Kmatrix}}.
 }
   \item{vcov_adjust}{
-  For \code{lmer} models fitted by REML: if \code{TRUE}, standard errors use the Kenward-Roger adjusted
-  covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
-  \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
-  unadjusted covariance, as in earlier versions.
+  For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
+  adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
+  Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
+  predictmeans 1.x. It has no effect for other models.
 }
   \item{weights}{
   Passed to \code{\link{Kmatrix}}: how the cells of the factors that are not in \code{modelterm} are weighted when averaging over them:

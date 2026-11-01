@@ -151,7 +151,9 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	lmer_var_names <- lmer_var_names[lmer_var_names!="pi"]
 	mod_df <- as.data.frame(nlme::getData(model))
 	mod_df <- na.omit(mod_df[, lmer_var_names])	
-	model <- pm_refit(model, data=mod_df, check=TRUE)	
+	model <- pm_refit(model, data=mod_df, check=TRUE)
+	# lmerTest tables (Satterthwaite df and p-values) however the model was fitted
+	if (inherits(model, "lmerMod") && !inherits(model, "lmerModLmerTest")) model <- as_lmerModLmerTest(model)	
     theta <- getME(model, "theta")
     fixef <- fixef(model) 
     Lambda <- getME(model, "Lambda")

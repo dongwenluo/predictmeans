@@ -8,7 +8,7 @@
 }
 \usage{
   contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
-                vcov_adjust=FALSE, weights=c("equal", "proportional", "outer", "cells", "flat"))
+                vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
   \item{model}{
@@ -35,10 +35,10 @@
 	option for the permutation test. 
 }
   \item{vcov_adjust}{
-  For \code{lmer} models fitted by REML: if \code{TRUE}, standard errors use the Kenward-Roger adjusted
-  covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
-  \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
-  unadjusted covariance, as in earlier versions.
+  For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
+  adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
+  Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
+  predictmeans 1.x. It has no effect for other models.
 }
   \item{weights}{
   Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
