@@ -1,40 +1,57 @@
 # predictmeans 2.0 — Modernisation Plan
 
-*Drafted 2026-11-01 from a read of the source at commit `7f398a5` (v1.1.1), the
-"Overview of R Package predictmeans" Quarto deck and slides, and the proposed
-seven-pillar blueprint. R was not available while drafting, so performance
-claims below are from reading the code and should be confirmed by the Phase 0
-benchmarks.*
+*First drafted 2026-11-01 from the source at commit `7f398a5` (v1.1.1), the
+"Overview of R Package predictmeans" deck and slides, and the proposed
+seven-pillar blueprint. Revised the same day after testing in R 4.3.3 with
+lme4 1.1-35, glmmTMB 1.1.8, mgcv 1.9-1, emmeans 1.10.0 and marginaleffects
+0.18.0. Statements marked **(measured)** come from running code; the rest come
+from reading it.*
 
 ---
 
-## 0. Summary
+## 0. Aims and summary
 
-- **The blueprint's direction is right.** Keep the biometric strengths (SED/LSD
-  summaries, transparent `Kmatrix` algebra, multi-stratum permutation, all-in-one
-  diagnostics) and modernise the result objects, engines and documentation.
-- **Several of its premises are already true of the code, and a few are wrong**
-  (§1.1). The gaps that matter most are elsewhere:
-  1. There are **no tests**, and the examples for the permutation and
-     semiparametric functions are commented out. Any refactor is currently blind.
-  2. `predictmeans()` is one 1,035-line function that computes, plots and prints.
-  3. There are hidden performance costs, the largest being Kenward–Roger df
-     recomputed on every permutation refit (§1.3).
-  4. There are a few bugs and CRAN-policy issues (§1.2, §1.4).
-- **The plan reorders the blueprint:** safety net → engine and result object →
-  new statistics → docs/AI → Shiny and outreach. LLM-readiness and Shiny both
-  depend on a stable result object, so that object comes first.
-- **Five phases, three CRAN releases:** 1.2.0 (hygiene, no intended result
-  changes), 2.0.0 (new object and engine), 2.1.0 (statistics expansion), then a
-  companion Shiny package and a software paper.
+predictmeans 2.0 has three aims, with equal weight:
 
-| Blueprint phase | Where it lands here |
+1. **Match SAS on the numbers, and run fast.** For the same model and options,
+   estimates, SEs, df and p-values should agree with SAS PROC MIXED / GLIMMIX /
+   GLM (LSMEANS, DIFF, SLICE, ESTIMATE, LSMESTIMATE) to stated tolerances.
+   Speed should come from algorithms, not hardware.
+2. **Add the features that make emmeans and marginaleffects popular**, while
+   keeping what is unique to predictmeans: SED/LSD summaries, the pairwise
+   p-value matrix and letters, multi-stratum permutation, semiparametric
+   mixed models, Piepho R², and diagnostics.
+3. **Depend on as few other packages as possible.** Model-class packages are
+   only needed by users who fit those models, so they belong in Suggests.
+   Small helpers are re-implemented, and heavy chains are avoided.
+
+### Status
+
+| Item | Status |
 |---|---|
-| — (missing) | **Phase 0**: tests, CI, bug fixes, CRAN hygiene → 1.2.0 |
-| Phase 1: core refactor & tidy S3 API | **Phase 1** → 2.0.0 (also takes Kmatrix v2, because the new object carries estimability) |
-| Phase 2: Kmatrix + mgcv + R² | **Phase 2** → 2.1.0 (permutation, bootstrap, R², semireg/mgcv) |
-| Phase 3: pkgdown + llms.txt + vignettes | **Phase 3**, run alongside Phases 1–2 |
-| Phase 4: visibility & community | **Phase 4**, after 2.1 |
+| Kmatrix v2 (reference grid, complex covariates, gam, estimability, `semipred` integration) | **Done** — commit `a7084b6` (§11) |
+| Test suite: 43 cases frozen from 1.1.1, new cases checked against emmeans and mgcv | **Done** — `tests/testthat` |
+| Dependencies step 1: 112 → 76 installed packages | **Done** — `a7084b6` (§6) |
+| Phase 0 bug fixes (B1–B3, B5, B11–B14), options/interactive hygiene, packaging, CI | **Done** — commit `364d733` |
+| Speed fixes that don't change numbers (KR in refits, R² memory, sparse Cholesky) | **Done** — `364d733` (§1.3) |
+| Frozen reference extended to permutation, R², variance components, contrasts (58 cases) | **Done** |
+| Phase 1: engine and result object | Next |
+
+### What changed from the blueprint
+
+- **The blueprint's direction is right, but several premises were already
+  true or wrong** (§1.1): the result object is already classed, most plots are
+  already ggplot, `refit()` is already used, and R² is Piepho, not Nakagawa.
+- **The gaps that matter most were elsewhere:**
+  - there were no tests;
+  - `predictmeans()` is one 1,035-line function;
+  - Kenward–Roger df is recomputed on every permutation refit;
+  - Kmatrix failed on most complex covariates (§11);
+  - there are a few bugs (§1.2).
+- **Order:** safety net → engine and result object → new statistics →
+  docs/AI → Shiny and outreach.
+- **Releases:** 1.2.0 (hygiene, no intended result changes), 2.0.0 (engine
+  and object), 2.1.0 (statistics), then a Shiny companion and a paper.
 
 ---
 
@@ -42,398 +59,407 @@ benchmarks.*
 
 ### 1.1 Blueprint claims checked against the source
 
-| Blueprint says | What the code does | What it means for the plan |
+| Blueprint says | What the code does | What it means |
 |---|---|---|
-| `predictmeans()` returns an unclassed list | It returns class `pdmlist` with a print method (`R/misc.R:514`). | Keep `pdmlist` as a secondary class for compatibility. |
-| Slots are title-cased `xtabs` arrays | True for `Predicted Means` and `Standard Error of Means`, but `mean_table` is already a flat data frame. Two worse problems: with `atvar`, **slot names are factor levels** (`R/predictmeans.R:1015-1021`), so the schema changes with the data; and `mean_table` is a data frame when `pairwise = FALSE` but `list(Table, Note)` when `pairwise = TRUE`. Column names carry the level (`"LL(95%)"`). | A stable, documented schema is the core fix. |
-| Plots open devices and need to become ggplot | Mean, bar, back-transformed, covariate and semipred plots are **already ggplot objects** returned in the list. `prtplt = FALSE, newwd = FALSE` already gives headless runs. Base graphics remain in `PMplot()` (called automatically from `predictmeans()` at `R/predictmeans.R:440,533`), `residplot()`/`rsplot.*()`, `CookD()` and `permlmer(plot = TRUE)`. | The Shiny work is narrower than described: the p-value heatmap and the diagnostics. |
-| Use `lme4::refit()` instead of re-parsing for 5–10x speed | `permmodels()` and `permlmer()` **already use `refit()`** for lmer (`R/permmodels.R:194-222`, `R/permlmer.R:94,100`). | The real speed costs are elsewhere (§1.3). |
-| Add Johnson (2014) random-slope trace to R² | `R2_glmm()` implements **Piepho (2023)** with the full tr(P·Z·G·Zᵀ), which already covers random slopes. | Keep Piepho as the flagship; add Nakagawa as an option, not a replacement. |
-| Add semiparametric/GAM support | The package already has its own engine: `smZ()` + `semireg()`/`semireg_tmb()` (mixed-model penalised splines) + `semipred()`, including group-difference curves (`contr =`). | Build on `semireg` first; add mgcv as an adapter. |
-| Add restricted permutation strata | `permindex()` already does block/group restricted shuffling. | `permute::how()` generalises it; keep `permindex()` as a wrapper. |
-| Add studentised (pivotal) permutation statistics | `permmodels()` already compares t and F statistics, not raw coefficients. | Already done; Freedman–Lane is the real gap (§5, Pillar 4). |
+| `predictmeans()` returns an unclassed list | Class `pdmlist` with a print method (`R/misc.R:514`). | Keep `pdmlist` as a secondary class. |
+| Slots are title-cased `xtabs` arrays | `mean_table` is already a flat data frame. But with `atvar`, **slot names are factor levels** (`R/predictmeans.R:1015-1021`). `mean_table` is a data frame or `list(Table, Note)` depending on `pairwise`. Columns carry the level, e.g. `"LL(95%)"`. | A stable schema is the core fix. |
+| Plots need to become ggplot | Mean, bar, back-transformed, covariate and semipred plots already are. Base graphics remain only in `PMplot()`, `residplot()`, `CookD()` and `permlmer(plot = TRUE)`. | The Shiny work is narrower than described. |
+| Use `lme4::refit()` for speed | Already used (`R/permmodels.R:194-222`, `R/permlmer.R:94,100`). | The real costs are elsewhere (§1.3). |
+| Add Johnson (2014) random-slope trace to R² | `R2_glmm()` is **Piepho (2023)** with the full tr(P·Z·G·Zᵀ), which already covers random slopes. | Keep Piepho; add Nakagawa as an option. |
+| Add semiparametric/GAM support | `smZ` + `semireg` + `semipred` already exist; gam support is now added (§11). | Build on both. |
+| Restricted permutation strata | `permindex()` already does block/group shuffling. | `permute::how()` would generalise it, but adds a dependency (§6). |
+| Studentised statistics | `permmodels()` already compares t and F. | Freedman–Lane is the real gap. |
 
-Your own "future plan" slides add three items the blueprint doesn't cover:
-`vglm` support, **predictions that include specified random effects**, and
-**glmmTMB with complex variance structures**. They are in Phase 2 below.
+Your slides' own future-plan items are included: `vglm`, predictions that
+include specified random effects, and glmmTMB with complex variance
+structures.
 
-### 1.2 Bugs found while reading (fix in Phase 0, each with a failing test first)
+### 1.2 Bugs
 
-| # | Where | Problem |
-|---|---|---|
-| B1 | `R/predictmeans.R:43,46` | The deprecated-argument warning uses `vars` before it is defined, so it resolves to `ggplot2::vars` (a function). Passing two or more of `mplot`/`barplot`/`pplot`/`bkplot` errors with "object of type 'closure' is not subsettable". It should be `notnull`. Passing all four also fails, because `x[-integer(0)]` is empty. |
-| B2 | `R/predictmeans.R:821` vs `:969` | `predictmeansPlot` and the letter-group table are only built inside `if (!is.null(trans))`. Calling with `trans = NULL` errors at return. |
-| B3 | `R/contrastmeans.R:87,89` vs `R/predictmeans.R:369,373` | Permutation p-values count `>` in `contrastmeans()` but `>=` (after rounding) in `predictmeans()`. `>=` is the standard. With `>`, the two functions give different p-values for the same contrast, and `contrastmeans()` is slightly anti-conservative. |
-| B4 | `R/predictmeans.R:238,251,472` and Kmatrix row names | Level combinations are joined with `":"` and split back with `strsplit(":")`. A factor level containing `":"` (e.g. a time like `"10:30"`) silently corrupts the pairwise tables. |
-| B5 | `R/permmodels.R:13` vs `:165-189` | glmer is rejected up front, so the glmer branch is dead code. It also tests for `"gamma"`, but the family name is `"Gamma"`. |
-| B6 | `R/predictmeans.R:465` | Tukey within `atvar` uses one averaged `Df` for lmer models instead of per-contrast df (the code's own comment says "Df need to be updated"). |
-| B7 (verify) | `R/Kmatrix.R:152-153,168` | Missing cells are flagged with `X[ndf$Freq == 0, ] <- NA`, where `ndf` comes from `merge(grid, ndf, sort = FALSE)`. R doesn't guarantee row order for `sort = FALSE`, so the NA rows could be misaligned with `grid`. Needs a test with an unbalanced missing-cell design. |
+| # | Where | Problem | Status |
+|---|---|---|---|
+| B1 | `R/predictmeans.R:43,46` | Passing two or more legacy plot args (`mplot`, …) errors: `vars` resolves to `ggplot2::vars`. | **Fixed** |
+| B2 | `R/predictmeans.R:821` vs `:969` | `trans = NULL` errors at return. | **Fixed** |
+| B3 | `R/contrastmeans.R:87,89` vs `R/predictmeans.R:369` | Permutation p-values count `>` in `contrastmeans()` but `>=` in `predictmeans()`. | **Fixed** (both use `>=`) |
+| B4 | `R/predictmeans.R:238,251,472` | Factor levels containing `":"` corrupt the pairwise tables. | Phase 1 |
+| B5 | `R/permmodels.R:13,165-189` | Dead glmer branch; tests `"gamma"` instead of `"Gamma"`. | **Fixed** (typo); branch revived by `bootmodels()` in Phase 2 |
+| B6 | `R/predictmeans.R:465` | Tukey within `atvar` uses one averaged df for lmer. | Phase 1 |
+| B7 | `R/Kmatrix.R` 1.1.1 | Missing cells relied on `merge(sort = FALSE)` row order. | **Not reproduced; removed** (Kmatrix v2 matches by key) |
+| B8 | Kmatrix 1.1.1 | A matrix `covariateV` (documented as prediction points) was silently ignored. | **Fixed** |
+| B9 | Kmatrix 1.1.1 | 16 of 22 complex-covariate cases failed (§11). | **Fixed** |
+| B10 | `HRW::pointsInPoly` | Adds a spurious vertex when a polygon's last vertex doesn't repeat the first. | **Fixed** (internal version) |
+| B11 | `CookD()` | Failed for every lmer model: ML refit, then Kenward–Roger df (needs REML). | **Fixed**; agrees with `lme` to 4e-7 **(measured)** |
+| B12 | `permmodels()`, `CookD()` | Refitted lme/gls models from package code, so local data weren't found. Worse, a same-named data set on the search path was used silently: a local `Oats` with `nitro` as a factor was replaced by `nlme::Oats` (numeric `nitro`; 6 of 12 coefficients tested) **(measured)**. | **Fixed** (`pm_refit()` checks the coefficients) |
+| B13 | `permmodels()` | Failed for gls models without a correlation structure. | **Fixed** |
+| B14 | `R2_glmm()` | glmmTMB: data only found in the global environment. `over_disp = TRUE`: cryptic error without an observation-level random effect. | **Fixed** |
 
 ### 1.3 Performance hot spots
 
-| Where | Cost | Fix |
-|---|---|---|
-| `R/mymodelparm.R:45-47` | For every lmer fit, computes Kenward–Roger df for **every model term** (`pbkrtest::vcovAdj`, O(n³)). `permmodels()` calls it on each refit (`R/permmodels.R:196,211,222`), then keeps only coef/vcov and discards the df. With `nperm = 4999`, that's 4,999 KR computations nobody uses. | Add a `df = FALSE` path for refits and compute df once on the original fit. This is probably the biggest speed-up available; Phase 0 benchmarks will measure it. |
-| `predictmeans()` → `mymodelparm()` + `df_term()` ×2 | KR is computed separately for the terms, the means and every pairwise contrast. | Cache `vcovAdj` once per call. |
-| `R/permmodels.R:161`, `R/permlmer.R:54` | V = ZΛΛᵀZᵀ + a **dense** n×n identity, then a dense Cholesky and `solve()`. That's O(n³) time and O(n²) memory. | Sparse Cholesky (`Matrix::Cholesky`) with triangular solves; never form the inverse. |
-| `R/R2_glmm.R:71-72` | Builds dense n×n `V` and `P = I − J/n`. At n = 10,000 that's about 800 MB per matrix. | Use tr(VP) = tr(V) − 1ᵀV1/n and centred cross-products; no n×n matrices. |
-| `permmodels()` lm/glm branch | `update()` re-parses the formula and model frame on every permutation. | lm fast path: reuse the QR of X (`qr.coef`, `qr.resid`). |
+| Where | Cost | Fix | Status |
+|---|---|---|---|
+| `R/mymodelparm.R:45-47` | Every lmer fit computes Kenward–Roger df for every term (`pbkrtest::vcovAdj`, O(n³)). `permmodels()` does this on every refit, then discards it. | Refits skip df. | **Done**: 99 permutations on Oats 21.8 s → 2.2 s, same p-values **(measured)** |
+| `predictmeans()` | KR computed separately for terms, means and every pairwise contrast. | Cache once per model. | Phase 1 |
+| `R/permmodels.R:161`, `R/permlmer.R:54` | Dense n×n V, dense Cholesky, `solve()`. | Sparse Cholesky and triangular solves. | **Done** |
+| `R/R2_glmm.R:71-72` | Dense n×n `V` and `P`; ~800 MB each at n = 10,000. | Traces without n×n matrices. | **Done**: n = 4,000 4.4 s / 529 MB → 0.01 s; n = 100,000 in 0.02 s **(measured)** |
+| `permmodels()` lm branch | `update()` per permutation. | QR fast path; all permutations at once. | Phase 2 |
+| Kmatrix | Slower on large data. | Rewritten: 0.37 s → 0.08 s (term `A`) and 1.14 s → 0.08 s (`A:B:C`) on 20,000 rows / 360 cells **(measured)**. | **Done** |
 
 ### 1.4 Engineering and CRAN hygiene
 
-- **Missing tests and examples.** There is no `tests/`, `vignettes/` or `inst/`.
-  The examples for `permmodels`, `permlmer`, `permanova.lmer`, `semireg`,
-  `semireg_tmb` and `semipred` are fully commented out, and those for
-  `contrastmeans` and `df_term` mostly. R CMD check never runs the permutation
-  or semiparametric code.
-- **Global side effects.** `options(scipen = 6)` is set and never restored
-  (`R/predictmeans.R:10`, `R/contrastmeans.R:2`, `R/permmodels.R:5`), which
-  CRAN policy forbids. `cat()` output comes from `Kmatrix()` (`R/Kmatrix.R:139`,
-  on by default through `prtnum = TRUE`) and `R2_glmm()` (`R/R2_glmm.R:113`).
-  `set.seed()` is called inside functions.
-- **Parallel defaults.** `ncore = 3` is the default in five functions, but CRAN
-  allows at most 2 cores during checks. Clusters are hand-rolled with
-  `makeCluster` on Windows and `mclapply` elsewhere.
-- **Interactive code in the compute path.** `contrastmeans()` falls back to
-  `readline()`/`edit()` when `ctrmatrix` is missing (`R/contrastmeans.R:15,19`).
-  That hangs a Shiny server or an AI agent.
-- **Packaging.**
-  - Help pages are hand-written Rd, with no roxygen.
-  - NAMESPACE uses conditional `if (requireNamespace(...)) import(...)`.
-  - Internal S3 methods (`terms.lme`, `model.frame.gls`, …) are not registered.
-  - DESCRIPTION says `NeedsCompilation: yes` but there is no `src/`.
-  - CRAN-generated fields (`Packaged`, `Repository`, `Date/Publication`) are
-    committed to the source.
-- **Heavy dependencies.** Four packages in Depends (glmmTMB, lme4, nlme,
-  lmerTest) and 17 Imports (including plotly, HRW, lmeSplines, plyr,
-  splines2).
-- **`"NULL"` string sentinels.** Many arguments accept the strings `"NULL"` or
-  `""` (`!unique(x %in% c("NULL", ""))`), probably for an old GUI. One small
-  helper should replace them.
+- **Tests:** a testthat suite now exists (27 tests, 120 checks). The examples
+  for permutation and semiparametric functions are still commented out.
+- **Global side effects:** `options(scipen = 6)` is never restored
+  (`predictmeans`, `contrastmeans`, `permmodels`). `cat()` is used in
+  `R2_glmm`; the Kmatrix one now uses `message()`. `set.seed()` is called
+  inside functions.
+- **Parallel:** `ncore = 3` default, with hand-rolled `makeCluster` /
+  `mclapply`.
+- **Interactive code** in `contrastmeans()` (`readline()` / `edit()`).
+- **Packaging:**
+  - hand-written Rd;
+  - conditional `import()` in NAMESPACE;
+  - unregistered internal S3 methods;
+  - `NeedsCompilation: yes` with no `src/`;
+  - CRAN-generated DESCRIPTION fields;
+  - `which.plots` undocumented (an R CMD check WARNING);
+  - `LICENSE` file not mentioned (an R CMD check NOTE).
 
 ---
 
 ## 2. Guiding principles
 
-1. **Numbers don't change by accident.** Every 1.x result is frozen as a
-   snapshot test before refactoring. Any change in a number is either a
-   documented bug fix or a new opt-in option.
-2. **One engine, many views.** A pure compute core returns one object. `print`,
-   `summary`, `tidy`, `autoplot`, `as_gt` and Shiny are all views of that
-   object, and no view computes statistics.
-3. **Headless core.** No `dev.new()`, plot printing, `cat()`, `readline()` or
-   `options()` inside computation. Messages go through `message()` so they can
-   be silenced.
-4. **Light core, optional extras.** Anything presentation- or app-specific (gt,
-   shiny, ellmer, jsonlite, plotly) goes in Suggests or a companion package.
-5. **Deprecate, don't break.** Legacy arguments and slot names keep working
-   through 2.x with `lifecycle` warnings. Removals only happen in 3.0.
-6. **Interoperate rather than re-implement.** Use `generics` (not `broom`) for
-   `tidy`/`glance`, `estimability` for non-estimability, `future.apply` for
-   parallelism, `permute` for strata, and emmeans as a test oracle.
+1. **Numbers don't change by accident.** Results are frozen as tests before
+   refactoring. Every change in a number is a documented fix or an opt-in.
+2. **SAS-verifiable.** Every statistic has a documented formula and a test
+   against an external reference (SAS output, emmeans, mgcv, pbkrtest).
+3. **Fast by construction.** Compute once and reuse: means covariance,
+   df ingredients, factorisations. Never form n×n or (pairs × p) matrices
+   that aren't needed. Skip work that full-rank or balanced cases don't need.
+4. **One engine, many views.** A pure compute core returns one object;
+   print, tidy, autoplot, gt and Shiny are views of it.
+5. **Headless core.** No devices, printing, `readline()` or `options()` in
+   computation.
+6. **Few dependencies.** A package goes in Imports only if most users need it
+   and re-implementing it would be unreasonable. Everything else goes in
+   Suggests with a clear message (§6).
+7. **Deprecate, don't break.** Legacy arguments and slots work through 2.x.
 
 ---
 
-## 3. Target architecture
+## 3. What to take from emmeans, marginaleffects and SAS
+
+Checked against emmeans 1.10.0 and marginaleffects 0.18.0 (installed);
+SAS from the PROC MIXED/GLIMMIX documentation.
+
+| Capability | emmeans | marginaleffects | SAS | predictmeans 1.1.1 | Plan |
+|---|---|---|---|---|---|
+| Reference grid, covariate values, weights | `ref_grid(at, cov.reduce, cov.keep, nuisance, counterfactuals)`; weights equal/proportional/outer/cells/flat | `datagrid()`, `newdata = "balanced"`, `by` | `AT`, `OM` (observed margins), `BYLEVEL` | Equal weights; covariates at mean | **Done:** `cov_reduce` (function or `"average"`). Add `weights = "proportional"/"cells"` (= SAS `OM`) — Phase 1 |
+| Non-estimable means | Flagged (estimability package) | — | "Non-est" | Silent | **Done** in K (`attr(K, "estimable")`); show in tables — Phase 1 |
+| Complex covariates (`poly`, `ns`, interactions only, smooths) | Yes | Yes | Via pre-computed variables | Mostly failed | **Done** (§11) |
+| Contrast families | pairwise, revpairwise, trt.vs.ctrl, dunnett, poly, consec, eff, del.eff, mean_chg; interaction contrasts; `by` | `hypothesis = ~pairwise / ~reference / ~sequential`, string equations, ratios | `DIFF=ALL/CONTROL`, `LSMESTIMATE`, `SLICEDIFF` | All pairwise; custom matrix; `atvar` ≈ `by` | `pm_contrast(method =)` with the same families + `specify_contrast()` + interaction contrasts — Phase 2 |
+| Joint tests / slices | `joint_tests()`, `test(joint = TRUE)` | `hypotheses(joint = )` | `SLICE`, `CONTRAST` | — | `pm_joint()` slice F-tests with chosen df — Phase 2 |
+| Multiplicity | tukey, scheffe, sidak, bonferroni, dunnettx, mvt | `p_adjust` (p.adjust methods) | TUKEY(-Kramer), BON, SCHEFFE, SIDAK, DUNNETT, SIMULATE | p.adjust methods + Tukey | Add sidak, scheffe, dunnett and single-step multivariate t (exact counterpart of SAS `SIMULATE`) — Phase 2 |
+| df for mixed models | KR, Satterthwaite, asymptotic | KR/Satterthwaite only for unit-level predictions; refused for averaged means **(measured)** | CONTAIN, BETWITHIN, RESIDUAL, SATTERTHWAITE, KR, KR2 | KR (falls back to Satterthwaite) for lmer; nlme inner–outer for lme | Explicit `df_method`, adding containment and between-within for lmer (rare in R) — Phase 2 |
+| SE paired with KR df | KR-adjusted covariance | (unit level) | KR-adjusted covariance | **Unadjusted** covariance with KR df: SE 7.8868 vs 7.8962 on unbalanced Oats **(measured)** | Use adjusted covariance when `df_method = "kenward-roger"` — Phase 1, decision D6 |
+| Response scale | `regrid()`, `type = "response"`, `bias.adjust` | `type = "response"`, `transform`, ratio/lnor comparisons | `ILINK` | Back-transformed means and CIs; no response-scale SEs | Delta-method SEs, ratio/odds-ratio contrasts, GLMM bias adjustment — Phase 2 |
+| Averaged (counterfactual) predictions, AME | `counterfactuals` | `avg_predictions`, `avg_comparisons`, `avg_slopes` | `OM` (link scale) | — | **Done** on the link scale (`cov_reduce = "average"`); response-scale averaging and AME — Phase 2 |
+| Slopes by group | `emtrends()` | `slopes()` | `ESTIMATE` on slope terms | Plots only | `pm_slopes()` — Phase 2 |
+| Robust / clustered vcov | `vcov.` argument | `vcov = "HC3"`, `~cluster` | `EMPIRICAL` | — | `vcov =` argument (matrix or function) — Phase 2 |
+| Equivalence tests | `test(delta, side)` | `equivalence =` | TOST via `ESTIMATE` | — | Phase 2 |
+| Tidy, stable output | `as.data.frame` | Consistent data frames | ODS tables with stable names | Title-case list; dynamic names | §7.2 object — Phase 1 |
+| Model coverage | Many classes, extension API | 100+ classes via insight | — | 9 classes; gam added | Adapter contract (§7.1); vglm, ordinal later |
+
+**What only predictmeans offers** (none of the three has all of it):
+
+- SED/LSD summaries (min/mean/max, per factor);
+- the pairwise p-value matrix with heatmap, and letters, including CI-based
+  letters;
+- multi-stratum permutation tests for mixed models;
+- mixed-model semiparametric regression (`semireg`, `semipred`);
+- Piepho R²;
+- variance components and diagnostics in one package.
+
+**API direction:**
+
+- `predictmeans()` stays the one-call biometric summary, like a SAS LSMEANS
+  statement.
+- A small set of composable verbs sits underneath:
+  - `pm_grid()` (Kmatrix v2);
+  - `pm_means()`;
+  - `pm_contrast()`;
+  - `pm_joint()`;
+  - `pm_slopes()`.
+- The means object gets `coef()` and `vcov()` methods. Then
+  `marginaleffects::hypotheses()` and `multcomp::glht()` work on it directly,
+  instead of predictmeans re-implementing them.
+
+---
+
+## 4. Matching SAS on the numbers
+
+**Target tolerances** (same model and options):
+
+| Quantity | Tolerance |
+|---|---|
+| Estimates and SEs | 1e-6 relative |
+| df | 1e-3 (KR implementations differ slightly) |
+| p-values | 1e-4 |
+
+**Reference values.** Sources, in order of preference:
+
+1. Published SAS output with data:
+   - SAS/STAT documentation examples for MIXED and GLIMMIX;
+   - *SAS for Mixed Models* (Littell et al. 2006; Stroup et al. 2018);
+   - Milliken & Johnson, *Analysis of Messy Data* (missing cells).
+2. If AgResearch has SAS: a `validation/sas/` folder of `.sas` scripts that
+   export ODS tables to CSV, re-run each release.
+3. GenStat or ASReml for SED/LSD (optional).
+
+Each reference goes in `tests/testthat/_data/sas/` with its provenance
+(source, table, SAS version, options), tested like the 1.1.1 reference.
+
+**Gaps to close:**
+
+| Gap | Phase |
+|---|---|
+| KR-adjusted SEs (measured above) | 1 |
+| Non-estimable means shown, not averaged silently | 1 |
+| Containment and between-within df for lmer; `ADJDFE=ROW` (per-row df in adjusted p-values) | 2 |
+| Tukey–Kramer per-row df for lmer; Dunnett, Scheffé, Šidák, simulate/multivariate-t adjustments | 2 |
+| SAS definitions of LSD in unbalanced designs; documented differences from GenStat | 2 |
+| Singular fits (lme4 boundary vs SAS "G matrix not positive definite"): warn and record in results | 1 |
+
+**Determinism and traceability:**
+
+- Stored seed and RNG kind; the same result on 1 core or N cores.
+- Package versions stored in each result.
+- A per-release validation report mapping each requirement to its tests and
+  its reference source (R Validation Hub style).
+
+---
+
+## 5. Speed
+
+Measured so far: Kmatrix v2 is 4–15× faster on large data and equal on small
+data.
+
+| Technique | Where | Phase |
+|---|---|---|
+| Skip KR df in permutation refits | `mymodelparm`, `permmodels` | Next |
+| Sparse Cholesky (no fill-reducing permutation, so numbers are unchanged), triangular solves | `permmodels`, `permlmer` | Next |
+| R² traces without n×n matrices | `R2_glmm` | Next |
+| Means covariance V_m = K V Kᵀ once; SEDs from V_m. Never build the m(m−1)/2 × p pairwise matrix (1,000 levels → ~500,000 rows) | `predictmeans` | 1 |
+| KR/Satterthwaite ingredients once per model (adjusted vcov, Jacobian of vcov(β) wrt θ), then vectorised over contrasts; per-model cache for Shiny re-renders | df code | 1 |
+| lm and fixed-θ GLS: all permutations in one matrix solve (`qr.coef(Q, Y)`); balanced multi-stratum ANOVA through projections | `permmodels` | 2 |
+| Analytic link-function Jacobians for the delta method (exact and fast); numeric fallback only for user transforms | response scale | 2 |
+| Parallel backend: base `parallel` with chunked work, no extra dependency (§6) | permutations | 2 |
+| Benchmarks in CI with performance budgets, set after Phase 0 measurements | all | 0 |
+
+---
+
+## 6. Dependencies
+
+Measured on the installed package database (non-base packages pulled in by
+Depends + Imports, recursively):
+
+| Step | What | Installed packages |
+|---|---|---|
+| 1.1.1 | — | 112 |
+| **Step 1 (done)** | Drop plyr; HRW, lmeInfo, lmeSplines, plotly, splines2 → Suggests | **76** |
+| Step 2 | Own Type II/III Wald and F tests (replaces `car::Anova`); own Kenward–Roger (replaces pbkrtest; needed for SAS parity anyway). car and pbkrtest → Suggests, used as test oracles | 56 |
+| Step 3 | Own Satterthwaite (the package already holds the Jacobian code copied from lmerTest); glmmTMB and lmerTest → Suggests | 53 |
+| Floor | lme4, nlme, Matrix, MASS, numDeriv, ggplot2 | 53 (42 without ggplot2) |
+
+Per package:
+
+| Package | Used for | Action |
+|---|---|---|
+| plotly | One 3-D plot; alone brings 29 packages | **Suggests (done)** |
+| car | `Anova()` in `permmodels`; brings 8 packages and also pulls in pbkrtest | Own Type II/III tests (step 2) |
+| pbkrtest | KR df; imports dplyr and broom | Own KR (step 2) |
+| HRW | `pointsInPoly`, example data; current release needs R ≥ 4.5 | **Internal copy; Suggests (done)** |
+| lmeInfo, lmeSplines, splines2 | One function each | **Suggests (done)** |
+| plyr | Old Kmatrix only | **Removed (done)** |
+| glmmTMB, lmerTest | Model classes, Satterthwaite | Suggests in 2.0 (D2); users who fit glmmTMB have it installed |
+| numDeriv | Hessian/Jacobian for variance parameters | Keep (pure R, no dependencies), or ~20 lines of finite differences later |
+| future.apply, permute, estimability, generics, lifecycle | Proposed in the first draft | **Not added.** Base `parallel` and existing `permindex()` instead; estimability is done internally. Only `generics` (tiny, no dependencies) is worth adding when `tidy()` arrives |
+| ggplot2 | All plots | Keep in Imports for 2.0 (plots are core); revisit (D7) |
+
+---
+
+## 7. Target architecture
 
 ```mermaid
 flowchart LR
   M["Fitted model<br/>lm glm aov gls lme lmer glmer glmmTMB semireg gam"] --> A["Model adapter<br/>pm_coef / pm_vcov / pm_df / pm_design / pm_linkinv"]
-  A --> K["Reference grid + Kmatrix v2<br/>weights, estimability"]
+  A --> K["Reference grid + Kmatrix v2<br/>(done)"]
   K --> E["Compute core<br/>means, SE, df, SED, LSD,<br/>pairs, p-values, letters"]
   P["permmodels / bootmodels"] --> E
   E --> O[("predictmeans object")]
   O --> V1["print / summary"]
   O --> V2["tidy / glance"]
   O --> V3["autoplot"]
-  O --> V4["as_gt"]
   O --> V5["legacy pdmlist slots"]
   O --> V6["Shiny companion / LLM tools"]
 ```
 
-### 3.1 Model adapter contract
+### 7.1 Model adapter contract
 
-`mymodelparm()` becomes a family of small internal S3 generics. Supporting a
-new model class (gam, vglm, …) then means writing these methods and nothing
-else:
+`pm_model_info()` in `R/refgrid.R` already centralises the class-specific
+facts Kmatrix needs. It grows into these internal generics, so a new model
+class needs only these methods:
 
 | Method | Returns |
 |---|---|
-| `pm_coef(model)` | Fixed-effect estimates (estimable columns only) |
-| `pm_vcov(model)` | Their covariance matrix |
-| `pm_df(model, L, method)` | Denominator df for contrast rows `L` (Kenward–Roger, Satterthwaite, residual, containment, asymptotic) |
-| `pm_design(model)` | Terms with `predvars`, contrasts, xlevels, model frame |
-| `pm_linkinv(model)` | Inverse link and family, for back-transformation |
+| `pm_coef(model)` | Fixed-effect estimates |
+| `pm_vcov(model, adjust)` | Their covariance (optionally KR-adjusted) |
+| `pm_df(model, L, method)` | Denominator df for contrast rows `L` |
+| `pm_design(model)` | Terms with `predvars`, contrasts, xlevels, data (done inside Kmatrix v2) |
+| `pm_linkinv(model)` | Inverse link and its derivative |
 
-### 3.2 The result object
+### 7.2 The result object
 
 ```r
 pm <- predictmeans(mod, "nitro:Variety")
 class(pm)        # c("predictmeans", "pdmlist", "list")
-
-# New stable slots: snake_case, fixed names, flat data frames
 pm$means         # one row per level combination
 pm$pairs         # one row per pairwise comparison
-pm$sed           # data frame: scope ("overall" or a factor name), min, mean, max
-pm$lsd           # same shape as sed
-pm$K             # the "kmatrix" used, with an estimability attribute
-pm$settings      # modelterm, level, adj, df method, trans, covariate values,
-                 # nperm, seed, package versions, call
-
-# Legacy slots kept unchanged through 2.x:
-# "Predicted Means", "Standard Error of Means", "Standard Error of Differences",
-# "LSD", "Pairwise p-value", mean_table, p_valueMatrix, predictmeansPlot, ...
+pm$sed; pm$lsd   # data frames: scope, min, mean, max
+pm$K             # with estimability
+pm$settings      # level, adjustment, df method, covariate values, seed, versions
+# legacy slots unchanged through 2.x
 ```
 
-- **`pm$means` columns:** the factor columns, `estimate`, `std.error`, `df`,
-  `conf.low`, `conf.high`, then `response`, `response.conf.low`,
-  `response.conf.high` (only when back-transformed), `group` (compact letter
-  display), `estimable`, `n`.
-- **`pm$pairs` columns:** `level1`, `level2`, `by` (the `atvar` slice, `NA` if
-  none), `estimate`, `std.error`, `df`, `statistic`, `p.value`, `p.adj`, `lsd`,
-  `p.method` (`"t"`, `"tukey"`, `"permutation"`, `"bootstrap"`).
-- **Names follow broom conventions.** `tidy(pm)` is essentially `pm$means` and
-  `tidy(pm, "pairs")` is `pm$pairs`. The confidence level and adjustment
-  method go in `settings`, not in column names.
-- **Plots are built on request** by `autoplot()` from these tables. In 2.x the
-  legacy `predictmeansPlot` slots are still filled by the same builders, so
-  old scripts keep working.
-- **New slots are added, legacy slots aren't aliased.** Aliasing every legacy
-  slot (the blueprint's `$predicted_means` and so on) would double the printed
-  output and leave two names for each thing.
+- **`pm$means` columns:** factor columns, `estimate`, `std.error`, `df`,
+  `conf.low`, `conf.high`, `response`, `response.conf.low`,
+  `response.conf.high`, `group`, `estimable`, `n`.
+- **`pm$pairs` columns:** `level1`, `level2`, `by`, `estimate`, `std.error`,
+  `df`, `statistic`, `p.value`, `p.adj`, `lsd`, `p.method`.
 
 ---
 
-## 4. Roadmap
+## 8. Roadmap
 
-Sizes: **S** ≈ up to 2 days, **M** ≈ 1–2 weeks, **L** ≈ several weeks, for one
-part-time person. These are rough guesses; adjust them to your capacity.
+Sizes: **S** ≤ 2 days, **M** 1–2 weeks, **L** several weeks (rough, one
+part-time person).
 
-### Phase 0 — Safety net and hygiene → CRAN 1.2.0 (no intended result changes)
+### Phase 0 — Safety net and hygiene → 1.2.0
 
-| Task | Size |
-|---|---|
-| testthat 3e. Snapshot current outputs for ~15 canonical scenarios: Oats split-plot (aov, lme, lmer); ATP repeated measures with and without `atvar`; Drug glm with covariate; a missing-cell factorial; glmmTMB Poisson; glmer binomial; semireg (WarsawApts); `permmodels`/`permlmer` with a fixed seed and small `nperm` | M |
-| Cross-check means and SEs against emmeans for balanced designs (emmeans in Suggests, used in tests only) | S |
-| GitHub Actions: R-CMD-check on Linux/macOS/Windows, plus test coverage | S |
-| Migrate Rd → roxygen2 (`Rd2roxygen` gives a first pass), generate NAMESPACE, register S3 methods | M |
-| Uncomment examples; wrap slow ones in `\donttest{}`; use small `nperm` | S |
-| Fix B1–B7. Replace `options()` with local formatting, `cat()` with `message()`, guard `readline`/`edit` with `interactive()`, default `ncore` to 1 | S |
-| Clean DESCRIPTION (`NeedsCompilation: no`, drop CRAN fields, add `URL`/`BugReports`, `Config/testthat/edition: 3`); start `NEWS.md` | S |
-| Benchmark script (`bench`) for `predictmeans`, `permmodels`, `R2_glmm` at small, medium and large n, as a baseline for Phase 1 | S |
+| Task | Size | Status |
+|---|---|---|
+| testthat suite; 1.1.1 results frozen; emmeans/mgcv cross-checks | M | **Done** (43 + 34 checks) |
+| Fix B1, B2, B3, B5, B11–B14; guard `readline`/`edit` with `interactive()`; restore `options()` | S | **Done** |
+| DESCRIPTION hygiene, `which.plots` docs, LICENSE note | S | **Done** (R CMD check: no package warnings or notes) |
+| Speed fixes that don't change numbers (§1.3) | S | **Done** |
+| Extend frozen reference to `permmodels`, `permlmer`, `R2_glmm`, `varcomp`, `contrastmeans` | S | **Done** (58 cases) |
+| CI on three OSes (GitHub Actions) | S | **Done** |
+| roxygen2 migration; uncomment examples | M | Open |
+| Benchmarks script | S | Open |
 
-**Exit criteria:** R CMD check is clean on three OSes, coverage is at least 70%
-for `predictmeans`/`Kmatrix`/`contrastmeans`/`permmodels`, and all snapshots
-pass.
+### Phase 1 — Engine and object → 2.0.0
 
-### Phase 1 — Engine and object → CRAN 2.0.0
+| Task | Size | Status |
+|---|---|---|
+| Kmatrix v2 (reference grid, complex covariates, estimability, weights) | L | **Done** except `weights =` |
+| Split `predictmeans()` into compute steps; plot builders | L | Open |
+| Model adapter; KR-adjusted SEs (D6); KR/Satterthwaite cached and vectorised | M | Open |
+| New result object with `print`, `summary`, `tidy`, `autoplot` | M | Open |
+| Stable internal level keys (fixes B4); B6 | M | Open |
+| Non-estimable means shown as NA with a note | S | Open |
+| `specify_contrast()` | S | Open |
+| Pass `cov_reduce`/`exclude` through `predictmeans()`/`covariatemeans()` | S | Open |
+| pkgdown site, "Getting started", "Migrating from 1.x" | M | Open |
 
-| Task | Size |
-|---|---|
-| Split `predictmeans()` into internal steps: `pm_compute()` → `pm_pairs()` → `pm_letters()` → `pm_backtransform()` → `pm_assemble()`. Plots move into builder functions | L |
-| Model adapter layer (§3.1). Move df logic out of `mymodelparm()`, add `df = FALSE` for refits, cache the KR `vcovAdj` | M |
-| New S3 object (§3.2) with `print`, `summary`, `tidy`, `glance` (from `generics`) and `autoplot` (types `"means"`, `"bar"`, `"pvalue"`, `"back"`). The `summary` footer lists the SED/LSD range, df method, covariate values, adjustment and `nperm` | M |
-| `contrastmeans()` returns class `pm_contrast` with a `tidy` method; `covariatemeans()` and `semipred()` return classed objects with `autoplot` | M |
-| ggplot p-value heatmap replaces the automatic call to base `PMplot()`; `PMplot()` stays exported | S |
-| Internal stable level keys (row indices) instead of `":"` splitting, which fixes B4 for good | M |
-| Kmatrix v2 (Pillar 3 in §5), behind `engine = "v2"` until the snapshots match, then made the default | L |
-| `specify_contrast()` named-contrast builder | S |
-| Sparse Cholesky in `permmodels`/`permlmer`; O(n) R² traces | M |
-| Plot printing: add `options(predictmeans.print_plots = TRUE)`, keep it on by default in 2.0, document the plan to turn it off (decision D4) | S |
-| `lifecycle` deprecations for `mplot`/`barplot`/`pplot`/`bkplot` (already soft-deprecated), `newwd`, `prtnum`, `ncore` and the `"NULL"` strings | S |
-| pkgdown site skeleton, a "Getting started" article and a "Migrating from 1.x" vignette | M |
+### Phase 2 — Statistics → 2.1.0
 
-**Exit criteria:** all Phase 0 snapshots still pass (legacy slots identical),
-and `?predictmeans` documents the full column schema of the new object.
+| Task | Size | Status |
+|---|---|---|
+| Own Type II/III tests and KR; car and pbkrtest → Suggests (§6 step 2) | L | Open |
+| Own Satterthwaite; containment and between-within df | M | Open |
+| Contrast families, joint tests, multiplicity methods (§3) | L | Open |
+| Response scale: delta-method SEs, ratios, bias adjustment, averaged predictions, slopes | L | Open |
+| Freedman–Lane permutation + simulation study; batched lm permutations | L | Open |
+| `bootmodels()` (parametric bootstrap for GLMMs) | M | Open |
+| `R2_model()` (Piepho default, Nakagawa option, numeric result) | M | Open |
+| mgcv adapter | L | **Done** in Kmatrix and `predictmeans()` |
+| `predictmeans()` accepting `semireg` objects; simultaneous bands in `semipred` | M | Open |
+| SAS validation suite (§4) | L | Open |
 
-### Phase 2 — Statistics expansion → CRAN 2.1.0
+### Phase 3 — Documentation and AI readiness (alongside Phases 1–2)
 
-| Task | Size |
-|---|---|
-| `permmodels(method = c("raw", "freedman-lane"))`, strata through `permute::how()`, `future.apply` backend with `future.seed = TRUE` | L |
-| Simulation study of Type I error and power for raw vs Freedman–Lane permutation on split-plot, repeated-measures and unbalanced factorial designs. It decides the default and feeds the paper | M |
-| GLMM inference with `bootmodels()`: a parametric bootstrap under the reduced model (simulate + refit). It returns a permlist-compatible object, so `predictmeans(permlist =)` and `contrastmeans(permlist =)` work unchanged | M |
-| `R2_model()` generic. Piepho is the default; `method = "nakagawa"` adds the delta/lognormal/trigamma variants; GLM extras (McFadden, Nagelkerke, Tjur); for gam, deviance explained, adjusted R² and the parametric vs smooth split. It returns numbers in a classed object, and `R2_glmm()` becomes a wrapper | M |
-| `predictmeans()` and `contrastmeans()` accept `semireg` objects directly, giving factor means adjusted for the smooths | M |
-| mgcv adapter: `predict(type = "lpmatrix")` on the reference grid. Smooths are either averaged over observed covariates or fixed at reference values; option for the `unconditional = TRUE` vcov; gamm through its lme part | L |
-| `smoothmeans()`, generalising `covariatemeans()`/`semipred()`: a fine covariate grid, pointwise and simultaneous bands (simulated from the coefficient MVN), and the regions where two curves differ (where the difference-curve band excludes 0) | M |
-| glmmTMB with dispersion and zero-inflation formulas: conditional-model means first, with documentation of what is and isn't covered | M |
-| Predictions that include specified random effects: a `re_form`-style argument for lmer and glmmTMB | M |
-| Later (2.2+): `vglm` support, which is harder because there are several linear predictors | L |
-
-### Phase 3 — Documentation and AI readiness (runs alongside Phases 1–2)
-
-| Task | Size |
-|---|---|
-| Vignettes: (1) split-plot and missing cells, (2) GLMM link vs response scale, (3) multi-stratum permutation and bootstrap, (4) spatial/smooth adjustment with semireg and mgcv, (5) predictmeans in Shiny and AI agents. Plus "Migrating from 1.x" | L |
-| `llms.txt` at the pkgdown site root (recent pkgdown versions can generate it; otherwise write it by hand) and `inst/llms-context.md`: function signatures, the result schema and 8–10 canonical recipes | S |
-| Optional `predictmeans_tools()` returning ellmer tool definitions (ellmer in Suggests) for `predictmeans`, `contrastmeans`, `permmodels`, `varcomp` and `R2_model`. MCP servers built on ellmer tools (e.g. mcptools) can serve them directly | S |
-| JSON and Markdown output documented as `tidy()` + `jsonlite` / `knitr::kable` recipes, not as new print formats | S |
-| Optional: an `emmeans` support method for `semireg`, so semireg fits also work in the emmeans ecosystem | S |
+- Vignettes:
+  1. split-plot and missing cells;
+  2. GLMM link vs response scale;
+  3. permutation;
+  4. smooth/spatial adjustment;
+  5. matching SAS (worked comparisons);
+  6. Shiny and AI agents.
+- `llms.txt` and `inst/llms-context.md` with the result schema and recipes.
 
 ### Phase 4 — Shiny companion and outreach
 
-| Task | Size |
-|---|---|
-| A separate package `predictmeansShiny` (bslib): model fitting, means and LSD tables (gt), p-value heatmap (plotly through `ggplotly`), a contrast builder from `Kmatrix` (missing cells locked to 0, weights must sum to 0), and permutations through `shiny::ExtendedTask` + future | L |
-| Software paper (JSS or The R Journal) built around the Phase 2 simulation study and the semiparametric adapters | L |
-| Apply to the CRAN Task Views (ExperimentalDesign, MixedModels, Agriculture) | S |
-| Public demo app (Posit Connect Cloud or shinyapps.io) | S |
+- Separate `predictmeansShiny` package.
+- Software paper after 2.1, including the SAS validation and the permutation
+  simulation study.
+- CRAN Task Views; demo app.
 
 ---
 
-## 5. Pillar-by-pillar decisions
+## 9. Backward compatibility
 
-### Pillar 1 — LLM and agent ready
-
-- **Keep:** stable snake_case schema, `tidy`/`glance`, `llms.txt`, vignettes.
-- **Change:** the schema lives in new slots of the object itself (§3.2)
-  instead of aliases for every legacy slot.
-- **Change:** drop `print(format = "json"/"markdown"/"gt")`. Use `tidy()` with
-  existing tools, plus `as_gt()`. A single print method is easier to keep
-  correct.
-- **Why:** LLMs write good emmeans code mainly because of years of public
-  examples with stable names. Vignettes and consistent naming will help more
-  than tool definitions, so tool definitions come last.
-
-### Pillar 2 — Shiny ready
-
-- **Keep:** headless core, ggplot everywhere, `autoplot()`, `as_gt()`.
-- **Change:** base graphics remain only in legacy functions (`PMplot`,
-  `residplot`, `CookD`). Add `autoplot()` methods for the `residplot()` and
-  `CookD()` results.
-- **Change:** Shiny modules go in a companion package, not the core. Otherwise
-  shiny, bslib and friends become dependencies of every predictmeans user and
-  every CRAN check.
-- **Cut:** `as_reactable()` and DT formatters. `tidy()` output already feeds
-  both.
-
-### Pillar 3 — Bulletproof Kmatrix
-
-Keep all four items:
-
-- **Reference grid.** Build it from the model frame plus `xlev`/`predvars`, so
-  `poly()`, `ns()`, `bs()`, `I()` and `offset()` evaluate with the stored
-  basis. Compute `K = W %*% X_grid` with an explicit weight matrix `W` instead
-  of `plyr::alply`, which also drops plyr.
-- **Estimability.** Run `estimability::nonest.basis()` on the model matrix and
-  set `attr(K, "estimable")`. Non-estimable means are reported as `NA` with a
-  clear message. Today, `R/Kmatrix.R:168` sets missing cells to `NA` and then
-  averages the remaining cells, which quietly changes what the marginal mean
-  represents.
-- **Weights and covariates.** Add `weights = c("equal", "proportional",
-  "cells")`. `cov_at = list(...)` replaces `covariate`/`covariateV`, which stay
-  as deprecated aliases.
-- **`specify_contrast()`.** It evaluates the user's expression in an
-  environment where each (backticked) level name is a unit vector over the rows
-  of K. It checks that the weights sum to zero, and the result plugs into
-  `contrastmeans(ctrmatrix =)`.
-
-### Pillar 4 — Permutation engine
-
-- **Keep:** Freedman–Lane, `permute::how()`, `future.apply`.
-- **Already done:** `refit()` for lmer; studentised t and F statistics.
-- **Why Freedman–Lane matters:** today's mixed-model scheme permutes fitted
-  values and whitened residuals together (`R/permmodels.R:173-189`), which is
-  permutation under the global null. That's exact for the overall test, but not
-  for individual terms when other terms have real effects (e.g. testing an
-  interaction when the main effects are strong). Freedman–Lane fixes this, at
-  the cost of one permutation set per tested term, so more refits. The lm path
-  permutes the raw response and has the same limitation.
-- **Change:** for GLMMs, use a parametric bootstrap (`bootmodels()`), which is
-  well established, rather than the proposed randomised-quantile-residual
-  hybrid, whose validity isn't established. It gets its own name because it
-  isn't a permutation test.
-- **Cut:** "C++ refitting". No compiled code is needed; skipping KR in refits
-  and the lm QR fast path deliver the speed.
-
-### Pillar 5 — R² suite
-
-- **Keep** Piepho (2023) as the default. It's distinctive and already handles
-  random slopes.
-- **Add** the Nakagawa variants and the GLM/gam measures as options in
-  `R2_model()`.
-- **Change** the return value to numbers. Today `R2_glmm()` returns character
-  strings like `"75.81%"` and prints a header with `cat()`.
-- **Fix** the n×n memory use (§1.3).
-
-### Pillar 6 — Semiparametric and GAMM
-
-- **Order:**
-  1. Make `predictmeans()`/`contrastmeans()` work on existing `semireg` objects.
-  2. Add the mgcv adapter through `lpmatrix`.
-  3. Add `smoothmeans()` with simultaneous bands. `semipred(contr =)` already
-     computes group-difference curves, so this extends existing code.
-- **Note on "zeroing" smooth columns:** mgcv smooths are centred over the
-  data, so zeroing them is the same as averaging the smooth over the observed
-  covariate values. Expose this as the `"proportional"` option, with fixed
-  reference values as the alternative.
-
-### Pillar 7 — Documentation and outreach
-
-- **Keep** the deliverables.
-- **Change** the timing: the paper should follow 2.1, so it can report the
-  permutation simulation study and the semiparametric adapters.
+- Every 1.x call keeps working and returns the same legacy slots with the same
+  numbers, except documented fixes. The frozen 1.1.1 reference enforces this.
+- New behaviour is opt-in. Defaults change only with a NEWS entry and one
+  minor version of warnings.
+- The "Migrating from 1.x" vignette maps every legacy slot.
 
 ---
 
-## 6. Backward-compatibility policy
-
-- In 2.x, every 1.x call that worked still works and returns the same legacy
-  slots with the same numbers. The only exceptions are the documented bug fixes
-  B1–B7.
-- New features are opt-in arguments. A default only changes with a NEWS entry
-  and one minor version of warnings.
-- Deprecations go `lifecycle::deprecate_soft()` in 2.0 → `deprecate_warn()` in
-  2.1 → removal no earlier than 3.0.
-- The "Migrating from 1.x" vignette maps every legacy slot to its new
-  equivalent.
-
----
-
-## 7. Dependency plan
-
-| | 1.1.1 | Target 2.x |
-|---|---|---|
-| Depends | R ≥ 3.5.0, glmmTMB, lme4, nlme, lmerTest | R ≥ 4.1, lme4, nlme (+ lmerTest until decision D2) |
-| Imports | car, ggplot2, graphics, grDevices, HRW, lmeInfo, lmeSplines, Matrix, MASS, methods, numDeriv, parallel, pbkrtest, plotly, plyr, splines2, stats, utils | Add generics, estimability, lifecycle, future.apply. Move glmmTMB down from Depends. Drop plyr and parallel. Move plotly to Suggests (only 3-D `semipred` uses it) |
-| Suggests | — | testthat, emmeans, mgcv, permute, gt, jsonlite, ellmer, knitr, rmarkdown, future, bench |
-
-R ≥ 4.1 gives the native pipe (`|>`) used in the docs.
-
----
-
-## 8. Risks
-
-| Risk | Mitigation |
-|---|---|
-| The refactor silently changes published numbers | Phase 0 snapshots; CI compares legacy slots exactly |
-| Freedman–Lane changes p-values users have already reported | Opt-in until the simulation study; document the difference |
-| Scope creep (seven pillars at once) | Three releases with exit criteria; Shiny and the paper only after 2.1 |
-| Upstream API churn (lme4, glmmTMB, pbkrtest, lmerTest) | Monthly CI against CRAN and development versions. Avoid legacy APIs, e.g. replace `lmerTest::calcSatterth()` with `contest1D()`, which the package already imports |
-| One maintainer's bandwidth | The phases are separable enough for contributors; one issue label per phase |
-
----
-
-## 9. Decisions for the maintainer
+## 10. Decisions for the maintainer
 
 | # | Decision | Recommendation |
 |---|---|---|
-| D1 | Default permutation method in 2.1 | Decide from the simulation study; Freedman–Lane is likely right for term tests |
-| D2 | Keep glmmTMB, lme4, nlme and lmerTest in Depends? | Keep lme4 and nlme for 2.x, because user scripts call `lmer()`/`lme()` after `library(predictmeans)`. Move glmmTMB to Imports. lmerTest is trickier: removing it from Depends changes what `summary(lmer(...))` and `anova()` print for users who don't load it themselves. Keep it in 2.0 and revisit in 3.0 |
-| D3 | Shiny modules in the core or a companion package | Companion package |
-| D4 | When to stop printing plots automatically (`prtplt = TRUE`) | Keep it in 2.0 behind an option; turn it off in 2.1 after a warning cycle |
+| D1 | Default permutation method in 2.1 | Decide from the simulation study |
+| D2 | glmmTMB and lmerTest out of Depends? | glmmTMB → Suggests in 2.0. lmerTest: removing it changes what `summary(lmer())` prints for users who don't load it — announce in 2.0, move in 2.1 |
+| D3 | Shiny modules in core or companion | Companion package |
+| D4 | When to stop auto-printing plots | Option in 2.0, default off in 2.1 |
 | D5 | Paper timing | After 2.1 |
+| D6 | SEs with KR df: adjusted (SAS, emmeans) or unadjusted (1.1.1)? | Adjusted by default in 2.0, `vcov_adjust = FALSE` restores 1.1.1; NEWS entry |
+| D7 | ggplot2 in Imports or Suggests | Imports for 2.0; reconsider once plots are built only by `autoplot()` |
+| D8 | Version numbering | Development versions as `1.1.1.9000`, release 1.2.0 after Phase 0 |
 
 ---
 
-## 10. First two weeks
+## 11. Appendix: Kmatrix v2 (done)
 
-1. Add testthat and the GitHub Actions R-CMD-check workflow.
-2. Write snapshot tests for the 15 scenarios against v1.1.1, saving outputs
-   with `expect_snapshot_value()`.
-3. Fix B1–B3, each with a failing test first; write the B7 test.
-4. Remove `options(scipen)`, switch `cat()` to `message()`, default `ncore` to 1.
-5. Clean DESCRIPTION, draft `NEWS.md`, prepare a 1.2.0 release candidate.
-6. Benchmark `permmodels()` on Oats with and without KR df in the refits, to
-   confirm the size of the §1.3 win before Phase 1 starts.
+**Design** (`R/refgrid.R`, `R/Kmatrix.R`):
+
+1. Recover the raw data used in the fit. The sources, tried lazily in this
+   order, are `data`, `getData()`, the call's `data`, the model frame and the
+   formula environment. The rows are then restricted to those used in fitting.
+2. Build a reference grid of all factor levels × covariate values (fixed,
+   varied, joint points, or observed profiles for `"average"`).
+3. Evaluate the model's own basis on the grid, using stored `predvars` and
+   levels: `model.matrix` for most classes, `predict.gam(type = "lpmatrix")`
+   for gam.
+4. Average the grid rows with a sparse weight matrix W: K = W·X.
+   `semipred()` averages its smooth basis with the same W.
+
+**Validation (measured):**
+
+| Check | Result |
+|---|---|
+| 43 calls supported by 1.1.1 (K, `predictmeans`, `covariatemeans`, `semipred`) | Identical to 1.1.1 (tolerance 1e-10) |
+| `poly`, `ns`, `log`, `scale`, `I()`, `A:x`, `x:z`, character, `factor(x)`, offset, lmer/lme/glmmTMB, varied covariates, `cov_reduce = median` | Equal to emmeans linear functions (max difference 0) |
+| gam: K vs lpmatrix; `"average"` vs averaged lpmatrix; `predictmeans(gam)` vs `predict.gam(se.fit)` | Max difference 0, 7e-16, and 0 |
+| Estimability flags on a missing-cell design | Same as emmeans |
+| `semipred` with a smooth `by` factor averaged over | Equals the mean of the per-level curves (1e-13) |
+
+Before the rewrite, 16 of the 22 probe cases failed.
+
+**Remaining Kmatrix work (Phase 1):**
+
+- `weights = "proportional"/"cells"` (SAS `OM`);
+- `specify_contrast()`;
+- show estimability in `predictmeans()` tables;
+- pass `cov_reduce`/`exclude` through `predictmeans()` and `covariatemeans()`.
