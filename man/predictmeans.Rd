@@ -169,6 +169,20 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
  \item{predictmeansBKPlot}{ggplot of back transformed means.}
  \item{predictmeansBarPlot}{gg bar plot of predicted means.}
  \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
+ \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
+ columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high}; when the means are
+ back-transformed also \code{response}, \code{response.conf.low} and \code{response.conf.high}; \code{group}
+ (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
+ not rounded. Also returned by \code{tidy()} and \code{as.data.frame()}.}
+ \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
+ level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
+ minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
+ (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{lsd} and \code{p.method}.}
+ \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
+ degrees-of-freedom method, \code{vcov_adjust}, number of permutations, covariate values, model class and
+ package version.}
+ The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
+ the \code{means}, \code{pairs} and \code{settings} slots are not printed.
 }
 
 \note{
@@ -177,8 +191,9 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
   (e.g. \code{as.factor(income)}) will cause errors. Instead, create the modified variables outside of the model
   formula (e.g., \code{fincome <- as.factor(income)}) and then use them in the model formula.
   
-  Factors cannot have colons in level names (e.g., \code{"level:A"}); the \code{predictmeans} function will confuse the
-  colons with interactions; rename levels to avoid colons.
+  Factors cannot have colons in level names (e.g., \code{"level:A"}) for the legacy tables; the \code{predictmeans}
+  function will confuse the colons with interactions; rename levels to avoid colons. The \code{means} and
+  \code{pairs} tables are not affected.
   
   For \code{predictmeans} function, it is assumed that methods \code{coef}, \code{vcov}, \code{model.matrix}, \code{model.frame} and \code{terms} are available for \code{model}. 
 }

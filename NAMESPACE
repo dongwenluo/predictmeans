@@ -1,4 +1,6 @@
 S3method(print, pdmlist)
+S3method(as.data.frame, predictmeans)
+S3method(generics::tidy, predictmeans)
 
 if (requireNamespace("ggplot2", quietly = TRUE)) {
     import(ggplot2)

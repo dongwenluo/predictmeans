@@ -517,6 +517,9 @@ print.pdmlist = function(x, ...){
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
   pos = grep('predictmeansPlot|predictmeansBKPlot|predictmeansBarPlot|p_valueMatrix', names(x))
+  # the stable tables (means, pairs, settings) are not printed, so the printed
+  # output is the same as before; use tidy() or as.data.frame() to see them
+  pos = union(pos, which(names(x) %in% c("means", "pairs", "settings")))
   if (length(pos)) x = x[names(x)[-pos]]
   NextMethod()
 }

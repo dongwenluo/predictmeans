@@ -306,7 +306,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
         #  Df <- median(df_term(model, modelterm), na.rm=TRUE)
     		  Df <- mp$df[modelterm]
     		  names(Df) <- NULL
-    		  mt$Df <- round(df_term(model, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj), 2)
+    		  pm_df_raw <- df_term(model, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj)
+    		  mt$Df <- round(pm_df_raw, 2)
     		 # if (any(mt$Df <= 0)) mt$Df <- Df
     		  Df_diff <- df_term(model, ctrmatrix=rK, type=df_type, vcov_adj=vcov_adj)
     		  pairDf <- round(mean(Df_diff), 2)
@@ -322,6 +323,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
           stop("You need provide Df for this model!")
         }
       }else {
+  	    df_user <- TRUE
   	    mt$Df <- Df
   		  Df_diff <- Df
   		  pairDf <- Df
@@ -466,6 +468,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     }else{
       dses.df$tvalue <- t.v
       dses.df$pvalue <- t.p.values
+      if (adj == "tukey") {
+        dses.df$pair_df <- rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)
+      }
 
       for (i in which(vars%in%atvar)) { # To find rows relating atvar
         KKvarndiff <- KKvarndiff[which(as.character(KKvarndiff[, i]) == as.character(KKvarndiff[, length(vars) + i])), ]
@@ -486,7 +491,10 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
             x$adj.pvalue <- x$pvalue
           } else {
             if (adj=="tukey"){
-              x$adj.pvalue <- ptukey(sqrt(2)*abs(x$tvalue), t_valueN, Df, lower.tail=FALSE) # Df need to be updated
+              # Tukey's range distribution needs the number of means, k, in
+              # this level; the group holds all k(k-1)/2 pairs among them.
+              n_means <- (1 + sqrt(1 + 8*t_valueN))/2
+              x$adj.pvalue <- ptukey(sqrt(2)*abs(x$tvalue), n_means, x$pair_df, lower.tail=FALSE)
             }else{
               x$adj.pvalue <- p.adjust(x$pvalue, adj)
             }
@@ -993,6 +1001,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     predictmeansPlot <- list(meanPlot=meanPlot, ciPlot=ciPlot)
   }
 
+  # Stable result tables (means, pairs, settings) from the values above.
+  tidy_parts <- pm_tidy_parts(environment())
+
   if (pairwise) {
 
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
@@ -1002,8 +1013,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
                            "Standard Error of Differences" = SED.out, LSD = LSD, "Pairwise LSDs"=round(LSDm,ndecimal+1),
                            "Pairwise p-value" = round(t.p.valuem, 4), predictmeansPlot=predictmeansPlot,
                            predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable, p_valueMatrix=p_valueMatrix)
-        class(outputlist) = "pdmlist"
-        return(outputlist)
+                return(pm_finish(outputlist, tidy_parts))
 
       }else{
 
@@ -1011,8 +1021,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
                            "Standard Error of Differences" = SED.out, LSD = LSD, "Pairwise p-value" = round(t.p.valuem, 4),
                            predictmeansPlot=predictmeansPlot, predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable,
                            p_valueMatrix=p_valueMatrix)
-        class(outputlist) = "pdmlist"
-        return(outputlist)
+                return(pm_finish(outputlist, tidy_parts))
       }
     } else {
 
@@ -1045,15 +1054,13 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
                                atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[1:length(outputlist)]
       }
 
-      class(outputlist) <- "pdmlist"
-      return(outputlist)
+            return(pm_finish(outputlist, tidy_parts))
     }
   } else {
     outputlist=list("Predicted Means" = mean.table, "Standard Error of Means" = se.table,
                     "Standard Error of Differences" = SED.out, LSD = LSD, predictmeansPlot=predictmeansPlot,
                     predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable)
-    class(outputlist) <- "pdmlist"
-    return(outputlist)
+        return(pm_finish(outputlist, tidy_parts))
   }
   #  }
 }

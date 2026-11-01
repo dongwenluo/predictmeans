@@ -15,7 +15,8 @@ reference_cases <- function() {
   }
   pmo <- function(...) {
     p <- predictmeans(..., plot = FALSE, prtnum = FALSE)
-    p[!grepl("Plot|plot", names(p))]
+    # legacy slots only (the stable means/pairs/settings slots are newer)
+    p[!grepl("Plot|plot", names(p)) & !names(p) %in% c("means", "pairs", "settings")]
   }
 
   Oats <- as.data.frame(nlme::Oats)

@@ -1,5 +1,20 @@
 # predictmeans (development version)
 
+## Stable result tables
+
+* `predictmeans()` results gain three slots with fixed names and unrounded
+  values. `tidy()` (generics/broom) and `as.data.frame()` return them:
+  * `means`: one row per mean, with `estimate`, `std.error`, `df`,
+    `conf.low`, `conf.high`, back-transformed `response` columns, `group`
+    letters, `n` and `estimable`;
+  * `pairs`: one row per comparison, with `level1`, `level2`, `by` (for
+    `atvar`), `estimate`, `std.error`, `df`, `statistic`, `p.value`,
+    `p.adj`, `lsd` and `p.method`;
+  * `settings`.
+  They are checked against emmeans in the tests. The legacy slots and the
+  printed output are unchanged, and the result has class
+  `c("predictmeans", "pdmlist")`.
+
 ## New options
 
 * `predictmeans(vcov_adjust = TRUE)` and `contrastmeans(vcov_adjust = TRUE)`:
@@ -12,6 +27,11 @@
 
 ## Bug fixes
 
+* Tukey-adjusted p-values within `atvar` levels used the number of pairs
+  instead of the number of means. With 4 means per level, Tukey was computed
+  for 6 means, so p-values were too large (0.350 instead of 0.197 in the Oats
+  example). For `lmer` models they also used one averaged df instead of each
+  pair's df. Both now match emmeans.
 * `predictmeans()` failed for every `lmer` model with a missing treatment
   combination ("replacement has 12 rows, data has 11").
 * `predictmeans()` failed for `lmer` models fitted by ML (`REML = FALSE`).
