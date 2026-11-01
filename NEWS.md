@@ -188,7 +188,8 @@
   random effects containing the term, else the residual df), with the
   unadjusted covariance unless `vcov_adjust = TRUE` is given. For the oats
   split plot this is 10 for Variety and 45 for Nitro and Variety:Nitro; with
-  a whole plot missing, 9 and 42.
+  a whole plot missing, 9 and 42. The ranks use M'M, so a split plot with
+  n = 6000 and 750 whole plots takes about 3 s.
 
 ## Bug fixes found by the refactor
 

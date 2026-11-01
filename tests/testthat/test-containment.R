@@ -52,3 +52,13 @@ test_that("df_method is ignored with a warning for other model classes", {
   expect_warning(predictmeans(fm, "Variety", df_method = "containment", plot = FALSE, prtnum = FALSE),
                  "lmer models only")
 })
+
+test_that("terms are taken in formula order, not lme4's order", {
+  set.seed(1)
+  d <- expand.grid(A = factor(1:3), B = factor(1:2), Block = factor(1:6), rep = 1:2)
+  d$WP <- interaction(d$Block, d$A)
+  d$y <- rnorm(nrow(d)) + rnorm(6)[d$Block] + rnorm(18)[d$WP]
+  m <- suppressMessages(lme4::lmer(y ~ A*B + (1|Block) + (1|WP), d))
+  # Block first: rank 5 beyond the intercept; WP then adds 18 - 6 = 12
+  expect_equal(unname(predictmeans:::pm_containment_df(m)["(Intercept)"]), 5)
+})

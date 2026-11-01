@@ -7,7 +7,7 @@
 ## Rank contributions are sequential, as in SAS: the rank that a random
 ## effect adds to X and the random effects before it. Effects are ordered with
 ## fewer variables first (Block before Block*Variety, as one writes them in a
-## RANDOM statement), then by their order in the formula.
+## RANDOM statement), then by their order in the formula (lme4 reorders them).
 ##
 ## Random effects follow SAS: in (1 + x | g) the intercept part is the effect
 ## g and the slope part is x*g, so (1 | Block/Variety) gives Block and
@@ -19,19 +19,27 @@ pm_random_effects <- function(model) {
   cnms <- lme4::getME(model, "cnms")
   Gp <- lme4::getME(model, "Gp")
   out <- list()
+  # lme4 reorders the terms (most levels first): match each to its term in
+  # the formula by the grouping variables, to get the slope variables and
+  # the formula position
+  bar_g <- lapply(bars, function(b) all.vars(b[[3]]))
+  used <- logical(length(bars))
   for (i in seq_along(cnms)) {
     gvars <- unlist(strsplit(names(cnms)[i], ":", fixed = TRUE))
-    lhs_vars <- if (i <= length(bars)) all.vars(bars[[i]][[2]]) else character(0)
+    hit <- which(!used & vapply(bar_g, function(g) setequal(g, gvars), logical(1)))[1]
+    if (!is.na(hit)) used[hit] <- TRUE
+    lhs_vars <- if (!is.na(hit)) all.vars(bars[[hit]][[2]]) else character(0)
+    pos <- if (is.na(hit)) i else hit
     nc <- length(cnms[[i]])
     cols <- (Gp[i] + 1):Gp[i + 1]
     comp <- (seq_along(cols) - 1) %% nc + 1
     is_int <- cnms[[i]][comp] == "(Intercept)"
     if (any(is_int)) {
-      out[[length(out) + 1]] <- list(name = names(cnms)[i], vars = gvars, cols = cols[is_int])
+      out[[length(out) + 1]] <- list(name = names(cnms)[i], vars = gvars, cols = cols[is_int], pos = pos)
     }
     if (any(!is_int)) {
       out[[length(out) + 1]] <- list(name = paste(c(lhs_vars, names(cnms)[i]), collapse = ":"),
-                                     vars = union(lhs_vars, gvars), cols = cols[!is_int])
+                                     vars = union(lhs_vars, gvars), cols = cols[!is_int], pos = pos)
     }
   }
   out
@@ -41,13 +49,15 @@ pm_random_effects <- function(model) {
 ## attribute "residual" (N - rank([X Z])).
 pm_containment_df <- function(model) {
   stopifnot(inherits(model, "merMod"))
-  X <- as.matrix(lme4::getME(model, "X"))
-  Z <- as.matrix(lme4::getME(model, "Z"))
-  rk <- function(M) qr(M, tol = 1e-8)$rank
+  X <- Matrix::Matrix(lme4::getME(model, "X"), sparse = TRUE)
+  Z <- methods::as(lme4::getME(model, "Z"), "CsparseMatrix")
+  # rank(M) = rank(M'M): a (p+q) x (p+q) problem instead of n x (p+q)
+  rk <- function(M) qr(as.matrix(Matrix::crossprod(M)), tol = 1e-10)$rank
   r_full <- rk(cbind(X, Z))
   res_df <- nrow(X) - r_full
   re <- pm_random_effects(model)
-  re <- re[order(vapply(re, function(e) length(e$vars), integer(1)), seq_along(re))]
+  re <- re[order(vapply(re, function(e) length(e$vars), integer(1)),
+                 vapply(re, function(e) e$pos, numeric(1)))]
   contrib <- numeric(length(re))
   r_prev <- rk(X)
   M <- X
