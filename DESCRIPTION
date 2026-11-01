@@ -4,11 +4,13 @@ Author: Dongwen Luo, Siva Ganesh and John Koolaard
 Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
 Title: Predicted Means for Linear and Semiparametric Models
 Description: Providing functions to diagnose and make inferences from various linear models, 
-    such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB' and 'semireg'. 
+    such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB', 'gam' and 'semireg'. 
 	Inferences include predicted means and standard errors, contrasts, multiple comparisons, 
 	permutation tests, adjusted R-square and graphs.
 Depends: R (>= 3.5.0), glmmTMB, lme4, nlme, lmerTest
-Imports: car, ggplot2, graphics, grDevices, HRW, lmeInfo, lmeSplines, Matrix, MASS, methods, numDeriv, parallel, pbkrtest, plotly, plyr, splines2, stats, utils
+Imports: car, ggplot2, graphics, grDevices, Matrix, MASS, methods, numDeriv, parallel, pbkrtest, stats, utils
+Suggests: emmeans, HRW, lmeInfo, lmeSplines, mgcv, plotly, splines2, testthat (>= 3.0.0)
+Config/testthat/edition: 3
 License: GPL (>= 2)
 Packaged: 2024-04-03
 URL: https://CRAN.R-project.org/package=predictmeans

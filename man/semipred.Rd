@@ -18,7 +18,7 @@
 }
   \item{modelterm}{
   Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-  The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping.
+  The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
 }
   \item{covariate}{
   Name (in "quotes") of one or two (for \code{Ztps} smooth) the covariate variables in the \code{semireg} shuch as "x1" or c("x1", "x2").
@@ -30,7 +30,7 @@ Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} 
 A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
 } 
   \item{covariateV}{
-  A numeric vector or matrix, then semipred will produce the result for \code{covariate} at value of \code{covariateV}.
+  A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
 }
   \item{boundary}{
   A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.
@@ -63,7 +63,7 @@ A logical scalar to indicate whether to print raw data points. The default value
   A degree of jitter in x and y direction in the graph. The default is zero.
 }
   \item{threeD}{
-A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE.
+A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
 } 
   \item{prt}{
 A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.

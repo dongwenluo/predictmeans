@@ -1,0 +1,109 @@
+# Calls whose results are frozen in _data/reference-v1.1.1.rds. The reference
+# was produced by running reference_cases() with predictmeans 1.1.1 (see
+# dev/make-reference.R), so these tests check that later versions reproduce
+# the 1.1.1 numbers for everything 1.1.1 supported.
+
+reference_cases <- function() {
+  R <- list()
+  cap <- function(nm, expr) {
+    R[[nm]] <<- tryCatch(suppressMessages(suppressWarnings(eval.parent(substitute(expr)))),
+                         error = function(e) paste("ERROR:", conditionMessage(e)))
+  }
+  km <- function(...) {
+    k <- Kmatrix(...)
+    list(K = unclass(k$K)[, , drop = FALSE], fctnames = k$fctnames, response = k$response)
+  }
+  pmo <- function(...) {
+    p <- predictmeans(..., plot = FALSE, prtnum = FALSE)
+    p[!grepl("Plot|plot", names(p))]
+  }
+
+  Oats <- as.data.frame(nlme::Oats)
+  fm_lme_num <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
+  cap("ex_K1", km(fm_lme_num, "Variety"))
+  cap("ex_K2", km(fm_lme_num, "Variety", 0.5))
+  cap("ex_K3", km(fm_lme_num, "Variety", "nitro", covariateV = seq(0, 0.6, 0.1)))
+  cap("ex_K4", km(fm_lme_num, "Variety", "nitro"))
+  cap("ex_cov1", covariatemeans(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
+  cap("ex_cov2", covariatemeans(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
+
+  Oats$nitro <- factor(Oats$nitro); Oats$Whole_plot <- Oats$Variety
+  fm_lmer <- lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)
+  fm_lme <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
+  fm_lm <- lm(yield ~ Block + nitro*Variety, data = Oats)
+  fm_aov <- aov(yield ~ nitro*Variety + Error(Block/Variety), data = Oats)
+  for (t in c("nitro", "Variety", "nitro:Variety")) {
+    cap(paste0("oats_lmer_K_", t), km(fm_lmer, t))
+    cap(paste0("oats_lme_K_", t), km(fm_lme, t))
+    cap(paste0("oats_lm_K_", t), km(fm_lm, t))
+  }
+  cap("oats_pm_lmer_nitro", pmo(fm_lmer, "nitro", adj = "BH"))
+  cap("oats_pm_lmer_int", pmo(fm_lmer, "nitro:Variety", adj = "BH"))
+  cap("oats_pm_lmer_atvar", pmo(fm_lmer, "nitro:Variety", atvar = "Variety", adj = "BH"))
+  cap("oats_pm_lme_int", pmo(fm_lme, "nitro:Variety", pairwise = TRUE))
+  cap("oats_pm_lm_int", pmo(fm_lm, "nitro:Variety", adj = "tukey"))
+  cap("oats_pm_aov", pmo(fm_aov, "nitro"))
+
+  Om <- Oats[!(Oats$nitro == "0.6" & Oats$Variety == "Victory"), ]
+  fm_miss <- lm(yield ~ nitro*Variety, data = Om)
+  fm_miss_lmer <- lmer(yield ~ nitro*Variety + (1|Block), data = Om)
+  cap("miss_lm_K_int", km(fm_miss, "nitro:Variety"))
+  cap("miss_lm_K_nitro", km(fm_miss, "nitro"))
+  cap("miss_lm_K_var", km(fm_miss, "Variety"))
+  cap("miss_lmer_K_int", km(fm_miss_lmer, "nitro:Variety"))
+  cap("miss_pm", pmo(fm_miss, "nitro:Variety", pairwise = TRUE))
+
+  data("ATP", package = "predictmeans", envir = environment())
+  fm_atp <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
+  cap("atp_K_ABt", km(fm_atp, "A:B:time"))
+  cap("atp_pm_At", pmo(fm_atp, "A:time", atvar = "time", adj = "BH"))
+
+  data("Drug", package = "predictmeans", envir = environment())
+  fm_drug <- glm(cbind(R, N-R) ~ Drug + log10Dose, data = Drug, family = binomial)
+  cap("drug_K", km(fm_drug, "Drug"))
+  cap("drug_pm", pmo(fm_drug, "Drug", pairwise = TRUE))
+  cap("drug_cov", covariatemeans(fm_drug, "Drug", covariate = "log10Dose", trans = binomial()$linkinv)$pltdf)
+
+  data("Clinical", package = "predictmeans", envir = environment())
+  fm_clin <- glmer(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
+  cap("clin_K", km(fm_clin, "Treatment"))
+  cap("clin_pm", pmo(fm_clin, "Treatment", pairwise = TRUE))
+  fm_tmb <- glmmTMB(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
+  cap("clin_tmb_K", km(fm_tmb, "Treatment"))
+
+  set.seed(2)
+  d <- expand.grid(A = factor(c("a1","a2","a3")), B = factor(c("b1","b2")), rep = 1:6); n <- nrow(d)
+  d$x <- runif(n, 1, 10); d$z <- rnorm(n); d$y <- as.numeric(d$A) + d$x + d$z + rnorm(n)
+  fm_ax <- lm(y ~ A*x + B + z, d)
+  cap("sim_K_cov50", km(fm_ax, "A", "x"))
+  cap("sim_K_covnum", km(fm_ax, "A:B", c(2, 0.5)))
+  cap("sim_K_covlist", km(fm_ax, "A", c("x","z"), covariateV = list(c(2,5), c(-1,1))))
+  cap("sim_K_x_only", km(fm_ax, "x", "x", covariateV = c(2,4,6)))
+
+  data("WarsawApts", package = "HRW", envir = environment())
+  W <- WarsawApts; W$district <- factor(W$district)
+  sm1 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
+                 smoothZ = list(grp = smZ(construction.date, k = 25)), data = W, prt = FALSE))
+  cap("semi_1", semipred(sm1, covariate = "construction.date", prt = FALSE)$pred_df)
+  sm2 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
+                 smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
+                 data = W, prt = FALSE))
+  cap("semi_2_grp", semipred(sm2, "district", "construction.date", prt = FALSE)$pred_df)
+  cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), prt = FALSE)$pred_df)
+  sm3 <- suppressWarnings(semireg(areaPerMzloty ~ district + surface,
+                 smoothZ = list(gc = smZ(construction.date, k = 10)), data = W, prt = FALSE))
+  cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", prt = FALSE)$pred_df)
+  cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", prt = FALSE)$pred_df)
+  R
+}
+
+# Drop attributes and row names that are not part of the frozen 1.1.1 output.
+clean_reference <- function(x) {
+  if (is.list(x) && !is.data.frame(x)) return(lapply(x, clean_reference))
+  if (is.matrix(x)) attr(x, "estimable") <- NULL
+  if (is.data.frame(x)) {
+    rownames(x) <- NULL
+    for (v in names(x)) if (is.matrix(x[[v]])) x[[v]] <- as.vector(x[[v]])
+  }
+  x
+}

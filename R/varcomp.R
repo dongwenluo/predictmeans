@@ -20,8 +20,9 @@ varcomp <- function(model, ci=TRUE, level=0.95) {
 	}	
     rownames(varcomp) <- random_terms
   }else if(inherits(model, "lme")){    
-    vcov=unlist(extract_varcomp(model))
-    SE=sqrt(diag(varcomp_vcov(model)))
+    pm_need("lmeInfo", "variance components of 'lme' models")
+    vcov=unlist(lmeInfo::extract_varcomp(model))
+    SE=sqrt(diag(lmeInfo::varcomp_vcov(model)))
     
     # cbind(Std.error, vcov)
     confint_list <- try(intervals(model, which="var-cov", level=level), silent = TRUE)

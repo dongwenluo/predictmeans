@@ -4,7 +4,7 @@
 Calculate SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model
 }
 \description{
-This function calculates SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model.
+This function calculates SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model. For \code{lme} models it needs package \pkg{lmeInfo}.
 }
 \usage{
 varcomp(model, ci=TRUE, level=0.95) 

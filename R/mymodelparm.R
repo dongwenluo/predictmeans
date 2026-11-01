@@ -106,3 +106,16 @@ mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
 
 mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+
+# mgcv gam/bam: all coefficients (parametric and smooth basis), the Bayesian
+# posterior covariance matrix Vp, and the residual degrees of freedom.
+mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
+  beta <- coef.(model)
+  sigma <- as.matrix(vcov.(model))
+  if (is.null(df)) {
+    df <- model$df.residual
+  }
+  RET <- list(coef = beta, vcov = sigma, df = df, estimable = rep(TRUE, length(beta)))
+  class(RET) <- "mymodelparm"
+  RET
+}

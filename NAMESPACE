@@ -14,21 +14,13 @@ if (requireNamespace("pbkrtest", quietly = TRUE)) {
     import(pbkrtest)
 }
 
-if (requireNamespace("plyr", quietly = TRUE)) {
-    importFrom(plyr, alply)
-}
   import(parallel)
-  import(lmeInfo)
   import(lme4)
   import(glmmTMB)
-  importFrom("plotly", "plot_ly", "add_trace")  
-  importFrom("HRW", "pointsInPoly")
-  importFrom("lmeSplines", "approx.Z", "smspline")
   importFrom("numDeriv", "hessian", "jacobian")
   importFrom("MASS", "theta.ml", "negative.binomial")
   importFrom("lmerTest", "as_lmerModLmerTest", "contest1D")
   importFrom("splines", "ns", "bs")
-  importFrom("splines2", "bernsteinPoly", "bSpline", "naturalSpline", "cSpline", "iSpline", "mSpline")
   importFrom("nlme", "getData", "intervals", "getResponse")
   importFrom("grDevices", "dev.new")
   importFrom("Matrix", ".bdiag", "Diagonal", "forceSymmetric", "Matrix", "nearPD")

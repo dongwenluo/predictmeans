@@ -18,7 +18,7 @@ smZ(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
 \item{intKnots}{Ordered array of length smaller than that of x and consisting of unique numbers between min(x) and max(x) that specifies the positions of internal knots, that define the spline basis (see the Wand and Ormerod (2008) reference below for full mathematical details).}
 \item{range.x}{Array of length 2 such that range.x[1] >= min(x) and range.x[2] <= max(x).}
 \item{degree}{Integer: degree of (truncated) polynomial.}
-\item{type}{Type of splines including "ZOSull", "Ztps", "ns", "bs", "bernstein", "bSpline", "nSpline", "cSpline", "iSpline", "mSpline" and "smspline", the default is "ZOSull".}
+\item{type}{Type of splines including "ZOSull", "Ztps", "ns", "bs", "bernstein", "bSpline", "nSpline", "cSpline", "iSpline", "mSpline" and "smspline", the default is "ZOSull". Types "bernstein", "bSpline", "nSpline", "cSpline", "iSpline" and "mSpline" need package \pkg{splines2}, and "smspline" needs package \pkg{lmeSplines}.}
 \item{by}{Factor for group wise splines.}
 \item{group}{When \code{by != NULL}, producing group wise splines with radom effects separately.}
 \item{intercept}{If TRUE, all of the spline basis functions are returned. Notice that when using I-Spline for monotonic regression, intercept = TRUE should be set even when an intercept term is considered additional to the spline basis functions.}

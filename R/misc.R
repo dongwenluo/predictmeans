@@ -983,7 +983,7 @@ Ztps <- function(x, k, knots=NULL, range.x=NULL) {
   }
 
   if (!is.null(range.x)) {
-    inBdry <- HRW::pointsInPoly(knots, range.x)
+    inBdry <- pm_points_in_poly(knots, range.x)
     knots <- knots[inBdry, ]
   }
 
