@@ -175,12 +175,13 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
       vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
     } else {
       df_type <- "Satterthwaite"
+      vcov_adj <- pm_satt_parts(model)
       message("The model was fitted by ML: using Satterthwaite df.")
     }
   }
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
-    if (is.null(vcov_adj)) {
+    if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
       # the default applies to REML lmer fits only; say so only when asked for
       if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
     } else {

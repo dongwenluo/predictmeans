@@ -361,7 +361,7 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
 
   if (type=="Kenward-Roger") {
     # Adjusted vcov(beta); reuse it when the caller has already computed it.
-    vcov_beta_adj <- if (is.null(vcov_adj)) try(pm_vcov_kr(model), silent=TRUE) else vcov_adj
+    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model), silent=TRUE) else vcov_adj
     # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
     ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
 
@@ -375,10 +375,10 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
   }
 
   if (type == "Satterthwaite") {
-    if(!inherits(model, "lmerModLmerTest")) {
-      model <- as_lmerModLmerTest(model)
-    }
-    ddf <- apply(Lc, 1, function(x) suppressMessages(lmerTest::calcSatterth(model, x)$denom))
+    # all rows at once; same values as lmerTest. 'vcov_adj' may carry the
+    # Satterthwaite ingredients already computed for this model.
+    parts <- if (inherits(vcov_adj, "pm_satt")) vcov_adj else pm_satt_parts(model)
+    ddf <- pm_satt_ddf(Lc, parts)
   }
   return(ddf)
 }

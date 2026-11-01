@@ -142,6 +142,12 @@
 
 ## Speed
 
+* Satterthwaite df (used for `lmer` models fitted by ML, and by
+  `df_term(type = "Satterthwaite")`) are computed for all contrasts at once
+  from ingredients computed once per model. They equal lmerTest's values,
+  about 25x faster for many contrasts (780 pairs: 0.8 s -> 0.03 s), and no
+  longer convert the model to lmerTest's class.
+
 * Kenward-Roger computations no longer form or invert the n x n covariance
   of the data. They use the model's low-rank structure (Woodbury identity),
   with the same results as pbkrtest. n = 3,000 takes under 0.05 s instead of
