@@ -261,58 +261,93 @@ pm_stage_compare <- function(st) eval(pm_code_compare, st)
 pm_code_compare <- quote({
   nK <- nrow(K)          # To setup various matrix and row, col names
   rnK <- rownames(K)
-  varn1 <- varn2 <- rep(0, nK * (nK - 1)/2)
 
   if (nK == 1) {
     SED.out <- NA
     LSD <- NA
   }else {
-    # pairs (i, j), i > j, in column order; level labels come from the label
-    # tables, not from splitting row names at ":" (levels may contain ":")
-    pp <- pm_pair_index(nK)
-    CM <- pm_pair_matrix(nK)
-    varn1 <- rnK[pp$i]
-    varn2 <- rnK[pp$j]
-    labK <- pm_label_matrix(label, length(vars))
-
-    nKK <- nrow(KK)          # To setup various matrix and row, col names
-    rnKK <- rownames(KK)
-    ppKK <- pm_pair_index(nKK)
-    labKK <- pm_label_matrix(ctr.matrix$fctnames, length(vars))
-
-    KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
-
-    rK <- CM%*%K                    # calculate stats
-    cm <- rK%*%mp$coef
-    vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-    dses <- sqrt(diag(vcov.contr))
-
-    if (adj == "bonferroni"){
-      level <- level/length(dses)
+    perm <- !(is.null(permlist) || all(permlist%in%c("NULL", "")))
+    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar),
+             envir = environment())
+    if (!perm) {
+      list2env(pm_compare_df(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj), envir = environment())
+      bkmt <- mt  # update bkmt
     }
+    LSD <- pm_compare_lsd(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm)
 
-    SED.out <- c(Max.SED = max(dses), Min.SED = min(dses), Aveg.SED = mean(dses))
-    dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses)
-
-    if (length(vars) > 1) { # all(length(vars) > 1, SED.out[1]!=SED.out[2])
-      dses.m <- matrix(0, nrow=3, ncol=length(vars))
-      colnames(dses.m) <- vars
-      rownames(dses.m) <- c("Aveg.SED", "Min.SED", "Max.SED")
-
-      for (i in 1:length(vars)) {
-        varsindx <- as.character(dses.df[,i])==as.character(dses.df[, length(vars)+i])
-        if(any(varsindx)){  # in case of A/B
-          dses.m[,i] <- summary.default(dses.df[varsindx,"dses"])[c(4,1,6)]
-        }else{
-          dses.m[,i] <- NA
-          atvar <- NULL
-        }
+    if (pairwise) {
+      p_valueMatrix <- NULL
+      list2env(pm_pair_pvalues(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore),
+               envir = environment())
+      if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
+        list2env(pm_pairs_overall(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
+                                  adj, perm, nsim, level, slevel, meandecr), envir = environment())
+      } else {
+        list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
+                                Df_diff, adj, slevel), envir = environment())
       }
-      attr(SED.out, "For the Same Level of Factor") <- dses.m
     }
+  } # end of if (nK == 1) ... else
+})
 
-    if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
+## The pure functions of the compare stage. Each returns a named list of the
+## values it creates (only those that exist), which the stage stores.
+pm_existing <- function(nms, env) mget(intersect(nms, ls(env, all.names = TRUE)), envir = env)
 
+## Pairwise contrasts and their SEDs (overall and within levels of each
+## factor). 'atvar' becomes NULL when a factor has no pairs within its levels
+## (nested factors).
+pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level, atvar) {
+  nK <- nrow(K)
+  rnK <- rownames(K)
+  # pairs (i, j), i > j, in column order; level labels come from the label
+  # tables, not from splitting row names at ":" (levels may contain ":")
+  pp <- pm_pair_index(nK)
+  CM <- pm_pair_matrix(nK)
+  labK <- pm_label_matrix(label, length(vars))
+
+  nKK <- nrow(KK)
+  ppKK <- pm_pair_index(nKK)
+  labKK <- pm_label_matrix(fctnames, length(vars))
+
+  KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
+
+  rK <- CM%*%K                    # calculate stats
+  cm <- rK%*%coef
+  vcov.contr <- rK %*% tcrossprod(vcovm, rK)
+  dses <- sqrt(diag(vcov.contr))
+
+  if (adj == "bonferroni"){
+    level <- level/length(dses)
+  }
+
+  SED.out <- c(Max.SED = max(dses), Min.SED = min(dses), Aveg.SED = mean(dses))
+  dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses)
+  dses.m <- NULL
+
+  if (length(vars) > 1) {
+    dses.m <- matrix(0, nrow=3, ncol=length(vars))
+    colnames(dses.m) <- vars
+    rownames(dses.m) <- c("Aveg.SED", "Min.SED", "Max.SED")
+
+    for (i in 1:length(vars)) {
+      varsindx <- as.character(dses.df[,i])==as.character(dses.df[, length(vars)+i])
+      if(any(varsindx)){  # in case of A/B
+        dses.m[,i] <- summary.default(dses.df[varsindx,"dses"])[c(4,1,6)]
+      }else{
+        dses.m[,i] <- NA
+        atvar <- NULL
+      }
+    }
+    attr(SED.out, "For the Same Level of Factor") <- dses.m
+  }
+  list(rK = rK, cm = cm, dses = dses, level = level, SED.out = SED.out, dses.df = dses.df,
+       dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar)
+}
+
+## Degrees of freedom of the means and of the pairs (no permutation tests):
+## the user's Df, else by model class.
+pm_compare_df <- function(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj) {
       if (length(Df) == 0) {
 
         if (inherits(model, "lme")) {
@@ -359,39 +394,42 @@ pm_code_compare <- quote({
   		  pairDf <- Df
 		  }
 
-	    bkmt <- mt  # update bkmt
+  pm_existing(c("Df", "mt", "pm_df_raw", "Df_diff", "pairDf", "df_type", "df_user"), environment())
+}
 
-      LSD <- round(qt(1 - level/2, df = Df) * SED.out, ndecimal+1)
-      names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
-      attr(LSD, "For the Same Level of Factor") <- NULL
+## LSDs from the SEDs: t quantile with the df, or 2 x SED with permutation tests.
+pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm) {
+  if (!perm) {
+    LSD <- round(qt(1 - level/2, df = Df) * SED.out, ndecimal+1)
+    names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
+    attr(LSD, "For the Same Level of Factor") <- NULL
 
-      if (length(vars) > 1) {
-        rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
-        attr(LSD, "For the Same Level of Factor") <- round(qt(1 - level/2, df = Df) * dses.m, ndecimal+1)
-      } # end of if LSD
-
-      attr(LSD, "Significant level") <- slevel
-      attr(LSD, "Degree of freedom") <- round(Df, 2)
-    }else{
-      LSD <- round(2 * SED.out[1:3], ndecimal+1)
-      names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
-
-      if (length(vars) > 1) {
-        rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
-        attr(LSD, "For the Same Level of Factor") <- round(2 * dses.m, ndecimal+1)
-      }
-
-      attr(LSD, "Note") <- "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
+    if (length(vars) > 1) {
+      rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
+      attr(LSD, "For the Same Level of Factor") <- round(qt(1 - level/2, df = Df) * dses.m, ndecimal+1)
     }
 
+    attr(LSD, "Significant level") <- slevel
+    attr(LSD, "Degree of freedom") <- round(Df, 2)
+  }else{
+    LSD <- round(2 * SED.out[1:3], ndecimal+1)
+    names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
 
-    if (pairwise) {
-      p_valueMatrix <- NULL
-      tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
-      rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
+    if (length(vars) > 1) {
+      rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
+      attr(LSD, "For the Same Level of Factor") <- round(2 * dses.m, ndecimal+1)
+    }
+
+    attr(LSD, "Note") <- "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
+  }
+  LSD
+}
+
+## t values and raw p-values of the pairs (t, Tukey or permutation).
+pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore) {
       t.v <- cm/dses
 
-      if (all(is.null(permlist) || all(permlist%in%c("NULL", "")), adj=="tukey")) {
+      if (!perm && adj=="tukey") {
 	      if (inherits(model, "lmerMod")) {
 		      p.tukey <- sapply(1:length(t.v), function(m) ptukey(sqrt(2)*abs(t.v[m]), nK, Df_diff[m], lower.tail=FALSE))
 		    }else{
@@ -399,9 +437,7 @@ pm_code_compare <- quote({
 		    }
       }
 
-      tvm[upper.tri(tvm)] <- t.v
-
-      if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
+      if (!perm) {
 	  	  if (inherits(model, "lmerMod")) {
 		      t.p.values <- sapply(1:length(t.v), function(m) 2 * pt(-abs(t.v[m]), Df_diff[m]))
 		    }else{
@@ -435,7 +471,17 @@ pm_code_compare <- quote({
 
       } # end of if (is.null(permlist))
 
-      if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
+  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim"), environment())
+}
+
+## Overall pairwise tables: p-values (t value above the diagonal), LSDs and
+## the matrix used for letter groups.
+pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
+                             adj, perm, nsim, level, slevel, meandecr) {
+  tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
+  rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
+  tvm[upper.tri(tvm)] <- t.v
+  p_valueMatrix <- NULL
 
         if (adj=="tukey"){
           t.p.valuem[upper.tri(t.p.valuem)] <- p.tukey
@@ -448,7 +494,7 @@ pm_code_compare <- quote({
         names(t.p.valuem) <- NULL
 		    diag(t.p.valuem) <- 1
 
-		    if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
+		    if (!perm) {
 
 		      if (!inherits(model, "lmerMod")) {
 		        attr(t.p.valuem, "Degree of freedom") <- pairDf
@@ -486,7 +532,14 @@ pm_code_compare <- quote({
         p_valueMatrix <- round(t(t.p.valuep), 4)
       }
 
-    }else{
+  pm_existing(c("t.p.valuem", "t.p.valuep", "LSDm", "t.p.valuemGrp", "p_valueMatrix"), environment())
+}
+
+## Pairwise tables within each level of 'atvar': adjusted p-values, letters
+## and the means ordered by 'atvar'.
+pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
+                           Df_diff, adj, slevel) {
+  p_valueMatrix <- NULL
       dses.df$tvalue <- t.v
       dses.df$pvalue <- t.p.values
       if (adj == "tukey") {
@@ -576,10 +629,9 @@ pm_code_compare <- quote({
         p_valueMatrix <- pmlist
       }
 
-    } # if (is.null(atvar))
-  }# end of if(pairwise)
-  } # end of if (nK == 1) ... else
-})
+  pm_existing(c("resvar", "atvar.levels", "rcnplotm", "bkmt", "listlength", "nrow.pm", "pmlist",
+                "pmlistTab", "pmlistLetter", "p_valueMatrix"), environment())
+}
 
 ## Mean table with confidence limits.
 pm_stage_mean_table <- function(st) eval(pm_code_mean_table, st)
