@@ -1,4 +1,4 @@
-# predictmeans (development version)
+# predictmeans 1.1.1.9000 (development version)
 
 ## Changes that affect results or scripts
 
@@ -205,6 +205,11 @@
   computed). The given `Df` is now used for every pair.
 
 ## Internal
+
+* Help pages are now written with roxygen2: the sources are the
+  `R/doc-*.R` files, and `man/` is generated with
+  `roxygen2::roxygenise(roclets = "rd")`. NAMESPACE is still maintained by
+  hand. The rendered pages are unchanged.
 
 * `predictmeans()` is split into stages (setup, estimate, compare, mean table,
   back-transform, plots, assemble). All statistics are computed before any

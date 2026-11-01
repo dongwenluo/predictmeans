@@ -18,3 +18,4 @@ LazyLoad: yes
 NeedsCompilation: no
 Encoding: UTF-8
 ByteCompile: true
+Config/roxygen2/version: 8.1.1

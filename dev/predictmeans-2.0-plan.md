@@ -47,7 +47,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | Containment df for lmer (`df_method = "containment"`), tested on the SAS rule; SAS script to export reference CSVs (`dev/sas/`) | **Done** |
 | Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
 | Stages to pure functions, part 2: estimate (`pm_model_parms()`, `pm_estimate_means()`), compare (five functions), plots (`pm_make_plots()`), assemble (`pm_legacy_output()`); only setup still works on the call's state (it rewrites the arguments); direct tests of the functions; all 36 snapshot calls identical | **Done** |
-| Next: finish Phase 1 — roxygen2 migration; pkgdown site with "Getting started" and "Migrating from 1.x". Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
+| Next: finish Phase 1 — move help blocks next to their functions and uncomment examples; pkgdown site with "Getting started" and "Migrating from 1.x". Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
 
@@ -382,7 +382,7 @@ part-time person).
 | Speed fixes that don't change numbers (§1.3) | S | **Done** |
 | Extend frozen reference to `permmodels`, `permlmer`, `R2_glmm`, `varcomp`, `contrastmeans` | S | **Done** (58 cases) |
 | CI on three OSes (GitHub Actions) | S | **Done** |
-| roxygen2 migration; uncomment examples | M | Open |
+| roxygen2 migration; uncomment examples | M | Migration **done** (help sources in `R/doc-*.R`; rendered pages identical); examples open |
 | Benchmarks script | S | **Done** (`dev/benchmarks.R`) |
 
 ### Phase 1 — Engine and object → 2.0.0
