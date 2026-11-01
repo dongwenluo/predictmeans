@@ -350,7 +350,7 @@ pm_code_compare <- quote({
       }else {
   	    df_user <- TRUE
   	    mt$Df <- Df
-  		  Df_diff <- Df
+  		  Df_diff <- rep_len(Df, nrow(rK))   # one df per pair, as for lmer
   		  pairDf <- Df
 		  }
 

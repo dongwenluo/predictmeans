@@ -44,7 +44,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | Low-rank (Woodbury) Kenward–Roger: n = 3,000 21.5 s → < 0.05 s; n = 20,000 0.3 s; same results as pbkrtest | **Done** |
 | Own vectorised Satterthwaite (equal to lmerTest, ~25x faster); lmerTest now only needed for its model class in `semireg()` and `permmodels()` tables | **Done** |
 | `predictmeans()` split into seven stages (setup, estimate, compare, mean_table, backtransform, plots, assemble); all graphics after the statistics; output bit-for-bit identical on 32 option combinations (`dev/snapshot-predictmeans.R`) | **Done** |
-| Next: turn stages into pure functions one at a time; fix `permlist` + `atvar` and user `Df` for lmer (found by the snapshot); containment and between-within df once SAS reference output is available | Next |
+| Next: turn stages into pure functions one at a time; containment and between-within df once SAS reference output is available | Next |
 
 ### What changed from the blueprint
 

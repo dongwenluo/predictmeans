@@ -174,6 +174,9 @@
 * `predictmeans()` with both `permlist` and `atvar` failed with "undefined
   columns selected". It now gives permutation p-values within each `atvar`
   level.
+* A user-supplied `Df` for an lmer model gave NA p-values for all pairs but
+  the first ("missing value where TRUE/FALSE needed" when letters were
+  computed). The given `Df` is now used for every pair.
 
 ## Internal
 

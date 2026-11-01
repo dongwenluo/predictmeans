@@ -19,3 +19,18 @@ test_that("permlist works with atvar", {
   expect_equal(nrow(within), 3 * 6)
   expect_false(anyNA(within$p.adj))
 })
+
+test_that("a user-supplied Df is used for every pair of an lmer model", {
+  m <- oats_lmer()
+  r <- predictmeans(m, "nitro", Df = 20, adj = "BH", plot = FALSE, prtnum = FALSE)
+  pv <- r$`Pairwise p-value`
+  tv <- pv[upper.tri(pv)]
+  expect_equal(t(pv)[upper.tri(pv)], round(p.adjust(2 * pt(-abs(tv), 20), "BH"), 4),
+               tolerance = 1e-4)
+  expect_true(all(r$means$df == 20))
+  r_t <- predictmeans(m, "nitro", Df = 20, adj = "tukey", plot = FALSE, prtnum = FALSE)
+  pt_ <- r_t$`Pairwise p-value`
+  expect_false(anyNA(t(pt_)[upper.tri(pt_)]))
+  expect_equal(t(pt_)[upper.tri(pt_)],
+               round(ptukey(sqrt(2) * abs(tv), 4, 20, lower.tail = FALSE), 4), tolerance = 1e-4)
+})
