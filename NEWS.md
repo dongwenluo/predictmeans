@@ -142,6 +142,11 @@
 
 ## Speed
 
+* Kenward-Roger computations no longer form or invert the n x n covariance
+  of the data. They use the model's low-rank structure (Woodbury identity),
+  with the same results as pbkrtest. n = 3,000 takes under 0.05 s instead of
+  21.5 s; n = 20,000 takes 0.3 s (previously out of reach).
+
 * Kenward-Roger df are computed for all contrasts at once (identical to
   `pbkrtest::Lb_ddf()` row by row), and the adjusted covariance is computed
   once per `predictmeans()` call instead of once per model term, for the

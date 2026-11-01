@@ -40,7 +40,9 @@ predictmeans 2.0 has three aims, with equal weight:
 | `autoplot()` (means, p-value heatmap, back-transformed) and `summary()` with a self-describing footer | **Done** |
 | Own Type II/III tests (`pm_anova()`, equal to `car::Anova()`); car → Suggests; 76 → 68 packages | **Done** |
 | Own Kenward–Roger (`pm_vcov_kr()`, `pm_kr_ftest()`, equal to pbkrtest); pbkrtest → Suggests; 68 → 56 packages | **Done** |
-| Next: splitting `predictmeans()` into compute steps; faster (sparse) KR for large n; containment and between-within df | Next |
+| KR-adjusted SEs default (D6); glmmTMB → Imports (D2); `permmodels()` tables independent of lme4/lmerTest fits | **Done** |
+| Low-rank (Woodbury) Kenward–Roger: n = 3,000 21.5 s → < 0.05 s; n = 20,000 0.3 s; same results as pbkrtest | **Done** |
+| Next: containment and between-within df (SAS defaults); own Satterthwaite (lmerTest → Imports); splitting `predictmeans()` | Next |
 
 ### What changed from the blueprint
 
