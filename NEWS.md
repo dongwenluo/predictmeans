@@ -188,6 +188,14 @@
 
 ## Fewer dependencies
 
+* `car` moved from Imports to Suggests. `permmodels()` computes its Type II
+  and III tests itself: lm F; glm LR, Wald and F; lme and gls Wald
+  chi-square; lmer Wald chi-square and Kenward-Roger F. They are ported from
+  car and equal `car::Anova()` in the tests. Installing predictmeans now
+  pulls in 68 packages (112 for 1.1.1).
+* `permmodels()` with `type = "II"` now also works for `lm` models with
+  aliased coefficients. 1.1.1 stopped with an error from `car::Anova()`.
+
 * `plyr` is no longer used.
 * `HRW`, `lmeInfo`, `lmeSplines`, `plotly` and `splines2` moved from Imports
   to Suggests. They are only needed for, respectively:

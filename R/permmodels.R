@@ -35,7 +35,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -43,15 +43,14 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     
     } else{	
 	if (.Platform$OS.type=="windows") {
-      cl <- makeCluster(ncore)	  
-      if (!(type %in% c("I", "1"))) clusterEvalQ(cl, library(car))
+      cl <- makeCluster(ncore)
       clusterExport(cl, c("mymodelparm", "mymodelparm.default", "model", "mod_df", "yname", "diff_yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
 		if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x		
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -63,7 +62,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -110,7 +109,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -118,8 +117,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	
 	}else{
     if (.Platform$OS.type=="windows") {
-      cl <- makeCluster(ncore)	  
-      if (!(type %in% c("I", "1"))) clusterEvalQ(cl, library(car)) 
+      cl <- makeCluster(ncore)
       clusterEvalQ(cl, library(nlme))
       clusterExport(cl, c("mymodelparm", "mymodelparm.lme", "mymodelparm.gls","mymodelparm.default", "model", "mod_df", "yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
@@ -127,7 +125,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -139,7 +137,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -194,7 +192,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -209,7 +207,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")){
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -220,7 +218,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
           mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- car::Anova(rfitmodel, type=type, test.statistic=test.statistic)
+          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
 		  coefT <- coef(summary(rfitmodel))
           return(list(mp, aT, coefT))
         }
@@ -287,7 +285,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     if ("(Intercept)" %in% rownames(key_anova)) Fper.p[1] <- NA	
     ANOVA <- round(cbind(key_anova, "Perm_p_value"=Fper.p),4)
   }else{
-    key_anova <- car::Anova(model, type=type, test.statistic=test.statistic)
+    key_anova <- pm_anova(model, type=type, test.statistic=test.statistic)
     if (class(model)[1] %in% c("lm", "aov")) stats_value <- "F value"  else stats_value <-  test.statistic 
     if (class(model)[1] %in% c("glm")) stats_value <- switch(test.statistic, LR = "LR Chisq", Wald = "Chisq", F = ifelse(type %in% c("2", "II"), "F value", "F values"))  
     if (nrow(key_anova)==1) {

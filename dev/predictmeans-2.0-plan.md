@@ -38,7 +38,8 @@ predictmeans 2.0 has three aims, with equal weight:
 | Phase 1, part 1: stable result tables (`means`, `pairs`, `settings`, `tidy()`), vectorised and cached Kenward–Roger df, `vcov_adjust`, `cov_reduce`/`exclude` pass-through; B6, B15–B17 fixed | **Done** — commits `a763b7d`, `83d287a` |
 | Phase 1, part 2: `weights =` (SAS OM; matches emmeans), `specify_contrast()`, model adapter (`?pm_coef`); B18 fixed | **Done** — commits `2986851`, `1f8b4f4`, and the adapter commit |
 | `autoplot()` (means, p-value heatmap, back-transformed) and `summary()` with a self-describing footer | **Done** |
-| Phase 1, part 3: own Type II/III tests (car → Suggests), splitting `predictmeans()` | Next |
+| Own Type II/III tests (`pm_anova()`, equal to `car::Anova()`); car → Suggests; 76 → 68 packages | **Done** |
+| Next: own Kenward–Roger (`vcovAdj`, `KRmodcomp`) so pbkrtest → Suggests (removes 11 tidyverse packages); splitting `predictmeans()` | Next |
 
 ### What changed from the blueprint
 
@@ -279,7 +280,8 @@ Depends + Imports, recursively):
 |---|---|---|
 | 1.1.1 | — | 112 |
 | **Step 1 (done)** | Drop plyr; HRW, lmeInfo, lmeSplines, plotly, splines2 → Suggests | **76** |
-| Step 2 | Own Type II/III Wald and F tests (replaces `car::Anova`); own Kenward–Roger (replaces pbkrtest; needed for SAS parity anyway). car and pbkrtest → Suggests, used as test oracles | 56 |
+| Step 2a (done) | Own Type II/III tests (`pm_anova()`, replaces `car::Anova`); car → Suggests | **68** |
+| Step 2b | Own Kenward–Roger (replaces pbkrtest; needed for SAS parity anyway); pbkrtest → Suggests as a test oracle | 56 |
 | Step 3 | Own Satterthwaite (the package already holds the Jacobian code copied from lmerTest); glmmTMB and lmerTest → Suggests | 53 |
 | Floor | lme4, nlme, Matrix, MASS, numDeriv, ggplot2 | 53 (42 without ggplot2) |
 
