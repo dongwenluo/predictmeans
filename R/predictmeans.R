@@ -68,30 +68,27 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     model <- aovlist_lmer(model)
   }
 
-  if (inherits(model, "glm")) {
-    trans <- model$family$linkinv  # identical(trans, make.link("log")$linkinv)
-
-    if (model$family$family %in% c("poisson", "quasipoisson")){
-      count=TRUE
-    }
+  # Models with a link function: means are back-transformed with its inverse
+  # (pm_linkinv(); see ?pm_coef to support other model classes).
+  linkinv <- pm_linkinv(model)
+  if (!is.null(linkinv)) {
+    trans <- linkinv
   }
 
-  if (inherits(model, "glmerMod")) {
-    trans <- slot(model, "resp")$family$linkinv
+  if (inherits(model, "glm") && model$family$family %in% c("poisson", "quasipoisson")){
+    count=TRUE
   }
 
-  if (inherits(model, "glmmTMB")) {
-    trans <- model$modelInfo$family$linkinv
-
-    if (model$modelInfo$family$family %in% c("poisson", "quasipoisson")){
-      count=TRUE
-    }
+  if (inherits(model, "glmmTMB") && model$modelInfo$family$family %in% c("poisson", "quasipoisson")){
+    count=TRUE
   }
 
   vars <- unlist(strsplit(modelterm, "\\:"))
-  mdf <- model.frame(model)
+  # Model frame; for model classes without one, the data recovered by
+  # Kmatrix() are used instead (below).
+  mdf <- tryCatch(model.frame(model), error = function(e) NULL)
 
-  if(any(!is.element(vars, names(mdf)[sapply(mdf,is.factor)]))){
+  if(!is.null(mdf) && any(!is.element(vars, names(mdf)[sapply(mdf,is.factor)]))){
     stop(paste(vars, "must be factor(s)!"))
   }
 
@@ -162,6 +159,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum,
                         cov_reduce=cov_reduce, exclude=exclude, weights=weights)
   KK <- ctr.matrix$K
+  if (is.null(mdf)) {
+    mdf <- ctr.matrix$data
+  }
   label <- ctr.matrix$fctnames
   rownames(label) <- rownames(KK)
   response <- ctr.matrix$response
@@ -315,10 +315,21 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     		  pairDf <- round(mean(Df_diff), 2)
     		 # Df_diff[Df_diff <= 0] <- 1
         } else {
-          Df <- mp$df
-          mt$Df <- round(Df, 2)
-          pairDf <- Df
-          Df_diff <- Df
+          # a pm_df() method can give the df of each contrast (see ?pm_coef)
+          df_means <- pm_df(model, K)
+          if (!is.null(df_means)) {
+            pm_df_raw <- rep_len(as.numeric(df_means), nrow(K))
+            mt$Df <- round(pm_df_raw, 2)
+            Df_diff <- rep_len(as.numeric(pm_df(model, rK)), nrow(rK))
+            Df <- mean(Df_diff)
+            pairDf <- round(Df, 2)
+            df_type <- "model (pm_df)"
+          } else {
+            Df <- mp$df
+            mt$Df <- round(Df, 2)
+            pairDf <- Df
+            Df_diff <- Df
+          }
         }
 
         if (Df==0){

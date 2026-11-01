@@ -60,7 +60,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     obj <- X[[xname]]
     if (is.factor(obj)) {
       xlev[[xname]] <- levels(obj)
-      baselevs[[xname]] <- factor(levels(obj), levels = levels(obj))
+      baselevs[[xname]] <- factor(levels(obj), levels = levels(obj), ordered = is.ordered(obj))
     } else if (is.matrix(obj)) {
       # Matrix covariates: use column means
       matdat[[xname]] <- apply(obj, 2, mean, na.rm = TRUE)
@@ -187,12 +187,10 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
 
   rg <- pm_make_refgrid(facs, baselevs, matdat, joint, profiles, prof_w, present)
 
-  # Basis evaluated row by row on the grid.
+  # Basis evaluated row by row on the grid, through pm_basis() (see ?pm_coef).
   if (info$builder == "gam") {
     gam_excl <- if (length(info$gam_exclude)) info$gam_exclude else NULL
-    basis <- function(nd) {
-      mgcv::predict.gam(model, newdata = nd, type = "lpmatrix", exclude = gam_excl)
-    }
+    basis <- function(nd) pm_basis(model, nd, exclude = gam_excl)
   } else {
     contrasts <- info$contrasts
     # Levels of every factor in the model frame (incl. factor(x) terms and
@@ -203,10 +201,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     mxlev <- lapply(mf_fit[is_lev], function(z) if (is.factor(z)) levels(z) else sort(unique(z)))
     mxlev <- mxlev[!names(mxlev) %in% names(xlev)]
     xlev_all <- c(xlev, mxlev)
-    basis <- function(nd) {
-      m <- model.frame(Terms, nd, na.action = na.pass, xlev = xlev_all)
-      model.matrix(Terms, m, contrasts.arg = contrasts)
-    }
+    basis <- function(nd) pm_basis(model, nd, terms = Terms, contrasts = contrasts, xlev = xlev_all)
   }
 
   K <- as.matrix(pm_refgrid_average(rg, basis))
@@ -225,7 +220,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   # (aliased or dropped coefficients) have a null space, so the check costs
   # nothing for full-rank models.
   estimable <- rep(TRUE, nrow(K))
-  if (info$builder == "mm" && info$rank_deficient(colnames(K))) {
+  if (info$builder != "gam" && info$rank_deficient(colnames(K))) {
     Xfit <- basis(model_data)
     XtX <- crossprod(Xfit)
     ev <- eigen(XtX, symmetric = TRUE)
@@ -253,5 +248,5 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   }
   rownames(fctnames) <- NULL
 
-  return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg))
+  return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data))
 }

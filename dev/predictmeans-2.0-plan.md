@@ -36,7 +36,8 @@ predictmeans 2.0 has three aims, with equal weight:
 | Speed fixes that don't change numbers (KR in refits, R² memory, sparse Cholesky) | **Done** — `364d733` (§1.3) |
 | Frozen reference extended to permutation, R², variance components, contrasts (58 cases) | **Done** |
 | Phase 1, part 1: stable result tables (`means`, `pairs`, `settings`, `tidy()`), vectorised and cached Kenward–Roger df, `vcov_adjust`, `cov_reduce`/`exclude` pass-through; B6, B15–B17 fixed | **Done** — commits `a763b7d`, `83d287a` |
-| Phase 1, part 2: `autoplot()`/`summary()`, `weights =`, `specify_contrast()`, splitting `predictmeans()` | Next |
+| Phase 1, part 2: `weights =` (SAS OM; matches emmeans), `specify_contrast()`, model adapter (`?pm_coef`); B18 fixed | **Done** — commits `2986851`, `1f8b4f4`, and the adapter commit |
+| Phase 1, part 3: `autoplot()`/`summary()`, own Type II/III tests (car → Suggests), splitting `predictmeans()` | Next |
 
 ### What changed from the blueprint
 
@@ -88,6 +89,7 @@ structures.
 | B15 | `predictmeans()` | Failed for every lmer model with a missing cell ("replacement has 12 rows, data has 11"). | **Fixed** |
 | B16 | `predictmeans()` | Failed for lmer models fitted by ML. | **Fixed** (Satterthwaite df for ML fits) |
 | B17 | `predictmeans()` | Tukey within `atvar` used the number of pairs as the number of means: 0.350 instead of 0.197 in the Oats example **(measured)**. | **Fixed**; matches emmeans |
+| B18 | `contrastmeans()` | Failed ("non-conformable arguments") for every model with a missing cell. | **Fixed** |
 | B7 | `R/Kmatrix.R` 1.1.1 | Missing cells relied on `merge(sort = FALSE)` row order. | **Not reproduced; removed** (Kmatrix v2 matches by key) |
 | B8 | Kmatrix 1.1.1 | A matrix `covariateV` (documented as prediction points) was silently ignored. | **Fixed** |
 | B9 | Kmatrix 1.1.1 | 16 of 22 complex-covariate cases failed (§11). | **Fixed** |
@@ -147,6 +149,12 @@ structures.
    and re-implementing it would be unreasonable. Everything else goes in
    Suggests with a clear message (§6).
 7. **Deprecate, don't break.** Legacy arguments and slots work through 2.x.
+8. **Easy to extend to new model classes.** Everything predictmeans needs
+   from a model goes through a few exported generics with sensible
+   defaults (§7.1). Supporting a new class means writing those methods
+   only, never editing `predictmeans()`, `Kmatrix()` or `contrastmeans()`.
+   Each built-in class is just a set of these methods, and a test fits
+   made-up classes to keep the contract honest.
 
 ---
 
@@ -157,10 +165,10 @@ SAS from the PROC MIXED/GLIMMIX documentation.
 
 | Capability | emmeans | marginaleffects | SAS | predictmeans 1.1.1 | Plan |
 |---|---|---|---|---|---|
-| Reference grid, covariate values, weights | `ref_grid(at, cov.reduce, cov.keep, nuisance, counterfactuals)`; weights equal/proportional/outer/cells/flat | `datagrid()`, `newdata = "balanced"`, `by` | `AT`, `OM` (observed margins), `BYLEVEL` | Equal weights; covariates at mean | **Done:** `cov_reduce` (function or `"average"`). Add `weights = "proportional"/"cells"` (= SAS `OM`) — Phase 1 |
+| Reference grid, covariate values, weights | `ref_grid(at, cov.reduce, cov.keep, nuisance, counterfactuals)`; weights equal/proportional/outer/cells/flat | `datagrid()`, `newdata = "balanced"`, `by` | `AT`, `OM` (observed margins), `BYLEVEL` | Equal weights; covariates at mean | **Done:** `cov_reduce` (function or `"average"`); `weights` equal/proportional (= SAS `OM`)/outer/cells/flat, matching emmeans |
 | Non-estimable means | Flagged (estimability package) | — | "Non-est" | Silent | **Done** in K (`attr(K, "estimable")`); show in tables — Phase 1 |
 | Complex covariates (`poly`, `ns`, interactions only, smooths) | Yes | Yes | Via pre-computed variables | Mostly failed | **Done** (§11) |
-| Contrast families | pairwise, revpairwise, trt.vs.ctrl, dunnett, poly, consec, eff, del.eff, mean_chg; interaction contrasts; `by` | `hypothesis = ~pairwise / ~reference / ~sequential`, string equations, ratios | `DIFF=ALL/CONTROL`, `LSMESTIMATE`, `SLICEDIFF` | All pairwise; custom matrix; `atvar` ≈ `by` | `pm_contrast(method =)` with the same families + `specify_contrast()` + interaction contrasts — Phase 2 |
+| Contrast families | pairwise, revpairwise, trt.vs.ctrl, dunnett, poly, consec, eff, del.eff, mean_chg; interaction contrasts; `by` | `hypothesis = ~pairwise / ~reference / ~sequential`, string equations, ratios | `DIFF=ALL/CONTROL`, `LSMESTIMATE`, `SLICEDIFF` | All pairwise; custom matrix; `atvar` ≈ `by` | **`specify_contrast()` done** (named contrasts, like `LSMESTIMATE`); families and interaction contrasts — Phase 2 |
 | Joint tests / slices | `joint_tests()`, `test(joint = TRUE)` | `hypotheses(joint = )` | `SLICE`, `CONTRAST` | — | `pm_joint()` slice F-tests with chosen df — Phase 2 |
 | Multiplicity | tukey, scheffe, sidak, bonferroni, dunnettx, mvt | `p_adjust` (p.adjust methods) | TUKEY(-Kramer), BON, SCHEFFE, SIDAK, DUNNETT, SIMULATE | p.adjust methods + Tukey | Add sidak, scheffe, dunnett and single-step multivariate t (exact counterpart of SAS `SIMULATE`) — Phase 2 |
 | df for mixed models | KR, Satterthwaite, asymptotic | KR/Satterthwaite only for unit-level predictions; refused for averaged means **(measured)** | CONTAIN, BETWITHIN, RESIDUAL, SATTERTHWAITE, KR, KR2 | KR (falls back to Satterthwaite) for lmer; nlme inner–outer for lme | Explicit `df_method`, adding containment and between-within for lmer (rare in R) — Phase 2 |
@@ -171,7 +179,7 @@ SAS from the PROC MIXED/GLIMMIX documentation.
 | Robust / clustered vcov | `vcov.` argument | `vcov = "HC3"`, `~cluster` | `EMPIRICAL` | — | `vcov =` argument (matrix or function) — Phase 2 |
 | Equivalence tests | `test(delta, side)` | `equivalence =` | TOST via `ESTIMATE` | — | Phase 2 |
 | Tidy, stable output | `as.data.frame` | Consistent data frames | ODS tables with stable names | Title-case list; dynamic names | **Done**: `means`, `pairs`, `settings`; `tidy()`, `as.data.frame()`; checked against emmeans |
-| Model coverage | Many classes, extension API | 100+ classes via insight | — | 9 classes; gam added | Adapter contract (§7.1); vglm, ordinal later |
+| Model coverage | Many classes, extension API | 100+ classes via insight | — | 9 classes; gam added | **Adapter contract done** (§7.1, `?pm_coef`); vglm, ordinal later |
 
 **What only predictmeans offers** (none of the three has all of it):
 
@@ -309,17 +317,23 @@ flowchart LR
 
 ### 7.1 Model adapter contract
 
-`pm_model_info()` in `R/refgrid.R` already centralises the class-specific
-facts Kmatrix needs. It grows into these internal generics, so a new model
-class needs only these methods:
+**Done** (`R/adapter.R`, `?pm_coef`). Six exported generics; the defaults
+work for any class with the usual `coef`, `vcov`, `terms`, `df.residual` and
+`family` methods:
 
-| Method | Returns |
-|---|---|
-| `pm_coef(model)` | Fixed-effect estimates |
-| `pm_vcov(model, adjust)` | Their covariance (optionally KR-adjusted) |
-| `pm_df(model, L, method)` | Denominator df for contrast rows `L` |
-| `pm_design(model)` | Terms with `predvars`, contrasts, xlevels, data (done inside Kmatrix v2) |
-| `pm_linkinv(model)` | Inverse link and its derivative |
+| Generic | Returns | Default |
+|---|---|---|
+| `pm_coef(model)` | Named fixed-effect estimates (NA if aliased) | `coef()`; methods for lme, merMod, glmmTMB |
+| `pm_vcov(model)` | Their covariance | `vcov()`; glmmTMB method |
+| `pm_basis(model, newdata, ...)` | Design matrix for new data | `model.matrix()` with stored `predvars`, contrasts and levels; gam method (lpmatrix) |
+| `pm_data(model)` | The fitting data | `NULL`: built-in search |
+| `pm_df(model, L, ...)` | df per contrast row | `NULL`: model's residual df, else `Inf` |
+| `pm_linkinv(model)` | Inverse link | `family()` inverse link unless identity; glm, glmer, glmmTMB methods |
+
+Tests fit three made-up classes (only `coef`/`vcov`/`terms`/`df.residual`;
+`pm_data` + `pm_df`; `pm_linkinv`) and check that the results equal `lm`/`glm`.
+Still class-specific inside the code and worth moving behind generics later:
+Kenward–Roger for lmer, nlme df rules, gam smooth exclusion, `semireg`.
 
 ### 7.2 The result object
 

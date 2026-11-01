@@ -1,7 +1,7 @@
 mymodelparm <- function(model, coef., vcov., df, ...)
 UseMethod("mymodelparm")
 
-mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
+mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NULL, ...)
 {
   ### extract coefficients and their covariance matrix
 	if (inherits(model, "glmmTMB")) {
@@ -53,6 +53,11 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
 		}
     if (inherits(model, "parm")) {
       df <- model$df
+    }
+    known <- c("lm", "gls", "lme", "lmerMod", "glmerMod", "glmmTMB", "parm")
+    if (identical(df, 0) && !inherits(model, known)) {
+      # other model classes: df.residual(), else normal-based (see ?pm_coef)
+      df <- pm_residual_df(model)
     }
   } else {
     if (df < 0) {

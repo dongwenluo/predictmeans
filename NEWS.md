@@ -15,6 +15,24 @@
   printed output are unchanged, and the result has class
   `c("predictmeans", "pdmlist")`.
 
+## Supporting new model classes
+
+* `Kmatrix()`, `predictmeans()`, `contrastmeans()` and `covariatemeans()`
+  now get what they need from a model through six exported generics:
+  * `pm_coef()`, `pm_vcov()`: estimates and their covariance;
+  * `pm_basis()`: design matrix for new data;
+  * `pm_data()`: the fitting data;
+  * `pm_df()`: df for each contrast;
+  * `pm_linkinv()`: inverse link.
+
+  The defaults work for any class with the usual `coef`, `vcov`, `terms`,
+  `df.residual` and `family` methods. Supporting another class means writing
+  methods for these generics only (see `?pm_coef`), and model classes
+  predictmeans doesn't know are no longer rejected. Built-in classes behave
+  exactly as before.
+* Ordered factors keep their contrasts in the reference grid even when a
+  model class stores no contrasts.
+
 ## Named contrasts
 
 * New `specify_contrast()` writes contrasts with level names instead of

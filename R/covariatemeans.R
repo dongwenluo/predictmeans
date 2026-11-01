@@ -60,21 +60,16 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
         stop("You need provide Df for this model!")
       }
     } else {
-      Df <- mp$df
+      df_custom <- pm_df(model, KK)
+      Df <- if (!is.null(df_custom)) rep_len(as.numeric(df_custom), nrow(KK)) else mp$df
     }
-    if (Df==0) {
+    if (any(Df==0)) {
       stop("You need provide Df for this model!")
     }
   }
 
-  if (inherits(model, "glm") && is.null(trans)) {
-    trans <- model$family$linkinv
-  }
-  if (inherits(model, "glmerMod") && is.null(trans)) {
-    trans <- slot(model, "resp")$family$linkinv
-  }
-  if (inherits(model, "glmmTMB") && is.null(trans)) {
-    trans <- model$modelInfo$family$linkinv
+  if (is.null(trans)) {
+    trans <- pm_linkinv(model)
   }
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
@@ -105,7 +100,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   if (!is.null(data)) {
     mdf <- data
   } else {
-    mdf <- model.frame(model)
+    mdf <- tryCatch(model.frame(model), error = function(e) ctr.matrix$data)
   }
   if (length(setdiff(response, names(mdf)))!=0) {
     mdf[,response] <- eval(parse(text=response), mdf)

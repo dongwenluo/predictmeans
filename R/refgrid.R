@@ -88,20 +88,25 @@ pm_model_info <- function(model, data = NULL, exclude = NULL) {
     contrasts <- attr(mm, "contrasts")
     coef_names <- colnames(mm)
   } else {
-    stop(paste("Can't handle an model of class", class(model)[1]))
+    # Any other model class, through the adapter generics (see ?pm_coef).
+    builder <- "custom"
+    coef_try <- tryCatch(pm_coef(model), error = function(e) NULL)
+    if (!is.numeric(coef_try) || is.null(names(coef_try))) {
+      stop("Can't handle a model of class ", sQuote(class(model)[1]),
+           ": it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).",
+           call. = FALSE)
+    }
+    thecall <- tryCatch(stats::getCall(model), error = function(e) NULL)
+    contrasts <- pm_contrasts(model)
+    coef_names <- names(coef_try)
   }
 
   # A fit is rank deficient if coefficients are aliased (NA) or design
   # columns were dropped before fitting (lme4, glmmTMB).
-  coef_vals <- tryCatch({
-    if (inherits(model, "glmmTMB")) glmmTMB::fixef(model)$cond
-    else if (inherits(model, "mer") || inherits(model, "merMod")) lme4::fixef(model)
-    else if (inherits(model, "lme")) nlme::fixef(model)
-    else coef(model)
-  }, error = function(e) NULL)
+  coef_vals <- tryCatch(pm_coef(model), error = function(e) NULL)
   coef_na <- any(is.na(coef_vals))
   rank_deficient <- function(full_cols) {
-    builder == "mm" && (coef_na || length(setdiff(full_cols, coef_names)) > 0)
+    builder != "gam" && (coef_na || length(setdiff(full_cols, coef_names)) > 0)
   }
 
   Terms_full <- terms(model)
@@ -174,6 +179,7 @@ pm_recover_data <- function(info) {
   if (!is.null(info$data) && (info$data_first || !(is_nlme || is_mer))) {
     cands$data <- function() info$data
   }
+  cands$pm_data <- function() pm_data(model)
   if (is_nlme) cands$getData <- function() pm_get_data(model)
   if (is_mer) cands$getData <- function() nlme::getData(model)
   if (!is.null(info$data) && is.null(cands$data)) cands$data <- function() info$data

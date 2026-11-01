@@ -84,7 +84,10 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
 
 
   if (all(missing(permlist), missing(Df))){
-	  if (length(mp$df)==1 && mp$df!=0) {
+    df_custom <- pm_df(model, rK)
+	  if (!is.null(df_custom)) {
+	    Df <- rep_len(as.numeric(df_custom), nrow(rK))
+	  } else if (length(mp$df)==1 && mp$df!=0) {
 		  Df <- mp$df
 	  } else {
 		  if (inherits(model, "lme")) {
