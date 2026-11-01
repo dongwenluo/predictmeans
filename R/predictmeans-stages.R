@@ -533,7 +533,8 @@ pm_code_compare <- quote({
 
       # mean table arrange by atvar
       mt.atvar <- mt[do.call(order, mt[, atvar, drop=FALSE]),]
-      bkmt <- mt.atvar[, c(atvar, resvar, "pm", "ses", "Df")]
+      # no Df column with permutation p-values
+      bkmt <- mt.atvar[, intersect(c(atvar, resvar, "pm", "ses", "Df"), names(mt.atvar))]
       listlength <- length(atvar.levels)
       pmlist <- pmlistTab <- pmlistLetter <- vector("list", listlength)
       indexlength <- nrow(atvar.df)/listlength

@@ -169,6 +169,12 @@
   goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
   now takes 0.02 s.
 
+## Bug fixes found by the refactor
+
+* `predictmeans()` with both `permlist` and `atvar` failed with "undefined
+  columns selected". It now gives permutation p-values within each `atvar`
+  level.
+
 ## Internal
 
 * `predictmeans()` is split into stages (setup, estimate, compare, mean table,
