@@ -1,7 +1,22 @@
 # predictmeans (development version)
 
+## New options
+
+* `predictmeans(vcov_adjust = TRUE)` and `contrastmeans(vcov_adjust = TRUE)`:
+  for `lmer` models fitted by REML, standard errors use the Kenward-Roger
+  adjusted covariance (as SAS `DDFM=KR` and emmeans do) to go with the
+  Kenward-Roger df. The default keeps the earlier, unadjusted standard errors.
+* `predictmeans()` and `covariatemeans()` pass `cov_reduce` and `exclude` on
+  to `Kmatrix()`. For example, `cov_reduce = "average"` gives `gam` means
+  adjusted for a spatial smooth.
+
 ## Bug fixes
 
+* `predictmeans()` failed for every `lmer` model with a missing treatment
+  combination ("replacement has 12 rows, data has 11").
+* `predictmeans()` failed for `lmer` models fitted by ML (`REML = FALSE`).
+  Satterthwaite df are now used for such fits, with a message; `df_term()`
+  falls back to Satterthwaite with a warning instead of stopping.
 * `permmodels()` and `CookD()` refitted `lme`/`gls` models by re-evaluating
   the model call from inside the package. Data fitted inside a function were
   not found, and a data set with the same name elsewhere on the search path
@@ -34,6 +49,12 @@
 
 ## Speed
 
+* Kenward-Roger df are computed for all contrasts at once (identical to
+  `pbkrtest::Lb_ddf()` row by row), and the adjusted covariance is computed
+  once per `predictmeans()` call instead of once per model term, for the
+  means, and again for the pairs. `predictmeans()` on `lmer` models is about
+  10-50x faster: Oats split-plot 0.96 s -> 0.09 s; 40 means with 780 pairwise
+  comparisons 5.3 s -> 0.1 s.
 * `permmodels()` no longer computes Kenward-Roger df for every permutation
   refit (the df were discarded). About 10x faster for `lmer` models
   (99 permutations of the Oats split-plot: 21.8 s -> 2.2 s), with identical

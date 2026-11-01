@@ -1,4 +1,4 @@
-contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist) {
+contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=FALSE) {
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
@@ -39,7 +39,19 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   rK <- ctrmatrix%*%K
 
-  mp <- mymodelparm(model)
+  df_type <- vcov_adj <- NULL
+  if (inherits(model, "lmerMod")) {
+    df_type <- if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
+    if (df_type == "Kenward-Roger") vcov_adj <- tryCatch(pbkrtest::vcovAdj(model), error = function(e) NULL)
+  }
+  mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
+  if (vcov_adjust) {
+    if (is.null(vcov_adj)) {
+      warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
+    } else {
+      mp$vcov <- as.matrix(vcov_adj)
+    }
+  }
   if (all(missing(permlist), missing(Df))){
 	  if (length(mp$df)==1 && mp$df!=0) {
 		  Df <- mp$df
@@ -52,7 +64,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
 			  sQuote(modelterm), "and its marginal terms vary between", sQuote(Df), "and",
 			  sQuote(mDf), ".\n","Probabilities will be calculated using", sQuote(Df), "Df.",  "\n")
 		  } else if (inherits(model, "lmerMod")) {
-			  Df <- df_term(model, ctrmatrix = rK)
+			  Df <- df_term(model, ctrmatrix = rK, type = df_type, vcov_adj = vcov_adj)
       } else {
         stop("You need provide Df for the model!")
       }

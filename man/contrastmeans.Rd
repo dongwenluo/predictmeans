@@ -7,7 +7,8 @@
   or \code{lmer}. 
 }
 \usage{
-  contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist)
+  contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
+                vcov_adjust=FALSE)
 }
 \arguments{
   \item{model}{
@@ -32,6 +33,12 @@
 
   \item{permlist}{ A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
 	option for the permutation test. 
+}
+  \item{vcov_adjust}{
+  For \code{lmer} models fitted by REML: if \code{TRUE}, standard errors use the Kenward-Roger adjusted
+  covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
+  \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
+  unadjusted covariance, as in earlier versions.
 }
 }
 \value{

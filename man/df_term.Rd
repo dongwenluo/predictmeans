@@ -7,7 +7,7 @@
 }
 \usage{
   df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite"))
+          type=c("Kenward-Roger", "Satterthwaite"), vcov_adj=NULL)
 }
 \arguments{
   \item{model}{
@@ -28,7 +28,13 @@
 }
   \item{type}{   Name (in "quote") for indicating a method for claculating degree of freedom. 
   The choices are "Kenward-Roger" and "Satterthwaite". The default method is "Kenward-Roger".
+  Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 }  
+  \item{vcov_adj}{
+  Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
+  \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
+  for the same model.
+}
 }
 
 \author{

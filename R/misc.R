@@ -332,12 +332,16 @@ doolittle <- function(x, eps = 1e-6) {
 
 ########################
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite")) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
-  if (!getME(model, "is_REML")) {
-    stop("This function works properly only for REML model fits")
+  type <- as.character(type)
+  type <- match.arg(type)
+  if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
+    # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
+    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+    type <- "Satterthwaite"
   }
 
   if (!is.null(ctrmatrix)) {
@@ -355,13 +359,11 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     Lc <- Kmatrix(model, modelterm, covariate)$K
   }
 
-  type <- as.character(type)
-  type <- match.arg(type)
-
   if (type=="Kenward-Roger") {
-    vcov_beta_adj <- try(pbkrtest::vcovAdj(model), silent=TRUE) # Adjusted vcov(beta)
-    ddf <- try(apply(Lc, 1, function(x) pbkrtest::Lb_ddf(x, V0=vcov(model),
-                                                         Vadj=vcov_beta_adj)), silent=TRUE) # vcov_beta_adj need to be dgeMatrix!
+    # Adjusted vcov(beta); reuse it when the caller has already computed it.
+    vcov_beta_adj <- if (is.null(vcov_adj)) try(pbkrtest::vcovAdj(model), silent=TRUE) else vcov_adj
+    # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
+    ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
 
     if (any(inherits(vcov_beta_adj, "try-error"),
 	        inherits(ddf, "try-error"),

@@ -4,7 +4,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  plotylab=NULL,
 						  which.plots = c("mean", "pval", "back"),
 						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
-						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4) {
+						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4,
+                          cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE) {
 
   ## Bias output towards fixed notation. See ?options for more info
   op <- options(scipen = 6)
@@ -156,12 +157,32 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     newwd <- FALSE
   }
 
-  ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum)
+  ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum,
+                        cov_reduce=cov_reduce, exclude=exclude)
   KK <- ctr.matrix$K
   label <- ctr.matrix$fctnames
   rownames(label) <- rownames(KK)
   response <- ctr.matrix$response
-  mp <- mymodelparm(model)
+  # lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits). The
+  # adjusted covariance is computed once and shared by all df calculations.
+  df_type <- vcov_adj <- NULL
+  if (inherits(model, "lmerMod")) {
+    if (getME(model, "is_REML")) {
+      df_type <- "Kenward-Roger"
+      vcov_adj <- tryCatch(pbkrtest::vcovAdj(model), error = function(e) NULL)
+    } else {
+      df_type <- "Satterthwaite"
+      message("The model was fitted by ML: using Satterthwaite df.")
+    }
+  }
+  mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
+  if (vcov_adjust) {
+    if (is.null(vcov_adj)) {
+      warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
+    } else {
+      mp$vcov <- as.matrix(vcov_adj)
+    }
+  }
   n.table <- table(mdf[, vars, drop = FALSE])
   ndf <- data.frame(n.table)       ## To obtain info from model
 
@@ -285,9 +306,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
         #  Df <- median(df_term(model, modelterm), na.rm=TRUE)
     		  Df <- mp$df[modelterm]
     		  names(Df) <- NULL
-    		  mt$Df <- round(df_term(model, modelterm), 2)
+    		  mt$Df <- round(df_term(model, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj), 2)
     		 # if (any(mt$Df <= 0)) mt$Df <- Df
-    		  Df_diff <- df_term(model, ctrmatrix=rK)
+    		  Df_diff <- df_term(model, ctrmatrix=rK, type=df_type, vcov_adj=vcov_adj)
     		  pairDf <- round(mean(Df_diff), 2)
     		 # Df_diff[Df_diff <= 0] <- 1
         } else {

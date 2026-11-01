@@ -91,3 +91,52 @@ test_that("permmodels() and CookD() refit the model on its own data (B12)", {
   fg <- gls(yield ~ nitro + Variety, data = local_dat)
   expect_length(permmodels(fg, nperm = 5, prt = FALSE, ncore = 1, seed = 1)$permlist, 5)
 })
+
+test_that("predictmeans() works for lmer models with a missing cell (B15)", {
+  Om <- oats()
+  Om <- Om[!(Om$nitro == "0.6" & Om$Variety == "Victory"), ]
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Om)
+  pm <- suppressWarnings(predictmeans(fm, "nitro:Variety", plot = FALSE, prtnum = FALSE))
+  expect_equal(nrow(pm$mean_table), 11)
+  K <- suppressWarnings(Kmatrix(fm, "nitro:Variety")$K)
+  K <- K[rownames(K) != "0.6:Victory", ]
+  expect_equal(pm$mean_table$Df, round(unname(df_term(fm, ctrmatrix = K)), 2))
+})
+
+test_that("predictmeans() works for lmer models fitted by ML, with Satterthwaite df (B16)", {
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats(), REML = FALSE)
+  expect_message(pm <- predictmeans(fm, "nitro", plot = FALSE, prtnum = FALSE), "Satterthwaite")
+  K <- Kmatrix(fm, "nitro")$K
+  expect_equal(pm$mean_table$Df, round(unname(df_term(fm, ctrmatrix = K, type = "Satterthwaite")), 2))
+})
+
+test_that("vcov_adjust = TRUE gives Kenward-Roger adjusted SEs, as emmeans", {
+  skip_if_not_installed("emmeans")
+  set.seed(7)
+  Ou <- oats()
+  Ou <- Ou[-sample(nrow(Ou), 9), ]
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
+  em <- summary(emmeans::emmeans(fm, ~Variety, lmer.df = "kenward-roger"))
+  adj <- predictmeans(fm, "Variety", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)$mean_table
+  unadj <- predictmeans(fm, "Variety", plot = FALSE, prtnum = FALSE)$mean_table
+  expect_equal(adj$SE, round(em$SE, 5))
+  expect_equal(adj$Df, round(em$df, 2))
+  expect_equal(adj$Mean, unadj$Mean)
+  expect_true(all(adj$SE > unadj$SE))
+  cm <- contrastmeans(fm, "Variety", ctrmatrix = rbind(c(1, -1, 0)), vcov_adjust = TRUE)
+  ec <- summary(emmeans::contrast(emmeans::emmeans(fm, ~Variety, lmer.df = "kenward-roger"),
+                                  list(c(1, -1, 0))))
+  expect_equal(unname(cm[[1]][1, "Std. Error"]), round(ec$SE, 4))
+})
+
+test_that("predictmeans() passes cov_reduce and exclude to Kmatrix()", {
+  skip_if_not_installed("mgcv")
+  set.seed(9)
+  d <- expand.grid(A = factor(c("a1", "a2")), blk = factor(1:5), rep = 1:4)
+  d$x <- runif(nrow(d))
+  d$y <- as.numeric(d$A) + sin(4*d$x) + rnorm(5)[d$blk] + rnorm(nrow(d), sd = 0.3)
+  g <- mgcv::gam(y ~ A + s(x) + s(blk, bs = "re"), data = d)
+  K <- Kmatrix(g, "A", cov_reduce = "average")$K
+  pm <- predictmeans(g, "A", cov_reduce = "average", plot = FALSE, prtnum = FALSE)
+  expect_equal(pm$mean_table$Mean, round(as.vector(K %*% coef(g)), 4))
+})

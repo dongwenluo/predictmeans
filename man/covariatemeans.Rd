@@ -9,7 +9,8 @@
 \usage{
   covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, 
   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
-  plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE)
+  plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
+  cov_reduce=mean, exclude=NULL)
 }
 \arguments{
   \item{model}{
@@ -71,6 +72,15 @@ A logical variable to indicate whether to print raw data points. The default val
 \item{newwd}{
 A logical variable to indicate whether to print graph in a new window. The default value is FALSE.
 } 
+  \item{cov_reduce}{
+  How covariates that are not varied are handled when building the predicted means: a function such as
+  \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
+  observed covariate values (e.g. means adjusted for a spatial smooth in a \code{gam}). See \code{\link{Kmatrix}}.
+}
+  \item{exclude}{
+  For \code{gam} models: smooth terms to leave out of the predictions. The default excludes random-effect
+  smooths. See \code{\link{Kmatrix}}.
+}
 }
 
 \value{

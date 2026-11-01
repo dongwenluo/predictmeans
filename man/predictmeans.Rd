@@ -15,7 +15,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-  ncore=3, ndecimal=4)
+  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE)
 }
 \arguments{
   \item{model}{
@@ -138,6 +138,21 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
 } 
   \item{ndecimal}{
   An option for specifying number of decimal point to be print at predicted means table. The default is 4.
+}
+  \item{cov_reduce}{
+  How covariates that are not varied are handled when building the predicted means: a function such as
+  \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
+  observed covariate values (e.g. means adjusted for a spatial smooth in a \code{gam}). See \code{\link{Kmatrix}}.
+}
+  \item{exclude}{
+  For \code{gam} models: smooth terms to leave out of the predictions. The default excludes random-effect
+  smooths. See \code{\link{Kmatrix}}.
+}
+  \item{vcov_adjust}{
+  For \code{lmer} models fitted by REML: if \code{TRUE}, standard errors use the Kenward-Roger adjusted
+  covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
+  \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
+  unadjusted covariance, as in earlier versions.
 }
 }
 

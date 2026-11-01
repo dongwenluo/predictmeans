@@ -182,3 +182,19 @@ test_that("predictmeans() works with transformed covariates", {
   em <- summary(emmeans::emmeans(m, ~A, lmer.df = "kenward-roger"))
   expect_equal(pm$mean_table$Mean, round(em$emmean, 4))
 })
+
+test_that("vectorised Kenward-Roger df equal pbkrtest::Lb_ddf() row by row", {
+  data("ATP", package = "predictmeans", envir = environment())
+  fm <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
+  Va <- pbkrtest::vcovAdj(fm)
+  K <- Kmatrix(fm, "A:time")$K
+  pairs <- t(combn(nrow(K), 2, function(ij) K[ij[1], ] - K[ij[2], ]))
+  L <- rbind(K, pairs)
+  ref <- apply(L, 1, function(l) pbkrtest::Lb_ddf(l, V0 = vcov(fm), Vadj = Va))
+  expect_equal(unname(predictmeans:::pm_kr_ddf(L, vcov(fm), Va)), unname(ref), tolerance = 1e-10)
+  fm2 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = transform(as.data.frame(nlme::Oats), nitro = factor(nitro)))
+  Va2 <- pbkrtest::vcovAdj(fm2)
+  K2 <- Kmatrix(fm2, "nitro:Variety")$K
+  ref2 <- apply(K2, 1, function(l) pbkrtest::Lb_ddf(l, V0 = vcov(fm2), Vadj = Va2))
+  expect_equal(unname(predictmeans:::pm_kr_ddf(K2, vcov(fm2), Va2)), unname(ref2), tolerance = 1e-10)
+})
