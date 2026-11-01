@@ -34,3 +34,32 @@ test_that("a user-supplied Df is used for every pair of an lmer model", {
   expect_equal(t(pt_)[upper.tri(pt_)],
                round(ptukey(sqrt(2) * abs(tv), 4, 20, lower.tail = FALSE), 4), tolerance = 1e-4)
 })
+
+test_that("factor levels containing ':' give the same results (B4)", {
+  Oats <- as.data.frame(nlme::Oats)
+  Oats$nitro <- factor(Oats$nitro)
+  Oats <- Oats[-c(1, 2, 30), ]                 # unbalanced: SEDs differ
+  O2 <- Oats
+  levels(O2$Variety) <- c("Golden:Rain", "Marv:1", "Vic")
+  fit <- function(d) suppressMessages(lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d))
+  m1 <- fit(Oats); m2 <- fit(O2)
+  strip <- function(x) {
+    if (is.list(x) && !is.data.frame(x)) return(lapply(unname(x), strip))
+    if (is.data.frame(x)) { x[] <- lapply(x, function(v) if (is.factor(v) || is.character(v)) NULL else v); return(unname(as.list(x))) }
+    if (is.numeric(x)) { a <- attributes(x); x <- as.vector(x); if (!is.null(a[["For the Same Level of Factor"]])) attr(x, "s") <- unname(a[["For the Same Level of Factor"]]); return(x) }
+    NULL
+  }
+  for (args in list(list(modelterm = "nitro:Variety", pairwise = TRUE),
+                    list(modelterm = "nitro:Variety", atvar = "Variety", adj = "BH"),
+                    list(modelterm = "nitro:Variety", atvar = "nitro", adj = "tukey"))) {
+    r1 <- expect_silent(do.call(predictmeans, c(list(m1), args, plot = FALSE, prtnum = FALSE)))
+    r2 <- expect_silent(do.call(predictmeans, c(list(m2), args, plot = FALSE, prtnum = FALSE)))
+    keep <- !grepl("Plot|plot|settings|^Golden|^Marv|^Vic", names(r1))
+    expect_equal(strip(r2[!grepl("Plot|plot|settings|^Golden|^Marv|^Vic", names(r2))]), strip(r1[keep]))
+    expect_equal(r2$pairs[c("estimate", "std.error", "df", "p.value", "p.adj")],
+                 r1$pairs[c("estimate", "std.error", "df", "p.value", "p.adj")])
+    expect_equal(r2$means$group, r1$means$group)
+  }
+  pdf(NULL); on.exit(dev.off())
+  expect_no_error(predictmeans(m2, "nitro:Variety", atvar = "Variety", adj = "BH", prtnum = FALSE, prtplt = FALSE))
+})

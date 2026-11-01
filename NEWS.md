@@ -186,6 +186,10 @@
 * `predictmeans()` with both `permlist` and `atvar` failed with "undefined
   columns selected". It now gives permutation p-values within each `atvar`
   level.
+* Factor levels containing `":"` (e.g. `"Golden:Rain"`) broke the legacy
+  pairwise tables: `atvar` failed and the within-factor SEDs and LSDs were
+  computed from misread labels (B4). Level labels are now taken from the
+  label table, never split from row names.
 * A user-supplied `Df` for an lmer model gave NA p-values for all pairs but
   the first ("missing value where TRUE/FALSE needed" when letters were
   computed). The given `Df` is now used for every pair.

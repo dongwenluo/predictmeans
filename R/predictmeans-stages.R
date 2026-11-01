@@ -242,34 +242,20 @@ pm_code_compare <- quote({
     SED.out <- NA
     LSD <- NA
   }else {
-    kindx <- 1:nK
-    CM <-  matrix(0, nrow=nK * (nK - 1)/2, ncol=nK)
-    t <- 1
-
-    for (i in 2:nK) {                      # To construct pairwise comparison K matrix by col order
-      for (j in 1:(i-1)) {
-        CM[t, ] <- (kindx == j) - (kindx == i)
-        varn1[t] <- rnK[i]
-        varn2[t] <- rnK[j]
-        t <- t+1
-      }
-    }
+    # pairs (i, j), i > j, in column order; level labels come from the label
+    # tables, not from splitting row names at ":" (levels may contain ":")
+    pp <- pm_pair_index(nK)
+    CM <- pm_pair_matrix(nK)
+    varn1 <- rnK[pp$i]
+    varn2 <- rnK[pp$j]
+    labK <- pm_label_matrix(label, length(vars))
 
     nKK <- nrow(KK)          # To setup various matrix and row, col names
     rnKK <- rownames(KK)
-    KKvarn1 <- KKvarn2 <- rep(0, nKK * (nKK - 1)/2)
-    tt <- 1
+    ppKK <- pm_pair_index(nKK)
+    labKK <- pm_label_matrix(ctr.matrix$fctnames, length(vars))
 
-    for (i in 2:nKK) {
-      for (j in 1:(i-1)) {
-        KKvarn1[tt] <- rnKK[i]
-        KKvarn2[tt] <- rnKK[j]
-        tt <- tt+1
-      }
-    }
-
-    KKvarndiff <- data.frame(matrix(unlist(strsplit(KKvarn1, "\\:")), byrow=T, nrow=length(KKvarn1)),
-                             matrix(unlist(strsplit(KKvarn2, "\\:")), byrow=T, nrow=length(KKvarn2)))
+    KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
 
     rK <- CM%*%K                    # calculate stats
     cm <- rK%*%mp$coef
@@ -281,8 +267,7 @@ pm_code_compare <- quote({
     }
 
     SED.out <- c(Max.SED = max(dses), Min.SED = min(dses), Aveg.SED = mean(dses))
-    dses.df <- data.frame(matrix(unlist(strsplit(varn1, "\\:")), byrow=T, nrow=length(varn1)),
-                          matrix(unlist(strsplit(varn2, "\\:")), byrow=T, nrow=length(varn2)), dses)
+    dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses)
 
     if (length(vars) > 1) { # all(length(vars) > 1, SED.out[1]!=SED.out[2])
       dses.m <- matrix(0, nrow=3, ncol=length(vars))
@@ -512,7 +497,7 @@ pm_code_compare <- quote({
           }
         }))
 
-      rnK.df <- as.data.frame(matrix(unlist(strsplit(rnKK, "\\:")), byrow=T, nrow=nKK)) # To find the suitable names for pm
+      rnK.df <- as.data.frame(labKK) # To find the suitable names for pm
       colnames(rnK.df) <- vars
 
       for (i in vars) {       # To ensure factor vars  have the same level as original
@@ -1117,3 +1102,29 @@ pm_code_assemble <- quote({
 
 })
 
+
+## Helpers for the compare stage (pure functions).
+
+## Pairs (i, j) with i > j, ordered by i then j: (2,1), (3,1), (3,2), ...
+pm_pair_index <- function(n) {
+  if (n < 2) return(list(i = integer(0), j = integer(0)))
+  list(i = rep(2:n, times = 1:(n - 1)), j = sequence(1:(n - 1)))
+}
+
+## Contrast matrix of the pairs: row k is mean j minus mean i.
+pm_pair_matrix <- function(n) {
+  pp <- pm_pair_index(n)
+  CM <- matrix(0, nrow = length(pp$i), ncol = n)
+  CM[cbind(seq_along(pp$i), pp$j)] <- 1
+  CM[cbind(seq_along(pp$i), pp$i)] <- -1
+  CM
+}
+
+## Level labels of the first 'nvar' columns of a label table, as a character
+## matrix without dimnames.
+pm_label_matrix <- function(lab, nvar) {
+  m <- vapply(lab[seq_len(nvar)], as.character, character(nrow(lab)))
+  m <- matrix(m, nrow = nrow(lab))
+  dimnames(m) <- NULL
+  m
+}
