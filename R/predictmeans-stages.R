@@ -167,16 +167,34 @@ pm_code_estimate <- quote({
   if (is.null(mdf)) {
     mdf <- ctr.matrix$data
   }
-  label <- ctr.matrix$fctnames
-  rownames(label) <- rownames(KK)
   response <- ctr.matrix$response
-  # lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits). The
-  # adjusted covariance is computed once and shared by all df calculations.
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default)
+  mp <- parms$mp
+  df_type <- parms$df_type
+  vcov_adj <- parms$vcov_adj
+  est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, vars, mp, ndecimal)
+  K <- est$K
+  label <- est$label
+  pm <- est$pm
+  ses <- est$ses
+  ndf <- est$ndf          # cell counts, used by the stable tables
+  mt <- bkmt <- est$mt    # bkmt: for back transformed
+  vcovm <- mp$vcov
+  mean.table <- est$mean.table
+  se.table <- est$se.table
+  LL <- UL <- NULL
+})
+
+## Coefficients, covariance and df method of the model (pure function).
+## lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits) unless
+## 'df_method' says otherwise; the adjusted covariance is computed once and
+## shared by all df calculations. Returns list(mp, df_type, vcov_adj).
+pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default) {
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
   # containment df with the adjusted covariance only when asked for explicitly
-  if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
+  if (identical(df_type, "containment") && vcov_adjust && lme4::getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
@@ -187,6 +205,16 @@ pm_code_estimate <- quote({
       mp$vcov <- as.matrix(vcov_adj)
     }
   }
+  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj)
+}
+
+## Predicted means, their SEs and the legacy mean/SE tables (pure function).
+## KK: K matrix of all cells; fctnames: their labels; cells with no data are
+## dropped. Returns list(K, label, pm, ses, mt, ndf (cell counts), mean.table,
+## se.table).
+pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
+  label <- fctnames
+  rownames(label) <- rownames(KK)
   n.table <- table(mdf[, vars, drop = FALSE])
   ndf <- data.frame(n.table)       ## To obtain info from model
 
@@ -195,17 +223,13 @@ pm_code_estimate <- quote({
   if (any(ndf$Freq==0)) {
     rnTrt <- do.call("paste", c(ndf[, vars, drop=FALSE], sep=":"))
     rnTrt <- rnTrt[ndf$Freq!=0]      # To delete any missing level in factor
-    K <- K[rownames(K)%in%rnTrt,]
-    label <- label[rownames(label)%in%rnTrt,]
+    K <- K[rownames(K)%in%rnTrt, , drop=FALSE]
+    label <- label[rownames(label)%in%rnTrt, , drop=FALSE]
   }
 
   pm <- K %*% mp$coef
-  vcovm <- mp$vcov
-  # ses <- sqrt(diag(K %*% tcrossprod(vcovm, K)))
   ses <- as.numeric(apply(K, 1, function(x) {y <- matrix(x, nrow=1);sqrt(y %*% tcrossprod(mp$vcov, y))}))
   mt <- data.frame(pm, ses, label)
-  LL <- UL <- NULL
-  bkmt <- mt  # for back transformed
 
   mean.table <- round(xtabs(pm ~ ., mt[, c("pm", vars)], drop.unused.levels = TRUE), ndecimal)
   se.table <- round(xtabs(ses ~ ., mt[, c("ses", vars)], drop.unused.levels = TRUE), ndecimal+1)
@@ -228,8 +252,9 @@ pm_code_estimate <- quote({
     se.table <- min(se.table, na.rm=TRUE)
     names(se.table) <- "All means have the same SE"
   }
-
-})
+  list(K = K, label = label, pm = pm, ses = ses, mt = mt, ndf = ndf,
+       mean.table = mean.table, se.table = se.table)
+}
 
 ## SEDs, LSDs, degrees of freedom and pairwise comparisons.
 pm_stage_compare <- function(st) eval(pm_code_compare, st)
@@ -1066,6 +1091,25 @@ pm_code_assemble <- quote({
 
   # Stable result tables (means, pairs, settings) from the values above.
   tidy_parts <- pm_tidy_parts(environment())
+  outputlist <- pm_legacy_output(mget(pm_legacy_inputs, envir = environment(),
+                                      ifnotfound = list(NULL)))
+  pm_out <- pm_finish(outputlist, tidy_parts)
+})
+
+## Values the legacy result list is built from.
+pm_legacy_inputs <- c("pairwise", "atvar", "permlist", "adj", "ndecimal", "mean.table", "se.table",
+                      "SED.out", "LSD", "LSDm", "t.p.valuem", "predictmeansPlot", "predictmeansBarPlot",
+                      "meanTable", "p_valueMatrix", "listlength", "resvar", "pmlistTab", "atvar.levels", "nsim")
+
+## The legacy result list of predictmeans() (pure function); 'x' is a named
+## list of the values in pm_legacy_inputs.
+pm_legacy_output <- function(x) {
+  pairwise <- x$pairwise; atvar <- x$atvar; permlist <- x$permlist; adj <- x$adj
+  ndecimal <- x$ndecimal; mean.table <- x$mean.table; se.table <- x$se.table
+  SED.out <- x$SED.out; LSD <- x$LSD; LSDm <- x$LSDm; t.p.valuem <- x$t.p.valuem
+  predictmeansPlot <- x$predictmeansPlot; predictmeansBarPlot <- x$predictmeansBarPlot
+  meanTable <- x$meanTable; p_valueMatrix <- x$p_valueMatrix; listlength <- x$listlength
+  resvar <- x$resvar; pmlistTab <- x$pmlistTab; atvar.levels <- x$atvar.levels; nsim <- x$nsim
 
   if (pairwise) {
 
@@ -1076,7 +1120,7 @@ pm_code_assemble <- quote({
                            "Standard Error of Differences" = SED.out, LSD = LSD, "Pairwise LSDs"=round(LSDm,ndecimal+1),
                            "Pairwise p-value" = round(t.p.valuem, 4), predictmeansPlot=predictmeansPlot,
                            predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable, p_valueMatrix=p_valueMatrix)
-                pm_out <- pm_finish(outputlist, tidy_parts)
+                return(outputlist)
 
       }else{
 
@@ -1084,7 +1128,7 @@ pm_code_assemble <- quote({
                            "Standard Error of Differences" = SED.out, LSD = LSD, "Pairwise p-value" = round(t.p.valuem, 4),
                            predictmeansPlot=predictmeansPlot, predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable,
                            p_valueMatrix=p_valueMatrix)
-                pm_out <- pm_finish(outputlist, tidy_parts)
+                return(outputlist)
       }
     } else {
 
@@ -1117,17 +1161,15 @@ pm_code_assemble <- quote({
                                atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[1:length(outputlist)]
       }
 
-            pm_out <- pm_finish(outputlist, tidy_parts)
+            return(outputlist)
     }
   } else {
     outputlist=list("Predicted Means" = mean.table, "Standard Error of Means" = se.table,
                     "Standard Error of Differences" = SED.out, LSD = LSD, predictmeansPlot=predictmeansPlot,
                     predictmeansBarPlot=predictmeansBarPlot, mean_table=meanTable)
-        pm_out <- pm_finish(outputlist, tidy_parts)
+        return(outputlist)
   }
-  #  }
-
-})
+}
 
 
 ## Helpers for the compare stage (pure functions).
