@@ -169,6 +169,13 @@
   goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
   now takes 0.02 s.
 
+## Internal
+
+* `predictmeans()` is split into stages (setup, estimate, compare, mean table,
+  back-transform, plots, assemble). All statistics are computed before any
+  plotting, so `plot = FALSE` skips all graphics work. Results are
+  unchanged.
+
 ## Packaging
 
 * `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
