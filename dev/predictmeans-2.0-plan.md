@@ -45,7 +45,8 @@ predictmeans 2.0 has three aims, with equal weight:
 | Own vectorised Satterthwaite (equal to lmerTest, ~25x faster); lmerTest now only needed for its model class in `semireg()` and `permmodels()` tables | **Done** |
 | `predictmeans()` split into seven stages (setup, estimate, compare, mean_table, backtransform, plots, assemble); all graphics after the statistics; output bit-for-bit identical on 32 option combinations (`dev/snapshot-predictmeans.R`) | **Done** |
 | Containment df for lmer (`df_method = "containment"`), tested on the SAS rule; SAS script to export reference CSVs (`dev/sas/`) | **Done** |
-| Next: turn stages into pure functions one at a time; between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (the chat tables were checked and are not usable, see `dev/sas/README.md`) | Next |
+| Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
+| Next: turn the remaining stages (setup, estimate, compare, plots, assemble) into pure functions one at a time; between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (the chat tables were checked and are not usable, see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
 

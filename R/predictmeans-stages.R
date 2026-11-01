@@ -559,95 +559,122 @@ pm_code_compare <- quote({
 ## Mean table with confidence limits.
 pm_stage_mean_table <- function(st) eval(pm_code_mean_table, st)
 pm_code_mean_table <- quote({
-  meanTable <- mt
+  mt_res <- pm_mean_table(mt, vars, perm = !(is.null(permlist) || all(permlist%in%c("NULL", ""))),
+                          slevel = slevel, ndecimal = ndecimal)
+  meanTable <- mt_res$table
+  slevel <- mt_res$slevel
+})
 
-  if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
+## Mean table with confidence limits (pure function).
+## mt: data frame with columns pm, ses, Df and the factors 'vars'.
+## With permutation p-values there are no df: limits are mean +/- 2 SE and
+## the level becomes 0.05. Returns list(table, slevel).
+pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
+  meanTable <- mt
+  if (!perm) {
     meanTable$LL <- meanTable$pm - qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
     meanTable$UL <- meanTable$pm + qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
-  }else{
+  } else {
     meanTable$LL <- meanTable$pm - 2 * meanTable$ses
     meanTable$UL <- meanTable$pm + 2 * meanTable$ses
     slevel <- 0.05
     meanTable$Df <- NA
   }
-
   rownames(meanTable) <- NULL
   meanTable <- meanTable[c(vars, "pm", "ses", "Df", "LL", "UL")]
   meanTable[c("pm", "LL", "UL")] <- round(meanTable[c("pm", "LL", "UL")], ndecimal)
   meanTable$ses <- round(meanTable$ses, ndecimal+1)
   colnames(meanTable) <- c(vars, "Mean", "SE", "Df", paste("LL(", (1 - slevel) * 100, "%)", sep = ""),
                            paste("UL(", (1 - slevel) * 100, "%)", sep = ""))
-})
+  list(table = meanTable, slevel = slevel)
+}
 
 ## Back-transformed means, and letters for the mean table.
 pm_stage_backtransform <- function(st) eval(pm_code_backtransform, st)
 pm_code_backtransform <- quote({
   if (!is.null(trans)) {
     Mean <- Trt <- ciPlot <- NULL
-    bkmt$Mean <- trans(bkmt$pm)-transOff
-
-    if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)){
-      bkmt$Mean <- exp(bkmt$pm)-transOff
-    }
-
-    if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
-      bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
-      bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
-    } else {
-      bkmt$LL <- trans(bkmt$pm - 2 * bkmt$ses)-transOff
-      bkmt$UL <- trans(bkmt$pm + 2 * bkmt$ses)-transOff
-    }
-
-    bkmt$pm <- bkmt$ses <- bkmt$Df <- NULL
-    nc <- ncol(bkmt)
-    bkmt[, (nc - 2):nc] <- round(bkmt[, (nc - 2):nc], ndecimal)
-
-    if (count) {
-      bkmt[, (nc - 2):nc] <- round(bkmt[, (nc - 2):nc], 0)
-      bkmt[, (nc - 2):nc][bkmt[, (nc - 2):nc] < 0] <- 0
-    }
-
-    rownames(bkmt) <- NULL
-    bkmt$Trt <- NULL
-
-    if (!(is.null(atvar) || all(atvar%in%c("NULL", "")))) {
-      all_var_names <- colnames(meanTable)
-      meanTable <- meanTable[c(atvar, resvar, setdiff(all_var_names, vars))]
-      meanTable <- with(meanTable, meanTable[order(eval(parse(text=c(atvar, resvar)[length(vars):1]))),])
-    }
-
-   # if (all(!identical(trans, function(x) x, ignore.environment=TRUE), !identical(trans, I, ignore.environment=TRUE))) {
-	  if (any(meanTable$Mean!=bkmt$Mean)) {
-      meanTable <- cbind(meanTable, round(bkmt[, (ncol(bkmt)-2):ncol(bkmt)], ndecimal))
-      colnames(meanTable)[(ncol(meanTable)-2):ncol(meanTable)] <-  c("Bk_Mean", paste("Bk_LL(", (1 - slevel) * 100, "%)", sep = ""),
-                                                                     paste("Bk_UL(", (1 - slevel) * 100, "%)", sep = ""))
-    }
-
-	  if (pairwise) {
-
-      if ((is.null(atvar) || all(atvar%in%c("NULL", "")))) {
-
-        if (!is.null(meandecr) && is.logical(meandecr)) {
-          meanTable <- meanTable[order(meanTable$Mean, decreasing = meandecr), ]
-        }
-
-        meanTable$LetterGrp <- multcompLetters(t.p.valuemGrp, Letters=LETTERS, threshold=slevel)
-
-        if (letterCI) {
-          meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],
-                                        meanTable[, grepl("^UL", names(meanTable))])
-        }
-
-        meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
-        # attr(meanTable, "Note") <- paste("Note: letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep="")
-      } else {
-	      meanTable$LetterGrp <- unlist(pmlistLetter)
-        meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "' at each level of ", atvar, sep=""))
-	    }
-	  }
-
+    perm <- !(is.null(permlist) || all(permlist%in%c("NULL", "")))
+    bkmt <- pm_back_transform(bkmt, trans, transOff, perm = perm, slevel = slevel,
+                              ndecimal = ndecimal, count = count)
+    nc <- ncol(bkmt)   # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
+    meanTable <- pm_final_mean_table(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
+                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter)
   }
 })
+
+## Means and confidence limits on the response scale (pure function).
+## bkmt has columns pm, ses, Df (absent with permutation p-values) and the
+## factors; returns the factors with Mean, LL and UL.
+pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count) {
+  bkmt$Mean <- trans(bkmt$pm)-transOff
+
+  if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)){
+    bkmt$Mean <- exp(bkmt$pm)-transOff
+  }
+
+  if (!perm) {
+    bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
+    bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
+  } else {
+    bkmt$LL <- trans(bkmt$pm - 2 * bkmt$ses)-transOff
+    bkmt$UL <- trans(bkmt$pm + 2 * bkmt$ses)-transOff
+  }
+
+  bkmt$pm <- bkmt$ses <- bkmt$Df <- NULL
+  nc <- ncol(bkmt)
+  bkmt[, (nc - 2):nc] <- round(bkmt[, (nc - 2):nc], ndecimal)
+
+  if (count) {
+    bkmt[, (nc - 2):nc] <- round(bkmt[, (nc - 2):nc], 0)
+    bkmt[, (nc - 2):nc][bkmt[, (nc - 2):nc] < 0] <- 0
+  }
+
+  rownames(bkmt) <- NULL
+  bkmt$Trt <- NULL
+  bkmt
+}
+
+## Final mean table (pure function): ordered by 'atvar', back-transformed
+## columns when they differ from the means, and letter groups when pairwise.
+## 'resvar', 't.p.valuemGrp' and 'pmlistLetter' are only used (and only need
+## to exist) in the branches that need them.
+pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
+                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter) {
+  no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
+  if (!no_atvar) {
+    all_var_names <- colnames(meanTable)
+    meanTable <- meanTable[c(atvar, resvar, setdiff(all_var_names, vars))]
+    meanTable <- with(meanTable, meanTable[order(eval(parse(text=c(atvar, resvar)[length(vars):1]))),])
+  }
+
+  if (any(meanTable$Mean!=bkmt$Mean)) {
+    meanTable <- cbind(meanTable, round(bkmt[, (ncol(bkmt)-2):ncol(bkmt)], ndecimal))
+    colnames(meanTable)[(ncol(meanTable)-2):ncol(meanTable)] <-  c("Bk_Mean", paste("Bk_LL(", (1 - slevel) * 100, "%)", sep = ""),
+                                                                   paste("Bk_UL(", (1 - slevel) * 100, "%)", sep = ""))
+  }
+
+  if (pairwise) {
+    if (no_atvar) {
+      if (!is.null(meandecr) && is.logical(meandecr)) {
+        meanTable <- meanTable[order(meanTable$Mean, decreasing = meandecr), ]
+      }
+
+      meanTable$LetterGrp <- multcompLetters(t.p.valuemGrp, Letters=LETTERS, threshold=slevel)
+
+      if (letterCI) {
+        meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],
+                                      meanTable[, grepl("^UL", names(meanTable))])
+      }
+
+      meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
+    } else {
+      meanTable$LetterGrp <- unlist(pmlistLetter)
+      meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "' at each level of ", atvar, sep=""))
+    }
+  }
+  meanTable
+}
 
 ## All graphics: p-value plots, mean and bar plots, back-transformed plot.
 pm_stage_plots <- function(st) eval(pm_code_plots, st)

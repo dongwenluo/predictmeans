@@ -17,6 +17,11 @@ m_miss <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block), data = Om)
 m_atp <- lmerTest::lmer(ATP ~ A*B*time + (1|heart), data = ATP)
 m_log <- lm(log(yield) ~ nitro*Variety, Oats)
 m_ml <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats, REML = FALSE)
+set.seed(3); dp <- expand.grid(A = factor(c("a1", "a2", "a3")), B = factor(c("b1", "b2")), rep = 1:5)
+dp$y <- rpois(nrow(dp), exp(1 + as.numeric(dp$A)/2 + as.numeric(dp$B)/4))
+m_pois <- glm(y ~ A*B, family = poisson, data = dp)
+Oc <- Oats; levels(Oc$Variety) <- c("Golden:Rain", "Marv", "Vic")
+m_colon <- lm(yield ~ Block + nitro*Variety, data = Oc)
 perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
 calls <- list(
   lm_def = quote(predictmeans(m_lm, "nitro")),
@@ -50,7 +55,11 @@ calls <- list(
   atp_3way = quote(predictmeans(m_atp, "A:B:time", atvar = "time", adj = "BH")),
   atp_2way = quote(predictmeans(m_atp, "A:time", plotord = c(2, 1))),
   user_df = quote(predictmeans(m_lmer, "nitro", Df = 20, adj = "BH")),
-  weights = quote(predictmeans(m_lm, "nitro", weights = "proportional")))
+  weights = quote(predictmeans(m_lm, "nitro", weights = "proportional")),
+  pois_count = quote(predictmeans(m_pois, "A", trans = exp, count = TRUE, pairwise = TRUE)),
+  pois_atvar = quote(predictmeans(m_pois, "A:B", atvar = "B", adj = "BH", trans = exp)),
+  pois_letterCI = quote(predictmeans(m_pois, "A:B", pairwise = TRUE, letterCI = TRUE, trans = exp, meandecr = FALSE)),
+  colon_levels = quote(predictmeans(m_colon, "nitro:Variety", atvar = "nitro", adj = "BH")))
 plotdata <- function(p) if (inherits(p, "ggplot")) lapply(seq_along(p$layers), function(i) ggplot2::layer_data(p, i)) else p
 R <- list()
 for (nm in names(calls)) {
