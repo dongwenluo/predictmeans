@@ -46,3 +46,18 @@ test_that("LSDs: t quantile, or 2 x SED with permutation", {
   lp <- predictmeans:::pm_compare_lsd(sed, NULL, "A", 0.05, NULL, 0.05, 4, perm = TRUE)
   expect_equal(as.vector(lp), c(4, 2, 3))
 })
+
+test_that("means that cannot be estimated are NA; estimable differences kept", {
+  set.seed(1)
+  d <- expand.grid(A = factor(c("a1", "a2", "a3")), B = factor(c("b1", "b2")), r = 1:4)
+  d$x <- as.numeric(d$A == "a3") * 2 + as.numeric(d$B == "b2")   # aliased with A + B
+  d$y <- rnorm(nrow(d))
+  m <- lm(y ~ A + B + x, d)
+  expect_message(r <- predictmeans(m, "A", pairwise = TRUE, plot = FALSE, prtnum = FALSE),
+                 "cannot be estimated")
+  expect_true(all(is.na(r$means$estimate)) && all(!r$means$estimable))
+  expect_true(all(is.na(r$`Predicted Means`)))
+  expect_equal(r$pairs$estimate, unname(c(-coef(m)["Aa2"], -coef(m)["Aa3"], coef(m)["Aa2"] - coef(m)["Aa3"])))
+  pdf(NULL); on.exit(dev.off())
+  expect_message(predictmeans(m, "A", prtnum = FALSE, prtplt = FALSE), "no mean plots")
+})

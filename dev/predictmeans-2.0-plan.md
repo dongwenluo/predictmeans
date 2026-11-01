@@ -47,7 +47,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | Containment df for lmer (`df_method = "containment"`), tested on the SAS rule; SAS script to export reference CSVs (`dev/sas/`) | **Done** |
 | Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
 | Stages to pure functions, part 2: estimate (`pm_model_parms()`, `pm_estimate_means()`), compare (five functions), plots (`pm_make_plots()`), assemble (`pm_legacy_output()`); only setup still works on the call's state (it rewrites the arguments); direct tests of the functions; all 36 snapshot calls identical | **Done** |
-| Next: finish Phase 1 — non-estimable means shown as NA with a note; benchmarks script; roxygen2 migration; pkgdown site with "Getting started" and "Migrating from 1.x". Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
+| Next: finish Phase 1 — benchmarks script; roxygen2 migration; pkgdown site with "Getting started" and "Migrating from 1.x". Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
 
@@ -394,7 +394,7 @@ part-time person).
 | Model adapter; KR-adjusted SEs (D6); KR/Satterthwaite cached and vectorised | M | **Done** |
 | New result object with `print`, `summary`, `tidy`, `autoplot` | M | **Done** |
 | Stable internal level keys (fixes B4); B6 | M | **Done** |
-| Non-estimable means shown as NA with a note | S | Open |
+| Non-estimable means shown as NA with a note | S | **Done** |
 | `specify_contrast()` | S | **Done** |
 | Pass `cov_reduce`/`exclude` through `predictmeans()`/`covariatemeans()` | S | **Done** |
 | pkgdown site, "Getting started", "Migrating from 1.x" | M | Open |

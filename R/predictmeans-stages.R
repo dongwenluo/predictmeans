@@ -234,12 +234,31 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
 
   pm <- K %*% mp$coef
   ses <- as.numeric(apply(K, 1, function(x) {y <- matrix(x, nrow=1);sqrt(y %*% tcrossprod(mp$vcov, y))}))
+  # Means that cannot be estimated (they depend on aliased coefficients) are
+  # NA; their differences may still be estimable and are kept.
+  est_flag <- attr(KK, "estimable")
+  if (!is.null(est_flag)) {
+    non_est <- !est_flag[rownames(K)]
+    non_est[is.na(non_est)] <- FALSE
+    if (any(non_est)) {
+      pm[non_est] <- NA
+      ses[non_est] <- NA
+      message("Means that cannot be estimated are shown as NA: ",
+              paste(rownames(K)[non_est], collapse = ", "),
+              ". Their pairwise differences are shown when estimable.")
+    }
+  }
   mt <- data.frame(pm, ses, label)
 
   mean.table <- round(xtabs(pm ~ ., mt[, c("pm", vars)], drop.unused.levels = TRUE), ndecimal)
   se.table <- round(xtabs(ses ~ ., mt[, c("ses", vars)], drop.unused.levels = TRUE), ndecimal+1)
   mean.table[!(n.table)] <- NA
   se.table[!(n.table)] <- NA
+  if (anyNA(mt$pm)) {   # non-estimable means: xtabs() would show 0
+    na_cells <- as.matrix(mt[is.na(mt$pm), vars, drop = FALSE])
+    mean.table[na_cells] <- NA
+    se.table[na_cells] <- NA
+  }
 
   if (length(vars) > 1) {
     varsnlevel <- numeric(0)
@@ -730,7 +749,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
     meanTable <- with(meanTable, meanTable[order(eval(parse(text=c(atvar, resvar)[length(vars):1]))),])
   }
 
-  if (any(meanTable$Mean!=bkmt$Mean)) {
+  if (any(meanTable$Mean!=bkmt$Mean, na.rm = TRUE)) {
     meanTable <- cbind(meanTable, round(bkmt[, (ncol(bkmt)-2):ncol(bkmt)], ndecimal))
     colnames(meanTable)[(ncol(meanTable)-2):ncol(meanTable)] <-  c("Bk_Mean", paste("Bk_LL(", (1 - slevel) * 100, "%)", sep = ""),
                                                                    paste("Bk_UL(", (1 - slevel) * 100, "%)", sep = ""))
@@ -812,8 +831,9 @@ pm_code_draw <- quote({
     }
   }
 
-  # means and bar plots
-  if (plot) {
+  # means and bar plots (none when no mean can be estimated)
+  if (plot && all(is.na(mt$pm))) message("No mean can be estimated: no mean plots.")
+  if (plot && !all(is.na(mt$pm))) {
 
     if (length(vars) > 3){
       cat("\n", "There is no plot for more than three-way interaction! \n\n")
@@ -1078,7 +1098,7 @@ pm_code_draw <- quote({
 
   # back-transformed means with the data (works on copies of bkmt and mdf)
   if (!is.null(trans)) local({
-    if (plot && bkplot) {
+    if (plot && bkplot && !all(is.na(mt$pm))) {
 
       if (!is.null(atvar) && !unique(atvar%in%c("NULL", ""))) {
         mdf <- mdf[do.call(order, mdf[, c(atvar, resvar), drop=FALSE]),]

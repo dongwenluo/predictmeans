@@ -169,6 +169,15 @@
   goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
   now takes 0.02 s.
 
+## Non-estimable means
+
+* Means that cannot be estimated (they depend on aliased coefficients) are
+  now NA in every table, with a message naming them; their pairwise
+  differences are still shown when estimable. Before, a number that
+  depended on the arbitrary choice of aliased coefficient was printed.
+  Means over missing cells keep the 1.x rule (average of the observed
+  cells, with the "Missing treatments' combination" warning).
+
 ## Containment df
 
 * New argument `df_method` in `predictmeans()` and `contrastmeans()` (and
