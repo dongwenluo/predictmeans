@@ -1,4 +1,5 @@
-contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=FALSE) {
+contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=FALSE,
+                          weights=c("equal", "proportional", "outer", "cells", "flat")) {
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
@@ -9,8 +10,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (is.null(ctrnames) || all(ctrnames%in%c("NULL", ""))) {
     ctrnames <- NULL
   }
-  K <- Kmatrix(model, modelterm)$K
-  termsLabel <- rownames(K)
+  weights <- match.arg(weights)
+  KK <- Kmatrix(model, modelterm, weights=weights)$K
+  termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {
     if (!interactive()) {
       stop("Please supply 'ctrmatrix'; the contrast editor needs an interactive session.")
@@ -30,15 +32,40 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
       stop("\n", "Please check the row",  sQuote(which(rowSums(ctrmatrix)!=0)), "of the contrast matrix!\n\n")
     }
   } else {
-    colnames(ctrmatrix) <- termsLabel
-    rownames(ctrmatrix) <- ctrnames
+    if (is.null(dim(ctrmatrix))) {
+      ctrmatrix <- matrix(ctrmatrix, nrow=1, dimnames=list(NULL, names(ctrmatrix)))
+    }
+    if (!is.null(colnames(ctrmatrix)) && all(colnames(ctrmatrix) %in% termsLabel)) {
+      # columns named by level (e.g. from specify_contrast()): put them in the
+      # order of the means, with zero weight for levels not mentioned
+      full <- matrix(0, nrow(ctrmatrix), length(termsLabel), dimnames=list(rownames(ctrmatrix), termsLabel))
+      full[, colnames(ctrmatrix)] <- ctrmatrix
+      ctrmatrix <- full
+    } else {
+      if (ncol(ctrmatrix) != length(termsLabel)) {
+        stop("'ctrmatrix' must have one column for each of the ", length(termsLabel), " levels of ",
+             sQuote(modelterm), ": ", paste(termsLabel, collapse=", "))
+      }
+      colnames(ctrmatrix) <- termsLabel
+    }
+    if (!is.null(ctrnames)) rownames(ctrmatrix) <- ctrnames
     nctr <- nrow(ctrmatrix)
   }
   if (all((is.null(dim(ctrmatrix)) | dim(ctrmatrix)[1]==1), missing(permlist)))  {
     adj <- "none"
   }
-  rK <- ctrmatrix%*%K
 
+  # Means for missing cells (NaN rows of K) or other non-estimable means can
+  # only be left out of a contrast, not used in it.
+  est_flag <- attr(KK, "estimable")
+  if (is.null(est_flag)) est_flag <- rep(TRUE, nrow(KK))
+  bad_row <- !est_flag | apply(KK, 1, function(r) any(is.na(r)))
+  used_bad <- colSums(abs(ctrmatrix[, bad_row, drop=FALSE])) > 0
+  if (any(used_bad)) {
+    stop("The contrast(s) use mean(s) that cannot be estimated: ",
+         paste(termsLabel[bad_row][used_bad], collapse=", "))
+  }
+  KK[bad_row, ] <- 0
   df_type <- vcov_adj <- NULL
   if (inherits(model, "lmerMod")) {
     df_type <- if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
@@ -52,6 +79,10 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
       mp$vcov <- as.matrix(vcov_adj)
     }
   }
+  K <- KK[, mp$estimable, drop=FALSE]
+  rK <- ctrmatrix%*%K
+
+
   if (all(missing(permlist), missing(Df))){
 	  if (length(mp$df)==1 && mp$df!=0) {
 		  Df <- mp$df
@@ -86,7 +117,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     t.p.value <- p.adjust(t.p.value, adj)
     out.put <- cbind(cm, ses, t.v, Df, t.p.value)
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)")
-    rownames(out.put) <- ctrnames
+    rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
   	nsim <- length(permlist[[1]])
@@ -106,7 +137,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
-  rownames(out.put) <- ctrnames
+  rownames(out.put) <- rownames(ctrmatrix)
   attr(out.put,"Note") <- paste("The permuted p-value is obtained using", sQuote(nsim), "permutations.")
   }
   return(list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix))

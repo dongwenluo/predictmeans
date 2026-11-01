@@ -15,6 +15,20 @@
   printed output are unchanged, and the result has class
   `c("predictmeans", "pdmlist")`.
 
+## Named contrasts
+
+* New `specify_contrast()` writes contrasts with level names instead of
+  counted columns, e.g.
+  `specify_contrast(Kmatrix(fm, "A:B"), a = (`x:b1` + `y:b1`)/2 - `z:b1`)`.
+  The result goes straight into `contrastmeans(ctrmatrix = )`. It checks
+  that the weights sum to zero (unless `.zero_sum = FALSE`) and that no
+  missing or non-estimable mean is used.
+* `contrastmeans()`:
+  * accepts a contrast matrix whose columns are named by level, in any order
+    and for a subset of levels;
+  * keeps the contrast names in its result;
+  * gains `weights`.
+
 ## New options
 
 * `Kmatrix()`, `predictmeans()` and `covariatemeans()` gain
@@ -34,6 +48,10 @@
 
 ## Bug fixes
 
+* `contrastmeans()` failed with "non-conformable arguments" for every model
+  with a missing treatment combination, even for contrasts that do not
+  involve it. It now works, and stops with a clear message only when a
+  contrast uses a mean that cannot be estimated.
 * Tukey-adjusted p-values within `atvar` levels used the number of pairs
   instead of the number of means. With 4 means per level, Tukey was computed
   for 6 means, so p-values were too large (0.350 instead of 0.197 in the Oats

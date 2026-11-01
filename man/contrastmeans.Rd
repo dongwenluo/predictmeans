@@ -8,7 +8,7 @@
 }
 \usage{
   contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
-                vcov_adjust=FALSE)
+                vcov_adjust=FALSE, weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
   \item{model}{
@@ -19,7 +19,7 @@
   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B". 
 }
   \item{ctrmatrix}{
-  A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. 
+  A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight. 
 }
   \item{ctrnames}{ Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...) 
 }
@@ -39,6 +39,10 @@
   covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
   \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
   unadjusted covariance, as in earlier versions.
+}
+  \item{weights}{
+  Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
+  over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).
 }
 }
 \value{

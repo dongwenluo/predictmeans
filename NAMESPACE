@@ -39,4 +39,4 @@ if (requireNamespace("pbkrtest", quietly = TRUE)) {
 			 "aggregate", "get_all_vars")
   importFrom("utils", "as.roman", "combn", "edit")
 
-export(ci_mcp, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, PMplot, predictmeans, R2_glmm, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, varcomp)
+export(ci_mcp, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, PMplot, predictmeans, R2_glmm, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
