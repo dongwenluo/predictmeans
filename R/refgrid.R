@@ -240,7 +240,8 @@ pm_recover_data <- function(info) {
 ##   joint       optional data frame of jointly specified covariate points
 ##   profiles    optional data frame of observed covariate profiles to average over
 ##   prof_w      weights for 'profiles' (sum to 1)
-##   present     function(grid) -> logical, TRUE if a grid row's factor cell is usable
+##   present     function(grid) -> weight for each grid row's factor cell (logical
+##               TRUE/FALSE for usable/unusable cells, or numeric cell weights)
 pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
                             profiles = NULL, prof_w = NULL, present = NULL) {
   dims <- list()
@@ -287,8 +288,7 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
 
   w <- rep(1, nrow(grid))
   if (!is.null(profiles)) w <- w * prof_w[idx[[".profile"]]]
-  valid <- if (is.null(present)) rep(TRUE, nrow(grid)) else present(grid)
-  w[!valid] <- 0
+  if (!is.null(present)) w <- w * as.numeric(present(grid))
   tot <- as.vector(tapply(w, factor(key, levels = seq_len(nrow(target))), sum))
   tot[is.na(tot)] <- 0
   x <- as.vector(w / tot[key])

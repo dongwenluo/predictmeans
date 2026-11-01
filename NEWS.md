@@ -17,6 +17,13 @@
 
 ## New options
 
+* `Kmatrix()`, `predictmeans()` and `covariatemeans()` gain
+  `weights = c("equal", "proportional", "outer", "cells", "flat")`, which
+  sets how the cells of the factors not in `modelterm` are weighted.
+  `"proportional"` uses the observed frequencies, the same for every mean,
+  like SAS `LSMEANS / OM`. The definitions are emmeans', and the results
+  match emmeans. The default `"equal"` is unchanged.
+
 * `predictmeans(vcov_adjust = TRUE)` and `contrastmeans(vcov_adjust = TRUE)`:
   for `lmer` models fitted by REML, standard errors use the Kenward-Roger
   adjusted covariance (as SAS `DDFM=KR` and emmeans do) to go with the

@@ -198,3 +198,27 @@ test_that("vectorised Kenward-Roger df equal pbkrtest::Lb_ddf() row by row", {
   ref2 <- apply(K2, 1, function(l) pbkrtest::Lb_ddf(l, V0 = vcov(fm2), Vadj = Va2))
   expect_equal(unname(predictmeans:::pm_kr_ddf(K2, vcov(fm2), Va2)), unname(ref2), tolerance = 1e-10)
 })
+
+test_that("weights options match emmeans", {
+  skip_if_not_installed("emmeans")
+  set.seed(3)
+  d <- data.frame(A = factor(sample(c("a1", "a2", "a3"), 90, TRUE, prob = c(.5, .3, .2))),
+                  B = factor(sample(c("b1", "b2"), 90, TRUE, prob = c(.7, .3))),
+                  C = factor(sample(c("c1", "c2", "c3"), 90, TRUE)), x = rnorm(90))
+  d$y <- rnorm(90) + as.numeric(d$A) + d$x
+  m <- lm(y ~ A*B + C + x, d)
+  for (w in c("equal", "proportional", "outer", "cells", "flat")) {
+    K <- Kmatrix(m, "A", weights = w)$K
+    L <- emmeans::emmeans(m, ~A, weights = w)@linfct
+    expect_equal(unclass(K), L[, colnames(K)], ignore_attr = TRUE, tolerance = 1e-12, label = w)
+  }
+  K2 <- Kmatrix(m, "A:B", weights = "cells")$K
+  em <- emmeans::emmeans(m, ~A:B, weights = "cells")
+  L2 <- em@linfct
+  rownames(L2) <- paste(em@grid$A, em@grid$B, sep = ":")
+  expect_equal(unclass(K2), L2[rownames(K2), colnames(K2)], ignore_attr = TRUE, tolerance = 1e-12)
+  pm <- predictmeans(m, "A", weights = "proportional", plot = FALSE, prtnum = FALSE)
+  expect_equal(pm$means$estimate, summary(emmeans::emmeans(m, ~A, weights = "proportional"))$emmean,
+               tolerance = 1e-10)
+  expect_error(Kmatrix(m, "A", weights = "other"))
+})

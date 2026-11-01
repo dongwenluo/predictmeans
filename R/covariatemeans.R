@@ -1,4 +1,5 @@
-covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL) {
+covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL,
+                            weights=c("equal", "proportional", "outer", "cells", "flat")) {
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -24,7 +25,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       }
     }
   }
-  ctr.matrix <- Kmatrix(model, modelterm, covariate, covariateV, data, cov_reduce=cov_reduce, exclude=exclude)
+  weights <- match.arg(weights)
+  ctr.matrix <- Kmatrix(model, modelterm, covariate, covariateV, data, cov_reduce=cov_reduce, exclude=exclude, weights=weights)
   KK <- ctr.matrix$K
   pltdf <- ctr.matrix$fctnames
   response <- ctr.matrix$response

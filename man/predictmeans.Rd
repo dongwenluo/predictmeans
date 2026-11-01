@@ -15,7 +15,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE)
+  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE,
+  weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
   \item{model}{
@@ -153,6 +154,13 @@ Number of core for parallel computing when \code{permlist != NULL}, the default 
   covariance matrix of the fixed effects (\code{pbkrtest::vcovAdj}), as SAS \code{DDFM=KR} and
   \pkg{emmeans} do, to go with the Kenward-Roger degrees of freedom. The default \code{FALSE} keeps the
   unadjusted covariance, as in earlier versions.
+}
+  \item{weights}{
+  Passed to \code{\link{Kmatrix}}: how the cells of the factors that are not in \code{modelterm} are weighted when averaging over them:
+  \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
+  those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
+  factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
+  \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
 }
 }
 

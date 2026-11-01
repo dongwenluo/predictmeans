@@ -5,7 +5,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  which.plots = c("mean", "pval", "back"),
 						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4,
-                          cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE) {
+                          cov_reduce=mean, exclude=NULL, vcov_adjust=FALSE,
+                          weights=c("equal", "proportional", "outer", "cells", "flat")) {
 
   ## Bias output towards fixed notation. See ?options for more info
   op <- options(scipen = 6)
@@ -157,8 +158,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
     newwd <- FALSE
   }
 
+  weights <- match.arg(weights)
   ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum,
-                        cov_reduce=cov_reduce, exclude=exclude)
+                        cov_reduce=cov_reduce, exclude=exclude, weights=weights)
   KK <- ctr.matrix$K
   label <- ctr.matrix$fctnames
   rownames(label) <- rownames(KK)

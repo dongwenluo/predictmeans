@@ -1,6 +1,8 @@
 Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL,
-                    prtnum=FALSE, cov_reduce=mean, exclude=NULL) {
+                    prtnum=FALSE, cov_reduce=mean, exclude=NULL,
+                    weights=c("equal", "proportional", "outer", "cells", "flat")) {
 
+  weights <- match.arg(weights)
   info <- pm_model_info(model, data, exclude)
   model <- info$model
   Terms <- info$Terms
@@ -143,20 +145,43 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     }
   }
 
-  # Missing factor combinations: only average over the observed cells.
+  # Weights for averaging over the factors that are not in modelterm.
+  cell_key <- function(df, vs) {
+    do.call(paste, c(lapply(vs, function(v) as.character(df[[v]])), sep = "\r"))
+  }
+  # number of observations in each grid row's combination of the factors 'vs'
+  count_of <- function(vs) {
+    tab <- table(cell_key(preddf, vs))
+    function(grid) {
+      n <- as.vector(tab[cell_key(grid, vs)])
+      n[is.na(n)] <- 0
+      n
+    }
+  }
+  nuisance <- setdiff(factor_names, facs)
   present <- NULL
-  if (length(factor_names) != 0) {
+  if (weights != "equal" && length(factor_names) != 0) {
+    present <- switch(weights,
+      # same weights for every mean: frequencies of the averaged-over cells (SAS OM)
+      proportional = if (length(nuisance)) count_of(nuisance),
+      # product of each averaged-over factor's own frequencies
+      outer = if (length(nuisance)) function(grid) Reduce(`*`, lapply(nuisance, function(v) count_of(v)(grid))),
+      # each mean weights the cells by their own frequencies
+      cells = count_of(factor_names),
+      # equal weights over the non-empty cells
+      flat = function(grid) as.numeric(count_of(factor_names)(grid) > 0))
+  }
+
+  # Missing factor combinations: only average over the observed cells.
+  if (weights == "equal" && length(factor_names) != 0) {
     ndf <- data.frame(table(preddf[, factor_names, drop = FALSE]))
     max_ord <- max(c(0, attr(Terms, "order")))
     if ((!cov_given || !setequal(covariate, modelterm)) && max_ord > 1 &&
         length(factor_names) > 1 && any(ndf$Freq == 0) &&
         !setequal(unique(ndf$Freq), c(0, 1))) {
       warning("Missing treatments' combination appeared, predicted means maybe misleading!")
-      cell_key <- function(df) {
-        do.call(paste, c(lapply(factor_names, function(v) as.character(df[[v]])), sep = "\r"))
-      }
-      seen <- unique(cell_key(preddf))
-      present <- function(grid) cell_key(grid) %in% seen
+      seen <- unique(cell_key(preddf, factor_names))
+      present <- function(grid) cell_key(grid, factor_names) %in% seen
     }
   }
 

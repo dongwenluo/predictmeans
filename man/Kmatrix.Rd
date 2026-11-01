@@ -20,7 +20,8 @@ Matrix of Coefficients in a Linear Model
 }
 \usage{
 Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
-        cov_reduce=mean, exclude=NULL)
+        cov_reduce=mean, exclude=NULL,
+        weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
   \item{model}{
@@ -64,6 +65,13 @@ For \code{gam} models only: labels of smooth terms to leave out of the predictio
 set to zero), e.g. \code{"s(Block)"}. The default \code{NULL} excludes random-effect smooths (\code{bs = "re"} and
 \code{bs = "fs"}), so the predicted means are population-level means, as for \code{lmer}. Use
 \code{exclude = character(0)} to keep all smooth terms.
+}
+  \item{weights}{
+  How the cells of the factors that are not in \code{modelterm} are weighted when averaging over them:
+  \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
+  those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
+  factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
+  \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
 }
 }
 

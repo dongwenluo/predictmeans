@@ -10,7 +10,8 @@
   covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, 
   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
   plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
-  cov_reduce=mean, exclude=NULL)
+  cov_reduce=mean, exclude=NULL,
+  weights=c("equal", "proportional", "outer", "cells", "flat"))
 }
 \arguments{
   \item{model}{
@@ -80,6 +81,13 @@ A logical variable to indicate whether to print graph in a new window. The defau
   \item{exclude}{
   For \code{gam} models: smooth terms to leave out of the predictions. The default excludes random-effect
   smooths. See \code{\link{Kmatrix}}.
+}
+  \item{weights}{
+  Passed to \code{\link{Kmatrix}}: how the cells of the factors that are not in \code{modelterm} are weighted when averaging over them:
+  \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
+  those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
+  factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
+  \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
 }
 }
 
