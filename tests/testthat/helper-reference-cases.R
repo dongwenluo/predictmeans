@@ -122,6 +122,8 @@ reference_cases <- function() {
 
 # Drop attributes and row names that are not part of the frozen 1.1.1 output.
 clean_reference <- function(x) {
+  # R-devel's xtabs() tables carry a "call" attribute; it is not a result
+  if (!is.null(attr(x, "call")) && !is.list(x)) attr(x, "call") <- NULL
   if (is.list(x) && !is.data.frame(x)) return(lapply(x, clean_reference))
   # percentages printed as text (R2_glmm) are compared as numbers
   if (is.character(x) && length(x) && all(grepl("^-?[0-9.]+%$", x))) return(as.numeric(sub("%", "", x)))
