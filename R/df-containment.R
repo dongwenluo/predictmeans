@@ -15,7 +15,7 @@
 
 ## Random effects of an lmer model: list of (vars, Z column index).
 pm_random_effects <- function(model) {
-  bars <- lme4::findbars(stats::formula(model))
+  bars <- pm_findbars(stats::formula(model))
   cnms <- lme4::getME(model, "cnms")
   Gp <- lme4::getME(model, "Gp")
   out <- list()

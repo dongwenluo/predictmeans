@@ -36,7 +36,7 @@ test_that("functions don't change options() for the rest of the session", {
   invisible(predictmeans(fm, "nitro", plot = FALSE, prtnum = FALSE))
   invisible(contrastmeans(fm, "nitro", ctrmatrix = rbind(c(1, -1, 0, 0))))
   invisible(permmodels(fm, nperm = 5, prt = FALSE, ncore = 1, seed = 1))
-  expect_identical(getOption("scipen"), 0)
+  expect_equal(getOption("scipen"), 0)
 })
 
 test_that("contrastmeans() without ctrmatrix needs an interactive session", {

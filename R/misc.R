@@ -1169,3 +1169,8 @@ pm_df_method <- function(model, df_method) {
     NULL)
   list(df_type = df_type, vcov_adj = vcov_adj)
 }
+
+## findbars() moved from lme4 to reformulas; use reformulas when installed.
+pm_findbars <- function(f) {
+  if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
+}

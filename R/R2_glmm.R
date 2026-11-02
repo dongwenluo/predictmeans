@@ -18,6 +18,12 @@ R2_glmm <- function(model, over_disp=FALSE){
 	}
     weights <- tmbf$data.tmb$weights
     cond_reTrms <- tmbf$condList$reTrms
+    if (is.null(cond_reTrms$Lambdat) || is.null(cond_reTrms$Lind)) {
+      # glmmTMB >= 1.1.12 no longer stores Lambdat/Lind; rebuild them in
+      # glmmTMB's own term order
+      cond_reTrms <- lme4::mkReTrms(pm_findbars(stats::formula(model)), model$frame,
+                                    reorder.terms = FALSE)
+    }
     theta <- exp(getME(model, "theta"))/sigma(model)
     Lambda <- t(cond_reTrms$Lambdat)
     Lambda@x <- theta[cond_reTrms$Lind]

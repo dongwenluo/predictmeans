@@ -9,7 +9,7 @@ Description: Providing functions to diagnose and make inferences from various li
 	permutation tests, adjusted R-square and graphs.
 Depends: R (>= 3.6.0), lme4, nlme, lmerTest
 Imports: glmmTMB, ggplot2, graphics, grDevices, Matrix, MASS, methods, numDeriv, parallel, stats, utils
-Suggests: car, emmeans, generics, HRW, lmeInfo, lmeSplines, mgcv, pbkrtest, plotly, splines2, testthat (>= 3.0.0)
+Suggests: car, reformulas, emmeans, generics, HRW, lmeInfo, lmeSplines, mgcv, pbkrtest, plotly, splines2, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 License: GPL (>= 2)
 URL: https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans

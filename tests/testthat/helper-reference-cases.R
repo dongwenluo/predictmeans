@@ -123,9 +123,13 @@ reference_cases <- function() {
 # Drop attributes and row names that are not part of the frozen 1.1.1 output.
 clean_reference <- function(x) {
   if (is.list(x) && !is.data.frame(x)) return(lapply(x, clean_reference))
+  # percentages printed as text (R2_glmm) are compared as numbers
+  if (is.character(x) && length(x) && all(grepl("^-?[0-9.]+%$", x))) return(as.numeric(sub("%", "", x)))
   if (is.matrix(x)) attr(x, "estimable") <- NULL
   if (is.data.frame(x)) {
     rownames(x) <- NULL
+    # lme4 >= 2.0 names the anova column "-2*log(L)" instead of "deviance"
+    names(x)[names(x) == "-2*log(L)"] <- "deviance"
     for (v in names(x)) if (is.matrix(x[[v]])) x[[v]] <- as.vector(x[[v]])
   }
   x
