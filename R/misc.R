@@ -332,12 +332,25 @@ doolittle <- function(x, eps = 1e-6) {
 
 ########################
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite")) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
-  if (!getME(model, "is_REML")) {
-    stop("This function works properly only for REML model fits")
+  type <- as.character(type)
+  type <- match.arg(type)
+  if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
+    # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
+    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+    type <- "Satterthwaite"
+  }
+
+  if (type == "containment") {
+    # one df per term (SAS DDFM=CONTAIN): every row gets the df of 'modelterm'
+    if (missing(modelterm)) stop("containment df need 'modelterm'")
+    cdf <- pm_containment_df(model)
+    if (!modelterm %in% names(cdf)) stop("'", modelterm, "' is not a term of the model")
+    n_row <- if (is.null(ctrmatrix)) nrow(Kmatrix(model, modelterm, covariate)$K) else NROW(rbind(ctrmatrix))
+    return(rep(unname(cdf[modelterm]), n_row))
   }
 
   if (!is.null(ctrmatrix)) {
@@ -355,13 +368,11 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     Lc <- Kmatrix(model, modelterm, covariate)$K
   }
 
-  type <- as.character(type)
-  type <- match.arg(type)
-
   if (type=="Kenward-Roger") {
-    vcov_beta_adj <- try(pbkrtest::vcovAdj(model), silent=TRUE) # Adjusted vcov(beta)
-    ddf <- try(apply(Lc, 1, function(x) pbkrtest::Lb_ddf(x, V0=vcov(model),
-                                                         Vadj=vcov_beta_adj)), silent=TRUE) # vcov_beta_adj need to be dgeMatrix!
+    # Adjusted vcov(beta); reuse it when the caller has already computed it.
+    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model), silent=TRUE) else vcov_adj
+    # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
+    ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
 
     if (any(inherits(vcov_beta_adj, "try-error"),
 	        inherits(ddf, "try-error"),
@@ -373,10 +384,10 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
   }
 
   if (type == "Satterthwaite") {
-    if(!inherits(model, "lmerModLmerTest")) {
-      model <- as_lmerModLmerTest(model)
-    }
-    ddf <- apply(Lc, 1, function(x) suppressMessages(lmerTest::calcSatterth(model, x)$denom))
+    # all rows at once; same values as lmerTest. 'vcov_adj' may carry the
+    # Satterthwaite ingredients already computed for this model.
+    parts <- if (inherits(vcov_adj, "pm_satt")) vcov_adj else pm_satt_parts(model)
+    ddf <- pm_satt_ddf(Lc, parts)
   }
   return(ddf)
 }
@@ -512,8 +523,13 @@ get_covbeta <- function(varpar, devfun) {
 
 ###################### for print
 print.pdmlist = function(x, ...){
+  op <- options(scipen = 6)
+  on.exit(options(op), add = TRUE)
   pos = grep('predictmeansPlot|predictmeansBKPlot|predictmeansBarPlot|p_valueMatrix', names(x))
-  x = x[names(x)[-pos]]
+  # the stable tables (means, pairs, settings) are not printed, so the printed
+  # output is the same as before; use tidy() or as.data.frame() to see them
+  pos = union(pos, which(names(x) %in% c("means", "pairs", "settings")))
+  if (length(pos)) x = x[names(x)[-pos]]
   NextMethod()
 }
 ######################
@@ -983,7 +999,7 @@ Ztps <- function(x, k, knots=NULL, range.x=NULL) {
   }
 
   if (!is.null(range.x)) {
-    inBdry <- HRW::pointsInPoly(knots, range.x)
+    inBdry <- pm_points_in_poly(knots, range.x)
     knots <- knots[inBdry, ]
   }
 
@@ -1131,3 +1147,30 @@ aovlist_lmer <- function(object) {
 }
 
 
+
+## Resolve the df method for an lmer model: "auto" is Kenward-Roger for REML
+## fits and Satterthwaite for ML fits. Returns list(df_type, vcov_adj).
+pm_df_method <- function(model, df_method) {
+  if (!inherits(model, "lmerMod")) {
+    if (df_method != "auto") warning("'df_method' applies to lmer models only; ignored.")
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
+  reml <- lme4::getME(model, "is_REML")
+  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite",
+                    df_method)
+  if (df_type == "Kenward-Roger" && !reml) {
+    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+    df_type <- "Satterthwaite"
+  }
+  if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
+  vcov_adj <- switch(df_type,
+    "Kenward-Roger" = tryCatch(pm_vcov_kr(model), error = function(e) NULL),
+    "Satterthwaite" = pm_satt_parts(model),
+    NULL)
+  list(df_type = df_type, vcov_adj = vcov_adj)
+}
+
+## findbars() moved from lme4 to reformulas; use reformulas when installed.
+pm_findbars <- function(f) {
+  if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
+}

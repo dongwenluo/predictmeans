@@ -59,19 +59,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   if (inherits(semer, "glmmTMB")) betaHat <- fixef(semer)$cond else betaHat <- fixef(semer)
   sig.epsHat <- sigma(semer) 
   
-  sm_varsN <- setdiff(semireg$sm_vars, semireg$fomul_vars)
-  
-  if (length(sm_varsN) > 0){
-    lm_fl <- format(formula(terms(semer)))
-    for (i in sm_varsN)  lm_fl <- paste(lm_fl, "+ ",i)
-    mod_lm <- lm(as.formula(lm_fl), data=mod_df)
-    KK <- Kmatrix(mod_lm, modelterm, covariate, covariateV)
-  }else{  
-    KK <- Kmatrix(semer, modelterm, covariate, covariateV)
-  }
-  
-  response <- response0 <- KK$response 
-  K <- KK$K[, colnames(model.matrix(semer))]
+  # Kmatrix() understands 'semireg' objects directly: it uses the semireg
+  # data and carries smooth-only covariates in its reference grid.
+  KK <- Kmatrix(semireg, modelterm, covariate, covariateV)
+
+  response <- response0 <- KK$response
+  K <- KK$K[, colnames(model.matrix(semer)), drop=FALSE]
   pred_df <- KK$fctnames
   if (!(response %in% names(mod_df))) {   # all.vars(str2expression(response0))]
     mod_df[["response_y"]] <- eval(parse(text=response), mod_df)
@@ -120,17 +113,25 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     call_lstN[[i]] <- as.call(xcall_lst) 
   }  
   
-  for (i in sm_term) {
-    Z_lstN[[i]] <- with(pred_df, eval(call_lstN[[i]]))
+  # Smooth basis for a set of grid rows, in the order of the random effects.
+  smooth_basis <- function(nd) {
+    for (i in sm_term) {
+      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
+    }
+
+    Z_lstNN <- list()
+    for (i in sm_term){
+      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
+    }
+
+    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
+    do.call("cbind", Z_lstNN)
   }
-  
-  Z_lstNN <- list()
-  for (i in sm_term){
-    if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
-  }
-  
-  Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
-  ZN <- do.call("cbind", Z_lstNN)
+
+  # Evaluate the smooth basis on the full reference grid and average it with
+  # the same weights as K, so factors that are averaged over (including 'by'
+  # factors of the smooths) are treated identically in both parts.
+  ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
   D_mx <- cbind(K,ZN)
   u_hat <- do.call("c", u_lst)
   beta_u <- c(betaHat, u_hat)
@@ -224,11 +225,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
     }else if(length(covariate)==2) {
       if (!is.null(boundary)){
-        inBdry <- HRW::pointsInPoly(pred_df[, covariate], boundary)
+        inBdry <- pm_points_in_poly(pred_df[, covariate], boundary)
         pred_df <- droplevels(pred_df[inBdry,])
       }
       
       if (threeD) {
+        pm_need("plotly", "3-D plots (threeD = TRUE)")
         plt <- plotly::plot_ly(pred_df, x = formula(paste("~", covariate[1])), 
                                y = formula(paste("~", covariate[2])),
                                z = formula(paste("~", response)), 
@@ -307,11 +309,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       }else if(length(covariate)==2) {
         if (is.null(contr)) {
           if (!is.null(boundary)){
-            inBdry <- HRW::pointsInPoly(pred_df[, covariate], boundary)
+            inBdry <- pm_points_in_poly(pred_df[, covariate], boundary)
             pred_df <- droplevels(pred_df[inBdry,])
           }
           
           if (threeD) {
+            pm_need("plotly", "3-D plots (threeD = TRUE)")
             grp_fct <- pred_df[[modelterm]]
             plt <- lapply(split(pred_df, grp_fct), function(x) {
               plotly::plot_ly(droplevels(x), x = formula(paste("~", covariate[1])), 
@@ -365,7 +368,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           }
           
           if (!is.null(boundary)){
-            inBdry <- HRW::pointsInPoly(plt_df_contr[, covariate], boundary)
+            inBdry <- pm_points_in_poly(plt_df_contr[, covariate], boundary)
             plt_df_contrN <- droplevels(plt_df_contr[inBdry,])
           }else plt_df_contrN <- plt_df_contr		
           plt_df_contrSub <- subset(plt_df_contrN, LL > 0 | UL < 0)

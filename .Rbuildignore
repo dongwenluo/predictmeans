@@ -2,3 +2,7 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^dev$
+^LICENSE$
+^\.github$
+^CLAUDE\.md$

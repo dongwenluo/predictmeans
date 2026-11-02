@@ -4,29 +4,26 @@ CookD <- function (model, group=NULL, plot=TRUE, idn=3, newwd=FALSE) {
     any(inherits(model, "gls"), inherits(model, "lme"), inherits(model, "lmerMod"))
   })
   if (inherits(model, "gls") || inherits(model, "lme")) {
-    model <- update(model, method="ML")
+    mdf <- as.data.frame(pm_get_data(model))
+    model <- pm_refit(model, data=mdf, method="ML", check=TRUE)
   }
   if (inherits(model, "lmerMod")) {
-    model <- update(model, REML=FALSE)
-  }
-  if (inherits(model, "gls") || inherits(model, "lme")) {
-    mdf <- nlme::getData(model)
-  } else {
+    model <- pm_refit(model, REML=FALSE, check=TRUE)
     mdf <- model.frame(model)
   }
-  mp <- mymodelparm(model)
+  mp <- mymodelparm(model, df = 0)
   beta0  <- mp$coef
   vcovb <- mp$vcov
   vb.inv <- solve(vcovb)
 
   if (is.null(group) || group%in%c("NULL", "")) {
     rn <- rownames(mdf)
-    LOOmp <- lapply(rn, function(x)  mymodelparm(update(model, data=mdf[rn!=x, ])))
+    LOOmp <- lapply(rn, function(x)  mymodelparm(pm_refit(model, data=mdf[rn!=x, ]), df = 0))
   } else {
     rn <- unique(mdf[, group])
     LOOmp <- lapply(rn, function(x)  {
   	rind <- mdf[, group]!=x
-  	mymodelparm(update(model, data=mdf[rind, ]))
+  	mymodelparm(pm_refit(model, data=mdf[rind, ]), df = 0)
     })
   }
 

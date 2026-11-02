@@ -27,7 +27,7 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   
   glmmTMBcall <- mc 
   
-  glmmTMBcall[[1]] <- as.name("glmmTMB")
+  glmmTMBcall[[1]] <- quote(glmmTMB::glmmTMB)
   glmmTMBcall$smoothZ <- NULL
   glmmTMBcall$prt <- NULL
   glmmTMBcall$predict_info <- NULL

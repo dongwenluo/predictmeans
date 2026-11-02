@@ -1,7 +1,7 @@
 mymodelparm <- function(model, coef., vcov., df, ...)
 UseMethod("mymodelparm")
 
-mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
+mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NULL, ...)
 {
   ### extract coefficients and their covariance matrix
 	if (inherits(model, "glmmTMB")) {
@@ -43,14 +43,22 @@ mymodelparm.default <- function(model, coef. = coef, vcov. = vcov, df = NULL, ..
 			df <- dd[["N"]] - dd[["p"]]
 		}
 		if (inherits(model, "lmerMod")) {
+		    extra <- list(...)
+		    df_type <- if (!is.null(extra$df_type)) extra$df_type else if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
 		    L_list <- get_contrasts_type1(model)
-            df <- sapply(L_list, function(L) mean(df_term(model, ctrmatrix=L)))
+            df <- if (identical(df_type, "containment")) pm_containment_df(model)[names(L_list)] else
+              sapply(L_list, function(L) mean(df_term(model, ctrmatrix=L, type=df_type, vcov_adj=extra$vcov_adj)))
 		}
 		if (inherits(model, "glmerMod") || inherits(model, "glmmTMB")) {
 			df <- summary(model)$AICtab["df.resid"]
 		}
     if (inherits(model, "parm")) {
       df <- model$df
+    }
+    known <- c("lm", "gls", "lme", "lmerMod", "glmerMod", "glmmTMB", "parm")
+    if (identical(df, 0) && !inherits(model, known)) {
+      # other model classes: df.residual(), else normal-based (see ?pm_coef)
+      df <- pm_residual_df(model)
     }
   } else {
     if (df < 0) {
@@ -106,3 +114,16 @@ mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
 
 mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
+
+# mgcv gam/bam: all coefficients (parametric and smooth basis), the Bayesian
+# posterior covariance matrix Vp, and the residual degrees of freedom.
+mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
+  beta <- coef.(model)
+  sigma <- as.matrix(vcov.(model))
+  if (is.null(df)) {
+    df <- model$df.residual
+  }
+  RET <- list(coef = beta, vcov = sigma, df = df, estimable = rep(TRUE, length(beta)))
+  class(RET) <- "mymodelparm"
+  RET
+}

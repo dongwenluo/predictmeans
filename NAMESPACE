@@ -1,4 +1,24 @@
 S3method(print, pdmlist)
+S3method(pm_coef, default)
+S3method(pm_coef, lme)
+S3method(pm_coef, merMod)
+S3method(pm_coef, glmmTMB)
+S3method(pm_vcov, default)
+S3method(pm_vcov, glmmTMB)
+S3method(pm_basis, default)
+S3method(pm_basis, gam)
+S3method(pm_data, default)
+S3method(pm_df, default)
+S3method(pm_linkinv, default)
+S3method(pm_linkinv, lm)
+S3method(pm_linkinv, glm)
+S3method(pm_linkinv, glmerMod)
+S3method(pm_linkinv, glmmTMB)
+S3method(as.data.frame, predictmeans)
+S3method(generics::tidy, predictmeans)
+S3method(ggplot2::autoplot, predictmeans)
+S3method(summary, predictmeans)
+S3method(print, summary.predictmeans)
 
 if (requireNamespace("ggplot2", quietly = TRUE)) {
     import(ggplot2)
@@ -10,25 +30,14 @@ importMethodsFrom("Matrix",
                   "chol")
 }
 
-if (requireNamespace("pbkrtest", quietly = TRUE)) {
-    import(pbkrtest)
-}
 
-if (requireNamespace("plyr", quietly = TRUE)) {
-    importFrom(plyr, alply)
-}
   import(parallel)
-  import(lmeInfo)
   import(lme4)
   import(glmmTMB)
-  importFrom("plotly", "plot_ly", "add_trace")  
-  importFrom("HRW", "pointsInPoly")
-  importFrom("lmeSplines", "approx.Z", "smspline")
   importFrom("numDeriv", "hessian", "jacobian")
   importFrom("MASS", "theta.ml", "negative.binomial")
-  importFrom("lmerTest", "as_lmerModLmerTest", "contest1D")
+  importFrom("lmerTest", "as_lmerModLmerTest")
   importFrom("splines", "ns", "bs")
-  importFrom("splines2", "bernsteinPoly", "bSpline", "naturalSpline", "cSpline", "iSpline", "mSpline")
   importFrom("nlme", "getData", "intervals", "getResponse")
   importFrom("grDevices", "dev.new")
   importFrom("Matrix", ".bdiag", "Diagonal", "forceSymmetric", "Matrix", "nearPD")
@@ -45,4 +54,5 @@ if (requireNamespace("plyr", quietly = TRUE)) {
 			 "aggregate", "get_all_vars")
   importFrom("utils", "as.roman", "combn", "edit")
 
-export(ci_mcp, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, PMplot, predictmeans, R2_glmm, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, varcomp)
+export(pm_coef, pm_vcov, pm_basis, pm_data, pm_df, pm_linkinv)
+export(ci_mcp, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, PMplot, predictmeans, R2_glmm, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)

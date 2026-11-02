@@ -50,15 +50,15 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   thetan[theta0name] <- theta0
   Lambda1n <- getME(lmer1, "Lambda")
   Lambda1n@x <- thetan[getME(lmer1, "Lind")]
-  Lambda1nc <- Matrix::tcrossprod(Lambda1n)
-  V1n <- getME(lmer1, "Z")%*%Lambda1nc%*%getME(lmer1, "Zt")+diag(dim(getME(lmer1, "Z"))[1])
-  Ut <- t(chol(V1n))
-  wt <- solve(Ut)
+  # V = Z Lambda Lambda' Z' + I, kept sparse; Ut is its lower Cholesky factor.
+  ZL <- getME(lmer1, "Z") %*% Lambda1n
+  V1n <- Matrix::forceSymmetric(Matrix::tcrossprod(ZL) + Matrix::Diagonal(nrow(ZL)))
+  Ut <- Matrix::t(Matrix::chol(V1n))
   xbeta <- as.vector(getME(lmer0, "X")%*%fixef0)
   errors <- getME(lmer0, "y") - xbeta
 
   #Weighting the residuals.
-  wterrors <- wt%*%errors
+  wterrors <- Matrix::solve(Ut, errors)
 
   # permute weighted resid, then unweighted it for 999 times
   # permResid <- matrix(0, length(wterrors), nperm)

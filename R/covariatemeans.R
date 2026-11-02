@@ -1,4 +1,5 @@
-covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE) {
+covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL,
+                            weights=c("equal", "proportional", "outer", "cells", "flat")) {
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -24,7 +25,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       }
     }
   }
-  ctr.matrix <- Kmatrix(model, modelterm, covariate, covariateV, data)
+  weights <- match.arg(weights)
+  ctr.matrix <- Kmatrix(model, modelterm, covariate, covariateV, data, cov_reduce=cov_reduce, exclude=exclude, weights=weights)
   KK <- ctr.matrix$K
   pltdf <- ctr.matrix$fctnames
   response <- ctr.matrix$response
@@ -58,21 +60,16 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
         stop("You need provide Df for this model!")
       }
     } else {
-      Df <- mp$df
+      df_custom <- pm_df(model, KK)
+      Df <- if (!is.null(df_custom)) rep_len(as.numeric(df_custom), nrow(KK)) else mp$df
     }
-    if (Df==0) {
+    if (any(Df==0)) {
       stop("You need provide Df for this model!")
     }
   }
 
-  if (inherits(model, "glm") && is.null(trans)) {
-    trans <- model$family$linkinv
-  }
-  if (inherits(model, "glmerMod") && is.null(trans)) {
-    trans <- slot(model, "resp")$family$linkinv
-  }
-  if (inherits(model, "glmmTMB") && is.null(trans)) {
-    trans <- model$modelInfo$family$linkinv
+  if (is.null(trans)) {
+    trans <- pm_linkinv(model)
   }
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
@@ -103,7 +100,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   if (!is.null(data)) {
     mdf <- data
   } else {
-    mdf <- model.frame(model)
+    mdf <- tryCatch(model.frame(model), error = function(e) ctr.matrix$data)
   }
   if (length(setdiff(response, names(mdf)))!=0) {
     mdf[,response] <- eval(parse(text=response), mdf)

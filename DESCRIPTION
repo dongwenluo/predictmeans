@@ -1,20 +1,21 @@
 Package: predictmeans
-Version: 1.1.1
+Version: 1.1.1.9000
 Author: Dongwen Luo, Siva Ganesh and John Koolaard
 Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
 Title: Predicted Means for Linear and Semiparametric Models
 Description: Providing functions to diagnose and make inferences from various linear models, 
-    such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB' and 'semireg'. 
+    such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB', 'gam' and 'semireg'. 
 	Inferences include predicted means and standard errors, contrasts, multiple comparisons, 
 	permutation tests, adjusted R-square and graphs.
-Depends: R (>= 3.5.0), glmmTMB, lme4, nlme, lmerTest
-Imports: car, ggplot2, graphics, grDevices, HRW, lmeInfo, lmeSplines, Matrix, MASS, methods, numDeriv, parallel, pbkrtest, plotly, plyr, splines2, stats, utils
+Depends: R (>= 3.6.0), lme4, nlme, lmerTest
+Imports: glmmTMB, ggplot2, graphics, grDevices, Matrix, MASS, methods, numDeriv, parallel, stats, utils
+Suggests: car, reformulas, emmeans, generics, HRW, lmeInfo, lmeSplines, mgcv, pbkrtest, plotly, splines2, testthat (>= 3.0.0)
+Config/testthat/edition: 3
 License: GPL (>= 2)
-Packaged: 2024-04-03
-URL: https://CRAN.R-project.org/package=predictmeans
-Repository: CRAN
+URL: https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans
+BugReports: https://github.com/dongwenluo/predictmeans/issues
 LazyLoad: yes
-NeedsCompilation: yes
+NeedsCompilation: no
 Encoding: UTF-8
 ByteCompile: true
-Date/Publication: 2024-04-03
+Config/roxygen2/version: 8.1.1

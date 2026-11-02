@@ -84,6 +84,7 @@ smZ <- function(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
     if (is.null(intKnots)) attr(Z,"knots") <- Z_knots else attr(Z,"knots") <- intKnots
 	if (!is.null(range.x)) attr(Z,"range.x") <- range.x
   }else if(type %in% c("bs", "ns", "bernstein", "bSpline", "nSpline", "cSpline", "iSpline", "mSpline")){ 
+    if (!type %in% c("bs", "ns")) pm_need("splines2", paste0("type = \"", type, "\""))
     ZZ <- switch(type, 
                  "bs"=as.matrix(splines::bs(x, df=k, knots = intKnots, degree = degree, Boundary.knots = range.x, intercept=intercept)),
                  "ns"=as.matrix(splines::ns(x, df=k, knots = intKnots, Boundary.knots = range.x, intercept=intercept)),
@@ -118,6 +119,7 @@ smZ <- function(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
     attr(Z,"range.x") <- Z_attr$Boundary.knots
     attr(Z,"intercept") <- Z_attr$intercept
   }else if(type=="smspline"){
+    pm_need("lmeSplines", "type = \"smspline\"")
     if (is.factor(by)) {
       ZZ <- lmeSplines::smspline(x)	
 	  if (pred) ZZ <- lmeSplines::approx.Z(Z=range.x, oldtimes=intKnots, newtimes=x)
