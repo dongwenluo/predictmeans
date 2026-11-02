@@ -21,8 +21,8 @@ R2_glmm <- function(model, over_disp=FALSE){
     if (is.null(cond_reTrms$Lambdat) || is.null(cond_reTrms$Lind)) {
       # glmmTMB >= 1.1.12 no longer stores Lambdat/Lind; rebuild them in
       # glmmTMB's own term order
-      cond_reTrms <- lme4::mkReTrms(pm_findbars(stats::formula(model)), model$frame,
-                                    reorder.terms = FALSE)
+      mk <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::mkReTrms else lme4::mkReTrms
+      cond_reTrms <- mk(pm_findbars(stats::formula(model)), model$frame, reorder.terms = FALSE)
     }
     theta <- exp(getME(model, "theta"))/sigma(model)
     Lambda <- t(cond_reTrms$Lambdat)
