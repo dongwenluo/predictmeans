@@ -21,6 +21,10 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
+    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -64,7 +68,7 @@
 <div class="section level3">
 <h3 id="plots-and-summaries-from-the-result-tables-1-1-1-9000">Plots and summaries from the result tables<a class="anchor" aria-label="anchor" href="#plots-and-summaries-from-the-result-tables-1-1-1-9000"></a></h3>
 <ul><li>
-<code>autoplot()</code> for <code><a href="../reference/predictmeans.html">predictmeans()</a></code> results gives ggplot objects that work in Shiny, reports and <code><a href="https://rdrr.io/pkg/plotly/man/ggplotly.html" class="external-link">plotly::ggplotly()</a></code>:
+<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> for <code><a href="../reference/predictmeans.html">predictmeans()</a></code> results gives ggplot objects that work in Shiny, reports and <code><a href="https://rdrr.io/pkg/plotly/man/ggplotly.html" class="external-link">plotly::ggplotly()</a></code>:
 <ul><li>
 <code>type = "means"</code>, with confidence limits, half-LSD bars or no bars;</li>
 <li>
@@ -172,9 +176,13 @@ The defaults work for any class with the usual <code>coef</code>, <code>vcov</co
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-1-1-1-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-1-1-9000"></a></h3>
-<ul><li>Three vignettes: “Getting started with predictmeans”, “Adjusted R² for generalized linear mixed models” and “Migrating from predictmeans 1.x”.</li>
-<li>A pkgdown website (built by GitHub Actions and published to GitHub Pages), with two longer worked-example articles: an overview of the package and experimental design and analysis for tree improvement.</li>
-<li>New data sets <code>Body_length</code> and <code>Poisson_ind</code> (used in the R² vignette).</li>
+<ul><li><p>Fixed (regression in this development version): with nested treatments and one observation per block cell (e.g. <code>treat/contcomp</code> with <code>repl</code>), means were averaged over structurally empty cells and were wrong. Empty cells are now judged on the factors that interact only.</p></li>
+<li><p><code>atvar</code> with several factors failed (“Names required”) when a group of <code>atvar</code> levels had only one or no observed level of the other factors.</p></li>
+<li><p>Three vignettes: “Getting started with predictmeans”, “Adjusted R² for generalized linear mixed models” and “Migrating from predictmeans 1.x”.</p></li>
+<li><p>A pkgdown website (built by GitHub Actions and published to GitHub Pages), with two longer worked-example articles: an overview of the package and experimental design and analysis for tree improvement.</p></li>
+<li><p><code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code> works with glmmTMB &gt;= 1.1.12, which no longer stores <code>Lambdat</code>, <code>Lind</code> and <code>lower</code> (they are rebuilt when missing).</p></li>
+<li><p><code><a href="../reference/R2_glmm.html">R2_glmm()</a></code> failed for gaussian glmmTMB fits (including <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>) with glmmTMB &gt;= 1.1.12, whose dispersion parameter is named <code>betadisp</code>; the fixed effects now come from <code>fixef(model)$cond</code>.</p></li>
+<li><p>New data sets <code>Body_length</code> and <code>Poisson_ind</code> (used in the R² vignette).</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="internal-1-1-1-9000">Internal<a class="anchor" aria-label="anchor" href="#internal-1-1-1-9000"></a></h3>

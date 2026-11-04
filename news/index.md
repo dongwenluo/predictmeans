@@ -45,7 +45,8 @@
 
 ### Plots and summaries from the result tables
 
-- `autoplot()` for
+- [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  for
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   results gives ggplot objects that work in Shiny, reports and
   [`plotly::ggplotly()`](https://rdrr.io/pkg/plotly/man/ggplotly.html):
@@ -285,12 +286,32 @@
 
 ### Documentation
 
+- Fixed (regression in this development version): with nested treatments
+  and one observation per block cell (e.g. `treat/contcomp` with
+  `repl`), means were averaged over structurally empty cells and were
+  wrong. Empty cells are now judged on the factors that interact only.
+
+- `atvar` with several factors failed (“Names required”) when a group of
+  `atvar` levels had only one or no observed level of the other factors.
+
 - Three vignettes: “Getting started with predictmeans”, “Adjusted R² for
   generalized linear mixed models” and “Migrating from predictmeans
   1.x”.
+
 - A pkgdown website (built by GitHub Actions and published to GitHub
   Pages), with two longer worked-example articles: an overview of the
   package and experimental design and analysis for tree improvement.
+
+- [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  works with glmmTMB \>= 1.1.12, which no longer stores `Lambdat`,
+  `Lind` and `lower` (they are rebuilt when missing).
+
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  failed for gaussian glmmTMB fits (including
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md))
+  with glmmTMB \>= 1.1.12, whose dispersion parameter is named
+  `betadisp`; the fixed effects now come from `fixef(model)$cond`.
+
 - New data sets `Body_length` and `Poisson_ind` (used in the R²
   vignette).
 
