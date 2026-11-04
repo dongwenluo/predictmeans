@@ -206,6 +206,11 @@
 
 ## Documentation
 
+* Fixed (regression in this development version): with nested treatments
+  and one observation per block cell (e.g. `treat/contcomp` with
+  `repl`), means were averaged over structurally empty cells and were
+  wrong. Empty cells are now judged on the factors that interact only.
+
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".
 * A pkgdown website (built by GitHub Actions and published to GitHub

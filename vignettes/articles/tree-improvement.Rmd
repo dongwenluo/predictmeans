@@ -406,7 +406,7 @@ residplot(fm4.2)
 ```
 
 
-### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+### Predicted Means {.tabset .tabset-pills}
 
 -   contcomp
 
@@ -582,7 +582,7 @@ residplot(fm4.4)
 ```
 
 
-### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+### Predicted Means {.tabset .tabset-pills}
 
 -   treat
 
@@ -734,7 +734,7 @@ residplot(fm4.6)
 ```
 
 
-### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+### Predicted Means {.tabset .tabset-pills}
 
 -   irrig
 

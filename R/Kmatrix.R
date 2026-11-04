@@ -173,15 +173,25 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   }
 
   # Missing factor combinations: only average over the observed cells.
+  # Only the factors that interact matter: blocks or other main-effect-only
+  # factors would make every cell look single (one observation per cell),
+  # hiding structurally empty combinations such as nested treatments.
   if (weights == "equal" && length(factor_names) != 0) {
-    ndf <- data.frame(table(preddf[, factor_names, drop = FALSE]))
-    max_ord <- max(c(0, attr(Terms, "order")))
+    fac_mat <- attr(Terms, "factors")
+    ord <- attr(Terms, "order")
+    inter_rows <- if (length(fac_mat) && any(ord > 1))
+      rownames(fac_mat)[rowSums(fac_mat[, ord > 1, drop = FALSE] > 0) > 0] else character(0)
+    inter_vars <- factor_names[factor_names %in% inter_rows |
+                                 vapply(factor_names, function(v) any(grepl(paste0("\\b", v, "\\b"), inter_rows)), logical(1))]
+    if (length(inter_vars) < 2) inter_vars <- factor_names
+    ndf <- data.frame(table(preddf[, inter_vars, drop = FALSE]))
+    max_ord <- max(c(0, ord))
     if ((!cov_given || !setequal(covariate, modelterm)) && max_ord > 1 &&
-        length(factor_names) > 1 && any(ndf$Freq == 0) &&
+        length(inter_vars) > 1 && any(ndf$Freq == 0) &&
         !setequal(unique(ndf$Freq), c(0, 1))) {
       warning("Missing treatments' combination appeared, predicted means maybe misleading!")
-      seen <- unique(cell_key(preddf, factor_names))
-      present <- function(grid) cell_key(grid, factor_names) %in% seen
+      seen <- unique(cell_key(preddf, inter_vars))
+      present <- function(grid) cell_key(grid, inter_vars) %in% seen
     }
   }
 
