@@ -27,8 +27,9 @@ R2_glmm <- function(model, over_disp=FALSE){
     theta <- exp(getME(model, "theta"))/sigma(model)
     Lambda <- t(cond_reTrms$Lambdat)
     Lambda@x <- theta[cond_reTrms$Lind]
-    beta <- getME(model, "beta")
-    beta <- beta[setdiff(names(beta), c("betad", "betazi"))]
+    # conditional-model fixed effects (getME(, "beta") also holds the
+    # dispersion and zero-inflation parameters, named betad or betadisp)
+    beta <- fixef(model)$cond
     family_n <- model$modelInfo$family$family
     if (family_n=="binomial") yobs <- unique(tmbf$data.tmb$yobs)
     link_n <- model$modelInfo$family$link
