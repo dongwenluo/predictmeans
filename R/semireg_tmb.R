@@ -78,6 +78,14 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     s <- sigma(semer) 
     
     cond_reTrms <- tmbf$condList$reTrms
+    if (is.null(cond_reTrms$Lambdat) || is.null(cond_reTrms$Lind) || is.null(cond_reTrms$lower)) {
+      # glmmTMB >= 1.1.12 no longer stores Lambdat, Lind and lower; rebuild
+      # them (they depend only on the terms and factor levels) in glmmTMB's
+      # own term order
+      mk <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::mkReTrms else lme4::mkReTrms
+      rt <- mk(pm_findbars(glmmTMBcall$formula), tmbf$fr, reorder.terms = FALSE)
+      cond_reTrms[c("Lambdat", "Lind", "lower")] <- rt[c("Lambdat", "Lind", "lower")]
+    }
     n_diag <- sum(cond_reTrms$lower==0)
     theta_ini <- getME(semer, "theta")
     if (length(theta_ini)!=n_diag) {
