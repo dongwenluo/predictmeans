@@ -807,7 +807,7 @@ kable(Anova(mod$semer))
 
 -   **$R^2$**
 
-```{r, error = TRUE}
+```{r}
 R2_glmm(mod$semer)
 ```
 
@@ -1060,7 +1060,7 @@ kable(car::Anova(mod$semer))
 
 -   **$R^2$**
 
-```{r, error = TRUE}
+```{r}
 R2_glmm(mod$semer)
 ```
 
@@ -1144,7 +1144,7 @@ kable(ranova(mod$semer))
 
 -   **$R^2$**
 
-```{r, error = TRUE}
+```{r}
 R2_glmm(mod$semer)
 ```
 
@@ -1157,7 +1157,7 @@ mod <- semireg(log(grade) ~ 1,
                   ), 
                 data=copper)
 ```
-```{r, error = TRUE}
+```{r}
 R2_glmm(mod$semer)
 ```
 
