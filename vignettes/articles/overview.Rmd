@@ -1138,7 +1138,7 @@ kable(anova(mod$semer))
 
 -   **RANOVA**
 
-```{r}
+```{r, error = TRUE}
 kable(ranova(mod$semer))
 ```
 
