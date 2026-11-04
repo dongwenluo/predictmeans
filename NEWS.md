@@ -210,6 +210,8 @@
   and one observation per block cell (e.g. `treat/contcomp` with
   `repl`), means were averaged over structurally empty cells and were
   wrong. Empty cells are now judged on the factors that interact only.
+* `atvar` with several factors failed ("Names required") when a group of
+  `atvar` levels had only one or no observed level of the other factors.
 
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".
