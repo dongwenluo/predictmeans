@@ -18,6 +18,11 @@ articles:
   - predictmeans
   - R2_glmm
   - migrating
+- title: Worked examples
+  navbar: Worked examples
+  contents:
+  - articles/overview
+  - articles/tree-improvement
 
 reference:
 - title: Predicted means and comparisons

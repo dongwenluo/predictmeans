@@ -211,6 +211,8 @@
 * A pkgdown website (built by GitHub Actions and published to GitHub
   Pages), with two longer worked-example articles: an overview of the
   package and experimental design and analysis for tree improvement.
+* `semireg_tmb()` works with glmmTMB >= 1.1.12, which no longer stores
+  `Lambdat`, `Lind` and `lower` (they are rebuilt when missing).
 * New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
 
 ## Internal
