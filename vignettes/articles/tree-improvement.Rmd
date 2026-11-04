@@ -1,0 +1,1445 @@
+---
+title: "Experimental design and analysis for tree improvement"
+author: "Dongwen Luo"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(predictmeans)
+library(eda4treeR)
+library(gridExtra)
+library(car)
+library(DT)
+library(gt)
+library(summarytools)
+library(knitr)
+```
+
+
+## **2.1 Example 2.1 (Pg. 24)**
+
+A field trial was planted to compare a seedlot derived from a seed orchard (SO) with one collected from a routine plantation (P). There were eight plots of each seedlot, thinned at seven years of age. Tree diameters at breast height (dbh) were measured at 15 years and plot means calculated.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(DataExam2.1, package="eda4treeR")
+str(DataExam2.1)
+```
+#### Summary
+```{r}
+print(dfSummary(DataExam2.1, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+#### Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+DataExam2.1 %>% 
+  ggplot(aes(x=seedlot, y=dbh, col=seedlot, fill=seedlot))+
+  geom_boxplot(width=0.3, alpha=0.4)+
+  geom_jitter(size=2)+
+  theme_bw(9)
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fmtab2.3 <- lm(formula = dbh ~ seedlot , data = DataExam2.1)
+summary(fmtab2.3)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fmtab2.3) 
+```
+
+#### Test
+
+```{r}
+#perform shapiro-wilk test
+shapiro.test(resid(fmtab2.3))
+
+#perform bartlett test
+bartlett.test(dbh ~ seedlot , data = DataExam2.1)
+
+#perform levene test 
+car::leveneTest(dbh ~ seedlot , data = DataExam2.1)
+```
+
+
+### ANOVA
+
+```{r}
+kable(anova(fmtab2.3), digits = 4)
+```
+
+### Predicted Means {.tabset .tabset-pills}
+
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+
+## **2.2 Example 2.2 (Pg. 26)**
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(DataExam2.2, package="eda4treeR")
+str(DataExam2.2)
+```
+
+#### Summary
+```{r}
+print(dfSummary(DataExam2.2, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+#### Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+DataExam2.2 %>% 
+  ggplot(aes(x=seedlot, y=dbh, col=seedlot, fill=seedlot))+
+  geom_boxplot(width=0.3, alpha=0.4)+
+  geom_jitter(size=2)+
+  theme_bw(9)
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fmtab2.5 <- lm(dbh ~ block + seedlot, data = DataExam2.2)
+summary(fmtab2.5)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fmtab2.5) 
+```
+
+#### Test
+
+```{r}
+#perform shapiro-wilk test
+shapiro.test(resid(fmtab2.5))
+
+#perform bartlett test
+bartlett.test(dbh ~ seedlot, data = DataExam2.2)
+
+#perform levene test
+car::leveneTest(dbh ~ seedlot, data = DataExam2.2)
+```
+
+
+### ANOVA
+
+```{r}
+kable(anova(fmtab2.5), digits = 4)
+```
+
+### Predicted Means {.tabset .tabset-pills}
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+
+## **3.1 Example 3.1 (Pg. 30)**
+
+We illustrate the recommended layout for data sheets with one of the trials conducted by the Australian Centre for International Agricultural Research (ACIAR) in Queensland, Australia (Experiment 309). This was a species trial planted in 1985; survival was poor. For our example we will examine only part of the data from this experiment. Five of the species with good survival have been extracted at random, namely Acacia, Angophora, Casuarina, Melaleuca and Petalostigma.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(DataExam3.1, package="eda4treeR")
+str(DataExam3.1)
+```
+
+#### Summary
+```{r}
+print(dfSummary(DataExam3.1, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fmtab3.3 <- aov(ht ~ Error(repl/PlotNo)+seedlot, data = DataExam3.1)
+summary(fmtab3.3)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fmtab3.3) 
+```
+
+
+### Predicted Means {.tabset .tabset-pills}
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(130))
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+### Remove three outliers
+
+-   Outliers:
+```{r}
+DataExam3.1[c(28, 51, 76), ] %>% 
+  gt(rownames_to_stub=TRUE)
+```
+
+-   Model:
+```{r}
+fmtab3.3N <- aov(ht ~ Error(repl/PlotNo/TreeNo)+seedlot, data = DataExam3.1[-c(28, 51, 76), ])
+summary(fmtab3.3N)
+```
+
+## **3.2 Example 3.1 (continued) (Pg. 39)**
+
+### Data Info {.tabset .tabset-pills}
+
+The data in DataExam3.1 can be summarised to the plots level, we have
+
+#### Structure
+
+```{r}
+data(DataExam3.1.1, package="eda4treeR")
+str(DataExam3.1.1)
+```
+
+#### Summary
+```{r}
+print(dfSummary(DataExam3.1.1, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fmtab3.8 <- aov(ht ~ Error(repl)+seedlot, data = DataExam3.1.1)
+summary(fmtab3.8)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fmtab3.8) 
+```
+
+
+### Predicted Means {.tabset .tabset-pills}
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(130))
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+
+## **4.1 Example 4.3 (Pg. 53)**
+
+### Data Info {.tabset .tabset-pills}
+
+Major seed distributors such as the Australian Tree Seed Centre (ATSC) routinely conduct seed viability tests so that, when seed is dispatched, the purchaser has an indication of the germination percentage of the seed. As part of the ATSC research program, a series of experiments was conducted in 1992 by Debbie Solomon on provenances of Acacia mangium to investigate methods of pre-treatment and loss of viability of stored seed. Each experiment involved six seedlots of Acacia mangium and four seed pre-treatments in a factorial design with three replicates.
+
+#### Structure
+
+```{r}
+data(DataExam4.3, package="eda4treeR")
+DataExam4.3$treat <- factor(DataExam4.3$treat, levels =c("control", "nick", "bw&s", "bw1min"))
+DataExam4.3$contcomp <- factor(DataExam4.3$contcomp, levels = c("control", "Treated"))
+str(DataExam4.3)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam4.3, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fm4.2 <- aov(percent ~ repl + contcomp + seedlot +
+               treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot
+             , data = DataExam4.3)
+kable(anova(fm4.2), digits = 4) 
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fm4.2) 
+```
+
+
+### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+
+-   contcomp
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   seedlot
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(100))
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   treat/contcomp (treat)
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fm4.2, "treat", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(80))
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   contcomp/seedlot
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, groupname_col ="contcomp",
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+
+```{r}
+#| results='asis'
+for (i in 6:7){
+  print(names(predm_out[i]))
+  print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE), rownames_to_stub = TRUE))
+}
+```
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   treat/contcomp/seedlot
+
+#### Mean Table
+
+-   Mean
+```{r}
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, groupname_col ="treat",
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+-   Pairwise p-values
+
+```{r}
+#| results='asis'
+for (i in c(6, 11:13)){
+  print(names(predm_out[i]))
+  print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE), rownames_to_stub = TRUE))
+}
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+```
+
+
+### Subset Data
+
+```{r}
+DataExam4.3N <- DataExam4.3 %>%
+  filter(treat != "control") %>% 
+  droplevels()
+str(DataExam4.3N)
+```
+
+
+### Subset Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fm4.4 <- aov(percent ~ repl + treat*seedlot, data = DataExam4.3N)
+kable(anova(fm4.4), digits = 4) 
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fm4.4) 
+```
+
+
+### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+
+-   treat
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.4, "treat", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### p-value Table
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(80))
+```
+
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   seedlot
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### p-value Table & Plot
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(80))
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   treat:seedlot
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "treat"))
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### p-value Table & Plot
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(130))
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+
+## **4.2 Example 4.4 (Pg. 61)**
+
+### Data Info {.tabset .tabset-pills}
+
+An experiment supported by the Shell Company was planted at Toolara Forest Reserve near Gympie, Queensland, in February 1987 to study the effects of irrigation and fertiliser on four seedlots of Eucalyptus grandis. Because of the difficulty in applying the irrigation and fertiliser treatments individually to each
+7 × 6 plot of trees, the experiment was designed as a split-plot, with main-plot treatments, irrig and fert. There were two replicates of four main-plots each with four sub-plots.
+
+#### Structure
+
+```{r}
+data(DataExam4.4, package="eda4treeR")
+DataExam4.4$seedlot <- factor(as.character(DataExam4.4$seedlot))
+str(DataExam4.4)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam4.4, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fm4.6 <- aov(height ~ repl + irrig*fert*seedlot +
+Error(repl/irrig:fert), data = DataExam4.4)
+summary(fm4.6)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fm4.6) 
+```
+
+
+### Predicted Means {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills} {.tabset .tabset-pills}
+
+-   irrig
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.6, "irrig", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   fert
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.6, "fert", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   seedlot
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", bar=TRUE, lineplot = FALSE, prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### p-value Table
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(120))
+```
+
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+-   fert:seedlot
+
+#### Mean Table
+
+```{r}
+predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "fert"))
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+#### p-value Table & Plot
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(150))
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+```
+
+#### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+
+## **5.2 Example 5.1 (Pg. 68)**
+
+### Data Info {.tabset .tabset-pills}
+
+In 1985 species/provenance trials were laid out at six sites in Thailand as part of an ACIAR project extending over several years to investigate Australian multi-purpose tree species. The experimental design in each case was an RCB design with three replicates and the number of seedlots ranged from 30 to 42. Plots consisted of 5 × 5 trees with a 2m × 2m spacing. Plot summary files were constructed for the 24-month measurement according to the methods described in Chapter 3. Analyses were performed on the plot mean data at each site.
+
+#### Structure
+
+```{r}
+data(DataExam5.1, package="eda4treeR")
+str(DataExam5.1)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam5.1, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling
+
+-   ANOVA
+```{r}
+fm5.2 <- lm(ht ~ site*seedlot, DataExam5.1)
+kable(anova(fm5.2), digits = 4) 
+```
+
+-   Predicted Means
+
+Site:
+```{r}
+site_mean <- Kmatrix(fm5.2, "site")$K%*%coef(fm5.2)
+site_df <- data.frame(Site=rownames(site_mean), Mean=site_mean)
+gt(site_df)
+```
+
+Seedlot:
+```{r}
+seedlot_mean <- t(Kmatrix(fm5.2, "seedlot")$K%*%coef(fm5.2))
+gt(data.frame(seedlot_mean[, 1:9, drop=FALSE], check.names = FALSE, row.names ="Mean"), rownames_to_stub = TRUE)
+gt(data.frame(seedlot_mean[, 10:18, drop=FALSE], check.names = FALSE, row.names ="Mean"), rownames_to_stub = TRUE)
+gt(data.frame(seedlot_mean[, 19:27, drop=FALSE], check.names = FALSE, row.names ="Mean"), rownames_to_stub = TRUE)
+```
+
+-   ANOVA with Residual Mean_Sq 1040 and Df 208 (Table 5.3, page 71)
+```{r}
+fm5.2_aT <- anova(fm5.2)
+fm5.2_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(208, 208* 1040, 1040)
+fm5.2_aT$`F value`[3] <- fm5.2_aT$`Mean Sq`[3]/fm5.2_aT$`Mean Sq`[4]
+fm5.2_aT$`Pr(>F)`[3] <- df(fm5.2_aT$`F value`[3], fm5.2_aT$Df[3]
+, fm5.2_aT$Df[4])
+kable(fm5.2_aT, digits = 4)
+```
+
+### Example 5.1 (continued) Page 78 {.tabset .tabset-pills}
+
+#### Book Way
+
+-   Fig. 5.1. Plot of mean height of two seedlots versus mean height of all seedlots at each of four sites.
+```{r}
+DataExam5.1 %>%
+filter(seedlot %in% c("13653", "13871")) %>%
+  ggplot(aes(x = sitemean, y = ht, color = seedlot, shape = seedlot)) +
+    geom_point(size=3) +
+    geom_smooth(method = lm, se = FALSE, fullrange = TRUE) +
+    theme_classic(17) +
+    labs(x = "\nSite Mean", y = "SeedLot Mean\n")
+```
+
+-   Table 5.7 Estimated height means and regression coefficients for data from Table 5.2.
+```{r}
+Table_5.7 <- DataExam5.1 %>%
+  summarise(Mean = mean(ht), .by = seedlot) %>%
+  left_join(
+    DataExam5.1 %>%
+      nest_by(seedlot) %>%
+      mutate(fm1 = list(lm(ht ~ sitemean , data = data))) %>%
+      summarise(Slope = coef(fm1)[2]), 
+    by = "seedlot") %>% 
+  arrange(seedlot)
+gt(Table_5.7)
+```
+
+-   Fig. 5.2. Plot of regression coefficients versus height means for individual seedlots.
+```{r}
+Table_5.7 %>% 
+  ggplot(aes(x = Mean, y = Slope)) +
+    geom_point(size=3) +
+    theme_classic(17) +
+    labs(x = "\nSeedLot Mean", y = "Regression Coefficients\n")
+```
+
+-   Regression Deviance SS 
+
+```{r}
+DevSS <- DataExam5.1 %>%
+  nest_by(seedlot) %>%
+  mutate(fm1 = list(lm(ht ~ sitemean , data = data))) %>%
+  summarise(SSE = anova(fm1)[2, 2]) %>%
+  ungroup () %>%
+  summarise(Dev = sum(SSE)) %>%
+  as.numeric()
+print(DevSS)
+```
+
+#### My Way
+
+-   Model
+```{r}
+mod_5.1 <- lm(ht ~ site+sitemean*seedlot, DataExam5.1)
+summary(mod_5.1)
+```
+
+-   ANOVA
+```{r}
+mod_5.1_aT <- anova(mod_5.1)
+kable(mod_5.1_aT, digits = 4)
+```
+
+-   ANOVA in Table 5.3 (page 71)
+```{r}
+kable(fm5.2_aT, digits = 4)
+```
+
+-   Table 5.8 Joint regression analysis of variance for a complete site-by-seedlot table with pooled residual mean square added manually (Page 79)
+```{r}
+mod_5.1_aTN <- mod_5.1_aT[3:4,]
+row.names(mod_5.1_aTN) <- c("regression", "deviations")
+Table_5.8 <- fm5.2_aT[1:3,] %>% 
+  bind_rows(mod_5.1_aTN) %>% 
+  bind_rows(fm5.2_aT[4,])
+Table_5.8$`F value`[5] <- Table_5.8$`Mean Sq`[5]/Table_5.8$`Mean Sq`[6]
+Table_5.8$`Pr(>F)`[5] <- df(Table_5.8$`F value`[5], Table_5.8$Df[5]
+, Table_5.8$Df[6])
+kable(Table_5.8, digits = 4)
+```
+
+-   Regression Plot
+```{r}
+covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALSE)
+```
+
+-   Table of seedlot mean and regression coefficients
+```{r}
+predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlot$reg_coef <- c(NA, coef(mod_5.1)[-1:-31])
+gt(predm_seedlot)
+```
+
+-   Plot of regression coefficients versus height means for individual seedlots.
+```{r}
+predm_seedlot %>% 
+  ggplot(aes(x=Mean, y=reg_coef))+
+  geom_point(size=3)+
+  theme_classic(17)+
+  labs(x = "\nSeedLot Mean", y = "Regression Coefficients\n")
+```
+
+
+
+## **5.3 Example 5.2 (Pg. 72)**
+
+### Data {.tabset .tabset-pills}
+#### Structure
+
+```{r}
+data(DataExam5.2, package="eda4treeR")
+str(DataExam5.2)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam5.2, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+method = 'render')
+```
+
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Book Way
+
+-   ANOVA
+
+```{r}
+fm5.6 <- lm(ht ~ site*seedlot, DataExam5.2)
+kable(anova(fm5.6), digits = 4) 
+```
+
+-   ANOVA with Residual Mean_Sq 964 and Df 384 (Table 5.6, page 74)
+```{r}
+fm5.6_aT <- anova(fm5.6)
+fm5.6_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(384, 384*964, 964)
+fm5.6_aT$`F value`[3] <- fm5.6_aT$`Mean Sq`[3]/fm5.6_aT$`Mean Sq`[4]
+fm5.6_aT$`Pr(>F)`[3] <- df(fm5.6_aT$`F value`[3], fm5.6_aT$Df[3]
+, fm5.6_aT$Df[4])
+kable(fm5.6_aT, digits = 4)
+```
+
+-   Table 5.9 Estimated height means and regression coefficients for data from Table 5.1 (Page 82)
+
+```{r}
+Tab5.9 <- DataExam5.2 %>%
+  summarise(Mean = round(mean(ht, na.rm = TRUE), 0), .by = seedlot) %>%
+  left_join(
+    DataExam5.2 %>%
+      nest_by(seedlot) %>%
+      mutate(fm2 = list(lm(ht ~ sitemean , data = data))) %>%
+      summarise(Slope = round(coef(fm2)[2], 2)), 
+    by = "seedlot") %>%
+  as.data.frame ()
+gt(Tab5.9)
+```
+
+Site:
+```{r}
+fm5.6N <- lm(ht ~ site+seedlot, DataExam5.2)
+predictmeans(fm5.6N, "site", plot=FALSE)$mean_table %>% 
+gt()
+```
+
+-   Fig. 5.3. Plot of regression coefficients versus height means for individual seedlots
+```{r}
+Tab5.9 %>% 
+  ggplot(aes(x = Mean, y = Slope)) +
+    geom_point(size=3) +
+    theme_classic(17) +
+    labs(x = "\nSeedLot Mean", y = "Regression Coefficients\n")
+```
+
+-   Regression Deviance SS
+```{r}
+DevSSN <- DataExam5.2 %>%
+  nest_by(seedlot) %>%
+  mutate(fm1 = list(lm(ht ~ sitemean , data = data))) %>%
+  summarise(SSE = anova(fm1)[2, 2]) %>%
+  ungroup () %>%
+  summarise(Dev = sum(SSE)) %>%
+  as.numeric()
+print(DevSSN)
+```
+
+#### My Way
+
+-   Model
+```{r}
+mod_5.2 <- lm(ht ~ site+sitemean*seedlot, DataExam5.2)
+summary(mod_5.2)
+```
+
+-   ANOVA
+```{r}
+mod_5.2_aT <- anova(mod_5.2)
+kable(mod_5.2_aT, digits = 4)
+```
+
+-   ANOVA in Table 5.6 (page 74)
+```{r}
+kable(fm5.6_aT, digits = 4)
+```
+
+-   Table 5.10 Joint regression analysis of variance for an incomplete site-by-seedlot table with pooled residual mean square added manually. (Page 85)
+```{r}
+mod_5.2_aTN <- mod_5.2_aT[3:4,]
+row.names(mod_5.2_aTN) <- c("regression", "deviations")
+Table_5.10 <- fm5.6_aT[1:3,] %>% 
+  bind_rows(mod_5.2_aTN) %>% 
+  bind_rows(fm5.6_aT[4,])
+Table_5.10$`F value`[5] <- Table_5.10$`Mean Sq`[5]/Table_5.10$`Mean Sq`[6]
+Table_5.10$`Pr(>F)`[5] <- df(Table_5.10$`F value`[5], Table_5.10$Df[5]
+, Table_5.10$Df[6])
+kable(Table_5.10, digits = 4)
+```
+
+-   Regression Plot
+```{r}
+covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALSE)
+```
+
+-   Table of seedlot mean and regression coefficients
+```{r}
+predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlotN$reg_coef <- c(NA, coef(mod_5.2)[-1:-43])
+gt(predm_seedlotN)
+```
+
+-   Plot of regression coefficients versus height means for individual seedlots.
+```{r}
+predm_seedlotN %>% 
+  ggplot(aes(x=Mean, y=reg_coef))+
+  geom_point(size=3)+
+  theme_classic(17)+
+  labs(x = "\nSeedLot Mean", y = "Regression Coefficients\n")
+```
+
+
+
+
+## **8.1 Example 8.1 (Pg. 139)**
+
+### Data Info {.tabset .tabset-pills}
+
+In the early 1990s Khongsak Pinyopusarerk of CSIRO Forestry and Forest Products initiated a far-reaching study of Casuarina equisetifolia. This is a nitrogen-fixing tree of considerable social, economic and environmental importance in tropical/subtropical littoral zones of Asia, the Pacific and Africa. Provenance collections were obtained from 18 countries and, with this material, more than 40 trials were laid out in 20 countries. The number of seedlots included in each trial varied, depending on the suitability and size of the planting sites for the available material. One of the trials, in Weipa, northern Queensland, contained all the available seedlots and is the example used here.
+
+#### Structure
+
+```{r}
+data(DataExam8.1, package="eda4treeR")
+DataExam8.1$inoc <- factor(DataExam8.1$inoc, levels=c("1 week", "7 weeks"))
+DataExam8.1$country <- factor(as.character(DataExam8.1$country))
+str(DataExam8.1)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam8.1, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+fm8.2 <- aov(dbh ~ inoc*(country/prov) + Error(repl/(row:col))
+, data = DataExam8.1)
+summary(fm8.2)
+```
+
+#### Residual Plot
+
+```{r}
+fm8.2 <- lmer(dbh ~ inoc*(country/prov) + (1|repl/(row:col)), 
+              control=lmerControl(check.nobs.vs.nlev = "ignore",
+                                  check.nobs.vs.rankZ = "ignore",
+                                  check.nobs.vs.nRE="ignore",
+                                  optimizer ="Nelder_Mead"),
+              data = DataExam8.1)
+residplot(fm8.2) 
+```
+
+
+### Predicted Means
+
+-   inoc
+```{r}
+predm_out <- predictmeans(fm8.2, "inoc", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+-   country
+```{r}
+predm_out <- predictmeans(fm8.2, "country", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+-   inoc:country
+```{r}
+predm_out <- predictmeans(fm8.2, "inoc:country", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+### Example 8.1a (Pg. 145) {.tabset .tabset-pills}
+
+
+#### Model
+```{r}
+fm8.3 <- aov(terms(dbh ~ inoc+repl+col+repl:row+repl:col+prov+inoc:prov,              keep.order = TRUE), data = DataExam8.1)
+kable(anova(fm8.3), digits = 4) 
+```
+#### Residual Plot
+```{r}
+residplot(fm8.3)
+```
+
+
+### Example 8.1 (continued) (Pg. 147) {.tabset .tabset-pills}
+
+#### Model
+```{r}
+fm8.4 <- lmer(dbh ~ repl + col + prov+(1|repl:row)+(1|repl:col), data = DataExam8.1)
+summary(fm8.4, cor=FALSE)
+```
+#### Residual Plot
+```{r}
+residplot(fm8.4)
+```
+
+
+#### ANOVA, adjusted $R^2$, Varcomp
+
+-   ANOVA
+```{r}
+kable(anova(fm8.4, type=1, ddf = "Kenward-Roger"), digits = 4)
+```
+
+-   adjusted $R^2$
+```{r}
+R2_glmm(fm8.4)
+```
+
+-   Varcomp
+```{r}
+kable(varcomp(fm8.4), digits = 4)
+```
+
+
+#### Predict Mean
+
+-   repl
+```{r}
+predm_out <- predictmeans(fm8.4, "repl", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+-   col
+```{r}
+predm_out <- predictmeans(fm8.4, "col", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+-   prov
+```{r}
+predm_out <- predictmeans(fm8.4, "prov", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+### Example 8.1 (continued) (Pg. 155) {.tabset .tabset-pills}
+
+#### Model
+```{r}
+fm8.6 <- aov(dbh ~ country + country:prov, data = DataExam8.1)
+
+fm8.6_aT <- anova(fm8.6)
+fm8.6_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(119, 119* 0.1951, 0.1951)
+fm8.6_aT$`F value`[1:2] <- fm8.6_aT$`Mean Sq`[1:2]/fm8.6_aT$`Mean Sq`[3]
+fm8.6_aT$`Pr(>F)`[1:2] <- df(fm8.6_aT$`F value`[1:2], fm8.6_aT$Df[1:2]
+, rep(fm8.6_aT$Df[3], 2))
+kable(fm8.6_aT, digits = 4)
+```
+
+#### Residual Plot
+```{r}
+residplot(fm8.6)
+```
+
+
+#### Predict Mean
+
+-   country
+```{r}
+predm_out <- predictmeans(fm8.6, "country", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table)
+```
+
+
+## **8.5 Example 8.2 (Pg. 157)**
+
+### Data Info {.tabset .tabset-pills}
+
+In Example 7.1 we discussed a Eucalyptus clone trial conducted in Vietnam and described the experimental layout. The trial tested 56 hybrid clones of the interspecific hybrid combination E. urophylla × E. pellita (UP). These candidates had been selected from progeny trials of control-pollinated hybrid families; here we ignore the parental origins of the different UP clones.
+
+#### Structure
+
+```{r}
+data(DataExam8.2, package="eda4treeR")
+DataExam8.2$standard <- factor(DataExam8.2$standard, levels=c("0", "PN14", "SSOseed", "U6", "UG323"))
+str(DataExam8.2)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam8.2, 
+                varnumbers   = FALSE, 
+                valid.col    = FALSE, 
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+
+#### Model
+```{r}
+fm8.7 <- lmer(dbh ~ repl + column +
+contcompf + contcompf:standard + (1| repl:row) + (1| repl:column) +(1| contcompv:clone), data = DataExam8.2)
+summary(fm8.7, corr=FALSE)
+```
+
+#### Residual Plot
+```{r}
+residplot(fm8.7)
+```
+
+
+### ANOVA, adjusted $R^2$, Varcomp
+
+-   ANOVA
+```{r}
+kable(anova(fm8.7, type=1), digits=4)
+```
+
+-   Adjusted $R^2$
+```{r}
+R2_glmm(fm8.7)
+```
+
+-   Varcomp
+```{r}
+gt(varcomp(fm8.7), rownames_to_stub=TRUE)
+```
+
+### Predicted Means {.tabset .tabset-pills}
+
+-   repl
+```{r}
+predictmeans(fm8.7, "repl", plot=FALSE)
+```
+
+-   column
+```{r}
+predictmeans(fm8.7, "column", plot=FALSE)
+```
+
+-   standard|contcompf
+
+
+#### Mean
+```{r}
+predm_out <- predictmeans(fm8.7, "contcompf:standard", atvar="contcompf", plot=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, groupname_col = "contcompf")
+```
+
+#### Pairwise p-values
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(120))
+```
+
+
+
+
+
+
+
+## **Reference**
+
+-   Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
+discovery rate: a practical and powerful approach to multiple
+testing. Journal of the Royal Statistical Society Series B, 57,
+289--300. <doi:10.1111/j.2517-6161.1995.tb02031.x>.
+<https://www.jstor.org/stable/2346101>.
+
+-   Cave, V. (2021). Confidence tricks: the 83.4% confidence interval for comparing means. https://vsni.co.uk/blogs/confidence_trick.
+
+-   Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015).
+Fitting Linear Mixed-Effects Models Using lme4. Journal of
+Statistical Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>.
+
+-   Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
+predicted means for linear models [R package version 1.0.8].
+<https://CRAN.R-project.org/package=predictmeans>.
+
+-   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID: 37127864.
+
+-   R Core Team (2022). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+URL <https://www.R-project.org/>.

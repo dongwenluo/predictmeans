@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 tests/testthat/testthat-problems.rds
+docs/
+inst/doc

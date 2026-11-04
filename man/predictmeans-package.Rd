@@ -23,6 +23,7 @@ Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://dongwenluo.github.io/predictmeans/}
   \item \url{https://github.com/dongwenluo/predictmeans}
   \item \url{https://CRAN.R-project.org/package=predictmeans}
   \item Report bugs at \url{https://github.com/dongwenluo/predictmeans/issues}

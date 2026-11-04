@@ -1,0 +1,1242 @@
+---
+title: "Overview of predictmeans"
+author: "Dongwen Luo"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(predictmeans)
+library(HRW)
+library(gridExtra)
+library(car)
+library(DT)
+library(gt)
+library(knitr)
+
+# Data copper can be download at Example 8
+copper <- read.csv("copper.csv", header=TRUE)
+
+DT_df <- function(df){
+  require(DT)
+  stopifnot(is.data.frame(df))
+  
+  df |>
+    DT::datatable(
+      extensions = 'Buttons',
+      options = list(
+        dom = 'Blfrtip', # set DOM
+        buttons = c('csv'),
+        lengthMenu = list(
+          c(10, 20, -1), # declare values
+          c(10, 20, "All") # declare titles
+        ), # end of lengthMenu customization
+        pageLength = 10
+      ), rownames= FALSE)
+}
+```
+
+## **Outline**
+
+::: {style="font-size: 200%;"}
+
+-   Motivation
+
+-   Overview 
+
+-   Examples 
+
+-   Future Plan
+
+::: 
+
+## **Motivation**
+
+::: {style="font-size: 150%;"}
+
+-   **Mixed Effects Models:** Essential for statistical analysis (e.g., split-plot experiments, repeated measurements, meta-analysis). However, popular R packages like 'nlme' and 'lme4' only provide model effects and ANOVA outputs, lacking further inference (predicted means, multiple comparisons, confidence intervals).
+
+-   **Permutation Tests:** Ideal for small sample sizes, non-normal distributions, or when parametric test assumptions are unmet. They offer robust and flexible hypothesis testing in such scenarios.
+
+-   **Semiparametric Regression:** Combines parametric and non-parametric effects for predictive variables. Widely valuable across astronomy, biology, medicine, economics, and finance applications.
+
+-   **Package 'predictmeans':** Offers diagnostic and inference functions for various models ('aov', 'lm', 'glm', etc.). Inferences include predicted means, standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square, and graphical representations.  <https://cran.r-project.org/web/packages/predictmeans/index.html>.
+::: 
+
+## **Overview**
+
+### **Main Functions Flowchart**
+
+![](overview%20flow%20chart.jpg)
+
+### Contents
+
+![](predictmeans%20help.jpg)
+
+## Example_1 Split-plot Design (Oats data)
+
+In the split-plot design shown here, the treatments are three varieties of oats (Victory, Golden rain and Marvellous) and four levels of nitrogen (0, 0.2, 0.4 and 0.6 cwt). As it is feasible to work with smaller plots for fertiliser than for varieties, the six blocks were initially split into three whole-plots and then each whole-plot was split into four subplots. The varieties were allocated (at random) to the whole-plots within each block, and the nitrogen levels (at random) to the subplots within each whole-plot. In a randomized-block design, we have a hierarchical structure with blocks and then plots within blocks.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(Oats, package="nlme")
+Oats$Block <- factor(Oats$Block, levels=unique(Oats$Block), ordered = TRUE)
+Oats <- data.frame(Oats)
+str(Oats)
+```
+
+#### Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+Oats %>% 
+  ggplot(aes(x=nitro, y=yield, col=Variety))+
+  geom_point(size=2)+
+  geom_line(linewidth=1)+
+  facet_wrap(vars(Block))+
+  theme_bw(9)
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+Oats$nitro <- factor(Oats$nitro)
+Oats$Whole_plot <- Oats$Variety
+mod <- lmer(yield ~ nitro*Variety+(1|Block/Whole_plot), data=Oats)
+summary(mod, corr=FALSE)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod, group="nitro")  # id=TRUE
+```
+
+#### Highlights
+
+Options in function 'residplot':
+
+-   **{id=TRUE}** is useful to identify any outliers.
+
+-   **{group="nitro"}** is useful to identify variation pattern along 'nitro' groups.
+
+#### Test
+
+```{r}
+#perform shapiro-wilk test
+shapiro.test(resid(mod))
+
+#perform bartlett test
+bartlett.test(yield ~ interaction(nitro:Variety), data = Oats)
+
+#perform levene test 
+car::leveneTest(yield ~ nitro:Variety, data = Oats)
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+```{r}
+kable(anova(mod))
+```
+
+-   **$R^2$**
+```{r}
+R2_glmm(mod)
+```
+
+### Predicted Means
+
+#### Predicted Means for "nitro" {.tabset .tabset-pills}
+
+
+##### Mean Table
+
+```{r}
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+##### p-value Table & Plot
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE, 
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(130))
+```
+
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+PMplot(predm_out$p_valueMatrix)
+```
+
+
+#### Predicted Means for "nitro:Variety" {.tabset .tabset-pills}
+
+
+##### Mean Table
+
+```{r}
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+##### p-value Table & Plot
+
+```{r}
+gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
+   rownames_to_stub=TRUE,
+   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+  cols_width(everything() ~ px(130))
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 8
+PMplot(predm_out$p_valueMatrix)
+```
+
+
+#### Highlights
+
+Options in function 'predictmens':
+
+-   **{pair=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
+
+-   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pair' with be TRUE automatically when 'adj' is not none).
+
+-   **{bar=TRUE}** is for producing bar chart.
+
+-   **{meandecr=TRUE}** is for descending means in 'mean_table'.
+
+-   **{meandecr=FALSE}** is for ascending means in 'mean_table'.
+
+-   **Pairwise LSD** is available only when adj='none' or 'bonferroni'.
+
+### Permutation Test {.tabset .tabset-pills}
+
+
+#### For Model Term
+```{r}
+# Permutation Test for model terms
+system.time(
+  permlme <- permmodels(model=mod, nperm=999)
+)
+```
+
+#### For Multiple Comparisons
+```{r}
+# Permutation Test for multiple comparisons
+predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", permlist=permlme, plot=FALSE)
+```
+
+#### For Contrasts
+```{r}
+# Permutation Test for specified contrasts
+cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
+contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
+```
+
+
+## Example_2 Repeated Measurements (ATP data)
+
+ATP containing data from an experiment to study the effects of preserving liquids on the enzyme content of dog hearts. There were 23 hearts and two treatment factors, A and B, each at two levels. Measurements were made of ATP as a percentage of total enzyme in the heart, at one and two hourly intervals during a twelve hour period following initial preservation.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(ATP, package="predictmeans")
+ATP$time.v <- as.numeric(as.character(ATP$time))
+str(ATP)
+```
+
+#### Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+ATP %>% 
+  ggplot(aes(x=time.v, y=ATP, col=A:B))+
+  geom_point(size=2)+
+  geom_line(linewidth=1)+
+  facet_wrap(vars(heart))
+```
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+ATP %>% 
+  ggplot(aes(x=time.v, y=ATP, col=A:B))+
+  geom_point()+
+  geom_smooth()+
+  facet_grid(vars(A), vars(B))
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod <- lmer(ATP^1.5 ~ A*B*time+(1| heart), ATP)
+summary(mod)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod, group="A") 
+```
+
+#### Test
+
+```{r}
+#perform shapiro-wilk test
+shapiro.test(resid(mod))
+
+#perform bartlett test
+bartlett.test((ATP)^1.5 ~ interaction(A, B), data = ATP)
+
+#perform levene test
+car::leveneTest((ATP)^1.5 ~ A:B, data = ATP)
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+```{r}
+kable(anova(mod))
+```
+
+-   **$R^2$**
+```{r}
+R2_glmm(mod)
+```
+
+### Predicted Means
+
+#### Predicted Means for "A:time" {.tabset .tabset-pills}
+
+##### Mean Table
+
+```{r}
+predm_out <- predictmeans(mod, "A:time", 
+                          atvar="time", adj="BH", bar=TRUE, 
+                          trans=function(x) x^(1/1.5), 
+                          prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+##### p-value Table
+
+-   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+```{r}
+#| results='asis'
+for (i in 6:15){
+  if (i==1) {
+    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
+  }else{
+    print(names(predm_out[i]))
+    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE), 
+             rownames_to_stub = TRUE))
+  }
+}
+```
+
+
+
+#### Predicted Means for "B:time" {.tabset .tabset-pills}
+
+##### Mean Table
+
+```{r}
+predm_out <- predictmeans(mod, "B:time", 
+                          atvar="time", adj="BH", bar=TRUE, 
+                          trans=function(x) x^(1/1.5), 
+                          prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+predm_out$predictmeansBarPlot
+```
+
+##### p-value Table
+
+-   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+```{r}
+#| results='asis'
+for (i in 6:15){
+  if (i==1) {
+    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
+  }else{
+    print(names(predm_out[i]))
+    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
+             rownames_to_stub = TRUE))
+  }
+}
+```
+
+
+
+#### Predicted Means for "A:B:time" {.tabset .tabset-pills}
+
+##### Mean Table
+
+```{r}
+predm_out <- predictmeans(mod, "A:B:time", 
+                          atvar="time", adj="BH", 
+                          trans=function(x) x^(1/1.5), 
+                          prtplt=FALSE)
+print(predm_out[1:4])
+gt(predm_out$mean_table$Table, 
+   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+predm_out$predictmeansPlot$meanPlot
+predm_out$predictmeansPlot$ciPlot
+```
+
+##### p-value Table
+
+-   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+```{r}
+#| results='asis'
+for (i in 6:15){
+  if (i==1) {
+    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
+  }else{
+    print(names(predm_out[i]))
+    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
+             rownames_to_stub = TRUE))
+  }
+}
+```
+
+##### p-value Plot
+
+```{r}
+#| fig-width: 9
+#| fig-height: 8
+PMplot(predm_out$p_valueMatrix)
+```
+
+
+#### Highlights
+
+Options in function 'predictmens':
+
+-   **{atvar="time"}** sets multiple comparison within each level of 'time', it also infects the mean_table and mean plots arrangement. When 'atvar' is not NULL 'pair' turns to be TRUE automatically. Please try to see any effects for 'atvar=c("A", "B")' or 'atvar=c("B", "A")'.
+
+-   **{trans=function(x) x^(1/1.5)}** is a function for back transformation e.g. 'trans=exp' for log, 'trans=function(x) x^2' for sqrt. 
+
+-   For any GLM, the function produces associated back transformation automatically.
+
+
+## Example_3 GLM with Covariate (Drug data)
+
+Comparison of the effectiveness of three analgesic drugs to a standard drug, morphine (Finney, Probit analysis, 3rd Edition 1971, p.103). 14 groups of mice were tested for response to the drugs at a range of doses. N is total number of mice in each group, R is number responding.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(Drug, package="predictmeans")
+str(Drug)
+```
+
+#### Summary
+
+```{r}
+summary(Drug)
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod <- glm(cbind(R, N-R) ~ log10Dose*Drug, 
+           family=binomial(link = "probit"), 
+           data=Drug)
+summary(mod)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod) 
+```
+
+
+### ANOVA
+
+```{r}
+kable(car::Anova(mod))
+```
+
+### Covariate Means
+
+#### Predicted Means for "Treatment" {.tabset .tabset-pills}
+
+##### Mean Table
+
+```{r}
+covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
+                                level = 0.166, # get 83.4% CI
+                                newwd = TRUE) 
+covariate_out$pltdf %>%
+  select(Drug, xvar, Mean, ses, LL, UL) %>% 
+  mutate_if(is.numeric, round, digits = 4) %>% 
+  rename(log10Dose=xvar, Probability=Mean) %>% 
+  arrange(log10Dose, Drug) %>% 
+  group_by(log10Dose) %>% 
+  mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
+  ungroup() %>% 
+  DT_df()
+```
+
+##### Mean Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
+               level = 0.166, trellis = FALSE)
+covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
+               level = 0.166, trans=I, trellis = FALSE, ci=F)
+```
+
+
+### Highlights
+
+Options in function 'covariatemeans':
+
+-   **{level = 0.166}** produces 83.4% confidence interval (CI) for predicted means. If a straightforward multiple comparison between predicted means is not feasible, an alternative method involves utilizing predicted means with 83.4% CIs. When the CIs of two predicted means overlap, the associated means are not significantly different at the 0.05 level; otherwise, they are considered significant. The function **'ci_mcp(LL, UL)'** is used to produce indicating letters.
+
+**DT_df** is a function for producing data table in html with 'CSV' download button. To download the whole data, you need to select 'All' entries.
+
+
+## Example_4 Semiparametric Regression with Group (WarsawApts data)
+
+'WarsawApts' is a subset of the data set 'apartments' in the R package PBImisc. This dataset contains the prices of the apartments which were sold in Warsaw, Poland, during the calendar years 2007 to 2009.
+
+### Data Info {.tabset .tabset-pills}
+
+
+#### Structure
+
+```{r}
+data(WarsawApts, package="HRW")
+WarsawApts$district <- factor(WarsawApts$district)
+names(WarsawApts)[c(6)] <- c("apartment.price")
+str(WarsawApts)
+```
+
+#### Plot
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7
+ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
+  geom_point(size=1.6)+
+  theme_bw(15)
+```
+
+
+### Smooth without Group {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod1 <- semireg(apartment.price ~ construction.date,
+                smoothZ=list(
+                  grp=smZ(construction.date, k=25) 
+                ), # Use of a O'Sullivan spline with 25 knots 
+                  #  to model the non-linear relationship
+                data = WarsawApts)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod1$semer)  
+```
+
+
+### ANOVA, RANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(anova(mod1$semer))
+```
+
+-   **RANOVA**
+
+```{r}
+kable(ranova(mod1$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod1$semer)
+```
+
+### Prediction {.tabset .tabset-pills}
+
+#### Predict Table
+
+```{r}
+pred_out1 <- semipred(mod1, covariate="construction.date", prt=FALSE)
+DT_df(pred_out1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Predict Plot
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7
+pred_out1$plt
+```
+
+
+### Smooth with Group {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod2 <- semireg(apartment.price ~ construction.date*district, 
+                smoothZ=list(
+                  grp=smZ(construction.date, k=10, 
+                            by = district, group=TRUE)
+                  ),
+                data=WarsawApts)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod2$semer, group="district")  
+```
+
+
+### ANOVA, RANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(anova(mod2$semer))
+```
+
+-   **RANOVA**
+
+```{r}
+kable(ranova(mod2$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod2$semer)
+```
+
+### Prediction with Group {.tabset .tabset-pills}
+
+#### Predict Table
+
+```{r}
+pred_out2_1 <- semipred(mod2, "district", "construction.date", prt=FALSE)
+DT_df(pred_out2_1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Predict Plot
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7
+pred_out2_1$plt
+```
+
+#### Contrast Table
+
+Mean Contrast table for District 'Mokotow' vs 'Srodmiescie' 
+
+```{r}
+pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'), prt=FALSE)
+pred_out2_2$pred_df %>% 
+  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
+  mutate_if(is.numeric, round, digits = 4) %>% 
+  DT_df()
+```
+
+#### Contrast Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out2_2$plt
+```
+
+
+## Example_5 Semiparametric Regression with Multiple Covariates (Caschool data)
+
+A data is collected from 420 schools in United States cross-section from 1998-1999, including county, grade span of district, percent qualifying for CalWORKS, computer per student, district average income, average math score.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(Caschool, package="Ecdat")
+Caschool <- Caschool %>% 
+  select(county, grspan, calwpct, compstu, avginc, mathscr) %>% 
+  mutate(log.avginc = log(Caschool$avginc))
+str(Caschool)
+```
+
+#### Summary
+
+```{r}
+summary(Caschool)
+```
+
+
+### Smooth Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
+                          smoothZ=list(
+                            cal_grp=smZ(calwpct, k=12),  
+                            avg_grp=smZ(log.avginc, k=5),
+                            comp_grp=smZ(compstu, k=12)
+                          ), 
+                          data=Caschool)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod$semer)  
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(Anova(mod$semer))
+```
+
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod$semer)
+```
+
+### Prediction {.tabset .tabset-pills}
+
+#### calwpct
+
+```{r}
+pred_out1 <- semipred(mod, covariate = "calwpct", prt=FALSE)
+DT_df(pred_out1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+pred_out1$plt
+```
+
+#### log.avginc
+
+```{r}
+pred_out2 <- semipred(mod, covariate = "log.avginc", prt=FALSE)
+DT_df(pred_out2$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+pred_out2$plt
+```
+
+#### compstu
+
+```{r}
+pred_out3 <- semipred(mod, covariate = "compstu", prt=FALSE)
+DT_df(pred_out3$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+pred_out3$plt
+```
+
+#### Joint Plot
+
+```{r}
+#| fig-width: 9
+#| fig-height: 8
+gridExtra::grid.arrange(pred_out1$plt, pred_out2$plt, pred_out3$plt, nrow = 1)
+```
+
+
+
+## Example_6 Semiparametric Regression with Binomial Distribution (indonRespir data)
+
+Indonesian Children's Health Study of respiratory infections for a cohort of 275 Indonesian children. The data are longitudinal with each child having between 1 and 6 repeated measurements.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(indonRespir, package="HRW")
+indonRespir[, c(1,5)] <- lapply(indonRespir[, c(1,5)], factor)
+indonRespir$sex <- indonRespir$female
+levels(indonRespir$sex) <- c("male", "female")
+str(indonRespir)
+```
+
+#### Summary
+
+```{r}
+summary(indonRespir)
+```
+
+
+### Smooth without Group {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod1 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
+                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
+                             smoothZ=list(
+                               grp=smZ(age, k=25)
+                             ),
+                             family = binomial,
+                             data = indonRespir)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod1$semer)  
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(car::Anova(mod1$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod1$semer)
+```
+
+### Prediction {.tabset .tabset-pills}
+
+#### Predict Table
+
+```{r}
+pred_out1 <- semipred(mod1, "age", "age", prt=FALSE)
+DT_df(pred_out1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Predict Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out1$plt+
+  geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink")+
+  geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
+  ylim(0, 0.18)
+```
+
+
+### Smooth with Group {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod2 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
+                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
+                smoothZ=list(
+                  grp=smZ(age, k=25, by=sex, group=TRUE)
+                ),
+                family = binomial,
+                data = indonRespir)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod2$semer)  
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(Anova(mod2$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod2$semer)
+```
+
+### Prediction with Group {.tabset .tabset-pills}
+
+#### Predict Table
+
+```{r}
+pred_out2_1 <- semipred(mod2, "sex", "age", prt=FALSE)
+DT_df(pred_out2_1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Predict Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out2_1$plt+
+  geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
+  geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
+  ylim(0, 0.24)
+```
+
+#### Contrast Table
+
+Mean Contrast table for Sex 'male' vs 'female'
+
+```{r}
+pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'), prt=FALSE)
+pred_out2_2$pred_df %>% 
+  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
+  mutate_if(is.numeric, round, digits = 4) %>% 
+  DT_df()
+```
+
+#### Contrast Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out2_2$plt
+```
+
+
+## Example_7 Semiparametric Regression with Negtive Binomial Distribution (ragweed data)
+
+The ragweed data frame has data on ragweed levels and meteorological variables for 334 days in Kalamazoo, Michigan, U.S.A.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+data(ragweed, package="HRW")
+ragweed$year <- factor(ragweed$year)
+str(ragweed)
+```
+
+#### Summary
+
+```{r}
+summary(ragweed)
+```
+
+
+### Smooth Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod <- semireg_tmb(pollenCount ~ rain+year+temperatureResidual+dayInSeason+windSpeed,
+                   smoothZ=list(
+                     s_day=smZ(dayInSeason, by=year, group=TRUE),
+                     s_temp=smZ(temperatureResidual),
+                     s_wind=smZ(windSpeed)
+                   ),
+                   family = nbinom1,
+                   data=ragweed)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod$semer)  
+```
+
+
+### ANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(car::Anova(mod$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod$semer)
+```
+
+### Prediction by Day in Season {.tabset .tabset-pills}
+
+#### Predict Table
+
+```{r}
+pred_out1_1 <- semipred(mod, "year", "dayInSeason", sm_term="s_day", prt=FALSE)
+DT_df(pred_out1_1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Predict Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out1_1$plt
+```
+
+
+## Example_8 Semiparametric Regression with Spatial Smooth (copper data)
+
+Data copper records the copper grade quality associated with various sampling points' X, Y, and Z coordinates within a designated area.
+
+### Data Info {.tabset .tabset-pills}
+
+#### Structure
+
+```{r}
+str(copper)
+```
+
+#### Summary
+
+```{r}
+summary(copper)
+```
+
+#### Data
+
+```{r}
+DT_df(copper)
+```
+
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model
+
+```{r}
+mod <- semireg(log(grade) ~ (xcoord+ycoord+zcoord)^2,
+                smoothZ=list(
+                  grp_z=smZ(zcoord),
+                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
+                  ), 
+                data=copper)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(mod$semer)  
+```
+
+
+### ANOVA, RANOVA and $R^2$
+
+-   **ANOVA**
+
+```{r}
+kable(anova(mod$semer))
+```
+
+-   **RANOVA**
+
+```{r}
+kable(ranova(mod$semer))
+```
+
+-   **$R^2$**
+
+```{r}
+R2_glmm(mod$semer)
+```
+
+The negative $R^2$ indictates we may fit the model with intercept only.
+```{r}
+mod <- semireg(log(grade) ~ 1,
+                smoothZ=list(
+                  grp_z=smZ(zcoord),
+                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
+                  ), 
+                data=copper)
+```
+```{r}
+R2_glmm(mod$semer)
+```
+
+
+### Semiparametric prediction {.tabset .tabset-pills}
+
+#### Z Table
+
+```{r}
+pred_out1 <- semipred(mod, covariate="zcoord", trans=exp, prt=FALSE)
+DT_df(pred_out1$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### Z Plot
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+pred_out1$plt
+```
+
+#### X, Y Table
+
+```{r}
+pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, point = TRUE, prt=FALSE)
+DT_df(pred_out2$pred_df %>% 
+        mutate_if(is.numeric, round, digits = 4))
+```
+
+#### X, Y 2D Plot
+
+```{r}
+pred_out2$plt
+```
+
+#### X, Y 3D Plot
+
+```{r}
+pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), threeD = TRUE, point=FALSE, trans=exp, prt=FALSE)
+pred_out3$plt
+```
+
+
+## **Future Plan**
+
+::: {style="font-size: 200%;"}
+
+-   Extend **'predictmeans'** to more popular models in R,
+
+-   Build a comprehensive Shiny App based on **'predictmeans'**,
+
+-   Make functions in **'predictmeans'** working properly for **glmmTMB** model with a complex variance-covariance structure.
+
+:::
+
+
+## **Reference**
+
+-   Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
+discovery rate: a practical and powerful approach to multiple
+testing. Journal of the Royal Statistical Society Series B, 57,
+289--300. <doi:10.1111/j.2517-6161.1995.tb02031.x>.
+<https://www.jstor.org/stable/2346101>.
+
+-   Cave, V. (2021). Confidence tricks: the 83.4% confidence interval for comparing means. https://vsni.co.uk/blogs/confidence_trick.
+
+-   Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015).
+Fitting Linear Mixed-Effects Models Using lme4. Journal of
+Statistical Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>.
+
+-   Harezlak J., Ruppert, D. & Wand, M.P. (2018). Semiparametric Regression with R. Springer; ISBN: 978-1-4939-8851-8.
+
+-   Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
+predicted means for linear models [R package version 1.0.8].
+<https://CRAN.R-project.org/package=predictmeans>.
+
+-   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID: 37127864.
+
+-   R Core Team (2022). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+URL <https://www.R-project.org/>.
