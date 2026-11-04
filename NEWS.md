@@ -204,6 +204,15 @@
   the first ("missing value where TRUE/FALSE needed" when letters were
   computed). The given `Df` is now used for every pair.
 
+## Documentation
+
+* Three vignettes: "Getting started with predictmeans", "Adjusted R² for
+  generalized linear mixed models" and "Migrating from predictmeans 1.x".
+* A pkgdown website (built by GitHub Actions and published to GitHub
+  Pages), with two longer worked-example articles: an overview of the
+  package and experimental design and analysis for tree improvement.
+* New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
+
 ## Internal
 
 * Help pages are now written with roxygen2: the sources are the

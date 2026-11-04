@@ -1,0 +1,73 @@
+url: https://dongwenluo.github.io/predictmeans/
+
+template:
+  bootstrap: 5
+
+home:
+  title: "predictmeans: predicted means for linear and mixed models"
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - predictmeans
+  - R2_glmm
+  - migrating
+- title: Worked examples
+  navbar: Worked examples
+  contents:
+  - articles/overview
+  - articles/tree-improvement
+
+reference:
+- title: Predicted means and comparisons
+  contents:
+  - predictmeans
+  - covariatemeans
+  - contrastmeans
+  - specify_contrast
+  - Kmatrix
+- title: Results
+  contents:
+  - tidy.predictmeans
+  - autoplot.predictmeans
+  - PMplot
+  - ci_mcp
+- title: Degrees of freedom, tests and diagnostics
+  contents:
+  - df_term
+  - R2_glmm
+  - varcomp
+  - se_ranef
+  - CookD
+  - residplot
+- title: Permutation tests
+  contents:
+  - permmodels
+  - permlmer
+  - permanova.lmer
+  - permindex
+- title: Semiparametric regression
+  contents:
+  - semireg
+  - semireg_tmb
+  - semipred
+  - smZ
+- title: Extending to new model classes
+  contents:
+  - pm_coef
+- title: Data
+  contents:
+  - ATP
+  - Body_length
+  - Clinical
+  - Drug
+  - Poisson_ind
+- title: Package
+  contents:
+  - predictmeans-package

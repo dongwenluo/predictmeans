@@ -1,0 +1,125 @@
+---
+title: "Getting started with predictmeans"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with predictmeans}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 4.5)
+```
+
+predictmeans gives predicted (least-squares) means, standard errors, LSDs and pairwise
+comparisons for `lm`, `glm`, `aov`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and `gam`
+models, with Kenward–Roger or Satterthwaite degrees of freedom for mixed models, and
+permutation tests.
+
+## A split-plot experiment
+
+The oats data (Yates 1935) are a split plot: three varieties on whole plots within six
+blocks, four nitrogen levels on subplots.
+
+```{r}
+library(predictmeans)
+Oats <- as.data.frame(nlme::Oats)
+Oats$nitro <- factor(Oats$nitro)
+fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
+```
+
+## Predicted means and pairwise comparisons
+
+```{r}
+pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
+                   plot = FALSE, prtnum = FALSE)
+summary(pm)
+```
+
+`atvar = "Variety"` compares the nitrogen levels within each variety, with Tukey
+adjustment within each variety.
+
+## Tables to work with
+
+Every result carries three stable tables: `means`, `pairs` and `settings`. They are plain
+data frames, so they are easy to filter, join or export.
+
+```{r}
+head(pm$means)
+head(pm$pairs)
+```
+
+The same tables come from `as.data.frame()` or, with the generics package, `tidy()`:
+
+```{r}
+head(as.data.frame(pm, what = "pairs"), 3)
+```
+
+## Plots
+
+```{r}
+ggplot2::autoplot(pm)
+ggplot2::autoplot(pm, type = "pvalue")
+```
+
+`predictmeans()` still draws its classic plots when `plot = TRUE` (the default);
+`which.plots` chooses among the means, bar, p-value and back-transformed plots.
+
+## Degrees of freedom and standard errors
+
+For REML `lmer` fits the default is Kenward–Roger: adjusted standard errors and
+Kenward–Roger df, as SAS `DDFM=KR` and emmeans give. Other choices:
+
+```{r}
+# Satterthwaite df
+pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
+# SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors
+pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE, prtnum = FALSE)
+rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
+```
+
+## Averaging over other factors
+
+Means of a main effect average over the other factors in the model. `weights` chooses
+how: `"equal"` (the default), `"proportional"` (as SAS `LSMEANS / OM`), `"outer"`,
+`"cells"` or `"flat"`, with the same definitions as emmeans.
+
+```{r}
+predictmeans(fm, "nitro", weights = "proportional", plot = FALSE, prtnum = FALSE)$means
+```
+
+## Custom contrasts
+
+`specify_contrast()` writes contrasts by the names of the means; `contrastmeans()` tests
+them.
+
+```{r}
+cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
+  N_effect_Victory = `0.6:Victory` - `0:Victory`,
+  N_effect_Victory_vs_others = (`0.6:Victory` - `0:Victory`) -
+    ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`)) / 2)
+contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
+```
+
+## Models with covariates
+
+`Kmatrix()` builds the reference grid behind every mean. Covariates are set to their means
+by default (`cov_reduce` changes that), and may enter the model through transformations
+such as `poly()`, `ns()`, `log()` or smooth terms of a `gam`.
+
+```{r}
+data(Drug)
+fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
+predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$means
+```
+
+For a glm the means are also given on the response scale (here probabilities).
+
+## More
+
+- `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
+- `vignette("migrating", package = "predictmeans")`: what changed from version 1.x.
+- `?permmodels`: permutation tests for mixed models; pass the result to
+  `predictmeans(permlist = )` for permutation p-values of pairwise comparisons.
+- `?semireg`, `?semipred`: semiparametric regression.

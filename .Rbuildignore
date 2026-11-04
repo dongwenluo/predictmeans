@@ -6,3 +6,7 @@
 ^LICENSE$
 ^\.github$
 ^CLAUDE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^vignettes/articles$

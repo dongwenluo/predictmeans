@@ -1,0 +1,98 @@
+---
+title: "Adjusted R² for generalized linear mixed models"
+author: "Dongwen Luo"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Adjusted R² for generalized linear mixed models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
+```
+
+`R2_glmm()` computes an adjusted coefficient of determination (R²) for linear and
+generalized linear mixed models with Piepho's (2023) method. It works for `lmer`,
+`glmer` and `glmmTMB` fits and picks the residual (distribution-specific) variance for
+the model's family and link automatically.
+
+```{r}
+library(predictmeans)
+args(R2_glmm)
+```
+
+With `over_disp = TRUE`, an observation-level random effect (one level per observation)
+is treated as overdispersion and counted as residual variance.
+
+## Example 1: body length (linear mixed model)
+
+```{r}
+data(Body_length)
+str(Body_length)
+mod_BodyL <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container),
+                  data = Body_length)
+R2_glmm(mod_BodyL)
+```
+
+## Example 2: egg counts (Poisson GLMM with overdispersion)
+
+Each female has her own level of `individual` within `Container` and `Population`, so the
+innermost random effect is observation-level and models overdispersion.
+
+```{r}
+data(Poisson_ind)
+mod_poisson <- glmer(Egg ~ Treatment + Habitat + (1|Population/Container/individual),
+                     family = "poisson", data = Poisson_ind)
+R2_glmm(mod_poisson, over_disp = TRUE)
+```
+
+## Example 3: clinical trial (binomial GLMM, three links)
+
+The `Clinical` data (Beitler & Landis 1985) give the number of favourable responses out
+of the patients in each treatment group at each of eight clinics.
+
+### Clinic-level data
+
+```{r}
+data(Clinical)
+Clinical$Unfavorable <- Clinical$Total - Clinical$Favorable
+fit_grp <- function(link)
+  glmer(cbind(Favorable, Unfavorable) ~ Treatment + (1|Clinic/Treatment),
+        family = binomial(link = link), data = Clinical)
+R2_glmm(fit_grp("logit"))
+R2_glmm(fit_grp("probit"))
+R2_glmm(fit_grp("cloglog"))
+```
+
+### Patient-level (binary) data
+
+The same data with one row per patient give the same fixed effects, but the residual
+variance is now that of a Bernoulli outcome.
+
+```{r}
+idx <- rep(seq_len(nrow(Clinical)), Clinical$Total)
+Clinical_N <- Clinical[idx, c("Clinic", "Treatment")]
+Clinical_N$favour <- unlist(lapply(seq_len(nrow(Clinical)), function(i)
+  rep(c(1, 0), c(Clinical$Favorable[i], Clinical$Unfavorable[i]))))
+str(Clinical_N)
+fit_pat <- function(link)
+  glmer(favour ~ Treatment + (1|Clinic/Treatment),
+        family = binomial(link = link), data = Clinical_N)
+R2_glmm(fit_pat("logit"))
+R2_glmm(fit_pat("probit"))
+R2_glmm(fit_pat("cloglog"))
+```
+
+## References
+
+Piepho, H.-P. (2023). An adjusted coefficient of determination (R²) for generalized
+linear mixed models in one go. *Biometrical Journal*, 65(7), e2200290.
+doi:10.1002/bimj.202200290
+
+Nakagawa, S. and Schielzeth, H. (2013). A general and simple method for obtaining R²
+from generalized linear mixed-effects models. *Methods in Ecology and Evolution*, 4,
+133–142.
+
+Beitler, P. J. and Landis, J. R. (1985). A mixed-effects model for categorical data.
+*Biometrics*, 41, 991–1000.
