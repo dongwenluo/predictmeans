@@ -63,3 +63,16 @@ test_that("factor levels containing ':' give the same results (B4)", {
   pdf(NULL); on.exit(dev.off())
   expect_no_error(predictmeans(m2, "nitro:Variety", atvar = "Variety", adj = "BH", prtnum = FALSE, prtplt = FALSE))
 })
+
+test_that("atvar groups with one or no observed level get letters without error", {
+  set.seed(1)
+  d <- expand.grid(repl = factor(1:3), seedlot = factor(1:4),
+                   treat = factor(c("control", "nick", "bwss"), levels = c("control", "nick", "bwss")))
+  d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"))
+  d$y <- as.numeric(d$treat) * 10 + as.numeric(d$seedlot) + rnorm(nrow(d))
+  fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
+  pm <- suppressWarnings(predictmeans(fm, "contcomp:seedlot:treat", atvar = c("treat", "contcomp"),
+                                      adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_equal(nrow(pm$mean_table$Table), 12)
+  expect_false(anyNA(pm$mean_table$Table$LetterGrp))
+})

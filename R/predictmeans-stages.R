@@ -639,8 +639,16 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
     	  }else{
       	  Grpatvar.letterM <- rep(NA, nrow.pm)
       	  names(Grpatvar.letterM) <- resvar.levels
-      	  atvar.rowname <- resvar.levels[!is.na(Grpatvar.pm[, 1])]
-      	  Grpatvar.letterM[atvar.rowname] <- multcompLetters(Grpatvar.pm[atvar.rowname, atvar.rowname], Letters=LETTERS, threshold=slevel)[atvar.rowname]
+      	  # levels with data in this group: a row with any p-value off the diagonal
+      	  atvar.rowname <- resvar.levels[rowSums(!is.na(Grpatvar.pm)) > 1]
+      	  if (length(atvar.rowname) > 1) {
+      	    Grpatvar.letterM[atvar.rowname] <- multcompLetters(Grpatvar.pm[atvar.rowname, atvar.rowname, drop = FALSE],
+      	                                                       Letters=LETTERS, threshold=slevel)[atvar.rowname]
+      	  } else {
+      	    # one level with data (nothing to compare) or none
+      	    atvar.rowname <- resvar.levels[!is.na(diag(Grpatvar.pm))][seq_len(length(atvar.rowname))]
+      	    Grpatvar.letterM[atvar.rowname] <- LETTERS[1]
+      	  }
       	  outtab <- as.table(cbind(outtab, Group=Grpatvar.letterM))
       	  Grpatvar.letter <- Grpatvar.letterM[atvar.rowname]
     	  }
