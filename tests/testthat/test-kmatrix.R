@@ -223,3 +223,18 @@ test_that("weights options match emmeans", {
                tolerance = 1e-10)
   expect_error(Kmatrix(m, "A", weights = "other"))
 })
+
+test_that("nested treatments with one observation per block cell average observed cells", {
+  # treat determines contcomp (control vs treated), one observation per
+  # repl x seedlot x treat cell, as in eda4treeR's DataExam4.3
+  set.seed(1)
+  d <- expand.grid(repl = factor(1:3), seedlot = factor(1:6),
+                   treat = factor(c("control", "nick", "bwss", "bw1min"),
+                                  levels = c("control", "nick", "bwss", "bw1min")))
+  d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"))
+  d$y <- c(control = 2, nick = 57, bwss = 66, bw1min = 81)[as.character(d$treat)] + rnorm(nrow(d))
+  fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
+  pm <- suppressWarnings(predictmeans(fm, "treat", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_equal(pm$means$estimate, as.vector(tapply(d$y, d$treat, mean)), tolerance = 1e-8)
+  expect_false(anyNA(pm$pairs$p.value))
+})
