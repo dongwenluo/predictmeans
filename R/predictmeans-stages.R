@@ -250,7 +250,9 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
       ses[non_est] <- NA
       message("Means that cannot be estimated are shown as NA: ",
               paste(rownames(K)[non_est], collapse = ", "),
-              ". Their pairwise differences are shown when estimable.")
+              ". Their pairwise differences are shown when estimable. ",
+              "If factors are confounded or cells are empty, weights = \"cells\" ",
+              "averages over the observed cells only.")
     }
   }
   mt <- data.frame(pm, ses, label)
@@ -345,12 +347,24 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
   cm <- rK%*%coef
   vcov.contr <- rK %*% tcrossprod(vcovm, rK)
   dses <- sqrt(diag(vcov.contr))
+  # differences that cannot be estimated (their components along the
+  # non-estimable directions do not cancel) are NA, not computed with the
+  # dropped coefficients taken as zero
+  null_proj <- attr(KK, "null_proj")
+  if (!is.null(null_proj) && all(rnK %in% rownames(null_proj))) {
+    pd <- CM %*% null_proj[rnK, , drop = FALSE]
+    scale_r <- pmax(1, apply(abs(rK), 1, max))
+    non_est_pair <- apply(abs(pd), 1, max) > 1e-6 * scale_r
+    cm[non_est_pair] <- NA
+    dses[non_est_pair] <- NA
+  }
 
   if (adj == "bonferroni"){
     level <- level/length(dses)
   }
 
-  SED.out <- c(Max.SED = max(dses), Min.SED = min(dses), Aveg.SED = mean(dses))
+  SED.out <- if (all(is.na(dses))) c(Max.SED = NA_real_, Min.SED = NA_real_, Aveg.SED = NA_real_) else
+    c(Max.SED = max(dses, na.rm = TRUE), Min.SED = min(dses, na.rm = TRUE), Aveg.SED = mean(dses, na.rm = TRUE))
   dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses)
   dses.m <- NULL
 
@@ -793,7 +807,20 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
         meanTable <- meanTable[order(meanTable$Mean, decreasing = meandecr), ]
       }
 
-      meanTable$LetterGrp <- multcompLetters(t.p.valuemGrp, Letters=LETTERS, threshold=slevel)
+      # letters only among means whose comparisons can all be estimated
+      # (NA p-values come from non-estimable differences)
+      P <- t.p.valuemGrp
+      ok <- rep(TRUE, nrow(P))
+      # drop, one at a time, the mean with most non-estimable comparisons
+      while (any(ok) && anyNA(P[ok, ok])) {
+        n_na <- rowSums(is.na(P[ok, ok, drop = FALSE]))
+        ok[which(ok)[which.max(n_na)]] <- FALSE
+      }
+      lets <- rep(NA_character_, nrow(P)); names(lets) <- rownames(P)
+      if (sum(ok) >= 2) {
+        lets[ok] <- multcompLetters(P[ok, ok, drop = FALSE], Letters=LETTERS, threshold=slevel)
+      }
+      meanTable$LetterGrp <- lets
 
       if (letterCI) {
         meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],

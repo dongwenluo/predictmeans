@@ -230,6 +230,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   # (aliased or dropped coefficients) have a null space, so the check costs
   # nothing for full-rank models.
   estimable <- rep(TRUE, nrow(K))
+  null_proj <- NULL
   if (info$builder != "gam" && info$rank_deficient(colnames(K))) {
     Xfit <- basis(model_data)
     XtX <- crossprod(Xfit)
@@ -238,7 +239,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     N <- ev$vectors[, ev$values <= tol, drop = FALSE]
     if (ncol(N)) {
       Kfull <- K[, colnames(Xfit), drop = FALSE]
-      nonest <- abs(Kfull %*% N)
+      null_proj <- Kfull %*% N
+      nonest <- abs(null_proj)
       estimable <- apply(nonest, 1, max) <= 1e-6 * pmax(1, apply(abs(Kfull), 1, max))
     }
   }
@@ -247,6 +249,12 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
 
   K <- K[, info$coef_names, drop = FALSE]
   attr(K, "estimable") <- estimable
+  # components along non-estimable directions: a contrast of the rows is
+  # estimable only when these cancel (used for pairwise differences)
+  if (!is.null(null_proj)) {
+    rownames(null_proj) <- rnK
+    attr(K, "null_proj") <- null_proj
+  }
 
   # Covariates that are fixed (not varied) are reported with the value used.
   cov_report <- setdiff(covlevname, names(fctnames))
