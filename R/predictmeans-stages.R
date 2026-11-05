@@ -54,13 +54,18 @@ pm_code_setup <- quote({
       verb = "are"
     }
 
-    ## set all NULL values to FALSE
-    for(v in old_args[is_null]){
-      assign(v, FALSE)
+    ## arguments not given keep their which.plots setting (the default
+    ## draws all plots), so e.g. 'bar = TRUE' no longer turns the mean plot off
+    which.plots = match.arg(which.plots, choices = c("mean", "bar", "pval", "back"), several.ok = TRUE)
+    wp_default = c("mean", "bar", "pval", "back") %in% which.plots
+    for(k in which(is_null)){
+      assign(old_args[k], wp_default[k])
     }
 
-    warnMessage = paste0(arg_list, " ", verb, " deprecated. Use which.plots in the future. The value will be honored for now, but may not always be")
-    warning(warnMessage)
+    wp_now = c("mean", "bar", "pval", "back")[c(isTRUE(mplot), isTRUE(barplot), isTRUE(pplot), isTRUE(bkplot))]
+    warnMessage = paste0(arg_list, " ", verb, " deprecated: use which.plots = c(",
+                         paste0('"', wp_now, '"', collapse = ", "), ") instead.")
+    warning(warnMessage, call. = FALSE)
   }
 
   meanPlot <- ciPlot <- predictmeansBarPlot <- NULL
