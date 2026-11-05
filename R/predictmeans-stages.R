@@ -257,8 +257,16 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   }
   mt <- data.frame(pm, ses, label)
 
-  mean.table <- round(xtabs(pm ~ ., mt[, c("pm", vars)], drop.unused.levels = TRUE), ndecimal)
-  se.table <- round(xtabs(ses ~ ., mt[, c("ses", vars)], drop.unused.levels = TRUE), ndecimal+1)
+  # xtabs() drops NA rows and then fails when levels go unused: give it 0s
+  # for the non-estimable means, which are set back to NA below
+  tabs <- local({
+    mt$pm[is.na(mt$pm)] <- 0
+    mt$ses[is.na(mt$ses)] <- 0
+    list(round(xtabs(pm ~ ., mt[, c("pm", vars)], drop.unused.levels = TRUE), ndecimal),
+         round(xtabs(ses ~ ., mt[, c("ses", vars)], drop.unused.levels = TRUE), ndecimal+1))
+  })
+  mean.table <- tabs[[1]]
+  se.table <- tabs[[2]]
   mean.table[!(n.table)] <- NA
   se.table[!(n.table)] <- NA
   if (anyNA(mt$pm)) {   # non-estimable means: xtabs() would show 0
@@ -665,28 +673,12 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
         outtab[upper.tri(outtab)] <-""
         Grpatvar.pm <- t(atvar.pm)+ atvar.pm
 
-        if (all(!is.na(outtab))) {
-    	   Grpatvar.letter <- multcompLetters(Grpatvar.pm, Letters=LETTERS, threshold=slevel)[resvar.levels]
-    	   outtab <- as.table(cbind(outtab, Group=Grpatvar.letter))
-    	  }else{
-      	  Grpatvar.letterM <- rep(NA, nrow.pm)
-      	  names(Grpatvar.letterM) <- resvar.levels
-      	  # levels with data in this group: a row with any p-value off the diagonal
-      	  atvar.rowname <- resvar.levels[rowSums(!is.na(Grpatvar.pm)) > 1]
-      	  if (length(atvar.rowname) > 1) {
-      	    Grpatvar.letterM[atvar.rowname] <- multcompLetters(Grpatvar.pm[atvar.rowname, atvar.rowname, drop = FALSE],
-      	                                                       Letters=LETTERS, threshold=slevel)[atvar.rowname]
-      	  } else {
-      	    # one level with data (nothing to compare) or none: take the
-      	    # observed levels of this atvar group from the mean table
-      	    in_grp <- do.call("paste", c(mt.atvar[, atvar, drop=FALSE], sep=" : ")) == atvar.levels[i]
-      	    atvar.rowname <- intersect(resvar.levels,
-      	                               do.call("paste", c(mt.atvar[in_grp, resvar, drop=FALSE], sep=" : ")))
-      	    Grpatvar.letterM[atvar.rowname] <- LETTERS[1]
-      	  }
-      	  outtab <- as.table(cbind(outtab, Group=Grpatvar.letterM))
-      	  Grpatvar.letter <- Grpatvar.letterM[atvar.rowname]
-    	  }
+        # levels of this atvar group with an observed mean
+        in_grp <- do.call("paste", c(lapply(mt.atvar[, atvar, drop=FALSE], as.character), sep=" : ")) == atvar.levels[i]
+        obs_lev <- do.call("paste", c(lapply(mt.atvar[in_grp, resvar, drop=FALSE], as.character), sep=" : "))
+        Grpatvar.letterM <- pm_letter_groups(Grpatvar.pm, resvar.levels %in% obs_lev, slevel)
+        outtab <- as.table(cbind(outtab, Group=Grpatvar.letterM))
+        Grpatvar.letter <- Grpatvar.letterM[resvar.levels %in% obs_lev]
 
 	      # letters labelled by group and level, so the mean table can match them
 	      if (length(Grpatvar.letter))
@@ -808,19 +800,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
       }
 
       # letters only among means whose comparisons can all be estimated
-      # (NA p-values come from non-estimable differences)
-      P <- t.p.valuemGrp
-      ok <- rep(TRUE, nrow(P))
-      # drop, one at a time, the mean with most non-estimable comparisons
-      while (any(ok) && anyNA(P[ok, ok])) {
-        n_na <- rowSums(is.na(P[ok, ok, drop = FALSE]))
-        ok[which(ok)[which.max(n_na)]] <- FALSE
-      }
-      lets <- rep(NA_character_, nrow(P)); names(lets) <- rownames(P)
-      if (sum(ok) >= 2) {
-        lets[ok] <- multcompLetters(P[ok, ok, drop = FALSE], Letters=LETTERS, threshold=slevel)
-      }
-      meanTable$LetterGrp <- lets
+      meanTable$LetterGrp <- unname(pm_letter_groups(t.p.valuemGrp, rep(TRUE, nrow(t.p.valuemGrp)), slevel))
 
       if (letterCI) {
         meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],
@@ -1360,4 +1340,30 @@ pm_label_matrix <- function(lab, nvar) {
   m <- matrix(m, nrow = nrow(lab))
   dimnames(m) <- NULL
   m
+}
+
+
+## Letter groups from a symmetric matrix of p-values (dimnames = levels),
+## with NA for comparisons that are not available (no data, or not
+## estimable). Levels without data get NA. Among the others, the level with
+## most unavailable comparisons is dropped, one at a time, until all the
+## remaining comparisons are available; those levels get letters. A level
+## left alone gets "A" when it is the only level with data (nothing to
+## compare), and NA when it was left alone because its comparisons are not
+## estimable.
+pm_letter_groups <- function(P, has_data, slevel) {
+  levs <- rownames(P)
+  out <- rep(NA_character_, length(levs)); names(out) <- levs
+  ok <- has_data
+  diag(P) <- 1
+  while (sum(ok) > 1 && anyNA(P[ok, ok])) {
+    n_na <- rowSums(is.na(P[ok, ok, drop = FALSE]))
+    ok[which(ok)[which.max(n_na)]] <- FALSE
+  }
+  if (sum(ok) >= 2) {
+    out[ok] <- multcompLetters(P[ok, ok, drop = FALSE], Letters = LETTERS, threshold = slevel)[levs[ok]]
+  } else if (sum(ok) == 1 && sum(has_data) == 1) {
+    out[ok] <- LETTERS[1]
+  }
+  out
 }

@@ -130,3 +130,28 @@ test_that("confounded factors: non-estimable means and differences are NA, no er
   pw <- suppressMessages(predictmeans(fm, "vol", weights = "cells", plot = FALSE, prtnum = FALSE))
   expect_false(anyNA(pw$means$estimate))
 })
+
+test_that("letters: one helper handles NA p-values overall and within atvar groups", {
+  P <- matrix(c(1, .01, NA, .01, 1, NA, NA, NA, 1), 3, dimnames = list(c("a", "b", "c"), c("a", "b", "c")))
+  L <- predictmeans:::pm_letter_groups(P, c(TRUE, TRUE, TRUE), 0.05)
+  expect_true(is.na(L[["c"]]) && L[["a"]] != L[["b"]])
+  # a level alone because it is the only one with data gets "A"
+  expect_equal(unname(predictmeans:::pm_letter_groups(P, c(FALSE, TRUE, FALSE), 0.05)), c(NA, "A", NA))
+  # a level left alone by non-estimable comparisons gets NA
+  P2 <- matrix(c(1, NA, NA, 1), 2, dimnames = list(c("a", "b"), c("a", "b")))
+  expect_true(all(is.na(predictmeans:::pm_letter_groups(P2, c(TRUE, TRUE), 0.05))))
+
+  # within atvar groups: vol 400 is confounded with droplet fine, so within
+  # each conc group the 400 comparisons are not estimable but 130 vs 200 is
+  set.seed(3)
+  d <- data.frame(droplet = factor(rep(c("medium", "fine"), c(40, 10)), levels = c("medium", "fine")),
+                  vol = factor(c(rep(c("130", "200"), 20), rep("400", 10))),
+                  conc = factor(c(rep(c("none", "none", "half", "half"), 10), rep(c("none", "half"), 5))))
+  d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
+  fm <- lm(y ~ droplet + conc * vol, data = d)
+  pm <- suppressMessages(predictmeans(fm, "conc:vol", atvar = "conc", adj = "BH", plot = FALSE, prtnum = FALSE))
+  tab <- pm$mean_table$Table
+  expect_equal(nrow(tab), 6)
+  expect_true(all(is.na(tab$LetterGrp[tab$vol == "400"])))
+  expect_false(anyNA(tab$LetterGrp[tab$vol != "400"]))
+})
