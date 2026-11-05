@@ -56,3 +56,4 @@ importMethodsFrom("Matrix",
 
 export(pm_coef, pm_vcov, pm_basis, pm_data, pm_df, pm_linkinv)
 export(ci_mcp, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, PMplot, predictmeans, R2_glmm, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
+S3method(update, semerLmerTest)

@@ -26,3 +26,19 @@ test_that("a matrix covariateV gives one prediction per point for a 2-D smooth",
   expect_equal(as.matrix(p[c("u", "v")]), pts, ignore_attr = TRUE, tolerance = 1e-12)
   expect_true(all(p$LL < p$w & p$w < p$UL))
 })
+
+test_that("ranova() on a semireg fit refits with the smooth bases (copper)", {
+  skip_on_cran()
+  data(copper)
+  full <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
+    smoothZ = list(grp_z = smZ(zcoord), grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
+    data = copper, prt = FALSE, predict_info = FALSE))
+  expect_s4_class(full$semer, "semerLmerTest")
+  rt <- suppressWarnings(lmerTest::ranova(full$semer))
+  expect_equal(nrow(rt), 3)
+  # dropping grp_geo must equal fitting with the grp_z smooth only
+  only_z <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
+    smoothZ = list(grp_z = smZ(zcoord)), data = copper, prt = FALSE, predict_info = FALSE))
+  expect_equal(rt$logLik[rownames(rt) == "(1 | grp_geo)"], as.numeric(logLik(only_z$semer)),
+               tolerance = 1e-6)
+})

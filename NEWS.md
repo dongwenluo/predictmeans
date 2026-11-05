@@ -206,6 +206,13 @@
 
 ## Documentation
 
+* `lmerTest::ranova()` on a gaussian `semireg()` fit failed ("object
+  'grp_geo' not found"), and its refits would have treated the remaining
+  smooth terms as ordinary random intercepts. Gaussian `semireg()` fits now
+  have class `semerLmerTest`, whose `update()` refits through `semireg()`
+  with the same smooth bases. `smoothZ` may also be a list given by name.
+* New data set `copper` (used in the overview article).
+
 * The deprecated plot arguments (`mplot`, `barplot`/`bar`, `pplot`,
   `bkplot`) turned off every plot not given, so `bar = TRUE` gave a NULL
   mean plot. Plots not given now keep their `which.plots` setting, and the

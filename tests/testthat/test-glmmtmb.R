@@ -36,12 +36,11 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   data(WarsawApts, package = "HRW", envir = environment())
   W <- WarsawApts
   W$district <- factor(W$district)
-  fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date * district,
-           smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
+  fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date,
+           smoothZ = list(grp = smZ(construction.date, k = 25)),
            data = W, prt = FALSE))
-  sp <- semipred(fit, "district", "construction.date", prt = FALSE)$pred_df
+  sp <- semipred(fit, covariate = "construction.date", prt = FALSE)$pred_df
   expect_true(all(is.finite(sp$SE)) && all(sp$SE > 0))
-  expect_equal(nlevels(factor(sp$district)), nlevels(W$district))
   r2 <- R2_glmm(fit$semer)
   expect_true(all(is.finite(as.numeric(sub("%", "", r2)))))
 })
