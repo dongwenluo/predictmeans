@@ -206,6 +206,11 @@
 
 ## Documentation
 
+* The deprecated plot arguments (`mplot`, `barplot`/`bar`, `pplot`,
+  `bkplot`) turned off every plot not given, so `bar = TRUE` gave a NULL
+  mean plot. Plots not given now keep their `which.plots` setting, and the
+  deprecation warning shows the equivalent `which.plots` call.
+
 * Fixed (regression in this development version): with nested treatments
   and one observation per block cell (e.g. `treat/contcomp` with
   `repl`), means were averaged over structurally empty cells and were

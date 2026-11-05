@@ -93,3 +93,17 @@ test_that("atvar groups with a single observed level get a letter", {
   expect_equal(nrow(pm$mean_table$Table), 5)
   expect_false(anyNA(pm$mean_table$Table$LetterGrp))
 })
+
+test_that("deprecated bar = TRUE keeps the other plots (mean plot not NULL)", {
+  Oats <- as.data.frame(nlme::Oats)
+  Oats$nitro <- factor(Oats$nitro)
+  fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
+  pdf(NULL); on.exit(dev.off())
+  expect_warning(pm <- predictmeans(fm, "nitro", adj = "BH", bar = TRUE, prtplt = FALSE, prtnum = FALSE),
+                 'which.plots = c\\("mean", "bar", "pval", "back"\\)')
+  expect_s3_class(pm$predictmeansPlot$meanPlot, "ggplot")
+  expect_s3_class(pm$predictmeansBarPlot, "ggplot")
+  pm2 <- suppressWarnings(predictmeans(fm, "nitro", adj = "BH", bar = FALSE, prtplt = FALSE, prtnum = FALSE))
+  expect_s3_class(pm2$predictmeansPlot$meanPlot, "ggplot")
+  expect_null(pm2$predictmeansBarPlot)
+})
