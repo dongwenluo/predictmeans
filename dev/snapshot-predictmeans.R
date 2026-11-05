@@ -22,6 +22,14 @@ dp$y <- rpois(nrow(dp), exp(1 + as.numeric(dp$A)/2 + as.numeric(dp$B)/4))
 m_pois <- glm(y ~ A*B, family = poisson, data = dp)
 Oc <- Oats; levels(Oc$Variety) <- c("Golden:Rain", "Marv", "Vic")
 m_colon <- lm(yield ~ Block + nitro*Variety, data = Oc)
+set.seed(5); dn <- expand.grid(repl = factor(1:3), seedlot = factor(1:4),
+  treat = factor(c("control", "nick", "bwss"), levels = c("control", "nick", "bwss")))
+dn$contcomp <- factor(ifelse(dn$treat == "control", "control", "Treated"))
+dn$y <- as.numeric(dn$treat) * 10 + as.numeric(dn$seedlot) + rnorm(nrow(dn))
+m_nest <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = dn)
+ds <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")), rep = 1:4)
+ds <- ds[!(ds$date == "d2" & ds$trt == "a"), ]; ds$y <- as.numeric(ds$trt) + rnorm(nrow(ds))
+m_single <- lm(y ~ date * trt, data = ds)
 perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
 calls <- list(
   lm_def = quote(predictmeans(m_lm, "nitro")),
@@ -59,6 +67,9 @@ calls <- list(
   pois_count = quote(predictmeans(m_pois, "A", trans = exp, count = TRUE, pairwise = TRUE)),
   pois_atvar = quote(predictmeans(m_pois, "A:B", atvar = "B", adj = "BH", trans = exp)),
   pois_letterCI = quote(predictmeans(m_pois, "A:B", pairwise = TRUE, letterCI = TRUE, trans = exp, meandecr = FALSE)),
+  nested_treat = quote(predictmeans(m_nest, "treat", adj = "BH")),
+  nested_atvar2 = quote(predictmeans(m_nest, "contcomp:seedlot:treat", atvar = c("treat", "contcomp"), adj = "BH")),
+  atvar_single_level = quote(predictmeans(m_single, "date:trt", atvar = "date", adj = "BH")),
   colon_levels = quote(predictmeans(m_colon, "nitro:Variety", atvar = "nitro", adj = "BH")))
 plotdata <- function(p) if (inherits(p, "ggplot")) lapply(seq_along(p$layers), function(i) ggplot2::layer_data(p, i)) else p
 R <- list()
