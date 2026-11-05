@@ -528,7 +528,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", 
     barplot=TRUE, line=FALSE)
-#> Warning: barplot is deprecated. Use which.plots in the future. The value will be honored for now, but may not always be
+#> Warning: barplot is deprecated: use which.plots = c("mean", "bar", "pval", "back") instead.
+
+
+
+#> `height` was translated to `width`.
 
   names(predictout)
 #>  [1] "Predicted Means"                                      
@@ -548,10 +552,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> [15] "settings"                                             
   print(predictout$predictmeansPlot)
 #> $meanPlot
-#> NULL
+
 #> 
 #> $ciPlot
-#> NULL
+#> `height` was translated to `width`.
+
 #> 
   print(predictout$predictmeansBarPlot)
 ```

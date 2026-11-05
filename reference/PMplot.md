@@ -71,7 +71,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", barplot=TRUE)
-#> Warning: barplot is deprecated. Use which.plots in the future. The value will be honored for now, but may not always be
+#> Warning: barplot is deprecated: use which.plots = c("mean", "bar", "pval", "back") instead.
+
+
+
+#> `height` was translated to `width`.
 
   PMplot(predictout$p_valueMatrix)
 ```

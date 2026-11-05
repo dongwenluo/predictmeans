@@ -113,10 +113,14 @@
 <span class="r-in"><span>  <span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">predictout</span> <span class="op">&lt;-</span> <span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar<span class="op">=</span><span class="st">"Variety"</span>, adj<span class="op">=</span><span class="st">"BH"</span>, barplot<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>barplot is deprecated. Use which.plots in the future. The value will be honored for now, but may not always be</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>barplot is deprecated: use which.plots = c("mean", "bar", "pval", "back") instead.</span>
 <span class="r-plt img"><img src="PMplot-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span>  <span class="fu">PMplot</span><span class="op">(</span><span class="va">predictout</span><span class="op">$</span><span class="va">p_valueMatrix</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="PMplot-3.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="PMplot-4.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> `height` was translated to `width`.</span>
+<span class="r-plt img"><img src="PMplot-5.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span>  <span class="fu">PMplot</span><span class="op">(</span><span class="va">predictout</span><span class="op">$</span><span class="va">p_valueMatrix</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="PMplot-6.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

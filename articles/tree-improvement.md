@@ -207,21 +207,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-10-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-10-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-10-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-10-3.png)
 
 ## **2.2 Example 2.2 (Pg. 26)**
 
@@ -421,21 +421,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-19-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-19-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-19-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-19-3.png)
 
 ## **3.1 Example 3.1 (Pg. 30)**
 
@@ -602,21 +602,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-26-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-26-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-26-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-26-3.png)
 
 ### Remove three outliers
 
@@ -813,21 +813,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-35-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-35-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-35-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-35-3.png)
 
 ## **4.1 Example 4.3 (Pg. 53)**
 
@@ -980,21 +980,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-41-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-41-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-41-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-41-3.png)
 
 - seedlot
 
@@ -1075,21 +1075,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-44-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-44-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-44-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-44-3.png)
 
 - treat/contcomp (treat)
 
@@ -1166,21 +1166,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-47-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-47-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-47-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-47-3.png)
 
 - contcomp/seedlot
 
@@ -1298,21 +1298,21 @@ for (i in 6:7){
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-50-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-50-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-50-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-50-3.png)
 
 - treat/contcomp/seedlot
 
@@ -1461,14 +1461,14 @@ for (i in c(6, 11:13)){
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-53-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-53-2.png)
 
 ### Subset Data
 
@@ -1599,21 +1599,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-59-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-59-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-59-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-59-3.png)
 
 - seedlot
 
@@ -1697,21 +1697,21 @@ PMplot(predm_out$p_valueMatrix, newwd = FALSE)
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-63-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-63-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-63-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-63-3.png)
 
 - treat:seedlot
 
@@ -1841,14 +1841,14 @@ predm_out$predictmeansPlot$meanPlot
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-67-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-67-2.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-67-3.png)
 
 ## **4.2 Example 4.4 (Pg. 61)**
 
@@ -2009,21 +2009,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-73-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-73-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-73-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-73-3.png)
 
 - fert
 
@@ -2074,21 +2074,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-75-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-75-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-75-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-75-3.png)
 
 - seedlot
 
@@ -2161,21 +2161,21 @@ quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-78-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-78-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-78-1.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-78-3.png)
 
 - fert:seedlot
 
@@ -2283,14 +2283,14 @@ predm_out$predictmeansPlot$meanPlot
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](tree-improvement_files/figure-html/unnamed-chunk-82-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](tree-improvement_files/figure-html/unnamed-chunk-82-2.png)
+![](tree-improvement_files/figure-html/unnamed-chunk-82-3.png)
 
 ## **5.2 Example 5.1 (Pg. 68)**
 

@@ -303,21 +303,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-10-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-10-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-10-1.png)
+![](overview_files/figure-html/unnamed-chunk-10-3.png)
 
 ``` r
 
@@ -422,21 +422,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-14-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-14-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-14-1.png)
+![](overview_files/figure-html/unnamed-chunk-14-3.png)
 
 ``` r
 
@@ -526,11 +526,11 @@ system.time(
     ## nitro0.2                          0.021
     ## nitro0.4                          0.001
     ## nitro0.6                          0.001
-    ## VarietyMarvellous                 0.504
-    ## VarietyVictory                    0.394
+    ## VarietyMarvellous                 0.505
+    ## VarietyVictory                    0.396
     ## nitro0.2:VarietyMarvellous        0.768
-    ## nitro0.4:VarietyMarvellous        0.726
-    ## nitro0.6:VarietyMarvellous        0.688
+    ## nitro0.4:VarietyMarvellous        0.727
+    ## nitro0.6:VarietyMarvellous        0.689
     ## nitro0.2:VarietyVictory           0.968
     ## nitro0.4:VarietyVictory           0.674
     ## nitro0.6:VarietyVictory           0.845
@@ -540,13 +540,13 @@ system.time(
     ## ANOVA:
     ##                   Sum Sq   Mean Sq NumDF DenDF F value Pr(>F) Perm_p_value
     ## nitro         20020.5001 6673.5000     3    45 37.6857 0.0000        0.001
-    ## Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.259
+    ## Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.258
     ## nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.931
     ## 
     ## Note: Perm_p_value of F test is obtained using '999' permutations.
 
     ##    user  system elapsed 
-    ##  21.322   1.010   8.218
+    ##  19.487   0.984   7.583
 
 ``` r
 
@@ -600,8 +600,8 @@ predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", pe
     ##     0     0.2   0.4   0.6 Group
     ## 0   1                     A    
     ## 0.2 0.018 1                B   
-    ## 0.4 0.003 0.263 1          BC  
-    ## 0.6 0.003 0.03  0.263 1     C  
+    ## 0.4 0.003 0.262 1          BC  
+    ## 0.6 0.003 0.03  0.262 1     C  
     ## 
     ## $Victory
     ##     0      0.2   0.4 0.6 Group
@@ -639,7 +639,7 @@ contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=perml
 
     ## $`The t tests of the specified contrasts`
     ##      Estimate Std. Error t value Permuted Pr(>|t|)
-    ## [1,]  -8.5000      9.715 -0.8749             0.394
+    ## [1,]  -8.5000      9.715 -0.8749             0.396
     ## [2,] -45.6667      9.715 -4.7006             0.001
     ## attr(,"Note")
     ## [1] "The permuted p-value is obtained using '999' permutations."
@@ -960,21 +960,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-29-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-29-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-29-1.png)
+![](overview_files/figure-html/unnamed-chunk-29-3.png)
 
 - **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
   the diagonal at each ‘time’**
@@ -1165,21 +1165,21 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-32-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-32-2.png)
 
 ``` r
 
 predm_out$predictmeansBarPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-32-1.png)
+![](overview_files/figure-html/unnamed-chunk-32-3.png)
 
 - **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
   the diagonal at each ‘time’**
