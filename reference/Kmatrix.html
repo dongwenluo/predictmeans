@@ -284,14 +284,14 @@ factor's own frequencies), <code>"cells"</code> (each mean weights the cells by 
 <span class="r-in"><span>  <span class="co"># Covariates entering through transformations or only through interactions</span></span></span>
 <span class="r-in"><span>  <span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">Variety</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">nitro</span>, <span class="fl">2</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu">Kmatrix</span><span class="op">(</span><span class="va">fm2</span>, <span class="st">"Variety"</span><span class="op">)</span><span class="op">$</span><span class="va">K</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             (Intercept)       Block.L      Block.Q       Block.C       Block^4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1 -5.551115e-17 5.551115e-17 -4.163336e-17 -2.775558e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1 -5.551115e-17 5.551115e-17 -4.163336e-17 -2.775558e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1 -5.551115e-17 5.551115e-17 -4.163336e-17 -2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             (Intercept)       Block.L       Block.Q       Block.C      Block^4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   Block^5 VarietyMarvellous VarietyVictory poly(nitro, 2)1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain -6.938894e-18                 0              0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous  -6.938894e-18                 1              0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory     -6.938894e-18                 0              1               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain -1.387779e-17                 0              0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous  -1.387779e-17                 1              0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory     -1.387779e-17                 0              1               0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             poly(nitro, 2)2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain      -0.1473139</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous       -0.1473139</span>
@@ -343,17 +343,17 @@ factor's own frequencies), <code>"cells"</code> (each mean weights the cells by 
 <span class="r-in"><span>    <span class="fu">Kmatrix</span><span class="op">(</span><span class="va">fm4</span>, <span class="st">"Variety"</span>, cov_reduce <span class="op">=</span> <span class="st">"average"</span><span class="op">)</span><span class="op">$</span><span class="va">K</span></span></span>
 <span class="r-in"><span>  <span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             (Intercept) VarietyMarvellous VarietyVictory    s(nitro).1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1                 0              0 -4.163336e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1                 1              0 -4.163336e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1                 0              1 -4.163336e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             s(nitro).2   s(nitro).3 s(Block).1 s(Block).2 s(Block).3 s(Block).4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain          0 5.551115e-17          0          0          0          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous           0 5.551115e-17          0          0          0          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory              0 5.551115e-17          0          0          0          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             s(Block).5 s(Block).6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain          0          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous           0          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory              0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1                 0              0 -8.326673e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1                 1              0 -8.326673e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1                 0              1 -8.326673e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               s(nitro).2   s(nitro).3 s(Block).1 s(Block).2 s(Block).3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain 2.428613e-17 5.551115e-17          0          0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous  2.428613e-17 5.551115e-17          0          0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory     2.428613e-17 5.551115e-17          0          0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             s(Block).4 s(Block).5 s(Block).6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain          0          0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous           0          0          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory              0          0          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"estimable")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain  Marvellous     Victory </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        TRUE        TRUE        TRUE </span>

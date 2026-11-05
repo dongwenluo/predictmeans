@@ -286,6 +286,12 @@
 
 ### Documentation
 
+- Letter groups, overall and within `atvar` groups, now come from one
+  function (`pm_letter_groups()`) that handles unavailable p-values
+  (missing levels or non-estimable differences) the same way everywhere.
+  Fixes repeated errors in the letters with missing p-values, and an
+  error in the mean/SE tables when non-estimable means meet empty cells.
+
 - Pairwise differences are now checked for estimability, not only the
   means: with confounded factors (e.g. one volume used only with fine
   droplets) a difference that depends on a dropped coefficient is NA
