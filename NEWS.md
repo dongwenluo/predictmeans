@@ -211,7 +211,12 @@
   `repl`), means were averaged over structurally empty cells and were
   wrong. Empty cells are now judged on the factors that interact only.
 * `atvar` with several factors failed ("Names required") when a group of
-  `atvar` levels had only one or no observed level of the other factors.
+  `atvar` levels had only one or no observed level of the other factors,
+  or ("replacement has 8 rows, data has 12") when a group had one level.
+* Within-`atvar` comparisons: adjusted p-values could be assigned to the
+  wrong group or pair when the groups were not in row order (for example
+  two `atvar` factors, or empty groups). This came from 1.x. P-values and
+  letters are now matched to groups and levels by name.
 
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".

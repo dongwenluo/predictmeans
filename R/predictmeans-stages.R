@@ -581,23 +581,25 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
           atvar.df[,i] <- factor(atvar.df[,i], levels=levels(mdf[, i][[1]]))
       }
 
-      atvar.df$adj.pvalue <- unlist(lapply(split(atvar.df, atvar.df[, atvar]), function(x) {
-          t_value <- x$tvalue
-          t_valueN <- length(na.omit(t_value))
-
-          if (t_valueN < 2){
-            x$adj.pvalue <- x$pvalue
-          } else {
-            if (adj=="tukey"){
-              # Tukey's range distribution needs the number of means, k, in
-              # this level; the group holds all k(k-1)/2 pairs among them.
-              n_means <- (1 + sqrt(1 + 8*t_valueN))/2
-              x$adj.pvalue <- ptukey(sqrt(2)*abs(x$tvalue), n_means, x$pair_df, lower.tail=FALSE)
-            }else{
-              x$adj.pvalue <- p.adjust(x$pvalue, adj)
-            }
-          }
-        }))
+      # adjusted p-values within each atvar group, kept in the rows they
+      # belong to (the group's own rows, not split()/unlist() order)
+      key_atv <- do.call("paste", c(lapply(atvar.df[, atvar, drop=FALSE], as.character), sep=" : "))
+      atvar.df$adj.pvalue <- NA_real_
+      for (g in unique(key_atv)) {
+        idx <- which(key_atv == g)
+        x <- atvar.df[idx, , drop=FALSE]
+        t_valueN <- length(na.omit(x$tvalue))
+        if (t_valueN < 2) {
+          atvar.df$adj.pvalue[idx] <- x$pvalue
+        } else if (adj=="tukey") {
+          # Tukey's range distribution needs the number of means, k, in
+          # this level; the group holds all k(k-1)/2 pairs among them.
+          n_means <- (1 + sqrt(1 + 8*t_valueN))/2
+          atvar.df$adj.pvalue[idx] <- ptukey(sqrt(2)*abs(x$tvalue), n_means, x$pair_df, lower.tail=FALSE)
+        } else {
+          atvar.df$adj.pvalue[idx] <- p.adjust(x$pvalue, adj)
+        }
+      }
 
       rnK.df <- as.data.frame(labKK) # To find the suitable names for pm
       colnames(rnK.df) <- vars
@@ -619,13 +621,24 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
       bkmt <- mt.atvar[, intersect(c(atvar, resvar, "pm", "ses", "Df"), names(mt.atvar))]
       listlength <- length(atvar.levels)
       pmlist <- pmlistTab <- pmlistLetter <- vector("list", listlength)
-      indexlength <- nrow(atvar.df)/listlength
       nrow.pm <- length(resvar.levels)
 
-      for (i in 1:listlength) {           # extract pvalues for each factor level
-        atvar.pm <- matrix(0, nrow=nrow.pm, ncol=nrow.pm)
-        atvar.pm[upper.tri(atvar.pm)] <- atvar.df$adj.pvalue[(indexlength*i-(indexlength-1)):(indexlength*i)]
-        rownames(atvar.pm) <- colnames(atvar.pm) <- resvar.levels
+      # the two members of each pair: first in columns 1..nv, second in nv+1..2nv
+      nv <- length(vars)
+      res_pos <- match(resvar, vars)
+      lev1 <- do.call("paste", c(lapply(atvar.df[, res_pos, drop=FALSE], as.character), sep=" : "))
+      lev2 <- do.call("paste", c(lapply(atvar.df[, nv + res_pos, drop=FALSE], as.character), sep=" : "))
+
+      for (i in 1:listlength) {           # p-values of this atvar group, placed by level name
+        idx <- which(key_atv == atvar.levels[i])
+        S <- matrix(NA_real_, nrow=nrow.pm, ncol=nrow.pm, dimnames=list(resvar.levels, resvar.levels))
+        if (length(idx)) {
+          S[cbind(lev1[idx], lev2[idx])] <- atvar.df$adj.pvalue[idx]
+          S[cbind(lev2[idx], lev1[idx])] <- atvar.df$adj.pvalue[idx]
+        }
+        diag(S) <- 0
+        atvar.pm <- S
+        atvar.pm[lower.tri(atvar.pm)] <- 0
         pmlist[[i]] <- t(atvar.pm)
         outtab <- round(as.table(t(atvar.pm)), 4)
         outtab[outtab < 0.0001] <- "0.0001"
@@ -645,14 +658,20 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
       	    Grpatvar.letterM[atvar.rowname] <- multcompLetters(Grpatvar.pm[atvar.rowname, atvar.rowname, drop = FALSE],
       	                                                       Letters=LETTERS, threshold=slevel)[atvar.rowname]
       	  } else {
-      	    # one level with data (nothing to compare) or none
-      	    atvar.rowname <- resvar.levels[!is.na(diag(Grpatvar.pm))][seq_len(length(atvar.rowname))]
+      	    # one level with data (nothing to compare) or none: take the
+      	    # observed levels of this atvar group from the mean table
+      	    in_grp <- do.call("paste", c(mt.atvar[, atvar, drop=FALSE], sep=" : ")) == atvar.levels[i]
+      	    atvar.rowname <- intersect(resvar.levels,
+      	                               do.call("paste", c(mt.atvar[in_grp, resvar, drop=FALSE], sep=" : ")))
       	    Grpatvar.letterM[atvar.rowname] <- LETTERS[1]
       	  }
       	  outtab <- as.table(cbind(outtab, Group=Grpatvar.letterM))
       	  Grpatvar.letter <- Grpatvar.letterM[atvar.rowname]
     	  }
 
+	      # letters labelled by group and level, so the mean table can match them
+	      if (length(Grpatvar.letter))
+	        names(Grpatvar.letter) <- paste(atvar.levels[i], names(Grpatvar.letter), sep="\r")
 	      pmlistLetter[[i]] <- Grpatvar.letter
         pmlistTab[[i]] <- outtab
       }
@@ -778,7 +797,10 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
 
       meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
     } else {
-      meanTable$LetterGrp <- unlist(pmlistLetter)
+      lets <- unlist(pmlistLetter)
+      mkey <- paste(do.call("paste", c(lapply(meanTable[atvar], as.character), sep=" : ")),
+                    do.call("paste", c(lapply(meanTable[resvar], as.character), sep=" : ")), sep="\r")
+      meanTable$LetterGrp <- unname(lets[mkey])
       meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "' at each level of ", atvar, sep=""))
     }
   }
