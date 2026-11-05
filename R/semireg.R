@@ -30,7 +30,7 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     }
 	attr(data, "numeric_var") <- numeric_n
   }
-  smoothZm <-  eval(substitute(smoothZ), data) 
+  smoothZm <-  eval(substitute(smoothZ), data, parent.frame())
   Z_namem <- names(smoothZm)
   
   # if (any(!sapply(smoothZm, is, class2 = "sparseMatrix"))) {
@@ -170,6 +170,13 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
       semer <- mkMerMod(environment(devfun), opt, reTrms, lmf@frame, mc) 
     }
   }
+  # Gaussian fits keep what a refit needs, so that update() (used by
+  # lmerTest::ranova) refits through semireg() with the same smooth bases.
+  if (methods::is(semer, "lmerModLmerTest")) {
+    semer <- methods::new("semerLmerTest", semer,
+                          semireg_info = list(data = data, smoothZ = smoothZN,
+                                              REML = isTRUE(REML), control = control))
+  }
   if (prt) print(semer)
   
   if (predict_info){
@@ -260,3 +267,39 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 }
 
 
+
+
+## A semireg() lmer fit that remembers its smooth bases (see update below).
+methods::setClass("semerLmerTest", contains = "lmerModLmerTest",
+                  slots = c(semireg_info = "list"))
+
+## Refit of a semireg() fit with a new formula (as lmerTest::ranova() does):
+## the smooth terms (1 | name) still in the formula keep their spline bases,
+## instead of being refitted as ordinary random intercepts.
+update.semerLmerTest <- function(object, formula = NULL, ...) {
+  info <- object@semireg_info
+  if (is.null(formula) || length(list(...))) {
+    upd <- utils::getS3method("update", "lmerModLmerTest", envir = asNamespace("lmerTest"))
+    return(upd(object, formula = formula, ...))
+  }
+  f <- stats::as.formula(paste(deparse(formula, width.cutoff = 500L), collapse = " "))
+  f <- stats::update(stats::formula(object), f)
+  bars <- pm_findbars(f)
+  bar_grp <- vapply(bars, function(b) paste(all.vars(b[[3]]), collapse = ":"), character(1))
+  sm_names <- names(info$smoothZ)
+  keep <- intersect(sm_names, bar_grp)
+  other <- bars[!bar_grp %in% sm_names]
+  fixed <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::nobars(f) else lme4::nobars(f)
+  rhs <- paste(c(paste(deparse(fixed[[3]], width.cutoff = 500L), collapse = " "),
+                 vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"),
+                        character(1))), collapse = " + ")
+  f_new <- stats::as.formula(paste(paste(deparse(f[[2]]), collapse = ""), "~", rhs),
+                             env = environment(stats::formula(object)))
+  e <- new.env(parent = asNamespace("predictmeans"))
+  e$sr_data <- info$data
+  e$sr_Z <- info$smoothZ[keep]
+  cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z),
+             REML = info$REML, ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE)
+  fit <- suppressMessages(suppressWarnings(eval(cl, e)))
+  if (is.list(fit) && !is.null(fit$semer)) fit$semer else fit
+}

@@ -47,7 +47,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | Containment df for lmer (`df_method = "containment"`), tested on the SAS rule; SAS script to export reference CSVs (`dev/sas/`) | **Done** |
 | Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
 | Stages to pure functions, part 2: estimate (`pm_model_parms()`, `pm_estimate_means()`), compare (five functions), plots (`pm_make_plots()`), assemble (`pm_legacy_output()`); only setup still works on the call's state (it rewrites the arguments); direct tests of the functions; all 36 snapshot calls identical | **Done** |
-| Known open issue: `lmerTest::ranova()` on a `semireg()` fit (copper example in the overview article, chunk marked `error = TRUE`) fails because the refit cannot find the smooth's constructed variable (e.g. `grp_geo`) | Open |
+| `ranova()` on `semireg()` fits: refits go through `semireg()` with the smooth bases (class `semerLmerTest`, `update()` method); `copper` data added | **Done** |
 | Next: finish Phase 1 — move help blocks next to their functions and uncomment examples. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint

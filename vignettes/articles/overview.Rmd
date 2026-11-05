@@ -19,8 +19,7 @@ library(DT)
 library(gt)
 library(knitr)
 
-# Data copper can be download at Example 8
-copper <- read.csv("copper.csv", header=TRUE)
+data(copper, package = "predictmeans")
 
 DT_df <- function(df){
   require(DT)
@@ -1138,7 +1137,7 @@ kable(anova(mod$semer))
 
 -   **RANOVA**
 
-```{r, error = TRUE}
+```{r}
 kable(ranova(mod$semer))
 ```
 
