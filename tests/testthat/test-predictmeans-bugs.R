@@ -107,3 +107,26 @@ test_that("deprecated bar = TRUE keeps the other plots (mean plot not NULL)", {
   expect_s3_class(pm2$predictmeansPlot$meanPlot, "ggplot")
   expect_null(pm2$predictmeansBarPlot)
 })
+
+test_that("confounded factors: non-estimable means and differences are NA, no error", {
+  # vol 400 occurs only with droplet fine (as in a spray trial)
+  set.seed(3)
+  d <- data.frame(droplet = factor(rep(c("medium", "fine"), c(40, 10)), levels = c("medium", "fine")),
+                  vol = factor(c(rep(c("130", "200"), 20), rep("400", 10))),
+                  conc = factor(rep(c("none", "half"), 25)))
+  d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
+  fm <- lm(y ~ droplet + conc + vol, data = d)
+  pv <- suppressMessages(predictmeans(fm, "vol", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_true(all(is.na(pv$means$estimate)))
+  pr <- pv$pairs
+  expect_false(is.na(pr$estimate[pr$level1 == "130" & pr$level2 == "200"]))
+  expect_true(all(is.na(pr$estimate[pr$level2 == "400" | pr$level1 == "400"])))
+  expect_equal(sum(!is.na(pv$mean_table$Table$LetterGrp)), 2)
+  pd <- suppressMessages(predictmeans(fm, "droplet", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_true(is.na(pd$pairs$estimate))
+  pc <- suppressMessages(predictmeans(fm, "conc", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_false(anyNA(pc$pairs$estimate))
+  # weights = "cells" averages over the observed cells only
+  pw <- suppressMessages(predictmeans(fm, "vol", weights = "cells", plot = FALSE, prtnum = FALSE))
+  expect_false(anyNA(pw$means$estimate))
+})

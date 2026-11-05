@@ -57,7 +57,10 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
                  "cannot be estimated")
   expect_true(all(is.na(r$means$estimate)) && all(!r$means$estimable))
   expect_true(all(is.na(r$`Predicted Means`)))
-  expect_equal(r$pairs$estimate, unname(c(-coef(m)["Aa2"], -coef(m)["Aa3"], coef(m)["Aa2"] - coef(m)["Aa3"])))
+  # x = 2*(A == a3) + (B == b2): a1 vs a2 is estimable; a3 vs the others,
+  # at a fixed x, depends on the dropped x coefficient and is not
+  expect_equal(r$pairs$estimate[1], unname(-coef(m)["Aa2"]))
+  expect_true(all(is.na(r$pairs$estimate[2:3])))
   pdf(NULL); on.exit(dev.off())
   expect_message(predictmeans(m, "A", prtnum = FALSE, prtplt = FALSE), "no mean plots")
 })

@@ -206,6 +206,14 @@
 
 ## Documentation
 
+* Pairwise differences are now checked for estimability, not only the
+  means: with confounded factors (e.g. one volume used only with fine
+  droplets) a difference that depends on a dropped coefficient is NA
+  instead of being computed with that coefficient taken as 0. Letters are
+  given to the means whose comparisons can be estimated, and the message
+  for non-estimable means suggests `weights = "cells"`. Fixes an error
+  ("missing value where TRUE/FALSE needed") in the letters.
+
 * `lmerTest::ranova()` on a gaussian `semireg()` fit failed ("object
   'grp_geo' not found"), and its refits would have treated the remaining
   smooth terms as ordinary random intercepts. Gaussian `semireg()` fits now
