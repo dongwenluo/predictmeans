@@ -11,8 +11,7 @@ library(DT)
 library(gt)
 library(knitr)
 
-# Data copper can be download at Example 8
-copper <- read.csv("copper.csv", header=TRUE)
+data(copper, package = "predictmeans")
 
 DT_df <- function(df){
   require(DT)
@@ -546,7 +545,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' permutations.
 
     ##    user  system elapsed 
-    ##  19.487   0.984   7.583
+    ##  19.756   0.930   7.657
 
 ``` r
 
@@ -1742,7 +1741,7 @@ mod1 <- semireg(apartment.price ~ construction.date,
                 data = WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['lmerModLmerTest']
+    ## Linear mixed model fit by REML ['semerLmerTest']
     ## Formula: apartment.price ~ construction.date + (1 | grp)
     ##    Data: WarsawApts
     ## REML criterion at convergence: 3544.905
@@ -1833,7 +1832,7 @@ mod2 <- semireg(apartment.price ~ construction.date*district,
                 data=WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['lmerModLmerTest']
+    ## Linear mixed model fit by REML ['semerLmerTest']
     ## Formula: apartment.price ~ construction.date * district + (1 | grp.Mokotow) +  
     ##     (1 | grp.Srodmiescie) + (1 | grp.Wola) + (1 | grp.Zoliborz)
     ##    Data: WarsawApts
@@ -1886,13 +1885,13 @@ kable(anova(mod2$semer))
 kable(ranova(mod2$semer))
 ```
 
-|                        | npar |    logLik |      AIC |      LRT |  Df | Pr(\>Chisq) |
-|:-----------------------|-----:|----------:|---------:|---------:|----:|------------:|
-|                        |   13 | -1751.525 | 3529.051 |       NA |  NA |          NA |
-| (1 \| grp.Mokotow)     |   12 | -1812.510 | 3649.019 | 121.9686 |   1 |           0 |
-| (1 \| grp.Srodmiescie) |   12 | -1812.510 | 3649.019 | 121.9686 |   1 |           0 |
-| (1 \| grp.Wola)        |   12 | -1812.510 | 3649.019 | 121.9686 |   1 |           0 |
-| (1 \| grp.Zoliborz)    |   12 | -1812.510 | 3649.019 | 121.9686 |   1 |           0 |
+|                        | npar |    logLik |      AIC |       LRT |  Df | Pr(\>Chisq) |
+|:-----------------------|-----:|----------:|---------:|----------:|----:|------------:|
+|                        |   13 | -1751.525 | 3529.051 |        NA |  NA |          NA |
+| (1 \| grp.Mokotow)     |   12 | -1800.940 | 3625.880 | 98.829583 |   1 |   0.0000000 |
+| (1 \| grp.Srodmiescie) |   12 | -1761.894 | 3547.788 | 20.737475 |   1 |   0.0000053 |
+| (1 \| grp.Wola)        |   12 | -1752.495 | 3528.990 |  1.939841 |   1 |   0.1636858 |
+| (1 \| grp.Zoliborz)    |   12 | -1760.028 | 3544.055 | 17.004627 |   1 |   0.0000373 |
 
 - **$`R^2`$**
 
@@ -2630,7 +2629,7 @@ mod <- semireg(log(grade) ~ (xcoord+ycoord+zcoord)^2,
                 data=copper)
 ```
 
-    ## Linear mixed model fit by REML ['lmerModLmerTest']
+    ## Linear mixed model fit by REML ['semerLmerTest']
     ## Formula: log(grade) ~ (xcoord + ycoord + zcoord)^2 + (1 | grp_z) + (1 |  
     ##     grp_geo)
     ##    Data: copper
@@ -2682,8 +2681,11 @@ kable(anova(mod$semer))
 kable(ranova(mod$semer))
 ```
 
-    ## Error:
-    ## ! object 'grp_geo' not found
+|                | npar |    logLik |      AIC |      LRT |  Df | Pr(\>Chisq) |
+|:---------------|-----:|----------:|---------:|---------:|----:|------------:|
+|                |   10 | -159.2031 | 338.4061 |       NA |  NA |          NA |
+| (1 \| grp_z)   |    9 | -199.6525 | 417.3050 | 80.89885 |   1 |           0 |
+| (1 \| grp_geo) |    9 | -207.6783 | 433.3567 | 96.95054 |   1 |           0 |
 
 - **$`R^2`$**
 
@@ -2710,7 +2712,7 @@ mod <- semireg(log(grade) ~ 1,
                 data=copper)
 ```
 
-    ## Linear mixed model fit by REML ['lmerModLmerTest']
+    ## Linear mixed model fit by REML ['semerLmerTest']
     ## Formula: log(grade) ~ 1 + (1 | grp_z) + (1 | grp_geo)
     ##    Data: copper
     ## REML criterion at convergence: 255.1183

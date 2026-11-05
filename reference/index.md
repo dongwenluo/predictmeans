@@ -108,6 +108,11 @@
 
   `Clinical` data
 
+- [`copper`](https://dongwenluo.github.io/predictmeans/reference/copper.md)
+  :
+
+  `copper` data
+
 - [`Drug`](https://dongwenluo.github.io/predictmeans/reference/Drug.md)
   :
 

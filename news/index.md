@@ -286,6 +286,21 @@
 
 ### Documentation
 
+- [`lmerTest::ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html)
+  on a gaussian
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fit failed (“object ‘grp_geo’ not found”), and its refits would have
+  treated the remaining smooth terms as ordinary random intercepts.
+  Gaussian
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits now have class `semerLmerTest`, whose
+  [`update()`](https://rdrr.io/r/stats/update.html) refits through
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  with the same smooth bases. `smoothZ` may also be a list given by
+  name.
+
+- New data set `copper` (used in the overview article).
+
 - The deprecated plot arguments (`mplot`, `barplot`/`bar`, `pplot`,
   `bkplot`) turned off every plot not given, so `bar = TRUE` gave a NULL
   mean plot. Plots not given now keep their `which.plots` setting, and
