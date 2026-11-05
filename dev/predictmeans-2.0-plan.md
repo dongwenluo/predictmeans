@@ -48,6 +48,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
 | Stages to pure functions, part 2: estimate (`pm_model_parms()`, `pm_estimate_means()`), compare (five functions), plots (`pm_make_plots()`), assemble (`pm_legacy_output()`); only setup still works on the call's state (it rewrites the arguments); direct tests of the functions; all 36 snapshot calls identical | **Done** |
 | `ranova()` on `semireg()` fits: refits go through `semireg()` with the smooth bases (class `semerLmerTest`, `update()` method); `copper` data added | **Done** |
+| Deferred until the functions are refined one by one: tidy/LLM polish — `options(predictmeans.plot = FALSE)` to turn plots off in pipelines, `glance()`, `llms.txt` on the pkgdown site, help pages and vignettes leading with `$means`/`$pairs`/`tidy()`. While refining, put new output into the stable tables and avoid argument names that partially match old ones (e.g. `bar` → `barplot`) | Deferred |
 | Next: finish Phase 1 — move help blocks next to their functions and uncomment examples. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
