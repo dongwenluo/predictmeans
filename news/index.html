@@ -177,7 +177,8 @@ The defaults work for any class with the usual <code>coef</code>, <code>vcov</co
 <div class="section level3">
 <h3 id="documentation-1-1-1-9000">Documentation<a class="anchor" aria-label="anchor" href="#documentation-1-1-1-9000"></a></h3>
 <ul><li><p>Fixed (regression in this development version): with nested treatments and one observation per block cell (e.g. <code>treat/contcomp</code> with <code>repl</code>), means were averaged over structurally empty cells and were wrong. Empty cells are now judged on the factors that interact only.</p></li>
-<li><p><code>atvar</code> with several factors failed (“Names required”) when a group of <code>atvar</code> levels had only one or no observed level of the other factors.</p></li>
+<li><p><code>atvar</code> with several factors failed (“Names required”) when a group of <code>atvar</code> levels had only one or no observed level of the other factors, or (“replacement has 8 rows, data has 12”) when a group had one level.</p></li>
+<li><p>Within-<code>atvar</code> comparisons: adjusted p-values could be assigned to the wrong group or pair when the groups were not in row order (for example two <code>atvar</code> factors, or empty groups). This came from 1.x. P-values and letters are now matched to groups and levels by name.</p></li>
 <li><p>Three vignettes: “Getting started with predictmeans”, “Adjusted R² for generalized linear mixed models” and “Migrating from predictmeans 1.x”.</p></li>
 <li><p>A pkgdown website (built by GitHub Actions and published to GitHub Pages), with two longer worked-example articles: an overview of the package and experimental design and analysis for tree improvement.</p></li>
 <li><p><code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code> works with glmmTMB &gt;= 1.1.12, which no longer stores <code>Lambdat</code>, <code>Lind</code> and <code>lower</code> (they are rebuilt when missing).</p></li>
