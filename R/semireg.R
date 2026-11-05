@@ -174,7 +174,7 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   # lmerTest::ranova) refits through semireg() with the same smooth bases.
   if (methods::is(semer, "lmerModLmerTest")) {
     semer <- methods::new("semerLmerTest", semer,
-                          semireg_info = list(data = data, smoothZ = smoothZN,
+                          semireg_info = list(data = data, smoothZ = smoothZN, formula = lmerc$formula,
                                               REML = isTRUE(REML), control = control))
   }
   if (prt) print(semer)
@@ -282,9 +282,15 @@ update.semerLmerTest <- function(object, formula = NULL, ...) {
     upd <- utils::getS3method("update", "lmerModLmerTest", envir = asNamespace("lmerTest"))
     return(upd(object, formula = formula, ...))
   }
-  f <- stats::as.formula(paste(deparse(formula, width.cutoff = 500L), collapse = " "))
-  f <- stats::update(stats::formula(object), f)
-  bars <- pm_findbars(f)
+  # ranova() only drops random terms: take the response and the fixed part
+  # from the original formula (newer R/lmerTest can pass a reduced formula
+  # whose response is damaged, e.g. 'log' for 'log(grade)'), and only the
+  # random terms from the new one
+  if (is.character(formula))
+    formula <- stats::as.formula(if (length(formula) == 3) paste(formula[2], formula[1], formula[3])
+                                 else paste(formula, collapse = " "))
+  f <- info$formula
+  bars <- pm_findbars(formula)
   bar_grp <- vapply(bars, function(b) paste(all.vars(b[[3]]), collapse = ":"), character(1))
   sm_names <- names(info$smoothZ)
   keep <- intersect(sm_names, bar_grp)
