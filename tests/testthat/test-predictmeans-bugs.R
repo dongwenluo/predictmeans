@@ -75,4 +75,21 @@ test_that("atvar groups with one or no observed level get letters without error"
                                       adj = "BH", plot = FALSE, prtnum = FALSE))
   expect_equal(nrow(pm$mean_table$Table), 12)
   expect_false(anyNA(pm$mean_table$Table$LetterGrp))
+  # p-values go to the groups with data: none for the empty control : Treated
+  # group, a full set for nick : Treated (group order differs from row order)
+  num <- function(tab) suppressWarnings(as.numeric(tab[lower.tri(tab)]))
+  expect_true(all(is.na(num(pm[["control : Treated"]]))))
+  expect_false(anyNA(num(pm[["nick : Treated"]])))
+})
+
+test_that("atvar groups with a single observed level get a letter", {
+  set.seed(2)
+  d <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")), rep = 1:4)
+  d <- d[!(d$date == "d2" & d$trt == "a"), ]          # d2 has only trt b
+  d$y <- as.numeric(d$trt) + rnorm(nrow(d))
+  fm <- lm(y ~ date * trt, data = d)
+  pm <- suppressWarnings(predictmeans(fm, "date:trt", atvar = "date", adj = "BH",
+                                      plot = FALSE, prtnum = FALSE))
+  expect_equal(nrow(pm$mean_table$Table), 5)
+  expect_false(anyNA(pm$mean_table$Table$LetterGrp))
 })
