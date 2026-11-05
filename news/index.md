@@ -286,6 +286,14 @@
 
 ### Documentation
 
+- Pairwise differences are now checked for estimability, not only the
+  means: with confounded factors (e.g. one volume used only with fine
+  droplets) a difference that depends on a dropped coefficient is NA
+  instead of being computed with that coefficient taken as 0. Letters
+  are given to the means whose comparisons can be estimated, and the
+  message for non-estimable means suggests `weights = "cells"`. Fixes an
+  error (“missing value where TRUE/FALSE needed”) in the letters.
+
 - [`lmerTest::ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html)
   on a gaussian
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
