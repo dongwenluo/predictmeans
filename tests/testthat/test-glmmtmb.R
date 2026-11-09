@@ -89,3 +89,22 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   sp2 <- semipred(fit2, covariate = "construction.date", prt = FALSE)$pred_df
   expect_true(all(is.finite(sp2$SE)) && all(sp2$SE > 0))
 })
+
+test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left as it was", {
+  skip_if_not_installed("glmmTMB")
+  f <- Reaction ~ Days + (Days | Subject)
+  m1 <- lme4::lmer(f, data = lme4::sleepstudy)
+  m2 <- glmmTMB::glmmTMB(f, data = lme4::sleepstudy, REML = TRUE)
+  v1 <- suppressMessages(varcomp(m1))
+  v2 <- varcomp(m2)
+  expect_identical(rownames(v2), rownames(v1))
+  expect_equal(v2[, "vcov"], v1[, "vcov"], tolerance = 1e-4)
+  expect_equal(v2[, "SE"], v1[, "SE"], tolerance = 1e-3)
+  # variances: glmmTMB's Wald CIs for the SDs, squared
+  ci_sd <- confint(m2, parm = "theta_")[1:2, 1:2]
+  expect_equal(unname(as.matrix(v2[c(1, 3), 3:4])), unname(ci_sd^2), tolerance = 1e-4)
+  expect_true(all(v2[, 3] < v2[, "vcov"] & v2[, "vcov"] < v2[, 4]))
+  # the fitted model is unchanged
+  expect_equal(as.numeric(glmmTMB::VarCorr(m2)$cond$Subject[1, 1]), v2[1, "vcov"], tolerance = 1e-6)
+  expect_identical(colnames(varcomp(m2, ci = FALSE)), c("vcov", "SE"))
+})

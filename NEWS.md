@@ -122,6 +122,14 @@
     part, or with coefficients dropped as aliased;
   * `over_disp = TRUE` finds the observation-level random effect wherever
     it is in the formula (glmmTMB keeps the formula's order).
+* `varcomp()` for `glmmTMB` models gave wrong confidence limits (the upper
+  limit could be below the estimate), read correlation parameters as log
+  standard deviations, and had no residual variance. It now gives the same
+  table as for `lmer`: the variances and covariances of each term
+  (zero-inflation terms prefixed `zi.`), the residual variance of gaussian
+  models, delta-method SEs (equal to the `lmer` ones for `sleepstudy`), and
+  Wald CIs on the log scale for variances and the Fisher z scale for
+  correlations. `ci = FALSE` now works for these models.
 * `semireg_tmb()` with `predict_info = TRUE`: the random-effect covariance
   was wrong for correlated terms (same cause as in `R2_glmm()`). A singular
   covariance is detected without computing all eigenvalues, and a system
