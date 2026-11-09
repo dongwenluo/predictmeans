@@ -9,7 +9,7 @@ varcomp(model, ci=TRUE, level=0.95)
 \arguments{
 \item{model}{Model object returned by \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB}.}
 
-\item{ci}{a logical value to indicates wheather or not to simulate a confidence interval for \code{lmer} model, the default value is TRUE.}
+\item{ci}{a logical value to indicates wheather or not to simulate a confidence interval for \code{lmer} and \code{glmmTMB} models, the default value is TRUE.}
 
 \item{level}{level of confidence of CI, the default value is 0.95.}
 }
@@ -18,6 +18,12 @@ Variance components table.
 }
 \description{
 This function calculates SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model. For \code{lme} models it needs package \pkg{lmeInfo}.
+}
+\details{
+For \code{glmmTMB} models the table holds the variances and covariances of each random-effect term
+(conditional model, then the zero-inflation model with prefix \code{zi.}) and, for gaussian models, the
+residual variance. SEs are from the delta method. CIs are Wald intervals on the log scale for variances
+and on the Fisher z (atanh) scale for correlations, times the two standard deviations for covariances.
 }
 \examples{
 library(predictmeans)

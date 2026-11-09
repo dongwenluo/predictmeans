@@ -155,3 +155,72 @@ test_that("letters: one helper handles NA p-values overall and within atvar grou
   expect_true(all(is.na(tab$LetterGrp[tab$vol == "400"])))
   expect_false(anyNA(tab$LetterGrp[tab$vol != "400"]))
 })
+
+test_that("trans is used for identity-link models (gaussian glm and glmmTMB)", {
+  d <- as.data.frame(nlme::Oats)
+  d$Variety <- factor(d$Variety, ordered = FALSE)
+  d$Block <- factor(d$Block, ordered = FALSE)
+  d$lyield <- log(d$yield)
+  m_lm <- lm(lyield ~ Variety, data = d)
+  m_glm <- glm(lyield ~ Variety, data = d)
+  m_tmb <- glmmTMB::glmmTMB(lyield ~ Variety + (1 | Block), data = d)
+  for (m in list(m_glm, m_tmb)) {
+    tab <- predictmeans(m, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
+    expect_true("Bk_Mean" %in% names(tab))
+    expect_equal(tab$Bk_Mean, exp(tab$Mean), tolerance = 1e-4)   # Mean is rounded
+  }
+  # same back-transformed means as lm, which always used 'trans'
+  tab_lm <- predictmeans(m_lm, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
+  tab_glm <- predictmeans(m_glm, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
+  expect_equal(tab_glm$Bk_Mean, tab_lm$Bk_Mean)
+  # a model with a link still uses the inverse link
+  data(Drug, package = "predictmeans", envir = environment())
+  m_bin <- glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug)
+  tab_bin <- predictmeans(m_bin, "Drug", plot = FALSE, prtnum = FALSE)$mean_table
+  expect_equal(tab_bin$Bk_Mean, round(plogis(tab_bin$Mean), 4), tolerance = 1e-3)
+})
+
+test_that("glmer Poisson means are counts, like glm and glmmTMB", {
+  set.seed(3)
+  dp <- expand.grid(A = factor(c("a1", "a2", "a3")), g = factor(1:6), rep = 1:3)
+  dp$y <- rpois(nrow(dp), exp(1 + as.numeric(dp$A)/2 + rnorm(6, sd = 0.3)[dp$g]))
+  m <- lme4::glmer(y ~ A + (1 | g), family = poisson, data = dp)
+  tab <- predictmeans(m, "A", plot = FALSE, prtnum = FALSE)$mean_table
+  bk <- unlist(tab[, grep("^Bk_", names(tab))])
+  expect_equal(bk, round(bk))
+})
+
+test_that("back-transformed data points are shifted by transOff, like the means", {
+  d <- as.data.frame(nlme::Oats)
+  d$Variety <- factor(d$Variety, ordered = FALSE)
+  d$Block <- factor(d$Block, ordered = FALSE)
+  d$nitro <- as.numeric(d$nitro)
+  d$ly1 <- log(d$yield + 1)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  invisible(predictmeans(lm(ly1 ~ Variety + Block, data = d), "Variety", trans = exp, transOff = 1,
+                         which.plots = "back", prtnum = FALSE))
+  p <- ggplot2::last_plot()
+  pts <- ggplot2::layer_data(p, 3)    # data points (jittered by up to 0.2 * resolution)
+  expect_equal(nrow(pts), nrow(d))
+  expect_equal(range(pts$x), range(d$yield), tolerance = 0.02)
+  cm <- covariatemeans(lm(ly1 ~ Variety * nitro, data = d), "Variety", covariate = "nitro",
+                       trans = exp, transOff = 1)$plt
+  expect_equal(range(ggplot2::layer_data(cm, 3)$y), range(d$yield))
+})
+
+test_that("clear messages for a misspelled 'adj' or a term in the wrong order or case", {
+  m <- oats_lmer()
+  expect_error(predictmeans(m, "Variety:nitro", plot = FALSE), "Did you mean 'nitro:Variety'")
+  expect_error(predictmeans(m, "variety", plot = FALSE), "Did you mean 'Variety'")
+  expect_error(predictmeans(m, "Bloc", plot = FALSE), "terms of the model are: 'nitro', 'Variety'")
+  expect_error(predictmeans(m, "Variety", adj = "holms", plot = FALSE), "'adj' must be one of")
+  # any letter case
+  r1 <- predictmeans(m, "Variety", adj = "Tukey", plot = FALSE, prtnum = FALSE)
+  r2 <- predictmeans(m, "Variety", adj = "tukey", plot = FALSE, prtnum = FALSE)
+  expect_identical(r1$pairs, r2$pairs)
+  cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
+  expect_identical(contrastmeans(m, "nitro", ctrmatrix = cm, adj = "bh"),
+                   contrastmeans(m, "nitro", ctrmatrix = cm, adj = "BH"))
+  expect_error(contrastmeans(m, "nitro", ctrmatrix = cm, adj = "tukey"), "'adj' must be one of")
+})

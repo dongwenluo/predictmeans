@@ -22,9 +22,8 @@
 pm_stage_setup <- function(st) eval(pm_code_setup, st)
 pm_code_setup <- quote({
 
-  if (!(modelterm %in% attr(terms(model), "term.labels"))){
-    stop(paste("The", modelterm, "must be exactly a term in the model (especially check the order of interaction)."))
-  }
+  pm_check_modelterm(model, modelterm)
+  adj <- pm_match_adj(adj)
 
   all.null = function(...){
     all(unlist(lapply(list(...), is.null)))
@@ -79,19 +78,19 @@ pm_code_setup <- quote({
     model <- aovlist_lmer(model)
   }
 
-  # Models with a link function: means are back-transformed with its inverse
-  # (pm_linkinv(); see ?pm_coef to support other model classes).
-  linkinv <- pm_linkinv(model)
-  if (!is.null(linkinv)) {
+  # Models with a link function other than the identity: means are
+  # back-transformed with its inverse (pm_linkinv(); see ?pm_coef to support
+  # other model classes). Otherwise the user's 'trans' is used.
+  linkinv <- pm_link_trans(model)
+  link_scale <- !is.null(linkinv)
+  if (link_scale) {
     trans <- linkinv
   }
 
-  if (inherits(model, "glm") && model$family$family %in% c("poisson", "quasipoisson")){
-    count=TRUE
-  }
-
-  if (inherits(model, "glmmTMB") && model$modelInfo$family$family %in% c("poisson", "quasipoisson")){
-    count=TRUE
+  # Poisson models: the back-transformed means are counts
+  if (inherits(model, c("glm", "glmerMod", "glmmTMB")) &&
+      stats::family(model)$family %in% c("poisson", "quasipoisson")) {
+    count <- TRUE
   }
 
   vars <- unlist(strsplit(modelterm, "\\:"))
@@ -112,7 +111,7 @@ pm_code_setup <- quote({
     pairwise <- TRUE
 
     if (adj=="tukey"){
-      stop("The p-value can't be adjusted by Tukey methd!")
+      stop("Tukey adjustment is not available for permutation p-values; use another 'adj'.", call. = FALSE)
     }
   }
 
@@ -834,7 +833,7 @@ pm_plot_inputs <- c("LL", "LSD", "Mean", "SED.out", "Trt", "UL", "adj", "atvar",
                     "model", "modelterm", "mplot", "mt", "nK", "nc", "newwd", "nrow.pm", "pairwise",
                     "plot", "plotord", "plottitle", "plotxlab", "plotylab", "pm", "pmlist", "pplot",
                     "predictmeansBarPlot", "prtplt", "rcnplotm", "response", "responsen", "resvar",
-                    "ses", "slevel", "t.p.valuep", "trans", "vars")
+                    "ses", "slevel", "t.p.valuep", "trans", "transOff", "link_scale", "vars")
 
 ## All graphics of predictmeans(): draws the requested plots and returns
 ## list(meanPlot, ciPlot, predictmeansBarPlot). 'x' is a named list of the
@@ -1152,7 +1151,7 @@ pm_code_draw <- quote({
           bky <- as.numeric(mdf[, response])-1
         } else {
 
-          if (inherits(model, "glm") || inherits(model, "glmerMod") || inherits(model, "glmmTMB")) {
+          if (link_scale) {    # response scale already
             bky <- mdf[, response]
 
             if (!is.null(dim(mdf[, response]))){
@@ -1160,7 +1159,7 @@ pm_code_draw <- quote({
             }
 
           } else {
-            bky <- trans(mdf[, response])
+            bky <- trans(mdf[, response]) - transOff
           }# end of if glm or glmer
         }# end of if factor
       } else {       ## Transformed y within modelling

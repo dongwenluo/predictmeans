@@ -19,7 +19,7 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 \item{ctrnames}{Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)}
 
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". 
+The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr", in any letter case. 
 The default method is "none".}
 
 \item{Df}{A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 

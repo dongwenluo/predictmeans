@@ -13,6 +13,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     ctrnames <- NULL
   }
   weights <- match.arg(weights)
+  adj <- pm_match_adj(adj, tukey = FALSE)
   KK <- Kmatrix(model, modelterm, weights=weights)$K
   termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {

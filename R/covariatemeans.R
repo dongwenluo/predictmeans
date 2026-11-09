@@ -69,7 +69,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   }
 
   if (is.null(trans)) {
-    trans <- pm_linkinv(model)
+    trans <- pm_link_trans(model)   # NULL for an identity link
   }
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
@@ -122,7 +122,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     mdf$bky <- mdf[, response]
   } else {
     if (length(setdiff(response, names(mdf)))==0) {    ## Transformed y before modelling
-      if (inherits(model, "glm") || inherits(model, "glmerMod") || inherits(model, "glmmTMB")) {
+      if (!is.null(pm_link_trans(model))) {    # models with a link: data on the response scale
         if (inherits(mdf[, response], "factor")) {
           mdf$bky <- as.numeric(mdf[, response])-1
         }else if (!is.null(dim(mdf[, response]))) {
@@ -144,7 +144,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
           response <- "Response"
         }
       } else {
-        mdf$bky <- trans(mdf[, response])
+        mdf$bky <- trans(mdf[, response]) - transOff
         response <- paste("Transformed", response)
       }
     } else {       ## Transformed y within modelling

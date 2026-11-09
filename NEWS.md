@@ -15,6 +15,9 @@
 * `permmodels()` gives the same tables (including Satterthwaite df and
   p-values) whether an lmer model was fitted with `lme4::lmer()` or
   `lmerTest::lmer()`.
+* `glmer` Poisson models now give back-transformed means as counts (whole
+  numbers, never below zero), as `glm` and `glmmTMB` Poisson models already
+  did.
 
 ## Stable result tables
 
@@ -96,6 +99,71 @@
 
 ## Bug fixes
 
+* `predictmeans()` and `covariatemeans()` ignored `trans` for `glm` and
+  `glmmTMB` models with an identity link: a gaussian `glmmTMB(log(y) ~ ...)`
+  with `trans = exp` showed no back-transformed means. `trans` is now used
+  whenever the link is the identity; models with another link still use its
+  inverse.
+* In the back-transformed plots of `predictmeans()` and `covariatemeans()`,
+  the data points were not shifted by `transOff` when the response was
+  transformed before modelling (e.g. a column holding `log(y + 1)`, with
+  `transOff = 1`), so they sat `transOff` above the means.
+* `R2_glmm()`:
+  * for `glmmTMB` models with correlated random effects, e.g.
+    `(Days | Subject)`, the random-effect variance was wrong (84.32% instead
+    of the 78.71% that `lmer` gives for `sleepstudy`) and the slope was
+    missing from the breakdown. glmmTMB puts correlations on its own scale,
+    so the covariance is now built from `VarCorr()`;
+  * the breakdown by term split a correlated term's columns into two
+    halves instead of by component (`lmer` too). Each component (intercept,
+    slope) now gets its own share; the covariance between them is only in
+    the random-effect total. Models without correlated terms are unchanged;
+  * failed for `glmmTMB` models with random effects in the zero-inflation
+    part, or with coefficients dropped as aliased;
+  * `over_disp = TRUE` finds the observation-level random effect wherever
+    it is in the formula (glmmTMB keeps the formula's order).
+* `varcomp()` for `glmer` models:
+  * the SEs of the variances were wrong: converting from SDs used the
+    derivative 0.5/sqrt(sd) instead of 0.5/sd (0.2845 instead of 0.2280 for
+    the `cbpp` example; glmmTMB gives 0.2294), and covariances ignored their
+    dependence on the two SDs. `vcov_glmerMod(ranpar = "var")` now applies
+    the delta method with the full Jacobian;
+  * failed for models with more than one variance parameter, e.g.
+    `(Days | Subject)` ("invalid 'row.names' length").
+* The `letterCI` help says when CI overlap matches the pairwise tests and
+  when it finds fewer or more differences, with a reference (Maghsoodloo and
+  Huang, 2010; from the 1.1.2 help).
+* Clearer messages for two common mistakes (ideas from James Curran's
+  `isValidTerm()` and `adj` check on the `master` branch):
+  * a `modelterm` with its factors in another order or letter case:
+    `'Variety:nitro' is not a term of the model. Did you mean
+    'nitro:Variety'?`; otherwise the message lists the model's terms;
+  * a misspelled `adj` lists the valid choices (before, `p.adjust()` gave an
+    error that did not mention `"tukey"`). `adj` may be given in any letter
+    case, e.g. `"Tukey"` or `"bh"`, in `predictmeans()` and
+    `contrastmeans()`. The `contrastmeans()` help no longer lists `"tukey"`,
+    which it never supported.
+* `residplot()`:
+  * failed for `glmmTMB` models with coefficients dropped as aliased;
+  * in the "random effects vs fitted" panel of `glmer` and `glmmTMB`
+    models with a correlated term, e.g. `(Days | Subject)`, the random
+    effects were matched to the wrong columns of Z (`ranef()` lists them by
+    component, Z by level).
+* `ci_mcp()` stopped when a lower and upper limit were equal (a mean with
+  SE 0).
+* The internal `model.matrix()` method for `lme` models accepts `data =`.
+* `varcomp()` for `glmmTMB` models gave wrong confidence limits (the upper
+  limit could be below the estimate), read correlation parameters as log
+  standard deviations, and had no residual variance. It now gives the same
+  table as for `lmer`: the variances and covariances of each term
+  (zero-inflation terms prefixed `zi.`), the residual variance of gaussian
+  models, delta-method SEs (equal to the `lmer` ones for `sleepstudy`), and
+  Wald CIs on the log scale for variances and the Fisher z scale for
+  correlations. `ci = FALSE` now works for these models.
+* `semireg_tmb()` with `predict_info = TRUE`: the random-effect covariance
+  was wrong for correlated terms (same cause as in `R2_glmm()`). A singular
+  covariance is detected without computing all eigenvalues, and a system
+  that is not positive definite falls back to `nearPD()` instead of failing.
 * `contrastmeans()` failed with "non-conformable arguments" for every model
   with a missing treatment combination, even for contrasts that do not
   involve it. It now works, and stops with a clear message only when a
@@ -272,6 +340,7 @@
 
 ## Packaging
 
+* James Curran is credited as a contributor (DESCRIPTION now uses `Authors@R`).
 * `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
   fields, and `NeedsCompilation` is "no".
 * GitHub Actions R CMD check on Linux, macOS and Windows.

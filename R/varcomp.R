@@ -4,10 +4,10 @@ varcomp <- function(model, ci=TRUE, level=0.95) {
     varcomp <- as.data.frame(VarCorr(model), order = "lower.tri")
     vcov_index <- -1:-length(fixef(model))
 	if (inherits(model, "glmerMod")) {
-	  random_vcov <- as.matrix(vcov_glmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index]) 
+	  random_vcov <- as.matrix(vcov_glmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index, drop = FALSE])
 	  ci <- FALSE
-	}else random_vcov <- as.matrix(vcov_lmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index])
-    if (inherits(model, "glmerMod")) random_terms <- gsub("cov_", "", rownames(random_vcov)) else random_terms <- gsub("cov_", "", colnames(random_vcov)) 
+	}else random_vcov <- as.matrix(vcov_lmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index, drop = FALSE])
+    random_terms <- gsub("cov_", "", colnames(random_vcov))   # vcov_glmerMod() has no row names
     varcomp$SE <- sqrt(diag(random_vcov))
 	if (ci){
     varcomp <- cbind(varcomp, confint(model, level=level)[1:length(random_terms), ])
@@ -58,18 +58,81 @@ varcomp <- function(model, ci=TRUE, level=0.95) {
       varcomp <- cbind(vcov, SE)      
     }
   }else if(inherits(model, "glmmTMB")){
-    theta_sd <- sqrt(diag(vcov(model, full=TRUE)))
-    theta_sd <- theta_sd[grepl("theta", names(theta_sd))]
-    theta <- getME(model, "theta")
-    vcov <- exp(2*theta)
-    SE=theta_sd*2*exp(2*theta)
-    theta_UL <- theta+qnorm(p=(1-level)/2, lower.tail=FALSE)*theta_sd
-    upper <- theta_sd*2*exp(2*theta_UL)
-    theta_LL <- theta-qnorm(p=(1-level)/2, lower.tail=FALSE)*theta_sd
-    lower <- theta_sd*2*exp(2*theta_LL)
-    varcomp <- cbind(vcov, SE, lower, upper)   
+    varcomp <- pm_tmb_varcomp(model, ci = ci, level = level)
   } else {
     stop("The model must be a lme, lmer, glmer or glmmTMB object!")
   }
   return(varcomp)  
+}
+
+## Variance components of a glmmTMB fit (conditional model, then the
+## zero-inflation model with prefix "zi."), laid out as for lmer: variances
+## and covariances of each term (lower triangle, by column), then the
+## residual variance of a gaussian model. SEs by the delta method from
+## vcov(full = TRUE): the components are recomputed by VarCorr() from
+## perturbed parameters, so this works for every covariance structure.
+## CIs are Wald intervals on the log scale for variances (glmmTMB's own
+## scale, so always positive) and on the atanh scale for correlations
+## (times the two SDs for a covariance).
+pm_tmb_varcomp <- function(model, ci = TRUE, level = 0.95) {
+  pf <- model$fit$parfull
+  keep <- !names(pf) %in% c("b", "bzi")   # vcov(full = TRUE) has these, in this order
+  pn <- names(pf)[keep]
+  V <- vcov(model, full = TRUE)
+  if (nrow(V) != length(pn)) stop("cannot match the parameters of this glmmTMB model to vcov(full = TRUE)")
+  gaus <- stats::family(model)$family == "gaussian"
+  use <- pn %in% c("theta", "thetazi", if (gaus) c("betad", "betadisp"))
+  pos <- which(keep)[use]
+  on.exit(model$obj$env$report(model$fit$parfull))   # leave the TMB object as it was
+
+  components <- function(x) {
+    m <- model
+    m$fit$parfull[pos] <- x
+    for (nm in unique(pn[use])) m$fit$par[names(m$fit$par) == nm] <- x[pn[use] == nm]
+    vc <- VarCorr(m)
+    est <- r <- sdp <- numeric(0)
+    for (part in c("cond", "zi")) {
+      for (j in seq_along(vc[[part]])) {
+        v <- vc[[part]][[j]]
+        is_diag <- identical(names(attr(v, "blockCode")), "diag")   # no covariances
+        grp <- paste0(if (part == "zi") "zi.", names(vc[[part]])[j])
+        cn <- rownames(v)
+        v <- matrix(as.numeric(v), nrow(v))
+        for (b in seq_len(ncol(v))) for (a in b:nrow(v)) {
+          if (a != b && is_diag) next
+          nm <- paste(c(grp, cn[unique(c(a, b))]), collapse = ".")
+          est[nm] <- v[a, b]
+          if (a != b) {
+            sdp[nm] <- sqrt(v[a, a]*v[b, b])
+            r[paste0("cor:", nm)] <- v[a, b]/sdp[nm]
+          }
+        }
+      }
+    }
+    if (gaus) est["residual"] <- sigma(m)^2
+    structure(c(est, r), sdprod = sdp)
+  }
+
+  x0 <- pf[pos]
+  val <- components(x0)
+  J <- numDeriv::jacobian(function(x) as.numeric(components(x)), x0)
+  se <- sqrt(pmax(diag(J %*% V[use, use, drop = FALSE] %*% t(J)), 0))
+  names(se) <- names(val)
+  is_r <- startsWith(names(val), "cor:")
+  est <- val[!is_r]
+  out <- cbind(vcov = est, SE = se[!is_r])
+  if (ci) {
+    z <- stats::qnorm(1 - (1 - level)/2)
+    lower <- ifelse(est > 0, est*exp(-z*se[!is_r]/est), 0)
+    upper <- ifelse(est > 0, est*exp(z*se[!is_r]/est), NA)
+    r <- val[is_r]
+    nm <- sub("^cor:", "", names(r))
+    sdprod <- attr(val, "sdprod")[nm]
+    lower[nm] <- tanh(atanh(r) - z*se[is_r]/(1 - r^2))*sdprod
+    upper[nm] <- tanh(atanh(r) + z*se[is_r]/(1 - r^2))*sdprod
+    out <- cbind(out, lower, upper)
+    colnames(out)[3:4] <- paste(format(100*c((1 - level)/2, 1 - (1 - level)/2), trim = TRUE,
+                                       scientific = FALSE, digits = 3), "%")
+  }
+  as.data.frame(round(out, 4), check.names = FALSE)   # as for lmer
 }
