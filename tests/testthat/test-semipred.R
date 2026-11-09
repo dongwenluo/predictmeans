@@ -77,3 +77,22 @@ test_that("predictmeans() on a semireg fit: means with the smooth, as semipred()
   sp0 <- semipred(sm, "district", "construction.date", covariateV = mean(W$construction.date), prt = FALSE)$pred_df
   expect_equal(r0$means$estimate, sp0$areaPerMzloty, tolerance = 1e-8)
 })
+
+test_that("semipred(): two-sided limits; simultaneous bands are wider, repeat, and keep the user's RNG", {
+  skip_on_cran()
+  skip_if_not_installed("HRW")
+  data("WarsawApts", package = "HRW", envir = environment())
+  sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
+                                 smoothZ = list(grp = smZ(construction.date, k = 25)), data = WarsawApts, prt = FALSE))
+  p <- semipred(sm, covariate = "construction.date", prt = FALSE)$pred_df
+  expect_equal((p$UL - p$areaPerMzloty)/p$SE, rep(qnorm(0.975), nrow(p)), tolerance = 1e-10)
+  set.seed(9); u1 <- runif(1); set.seed(9)
+  s <- semipred(sm, covariate = "construction.date", prt = FALSE, simultaneous = TRUE)$pred_df
+  expect_identical(runif(1), u1)
+  crit <- unique(round((s$UL - s$areaPerMzloty)/s$SE, 8))
+  expect_length(crit, 1)
+  expect_gt(crit, qnorm(0.975))
+  expect_lt(crit, qnorm(1 - 0.05/(2*nrow(s))))      # below the Bonferroni bound
+  s2 <- semipred(sm, covariate = "construction.date", prt = FALSE, simultaneous = TRUE)$pred_df
+  expect_identical(s$UL, s2$UL)
+})

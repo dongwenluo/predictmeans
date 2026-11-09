@@ -7,7 +7,8 @@
 semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 		   scales=c("fixed", "free", "free_x", "free_y"),
-		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE)
+		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+		   simultaneous=FALSE)
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -25,7 +26,8 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 
 \item{boundary}{A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.}
 
-\item{level}{A significant level for calculating confident interval. The default value is 0.05.}
+\item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
+version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%).}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
 
@@ -47,6 +49,11 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 \item{threeD}{A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.}
 
 \item{prt}{A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.}
+
+\item{simultaneous}{If \code{TRUE}, simultaneous confidence bands over the whole curve(s) instead of pointwise
+limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
+predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
+FALSE.}
 }
 \value{
 \item{plt}{A ggplot object.}
@@ -104,6 +111,9 @@ str(predout1$pred_df)
 predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
 str(predout2$pred_df)
 }
+}
+\references{
+Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

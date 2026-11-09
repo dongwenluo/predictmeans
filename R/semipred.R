@@ -6,7 +6,8 @@
 #' semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 #'            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 #' 		   scales=c("fixed", "free", "free_x", "free_y"),
-#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE)
+#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+#' 		   simultaneous=FALSE)
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -15,7 +16,8 @@
 #' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
 #' @param covariateV A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
 #' @param boundary A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.
-#' @param level A significant level for calculating confident interval. The default value is 0.05.
+#' @param level Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
+#'   version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%).
 #' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
 #' @param trellis A logical scalar. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.
 #' @param scales Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?
@@ -28,9 +30,15 @@
 #' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
 #' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
 #' @param prt A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.
+#' @param simultaneous If \code{TRUE}, simultaneous confidence bands over the whole curve(s) instead of pointwise
+#'   limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
+#'   predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
+#'   FALSE.
 #' @return
 #' \item{plt}{A ggplot object.}
 #' \item{pred_df}{A data.frame with predcted data.}
+#' @references
+#' Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -88,7 +96,7 @@ NULL
 semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
                      covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
                      scales=c("fixed", "free", "free_x", "free_y"), 
-                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE) {
+                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE) {
   
   stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))  
   scales <- as.character(scales)
@@ -143,10 +151,13 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   response <- des$response; response0 <- des$response0
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
 
+  # two-sided (1 - level) limits, pointwise or simultaneous over the curve(s)
+  crit_of <- function(D) if (simultaneous) pm_sim_crit(D, sm_Cov, level) else qnorm(1 - level/2)
+  crit <- crit_of(D_mx)
   stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
-  LL <- y_hat - qnorm(1-level)*stderr
-  UL <- y_hat + qnorm(1-level)*stderr  
+  LL <- y_hat - crit*stderr
+  UL <- y_hat + crit*stderr
   
   if (is.null(trans)) {
     if (!isLMM(semer)) {
@@ -167,8 +178,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       }		
       stderr_mu <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))*weight_fun(y_hat, semer)
       y_hat <- invfun(y_hat)
-      LL <- y_hat - qnorm(1-level)*stderr_mu
-      UL <- y_hat + qnorm(1-level)*stderr_mu
+      LL <- y_hat - crit*stderr_mu
+      UL <- y_hat + crit*stderr_mu
       if (family_n == "binomial"){
         UL <- ifelse(UL > 1, 1, UL)	
         LL <- ifelse(LL < 0, 0, LL)	
@@ -288,6 +299,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
           D_contr <- D_mx_lst[[grp_fct_levl[contr[1]]]] - D_mx_lst[[grp_fct_levl[contr[2]]]]
+          crit_c <- crit_of(D_contr)
           
           if (!isLMM(semer)) {
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))*weight_fun(plt_df_contr[[response]], semer)
@@ -295,11 +307,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))
           }
           if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
           }else{
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr
           }          
           
           plt <- ggplot(plt_df_contr, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))))+
@@ -363,6 +375,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
           D_contr <- D_mx_lst[[grp_fct_levl[contr[1]]]] - D_mx_lst[[grp_fct_levl[contr[2]]]]
+          crit_c <- crit_of(D_contr)
           
           if (!isLMM(semer)) {
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))*weight_fun(plt_df_contr[[response]], semer)
@@ -370,11 +383,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))
           }
           if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
           }else{
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr
           }
           
           if (!is.null(boundary)){

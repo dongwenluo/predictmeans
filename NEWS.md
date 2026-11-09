@@ -18,6 +18,9 @@
 * `glmer` Poisson models now give back-transformed means as counts (whole
   numbers, never below zero), as `glm` and `glmmTMB` Poisson models already
   did.
+* `semipred()` limits are now two-sided at the stated level: the default
+  `level = 0.05` gives 95% limits. Earlier versions used `qnorm(1 - level)`,
+  i.e. 90% limits with the default; `level = 0.1` gives those limits.
 * `predictmeans(letterCI = TRUE)` now works with `atvar`: the CI-overlap
   letters compare the means within each `atvar` group (as in predictmeans
   1.1.2). Before, `atvar` was dropped and the letters compared all means.
@@ -96,6 +99,12 @@
   * gains `weights`.
 
 ## New options
+
+* `semipred(simultaneous = TRUE)` gives simultaneous confidence bands over
+  the whole curve(s), and over difference curves with `contr` (Ruppert,
+  Wand and Carroll): the critical value is the quantile of the largest
+  standardised deviation from 10,000 draws, with a fixed seed so results
+  repeat (the user's random numbers are left alone).
 
 * `predictmeans()` accepts `semireg()` fits: the means of a factor term
   include the smooth terms (fixed part plus the smooth's random effects,

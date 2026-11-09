@@ -35,8 +35,18 @@ pm_p_mvt <- function(t, df, R) {
   }
   R <- stats::cov2cor(as.matrix(R))
   k <- length(t)
-  # pmvt() is a Monte Carlo integral: use a fixed seed so results repeat,
-  # and leave the user's random number stream as it was
+  # pmvt() is a Monte Carlo integral: a fixed seed makes results repeat
+  alg <- mvtnorm::GenzBretz(maxpts = 5e4, abseps = 1e-4)
+  pm_with_seed(20240403, vapply(seq_len(k), function(i) {
+    a <- abs(t[i])
+    pr <- mvtnorm::pmvt(lower = rep(-a, k), upper = rep(a, k), df = fix_df(df[i]), corr = R, algorithm = alg)
+    min(1, max(0, 1 - as.numeric(pr)))
+  }, numeric(1)))
+}
+
+## Evaluate 'expr' with a fixed random seed and leave the user's random
+## number stream as it was.
+pm_with_seed <- function(seed, expr) {
   if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
     old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
     on.exit(assign(".Random.seed", old_seed, envir = globalenv()), add = TRUE)
@@ -44,11 +54,25 @@ pm_p_mvt <- function(t, df, R) {
     on.exit(if (exists(".Random.seed", envir = globalenv(), inherits = FALSE))
       rm(".Random.seed", envir = globalenv()), add = TRUE)
   }
-  set.seed(20240403)
-  alg <- mvtnorm::GenzBretz(maxpts = 5e4, abseps = 1e-4)
-  vapply(seq_len(k), function(i) {
-    a <- abs(t[i])
-    pr <- mvtnorm::pmvt(lower = rep(-a, k), upper = rep(a, k), df = fix_df(df[i]), corr = R, algorithm = alg)
-    min(1, max(0, 1 - as.numeric(pr)))
-  }, numeric(1))
+  set.seed(seed)
+  expr
+}
+
+## Critical value for simultaneous bands over the rows of D (Ruppert, Wand
+## and Carroll): the (1 - level) quantile of max_g |D_g theta| / se_g for
+## theta ~ N(0, C), from 10000 draws.
+pm_sim_crit <- function(D, C, level, nsim = 10000) {
+  D <- as.matrix(D)
+  C <- as.matrix(C)
+  se <- sqrt(rowSums((D %*% C) * D))
+  ok <- is.finite(se) & se > 0
+  if (!any(ok)) return(stats::qnorm(1 - level/2))
+  e <- eigen(C, symmetric = TRUE)
+  A <- e$vectors %*% diag(sqrt(pmax(e$values, 0)), nrow = length(e$values))
+  DA <- D[ok, , drop = FALSE] %*% A
+  M <- pm_with_seed(20240403, {
+    Z <- matrix(stats::rnorm(ncol(A)*nsim), ncol(A))
+    apply(abs(DA %*% Z)/se[ok], 2, max)
+  })
+  as.numeric(stats::quantile(M, 1 - level))
 }
