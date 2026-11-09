@@ -100,6 +100,13 @@
 
 ## New options
 
+* New `bootmodels()`: parametric bootstrap p-values for the terms and
+  coefficients of `lmer` and `glmer` models, simulating from the model
+  without its fixed effects (global null) and refitting. Its result can be
+  passed to `predictmeans()` and `contrastmeans()` as `permlist`, giving
+  bootstrap p-values for pairwise comparisons and contrasts (`p.method`
+  `"bootstrap"` in the `pairs` table).
+
 * `semipred(simultaneous = TRUE)` gives simultaneous confidence bands over
   the whole curve(s), and over difference curves with `contr` (Ruppert,
   Wand and Carroll): the critical value is the quantile of the largest

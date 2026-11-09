@@ -141,7 +141,9 @@ pm_tidy_parts <- function(e) {
     pairs$p.adj <- p_adj
     lsd_level <- g("level")
     pairs$lsd <- if (perm) 2*dses else stats::qt(1 - lsd_level/2, pdf)*dses
-    pairs$p.method <- if (perm) "permutation" else if (adj == "tukey") "tukey" else "t"
+    pairs$p.method <- if (perm) {
+      if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else "permutation"
+    } else if (adj == "tukey") "tukey" else "t"
 
     # log scale: the difference is the log of the ratio of the means;
     # logit scale: the log of the odds ratio
