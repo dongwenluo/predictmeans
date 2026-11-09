@@ -27,16 +27,19 @@ Permutation ANOVA table.
 This function provides permutation ANOVA for \code{lmer} model.
 }
 \examples{
-# library(predictmeans)
-# Oats$nitro <- factor(Oats$nitro) 
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
+library(predictmeans)
+Oats$nitro <- factor(Oats$nitro)
+fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 
-## Permutation Test for model terms
-# permanova.lmer(fm)
-# permanova.lmer(fm, type=2)
+## Permutation test for model terms (99 permutations to keep the example
+## quick; use 999 or more in practice)
+\donttest{
+permanova.lmer(fm, nperm=99, ncore=1)
+permanova.lmer(fm, nperm=99, ncore=1, type=2)
+}
 ## Compare to F test
-# fm0 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# anova(fm0)
+fm0 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+anova(fm0)
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

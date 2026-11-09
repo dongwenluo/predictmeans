@@ -27,6 +27,17 @@ test_that("a matrix covariateV gives one prediction per point for a 2-D smooth",
   expect_true(all(p$LL < p$w & p$w < p$UL))
 })
 
+test_that("a numeric variable that is not in the prediction (here the grouping id) doesn't stop semipred()", {
+  set.seed(7)
+  d <- data.frame(u = runif(150, 2, 8), id = rep(1:15, each = 10))
+  d$y <- sin(d$u) + rnorm(15, sd = 0.5)[d$id] + rnorm(150, sd = 0.3)
+  centred <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d, prt = FALSE))
+  plain <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d,
+                                    ncenter = FALSE, prt = FALSE))
+  expect_equal(semipred(centred, covariate = "u", prt = FALSE)$pred_df,
+               semipred(plain, covariate = "u", prt = FALSE)$pred_df, tolerance = 1e-8)
+})
+
 test_that("ranova() on a semireg fit refits with the smooth bases (copper)", {
   skip_on_cran()
   data(copper)

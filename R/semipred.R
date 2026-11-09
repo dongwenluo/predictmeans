@@ -186,17 +186,20 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   pred_df$LL <- LL
   pred_df$UL <- UL
   
+  # Undo semireg()'s centring and scaling. Numeric covariates that are not in
+  # the prediction grid (averaged over) are only in mod_df.
   if (!is.null(attr(mod_df, "numeric_var"))) {
     for (i in attr(mod_df, "numeric_var")) {
+      in_pred <- i %in% names(pred_df)
       if (!is.null(attr(mod_df, paste(i, "sd", sep="_")))) {
         mod_df[[i]] <- mod_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
-        pred_df[[i]] <- pred_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))  
-      }  
-      
+        if (in_pred) pred_df[[i]] <- pred_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
+      }
+
       if (!is.null(attr(mod_df, paste(i, "mean", sep="_")))) {
         mod_df[[i]] <- mod_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
-        pred_df[[i]] <- pred_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))  
-      }  
+        if (in_pred) pred_df[[i]] <- pred_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
+      }
     }
   }
   

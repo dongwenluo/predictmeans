@@ -74,7 +74,7 @@
 #'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 #'   Kmatrix(fm, "Variety", prtnum=TRUE)$K
 #'   Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
-#'  # Kmatrix(fm, "Variety", "nitro")$K
+#'   Kmatrix(fm, "Variety", "nitro")$K
 #'   Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
 #'
 #'   # Covariates entering through transformations or only through interactions

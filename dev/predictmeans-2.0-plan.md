@@ -50,7 +50,7 @@ predictmeans 2.0 has three aims, with equal weight:
 | `ranova()` on `semireg()` fits: refits go through `semireg()` with the smooth bases (class `semerLmerTest`, `update()` method); `copper` data added | **Done** |
 | Ideas from 1.1.2 (CRAN zip, `master` branch, July 2025 tarball), reviewed function by function. Steps: (1) `trans` kept for identity links, `glmer` Poisson counts, `transOff` in plotted data, James Curran credited — **done**; (2) glmmTMB random-effect covariance from `VarCorr()` (`R/re-terms.R`) for `R2_glmm()` (correlated terms, zero-inflation random effects, aliased columns, per-component breakdown) and `semireg_tmb()`, `nearPD` fallback — **done**; (3) `varcomp()` for glmmTMB (delta-method SEs, Wald CIs, lmer layout) — **done**; (4) `residplot()` with aliased glmmTMB coefficients (and Z-ordered random effects), `ci_mcp()` LL = UL, `model.matrix.lme(data =)` — **done**; (5) clear `adj` check, "did you mean" for `modelterm` (`R/checks.R`) — **done**; (6) SE of `glmer` variance components (`vcov_glmerMod()` sd-to-variance Jacobian; `varcomp()` for correlated glmer terms), `letterCI` help note — **done**. Then R CMD check and PR. Optional, not started: `letterCI` level from the test level and with `atvar`, faster `multcompLetters()`, plot helpers / `.data[[ ]]`, `seq_along()` clean-up. Not taken: `predictmeansN()`, `pm()`/`predmeans()`, `combinat`, `PMplot()` as ggplot, `permmodels()` nperm 999, exporting the lme/gls `model.frame`/`terms` methods | In progress |
 | Deferred until the functions are refined one by one: tidy/LLM polish — `options(predictmeans.plot = FALSE)` to turn plots off in pipelines, `glance()`, `llms.txt` on the pkgdown site, help pages and vignettes leading with `$means`/`$pairs`/`tidy()`. While refining, put new output into the stable tables and avoid argument names that partially match old ones (e.g. `bar` → `barplot`) | Deferred |
-| Next: finish Phase 1 — move help blocks next to their functions and uncomment examples. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
+| Next: finish Phase 1 in two steps: (1) examples of the permutation and semiparametric functions run again (99 permutations on one core, slow parts in `\donttest{}`, HRW examples only when HRW is installed); found and fixed a `semipred()` error with numeric variables outside the grid — **done**; (2) move help blocks next to their functions. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
 
@@ -126,7 +126,8 @@ structures.
 ### 1.4 Engineering and CRAN hygiene
 
 - **Tests:** a testthat suite now exists (38 tests, 167 checks). The examples
-  for permutation and semiparametric functions are still commented out.
+  for permutation and semiparametric functions run again (slow parts in
+  `\donttest{}`).
 - **Global side effects:** `options(scipen = 6)` is never restored
   (`predictmeans`, `contrastmeans`, `permmodels`). `cat()` is used in
   `R2_glmm`; the Kmatrix one now uses `message()`. `set.seed()` is called
@@ -385,7 +386,7 @@ part-time person).
 | Speed fixes that don't change numbers (§1.3) | S | **Done** |
 | Extend frozen reference to `permmodels`, `permlmer`, `R2_glmm`, `varcomp`, `contrastmeans` | S | **Done** (58 cases) |
 | CI on three OSes (GitHub Actions) | S | **Done** |
-| roxygen2 migration; uncomment examples | M | Migration **done** (help sources in `R/doc-*.R`; rendered pages identical); examples open |
+| roxygen2 migration; uncomment examples | M | Migration **done** (help sources in `R/doc-*.R`; rendered pages identical); examples **done** |
 | Benchmarks script | S | **Done** (`dev/benchmarks.R`) |
 
 ### Phase 1 — Engine and object → 2.0.0

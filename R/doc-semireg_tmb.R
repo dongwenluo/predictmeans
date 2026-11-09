@@ -61,42 +61,39 @@
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
-#' ## Not run
-#' # library(predictmeans)
-#' # library(HRW) 
-#' # data(WarsawApts)
-#' # help(WarsawApts)
-#' # str(WarsawApts)
-#' # fit1 <- semireg_tmb(areaPerMzloty ~ construction.date,
-#' #                smoothZ=list(
-#' #                  grp=smZ(construction.date, k=25)
-#' #                ),
-#' #                data = WarsawApts)
-#' # sp_out1 <- semipred(fit1, "construction.date", "construction.date")
-#' # 
-#' # WarsawApts$district <- factor(WarsawApts$district)
-#' # fit2 <- semireg_tmb(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
-#' #                 smoothZ=list(group=smZ(construction.date, k=15,
-#' #                                        by = district, group=TRUE)), 
-#' #                 data=WarsawApts)
-#' # sp_out2_1 <- semipred(fit2, "district", "construction.date")
-#' # sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-#' # 
-#' # data(indonRespir)
-#' # help(indonRespir)
-#' # str(indonRespir)
-#' # fit3 <- semireg_tmb(respirInfec ~ age+vitAdefic + female + height
-#' #                + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-#' #                smoothZ=list(
-#' #                  grp=smZ(age)
-#' #                ),
-#' #                family = binomial,
-#' #                data = indonRespir)
-#' # sp_out3 <- semipred(fit3, "age", "age")
-#' # library(ggplot2)
-#' # sp_out3$plt+
-#' #   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-#' #   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-#' #   ylim(0, 0.2)
+#' library(predictmeans)
+#' if (requireNamespace("HRW", quietly = TRUE)) {
+#'   data(WarsawApts, package = "HRW")
+#'   fit1 <- semireg_tmb(areaPerMzloty ~ construction.date,
+#'                       smoothZ=list(
+#'                         grp=smZ(construction.date, k=25)
+#'                       ),
+#'                       data = WarsawApts)
+#'   sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+#'
+#'   WarsawApts$district <- factor(WarsawApts$district)
+#'   fit2 <- semireg_tmb(areaPerMzloty ~ construction.date*district,
+#'                       smoothZ=list(group=smZ(construction.date, k=15,
+#'                                              by = district, group=TRUE)),
+#'                       data=WarsawApts)
+#'   sp_out2_1 <- semipred(fit2, "district", "construction.date")
+#'   sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
+#' }
+#' if (requireNamespace("HRW", quietly = TRUE)) {
+#'   data(indonRespir, package = "HRW")
+#'   fit3 <- semireg_tmb(respirInfec ~ age+vitAdefic + female + height
+#'                       + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
+#'                       smoothZ=list(
+#'                         grp=smZ(age)
+#'                       ),
+#'                       family = binomial,
+#'                       data = indonRespir)
+#'   sp_out3 <- semipred(fit3, "age", "age")
+#'   library(ggplot2)
+#'   print(sp_out3$plt +
+#'     geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
+#'     geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
+#'     coord_cartesian(ylim = c(0, 0.2)))
+#' }
 #' @name semireg_tmb
 NULL

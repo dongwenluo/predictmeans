@@ -76,43 +76,42 @@ Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code
 A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
 }
 \examples{
-## Not run
-# library(predictmeans)
-# library(HRW) 
-# data(WarsawApts)
-# help(WarsawApts)
-# str(WarsawApts)
-# fit1 <- semireg(areaPerMzloty ~ construction.date,
-#                smoothZ=list(
-#                  grp=smZ(construction.date, k=25)
-#                ),
-#                data = WarsawApts)
-# sp_out1 <- semipred(fit1, "construction.date", "construction.date")
-# 
-# WarsawApts$district <- factor(WarsawApts$district)
-# fit2 <- semireg(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
-#                 smoothZ=list(group=smZ(construction.date, k=15,
-#                                        by = district, group=TRUE)), 
-#                 data=WarsawApts)
-# sp_out2_1 <- semipred(fit2, "district", "construction.date")
-# sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-# 
-# data(indonRespir)
-# help(indonRespir)
-# str(indonRespir)
-# fit3 <- semireg(respirInfec ~ age+vitAdefic + female + height
-#                + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-#                smoothZ=list(
-#                  grp=smZ(age)
-#                ),
-#                family = binomial,
-#                data = indonRespir)
-# sp_out3 <- semipred(fit3, "age", "age")
-# library(ggplot2)
-# sp_out3$plt+
-#   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-#   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-#   ylim(0, 0.2)
+library(predictmeans)
+if (requireNamespace("HRW", quietly = TRUE)) {
+  data(WarsawApts, package = "HRW")
+  fit1 <- semireg(areaPerMzloty ~ construction.date,
+                  smoothZ=list(
+                    grp=smZ(construction.date, k=25)
+                  ),
+                  data = WarsawApts)
+  sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+
+  WarsawApts$district <- factor(WarsawApts$district)
+  fit2 <- semireg(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
+                  smoothZ=list(group=smZ(construction.date, k=15,
+                                         by = district, group=TRUE)),
+                  data=WarsawApts)
+  sp_out2_1 <- semipred(fit2, "district", "construction.date")
+  sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
+}
+\donttest{
+if (requireNamespace("HRW", quietly = TRUE)) {
+  data(indonRespir, package = "HRW")
+  fit3 <- semireg(respirInfec ~ age+vitAdefic + female + height
+                  + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
+                  smoothZ=list(
+                    grp=smZ(age)
+                  ),
+                  family = binomial,
+                  data = indonRespir)
+  sp_out3 <- semipred(fit3, "age", "age")
+  library(ggplot2)
+  print(sp_out3$plt +
+    geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
+    geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
+    coord_cartesian(ylim = c(0, 0.2)))
+}
+}
 }
 \references{
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.

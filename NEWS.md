@@ -207,6 +207,10 @@
   `options(scipen = 6)` set after they return; printed results look the same.
 * `contrastmeans()` without `ctrmatrix` only opens the contrast editor in an
   interactive session.
+* `semipred()` failed ("replacement has 0 rows") on `semireg()` fits whose
+  data had a numeric variable not in the prediction grid, such as a numeric
+  grouping id in `(1 | idnum)`, because it tried to undo the centring for
+  it in the grid too.
 
 ## Speed
 
@@ -312,6 +316,13 @@
   two `atvar` factors, or empty groups). This came from 1.x. P-values and
   letters are now matched to groups and levels by name.
 
+* The examples of `permmodels()`, `permlmer()`, `permanova.lmer()`,
+  `semireg()`, `semireg_tmb()` and `semipred()`, and the `lmer` example of
+  `residplot()`, run again (they were commented out). Permutation examples
+  use 99 permutations on one core; slow parts are in `\donttest{}`, and
+  examples with HRW data run only when HRW is installed. The `semireg_tmb()`
+  example no longer passes `resp_scale`, which only `semireg()` has; the
+  `sleepstudy` plot uses ggplot2 instead of latticeExtra.
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".
 * A pkgdown website (built by GitHub Actions and published to GitHub

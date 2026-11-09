@@ -29,7 +29,6 @@
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #' df_term(fm, "nitro:Variety")
-#' ## Not run: 
 #' ## The contrast has a contrast matrix as follows:
 #' #     0:Golden Rain 0:Marvellous 0:Victory 
 #' #[1,]            -1            0         1 
@@ -45,7 +44,7 @@
 #' #[2,]                0              0           0
 #'
 #' # 1. Enter above contrast matrix into a pop up window, then close the window
-#' # df_term(fm, "nitro:Variety")
+#' if (interactive()) df_term(fm, "nitro:Variety")
 #'  
 #' # 2. Construct the contrast matrix directly
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 

@@ -35,58 +35,53 @@
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
-#' # # Not Run
-#' # library(predictmeans)
-#' # data(Dialyzer, package="nlme")
-#' # help(Dialyzer)
-#' # str(Dialyzer)
-#' # 
-#' # library(ggplot2)
-#' # ggplot(Dialyzer, aes(x=pressure, y=rate, col=QB)) +
-#' #  geom_line() +
-#' #  facet_wrap(vars(Subject))
-#' # 
-#' # fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
-#' #              smoothZ=list(
-#' #                qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)
-#' #              ),
-#' #              data=Dialyzer)
-#' # str(fm$data)
-#' # summary(fm$semer)
-#' # residplot(fm$semer, group="QB")
-#' # anova(fm$semer)
-#' # ranova(fm$semer)
-#' # R2_glmm(fm$semer)
-#' # ap_out1 <- semipred(fm, "QB", "pressure")
-#' # str(ap_out1$pred_df)
-#' # ap_out2 <- semipred(fm, "QB", "pressure", contr=c(1,2))
-#' # str(ap_out2$pred_df)
-#' #
-#' # data(sleepstudy, package="lme4")
-#' # help(sleepstudy)
-#' # str(sleepstudy)
-#' # library(latticeExtra)
-#' # xyplot(Reaction ~ Days | Subject, sleepstudy, aspect = "xy",
-#' #       layout = c(9, 2), type = c("g", "p", "r"),
-#' #       index.cond = function(x, y) coef(lm(y ~ x))[2],
-#' #       xlab = "Days of sleep deprivation",
-#' #       ylab = "Average reaction time (ms)",
-#' #       as.table = TRUE)
-#' # 
-#' # sleep.semi <- semireg(Reaction ~ Days*Subject,
-#' #                    smoothZ=list(
-#' #                      sub_grp=smZ(Days, by=Subject, group=TRUE)
-#' #                    ),
-#' #                    data=sleepstudy)
-#' # residplot(sleep.semi$semer)
-#' # summary(sleep.semi$semer)
-#' # anova(sleep.semi$semer)
-#' # ranova(sleep.semi$semer)
-#' # R2_glmm(sleep.semi$semer)
-#' # 
-#' # predout1 <- semipred(sleep.semi, "Subject", "Days")
-#' # str(predout1$pred_df)
-#' # predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
-#' # str(predout2$pred_df)
+#' library(predictmeans)
+#' data(Dialyzer, package="nlme")
+#' str(Dialyzer)
+#'
+#' library(ggplot2)
+#' ggplot(Dialyzer, aes(x=pressure, y=rate, col=QB)) +
+#'   geom_line() +
+#'   facet_wrap(vars(Subject))
+#'
+#' fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
+#'               smoothZ=list(
+#'                 qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)
+#'               ),
+#'               data=Dialyzer)
+#' str(fm$data)
+#' summary(fm$semer)
+#' residplot(fm$semer, group="QB")
+#' anova(fm$semer)
+#' ranova(fm$semer)
+#' R2_glmm(fm$semer)
+#' ap_out1 <- semipred(fm, "QB", "pressure")
+#' str(ap_out1$pred_df)
+#' ap_out2 <- semipred(fm, "QB", "pressure", contr=c(1,2))
+#' str(ap_out2$pred_df)
+#'
+#' \donttest{
+#' str(sleepstudy)
+#' ggplot(sleepstudy, aes(x=Days, y=Reaction)) +
+#'   geom_point() +
+#'   geom_smooth(method="lm", formula=y~x, se=FALSE) +
+#'   facet_wrap(vars(Subject), nrow=2) +
+#'   labs(x="Days of sleep deprivation", y="Average reaction time (ms)")
+#'
+#' sleep.semi <- semireg(Reaction ~ Days*Subject,
+#'                       smoothZ=list(
+#'                         sub_grp=smZ(Days, by=Subject, group=TRUE)
+#'                       ),
+#'                       data=sleepstudy)
+#' residplot(sleep.semi$semer)
+#' summary(sleep.semi$semer)
+#' anova(sleep.semi$semer)
+#' R2_glmm(sleep.semi$semer)
+#'
+#' predout1 <- semipred(sleep.semi, "Subject", "Days")
+#' str(predout1$pred_df)
+#' predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
+#' str(predout2$pred_df)
+#' }
 #' @name semipred
 NULL
