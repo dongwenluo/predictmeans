@@ -31,6 +31,7 @@ reference:
   - covariatemeans
   - contrastmeans
   - specify_contrast
+  - contrast_family
   - Kmatrix
 - title: Results
   contents:

@@ -97,6 +97,14 @@
 
 ## New options
 
+* New `contrast_family()` builds the standard families of contrasts among
+  the means of a term for `contrastmeans()`: `"pairwise"`,
+  `"revpairwise"`, `"trt.vs.ctrl"` (Dunnett; exact with `adj = "mvt"`),
+  `"consec"`, `"poly"` (integer orthogonal polynomials), `"eff"` and
+  `"del.eff"`, optionally within each level of `by` factors. Coefficients
+  and names are emmeans'; results through `contrastmeans()` equal
+  emmeans' `contrast()`.
+
 * New `adj` methods in `predictmeans()` and `contrastmeans()`: `"sidak"`,
   `"scheffe"` and `"mvt"`, as in emmeans (equal to emmeans' p-values for
   sidak and scheffe; within 1e-3 for mvt). `"mvt"` is the single-step
