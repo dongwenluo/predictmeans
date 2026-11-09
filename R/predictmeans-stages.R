@@ -22,9 +22,8 @@
 pm_stage_setup <- function(st) eval(pm_code_setup, st)
 pm_code_setup <- quote({
 
-  if (!(modelterm %in% attr(terms(model), "term.labels"))){
-    stop(paste("The", modelterm, "must be exactly a term in the model (especially check the order of interaction)."))
-  }
+  pm_check_modelterm(model, modelterm)
+  adj <- pm_match_adj(adj)
 
   all.null = function(...){
     all(unlist(lapply(list(...), is.null)))
@@ -112,7 +111,7 @@ pm_code_setup <- quote({
     pairwise <- TRUE
 
     if (adj=="tukey"){
-      stop("The p-value can't be adjusted by Tukey methd!")
+      stop("Tukey adjustment is not available for permutation p-values; use another 'adj'.", call. = FALSE)
     }
   }
 

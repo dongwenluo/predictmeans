@@ -15,7 +15,7 @@
 #' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
 #' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-#'   The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". 
+#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr", in any letter case. 
 #'   The default method is "none".
 #' @param Df A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 #'     the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).

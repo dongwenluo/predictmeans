@@ -122,6 +122,16 @@
     part, or with coefficients dropped as aliased;
   * `over_disp = TRUE` finds the observation-level random effect wherever
     it is in the formula (glmmTMB keeps the formula's order).
+* Clearer messages for two common mistakes (ideas from James Curran's
+  `isValidTerm()` and `adj` check on the `master` branch):
+  * a `modelterm` with its factors in another order or letter case:
+    `'Variety:nitro' is not a term of the model. Did you mean
+    'nitro:Variety'?`; otherwise the message lists the model's terms;
+  * a misspelled `adj` lists the valid choices (before, `p.adjust()` gave an
+    error that did not mention `"tukey"`). `adj` may be given in any letter
+    case, e.g. `"Tukey"` or `"bh"`, in `predictmeans()` and
+    `contrastmeans()`. The `contrastmeans()` help no longer lists `"tukey"`,
+    which it never supported.
 * `residplot()`:
   * failed for `glmmTMB` models with coefficients dropped as aliased;
   * in the "random effects vs fitted" panel of `glmer` and `glmmTMB`

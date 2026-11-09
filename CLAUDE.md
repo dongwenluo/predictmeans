@@ -33,7 +33,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 
 ## Checks
 - Tests: `NOT_CRAN=true Rscript -e 'devtools::test()'` (the 1.1.1 reference
-  tests only run with NOT_CRAN). Mixed-model reference values are compared to
+  tests only run with NOT_CRAN). One file: `testthat::test_file(<file>, package =
+  "predictmeans", load_package = "source")` (with `pkgload::load_all()` +
+  `test_file()` tests can't see unregistered internal methods). Mixed-model reference values are compared to
   2% because lme4/nlme versions move them; everything else to 1e-6.
 - Refactors must not change output: run
   `Rscript dev/snapshot-predictmeans.R <lib> before.rds` on the old build and

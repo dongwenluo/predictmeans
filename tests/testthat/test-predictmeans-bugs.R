@@ -208,3 +208,19 @@ test_that("back-transformed data points are shifted by transOff, like the means"
                        trans = exp, transOff = 1)$plt
   expect_equal(range(ggplot2::layer_data(cm, 3)$y), range(d$yield))
 })
+
+test_that("clear messages for a misspelled 'adj' or a term in the wrong order or case", {
+  m <- oats_lmer()
+  expect_error(predictmeans(m, "Variety:nitro", plot = FALSE), "Did you mean 'nitro:Variety'")
+  expect_error(predictmeans(m, "variety", plot = FALSE), "Did you mean 'Variety'")
+  expect_error(predictmeans(m, "Bloc", plot = FALSE), "terms of the model are: 'nitro', 'Variety'")
+  expect_error(predictmeans(m, "Variety", adj = "holms", plot = FALSE), "'adj' must be one of")
+  # any letter case
+  r1 <- predictmeans(m, "Variety", adj = "Tukey", plot = FALSE, prtnum = FALSE)
+  r2 <- predictmeans(m, "Variety", adj = "tukey", plot = FALSE, prtnum = FALSE)
+  expect_identical(r1$pairs, r2$pairs)
+  cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
+  expect_identical(contrastmeans(m, "nitro", ctrmatrix = cm, adj = "bh"),
+                   contrastmeans(m, "nitro", ctrmatrix = cm, adj = "BH"))
+  expect_error(contrastmeans(m, "nitro", ctrmatrix = cm, adj = "tukey"), "'adj' must be one of")
+})

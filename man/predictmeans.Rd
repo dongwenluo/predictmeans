@@ -30,7 +30,8 @@ variable trnasformation in the model.}
 
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". 
-The default method is "none". Note that LSD can't be adjusted except for "bonferroni" method.}
+The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
+except for "bonferroni" method.}
 
 \item{Df}{A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.}
 

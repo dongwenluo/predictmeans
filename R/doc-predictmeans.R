@@ -26,7 +26,8 @@
 #'   \code{modelterm} the multiple comparison will be performed.
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 #'   The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". 
-#'   The default method is "none". Note that LSD can't be adjusted except for "bonferroni" method.
+#'   The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
+#'   except for "bonferroni" method.
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
 #' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
