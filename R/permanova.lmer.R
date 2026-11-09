@@ -69,7 +69,7 @@ permanova.lmer <- function(model, nperm = 999, ncore=3, type = c("I", "II", "III
       termlabel2 <- termlabel1
 	  } else if (type=="2") {
 	    varsn <- unlist(strsplit(vars, "\\:"))
-	    model.1 <- update(model.0, as.formula(paste(".~.+", paste(termlabel0[attr(terms(model), "order")%in%(1:length(varsn))], collapse="+"))))
+	    model.1 <- update(model.0, as.formula(paste(".~.+", paste(termlabel0[attr(terms(model), "order")%in%(seq_along(varsn))], collapse="+"))))
 	    model.2 <- update(model.1, as.formula(paste(".~. -", vars)))
 	    Perm.p[vars] <- permlmer(model.2, model.1, nperm, ncore, plot=FALSE, ...)$`Perm-p`[2]
 	  } else if (type=="1") {

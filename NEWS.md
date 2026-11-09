@@ -18,6 +18,14 @@
 * `glmer` Poisson models now give back-transformed means as counts (whole
   numbers, never below zero), as `glm` and `glmmTMB` Poisson models already
   did.
+* `predictmeans(letterCI = TRUE)` now works with `atvar`: the CI-overlap
+  letters compare the means within each `atvar` group (as in predictmeans
+  1.1.2). Before, `atvar` was dropped and the letters compared all means.
+  The note under the mean table now says the letters come from the overlap
+  of, e.g., 83.4% CIs, and gives the approximate test level (about 0.05),
+  instead of "significant level '0.166'". `level` keeps its meaning (it sets
+  the CIs). With two `atvar` factors the note is one line
+  ("at each level of A:B") instead of two.
 
 ## Stable result tables
 
@@ -237,6 +245,10 @@
   permutation p-values.
 * `permmodels()` and `permlmer()` use a sparse Cholesky factor and
   triangular solves instead of a dense n x n inverse.
+* Letter groups (`multcompLetters()`, used for all letters) are much faster
+  for many means, with identical letters (checked on 375 random cases):
+  100 means 4.1 s -> 0.3 s; 200 means 103 s -> 2.1 s. The "absorb" step now
+  only checks the letter columns that changed.
 * `permmodels()` on `lmer` models takes the t values of each refit from the
   covariance matrix it already has, instead of calling `summary()`, which
   computed it again: about 15-20% faster (300 permutations of the Oats
@@ -341,6 +353,10 @@
 * New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
 
 ## Internal
+
+* `1:length(x)`, `1:nrow(x)` and `1:ncol(x)` are now `seq_along(x)` /
+  `seq_len()` throughout (idea from James Curran's code in 1.1.2); results
+  are unchanged, and empty inputs no longer loop over `c(1, 0)`.
 
 * Help pages are now written with roxygen2: each page's source is the
   block above its function (data sets in `R/data.R`, the package page in

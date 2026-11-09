@@ -84,7 +84,7 @@ add_submatrices <- function(indices, small_mat, big_mat) {
   if (nlevels(indices) != length(small_mat)) {
     stop("Levels of indices do not match entries of small_mat.")
   }
-  for (i in 1:length(levs)) {
+  for (i in seq_along(levs)) {
     ind <- levs[i] == indices
     big_mat[ind,ind] <- big_mat[ind,ind] + small_mat[[i]]
   }
@@ -112,7 +112,7 @@ add_diag_bdiag <- function(diag_mats, big_mats) {
 
 get_order <- function(A, B, block = attr(A, "groups")) {
   if (is.null(names(A))) {
-    names(A) <- 1:length(A)
+    names(A) <- seq_along(A)
   }
   A_names <- names(A)
   C_indx <- rep(A_names, times = sapply(A, function(x) dim(x)[1]))

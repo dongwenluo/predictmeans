@@ -35,14 +35,14 @@ PMplot <- function(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, leg
   if (is.matrix(pmatrix)) {
     nr <- nrow(pmatrix)
     pmatrix[upper.tri(pmatrix, diag=TRUE)] <- NA
-    if (is.null(rownames(pmatrix)))  rnpltm <- as.character(1:nrow(pmatrix))  else rnpltm <- rownames(pmatrix)
+    if (is.null(rownames(pmatrix)))  rnpltm <- as.character(seq_len(nrow(pmatrix)))  else rnpltm <- rownames(pmatrix)
   }
   
   if (is.list(pmatrix)) {
-    for (i in 1:length(pmatrix)) pmatrix[[i]][upper.tri(pmatrix[[i]], diag=TRUE)] <- NA
+    for (i in seq_along(pmatrix)) pmatrix[[i]][upper.tri(pmatrix[[i]], diag=TRUE)] <- NA
     pmatrix <- do.call(adiag, c(pmatrix, pad=NA))     
     nr <- nrow(pmatrix)
-    if (is.null(xylabel)) rnpltm <- as.character(1:nrow(pmatrix)) else rnpltm <- xylabel
+    if (is.null(xylabel)) rnpltm <- as.character(seq_len(nrow(pmatrix))) else rnpltm <- xylabel
   }
   
   if (nr <= 3) {

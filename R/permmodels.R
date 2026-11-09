@@ -87,7 +87,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	diff_yname <- setdiff(colnames(mod_df), yname)
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      mod_df[sample(1:nrow(mod_df)), yname, drop=FALSE]
+      mod_df[sample(seq_len(nrow(mod_df))), yname, drop=FALSE]
     }, simplify = !(length(yname) > 1))
 		
 	if (!is.null(fo)) {
@@ -151,7 +151,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      rowindex <- sample(1:length(errors))
+      rowindex <- sample(seq_along(errors))
       as.data.frame(perm_y <- xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
     })
     
@@ -214,7 +214,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      rowindex <- sample(1:length(errors))
+      rowindex <- sample(seq_along(errors))
 	  if (inherits(model, "glmerMod")) {
   	    perm_y <- slot(model, "resp")$family$linkinv(xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex])) 
 		if (slot(model, "resp")$family$family == "poisson") { 

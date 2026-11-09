@@ -168,7 +168,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       sm_Cov <- cov_lst[[sm_term]] 
     }else{
       sm_term <- intersect(names(vcov_indN), sm_term)
-      sm_termInds <- 1:ncol(getME(semer, "X")) 
+      sm_termInds <- seq_len(ncol(getME(semer, "X"))) 
       for (i in sm_term) {
         stmch_id <- match(i, names(vcov_indN))
         sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])

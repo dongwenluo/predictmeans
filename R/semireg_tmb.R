@@ -141,7 +141,7 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   
   # adding the constructed variables to the semer frame avoiding name duplication		  
   for (i in Zt_name) { 
-    data[[i]] <- factor(rep(1:nrow(smoothZt[[i]]), length=ncol(smoothZt[[i]])))
+    data[[i]] <- factor(rep(seq_len(nrow(smoothZt[[i]])), length=ncol(smoothZt[[i]])))
     glmmTMBcall$formula <- paste(paste(format(glmmTMBcall$formula), collapse = ""), "+ (1|",i,")")
   }
   

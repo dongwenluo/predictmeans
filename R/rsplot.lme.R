@@ -108,7 +108,7 @@ if(inherits(model, "glmerMod") && length(unique(model@resp$y))==2) {
     abline(v=length(observed)/2,lty=2)
     text(length(observed)/2,.03,"midpoint",pos=4)
     # show T/F
-    points(1:length(observed), observed[sf$ix],
+    points(seq_along(observed), observed[sf$ix],
     pch="|",cex=1,col=ifelse(as.integer(observed[sf$ix]), "green4", "maroon1"))  
   }else{
     plot(fittedv~obsv, xlab=yname, ylab="Fitted Values", col="blue", main = "Fitted vs Observed")

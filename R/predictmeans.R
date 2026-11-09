@@ -38,7 +38,10 @@
 #'   The default is FALSE. With \code{level = NULL} the CIs are 83.4\% CIs: for two uncorrelated means with equal SEs
 #'   they fail to overlap when the means differ at about the 5\% level. Otherwise overlap only approximates the
 #'   pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
-#'   and more when their SEs differ (Maghsoodloo and Huang, 2010).
+#'   and more when their SEs differ (Maghsoodloo and Huang, 2010). With \code{letterCI = TRUE}, \code{level} sets the CIs
+#'   (e.g. \code{level = 0.05} gives 95\% CIs), \code{adj} is "none", and with \code{atvar} the letters compare
+#'   the means within each \code{atvar} group. The note under the mean table gives the CI level and the
+#'   approximate test level.
 #' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
 #' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.
 #' @param responsen Name (in "quotes") of the back transformed response variable in the \code{model}.

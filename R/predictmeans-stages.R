@@ -124,7 +124,6 @@ pm_code_setup <- quote({
   }
 
   if (letterCI) {
-    atvar <- NULL
     pairwise <- TRUE
     adj <- "none"
 
@@ -380,7 +379,7 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
     colnames(dses.m) <- vars
     rownames(dses.m) <- c("Aveg.SED", "Min.SED", "Max.SED")
 
-    for (i in 1:length(vars)) {
+    for (i in seq_along(vars)) {
       varsindx <- as.character(dses.df[,i])==as.character(dses.df[, length(vars)+i])
       if(any(varsindx)){  # in case of A/B
         dses.m[,i] <- summary.default(dses.df[varsindx,"dses"])[c(4,1,6)]
@@ -481,7 +480,7 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 
       if (!perm && adj=="tukey") {
 	      if (inherits(model, "lmerMod")) {
-		      p.tukey <- sapply(1:length(t.v), function(m) ptukey(sqrt(2)*abs(t.v[m]), nK, Df_diff[m], lower.tail=FALSE))
+		      p.tukey <- sapply(seq_along(t.v), function(m) ptukey(sqrt(2)*abs(t.v[m]), nK, Df_diff[m], lower.tail=FALSE))
 		    }else{
 	        p.tukey <- ptukey(sqrt(2)*abs(t.v), nK, Df, lower.tail=FALSE)
 		    }
@@ -489,7 +488,7 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 
       if (!perm) {
 	  	  if (inherits(model, "lmerMod")) {
-		      t.p.values <- sapply(1:length(t.v), function(m) 2 * pt(-abs(t.v[m]), Df_diff[m]))
+		      t.p.values <- sapply(seq_along(t.v), function(m) 2 * pt(-abs(t.v[m]), Df_diff[m]))
 		    }else{
 	        t.p.values <- 2 * pt(-abs(t.v), Df)
 		    }
@@ -601,7 +600,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
       }
 
       atvar.df <- f_loj_krc(KKvarndiff, dses.df, by.x=names(KKvarndiff), by.y=names(KKvarndiff))
-      names(atvar.df)[1:length(vars)] <- vars
+      names(atvar.df)[seq_along(vars)] <- vars
 
 		  for (i in vars) {       # To ensure factor vars  have the same level as original
           atvar.df[,i] <- factor(atvar.df[,i], levels=levels(mdf[, i][[1]]))
@@ -798,24 +797,54 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
         meanTable <- meanTable[order(meanTable$Mean, decreasing = meandecr), ]
       }
 
-      # letters only among means whose comparisons can all be estimated
-      meanTable$LetterGrp <- unname(pm_letter_groups(t.p.valuemGrp, rep(TRUE, nrow(t.p.valuemGrp)), slevel))
-
       if (letterCI) {
-        meanTable$LetterGrp <- ci_mcp(meanTable[, grepl("^LL", names(meanTable))],
-                                      meanTable[, grepl("^UL", names(meanTable))])
+        meanTable$LetterGrp <- pm_ci_letters(meanTable)
+      } else {
+        # letters only among means whose comparisons can all be estimated
+        meanTable$LetterGrp <- unname(pm_letter_groups(t.p.valuemGrp, rep(TRUE, nrow(t.p.valuemGrp)), slevel))
       }
 
-      meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
+      meanTable <- list(Table=meanTable, Note=pm_letter_note(letterCI, slevel))
     } else {
-      lets <- unlist(pmlistLetter)
-      mkey <- paste(do.call("paste", c(lapply(meanTable[atvar], as.character), sep=" : ")),
-                    do.call("paste", c(lapply(meanTable[resvar], as.character), sep=" : ")), sep="\r")
-      meanTable$LetterGrp <- unname(lets[mkey])
-      meanTable <- list(Table=meanTable, Note=paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "' at each level of ", atvar, sep=""))
+      if (letterCI) {
+        # CI overlap within each 'atvar' group
+        grp <- do.call("paste", c(lapply(meanTable[atvar], as.character), sep="\r"))
+        lets <- character(nrow(meanTable))
+        for (g in unique(grp)) lets[grp == g] <- pm_ci_letters(meanTable[grp == g, , drop = FALSE])
+        meanTable$LetterGrp <- lets
+      } else {
+        lets <- unlist(pmlistLetter)
+        mkey <- paste(do.call("paste", c(lapply(meanTable[atvar], as.character), sep=" : ")),
+                      do.call("paste", c(lapply(meanTable[resvar], as.character), sep=" : ")), sep="\r")
+        meanTable$LetterGrp <- unname(lets[mkey])
+      }
+      meanTable <- list(Table=meanTable, Note=paste(pm_letter_note(letterCI, slevel), " at each level of ", paste(atvar, collapse = ":"), sep=""))
     }
   }
   meanTable
+}
+
+## Letters from CI overlap (ci_mcp()) for the rows of a mean table; means
+## without a CI (not estimable) get no letter.
+pm_ci_letters <- function(tab) {
+  LL <- tab[[grep("^LL", names(tab))[1]]]
+  UL <- tab[[grep("^UL", names(tab))[1]]]
+  ok <- is.finite(LL) & is.finite(UL)
+  if (all(ok)) return(ci_mcp(LL, UL))
+  out <- rep("", length(LL))
+  if (any(ok)) out[ok] <- unname(ci_mcp(LL[ok], UL[ok]))
+  out
+}
+
+## Note under the mean table saying how the letters were made. With letterCI,
+## 'slevel' sets the CI level; non-overlap of two such CIs is a test at about
+## 2(1 - pnorm(sqrt(2) z)) for two uncorrelated means with equal SEs, where
+## z = qnorm(1 - slevel/2) (83.4% CIs: about 0.05).
+pm_letter_note <- function(letterCI, slevel) {
+  if (!letterCI) return(paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
+  alpha <- 2*(1 - stats::pnorm(sqrt(2)*stats::qnorm(1 - slevel/2)))
+  paste("Letter-based representation of pairwise comparisons by overlap of the ", (1 - slevel)*100,
+        "% CIs (about significant level '", signif(alpha, 2), "' for two uncorrelated means with equal SEs)", sep="")
 }
 
 ## All graphics: p-value plots, mean and bar plots, back-transformed plot.
@@ -984,7 +1013,7 @@ pm_code_draw <- quote({
           plotord <- 1:2
           if (!(is.null(atvar) || all(atvar%in%c("NULL", "")))) {
             atvar_num <- which(vars %in% atvar)
-            plotord <- c(atvar_num, setdiff(1:length(vars), atvar_num))
+            plotord <- c(atvar_num, setdiff(seq_along(vars), atvar_num))
           }
         }
 
@@ -1084,7 +1113,7 @@ pm_code_draw <- quote({
 
           if (!(is.null(atvar) || all(atvar%in%c("NULL", ""))) && length(atvar)==1){
             atvar_num <- which(vars %in% atvar)
-            plotord <- c(atvar_num, setdiff(1:length(vars), atvar_num))
+            plotord <- c(atvar_num, setdiff(seq_along(vars), atvar_num))
           }
         }
 
@@ -1297,11 +1326,11 @@ pm_legacy_output <- function(x) {
       if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
         names(outputlist)<- c("Predicted Means", "Standard Error of Means", "Standard Error of Differences",
                               "LSD", paste("Pairwise comparison p-value (adjusted by '", adj, "' method)", sep=""),
-                              atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[1:length(outputlist)]
+                              atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[seq_along(outputlist)]
       } else {
         names(outputlist) <- c(c("Predicted Means", "Standard Error of Means", "Standard Error of Differences",
                                  "Approximated LSD"), paste("Pairwise '", nsim, "' times permuted p-value (adjusted by '", adj, "' method)", sep=""),
-                               atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[1:length(outputlist)]
+                               atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[seq_along(outputlist)]
       }
 
             return(outputlist)

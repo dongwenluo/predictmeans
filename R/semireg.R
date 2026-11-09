@@ -187,7 +187,7 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   
   # adding the constructed variables to the model frame avoiding name duplication		  
   for (i in Zt_name) { 
-    data[[i]] <- factor(rep(1:nrow(smoothZt[[i]]), length=ncol(smoothZt[[i]])))
+    data[[i]] <- factor(rep(seq_len(nrow(smoothZt[[i]])), length=ncol(smoothZt[[i]])))
     lmerc$formula <- paste(paste(format(lmerc$formula), collapse = ""), "+ (1|",i,")")
   }
   

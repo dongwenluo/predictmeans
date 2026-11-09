@@ -44,7 +44,7 @@ varcomp <- function(model, ci=TRUE, level=0.95) {
     random_terms <- gsub("cov_", "", colnames(random_vcov))   # vcov_glmerMod() has no row names
     varcomp$SE <- sqrt(diag(random_vcov))
 	if (ci){
-    varcomp <- cbind(varcomp, confint(model, level=level)[1:length(random_terms), ])
+    varcomp <- cbind(varcomp, confint(model, level=level)[seq_along(random_terms), ])
     kk <- abs(varcomp$sdcor^2 - varcomp$vcov) > 0.0000000000001
     varcomp[, 7] <- ifelse(!kk, ifelse(varcomp[, 7] < 0, 0, varcomp[, 7]^2), varcomp[, 7]*varcomp$vcov/varcomp$sdcor)
     varcomp[, 8] <- ifelse(!kk, varcomp[, 8]^2, varcomp[, 8]*varcomp$vcov/varcomp$sdcor)	

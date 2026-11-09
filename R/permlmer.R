@@ -119,7 +119,7 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
       set.seed(seed)
     }
     permy <- replicate(nperm, {
-      rowindex <- sample(1:length(errors))
+      rowindex <- sample(seq_along(errors))
       as.data.frame(xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
     })
   }
