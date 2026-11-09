@@ -33,6 +33,7 @@ reference:
   - specify_contrast
   - contrast_family
   - pm_joint
+  - pm_slopes
   - Kmatrix
 - title: Results
   contents:

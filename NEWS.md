@@ -97,6 +97,12 @@
 
 ## New options
 
+* New `pm_slopes()`: the slope of a numeric covariate within each level of
+  a factor term, with SEs, df, confidence limits and tests, and pairwise
+  comparisons of the slopes (any `adj`). Equal to emmeans' `emtrends()`
+  (Kenward-Roger for `lmer`); for `poly()` or splines the slope is taken
+  at `at` (default: the covariate's mean) by a central difference.
+
 * Response scale: when the means are back-transformed (non-identity link
   or `trans`), the `means` table has `response.std.error` (delta method,
   equal to emmeans with `type = "response"`). For a log link or
