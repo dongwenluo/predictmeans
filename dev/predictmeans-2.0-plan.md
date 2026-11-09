@@ -271,9 +271,9 @@ data.
 
 | Technique | Where | Phase |
 |---|---|---|
-| Skip KR df in permutation refits | `mymodelparm`, `permmodels` | Next |
-| Sparse Cholesky (no fill-reducing permutation, so numbers are unchanged), triangular solves | `permmodels`, `permlmer` | Next |
-| R² traces without n×n matrices | `R2_glmm` | Next |
+| Skip KR df in permutation refits; t values from the refit's covariance instead of `summary()` | `mymodelparm`, `permmodels` | **Done** |
+| Sparse Cholesky (no fill-reducing permutation, so numbers are unchanged), triangular solves | `permmodels`, `permlmer` | **Done** |
+| R² traces without n×n matrices | `R2_glmm` | **Done** |
 | Means covariance V_m = K V Kᵀ once; SEDs from V_m. Never build the m(m−1)/2 × p pairwise matrix (1,000 levels → ~500,000 rows) | `predictmeans` | 1 |
 | KR/Satterthwaite ingredients once per model (adjusted vcov, Jacobian of vcov(β) wrt θ), then vectorised over contrasts; per-model cache for Shiny re-renders | df code | 1 |
 | lm and fixed-θ GLS: all permutations in one matrix solve (`qr.coef(Q, Y)`); balanced multi-stratum ANOVA through projections | `permmodels` | 2 |

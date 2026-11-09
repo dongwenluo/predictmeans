@@ -45,6 +45,20 @@
 #' @name permmodels
 NULL
 
+## Statistics kept from one permutation refit: coefficients and covariance
+## (for permlist), the ANOVA table and the t table. For lmer refits the t
+## values are computed from that covariance (as summary() does) instead of
+## calling summary(), which would compute it again.
+pm_perm_stats <- function(rfitmodel, type, test.statistic) {
+  mp <- mymodelparm(rfitmodel, df = 0)[1:2]
+  if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
+  if (inherits(rfitmodel, "lmerMod")) {
+    se <- sqrt(diag(mp$vcov))
+    coefT <- cbind("Estimate" = mp$coef, "Std. Error" = se, "t value" = mp$coef/se)
+  } else coefT <- coef(summary(rfitmodel))
+  list(mp, aT, coefT)
+}
+
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
 					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed) {
@@ -81,25 +95,19 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
     
     } else{	
 	if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)
-      clusterExport(cl, c("mymodelparm", "mymodelparm.default", "model", "mod_df", "yname", "diff_yname", "type", "test.statistic"), envir = environment()) 
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.default", "model", "mod_df", "yname", "diff_yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
 		if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x		
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -108,10 +116,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }
@@ -155,10 +160,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
 	
@@ -166,15 +168,12 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)
       clusterEvalQ(cl, library(nlme))
-      clusterExport(cl, c("mymodelparm", "mymodelparm.lme", "mymodelparm.gls","mymodelparm.default", "model", "mod_df", "yname", "type", "test.statistic"), envir = environment()) 
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.lme", "mymodelparm.gls","mymodelparm.default", "model", "mod_df", "yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -183,10 +182,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }
@@ -240,10 +236,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	      permmod <- lapply(permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
 	
@@ -251,14 +244,11 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)	  
       clusterEvalQ(cl, library(lme4))
-      clusterExport(cl, c("mymodelparm", "mymodelparm.lmerMod", "mymodelparm.default", "model", "type", "test.statistic"), envir = environment())       
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.lmerMod", "mymodelparm.default", "model", "type", "test.statistic"), envir = environment())       
       permmod <- parLapplyLB(cl, permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")){
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -266,10 +256,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       permmod <- mclapply(permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }

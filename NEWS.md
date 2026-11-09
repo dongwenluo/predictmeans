@@ -237,6 +237,11 @@
   permutation p-values.
 * `permmodels()` and `permlmer()` use a sparse Cholesky factor and
   triangular solves instead of a dense n x n inverse.
+* `permmodels()` on `lmer` models takes the t values of each refit from the
+  covariance matrix it already has, instead of calling `summary()`, which
+  computed it again: about 15-20% faster (300 permutations of the Oats
+  split-plot, type III: 4.3 s -> 3.5 s), with identical results. The nine
+  copies of the per-refit code are now one internal function.
 * `R2_glmm()` computes its traces without n x n matrices. For n = 4,000 it
   goes from 4.4 s and 529 MB to 0.01 s with identical results; n = 100,000
   now takes 0.02 s.
