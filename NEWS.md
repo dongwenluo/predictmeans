@@ -97,6 +97,16 @@
 
 ## New options
 
+* New `adj` methods in `predictmeans()` and `contrastmeans()`: `"sidak"`,
+  `"scheffe"` and `"mvt"`, as in emmeans (equal to emmeans' p-values for
+  sidak and scheffe; within 1e-3 for mvt). `"mvt"` is the single-step
+  multivariate t adjustment, the exact counterpart of SAS
+  `ADJUST=SIMULATE`; it needs mvtnorm (Suggests), uses a fixed seed so
+  results repeat, and leaves the user's random numbers as they were. The
+  Scheffe rank is the number of means - 1 for pairs (within each `atvar`
+  group) and the rank of `ctrmatrix` in `contrastmeans()`. With `permlist`
+  only `"sidak"` of the three is allowed.
+
 * `Kmatrix()`, `predictmeans()` and `covariatemeans()` gain
   `weights = c("equal", "proportional", "outer", "cells", "flat")`, which
   sets how the cells of the factors not in `modelterm` are weighted.

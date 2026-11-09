@@ -110,8 +110,8 @@ pm_code_setup <- quote({
   if (!is.null(permlist) && !unique(permlist%in%c("NULL", ""))) {
     pairwise <- TRUE
 
-    if (adj=="tukey"){
-      stop("Tukey adjustment is not available for permutation p-values; use another 'adj'.", call. = FALSE)
+    if (adj %in% c("tukey", "scheffe", "mvt")){
+      stop("adj = \"", adj, "\" is not available for permutation p-values; use another 'adj'.", call. = FALSE)
     }
   }
 
@@ -314,14 +314,14 @@ pm_code_compare <- quote({
 
     if (pairwise) {
       p_valueMatrix <- NULL
-      list2env(pm_pair_pvalues(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore),
+      list2env(pm_pair_pvalues(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm),
                envir = environment())
       if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
         list2env(pm_pairs_overall(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                                  adj, perm, nsim, level, slevel, meandecr), envir = environment())
+                                  adj, perm, nsim, level, slevel, meandecr, Df_diff, pair_cor), envir = environment())
       } else {
         list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                                Df_diff, adj, slevel), envir = environment())
+                                Df_diff, adj, slevel, pair_cor), envir = environment())
       }
     }
   } # end of if (nK == 1) ... else
@@ -475,8 +475,12 @@ pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, p
 }
 
 ## t values and raw p-values of the pairs (t, Tukey or permutation).
-pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore) {
+pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm = NULL) {
       t.v <- cm/dses
+      pair_cor <- p.extra <- NULL
+
+      # correlation of the pairwise contrasts, for adj = "mvt"
+      if (!perm && adj == "mvt") pair_cor <- stats::cov2cor(as.matrix(rK %*% tcrossprod(vcovm, rK)))
 
       if (!perm && adj=="tukey") {
 	      if (inherits(model, "lmerMod")) {
@@ -520,13 +524,13 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 
       } # end of if (is.null(permlist))
 
-  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim"), environment())
+  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim", "pair_cor", "p.extra"), environment())
 }
 
 ## Overall pairwise tables: p-values (t value above the diagonal), LSDs and
 ## the matrix used for letter groups.
 pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                             adj, perm, nsim, level, slevel, meandecr) {
+                             adj, perm, nsim, level, slevel, meandecr, Df_diff = NULL, pair_cor = NULL) {
   tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
   rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
   tvm[upper.tri(tvm)] <- t.v
@@ -534,6 +538,12 @@ pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey,
 
         if (adj=="tukey"){
           t.p.valuem[upper.tri(t.p.valuem)] <- p.tukey
+        }else if (adj %in% pm_adjust_extra_methods) {
+          # all pairs as one family (with permutation p-values only "sidak", which needs no df)
+          p.extra <- pm_adjust_extra(adj, as.vector(t.v), as.vector(t.p.values),
+                                     if (adj == "sidak") NA_real_ else Df_diff, rank = nK - 1,
+                                     R = if (adj == "mvt") pair_cor)
+          t.p.valuem[upper.tri(t.p.valuem)] <- p.extra
         }else{
           t.p.valuem[upper.tri(t.p.valuem)] <- p.adjust(t.p.values, adj)
         }
@@ -581,18 +591,19 @@ pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey,
         p_valueMatrix <- round(t(t.p.valuep), 4)
       }
 
-  pm_existing(c("t.p.valuem", "t.p.valuep", "LSDm", "t.p.valuemGrp", "p_valueMatrix"), environment())
+  pm_existing(c("t.p.valuem", "t.p.valuep", "LSDm", "t.p.valuemGrp", "p_valueMatrix", "p.extra"), environment())
 }
 
 ## Pairwise tables within each level of 'atvar': adjusted p-values, letters
 ## and the means ordered by 'atvar'.
 pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                           Df_diff, adj, slevel) {
+                           Df_diff, adj, slevel, pair_cor = NULL) {
   p_valueMatrix <- NULL
       dses.df$tvalue <- t.v
       dses.df$pvalue <- t.p.values
-      if (adj == "tukey") {
-        dses.df$pair_df <- rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)
+      if (adj %in% pm_adjust_extra_methods) dses.df$pair_id <- seq_len(nrow(dses.df))   # row of the pair (pair_cor, p.extra)
+      if (adj %in% c("tukey", pm_adjust_extra_methods)) {
+        dses.df$pair_df <- if (adj == "sidak") NA_real_ else rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)
       }
 
       for (i in which(vars%in%atvar)) { # To find rows relating atvar
@@ -621,9 +632,18 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
           # this level; the group holds all k(k-1)/2 pairs among them.
           n_means <- (1 + sqrt(1 + 8*t_valueN))/2
           atvar.df$adj.pvalue[idx] <- ptukey(sqrt(2)*abs(x$tvalue), n_means, x$pair_df, lower.tail=FALSE)
+        } else if (adj %in% pm_adjust_extra_methods) {
+          n_means <- (1 + sqrt(1 + 8*t_valueN))/2
+          atvar.df$adj.pvalue[idx] <- pm_adjust_extra(adj, x$tvalue, x$pvalue, x$pair_df, rank = n_means - 1,
+                                                      R = if (adj == "mvt") pair_cor[x$pair_id, x$pair_id])
         } else {
           atvar.df$adj.pvalue[idx] <- p.adjust(x$pvalue, adj)
         }
+      }
+
+      if (adj %in% pm_adjust_extra_methods) {   # adjusted p-values by pair, for the stable pairs table
+        p.extra <- rep(NA_real_, nrow(dses.df))
+        p.extra[atvar.df$pair_id] <- atvar.df$adj.pvalue
       }
 
       rnK.df <- as.data.frame(labKK) # To find the suitable names for pm
@@ -690,7 +710,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
       }
 
   pm_existing(c("resvar", "atvar.levels", "rcnplotm", "bkmt", "listlength", "nrow.pm", "pmlist",
-                "pmlistTab", "pmlistLetter", "p_valueMatrix"), environment())
+                "pmlistTab", "pmlistLetter", "p_valueMatrix", "p.extra"), environment())
 }
 
 ## Mean table with confidence limits.

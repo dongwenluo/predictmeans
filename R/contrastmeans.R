@@ -14,7 +14,9 @@
 #' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
 #' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr", in any letter case. 
+#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
+#'   "mvt", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+#'   \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}.
 #'   The default method is "none".
 #' @param Df A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 #'     the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).
@@ -196,7 +198,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (missing(permlist)) {
    # t.p.value <- 2*pt(-abs(t.v), Df)
 	t.p.value <- apply(cbind(t.v, Df), 1, function(x) 2*pt(-abs(x[1]), x[2]))
-    t.p.value <- p.adjust(t.p.value, adj)
+    t.p.value <- if (adj %in% pm_adjust_extra_methods) {
+      pm_adjust_extra(adj, as.vector(t.v), t.p.value, Df, rank = qr(ctrmatrix)$rank, R = cor.contr)
+    } else p.adjust(t.p.value, adj)
     out.put <- cbind(cm, ses, t.v, Df, t.p.value)
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)")
     rownames(out.put) <- rownames(ctrmatrix)

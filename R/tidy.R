@@ -117,12 +117,18 @@ pm_tidy_parts <- function(e) {
         if (n < 2) return(p[idx])
         # number of means k from the k(k-1)/2 pairs among them
         stats::ptukey(sqrt(2)*abs(stat[idx]), (1 + sqrt(1 + 8*n))/2, pdf[idx], lower.tail = FALSE)
+      } else if (adj %in% pm_adjust_extra_methods) {
+        if (n < 2) return(p[idx])
+        pm_adjust_extra(adj, stat[idx], p[idx], pdf[idx], rank = (1 + sqrt(1 + 8*n))/2 - 1,
+                        R = if (adj == "mvt") g("pair_cor")[idx, idx, drop = FALSE])
       } else {
         stats::p.adjust(p[idx], adj)
       }
     }
     p_adj <- rep(NA_real_, length(p))
-    if (is.null(atvar)) {
+    if (adj %in% pm_adjust_extra_methods && length(g("p.extra")) == length(p)) {
+      p_adj <- g("p.extra")              # computed with the legacy tables
+    } else if (is.null(atvar)) {
       p_adj <- adjust_group(seq_along(p))
     } else {
       for (b in unique(stats::na.omit(by))) {

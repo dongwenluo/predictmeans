@@ -24,7 +24,10 @@
 #' @param atvar When \code{pairwise = TRUE}, a quoted name indicating within levels of which variable in 
 #'   \code{modelterm} the multiple comparison will be performed.
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-#'   The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". 
+#'   The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe"
+#'   and "mvt". "sidak", "scheffe" (rank of the family: number of means - 1) and "mvt" (single-step multivariate t, the exact
+#'   counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. "tukey", "scheffe" and "mvt" are not available
+#'   with \code{permlist}. 
 #'   The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
 #'   except for "bonferroni" method.
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
