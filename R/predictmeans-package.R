@@ -1,4 +1,3 @@
-# Help page predictmeans-package (roxygen2 source; man/predictmeans-package.Rd is generated).
 #' Predicted Means for Linear and Semiparametric Models
 #'
 #' @description

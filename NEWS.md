@@ -337,8 +337,9 @@
 
 ## Internal
 
-* Help pages are now written with roxygen2: the sources are the
-  `R/doc-*.R` files, and `man/` is generated with
+* Help pages are now written with roxygen2: each page's source is the
+  block above its function (data sets in `R/data.R`, the package page in
+  `R/predictmeans-package.R`), and `man/` is generated with
   `roxygen2::roxygenise(roclets = "rd")`. NAMESPACE is still maintained by
   hand. The rendered pages are unchanged.
 
