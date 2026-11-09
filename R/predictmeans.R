@@ -15,7 +15,10 @@
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
-#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}).
+#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
+#'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
+#'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
+#'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be factors and given exactly as it appears in the printed model, e.g. "A" or "A:B".
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some 
@@ -185,6 +188,12 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   if(any(missing(model), missing(modelterm))){
     stop("The arguments 'model', and 'modelterm' must be provided!")
+  }
+
+  # semireg() fits: means with the smooth terms included (see semireg-means.R)
+  if (inherits(model, "semireg")) {
+    return(pm_semireg_means(model, modelterm, covariate = covariate, level = if (is.null(level)) 0.05 else level,
+                            adj = adj, atvar = atvar))
   }
 
   weights <- match.arg(weights)

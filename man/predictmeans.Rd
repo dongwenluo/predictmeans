@@ -15,7 +15,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
-\code{glmmTMB} and \code{gam} (package \pkg{mgcv}).}
+\code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
+means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
+\code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
+\code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.}
 
 \item{modelterm}{Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 The \code{modelterm} must be factors and given exactly as it appears in the printed model, e.g. "A" or "A:B".}

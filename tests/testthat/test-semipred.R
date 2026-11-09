@@ -53,3 +53,27 @@ test_that("ranova() on a semireg fit refits with the smooth bases (copper)", {
   expect_equal(rt$logLik[rownames(rt) == "(1 | grp_geo)"], as.numeric(logLik(only_z$semer)),
                tolerance = 1e-6)
 })
+
+test_that("predictmeans() on a semireg fit: means with the smooth, as semipred(); pairs as semipred(contr =)", {
+  skip_on_cran()
+  skip_if_not_installed("HRW")
+  data("WarsawApts", package = "HRW", envir = environment())
+  W <- WarsawApts
+  W$district <- factor(W$district)
+  sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
+                                 smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
+                                 data = W, prt = FALSE))
+  r <- predictmeans(sm, "district", covariate = c(construction.date = 1980), adj = "tukey")
+  expect_s3_class(r, "pm_semimeans")
+  sp <- semipred(sm, "district", "construction.date", covariateV = 1980, prt = FALSE)$pred_df
+  expect_equal(r$means$estimate, sp$areaPerMzloty, tolerance = 1e-10)
+  expect_equal(r$means$std.error, sp$SE, tolerance = 1e-10)
+  sc <- semipred(sm, "district", "construction.date", contr = c(2, 1), covariateV = 1980, prt = FALSE)$pred_df
+  expect_equal(r$pairs$estimate[1], -sc$areaPerMzloty, tolerance = 1e-10)
+  expect_equal(r$pairs$std.error[1], sc$SE_contr, tolerance = 1e-10)
+  expect_equal(unname(sqrt(diag(vcov(r)))), r$means$std.error)
+  # default: covariates at their means
+  r0 <- predictmeans(sm, "district")
+  sp0 <- semipred(sm, "district", "construction.date", covariateV = mean(W$construction.date), prt = FALSE)$pred_df
+  expect_equal(r0$means$estimate, sp0$areaPerMzloty, tolerance = 1e-8)
+})

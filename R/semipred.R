@@ -138,91 +138,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     }
   }
   
-  semer <- semireg$semer 
-  vcov_indN <- semireg$Cov_indN
-  cov_lst <- semireg$cov_lst
-  fullCovMat <- semireg$CovMat
-  
-  if (inherits(semer, "glmmTMB")) betaHat <- fixef(semer)$cond else betaHat <- fixef(semer)
-  sig.epsHat <- sigma(semer) 
-  
-  # Kmatrix() understands 'semireg' objects directly: it uses the semireg
-  # data and carries smooth-only covariates in its reference grid.
-  KK <- Kmatrix(semireg, modelterm, covariate, covariateV)
+  des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df)
+  semer <- des$semer; mod_df <- des$mod_df; pred_df <- des$pred_df
+  response <- des$response; response0 <- des$response0
+  D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
 
-  response <- response0 <- KK$response
-  K <- KK$K[, colnames(model.matrix(semer)), drop=FALSE]
-  pred_df <- KK$fctnames
-  if (!(response %in% names(mod_df))) {   # all.vars(str2expression(response0))]
-    mod_df[["response_y"]] <- eval(parse(text=response), mod_df)
-    names(pred_df)[names(pred_df)==response] <- "response_y" 
-    response <- "response_y"
-  }
-  
-  if (is.null(sm_term)) {
-    sm_term <- names(as.list(semireg$smoothZ_call))[-1]
-    sm_term <- intersect(names(vcov_indN), sm_term)
-    sm_Cov <- cov_lst$sm_Cov
-  }else{ 
-    if (length(sm_term)==1) {
-      sm_Cov <- cov_lst[[sm_term]] 
-    }else{
-      sm_term <- intersect(names(vcov_indN), sm_term)
-      sm_termInds <- seq_len(ncol(getME(semer, "X"))) 
-      for (i in sm_term) {
-        stmch_id <- match(i, names(vcov_indN))
-        sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])
-      }  
-      sm_Cov <- fullCovMat[sm_termInds, sm_termInds]
-    }   
-  }
-  
-  u_lst <- list()
-  for (i in sm_term) {
-    u_indx <- grep(i, names(semireg$u_lst))
-    u_lst <- c(u_lst, semireg$u_lst[u_indx])
-  }
-  
-  knots_lst <- semireg$knots_lst[sm_term]
-  range_lst <- semireg$range_lst[sm_term] 
-  type_lst <- semireg$type_lst[sm_term]  
-  call_lst <- as.list(semireg$smoothZ_call)[sm_term]
-  
-  call_lstN <- Z_lstN <- vector("list", length(call_lst))
-  names(call_lstN) <- names(Z_lstN) <- sm_term 
-  
-  for (i in sm_term) {
-    xcall_lst  <- as.list(call_lst[[i]])
-    if (!is.null(xcall_lst$type) && xcall_lst$type=="smspline") xcall_lst$pred <- TRUE
-    if (!is.null(xcall_lst$k)) xcall_lst$k <- NULL
-    if (!is.null(range_lst[[i]]) && type_lst[[i]]!="Ztps") xcall_lst$range.x <- range_lst[[i]]
-    xcall_lst$intKnots <- knots_lst[[i]]
-    call_lstN[[i]] <- as.call(xcall_lst) 
-  }  
-  
-  # Smooth basis for a set of grid rows, in the order of the random effects.
-  smooth_basis <- function(nd) {
-    for (i in sm_term) {
-      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
-    }
-
-    Z_lstNN <- list()
-    for (i in sm_term){
-      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
-    }
-
-    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
-    do.call("cbind", Z_lstNN)
-  }
-
-  # Evaluate the smooth basis on the full reference grid and average it with
-  # the same weights as K, so factors that are averaged over (including 'by'
-  # factors of the smooths) are treated identically in both parts.
-  ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
-  D_mx <- cbind(K,ZN)
-  u_hat <- do.call("c", u_lst)
-  beta_u <- c(betaHat, u_hat)
-  
   stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
   LL <- y_hat - qnorm(1-level)*stderr
@@ -508,3 +428,99 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
 }
 
 
+
+
+## The design of semipred(): rows D = [K, Z] of the fixed part and the smooth
+## basis on the reference grid of 'modelterm' (and covariate values), the
+## estimates (beta, u) and their covariance up to sigma^2. Also used by
+## predictmeans() for semireg fits.
+pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df) {
+  semer <- semireg$semer 
+  vcov_indN <- semireg$Cov_indN
+  cov_lst <- semireg$cov_lst
+  fullCovMat <- semireg$CovMat
+  
+  if (inherits(semer, "glmmTMB")) betaHat <- fixef(semer)$cond else betaHat <- fixef(semer)
+  sig.epsHat <- sigma(semer) 
+  
+  # Kmatrix() understands 'semireg' objects directly: it uses the semireg
+  # data and carries smooth-only covariates in its reference grid.
+  KK <- Kmatrix(semireg, modelterm, covariate, covariateV)
+
+  response <- response0 <- KK$response
+  K <- KK$K[, colnames(model.matrix(semer)), drop=FALSE]
+  pred_df <- KK$fctnames
+  if (!(response %in% names(mod_df))) {   # all.vars(str2expression(response0))]
+    mod_df[["response_y"]] <- eval(parse(text=response), mod_df)
+    names(pred_df)[names(pred_df)==response] <- "response_y" 
+    response <- "response_y"
+  }
+  
+  if (is.null(sm_term)) {
+    sm_term <- names(as.list(semireg$smoothZ_call))[-1]
+    sm_term <- intersect(names(vcov_indN), sm_term)
+    sm_Cov <- cov_lst$sm_Cov
+  }else{ 
+    if (length(sm_term)==1) {
+      sm_Cov <- cov_lst[[sm_term]] 
+    }else{
+      sm_term <- intersect(names(vcov_indN), sm_term)
+      sm_termInds <- seq_len(ncol(getME(semer, "X"))) 
+      for (i in sm_term) {
+        stmch_id <- match(i, names(vcov_indN))
+        sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])
+      }  
+      sm_Cov <- fullCovMat[sm_termInds, sm_termInds]
+    }   
+  }
+  
+  u_lst <- list()
+  for (i in sm_term) {
+    u_indx <- grep(i, names(semireg$u_lst))
+    u_lst <- c(u_lst, semireg$u_lst[u_indx])
+  }
+  
+  knots_lst <- semireg$knots_lst[sm_term]
+  range_lst <- semireg$range_lst[sm_term] 
+  type_lst <- semireg$type_lst[sm_term]  
+  call_lst <- as.list(semireg$smoothZ_call)[sm_term]
+  
+  call_lstN <- Z_lstN <- vector("list", length(call_lst))
+  names(call_lstN) <- names(Z_lstN) <- sm_term 
+  
+  for (i in sm_term) {
+    xcall_lst  <- as.list(call_lst[[i]])
+    if (!is.null(xcall_lst$type) && xcall_lst$type=="smspline") xcall_lst$pred <- TRUE
+    if (!is.null(xcall_lst$k)) xcall_lst$k <- NULL
+    if (!is.null(range_lst[[i]]) && type_lst[[i]]!="Ztps") xcall_lst$range.x <- range_lst[[i]]
+    xcall_lst$intKnots <- knots_lst[[i]]
+    call_lstN[[i]] <- as.call(xcall_lst) 
+  }  
+  
+  # Smooth basis for a set of grid rows, in the order of the random effects.
+  smooth_basis <- function(nd) {
+    for (i in sm_term) {
+      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
+    }
+
+    Z_lstNN <- list()
+    for (i in sm_term){
+      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
+    }
+
+    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
+    do.call("cbind", Z_lstNN)
+  }
+
+  # Evaluate the smooth basis on the full reference grid and average it with
+  # the same weights as K, so factors that are averaged over (including 'by'
+  # factors of the smooths) are treated identically in both parts.
+  ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
+  D_mx <- cbind(K,ZN)
+  u_hat <- do.call("c", u_lst)
+  beta_u <- c(betaHat, u_hat)
+  
+  list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
+       response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
+       sm_term = sm_term)
+}

@@ -97,6 +97,14 @@
 
 ## New options
 
+* `predictmeans()` accepts `semireg()` fits: the means of a factor term
+  include the smooth terms (fixed part plus the smooth's random effects,
+  as `semipred()`), at the covariates' means or at named `covariate`
+  values, with pairwise comparisons (normal-based, any `adj`), letters,
+  and `coef()`/`vcov()`. The result holds the `means`, `pairs` and
+  `settings` tables. `semipred()`'s design step is now an internal
+  function shared by both (its output is unchanged).
+
 * New `R2_model()`: R-squared of a mixed model as numbers (class
   `"pm_r2"`, printed as percentages). `method = "piepho"` (default) gives
   the values of `R2_glmm()` as proportions; `method = "nakagawa"` gives
