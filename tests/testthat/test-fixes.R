@@ -161,3 +161,36 @@ test_that("permmodels() gives the same tables for lme4 and lmerTest fits", {
   expect_equal(p1$COEFFICENTS, p2$COEFFICENTS)
   expect_true("Pr(>F)" %in% names(p1$ANOVA))
 })
+
+test_that("residplot(): glmmTMB with aliased columns; random part in the column order of Z", {
+  skip_if_not_installed("glmmTMB")
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  set.seed(1)
+  da <- data.frame(g = factor(rep(1:6, each = 8)), A = factor(rep(1:4, 12)))
+  da$y <- rpois(48, exp(1 + rnorm(6, sd = 0.3)[da$g]))
+  da$B <- da$A      # aliased with A: glmmTMB drops its columns
+  ma <- suppressMessages(glmmTMB::glmmTMB(y ~ A + B + (1 | g), family = poisson, data = da))
+  expect_no_error(residplot(ma))
+  # correlated term: Z b equals the random part of the linear predictor
+  d <- lme4::sleepstudy
+  d$y <- rpois(nrow(d), exp(d$Reaction / 100))
+  gm <- suppressWarnings(lme4::glmer(y ~ Days + (Days | Subject), family = poisson, data = d))
+  Z <- lme4::getME(gm, "Z")
+  zb <- as.vector(Z %*% lme4::getME(gm, "b"))
+  expect_equal(zb, unname(predict(gm) - predict(gm, re.form = NA)), tolerance = 1e-8)
+  expect_no_error(residplot(gm))
+  tm <- glmmTMB::glmmTMB(y ~ Days + (Days | Subject), family = poisson, data = d)
+  expect_no_error(residplot(tm))
+})
+
+test_that("ci_mcp() accepts LL = UL; model.matrix() of an lme model takes 'data'", {
+  # [3, 3] lies inside [2, 4]; [10, 12] overlaps neither
+  expect_identical(unname(trimws(ci_mcp(c(3, 2, 10), c(3, 4, 12)))), c("A", "A", "B"))
+  # the lme methods are internal to predictmeans
+  fm <- nlme::lme(distance ~ age + Sex, random = ~ 1 | Subject, data = nlme::Orthodont)
+  X <- predictmeans:::model.matrix.lme(fm)
+  expect_identical(dim(X), c(nrow(nlme::Orthodont), 3L))
+  rows <- c(1:4, 65:68)   # both sexes
+  expect_equal(predictmeans:::model.matrix.lme(fm, data = nlme::Orthodont[rows, ]), X[rows, ], ignore_attr = TRUE)
+})

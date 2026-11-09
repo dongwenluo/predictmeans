@@ -17,7 +17,9 @@ model.matrix.gls <- function(object, ...) {
 }
 
 model.matrix.lme <- function(object, ...) {
-    model.matrix(terms(object), data = model.frame(object), ...)
+  # 'data' may be given in '...' (as for other model.matrix() methods)
+  if ("data" %in% names(list(...))) model.matrix(terms(object), ...)
+  else model.matrix(terms(object), data = model.frame(object), ...)
 }
 
 terms.gls <- function(x, ...) {

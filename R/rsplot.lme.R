@@ -54,13 +54,14 @@ rsplot.lme <- function (model, group="none", level=1, slope=FALSE, id=FALSE, ask
   
   if(inherits(model, "glmerMod") || inherits(model, "glmmTMB")) {
   ##plot random effects against the predicted values and check for no trend:
-    if (inherits(model, "glmmTMB")){
-	  mu <- model.matrix(model)%*%lme4::fixef(model)[["cond"]]
-	  RandomEffects <- getME(model, "Z")%*%unlist(lme4::ranef(model)[["cond"]])
-	}else{
-    mu <- model.matrix(model)%*%lme4::fixef(model)
-    RandomEffects <- t(as.matrix(model@pp$Zt)) %*% unlist(lme4::ranef(model))
-	}
+    # fixed part with the columns kept in the fit (glmmTMB drops aliased
+    # ones), random part with the effects in the column order of Z: ranef()
+    # orders a correlated term by component, Z by level
+    X <- as.matrix(getME(model, "X"))
+    Z <- getME(model, "Z")
+    fe <- if (inherits(model, "glmmTMB")) lme4::fixef(model)[["cond"]] else lme4::fixef(model)
+    mu <- X %*% fe[colnames(X)]
+    RandomEffects <- as.vector(Z %*% getME(model, "b")[seq_len(ncol(Z))])
     plot(mu, RandomEffects, col = "blue", main = "Random efects vs Fitted (mu)")
     abline(0,0)
   }else{

@@ -1081,7 +1081,7 @@ ci_mcp <- function(LL, UL, trt_n=NULL) {
     is.numeric(LL)
 	is.numeric(UL)
 	length(LL)==length(UL)
-	all(LL < UL)
+	all(LL <= UL)   # a mean with SE 0 has LL = UL
   })
   trt_len <- length(LL)
   if(is.null(trt_n) || length(unique(trt_n))!=trt_len) {

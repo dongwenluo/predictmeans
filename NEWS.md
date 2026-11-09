@@ -122,6 +122,15 @@
     part, or with coefficients dropped as aliased;
   * `over_disp = TRUE` finds the observation-level random effect wherever
     it is in the formula (glmmTMB keeps the formula's order).
+* `residplot()`:
+  * failed for `glmmTMB` models with coefficients dropped as aliased;
+  * in the "random effects vs fitted" panel of `glmer` and `glmmTMB`
+    models with a correlated term, e.g. `(Days | Subject)`, the random
+    effects were matched to the wrong columns of Z (`ranef()` lists them by
+    component, Z by level).
+* `ci_mcp()` stopped when a lower and upper limit were equal (a mean with
+  SE 0).
+* The internal `model.matrix()` method for `lme` models accepts `data =`.
 * `varcomp()` for `glmmTMB` models gave wrong confidence limits (the upper
   limit could be below the estimate), read correlation parameters as log
   standard deviations, and had no residual variance. It now gives the same
