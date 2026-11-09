@@ -4,10 +4,10 @@ varcomp <- function(model, ci=TRUE, level=0.95) {
     varcomp <- as.data.frame(VarCorr(model), order = "lower.tri")
     vcov_index <- -1:-length(fixef(model))
 	if (inherits(model, "glmerMod")) {
-	  random_vcov <- as.matrix(vcov_glmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index]) 
+	  random_vcov <- as.matrix(vcov_glmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index, drop = FALSE])
 	  ci <- FALSE
-	}else random_vcov <- as.matrix(vcov_lmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index])
-    if (inherits(model, "glmerMod")) random_terms <- gsub("cov_", "", rownames(random_vcov)) else random_terms <- gsub("cov_", "", colnames(random_vcov)) 
+	}else random_vcov <- as.matrix(vcov_lmerMod(model, full = TRUE, ranpar = "var")[vcov_index, vcov_index, drop = FALSE])
+    random_terms <- gsub("cov_", "", colnames(random_vcov))   # vcov_glmerMod() has no row names
     varcomp$SE <- sqrt(diag(random_vcov))
 	if (ci){
     varcomp <- cbind(varcomp, confint(model, level=level)[1:length(random_terms), ])

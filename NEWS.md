@@ -122,6 +122,17 @@
     part, or with coefficients dropped as aliased;
   * `over_disp = TRUE` finds the observation-level random effect wherever
     it is in the formula (glmmTMB keeps the formula's order).
+* `varcomp()` for `glmer` models:
+  * the SEs of the variances were wrong: converting from SDs used the
+    derivative 0.5/sqrt(sd) instead of 0.5/sd (0.2845 instead of 0.2280 for
+    the `cbpp` example; glmmTMB gives 0.2294), and covariances ignored their
+    dependence on the two SDs. `vcov_glmerMod(ranpar = "var")` now applies
+    the delta method with the full Jacobian;
+  * failed for models with more than one variance parameter, e.g.
+    `(Days | Subject)` ("invalid 'row.names' length").
+* The `letterCI` help says when CI overlap matches the pairwise tests and
+  when it finds fewer or more differences, with a reference (Maghsoodloo and
+  Huang, 2010; from the 1.1.2 help).
 * Clearer messages for two common mistakes (ideas from James Curran's
   `isValidTerm()` and `adj` check on the `master` branch):
   * a `modelterm` with its factors in another order or letter case:

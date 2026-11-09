@@ -789,37 +789,29 @@ vcov_glmerMod <- function(object, ...) {
         pars <- pars[!is.na(names(pars))]
         hh <- hessian(dd, pars)/(-2)
 
-        sdcormat <- as.data.frame(VarCorr(object,comp = "Std.Dev"),
+        # Covariance on the scale of devfun2() (SDs and correlations, then
+        # the fixed effects), then the delta method to variances and
+        # covariances: var = sd^2, cov = cor*sd_a*sd_b. (A diagonal
+        # rescaling of the Hessian with d(sd)/d(var) = 0.5*sd^(-1/2) was
+        # used before; the derivative is 0.5/sd, and cov also depends on
+        # the two SDs.)
+        vc_sd <- -solve(hh)
+        sdcormat <- as.data.frame(VarCorr(object, comp = "Std.Dev"),
           order = "lower.tri")
-        sdcormat$sdcor2[which(is.na(sdcormat$var2))] <-
-          (1/2)*(sdcormat$sdcor[which(is.na(sdcormat$var2))])^(-1/2)
-        sdcormat$sdcor2[which(!is.na(sdcormat$var2))] <- (-1)*
-          (sdcormat$vcov[which(!is.na(sdcormat$var2))]/
-             sdcormat$sdcor[which(!is.na(sdcormat$var2))])^(-1)
-        hh[((pran + 1):p), (1:pran)] <- sweep(as.matrix(hh[((pran + 1):p),
-          (1:pran)]), MARGIN = 2, sdcormat$sdcor2, `*`)
-        hh[(1:pran), ((pran + 1):p)] <- t(hh[((pran + 1):p), (1:pran)])
-        ## ranhes reparameterization
-        if (pran == 1){
-            entries = matrix(1, 1, 1)
-            weight <- (sdcormat$sdcor2)^2
-        } else {
-          entries <- rbind(matrix(rep(1: pran, each = 2),
-            pran, 2, byrow = TRUE), t(combn(pran, 2)))
-          entries <- entries[order(entries[,1], entries[,2]), ]
-          weight <- apply(entries, 1, function(x)
-            sdcormat$sdcor2[x[1]] * sdcormat$sdcor2[x[2]])
+        Kr <- diag(2*sdcormat$sdcor, pran)
+        is_sd <- is.na(sdcormat$var2)
+        for (k in which(!is_sd)) {
+          same <- is_sd & sdcormat$grp == sdcormat$grp[k]
+          ia <- max(which(same & sdcormat$var1 == sdcormat$var1[k] & seq_len(pran) < k))
+          ib <- min(which(same & sdcormat$var1 == sdcormat$var2[k] & seq_len(pran) > k))
+          r <- sdcormat$sdcor[k]
+          Kr[k, ] <- 0
+          Kr[k, k] <- sdcormat$sdcor[ia]*sdcormat$sdcor[ib]
+          Kr[k, ia] <- r*sdcormat$sdcor[ib]
+          Kr[k, ib] <- r*sdcormat$sdcor[ia]
         }
-
-        hh[1:pran, 1:pran][lower.tri(hh[1:pran, 1:pran], diag = TRUE)] <-
-          weight * hh[1:pran, 1:pran][lower.tri(hh[1:pran, 1:pran],
-                                                diag = TRUE)]
-        if (pran > 1){
-          hh[1:pran, 1:pran] <- as.matrix(forceSymmetric(hh[1:pran, 1:pran],
-            uplo = "L"))
-        }
-
-        full_vcov_noorder <- -solve(hh)
+        K <- as.matrix(Matrix::bdiag(Kr, diag(pfix)))
+        full_vcov_noorder <- K %*% vc_sd %*% t(K)
         full_vcov <- matrix(NA, nrow(full_vcov_noorder),
           ncol(full_vcov_noorder))
         full_vcov[1:pfix, 1:pfix] <-

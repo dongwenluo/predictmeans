@@ -46,7 +46,10 @@ values are the means of the associated covariates.}
 The default is NULL which indicates the mean order follows the associated factor levels.}
 
 \item{letterCI}{A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table. 
-The default is FALSE.}
+The default is FALSE. With \code{level = NULL} the CIs are 83.4\% CIs: for two uncorrelated means with equal SEs
+they fail to overlap when the means differ at about the 5\% level. Otherwise overlap only approximates the
+pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
+and more when their SEs differ (Maghsoodloo and Huang, 2010).}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
 
@@ -195,6 +198,10 @@ Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 	
 	Vanessa, C. (05 October 2022),
 	\emph{Confidence tricks: the 83.4\% confidence interval for comparing means}, https://vsni.co.uk/blogs/confidence_trick.
+
+	Maghsoodloo, S. and Huang, C.-Y. (2010), \emph{Comparing the overlapping of two independent confidence intervals
+	with a single confidence interval for two normal population parameters}, Journal of Statistical Planning and
+	Inference, 140(11), 3295-3305.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
