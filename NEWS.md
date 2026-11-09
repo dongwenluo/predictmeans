@@ -97,6 +97,14 @@
 
 ## New options
 
+* New `pm_joint()`: F tests of sets of contrasts among the means of a term.
+  With `by`, the means are compared within each level of the `by`
+  factor(s), as SAS `SLICE` (e.g. nitrogen within each variety); with
+  `ctrmatrix`, any set of contrasts is tested together. For `lmer`: the
+  Kenward-Roger F test equal to `pbkrtest::KRmodcomp()`, or Satterthwaite
+  equal to `lmerTest::contest(joint = TRUE)`, or containment df; nlme df
+  for `lme`; residual df otherwise.
+
 * New `contrast_family()` builds the standard families of contrasts among
   the means of a term for `contrastmeans()`: `"pairwise"`,
   `"revpairwise"`, `"trt.vs.ctrl"` (Dunnett; exact with `adj = "mvt"`),

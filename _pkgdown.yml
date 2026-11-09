@@ -32,6 +32,7 @@ reference:
   - contrastmeans
   - specify_contrast
   - contrast_family
+  - pm_joint
   - Kmatrix
 - title: Results
   contents:
