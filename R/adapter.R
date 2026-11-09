@@ -56,6 +56,17 @@ pm_linkinv.glm <- function(model, ...) model$family$linkinv
 pm_linkinv.glmerMod <- function(model, ...) slot(model, "resp")$family$linkinv
 pm_linkinv.glmmTMB <- function(model, ...) model$modelInfo$family$linkinv
 
+## The inverse link when it is not the identity (the means are then
+## back-transformed with it), else NULL. With an identity link, e.g. a
+## gaussian glm or glmmTMB of log(y), the user's 'trans' is used.
+pm_link_trans <- function(model) {
+  f <- pm_linkinv(model)
+  if (is.null(f)) return(NULL)
+  x <- c(-2, -0.5, 0, 0.5, 2)
+  y <- tryCatch(suppressWarnings(as.numeric(f(x))), error = function(e) NULL)
+  if (isTRUE(all.equal(y, x))) NULL else f
+}
+
 ## Contrasts used to build the model matrix (internal).
 pm_contrasts <- function(model) {
   if (inherits(model, "lme") || inherits(model, "gls")) return(model$contrasts)

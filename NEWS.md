@@ -15,6 +15,9 @@
 * `permmodels()` gives the same tables (including Satterthwaite df and
   p-values) whether an lmer model was fitted with `lme4::lmer()` or
   `lmerTest::lmer()`.
+* `glmer` Poisson models now give back-transformed means as counts (whole
+  numbers, never below zero), as `glm` and `glmmTMB` Poisson models already
+  did.
 
 ## Stable result tables
 
@@ -96,6 +99,15 @@
 
 ## Bug fixes
 
+* `predictmeans()` and `covariatemeans()` ignored `trans` for `glm` and
+  `glmmTMB` models with an identity link: a gaussian `glmmTMB(log(y) ~ ...)`
+  with `trans = exp` showed no back-transformed means. `trans` is now used
+  whenever the link is the identity; models with another link still use its
+  inverse.
+* In the back-transformed plots of `predictmeans()` and `covariatemeans()`,
+  the data points were not shifted by `transOff` when the response was
+  transformed before modelling (e.g. a column holding `log(y + 1)`, with
+  `transOff = 1`), so they sat `transOff` above the means.
 * `contrastmeans()` failed with "non-conformable arguments" for every model
   with a missing treatment combination, even for contrasts that do not
   involve it. It now works, and stops with a clear message only when a
@@ -272,6 +284,7 @@
 
 ## Packaging
 
+* James Curran is credited as a contributor (DESCRIPTION now uses `Authors@R`).
 * `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
   fields, and `NeedsCompilation` is "no".
 * GitHub Actions R CMD check on Linux, macOS and Windows.
