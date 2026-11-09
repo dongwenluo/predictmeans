@@ -59,6 +59,8 @@ pm_tidy_parts <- function(e) {
     lo <- back(means$conf.low)
     hi <- back(means$conf.high)
     means$response <- resp
+    # delta method: SE on the response scale = |d back / d eta| x SE
+    means$response.std.error <- abs(pm_back_deriv(trans, est, model, isTRUE(g("link_scale"))))*se
     means$response.conf.low <- pmin(lo, hi)
     means$response.conf.high <- pmax(lo, hi)
   }
@@ -140,6 +142,17 @@ pm_tidy_parts <- function(e) {
     lsd_level <- g("level")
     pairs$lsd <- if (perm) 2*dses else stats::qt(1 - lsd_level/2, pdf)*dses
     pairs$p.method <- if (perm) "permutation" else if (adj == "tukey") "tukey" else "t"
+
+    # log scale: the difference is the log of the ratio of the means;
+    # logit scale: the log of the odds ratio
+    kind <- pm_ratio_kind(trans, model, isTRUE(g("link_scale")))
+    if (!is.null(kind)) {
+      crit_p <- if (perm) rep(2, length(cm)) else stats::qt(1 - slevel/2, pdf)
+      pre <- if (kind == "log") "ratio" else "odds.ratio"
+      pairs[[pre]] <- exp(cm)
+      pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*dses)
+      pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*dses)
+    }
   }
 
   ## Settings
@@ -169,6 +182,38 @@ pm_tidy_parts <- function(e) {
   )
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)
+}
+
+## Derivative of the back-transformation at the means (link scale): the
+## family's mu.eta for a non-identity link, else the user's 'trans'
+## (numerically).
+pm_back_deriv <- function(trans, eta, model, link_scale) {
+  if (link_scale) {
+    fam <- tryCatch(stats::family(model), error = function(e) NULL)
+    link <- if (is.list(fam)) fam$link else NULL
+    if (is.character(link) && link %in% c("logit", "probit", "cauchit", "cloglog", "identity", "log", "sqrt",
+                                          "1/mu^2", "inverse")) {
+      return(stats::make.link(link)$mu.eta(eta))
+    }
+    if (is.list(fam) && is.function(fam$mu.eta)) return(fam$mu.eta(eta))
+  }
+  if (identical(trans, exp)) return(exp(eta))
+  vapply(eta, function(e) {
+    if (is.na(e)) NA_real_ else numDeriv::grad(function(x) as.numeric(trans(x)), e)
+  }, numeric(1))
+}
+
+## "log" when differences of the means are log ratios (log link or
+## trans = exp), "logit" for log odds ratios, else NULL.
+pm_ratio_kind <- function(trans, model, link_scale) {
+  if (link_scale) {
+    fam <- tryCatch(stats::family(model), error = function(e) NULL)
+    link <- if (is.list(fam)) fam$link else ""
+    if (identical(link, "log")) return("log")
+    if (identical(link, "logit")) return("logit")
+    return(NULL)
+  }
+  if (identical(trans, exp)) "log" else NULL
 }
 
 ## Add the stable slots and set the class.

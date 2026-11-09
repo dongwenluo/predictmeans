@@ -150,13 +150,16 @@ covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other 
  \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
  \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
  columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high}; when the means are
- back-transformed also \code{response}, \code{response.conf.low} and \code{response.conf.high}; \code{group}
+ back-transformed also \code{response}, \code{response.std.error} (delta method, as \pkg{emmeans} with
+ \code{type = "response"}), \code{response.conf.low} and \code{response.conf.high}; \code{group}
  (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
  not rounded. Also returned by \code{tidy()} and \code{as.data.frame()}.}
  \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
  level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
- (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{lsd} and \code{p.method}.}
+ (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{lsd} and \code{p.method}; for a log
+ link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
+ \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
  degrees-of-freedom method, \code{vcov_adjust}, number of permutations, covariate values, model class and
  package version.}

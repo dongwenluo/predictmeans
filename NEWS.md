@@ -97,6 +97,14 @@
 
 ## New options
 
+* Response scale: when the means are back-transformed (non-identity link
+  or `trans`), the `means` table has `response.std.error` (delta method,
+  equal to emmeans with `type = "response"`). For a log link or
+  `trans = exp`, the `pairs` table has the ratio of the means with its
+  confidence limits (`ratio`, `ratio.conf.low`, `ratio.conf.high`); for a
+  logit link, the odds ratio (`odds.ratio`, ...). The limits use the same
+  df as the differences.
+
 * New `pm_joint()`: F tests of sets of contrasts among the means of a term.
   With `by`, the means are compared within each level of the `by`
   factor(s), as SAS `SLICE` (e.g. nitrogen within each variety); with
