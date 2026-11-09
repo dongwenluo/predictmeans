@@ -45,6 +45,7 @@ reference:
   contents:
   - df_term
   - R2_glmm
+  - R2_model
   - varcomp
   - se_ranef
   - CookD

@@ -22,6 +22,15 @@
 NULL
 
 R2_glmm <- function(model, over_disp=FALSE){
+  cod_v <- pm_r2_piepho(model, over_disp)
+  R2 <- paste(round(cod_v, 2), "%", sep="")
+  names(R2) <- names(cod_v)
+  cat("# Adjusted R2 for Mixed Models\n")
+  return(R2)
+}
+
+## Piepho's R2 in percent: Total, Fixed, Random and each random component.
+pm_r2_piepho <- function(model, over_disp=FALSE){
 
   stopifnot(any(
     inherits(model, "lmerMod"),
@@ -143,9 +152,83 @@ R2_glmm <- function(model, over_disp=FALSE){
     }
   }else Omega_u_list <- NULL
 
-  cod_v <- c(Total=Omega_beta_u_percent, Fixed=Omega_beta_percent, Random=Omega_u_percent,  unlist(Omega_u_list)*100)
-  R2 <- paste(round(cod_v, 2), "%", sep="")
-  names(R2) <- names(cod_v)
-  cat("# Adjusted R2 for Mixed Models\n")
-  return(R2)
+  c(Total=Omega_beta_u_percent, Fixed=Omega_beta_percent, Random=Omega_u_percent,  unlist(Omega_u_list)*100)
+}
+
+#' R-squared for Mixed Models as Numbers
+#'
+#' @description
+#' The R-squared of a mixed model as a numeric result. \code{method = "piepho"} (the default) gives the same values as
+#' \code{\link{R2_glmm}} (Piepho, 2023), as proportions: total, fixed, random and each random-effect component.
+#' \code{method = "nakagawa"} gives the marginal (fixed effects) and conditional (fixed and random effects) R-squared of
+#' Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014): the variance of each random-effect term is the
+#' mean of \eqn{z_i' \Sigma z_i} over the observations.
+#' @details
+#' For \code{"nakagawa"} the observation-level variance is the residual variance for gaussian models and the variance
+#' of the latent distribution for binomial models: \eqn{\pi^2/3} (logit), 1 (probit) or \eqn{\pi^2/6} (cloglog). Other
+#' families have several competing approximations; use \code{method = "piepho"} for them.
+#' @usage
+#' R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
+#' @param model A model fitted by \code{lmer}, \code{glmer} or \code{glmmTMB}.
+#' @param method \code{"piepho"} or \code{"nakagawa"}.
+#' @param over_disp For \code{"piepho"}: as in \code{\link{R2_glmm}}.
+#' @return
+#' A named numeric vector of proportions (class \code{"pm_r2"}, printed as percentages). For \code{"nakagawa"},
+#' \code{Marginal} and \code{Conditional}, with attribute \code{"variances"}: the fixed-effect, random-effect and
+#' observation-level variances.
+#' @references
+#' Piepho, H.-P. (2023), An adjusted coefficient of determination (R2) for generalized linear mixed models in one go,
+#' \emph{Biometrical Journal}, 65(7), 2200290.
+#'
+#' Nakagawa, S. and Schielzeth, H. (2013), A general and simple method for obtaining R2 from generalized linear
+#' mixed-effects models, \emph{Methods in Ecology and Evolution}, 4, 133-142.
+#'
+#' Johnson, P. C. D. (2014), Extension of Nakagawa & Schielzeth's R2GLMM to random slopes models, \emph{Methods in
+#' Ecology and Evolution}, 5, 944-946.
+#' @author
+#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' @examples
+#'   library(predictmeans)
+#'   fm <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+#'   R2_model(fm)
+#'   R2_model(fm, "nakagawa")
+#' @name R2_model
+NULL
+
+R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE) {
+  method <- match.arg(method)
+  stopifnot("R2_model() needs a model fitted by lmer, glmer or glmmTMB" =
+              inherits(model, c("lmerMod", "glmerMod", "glmmTMB")))
+  if (method == "piepho") {
+    return(structure(pm_r2_piepho(model, over_disp)/100, class = "pm_r2", method = "piepho"))
+  }
+  # Nakagawa & Schielzeth (2013), random slopes as Johnson (2014)
+  X <- as.matrix(lme4::getME(model, "X"))
+  beta <- if (inherits(model, "glmmTMB")) glmmTMB::fixef(model)$cond[colnames(X)] else lme4::fixef(model)[colnames(X)]
+  var_fixed <- stats::var(drop(X %*% beta))
+  Z <- lme4::getME(model, "Z")
+  var_random <- sum(vapply(pm_re_terms(model), function(tm) {
+    Zt <- as.matrix(Z[, tm$cols, drop = FALSE])
+    G <- kronecker(diag(tm$nl), tm$vcov)
+    mean(rowSums((Zt %*% G) * Zt))
+  }, numeric(1)))
+  fam <- if (inherits(model, "lmerMod")) list(family = "gaussian", link = "identity") else stats::family(model)
+  var_obs <- if (identical(fam$family, "gaussian")) {
+    stats::sigma(model)^2
+  } else if (identical(fam$family, "binomial") && fam$link %in% c("logit", "probit", "cloglog")) {
+    switch(fam$link, logit = pi^2/3, probit = 1, cloglog = pi^2/6)
+  } else {
+    stop("method = \"nakagawa\" is available for gaussian and binomial models; use method = \"piepho\".", call. = FALSE)
+  }
+  tot <- var_fixed + var_random + var_obs
+  structure(c(Marginal = var_fixed/tot, Conditional = (var_fixed + var_random)/tot), class = "pm_r2",
+            method = "nakagawa", variances = c(fixed = var_fixed, random = var_random, observation = var_obs))
+}
+
+print.pm_r2 <- function(x, digits = 2, ...) {
+  m <- attr(x, "method")
+  cat(if (identical(m, "nakagawa")) "# R2 for mixed models (Nakagawa and Schielzeth)\n" else
+    "# Adjusted R2 for mixed models (Piepho)\n")
+  print(stats::setNames(paste0(format(round(100*unclass(x), digits), nsmall = digits), "%"), names(x)), quote = FALSE)
+  invisible(x)
 }

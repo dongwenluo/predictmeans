@@ -97,6 +97,14 @@
 
 ## New options
 
+* New `R2_model()`: R-squared of a mixed model as numbers (class
+  `"pm_r2"`, printed as percentages). `method = "piepho"` (default) gives
+  the values of `R2_glmm()` as proportions; `method = "nakagawa"` gives
+  Nakagawa and Schielzeth's marginal and conditional R-squared, with
+  random slopes as Johnson (2014), for gaussian and binomial models
+  (sleepstudy: 0.279 and 0.799, as `performance::r2_nakagawa()`).
+  `R2_glmm()` is unchanged.
+
 * New `pm_slopes()`: the slope of a numeric covariate within each level of
   a factor term, with SEs, df, confidence limits and tests, and pairwise
   comparisons of the slopes (any `adj`). Equal to emmeans' `emtrends()`
