@@ -19,7 +19,7 @@ varcomp(model, ci=TRUE, level=0.95)
 - ci:
 
   a logical value to indicates wheather or not to simulate a confidence
-  interval for `lmer` model, the default value is TRUE.
+  interval for `lmer` and `glmmTMB` models, the default value is TRUE.
 
 - level:
 
@@ -28,6 +28,15 @@ varcomp(model, ci=TRUE, level=0.95)
 ## Value
 
 Variance components table.
+
+## Details
+
+For `glmmTMB` models the table holds the variances and covariances of
+each random-effect term (conditional model, then the zero-inflation
+model with prefix `zi.`) and, for gaussian models, the residual
+variance. SEs are from the delta method. CIs are Wald intervals on the
+log scale for variances and on the Fisher z (atanh) scale for
+correlations, times the two standard deviations for covariances.
 
 ## Author
 

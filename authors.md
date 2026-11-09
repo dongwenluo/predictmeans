@@ -2,7 +2,13 @@
 
 ## Authors
 
-- **Dongwen Luo**. Maintainer.
+- **Dongwen Luo**. Author, maintainer.
+
+- **Siva Ganesh**. Author.
+
+- **John Koolaard**. Author.
+
+- **James Curran**. Contributor.
 
 ## Citation
 

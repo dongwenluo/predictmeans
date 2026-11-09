@@ -53,8 +53,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   Name (in "quote") for indicating a method for adjusting p-values of
   pairwise comparisons. The choices are "none", "tukey", "holm",
   "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". The default
-  method is "none". Note that LSD can't be adjusted except for
-  "bonferroni" method.
+  method is "none"; letter case does not matter ("Tukey" works). Note
+  that LSD can't be adjusted except for "bonferroni" method.
 
 - Df:
 
@@ -88,7 +88,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   A logical variable to indicate printed letters for multiple
   comparisons by whether or not CI overlap in the mean_table. The
-  default is FALSE.
+  default is FALSE. With `level = NULL` the CIs are 83.4% CIs: for two
+  uncorrelated means with equal SEs they fail to overlap when the means
+  differ at about the 5% level. Otherwise overlap only approximates the
+  pairwise test: it finds fewer differences when the means are
+  positively correlated, as in most mixed models, and more when their
+  SEs differ (Maghsoodloo and Huang, 2010).
 
 - trans:
 
@@ -361,6 +366,11 @@ of Statistics, 46(3), 325-347.
 Vanessa, C. (05 October 2022), *Confidence tricks: the 83.4% confidence
 interval for comparing means*,
 https://vsni.co.uk/blogs/confidence_trick.
+
+Maghsoodloo, S. and Huang, C.-Y. (2010), *Comparing the overlapping of
+two independent confidence intervals with a single confidence interval
+for two normal population parameters*, Journal of Statistical Planning
+and Inference, 140(11), 3295-3305.
 
 ## Author
 

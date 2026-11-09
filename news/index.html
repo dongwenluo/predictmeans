@@ -52,6 +52,8 @@
 <strong>glmmTMB is no longer attached</strong> by <code><a href="https://dongwenluo.github.io/predictmeans/">library(predictmeans)</a></code>; it moved from Depends to Imports. Scripts that fit models with <code>glmmTMB()</code> need <code><a href="https://github.com/glmmTMB/glmmTMB" class="external-link">library(glmmTMB)</a></code>. lme4, nlme and lmerTest are still attached.</li>
 <li>
 <code><a href="../reference/permmodels.html">permmodels()</a></code> gives the same tables (including Satterthwaite df and p-values) whether an lmer model was fitted with <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> or <code><a href="https://rdrr.io/pkg/lmerTest/man/lmer.html" class="external-link">lmerTest::lmer()</a></code>.</li>
+<li>
+<code>glmer</code> Poisson models now give back-transformed means as counts (whole numbers, never below zero), as <code>glm</code> and <code>glmmTMB</code> Poisson models already did.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="stable-result-tables-1-1-1-9000">Stable result tables<a class="anchor" aria-label="anchor" href="#stable-result-tables-1-1-1-9000"></a></h3>
@@ -117,6 +119,39 @@ The defaults work for any class with the usual <code>coef</code>, <code>vcov</co
 <div class="section level3">
 <h3 id="bug-fixes-1-1-1-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-1-9000"></a></h3>
 <ul><li>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code> and <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code> ignored <code>trans</code> for <code>glm</code> and <code>glmmTMB</code> models with an identity link: a gaussian <code>glmmTMB(log(y) ~ ...)</code> with <code>trans = exp</code> showed no back-transformed means. <code>trans</code> is now used whenever the link is the identity; models with another link still use its inverse.</li>
+<li>In the back-transformed plots of <code><a href="../reference/predictmeans.html">predictmeans()</a></code> and <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>, the data points were not shifted by <code>transOff</code> when the response was transformed before modelling (e.g. a column holding <code>log(y + 1)</code>, with <code>transOff = 1</code>), so they sat <code>transOff</code> above the means.</li>
+<li>
+<code><a href="../reference/R2_glmm.html">R2_glmm()</a></code>:
+<ul><li>for <code>glmmTMB</code> models with correlated random effects, e.g. <code>(Days | Subject)</code>, the random-effect variance was wrong (84.32% instead of the 78.71% that <code>lmer</code> gives for <code>sleepstudy</code>) and the slope was missing from the breakdown. glmmTMB puts correlations on its own scale, so the covariance is now built from <code><a href="https://rdrr.io/pkg/nlme/man/VarCorr.html" class="external-link">VarCorr()</a></code>;</li>
+<li>the breakdown by term split a correlated term’s columns into two halves instead of by component (<code>lmer</code> too). Each component (intercept, slope) now gets its own share; the covariance between them is only in the random-effect total. Models without correlated terms are unchanged;</li>
+<li>failed for <code>glmmTMB</code> models with random effects in the zero-inflation part, or with coefficients dropped as aliased;</li>
+<li>
+<code>over_disp = TRUE</code> finds the observation-level random effect wherever it is in the formula (glmmTMB keeps the formula’s order).</li>
+</ul></li>
+<li>
+<code><a href="../reference/varcomp.html">varcomp()</a></code> for <code>glmer</code> models:
+<ul><li>the SEs of the variances were wrong: converting from SDs used the derivative 0.5/sqrt(sd) instead of 0.5/sd (0.2845 instead of 0.2280 for the <code>cbpp</code> example; glmmTMB gives 0.2294), and covariances ignored their dependence on the two SDs. <code>vcov_glmerMod(ranpar = "var")</code> now applies the delta method with the full Jacobian;</li>
+<li>failed for models with more than one variance parameter, e.g. <code>(Days | Subject)</code> (“invalid ‘row.names’ length”).</li>
+</ul></li>
+<li>The <code>letterCI</code> help says when CI overlap matches the pairwise tests and when it finds fewer or more differences, with a reference (Maghsoodloo and Huang, 2010; from the 1.1.2 help).</li>
+<li>Clearer messages for two common mistakes (ideas from James Curran’s <code>isValidTerm()</code> and <code>adj</code> check on the <code>master</code> branch):
+<ul><li>a <code>modelterm</code> with its factors in another order or letter case: <code>'Variety:nitro' is not a term of the model. Did you mean 'nitro:Variety'?</code>; otherwise the message lists the model’s terms;</li>
+<li>a misspelled <code>adj</code> lists the valid choices (before, <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">p.adjust()</a></code> gave an error that did not mention <code>"tukey"</code>). <code>adj</code> may be given in any letter case, e.g. <code>"Tukey"</code> or <code>"bh"</code>, in <code><a href="../reference/predictmeans.html">predictmeans()</a></code> and <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>. The <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code> help no longer lists <code>"tukey"</code>, which it never supported.</li>
+</ul></li>
+<li>
+<code><a href="../reference/residplot.html">residplot()</a></code>:
+<ul><li>failed for <code>glmmTMB</code> models with coefficients dropped as aliased;</li>
+<li>in the “random effects vs fitted” panel of <code>glmer</code> and <code>glmmTMB</code> models with a correlated term, e.g. <code>(Days | Subject)</code>, the random effects were matched to the wrong columns of Z (<code><a href="https://rdrr.io/pkg/nlme/man/random.effects.html" class="external-link">ranef()</a></code> lists them by component, Z by level).</li>
+</ul></li>
+<li>
+<code><a href="../reference/ci_mcp.html">ci_mcp()</a></code> stopped when a lower and upper limit were equal (a mean with SE 0).</li>
+<li>The internal <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix()</a></code> method for <code>lme</code> models accepts <code>data =</code>.</li>
+<li>
+<code><a href="../reference/varcomp.html">varcomp()</a></code> for <code>glmmTMB</code> models gave wrong confidence limits (the upper limit could be below the estimate), read correlation parameters as log standard deviations, and had no residual variance. It now gives the same table as for <code>lmer</code>: the variances and covariances of each term (zero-inflation terms prefixed <code>zi.</code>), the residual variance of gaussian models, delta-method SEs (equal to the <code>lmer</code> ones for <code>sleepstudy</code>), and Wald CIs on the log scale for variances and the Fisher z scale for correlations. <code>ci = FALSE</code> now works for these models.</li>
+<li>
+<code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code> with <code>predict_info = TRUE</code>: the random-effect covariance was wrong for correlated terms (same cause as in <code><a href="../reference/R2_glmm.html">R2_glmm()</a></code>). A singular covariance is detected without computing all eigenvalues, and a system that is not positive definite falls back to <code>nearPD()</code> instead of failing.</li>
+<li>
 <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code> failed with “non-conformable arguments” for every model with a missing treatment combination, even for contrasts that do not involve it. It now works, and stops with a clear message only when a contrast uses a mean that cannot be estimated.</li>
 <li>Tukey-adjusted p-values within <code>atvar</code> levels used the number of pairs instead of the number of means. With 4 means per level, Tukey was computed for 6 means, so p-values were too large (0.350 instead of 0.197 in the Oats example). For <code>lmer</code> models they also used one averaged df instead of each pair’s df. Both now match emmeans.</li>
 <li>
@@ -197,7 +232,8 @@ The defaults work for any class with the usual <code>coef</code>, <code>vcov</co
 </ul></div>
 <div class="section level3">
 <h3 id="packaging-1-1-1-9000">Packaging<a class="anchor" aria-label="anchor" href="#packaging-1-1-1-9000"></a></h3>
-<ul><li>
+<ul><li>James Curran is credited as a contributor (DESCRIPTION now uses <code>Authors@R</code>).</li>
+<li>
 <code>which.plots</code> is documented. DESCRIPTION no longer carries CRAN-generated fields, and <code>NeedsCompilation</code> is “no”.</li>
 <li>GitHub Actions R CMD check on Linux, macOS and Windows.</li>
 </ul></div>
@@ -251,7 +287,7 @@ The defaults work for any class with the usual <code>coef</code>, <code>vcov</co
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
 </div>
 
 <div class="pkgdown-footer-right">

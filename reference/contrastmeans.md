@@ -39,9 +39,9 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 - adj:
 
   Name (in "quote") for indicating a method for adjusting p-values of
-  pairwise comparisons. The choices are "none", "tukey", "holm",
-  "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". The default
-  method is "none".
+  pairwise comparisons. The choices are "none", "holm", "hochberg",
+  "hommel", "bonferroni", "BH", "BY" and "fdr", in any letter case. The
+  default method is "none".
 
 - Df:
 

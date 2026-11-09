@@ -68,7 +68,7 @@
 </ul></div>
 <div class="section level2">
 <h2 id="checks">Checks<a class="anchor" aria-label="anchor" href="#checks"></a></h2>
-<ul><li>Tests: <code>NOT_CRAN=true Rscript -e 'devtools::test()'</code> (the 1.1.1 reference tests only run with NOT_CRAN). Mixed-model reference values are compared to 2% because lme4/nlme versions move them; everything else to 1e-6.</li>
+<ul><li>Tests: <code>NOT_CRAN=true Rscript -e 'devtools::test()'</code> (the 1.1.1 reference tests only run with NOT_CRAN). One file: <code>testthat::test_file(&lt;file&gt;, package = "predictmeans", load_package = "source")</code> (with <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all()</a></code> + <code>test_file()</code> tests can’t see unregistered internal methods). Mixed-model reference values are compared to 2% because lme4/nlme versions move them; everything else to 1e-6.</li>
 <li>Refactors must not change output: run <code>Rscript dev/snapshot-predictmeans.R &lt;lib&gt; before.rds</code> on the old build and <code>... after.rds</code> on the new one, then compare with <code>all.equal(readRDS("before.rds"), readRDS("after.rds"), tolerance = 0)</code>.</li>
 <li>Timings: <code>Rscript dev/benchmarks.R</code>.</li>
 <li>Run <code>R CMD check</code> once at the end of a piece of work, not after every edit.</li>
@@ -86,7 +86,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
 </div>
 
 <div class="pkgdown-footer-right">

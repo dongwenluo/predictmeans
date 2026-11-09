@@ -61,7 +61,7 @@
 
 
 <dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>
-<dd><p>a logical value to indicates wheather or not to simulate a confidence interval for <code>lmer</code> model, the default value is TRUE.</p></dd>
+<dd><p>a logical value to indicates wheather or not to simulate a confidence interval for <code>lmer</code> and <code>glmmTMB</code> models, the default value is TRUE.</p></dd>
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
@@ -71,6 +71,13 @@
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Variance components table.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>For <code>glmmTMB</code> models the table holds the variances and covariances of each random-effect term
+(conditional model, then the zero-inflation model with prefix <code>zi.</code>) and, for gaussian models, the
+residual variance. SEs are from the delta method. CIs are Wald intervals on the log scale for variances
+and on the Fisher z (atanh) scale for correlations, times the two standard deviations for covariances.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -112,7 +119,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
 </div>
 
 <div class="pkgdown-footer-right">

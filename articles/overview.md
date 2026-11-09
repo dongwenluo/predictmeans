@@ -545,7 +545,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' permutations.
 
     ##    user  system elapsed 
-    ##  19.030   0.857   7.347
+    ##   6.556   0.487   4.002
 
 ``` r
 

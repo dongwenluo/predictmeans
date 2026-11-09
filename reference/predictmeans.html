@@ -99,7 +99,8 @@ variable trnasformation in the model.</p></dd>
 <dt id="arg-adj">adj<a class="anchor" aria-label="anchor" href="#arg-adj"></a></dt>
 <dd><p>Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons.
 The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr".
-The default method is "none". Note that LSD can't be adjusted except for "bonferroni" method.</p></dd>
+The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
+except for "bonferroni" method.</p></dd>
 
 
 <dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
@@ -126,7 +127,10 @@ The default is NULL which indicates the mean order follows the associated factor
 
 <dt id="arg-letterci">letterCI<a class="anchor" aria-label="anchor" href="#arg-letterci"></a></dt>
 <dd><p>A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table.
-The default is FALSE.</p></dd>
+The default is FALSE. With <code>level = NULL</code> the CIs are 83.4% CIs: for two uncorrelated means with equal SEs
+they fail to overlap when the means differ at about the 5% level. Otherwise overlap only approximates the
+pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
+and more when their SEs differ (Maghsoodloo and Huang, 2010).</p></dd>
 
 
 <dt id="arg-trans">trans<a class="anchor" aria-label="anchor" href="#arg-trans"></a></dt>
@@ -339,6 +343,9 @@ covariance is used unless <code>vcov_adjust = TRUE</code> is given. Ignored for 
 	<em>Prediction in linear mixed models</em>, Australian and New Zealand Journal of Statistics, 46(3), 325-347.</p>	
 <p>Vanessa, C. (05 October 2022),
 	<em>Confidence tricks: the 83.4% confidence interval for comparing means</em>, https://vsni.co.uk/blogs/confidence_trick.</p>
+<p>Maghsoodloo, S. and Huang, C.-Y. (2010), <em>Comparing the overlapping of two independent confidence intervals
+	with a single confidence interval for two normal population parameters</em>, Journal of Statistical Planning and
+	Inference, 140(11), 3295-3305.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -545,7 +552,7 @@ covariance is used unless <code>vcov_adjust = TRUE</code> is given. Ignored for 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
 </div>
 
 <div class="pkgdown-footer-right">
