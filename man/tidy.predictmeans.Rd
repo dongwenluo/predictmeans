@@ -3,15 +3,23 @@
 \name{tidy.predictmeans}
 \alias{tidy.predictmeans}
 \alias{as.data.frame.predictmeans}
+\alias{coef.predictmeans}
+\alias{vcov.predictmeans}
 \title{Predicted Means and Pairwise Comparisons as Data Frames}
 \usage{
 \method{tidy}{predictmeans}(x, what = c("means", "pairs"), ...)
 
 \method{as.data.frame}{predictmeans}(x, row.names = NULL, optional = FALSE,
               what = c("means", "pairs"), ...)
+
+\method{coef}{predictmeans}(object, ...)
+
+\method{vcov}{predictmeans}(object, ...)
 }
 \arguments{
 \item{x}{A result of \code{\link{predictmeans}}.}
+
+\item{object}{A result of \code{\link{predictmeans}}.}
 
 \item{what}{Which table: \code{"means"} (the default) or \code{"pairs"}.}
 
@@ -22,13 +30,17 @@
 \item{\dots}{Not used.}
 }
 \value{
-A data frame.
+A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix.
 }
 \description{
 Return the \code{means} or \code{pairs} table of a \code{\link{predictmeans}} result. The tables have fixed column
 names (see the Value section of \code{\link{predictmeans}}) and unrounded values, which makes them easy to use in
 further analysis, reports, Shiny apps or AI tools. \code{tidy()} is the generic from package \pkg{generics} (also
 used by \pkg{broom}); \code{as.data.frame()} needs no other package.
+\code{coef()} and \code{vcov()} return the means (on the model scale, as in the \code{estimate} column) and
+their covariance matrix (Kenward-Roger adjusted when the means are), named by the mean labels. With them,
+\code{multcomp::glht()} or \code{marginaleffects::hypotheses()} can test any contrast of the means, e.g.
+\code{hypotheses(pm, hypothesis = "n2 - n0 = 0")} (normal-based).
 }
 \examples{
   library(predictmeans)
@@ -38,6 +50,11 @@ used by \pkg{broom}); \code{as.data.frame()} needs no other package.
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
   as.data.frame(pm)
   head(as.data.frame(pm, what = "pairs"))
+
+  # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
+  b <- coef(pm)
+  L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
+  c(estimate = sum(L*b), SE = sqrt(drop(L \%*\% vcov(pm) \%*\% L)))
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

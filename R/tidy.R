@@ -75,6 +75,16 @@ pm_tidy_parts <- function(e) {
   est_flag <- attr(KK, "estimable")
   means$estimable <- if (is.null(est_flag)) TRUE else unname(est_flag[rownames(K)])
 
+  ## Covariance of the means (model scale), for coef() and vcov()
+  vcovm <- g("vcovm")
+  V <- NULL
+  if (!is.null(vcovm) && ncol(K) == ncol(vcovm)) {
+    V <- K %*% tcrossprod(as.matrix(vcovm), K)
+    V[!means$estimable, ] <- NA
+    V[, !means$estimable] <- NA
+    dimnames(V) <- list(rownames(K), rownames(K))
+  }
+
   ## Pairs
   pairs <- NULL
   if (nK > 1 && !is.null(g("cm"))) {
@@ -152,7 +162,7 @@ pm_tidy_parts <- function(e) {
     version = as.character(utils::packageVersion("predictmeans"))
   )
 
-  list(means = means, pairs = pairs, settings = settings)
+  list(means = means, pairs = pairs, settings = settings, vcov = V)
 }
 
 ## Add the stable slots and set the class.
@@ -160,9 +170,32 @@ pm_finish <- function(outputlist, parts) {
   outputlist$means <- parts$means
   outputlist$pairs <- parts$pairs
   outputlist$settings <- parts$settings
+  attr(outputlist, "vcov") <- parts$vcov
   class(outputlist) <- c("predictmeans", "pdmlist")
   outputlist
 }
+
+## The means (model scale) and their covariance matrix, named by the mean
+## labels ("level1:level2"). With these, multcomp::glht() and
+## marginaleffects::hypotheses() can test any contrast of the means.
+coef.predictmeans <- function(object, ...) {
+  stats::setNames(object$means$estimate, rownames(attr(object, "vcov")))
+}
+vcov.predictmeans <- function(object, ...) {
+  V <- attr(object, "vcov")
+  if (is.null(V)) stop("This result has no covariance matrix of the means.", call. = FALSE)
+  V
+}
+
+## Methods for marginaleffects (registered when it is loaded), so that
+## marginaleffects::hypotheses() works on the means; its delta method changes
+## the coefficients with set_coef().
+get_coef.predictmeans <- function(model, ...) coef.predictmeans(model)
+set_coef.predictmeans <- function(model, coefs, ...) {
+  model$means$estimate <- unname(coefs)
+  model
+}
+get_vcov.predictmeans <- function(model, ...) vcov.predictmeans(model)
 
 as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
                                        what = c("means", "pairs"), ...) {
@@ -180,18 +213,27 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #' names (see the Value section of \code{\link{predictmeans}}) and unrounded values, which makes them easy to use in
 #' further analysis, reports, Shiny apps or AI tools. \code{tidy()} is the generic from package \pkg{generics} (also
 #' used by \pkg{broom}); \code{as.data.frame()} needs no other package.
+#' \code{coef()} and \code{vcov()} return the means (on the model scale, as in the \code{estimate} column) and
+#' their covariance matrix (Kenward-Roger adjusted when the means are), named by the mean labels. With them,
+#' \code{multcomp::glht()} or \code{marginaleffects::hypotheses()} can test any contrast of the means, e.g.
+#' \code{hypotheses(pm, hypothesis = "n2 - n0 = 0")} (normal-based).
 #' @usage
 #' \method{tidy}{predictmeans}(x, what = c("means", "pairs"), ...)
 #'
 #' \method{as.data.frame}{predictmeans}(x, row.names = NULL, optional = FALSE,
 #'               what = c("means", "pairs"), ...)
+#'
+#' \method{coef}{predictmeans}(object, ...)
+#'
+#' \method{vcov}{predictmeans}(object, ...)
 #' @param x A result of \code{\link{predictmeans}}.
+#' @param object A result of \code{\link{predictmeans}}.
 #' @param what Which table: \code{"means"} (the default) or \code{"pairs"}.
 #' @param row.names Optional row names for the result.
 #' @param optional Not used.
 #' @param \dots Not used.
 #' @return
-#' A data frame.
+#' A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -202,8 +244,13 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #'   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
 #'   as.data.frame(pm)
 #'   head(as.data.frame(pm, what = "pairs"))
+#'
+#'   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
+#'   b <- coef(pm)
+#'   L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
+#'   c(estimate = sum(L*b), SE = sqrt(drop(L \%*\% vcov(pm) \%*\% L)))
 #' @name tidy.predictmeans
-#' @aliases as.data.frame.predictmeans
+#' @aliases as.data.frame.predictmeans coef.predictmeans vcov.predictmeans
 NULL
 
 tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {

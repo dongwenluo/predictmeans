@@ -41,6 +41,13 @@
   They are checked against emmeans in the tests. The legacy slots and the
   printed output are unchanged, and the result has class
   `c("predictmeans", "pdmlist")`.
+* `coef()` and `vcov()` on a `predictmeans()` result give the means (model
+  scale) and their covariance matrix, Kenward-Roger adjusted when the means
+  are (equal to emmeans' `vcov()`). Any contrast of the means can then be
+  tested with `multcomp::glht()` or `marginaleffects::hypotheses()`, e.g.
+  `hypotheses(pm, hypothesis = "pairwise")` (marginaleffects is in
+  Suggests; predictmeans registers its `get_coef`/`set_coef`/`get_vcov`
+  methods).
 
 ## Plots and summaries from the result tables
 

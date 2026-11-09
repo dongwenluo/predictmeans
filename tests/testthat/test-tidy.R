@@ -97,3 +97,32 @@ test_that("printing is unchanged and the stable slots have fixed names", {
   skip_if_not_installed("generics")
   expect_identical(generics::tidy(pm), pm$means)
 })
+
+test_that("coef() and vcov() of the means match emmeans and give the pairs' SEs", {
+  skip_if_not_installed("emmeans")
+  set.seed(7)
+  Ou <- oats_fac()
+  Ou <- Ou[-sample(nrow(Ou), 9), ]
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
+  pm <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+  em <- emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger")
+  b <- coef(pm)
+  V <- vcov(pm)
+  expect_equal(names(b), rownames(V))
+  idx <- match(names(b), key_em(summary(em), c("nitro", "Variety")))
+  expect_equal(unname(b), summary(em)$emmean[idx], tolerance = 1e-8)
+  expect_equal(unname(V), unname(vcov(em)[idx, idx]), tolerance = 1e-8)
+  # each pair from coef()/vcov()
+  L <- outer(pm$pairs$level1, names(b), "==") - outer(pm$pairs$level2, names(b), "==")
+  expect_equal(drop(L %*% b), pm$pairs$estimate, tolerance = 1e-10)
+  expect_equal(sqrt(diag(L %*% V %*% t(L))), pm$pairs$std.error, tolerance = 1e-10)
+})
+
+test_that("marginaleffects::hypotheses() works on predictmeans results", {
+  skip_if_not_installed("marginaleffects")
+  fm <- lm(yield ~ Block + nitro*Variety, data = oats_fac())
+  pm <- predictmeans(fm, "nitro", pairwise = TRUE, plot = FALSE)
+  h <- marginaleffects::hypotheses(pm, hypothesis = "n2 - n0 = 0")
+  expect_equal(as.numeric(h$estimate), -pm$pairs$estimate[1], tolerance = 1e-8)
+  expect_equal(as.numeric(h$std.error), pm$pairs$std.error[1], tolerance = 1e-6)
+})
