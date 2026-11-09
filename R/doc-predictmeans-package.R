@@ -15,7 +15,7 @@
 #' Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 #' 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347.
 #' @author
-#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' Dongwen Luo, Siva Ganesh and John Koolaard; contributor: James Curran
 #'
 #' Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
 #' @name predictmeans-package

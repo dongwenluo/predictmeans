@@ -1,7 +1,10 @@
 Package: predictmeans
 Version: 1.1.1.9000
-Author: Dongwen Luo, Siva Ganesh and John Koolaard
-Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
+Authors@R: c(person("Dongwen", "Luo", role = c("aut", "cre"),
+                    email = "dongwen.luo@agresearch.co.nz"),
+             person("Siva", "Ganesh", role = "aut"),
+             person("John", "Koolaard", role = "aut"),
+             person("James", "Curran", role = "ctb"))
 Title: Predicted Means for Linear and Semiparametric Models
 Description: Providing functions to diagnose and make inferences from various linear models, 
     such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB', 'gam' and 'semireg'. 
