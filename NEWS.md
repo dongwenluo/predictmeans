@@ -108,6 +108,24 @@
   the data points were not shifted by `transOff` when the response was
   transformed before modelling (e.g. a column holding `log(y + 1)`, with
   `transOff = 1`), so they sat `transOff` above the means.
+* `R2_glmm()`:
+  * for `glmmTMB` models with correlated random effects, e.g.
+    `(Days | Subject)`, the random-effect variance was wrong (84.32% instead
+    of the 78.71% that `lmer` gives for `sleepstudy`) and the slope was
+    missing from the breakdown. glmmTMB puts correlations on its own scale,
+    so the covariance is now built from `VarCorr()`;
+  * the breakdown by term split a correlated term's columns into two
+    halves instead of by component (`lmer` too). Each component (intercept,
+    slope) now gets its own share; the covariance between them is only in
+    the random-effect total. Models without correlated terms are unchanged;
+  * failed for `glmmTMB` models with random effects in the zero-inflation
+    part, or with coefficients dropped as aliased;
+  * `over_disp = TRUE` finds the observation-level random effect wherever
+    it is in the formula (glmmTMB keeps the formula's order).
+* `semireg_tmb()` with `predict_info = TRUE`: the random-effect covariance
+  was wrong for correlated terms (same cause as in `R2_glmm()`). A singular
+  covariance is detected without computing all eigenvalues, and a system
+  that is not positive definite falls back to `nearPD()` instead of failing.
 * `contrastmeans()` failed with "non-conformable arguments" for every model
   with a missing treatment combination, even for contrasts that do not
   involve it. It now works, and stops with a clear message only when a

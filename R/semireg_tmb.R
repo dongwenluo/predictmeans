@@ -77,28 +77,12 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     n_beta <- length(beta)
     s <- sigma(semer) 
     
-    cond_reTrms <- tmbf$condList$reTrms
-    if (is.null(cond_reTrms$Lambdat) || is.null(cond_reTrms$Lind) || is.null(cond_reTrms$lower)) {
-      # glmmTMB >= 1.1.12 no longer stores Lambdat, Lind and lower; rebuild
-      # them (they depend only on the terms and factor levels) in glmmTMB's
-      # own term order
-      mk <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::mkReTrms else lme4::mkReTrms
-      rt <- mk(pm_findbars(glmmTMBcall$formula), tmbf$fr, reorder.terms = FALSE)
-      cond_reTrms[c("Lambdat", "Lind", "lower")] <- rt[c("Lambdat", "Lind", "lower")]
-    }
-    n_diag <- sum(cond_reTrms$lower==0)
-    theta_ini <- getME(semer, "theta")
-    if (length(theta_ini)!=n_diag) {
-      theta <- cond_reTrms$lower
-      theta[theta==0] <- exp(theta_ini[1:n_diag])/s
-      theta[theta!=0] <- theta_ini[-1:-n_diag]/s
-    }else theta <- exp(theta_ini)/s
-    
-    Lambdat <- cond_reTrms$Lambdat
-    Lambdat@x <- theta[cond_reTrms$Lind]
-    b_cov_inv <- Matrix::tcrossprod(t(Lambdat)) 
-    
-    if (any(eigen(b_cov_inv)$values <= 0)) {
+    # G / sigma^2 = Lambda Lambda', built from VarCorr() (pm_tmb_lambda());
+    # singular when a variance is zero (a zero on the diagonal of Lambda)
+    re <- pm_re_terms(semer)
+    Lambda <- pm_tmb_lambda(semer, re)
+    b_cov_inv <- Matrix::tcrossprod(Lambda)
+    if (any(Matrix::diag(Lambda) <= 0)) {
       Amatrixpd <- nearPD(b_cov_inv)$mat
       b_cov_inv <- Amatrixpd@x
       dim(b_cov_inv) <- Amatrixpd@Dim
@@ -111,7 +95,12 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     family_n <- semer$modelInfo$family$family
     if (family_n=="binomial") yobs <- unique(tmbf$data.tmb$yobs)
     link_n <- semer$modelInfo$family$link
-    uHat <- unlist(ranef(semer)$cond) # cbind(uHat, getME(semer, "b"))
+    # random effects in the column order of Z (getME(, "b") also holds the
+    # zero-inflation ones, after these)
+    uHat <- getME(semer, "b")[seq_len(ncol(getME(semer, "Z")))]
+    if (all(vapply(re, function(tm) length(tm$comps) == 1, logical(1)))) {
+      names(uHat) <- names(unlist(ranef(semer)$cond))   # same order then
+    }
     C <- cbind(getME(semer, "X"), getME(semer, "Z"))
     
     if (family_n != "gaussian"){
@@ -139,12 +128,15 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
       CTC <- crossprod(C*wVec,C)
     }
     
-    fullCovMat <- Matrix::solve(CTC + D)
+    fullCovMat <- tryCatch(Matrix::solve(CTC + D), error = function(e) {
+      Matrix::solve(nearPD(as.matrix(CTC + D))$mat)   # not positive definite
+    })
     # Compute the degrees of freedom  formula
     df <- sum(diag(fullCovMat%*%CTC)) 
     
-    u_ind <- cond_reTrms$nl
-    u_indn <- names(u_ind) 
+    # number of columns of Z of each term (levels x components)
+    u_ind <- vapply(re, function(tm) length(tm$cols), numeric(1))
+    u_indn <- vapply(re, `[[`, "", "group")
     vcov_ind <- cumsum(c(n_beta, u_ind))
     names(vcov_ind) <- c("beta", u_indn)  
     
