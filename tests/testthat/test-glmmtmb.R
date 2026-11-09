@@ -14,14 +14,29 @@ test_that("R2_glmm() on a gaussian glmmTMB fit equals the lmer result", {
   expect_equal(pct(r_tmb[1:3]), pct(r_lmer[1:3]), tolerance = 0.01)
 })
 
-test_that("glmmTMB random-effect covariance from VarCorr() equals lmer's, correlated terms too", {
+test_that("glmmTMB random-effect covariance from VarCorr(): equals lmer's; blocks in the order of Z", {
   skip_if_not_installed("glmmTMB")
-  f <- Reaction ~ Days + (Days | Subject) + (1 | Days)
-  m1 <- suppressMessages(lme4::lmer(f, data = lme4::sleepstudy, REML = FALSE))
+  # a correlated term, not singular, so both fits reach the same optimum
+  f <- Reaction ~ Days + (Days | Subject)
+  m1 <- lme4::lmer(f, data = lme4::sleepstudy, REML = FALSE)
   m2 <- glmmTMB::glmmTMB(f, data = lme4::sleepstudy, REML = FALSE)
   G1 <- sigma(m1)^2 * as.matrix(Matrix::tcrossprod(lme4::getME(m1, "Lambda")))
   G2 <- sigma(m2)^2 * as.matrix(Matrix::tcrossprod(predictmeans:::pm_tmb_lambda(m2)))
   expect_equal(G2, G1, tolerance = 2e-3, ignore_attr = TRUE)
+  # two terms: each term's block of G is its VarCorr() matrix, at its columns
+  # of Z, and the terms do not covary (checked against glmmTMB itself, as
+  # lmer and glmmTMB versions can disagree on this nearly singular fit)
+  m3 <- glmmTMB::glmmTMB(Reaction ~ Days + (Days | Subject) + (1 | Days), data = lme4::sleepstudy)
+  re <- predictmeans:::pm_re_terms(m3)
+  G3 <- sigma(m3)^2 * as.matrix(Matrix::tcrossprod(predictmeans:::pm_tmb_lambda(m3, re)))
+  expect_identical(ncol(G3), ncol(lme4::getME(m3, "Z")))
+  vc <- glmmTMB::VarCorr(m3)$cond
+  for (j in seq_along(re)) {
+    nc <- length(re[[j]]$comps)
+    lev1 <- re[[j]]$cols[seq_len(nc)]
+    expect_equal(G3[lev1, lev1], as.matrix(vc[[j]]), tolerance = 1e-8, ignore_attr = TRUE)
+  }
+  expect_true(all(G3[re[[1]]$cols, re[[2]]$cols] == 0))
   # a singular covariance (zero variance) gives a factor instead of an error
   expect_equal(predictmeans:::pm_chol_lower(matrix(c(4, 2, 2, 1), 2)), matrix(c(2, 1, 0, 0), 2))
 })
