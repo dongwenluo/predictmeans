@@ -55,6 +55,25 @@ are consistent with 5%). `lmer`: 300 data sets, SE about 0.013.
 
 (All cells are in the `.rds` file.)
 
+## Mixed model with a covariate with extreme values
+
+Run 2026-11-10 with `Rscript dev/sim-freedman-lane.R 2000 300 lmer-leverage`
+(results in `dev/sim-freedman-lane-lmer-leverage.rds`): 8 blocks with two
+units of each A level (n = 48), x log-normal and larger for one A level, a
+large slope; `y ~ x + A + (1 | block)`; 300 data sets per cell (results
+between 0.025 and 0.075 are consistent with 5%).
+
+| errors | effect | F test (Satterthwaite) | current | Freedman–Lane |
+|---|---|---|---|---|
+| normal | null | 0.043 | 0.077 | 0.067 |
+| skewed | null | 0.050 | 0.047 | 0.053 |
+| heavy | null | 0.043 | 0.057 | 0.057 |
+| normal | power | 0.620 | 0.617 | 0.593 |
+
+Unlike `lm`, the two permutation schemes behave alike here (within one
+percentage point). The current scheme is just above the Monte Carlo range in
+one of three cells; Freedman–Lane is close behind. The F test keeps 5%.
+
 ## Conclusions
 
 - In balanced, unbalanced and correlated-covariate designs the current scheme,
@@ -63,8 +82,11 @@ are consistent with 5%). `lmer`: 300 data sets, SE about 0.013.
   factor, the current scheme rejects 6.3–6.7% of true null hypotheses (well
   outside the Monte Carlo range); Freedman–Lane keeps 3.9–5.1%. The current
   scheme's higher power there comes from its inflated level.
-- For the `lmer` design the two schemes do not differ beyond Monte Carlo error
-  (300 data sets), and Freedman–Lane costs one reduced-model fit per term.
+- For the `lmer` designs (an associated factor, and a covariate with extreme
+  values) the two schemes do not differ beyond Monte Carlo error (300 data
+  sets); with the extreme covariate both may be slightly liberal with normal
+  errors (6.7–7.7%, one cell of three), so Freedman–Lane does not fix a
+  mixed-model problem, and it costs one reduced-model fit per term.
 
 Recommendation: offer Freedman–Lane in `permmodels()` for `lm`/`aov` models
 (where all permutations of a term can be solved at once from QR projections,
