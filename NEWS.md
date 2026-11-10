@@ -420,6 +420,11 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* New vignette "Missing cells and non-estimable means": an empty cell in
+  the oats split plot (the 1.x averaging rule and its warning, comparisons
+  within the observed cells) and confounded factors in a spray trial (NA
+  means with estimable differences, `weights = "cells"`, and writing the
+  nesting into the model).
 * New vignette "Smooth curves in mixed models": `semireg()` and
   `semipred()` on `nlme::Dialyzer`, `ranova()` of the smooth terms,
   pointwise and simultaneous bands, a difference curve, and `predictmeans()`

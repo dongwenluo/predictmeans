@@ -20,6 +20,7 @@ articles:
   - response-scale
   - resampling
   - smooth
+  - missing-cells
   - R2_glmm
   - migrating
 - title: Worked examples
