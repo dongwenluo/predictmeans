@@ -12,7 +12,9 @@
 ##
 ## Run: Rscript dev/sim-freedman-lane.R [R_lm] [R_lmer] [part]   (defaults 2000, 300, "all")
 ## part = "lmer-leverage" runs only the mixed-model design with a covariate
-## with extreme values (dev/sim-freedman-lane-lmer-leverage.rds).
+## with extreme values (dev/sim-freedman-lane-lmer-leverage.rds);
+## part = "lmer-leverage-confirm" only its normal-error null cell, with R_lmer
+## data sets (dev/sim-freedman-lane-lmer-leverage-confirm.rds).
 ## Writes dev/sim-freedman-lane-results.rds and prints the tables.
 
 args <- commandArgs(TRUE)
@@ -160,9 +162,10 @@ lmer_lev_design <- function() {
   d$x <- exp(rnorm(nrow(d), sd = 1) + 0.8 * (d$A == "3"))
   d
 }
-if (part == "lmer-leverage") {
+if (part %in% c("lmer-leverage", "lmer-leverage-confirm")) {
+  confirm <- part == "lmer-leverage-confirm"
   lev_results <- list()
-  for (en in names(errs)) for (eff in if (en == "normal") c(0, 1) else 0) {
+  for (en in if (confirm) "normal" else names(errs)) for (eff in if (en == "normal" && !confirm) c(0, 1) else 0) {
     p <- t(replicate(R_lmer, {
       d <- lmer_lev_design()
       d$y <- 3 * (d$x - mean(d$x)) + eff * c(0, 0.5, 1)[as.integer(d$A)] +
@@ -175,7 +178,7 @@ if (part == "lmer-leverage") {
                 mean(p[, "F"] <= alpha), mean(p[, "raw"] <= alpha), mean(p[, "FL"] <= alpha)))
   }
   lev <- do.call(rbind, lev_results); rownames(lev) <- NULL
-  saveRDS(lev, "dev/sim-freedman-lane-lmer-leverage.rds")
+  saveRDS(lev, if (confirm) "dev/sim-freedman-lane-lmer-leverage-confirm.rds" else "dev/sim-freedman-lane-lmer-leverage.rds")
   print(lev, digits = 3)
   quit(save = "no")
 }

@@ -101,6 +101,19 @@
 
 ## New options
 
+* `permmodels(method = "freedman-lane")` for `lm` and `aov` models: each
+  term (and coefficient) is tested by permuting the residuals of the model
+  without it and adding them back to that model's fitted values (Freedman
+  and Lane 1983). Use it when a covariate with extreme values is related to
+  the tested term: in a simulation study (`dev/sim-freedman-lane.md`)
+  permuting the response then rejected 6-7% of true null hypotheses at the
+  5% level, Freedman-Lane 4-5%; in other designs the two agreed. The
+  statistics come from QR projections of blocks of permuted responses, with
+  no refits (4999 permutations of a 1000-row model with 16 tests take about
+  11 seconds on one core). Weights and offsets are allowed; `permlist` is
+  `NULL`, so the result cannot be passed to `predictmeans()`. The default,
+  `method = "raw"`, is unchanged.
+
 * New `bootmodels()`: parametric bootstrap p-values for the terms and
   coefficients of `lmer` and `glmer` models, simulating from the model
   without its fixed effects (global null) and refitting. Its result can be

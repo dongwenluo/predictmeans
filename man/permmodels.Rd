@@ -6,7 +6,7 @@
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed)
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -29,13 +29,31 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 \item{ncore}{Number of core for parallel computing, the default value is 3.}
 
 \item{seed}{Specify a random number generator seed, for reproducible results.}
+
+\item{method}{How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"} (\code{lm} and
+\code{aov} models only). See Details.}
 }
 \value{
 The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL}.
 }
 \description{
 This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
 for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+}
+\details{
+With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
+\code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
+permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}.
+
+With \code{method = "freedman-lane"} (Freedman and Lane, 1983), each test has its own permutations: the
+residuals of the model without the tested term (for type I and II tests also without the terms that contain it;
+for a t test, without that coefficient) are permuted and added back to that model's fitted values, and the
+statistic is computed again. The statistics come from QR projections, so no model is refitted and it is fast;
+weights and offsets are allowed. Use it when the model has a covariate with extreme values (skewed, or with
+outliers) that is related to the tested term: in a simulation study, permuting the response then rejected
+6 to 7\% of true null hypotheses at the 5\% level, and Freedman-Lane 4 to 5\% (Anderson and Legendre (1999) found
+the same). In other designs the two methods agreed.
 }
 \examples{
 library(predictmeans)
@@ -57,6 +75,18 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 }
+
+## Freedman-Lane permutations for a linear model with a covariate
+fm2 <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+}
+\references{
+Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial
+regression coefficients in a linear model. \emph{Journal of Statistical Computation and Simulation}, 62,
+271-303.
+
+Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of reported significance levels.
+\emph{Journal of Business & Economic Statistics}, 1, 292-298.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
