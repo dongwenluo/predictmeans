@@ -127,6 +127,9 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 - **Terms and pairwise comparisons in `lm`, `lme` and `lmer` models**: `permmodels()`.
 - **Terms of `lm` and `aov` models with covariates**, especially skewed ones or ones with
   extreme values: `permmodels(method = "freedman-lane")`.
+- **Mixed models with a covariate with extreme values**: the Kenward–Roger or
+  Satterthwaite F test (`pm_joint()`, or `anova()` of an lmerTest fit); permutation
+  rejected slightly too often there in a simulation study.
 - **A variance component, or any comparison of two nested `lmer` models**:
   `permlmer()`.
 - **GLMMs**: `bootmodels()`.

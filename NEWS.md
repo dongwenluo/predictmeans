@@ -112,7 +112,9 @@
   no refits (4999 permutations of a 1000-row model with 16 tests take about
   11 seconds on one core). Weights and offsets are allowed; `permlist` is
   `NULL`, so the result cannot be passed to `predictmeans()`. The default,
-  `method = "raw"`, is unchanged.
+  `method = "raw"`, is unchanged. For mixed models with such a covariate
+  the help page recommends the Kenward-Roger or Satterthwaite F test: the
+  raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 
 * New `bootmodels()`: parametric bootstrap p-values for the terms and
   coefficients of `lmer` and `glmer` models, simulating from the model

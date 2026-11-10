@@ -74,6 +74,19 @@ Unlike `lm`, the two permutation schemes behave alike here (within one
 percentage point). The current scheme is just above the Monte Carlo range in
 one of three cells; Freedman–Lane is close behind. The F test keeps 5%.
 
+Confirmation of the normal-error null cell with 1000 data sets
+(`Rscript dev/sim-freedman-lane.R 2000 1000 lmer-leverage-confirm`, results in
+`dev/sim-freedman-lane-lmer-leverage-confirm.rds`; results between 0.036 and
+0.064 are consistent with 5%):
+
+| errors | effect | F test (Satterthwaite) | current | Freedman–Lane |
+|---|---|---|---|---|
+| normal | null | 0.046 | 0.063 | 0.050 |
+
+The current scheme is at the upper edge of the range (slightly liberal, as in
+`lm`, but less so); Freedman–Lane and the F test keep 5%. The 300-set value
+for Freedman–Lane (0.067) was chance.
+
 ## Conclusions
 
 - In balanced, unbalanced and correlated-covariate designs the current scheme,
@@ -82,17 +95,18 @@ one of three cells; Freedman–Lane is close behind. The F test keeps 5%.
   factor, the current scheme rejects 6.3–6.7% of true null hypotheses (well
   outside the Monte Carlo range); Freedman–Lane keeps 3.9–5.1%. The current
   scheme's higher power there comes from its inflated level.
-- For the `lmer` designs (an associated factor, and a covariate with extreme
-  values) the two schemes do not differ beyond Monte Carlo error (300 data
-  sets); with the extreme covariate both may be slightly liberal with normal
-  errors (6.7–7.7%, one cell of three), so Freedman–Lane does not fix a
-  mixed-model problem, and it costs one reduced-model fit per term.
+- For `lmer` with an associated factor the two schemes do not differ. With a
+  covariate with extreme values the current scheme is slightly liberal with
+  normal errors (6.3% in 1000 data sets), Freedman–Lane keeps 5.0% and the
+  Satterthwaite F test 4.6%: the same pattern as `lm`, but smaller.
 
 Recommendation: offer Freedman–Lane in `permmodels()` for `lm`/`aov` models
 (where all permutations of a term can be solved at once from QR projections,
 so it is cheap), keep the current scheme as the default, and say in the help
-when to prefer Freedman–Lane (covariates with extreme values). No change for
-mixed models unless a larger study shows a difference.
+when to prefer Freedman–Lane (covariates with extreme values). For mixed
+models with such a covariate, the help recommends the Kenward–Roger or
+Satterthwaite F test; Freedman–Lane for mixed models (one reduced-model fit
+per term, then refits) is a possible later addition.
 
 Reference: Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
 permutation methods for tests of partial regression coefficients in a linear

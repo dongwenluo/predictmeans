@@ -36,6 +36,11 @@
 #' outliers) that is related to the tested term: in a simulation study, permuting the response then rejected
 #' 6 to 7\% of true null hypotheses at the 5\% level, and Freedman-Lane 4 to 5\% (Anderson and Legendre (1999) found
 #' the same). In other designs the two methods agreed.
+#'
+#' For mixed models with a covariate with extreme values related to the tested term, the same study found
+#' the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Satterthwaite F test kept the level
+#' (4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (e.g. \code{anova()} of an \pkg{lmerTest} fit, or
+#' \code{\link{pm_joint}}).
 #' @references
 #' Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial
 #' regression coefficients in a linear model. \emph{Journal of Statistical Computation and Simulation}, 62,
