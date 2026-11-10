@@ -221,11 +221,11 @@ predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$mean
 #> 2     Amidone  0.603011  0.5660805 0.1370736  9  0.2559986  0.8761625 0.6378583
 #> 3 Phenadoxone  0.603011  2.4185555 0.2045918  9  1.9557367  2.8813742 0.9182314
 #> 4   Pethidine  0.603011 -1.7574624 0.1693986  9 -2.1406687 -1.3742560 0.1471084
-#>   response.conf.low response.conf.high group n estimable
-#> 1         0.4743527          0.6107968   A   3      TRUE
-#> 2         0.5636524          0.7060264   A   3      TRUE
-#> 3         0.8760708          0.9469180    B  3      TRUE
-#> 4         0.1052064          0.2019331     C 5      TRUE
+#>   response.std.error response.conf.low response.conf.high group n estimable
+#> 1         0.03034579         0.4743527          0.6107968   A   3      TRUE
+#> 2         0.03166332         0.5636524          0.7060264   A   3      TRUE
+#> 3         0.01536127         0.8760708          0.9469180    B  3      TRUE
+#> 4         0.02125403         0.1052064          0.2019331     C 5      TRUE
 ```
 
 For a glm the means are also given on the response scale (here

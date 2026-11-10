@@ -70,6 +70,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 4   0.6 123.3889 7.17468 45  113.2869  133.4909         C
 #> 
 #> $Note
-#> [1] "Letter-based representation of pairwise comparisons at significant level '0.166'"
+#> [1] "Letter-based representation of pairwise comparisons by overlap of the 83.4% CIs (about significant level '0.05' for two uncorrelated means with equal SEs)"
 #> 
 ```

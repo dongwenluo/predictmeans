@@ -41,7 +41,7 @@ for the terms in a linear model such as aov, lm, glm, gls, lme, and lmer."></hea
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Permutation Test of Linear Model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-permmodels.R" class="external-link"><code>R/doc-permmodels.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/permmodels.R" class="external-link"><code>R/permmodels.R</code></a></small>
       <div class="d-none name"><code>permmodels.Rd</code></div>
     </div>
 
@@ -113,26 +113,146 @@ Chisq test for <code>lme</code> and <code>gls</code> model, Chisq or F tests for
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">## Not run for simplifying process of submiting pkg to CRAN</span></span></span>
-<span class="r-in"><span><span class="co">#library(predictmeans)</span></span></span>
-<span class="r-in"><span><span class="co">#Oats$nitro &lt;- factor(Oats$nitro) </span></span></span>
-<span class="r-in"><span><span class="co">#fm &lt;- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)</span></span></span>
-<span class="r-in"><span><span class="co">## library(lme4)</span></span></span>
-<span class="r-in"><span><span class="co">## fm &lt;- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)</span></span></span>
-<span class="r-in"><span><span class="co">#</span></span></span>
-<span class="r-in"><span><span class="co">## Permutation Test for model terms</span></span></span>
-<span class="r-in"><span><span class="co">#system.time(</span></span></span>
-<span class="r-in"><span><span class="co">#  permlme &lt;- permmodels(model=fm, nperm=999)</span></span></span>
-<span class="r-in"><span><span class="co">#)  </span></span></span>
-<span class="r-in"><span><span class="co">#</span></span></span>
-<span class="r-in"><span><span class="co">## Permutation Test for multiple comparisons</span></span></span>
-<span class="r-in"><span><span class="co">#predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH", </span></span></span>
-<span class="r-in"><span><span class="co">#  permlist=permlme, plot=FALSE)</span></span></span>
-<span class="r-in"><span><span class="co">#</span></span></span>
-<span class="r-in"><span><span class="co">## Permutation Test for specified contrasts</span></span></span>
-<span class="r-in"><span><span class="co">#cm &lt;- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), </span></span></span>
-<span class="r-in"><span><span class="co">#            c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))</span></span></span>
-<span class="r-in"><span><span class="co">#contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span>, random<span class="op">=</span><span class="op">~</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># fm &lt;- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="co">## Permutation test for model terms (99 permutations to keep the example</span></span></span>
+<span class="r-in"><span><span class="co">## quick; use the default or more in practice)</span></span></span>
+<span class="r-in"><span><span class="va">permlme</span> <span class="op">&lt;-</span> <span class="fu">permmodels</span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients of (fixed) effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                              Value Std.Error DF t-value p-value Perm_p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)                80.0000    9.1070 45  8.7845  0.0000           NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2                   18.5000    7.6830 45  2.4079  0.0202         0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4                   34.6667    7.6830 45  4.5122  0.0000         0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6                   44.8333    7.6830 45  5.8354  0.0000         0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VarietyMarvellous           6.6667    9.7150 10  0.6862  0.5082         0.45</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VarietyVictory             -8.5000    9.7150 10 -0.8749  0.4021         0.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2:VarietyMarvellous  3.3333   10.8653 45  0.3068  0.7604         0.69</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4:VarietyMarvellous -4.1667   10.8653 45 -0.3835  0.7032         0.71</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6:VarietyMarvellous -4.6667   10.8653 45 -0.4295  0.6696         0.61</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2:VarietyVictory    -0.3333   10.8653 45 -0.0307  0.9757         0.94</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4:VarietyVictory     4.6667   10.8653 45  0.4295  0.6696         0.66</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6:VarietyVictory     2.1667   10.8653 45  0.1994  0.8428         0.81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of t test is obtained using ‘99’ permutations.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ANOVA:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               numDF denDF  F-value p-value Perm_p_value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)       1    45 245.1433  0.0000             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro             3    45  37.6856  0.0000         0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variety           2    10   1.4853  0.2724         0.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro:Variety     6    45   0.3028  0.9322         0.88</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of F test is obtained using ‘99’ permutations.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Permutation test for multiple comparisons</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, modelterm<span class="op">=</span><span class="st">"nitro:Variety"</span>, atvar<span class="op">=</span><span class="st">"Variety"</span>, adj<span class="op">=</span><span class="st">"BH"</span>,</span></span>
+<span class="r-in"><span>  permlist<span class="op">=</span><span class="va">permlme</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Predicted Means`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Variety Golden Rain Marvellous  Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro                                        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0                 80.0000    86.6667  71.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2               98.5000   108.5000  89.6667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4              114.6667   117.1667 110.8333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6              124.8333   126.8333 118.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Standard Error of Means`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> All means have the same SE </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    9.10696 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Standard Error of Differences`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Max.SED  Min.SED Aveg.SED </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9.715028 7.682958 9.160827 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"For the Same Level of Factor")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             nitro  Variety</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.SED 9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Min.SED  9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Max.SED  9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Approximated LSD`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Max.LSD  Min.LSD Aveg.LSD </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19.43006 15.36592 18.32165 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"For the Same Level of Factor")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             nitro  Variety</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.LSD 19.43006 15.36592</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Min.LSD  19.43006 15.36592</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Max.LSD  19.43006 15.36592</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Pairwise '99' times permuted p-value (adjusted by 'BH' method)`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "For variable 'nitro' at each level of 'Variety'"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Golden Rain`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0     0.2   0.4  0.6 Group</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                    A    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.015 1               B   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.015 0.048 1          C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.015 0.015 0.17 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0    0.2   0.4   0.6 Group</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                    A    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.02 1                B   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.02 0.26  1          BC  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.02 0.045 0.228 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0     0.2   0.4  0.6 Group</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                    A    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.024 1               B   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.02  0.024 1          C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.02  0.02  0.31 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Table</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Note</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Permutation test for specified contrasts</span></span></span>
+<span class="r-in"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="contrastmeans.html">contrastmeans</a></span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, modelterm<span class="op">=</span><span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span>, permlist<span class="op">=</span><span class="va">permlme</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value Permuted Pr(&gt;|t|)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749              0.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006              0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The permuted p-value is obtained using ‘99’ permutations."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $K</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]            -1            0         1               0              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]             0            0         1               0              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]           0               0              0           0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]           0               0             -1           0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.6:Marvellous 0.6:Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]              0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]              0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

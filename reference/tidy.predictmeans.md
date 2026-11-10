@@ -8,7 +8,16 @@ and unrounded values, which makes them easy to use in further analysis,
 reports, Shiny apps or AI tools. `tidy()` is the generic from package
 generics (also used by broom);
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) needs no
-other package.
+other package. [`coef()`](https://rdrr.io/r/stats/coef.html) and
+[`vcov()`](https://rdrr.io/r/stats/vcov.html) return the means (on the
+model scale, as in the `estimate` column) and their covariance matrix
+(Kenward-Roger adjusted when the means are), named by the mean labels.
+With them, `multcomp::glht()` or
+[`marginaleffects::hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html)
+can test any contrast of the means, e.g.
+`hypotheses(pm, hypothesis = "n2 - n0 = 0")` (normal-based). Recent
+versions of marginaleffects need the class listed first:
+`options(marginaleffects_model_classes = "predictmeans")`.
 
 ## Usage
 
@@ -19,11 +28,22 @@ tidy(x, what = c("means", "pairs"), ...)
 # S3 method for class 'predictmeans'
 as.data.frame(x, row.names = NULL, optional = FALSE,
               what = c("means", "pairs"), ...)
+
+# S3 method for class 'predictmeans'
+coef(object, ...)
+
+# S3 method for class 'predictmeans'
+vcov(object, ...)
 ```
 
 ## Arguments
 
 - x:
+
+  A result of
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+
+- object:
 
   A result of
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
@@ -46,7 +66,8 @@ as.data.frame(x, row.names = NULL, optional = FALSE,
 
 ## Value
 
-A data frame.
+A data frame; for [`coef()`](https://rdrr.io/r/stats/coef.html) a named
+vector and for [`vcov()`](https://rdrr.io/r/stats/vcov.html) a matrix.
 
 ## Author
 
@@ -102,4 +123,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 4 -2.4079299 0.020203579 0.09004252 15.47425    tukey
 #> 5 -1.2180451 0.232628352         NA 19.83437    tukey
 #> 6 -2.7792016 0.009281366         NA 19.83437    tukey
+
+  # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
+  b <- coef(pm)
+  L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
+  c(estimate = sum(L*b), SE = sqrt(drop(L %*% vcov(pm) %*% L)))
+#>  estimate        SE 
+#> -6.333333  9.715020 
 ```

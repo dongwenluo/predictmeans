@@ -39,7 +39,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Permutation Test of random or fixed effects for <code>lmer</code> model.</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-permlmer.R" class="external-link"><code>R/doc-permlmer.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/permlmer.R" class="external-link"><code>R/permlmer.R</code></a></small>
       <div class="d-none name"><code>permlmer.Rd</code></div>
     </div>
 
@@ -96,20 +96,61 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># library(predictmeans)</span></span></span>
-<span class="r-in"><span><span class="co">## Test random effects</span></span></span>
-<span class="r-in"><span><span class="co"># fm1 &lt;- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)</span></span></span>
-<span class="r-in"><span><span class="co"># fm2 &lt;- lmer(Reaction ~ Days + (Days || Subject), sleepstudy)</span></span></span>
-<span class="r-in"><span><span class="co"># fm3 &lt;- update(fm1, . ~ . - (Days | Subject) + (1 | Subject))</span></span></span>
-<span class="r-in"><span><span class="co"># anova(fm1, fm2, fm3)</span></span></span>
-<span class="r-in"><span><span class="co"># permlmer(fm3, fm2)</span></span></span>
-<span class="r-in"><span><span class="co"># permlmer(fm2, fm1)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co">## Test random effects (99 permutations to keep the example quick;</span></span></span>
+<span class="r-in"><span><span class="co">## use 999 or more in practice)</span></span></span>
+<span class="r-in"><span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="va">Days</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, <span class="va">sleepstudy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="va">Days</span> <span class="op">||</span> <span class="va">Subject</span><span class="op">)</span>, <span class="va">sleepstudy</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fm3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">fm1</span>, <span class="va">.</span> <span class="op">~</span> <span class="va">.</span> <span class="op">-</span> <span class="op">(</span><span class="va">Days</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm1</span>, <span class="va">fm2</span>, <span class="va">fm3</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> refitting model(s) with ML (instead of REML)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm3: Reaction ~ Days + (1 | Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm2: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm1: Reaction ~ Days + (Days | Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     npar    AIC    BIC  logLik -2*log(L)   Chisq Df Pr(&gt;Chisq)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm3    4 1802.1 1814.8 -897.04    1794.1                          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm2    5 1762.0 1778.0 -876.00    1752.0 42.0754  1  8.782e-11 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm1    6 1763.9 1783.1 -875.97    1751.9  0.0639  1     0.8004    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm3</span>, <span class="va">fm2</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + (1 | Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01</span>
+<span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm2</span>, <span class="va">fm1</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model failed to converge with max|grad| = 0.00228659 (tol = 0.002, component 1)</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   See ?lme4::convergence and ?lme4::troubleshooting.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days | Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(&gt;Chisq) Perm-p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    5 1753.7 1769.6 -871.83    1743.7                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.81</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Test fixed effects</span></span></span>
-<span class="r-in"><span><span class="co"># Oats$nitro &lt;- factor(Oats$nitro)</span></span></span>
-<span class="r-in"><span><span class="co"># fm0 &lt;- lmer(yield ~ nitro+Variety+(1|Block/Variety), data=Oats)</span></span></span>
-<span class="r-in"><span><span class="co"># fm &lt;- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)</span></span></span>
-<span class="r-in"><span><span class="co"># permlmer(fm0, fm)</span></span></span>
+<span class="r-in"><span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">+</span><span class="va">Variety</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm0</span>, <span class="va">fm</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> refitting model(s) with ML (instead of REML)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: Oats</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: yield ~ nitro + Variety + (1 | Block/Variety)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    9 616.04 636.53 -299.02    598.04                            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.91</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

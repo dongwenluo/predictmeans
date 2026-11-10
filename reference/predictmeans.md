@@ -23,7 +23,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 - model:
 
   Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`,
-  `glmer`, `glmmTMB` and `gam` (package mgcv).
+  `glmer`, `glmmTMB` and `gam` (package mgcv), or a
+  [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fit. For a `semireg` fit the means include the smooth terms (as
+  [`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
+  at the covariates' means or at the values of `covariate` (a named
+  vector, e.g. `c(construction.date = 1980)`); the result holds only the
+  `means`, `pairs` and `settings` tables, with normal-based tests and
+  any `adj`.
 
 - modelterm:
 
@@ -52,9 +59,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   Name (in "quote") for indicating a method for adjusting p-values of
   pairwise comparisons. The choices are "none", "tukey", "holm",
-  "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr". The default
-  method is "none"; letter case does not matter ("Tukey" works). Note
-  that LSD can't be adjusted except for "bonferroni" method.
+  "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak",
+  "scheffe" and "mvt". "sidak", "scheffe" (rank of the family: number of
+  means - 1) and "mvt" (single-step multivariate t, the exact
+  counterpart of SAS `ADJUST=SIMULATE`; needs package mvtnorm) are as in
+  emmeans. "tukey", "scheffe" and "mvt" are not available with
+  `permlist`. The default method is "none"; letter case does not matter
+  ("Tukey" works). Note that LSD can't be adjusted except for
+  "bonferroni" method.
 
 - Df:
 
@@ -93,7 +105,11 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   differ at about the 5% level. Otherwise overlap only approximates the
   pairwise test: it finds fewer differences when the means are
   positively correlated, as in most mixed models, and more when their
-  SEs differ (Maghsoodloo and Huang, 2010).
+  SEs differ (Maghsoodloo and Huang, 2010). With `letterCI = TRUE`,
+  `level` sets the CIs (e.g. `level = 0.05` gives 95% CIs), `adj` is
+  "none", and with `atvar` the letters compare the means within each
+  `atvar` group. The note under the mean table gives the CI level and
+  the approximate test level.
 
 - trans:
 
@@ -311,8 +327,9 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   A data frame with one row per predicted mean and fixed column names:
   the factor (and covariate) columns, `estimate`, `std.error`, `df`,
   `conf.low`, `conf.high`; when the means are back-transformed also
-  `response`, `response.conf.low` and `response.conf.high`; `group`
-  (letters, when pairwise comparisons are made), `n` (number of
+  `response`, `response.std.error` (delta method, as emmeans with
+  `type = "response"`), `response.conf.low` and `response.conf.high`;
+  `group` (letters, when pairwise comparisons are made), `n` (number of
   observations) and `estimable`. Values are not rounded. Also returned
   by `tidy()` and
   [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html).
@@ -323,7 +340,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `by` (the level of `atvar`, when given; `NA` for pairs across levels),
   `estimate` (mean of `level1` minus mean of `level2`), `std.error`,
   `df`, `statistic` (t), `p.value`, `p.adj` (adjusted by `adj`, within
-  each level of `atvar` when given), `lsd` and `p.method`.
+  each level of `atvar` when given), `lsd` and `p.method`; for a log
+  link or `trans = exp` also `ratio` (of the back-transformed means,
+  `exp(estimate)`), `ratio.conf.low` and `ratio.conf.high`, and for a
+  logit link `odds.ratio` with its limits.
 
 - settings:
 
@@ -407,7 +427,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   predictmeans(fm, "nitro", adj="BH")
 
 
-#> `height` was translated to `width`.
 
 #> $`Predicted Means`
 #> nitro
@@ -456,7 +475,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", line=FALSE)
 
 
-#> `height` was translated to `width`.
 
 #> $`Predicted Means`
 #>       Variety Golden Rain Marvellous  Victory
@@ -542,7 +560,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 
 
-#> `height` was translated to `width`.
 
   names(predictout)
 #>  [1] "Predicted Means"                                      
@@ -565,7 +582,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 #> 
 #> $ciPlot
-#> `height` was translated to `width`.
 
 #> 
   print(predictout$predictmeansBarPlot)

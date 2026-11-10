@@ -20,8 +20,11 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/PMplot.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Poisson_ind.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/R2_glmm.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/R2_model.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/bootmodels.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/ci_mcp.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/contrast_family.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/contrastmeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/copper.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/covariatemeans.html</loc></url>
@@ -32,6 +35,8 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/permlmer.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/permmodels.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_coef.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_joint.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_slopes.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/predictmeans-package.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/predictmeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/residplot.html</loc></url>

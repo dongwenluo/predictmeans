@@ -79,24 +79,144 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 ## Examples
 
 ``` r
-## Not run for simplifying process of submiting pkg to CRAN
-#library(predictmeans)
-#Oats$nitro <- factor(Oats$nitro) 
-#fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-## library(lme4)
-## fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-#
-## Permutation Test for model terms
-#system.time(
-#  permlme <- permmodels(model=fm, nperm=999)
-#)  
-#
-## Permutation Test for multiple comparisons
-#predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH", 
-#  permlist=permlme, plot=FALSE)
-#
-## Permutation Test for specified contrasts
-#cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
-#            c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
-#contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
+library(predictmeans)
+Oats$nitro <- factor(Oats$nitro)
+fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
+
+# \donttest{
+## Permutation test for model terms (99 permutations to keep the example
+## quick; use the default or more in practice)
+permlme <- permmodels(model=fm, nperm=99, ncore=1)
+#> 
+#> Coefficients of (fixed) effects:
+#>                              Value Std.Error DF t-value p-value Perm_p_value
+#> (Intercept)                80.0000    9.1070 45  8.7845  0.0000           NA
+#> nitro0.2                   18.5000    7.6830 45  2.4079  0.0202         0.01
+#> nitro0.4                   34.6667    7.6830 45  4.5122  0.0000         0.01
+#> nitro0.6                   44.8333    7.6830 45  5.8354  0.0000         0.01
+#> VarietyMarvellous           6.6667    9.7150 10  0.6862  0.5082         0.45
+#> VarietyVictory             -8.5000    9.7150 10 -0.8749  0.4021         0.36
+#> nitro0.2:VarietyMarvellous  3.3333   10.8653 45  0.3068  0.7604         0.69
+#> nitro0.4:VarietyMarvellous -4.1667   10.8653 45 -0.3835  0.7032         0.71
+#> nitro0.6:VarietyMarvellous -4.6667   10.8653 45 -0.4295  0.6696         0.61
+#> nitro0.2:VarietyVictory    -0.3333   10.8653 45 -0.0307  0.9757         0.94
+#> nitro0.4:VarietyVictory     4.6667   10.8653 45  0.4295  0.6696         0.66
+#> nitro0.6:VarietyVictory     2.1667   10.8653 45  0.1994  0.8428         0.81
+#> 
+#> Note: Perm_p_value of t test is obtained using ‘99’ permutations.
+#> 
+#> ANOVA:
+#>               numDF denDF  F-value p-value Perm_p_value
+#> (Intercept)       1    45 245.1433  0.0000             
+#> nitro             3    45  37.6856  0.0000         0.01
+#> Variety           2    10   1.4853  0.2724         0.19
+#> nitro:Variety     6    45   0.3028  0.9322         0.88
+#> 
+#> Note: Perm_p_value of F test is obtained using ‘99’ permutations.
+#> 
+
+## Permutation test for multiple comparisons
+predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
+  permlist=permlme, plot=FALSE, ncore=1)
+#> $`Predicted Means`
+#>       Variety Golden Rain Marvellous  Victory
+#> nitro                                        
+#> 0                 80.0000    86.6667  71.5000
+#> 0.2               98.5000   108.5000  89.6667
+#> 0.4              114.6667   117.1667 110.8333
+#> 0.6              124.8333   126.8333 118.5000
+#> 
+#> $`Standard Error of Means`
+#> All means have the same SE 
+#>                    9.10696 
+#> 
+#> $`Standard Error of Differences`
+#>  Max.SED  Min.SED Aveg.SED 
+#> 9.715028 7.682958 9.160827 
+#> attr(,"For the Same Level of Factor")
+#>             nitro  Variety
+#> Aveg.SED 9.715028 7.682958
+#> Min.SED  9.715028 7.682958
+#> Max.SED  9.715028 7.682958
+#> 
+#> $`Approximated LSD`
+#>  Max.LSD  Min.LSD Aveg.LSD 
+#> 19.43006 15.36592 18.32165 
+#> attr(,"For the Same Level of Factor")
+#>             nitro  Variety
+#> Aveg.LSD 19.43006 15.36592
+#> Min.LSD  19.43006 15.36592
+#> Max.LSD  19.43006 15.36592
+#> attr(,"Note")
+#> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
+#> 
+#> $`Pairwise '99' times permuted p-value (adjusted by 'BH' method)`
+#> [1] "For variable 'nitro' at each level of 'Variety'"
+#> 
+#> $`Golden Rain`
+#>     0     0.2   0.4  0.6 Group
+#> 0   1                    A    
+#> 0.2 0.015 1               B   
+#> 0.4 0.015 0.048 1          C  
+#> 0.6 0.015 0.015 0.17 1     C  
+#> 
+#> $Marvellous
+#>     0    0.2   0.4   0.6 Group
+#> 0   1                    A    
+#> 0.2 0.02 1                B   
+#> 0.4 0.02 0.26  1          BC  
+#> 0.6 0.02 0.045 0.228 1     C  
+#> 
+#> $Victory
+#>     0     0.2   0.4  0.6 Group
+#> 0   1                    A    
+#> 0.2 0.024 1               B   
+#> 0.4 0.02  0.024 1          C  
+#> 0.6 0.02  0.02  0.31 1     C  
+#> 
+#> $mean_table
+#> $mean_table$Table
+#>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
+#> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  
+#> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B 
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C
+#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C
+#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  
+#> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B 
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C
+#> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  
+#> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B 
+#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C
+#> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C
+#> 
+#> $mean_table$Note
+#> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"
+#> 
+#> 
+
+## Permutation test for specified contrasts
+cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
+contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
+#> $`The t tests of the specified contrasts`
+#>      Estimate Std. Error t value Permuted Pr(>|t|)
+#> [1,]  -8.5000      9.715 -0.8749              0.36
+#> [2,] -45.6667      9.715 -4.7006              0.01
+#> attr(,"Note")
+#> [1] "The permuted p-value is obtained using ‘99’ permutations."
+#> 
+#> $K
+#>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
+#> [1,]            -1            0         1               0              0
+#> [2,]             0            0         1               0              0
+#>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
+#> [1,]           0               0              0           0               0
+#> [2,]           0               0             -1           0               0
+#>      0.6:Marvellous 0.6:Victory
+#> [1,]              0           0
+#> [2,]              0           0
+#> 
+# }
 ```

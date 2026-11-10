@@ -39,7 +39,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Fitting Semi Parametric Models Using glmmTMB</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-semireg_tmb.R" class="external-link"><code>R/doc-semireg_tmb.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/semireg_tmb.R" class="external-link"><code>R/semireg_tmb.R</code></a></small>
       <div class="d-none name"><code>semireg_tmb.Rd</code></div>
     </div>
 
@@ -214,43 +214,118 @@ because of missingness.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">## Not run</span></span></span>
-<span class="r-in"><span><span class="co"># library(predictmeans)</span></span></span>
-<span class="r-in"><span><span class="co"># library(HRW) </span></span></span>
-<span class="r-in"><span><span class="co"># data(WarsawApts)</span></span></span>
-<span class="r-in"><span><span class="co"># help(WarsawApts)</span></span></span>
-<span class="r-in"><span><span class="co"># str(WarsawApts)</span></span></span>
-<span class="r-in"><span><span class="co"># fit1 &lt;- semireg_tmb(areaPerMzloty ~ construction.date,</span></span></span>
-<span class="r-in"><span><span class="co">#                smoothZ=list(</span></span></span>
-<span class="r-in"><span><span class="co">#                  grp=smZ(construction.date, k=25)</span></span></span>
-<span class="r-in"><span><span class="co">#                ),</span></span></span>
-<span class="r-in"><span><span class="co">#                data = WarsawApts)</span></span></span>
-<span class="r-in"><span><span class="co"># sp_out1 &lt;- semipred(fit1, "construction.date", "construction.date")</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># WarsawApts$district &lt;- factor(WarsawApts$district)</span></span></span>
-<span class="r-in"><span><span class="co"># fit2 &lt;- semireg_tmb(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,</span></span></span>
-<span class="r-in"><span><span class="co">#                 smoothZ=list(group=smZ(construction.date, k=15,</span></span></span>
-<span class="r-in"><span><span class="co">#                                        by = district, group=TRUE)), </span></span></span>
-<span class="r-in"><span><span class="co">#                 data=WarsawApts)</span></span></span>
-<span class="r-in"><span><span class="co"># sp_out2_1 &lt;- semipred(fit2, "district", "construction.date")</span></span></span>
-<span class="r-in"><span><span class="co"># sp_out2_2 &lt;- semipred(fit2, "district", "construction.date", contr=c(2,1))</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># data(indonRespir)</span></span></span>
-<span class="r-in"><span><span class="co"># help(indonRespir)</span></span></span>
-<span class="r-in"><span><span class="co"># str(indonRespir)</span></span></span>
-<span class="r-in"><span><span class="co"># fit3 &lt;- semireg_tmb(respirInfec ~ age+vitAdefic + female + height</span></span></span>
-<span class="r-in"><span><span class="co">#                + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),</span></span></span>
-<span class="r-in"><span><span class="co">#                smoothZ=list(</span></span></span>
-<span class="r-in"><span><span class="co">#                  grp=smZ(age)</span></span></span>
-<span class="r-in"><span><span class="co">#                ),</span></span></span>
-<span class="r-in"><span><span class="co">#                family = binomial,</span></span></span>
-<span class="r-in"><span><span class="co">#                data = indonRespir)</span></span></span>
-<span class="r-in"><span><span class="co"># sp_out3 &lt;- semipred(fit3, "age", "age")</span></span></span>
-<span class="r-in"><span><span class="co"># library(ggplot2)</span></span></span>
-<span class="r-in"><span><span class="co"># sp_out3$plt+</span></span></span>
-<span class="r-in"><span><span class="co">#   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +</span></span></span>
-<span class="r-in"><span><span class="co">#   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+</span></span></span>
-<span class="r-in"><span><span class="co">#   ylim(0, 0.2)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"HRW"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">WarsawApts</span>, package <span class="op">=</span> <span class="st">"HRW"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">semireg_tmb</span><span class="op">(</span><span class="va">areaPerMzloty</span> <span class="op">~</span> <span class="va">construction.date</span>,</span></span>
+<span class="r-in"><span>                      smoothZ<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>                        grp<span class="op">=</span><span class="fu"><a href="smZ.html">smZ</a></span><span class="op">(</span><span class="va">construction.date</span>, k<span class="op">=</span><span class="fl">25</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                      <span class="op">)</span>,</span></span>
+<span class="r-in"><span>                      data <span class="op">=</span> <span class="va">WarsawApts</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sp_out1</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit1</span>, <span class="st">"construction.date"</span>, <span class="st">"construction.date"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="va">WarsawApts</span><span class="op">$</span><span class="va">district</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">WarsawApts</span><span class="op">$</span><span class="va">district</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu">semireg_tmb</span><span class="op">(</span><span class="va">areaPerMzloty</span> <span class="op">~</span> <span class="va">construction.date</span><span class="op">*</span><span class="va">district</span>,</span></span>
+<span class="r-in"><span>                      smoothZ<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>group<span class="op">=</span><span class="fu"><a href="smZ.html">smZ</a></span><span class="op">(</span><span class="va">construction.date</span>, k<span class="op">=</span><span class="fl">15</span>,</span></span>
+<span class="r-in"><span>                                             by <span class="op">=</span> <span class="va">district</span>, group<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                      data<span class="op">=</span><span class="va">WarsawApts</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sp_out2_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit2</span>, <span class="st">"district"</span>, <span class="st">"construction.date"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sp_out2_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit2</span>, <span class="st">"district"</span>, <span class="st">"construction.date"</span>, contr<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula:          areaPerMzloty ~ construction.date + (1 | grp)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: WarsawApts</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       AIC       BIC    logLik -2*log(L)  df.resid </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3550.889  3566.944 -1771.445  3542.889       405 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random-effects (co)variances:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups   Name        Std.Dev.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  grp      (Intercept)  1.137  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual             17.785  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 409 / Conditional model: grp, 27</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Dispersion estimate for gaussian family (sigma^2):  316 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       (Intercept)  construction.date  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -19.28657            0.06521  </span>
+<span class="r-plt img"><img src="semireg_tmb-1.png" alt="" width="700" height="433"></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula:          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: WarsawApts</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       AIC       BIC    logLik -2*log(L)  df.resid </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3554.224  3606.402 -1764.112  3528.224       396 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random-effects (co)variances:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups            Name        Std.Dev. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Mokotow     (Intercept) 6.898e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Srodmiescie (Intercept) 3.187e-15</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Wola        (Intercept) 1.091e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Zoliborz    (Intercept) 5.413e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                      1.756e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 409 / Conditional model: group.Mokotow, 17; group.Srodmiescie, 17; group.Wola, 17; group.Zoliborz, 17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Dispersion estimate for gaussian family (sigma^2):  308 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                           (Intercept)                      construction.date  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             -43.32116                                0.07831  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   districtSrodmiescie                           districtWola  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             485.88087                              776.89772  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                      districtZoliborz  construction.date:districtSrodmiescie  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             282.67890                               -0.25265  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        construction.date:districtWola     construction.date:districtZoliborz  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                              -0.39155                               -0.14576  </span>
+<span class="r-plt img"><img src="semireg_tmb-2.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="semireg_tmb-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"HRW"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">indonRespir</span>, package <span class="op">=</span> <span class="st">"HRW"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu">semireg_tmb</span><span class="op">(</span><span class="va">respirInfec</span> <span class="op">~</span> <span class="va">age</span><span class="op">+</span><span class="va">vitAdefic</span> <span class="op">+</span> <span class="va">female</span> <span class="op">+</span> <span class="va">height</span></span></span>
+<span class="r-in"><span>                      <span class="op">+</span> <span class="va">stunted</span> <span class="op">+</span> <span class="va">visit2</span> <span class="op">+</span> <span class="va">visit3</span> <span class="op">+</span> <span class="va">visit4</span>  <span class="op">+</span> <span class="va">visit5</span> <span class="op">+</span> <span class="va">visit6</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">idnum</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                      smoothZ<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>                        grp<span class="op">=</span><span class="fu"><a href="smZ.html">smZ</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                      <span class="op">)</span>,</span></span>
+<span class="r-in"><span>                      family <span class="op">=</span> <span class="va">binomial</span>,</span></span>
+<span class="r-in"><span>                      data <span class="op">=</span> <span class="va">indonRespir</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sp_out3</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit3</span>, <span class="st">"age"</span>, <span class="st">"age"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">sp_out3</span><span class="op">$</span><span class="va">plt</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_rug.html" class="external-link">geom_rug</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">indonRespir</span>, <span class="va">respirInfec</span><span class="op">==</span><span class="fl">0</span><span class="op">)</span>, sides <span class="op">=</span> <span class="st">"b"</span>, col<span class="op">=</span><span class="st">"deeppink"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_rug.html" class="external-link">geom_rug</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">indonRespir</span>, <span class="va">respirInfec</span><span class="op">==</span><span class="fl">1</span><span class="op">)</span>, sides <span class="op">=</span> <span class="st">"t"</span>, col<span class="op">=</span><span class="st">"deeppink"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula:          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> respirInfec ~ age + vitAdefic + female + height + stunted + visit2 +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Data: indonRespir</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       AIC       BIC    logLik -2*log(L)  df.resid </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  673.9676  740.1386 -323.9838  647.9676      1187 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random-effects (co)variances:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups Name        Std.Dev.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  idnum  (Intercept) 0.7939  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  grp    (Intercept) 0.4285  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 1200 / Conditional model: idnum, 275; grp, 8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Conditional model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)          age    vitAdefic       female       height      stunted  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   -0.972232    -0.500262     0.666181    -0.505897    -0.033005     0.454810  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      visit2       visit3       visit4       visit5       visit6  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   -1.107213    -0.572605    -1.275794     0.473012    -0.004682  </span>
+<span class="r-plt img"><img src="semireg_tmb-4.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="semireg_tmb-5.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

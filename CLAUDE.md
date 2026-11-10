@@ -32,7 +32,8 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   the call’s state.
 - `R/Kmatrix.R` + `R/refgrid.R`: reference grid and K matrix.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
-- Help pages: edit `R/doc-*.R` (roxygen2), then
+- Help pages: edit the roxygen2 block above each function (data sets in
+  `R/data.R`, the package page in `R/predictmeans-package.R`), then
   `Rscript -e 'roxygen2::roxygenise(roclets = "rd")'`. NAMESPACE is
   hand-written — edit it directly.
 

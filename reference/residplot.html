@@ -39,7 +39,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Diagnostic Plots for a Linear (Mixed) Model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-residplot.R" class="external-link"><code>R/doc-residplot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/residplot.R" class="external-link"><code>R/residplot.R</code></a></small>
       <div class="d-none name"><code>residplot.Rd</code></div>
     </div>
 
@@ -101,10 +101,9 @@
 <span class="r-in"><span><span class="fu">residplot</span><span class="op">(</span><span class="va">fm</span>, level<span class="op">=</span><span class="fl">2</span><span class="op">)</span>    <span class="co">#lme: level=2 for random effect "Block:Variety"</span></span></span>
 <span class="r-plt img"><img src="residplot-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">#  Not Run</span></span></span>
-<span class="r-in"><span><span class="co">#  library(lme4)</span></span></span>
-<span class="r-in"><span><span class="co">#  fm &lt;- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)</span></span></span>
-<span class="r-in"><span><span class="co">#  residplot(fm) # lmer: By default level=1 for random effect "Block:Variety"</span></span></span>
+<span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">residplot</span><span class="op">(</span><span class="va">fm</span><span class="op">)</span> <span class="co"># lmer: By default level=1 for random effect "Block:Variety"</span></span></span>
+<span class="r-plt img"><img src="residplot-2.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

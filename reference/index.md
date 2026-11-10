@@ -10,6 +10,12 @@
   : Linear Contrast Tests for a Linear Model
 - [`specify_contrast()`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md)
   : Contrasts Written with Level Names
+- [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md)
+  : Families of Contrasts among Means
+- [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  : Joint F Tests of Contrasts among Means (Slices)
+- [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  : Slopes of a Covariate by Group
 - [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
   : Matrix of Coefficients in a Linear Model
 
@@ -17,6 +23,8 @@
 
 - [`tidy(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   [`as.data.frame(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
+  [`coef(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
+  [`vcov(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   : Predicted Means and Pairwise Comparisons as Data Frames
 - [`autoplot(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)
   [`summary(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)
@@ -36,6 +44,9 @@
 - [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
   : An adjusted coefficient of determination (R2) for generalized linear
   mixed models
+
+- [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
+  : R-squared for Mixed Models as Numbers
 
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
   :
@@ -69,6 +80,9 @@
 
 - [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)
   : Permutation Index
+
+- [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  : Parametric Bootstrap Tests for Mixed Models
 
 ## Semiparametric regression
 

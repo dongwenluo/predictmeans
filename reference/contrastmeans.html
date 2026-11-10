@@ -43,7 +43,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Linear Contrast Tests for a Linear Model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-contrastmeans.R" class="external-link"><code>R/doc-contrastmeans.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/contrastmeans.R" class="external-link"><code>R/contrastmeans.R</code></a></small>
       <div class="d-none name"><code>contrastmeans.Rd</code></div>
     </div>
 
@@ -83,7 +83,9 @@ The <code>modelterm</code> must be given exactly as it appears in the printed mo
 
 <dt id="arg-adj">adj<a class="anchor" aria-label="anchor" href="#arg-adj"></a></dt>
 <dd><p>Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons.
-The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY" and "fdr", in any letter case.
+The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
+"mvt", in any letter case. "sidak", "scheffe" (rank of <code>ctrmatrix</code>) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+<code>ADJUST=SIMULATE</code>; needs package <span class="pkg">mvtnorm</span>) are as in <span class="pkg">emmeans</span>.
 The default method is "none".</p></dd>
 
 
@@ -144,7 +146,6 @@ fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"cont
 <span class="r-in"><span><span class="co"># library(lme4)</span></span></span>
 <span class="r-in"><span><span class="co"># fm &lt;- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## Not run: </span></span></span>
 <span class="r-in"><span><span class="co">## The contrast has a contrast matrix as follows:</span></span></span>
 <span class="r-in"><span><span class="co">#     0:Golden Rain 0:Marvellous 0:Victory </span></span></span>
 <span class="r-in"><span><span class="co">#[1,]            -1            0         1 </span></span></span>
@@ -160,7 +161,7 @@ fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"cont
 <span class="r-in"><span><span class="co">#[2,]                0              0           0</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># 1. Enter above contrast matrix into a pop up window, then close the window</span></span></span>
-<span class="r-in"><span><span class="co"># contrastmeans(fm, "nitro:Variety")</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu">contrastmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span><span class="op">)</span></span></span>
 <span class="r-in"><span> </span></span>
 <span class="r-in"><span><span class="co"># 2. Construct the contrast matrix directly</span></span></span>
 <span class="r-in"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, </span></span>

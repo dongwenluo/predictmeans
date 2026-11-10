@@ -211,41 +211,104 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 ## Examples
 
 ``` r
-## Not run
-# library(predictmeans)
-# library(HRW) 
-# data(WarsawApts)
-# help(WarsawApts)
-# str(WarsawApts)
-# fit1 <- semireg(areaPerMzloty ~ construction.date,
-#                smoothZ=list(
-#                  grp=smZ(construction.date, k=25)
-#                ),
-#                data = WarsawApts)
-# sp_out1 <- semipred(fit1, "construction.date", "construction.date")
-# 
-# WarsawApts$district <- factor(WarsawApts$district)
-# fit2 <- semireg(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
-#                 smoothZ=list(group=smZ(construction.date, k=15,
-#                                        by = district, group=TRUE)), 
-#                 data=WarsawApts)
-# sp_out2_1 <- semipred(fit2, "district", "construction.date")
-# sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-# 
-# data(indonRespir)
-# help(indonRespir)
-# str(indonRespir)
-# fit3 <- semireg(respirInfec ~ age+vitAdefic + female + height
-#                + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-#                smoothZ=list(
-#                  grp=smZ(age)
-#                ),
-#                family = binomial,
-#                data = indonRespir)
-# sp_out3 <- semipred(fit3, "age", "age")
-# library(ggplot2)
-# sp_out3$plt+
-#   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-#   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-#   ylim(0, 0.2)
+library(predictmeans)
+if (requireNamespace("HRW", quietly = TRUE)) {
+  data(WarsawApts, package = "HRW")
+  fit1 <- semireg(areaPerMzloty ~ construction.date,
+                  smoothZ=list(
+                    grp=smZ(construction.date, k=25)
+                  ),
+                  data = WarsawApts)
+  sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+
+  WarsawApts$district <- factor(WarsawApts$district)
+  fit2 <- semireg(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
+                  smoothZ=list(group=smZ(construction.date, k=15,
+                                         by = district, group=TRUE)),
+                  data=WarsawApts)
+  sp_out2_1 <- semipred(fit2, "district", "construction.date")
+  sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
+}
+#> boundary (singular) fit: see help('isSingular')
+#> Linear mixed model fit by REML ['semerLmerTest']
+#> Formula: areaPerMzloty ~ construction.date + (1 | grp)
+#>    Data: WarsawApts
+#> REML criterion at convergence: 3544.905
+#> Random effects:
+#>  Groups   Name        Std.Dev.
+#>  grp      (Intercept)  1.191  
+#>  Residual             17.812  
+#> Number of obs: 409, groups:  grp, 27
+#> Fixed Effects:
+#>       (Intercept)  construction.date  
+#>         109.38694            0.06692  
+
+#> Warning: unable to evaluate scaled gradient
+#> Warning: Model failed to converge: degenerate  Hessian with 3 negative eigenvalues
+#>   See ?lme4::convergence and ?lme4::troubleshooting.
+#> Linear mixed model fit by REML ['semerLmerTest']
+#> Formula: areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  
+#>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)
+#>    Data: WarsawApts
+#> REML criterion at convergence: 3501.211
+#> Random effects:
+#>  Groups            Name        Std.Dev.
+#>  group.Mokotow     (Intercept)  1.0341 
+#>  group.Srodmiescie (Intercept)  2.9071 
+#>  group.Wola        (Intercept)  0.1686 
+#>  group.Zoliborz    (Intercept)  0.5913 
+#>  Residual                      16.4101 
+#> Number of obs: 409, groups:  
+#> group.Mokotow, 17; group.Srodmiescie, 17; group.Wola, 17; group.Zoliborz, 17
+#> Fixed Effects:
+#>                           (Intercept)                      construction.date  
+#>                               1.02680                                0.09596  
+#>                   districtSrodmiescie                           districtWola  
+#>                              -9.67371                                2.89971  
+#>                      districtZoliborz  construction.date:districtSrodmiescie  
+#>                              -5.35943                               -0.21369  
+#>        construction.date:districtWola     construction.date:districtZoliborz  
+#>                              -0.35515                               -0.17735  
+
+
+# \donttest{
+if (requireNamespace("HRW", quietly = TRUE)) {
+  data(indonRespir, package = "HRW")
+  fit3 <- semireg(respirInfec ~ age+vitAdefic + female + height
+                  + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
+                  smoothZ=list(
+                    grp=smZ(age)
+                  ),
+                  family = binomial,
+                  data = indonRespir)
+  sp_out3 <- semipred(fit3, "age", "age")
+  library(ggplot2)
+  print(sp_out3$plt +
+    geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
+    geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
+    coord_cartesian(ylim = c(0, 0.2)))
+}
+#> Warning: Model failed to converge with max|grad| = 0.0987597 (tol = 0.002, component 1)
+#>   See ?lme4::convergence and ?lme4::troubleshooting.
+#> Generalized linear mixed model fit by maximum likelihood (Laplace
+#>   Approximation) [glmerMod]
+#>  Family: binomial  ( logit )
+#> Formula: respirInfec ~ age + vitAdefic + female + height + stunted + visit2 +  
+#>     visit3 + visit4 + visit5 + visit6 + (1 | idnum)
+#>    Data: indonRespir
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#>  673.9676  740.1386 -323.9838  647.9676      1187 
+#> Random effects:
+#>  Groups Name        Std.Dev.
+#>  idnum  (Intercept) 0.7939  
+#>  grp    (Intercept) 0.4285  
+#> Number of obs: 1200, groups:  idnum, 275; grp, 8
+#> Fixed Effects:
+#> (Intercept)          age    vitAdefic       female       height      stunted  
+#>   -3.157601    -0.500259     0.666175    -0.505899    -0.033005     0.454812  
+#>      visit2       visit3       visit4       visit5       visit6  
+#>   -1.107218    -0.572608    -1.275791     0.473010    -0.004682  
+
+
+# }
 ```

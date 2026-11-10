@@ -39,7 +39,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Predicted Means of a Semi Paramatric Model with Covariate Variable(s)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/doc-semipred.R" class="external-link"><code>R/doc-semipred.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/semipred.R" class="external-link"><code>R/semipred.R</code></a></small>
       <div class="d-none name"><code>semipred.Rd</code></div>
     </div>
 
@@ -52,7 +52,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">semipred</span><span class="op">(</span><span class="va">semireg</span>, modelterm<span class="op">=</span><span class="cn">NULL</span>, <span class="va">covariate</span>, sm_term<span class="op">=</span><span class="cn">NULL</span>, contr<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>           covariateV<span class="op">=</span><span class="cn">NULL</span>, boundary<span class="op">=</span><span class="cn">NULL</span>, level<span class="op">=</span><span class="fl">0.05</span>, trans<span class="op">=</span><span class="cn">NULL</span>, trellis<span class="op">=</span><span class="cn">TRUE</span>, </span>
 <span>       scales<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixed"</span>, <span class="st">"free"</span>, <span class="st">"free_x"</span>, <span class="st">"free_y"</span><span class="op">)</span>,</span>
-<span>       plotord<span class="op">=</span><span class="cn">NULL</span>, ci<span class="op">=</span><span class="cn">TRUE</span>, point<span class="op">=</span><span class="cn">TRUE</span>, jitterv<span class="op">=</span><span class="fl">0</span>, threeD<span class="op">=</span><span class="cn">FALSE</span>, prt<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span>       plotord<span class="op">=</span><span class="cn">NULL</span>, ci<span class="op">=</span><span class="cn">TRUE</span>, point<span class="op">=</span><span class="cn">TRUE</span>, jitterv<span class="op">=</span><span class="fl">0</span>, threeD<span class="op">=</span><span class="cn">FALSE</span>, prt<span class="op">=</span><span class="cn">TRUE</span>,</span>
+<span>       simultaneous<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -89,7 +90,8 @@ The <code>modelterm</code> must be given exactly as it appears in <code>semireg<
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>A significant level for calculating confident interval. The default value is 0.05.</p></dd>
+<dd><p>Significance level of the two-sided confidence limits: the default 0.05 gives 95% limits (before
+version 2.0 the limits used <code>qnorm(1 - level)</code>, i.e. 90%).</p></dd>
 
 
 <dt id="arg-trans">trans<a class="anchor" aria-label="anchor" href="#arg-trans"></a></dt>
@@ -130,6 +132,13 @@ The defaults are <code>c(1, 2)</code> for two way interactions.</p></dd>
 <dt id="arg-prt">prt<a class="anchor" aria-label="anchor" href="#arg-prt"></a></dt>
 <dd><p>A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.</p></dd>
 
+
+<dt id="arg-simultaneous">simultaneous<a class="anchor" aria-label="anchor" href="#arg-simultaneous"></a></dt>
+<dd><p>If <code>TRUE</code>, simultaneous confidence bands over the whole curve(s) instead of pointwise
+limits: the critical value is the <code>1 - level</code> quantile of the largest standardised deviation over the
+predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
+FALSE.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -143,65 +152,360 @@ The defaults are <code>c(1, 2)</code> for two way interactions.</p></dd>
 
 </dl></div>
     <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), <em>Semiparametric Regression</em>, Cambridge University Press.</p>
+    </div>
+    <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Dongwen Luo, Siva Ganesh and John Koolaard</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># # Not Run</span></span></span>
-<span class="r-in"><span><span class="co"># library(predictmeans)</span></span></span>
-<span class="r-in"><span><span class="co"># data(Dialyzer, package="nlme")</span></span></span>
-<span class="r-in"><span><span class="co"># help(Dialyzer)</span></span></span>
-<span class="r-in"><span><span class="co"># str(Dialyzer)</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># library(ggplot2)</span></span></span>
-<span class="r-in"><span><span class="co"># ggplot(Dialyzer, aes(x=pressure, y=rate, col=QB)) +</span></span></span>
-<span class="r-in"><span><span class="co">#  geom_line() +</span></span></span>
-<span class="r-in"><span><span class="co">#  facet_wrap(vars(Subject))</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># fm &lt;- semireg(rate ~ pressure*QB+(pressure|Subject),</span></span></span>
-<span class="r-in"><span><span class="co">#              smoothZ=list(</span></span></span>
-<span class="r-in"><span><span class="co">#                qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)</span></span></span>
-<span class="r-in"><span><span class="co">#              ),</span></span></span>
-<span class="r-in"><span><span class="co">#              data=Dialyzer)</span></span></span>
-<span class="r-in"><span><span class="co"># str(fm$data)</span></span></span>
-<span class="r-in"><span><span class="co"># summary(fm$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># residplot(fm$semer, group="QB")</span></span></span>
-<span class="r-in"><span><span class="co"># anova(fm$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># ranova(fm$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># R2_glmm(fm$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># ap_out1 &lt;- semipred(fm, "QB", "pressure")</span></span></span>
-<span class="r-in"><span><span class="co"># str(ap_out1$pred_df)</span></span></span>
-<span class="r-in"><span><span class="co"># ap_out2 &lt;- semipred(fm, "QB", "pressure", contr=c(1,2))</span></span></span>
-<span class="r-in"><span><span class="co"># str(ap_out2$pred_df)</span></span></span>
-<span class="r-in"><span><span class="co">#</span></span></span>
-<span class="r-in"><span><span class="co"># data(sleepstudy, package="lme4")</span></span></span>
-<span class="r-in"><span><span class="co"># help(sleepstudy)</span></span></span>
-<span class="r-in"><span><span class="co"># str(sleepstudy)</span></span></span>
-<span class="r-in"><span><span class="co"># library(latticeExtra)</span></span></span>
-<span class="r-in"><span><span class="co"># xyplot(Reaction ~ Days | Subject, sleepstudy, aspect = "xy",</span></span></span>
-<span class="r-in"><span><span class="co">#       layout = c(9, 2), type = c("g", "p", "r"),</span></span></span>
-<span class="r-in"><span><span class="co">#       index.cond = function(x, y) coef(lm(y ~ x))[2],</span></span></span>
-<span class="r-in"><span><span class="co">#       xlab = "Days of sleep deprivation",</span></span></span>
-<span class="r-in"><span><span class="co">#       ylab = "Average reaction time (ms)",</span></span></span>
-<span class="r-in"><span><span class="co">#       as.table = TRUE)</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># sleep.semi &lt;- semireg(Reaction ~ Days*Subject,</span></span></span>
-<span class="r-in"><span><span class="co">#                    smoothZ=list(</span></span></span>
-<span class="r-in"><span><span class="co">#                      sub_grp=smZ(Days, by=Subject, group=TRUE)</span></span></span>
-<span class="r-in"><span><span class="co">#                    ),</span></span></span>
-<span class="r-in"><span><span class="co">#                    data=sleepstudy)</span></span></span>
-<span class="r-in"><span><span class="co"># residplot(sleep.semi$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># summary(sleep.semi$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># anova(sleep.semi$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># ranova(sleep.semi$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># R2_glmm(sleep.semi$semer)</span></span></span>
-<span class="r-in"><span><span class="co"># </span></span></span>
-<span class="r-in"><span><span class="co"># predout1 &lt;- semipred(sleep.semi, "Subject", "Days")</span></span></span>
-<span class="r-in"><span><span class="co"># str(predout1$pred_df)</span></span></span>
-<span class="r-in"><span><span class="co"># predout2 &lt;- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))</span></span></span>
-<span class="r-in"><span><span class="co"># str(predout2$pred_df)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Dialyzer</span>, package<span class="op">=</span><span class="st">"nlme"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">Dialyzer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Classes ‘nfnGroupedData’, ‘nfGroupedData’, ‘groupedData’ and 'data.frame':	140 obs. of  5 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Subject : Ord.factor w/ 20 levels "10"&lt;"8"&lt;"2"&lt;"6"&lt;..: 9 9 9 9 9 9 9 3 3 3 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ QB      : Factor w/ 2 levels "200","300": 1 1 1 1 1 1 1 1 1 1 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ pressure: num  0.24 0.505 0.995 1.485 2.02 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ rate    : num  0.645 20.115 38.46 44.985 51.765 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ index   : num  1 2 3 4 5 6 7 1 2 3 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "formula")=Class 'formula'  language rate ~ pressure | Subject</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "labels")=List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ x: chr "Transmembrane pressure"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ y: chr "Ultrafiltration rate"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "units")=List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ x: chr "(dmHg)"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ y: chr "(ml/hr)"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "outer")=Class 'formula'  language ~QB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .. ..- attr(*, ".Environment")=&lt;environment: R_GlobalEnv&gt; </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "FUN")=function (x)  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..- attr(*, "source")= chr "function (x) max(x, na.rm = TRUE)"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "order.groups")= logi TRUE</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">Dialyzer</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">pressure</span>, y<span class="op">=</span><span class="va">rate</span>, col<span class="op">=</span><span class="va">QB</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/vars.html" class="external-link">vars</a></span><span class="op">(</span><span class="va">Subject</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="va">pressure</span><span class="op">*</span><span class="va">QB</span><span class="op">+</span><span class="op">(</span><span class="va">pressure</span><span class="op">|</span><span class="va">Subject</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>              smoothZ<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>                qb_grp<span class="op">=</span><span class="fu"><a href="smZ.html">smZ</a></span><span class="op">(</span><span class="va">pressure</span>, k<span class="op">=</span><span class="fl">4</span>, by<span class="op">=</span><span class="va">QB</span>, group<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>              <span class="op">)</span>,</span></span>
+<span class="r-in"><span>              data<span class="op">=</span><span class="va">Dialyzer</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerLmerTest']</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula: rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | qb_grp.300)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Data: Dialyzer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 711.2453</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups     Name        Std.Dev. Corr </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Subject    (Intercept)  2.583        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             pressure     1.554   0.56 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  qb_grp.200 (Intercept) 27.493        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  qb_grp.300 (Intercept) 25.482        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                2.197        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 140, groups:  Subject, 20; qb_grp.200, 6; qb_grp.300, 6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    (Intercept)        pressure           QB300  pressure:QB300  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         30.908          12.829           7.424           7.131  </span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	140 obs. of  6 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ rate      : num  0.645 20.115 38.46 44.985 51.765 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ pressure  : num  -1.2975 -1.0325 -0.5425 -0.0525 0.4825 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ QB        : Factor w/ 2 levels "200","300": 1 1 1 1 1 1 1 1 1 1 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Subject   : Ord.factor w/ 20 levels "10"&lt;"8"&lt;"2"&lt;"6"&lt;..: 9 9 9 9 9 9 9 3 3 3 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ qb_grp.200: Factor w/ 6 levels "1","2","3","4",..: 1 2 3 4 5 6 1 2 3 4 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ qb_grp.300: Factor w/ 6 levels "1","2","3","4",..: 1 2 3 4 5 6 1 2 3 4 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "pressure_mean")= Named num 1.54</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..- attr(*, "names")= chr "pressure"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "numeric_var")= chr "pressure"</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML. t-tests use Satterthwaite's method [</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> semerLmerTest]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula: rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | qb_grp.300)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Data: Dialyzer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 711.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Scaled residuals: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Min       1Q   Median       3Q      Max </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -2.51549 -0.47839 -0.00357  0.46801  2.60037 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups     Name        Variance Std.Dev. Corr </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Subject    (Intercept)   6.670   2.583        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             pressure      2.414   1.554   0.56 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  qb_grp.200 (Intercept) 755.858  27.493        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  qb_grp.300 (Intercept) 649.313  25.482        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                 4.828   2.197        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 140, groups:  Subject, 20; qb_grp.200, 6; qb_grp.300, 6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                Estimate Std. Error       df t value Pr(&gt;|t|)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)    30.90817    0.86537  0.03268  35.717    0.823    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure       12.82922    0.57208 23.30987  22.426  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> QB300           7.42374    1.22522 18.41492   6.059 9.06e-06 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure:QB300  7.13124    0.81170 23.61651   8.786 6.63e-09 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Correlation of Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             (Intr) pressr QB300 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure     0.462              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> QB300       -0.706 -0.326       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> prssr:QB300 -0.325 -0.705  0.455</span>
+<span class="r-in"><span><span class="fu"><a href="residplot.html">residplot</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span>, group<span class="op">=</span><span class="st">"QB"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Type III Analysis of Variance Table with Satterthwaite's method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             Sum Sq Mean Sq NumDF  DenDF  F value    Pr(&gt;F)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure    7878.1  7878.1     1 23.617 1631.860 &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> QB           177.2   177.2     1 18.415   36.713 9.057e-06 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure:QB  372.6   372.6     1 23.616   77.186 6.629e-09 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">ranova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ANOVA-like table for random-effects: Single term deletions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) + (1 | qb_grp.300)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                  npar  logLik     AIC    LRT Df Pr(&gt;Chisq)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;none&gt;                             10 -355.62  731.25                         </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pressure in (pressure | Subject)    8 -505.22 1026.45 299.20  2  &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (1 | qb_grp.200)                    9 -476.38  970.77 241.52  1  &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (1 | qb_grp.300)                    9 -468.27  954.54 225.29  1  &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-in"><span><span class="fu"><a href="R2_glmm.html">R2_glmm</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # Adjusted R2 for Mixed Models</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            Total            Fixed           Random          Subject </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         "98.54%"         "80.31%"         "18.23%"          "1.93%" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject.pressure       qb_grp.200       qb_grp.300 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          "0.65%"          "8.47%"          "7.17%" </span>
+<span class="r-in"><span><span class="va">ap_out1</span> <span class="op">&lt;-</span> <span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">ap_out1</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	230 obs. of  6 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ QB      : Factor w/ 2 levels "200","300": 1 1 1 1 1 1 1 1 1 1 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ pressure: num  0.235 0.24 0.245 0.25 0.255 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ SE      : num  1.038 1.022 1.008 0.995 0.983 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ rate    : num  2.72 3.03 3.34 3.65 3.96 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ LL      : num  0.685 1.026 1.364 1.699 2.032 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ UL      : num  4.76 5.03 5.32 5.6 5.89 ...</span>
+<span class="r-in"><span><span class="va">ap_out2</span> <span class="op">&lt;-</span> <span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, contr<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-4.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">ap_out2</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	115 obs. of  5 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ pressure: num  0.235 0.24 0.245 0.25 0.255 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ rate    : num  1.045 1.03 1.015 1 0.984 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ LL      : num  -1.95 -1.91 -1.88 -1.85 -1.83 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ UL      : num  4.04 3.97 3.91 3.85 3.8 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ SE_contr: num  1.53 1.5 1.48 1.46 1.44 ...</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">sleepstudy</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	180 obs. of  3 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Reaction: num  250 259 251 321 357 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Days    : num  0 1 2 3 4 5 6 7 8 9 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Subject : Factor w/ 18 levels "308","309","310",..: 1 1 1 1 1 1 1 1 1 1 ...</span>
+<span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">sleepstudy</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">Days</span>, y<span class="op">=</span><span class="va">Reaction</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method<span class="op">=</span><span class="st">"lm"</span>, formula<span class="op">=</span><span class="va">y</span><span class="op">~</span><span class="va">x</span>, se<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/vars.html" class="external-link">vars</a></span><span class="op">(</span><span class="va">Subject</span><span class="op">)</span>, nrow<span class="op">=</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x<span class="op">=</span><span class="st">"Days of sleep deprivation"</span>, y<span class="op">=</span><span class="st">"Average reaction time (ms)"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-5.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">sleep.semi</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span><span class="op">*</span><span class="va">Subject</span>,</span></span>
+<span class="r-in"><span>                      smoothZ<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>                        sub_grp<span class="op">=</span><span class="fu"><a href="smZ.html">smZ</a></span><span class="op">(</span><span class="va">Days</span>, by<span class="op">=</span><span class="va">Subject</span>, group<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                      <span class="op">)</span>,</span></span>
+<span class="r-in"><span>                      data<span class="op">=</span><span class="va">sleepstudy</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerLmerTest']</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula: Reaction ~ Days * Subject + (1 | sub_grp.308) + (1 | sub_grp.309) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.310) + (1 | sub_grp.330) + (1 | sub_grp.331) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.332) + (1 | sub_grp.333) + (1 | sub_grp.334) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.335) + (1 | sub_grp.337) + (1 | sub_grp.349) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.350) + (1 | sub_grp.351) + (1 | sub_grp.352) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.369) + (1 | sub_grp.370) + (1 | sub_grp.371) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.372)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Data: sleepstudy</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 1402.094</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups      Name        Std.Dev. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.308 (Intercept) 8.769e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.309 (Intercept) 1.953e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.310 (Intercept) 4.087e-07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.330 (Intercept) 8.867e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.331 (Intercept) 8.598e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.332 (Intercept) 5.321e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.333 (Intercept) 1.230e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.334 (Intercept) 8.332e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.335 (Intercept) 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.337 (Intercept) 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.349 (Intercept) 5.746e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.350 (Intercept) 1.773e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.351 (Intercept) 7.290e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.352 (Intercept) 1.655e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.369 (Intercept) 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.370 (Intercept) 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.371 (Intercept) 1.266e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.372 (Intercept) 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                1.708e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 180, groups:  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (Intercept)             Days       Subject309       Subject310  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         343.816           22.748         -128.226         -112.815  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Subject330       Subject331       Subject332       Subject333  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -36.740          -33.231          -47.494          -27.658  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Subject334       Subject335       Subject337       Subject349  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -45.052          -93.746           31.905          -65.836  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Subject350       Subject351       Subject352       Subject369  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -28.624          -52.067          -10.448          -37.782  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Subject370       Subject371       Subject372  Days:Subject309  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -52.115          -44.565          -25.930          -20.490  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject310  Days:Subject330  Days:Subject331  Days:Subject332  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -16.633          -19.741          -17.181          -14.881  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject333  Days:Subject334  Days:Subject335  Days:Subject337  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -13.606          -10.598          -25.629           -3.722  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject349  Days:Subject350  Days:Subject351  Days:Subject352  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          -9.247           -4.093          -16.119           -8.505  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject369  Days:Subject370  Days:Subject371  Days:Subject372  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         -11.400           -4.692          -13.129          -11.450  </span>
+<span class="r-in"><span><span class="fu"><a href="residplot.html">residplot</a></span><span class="op">(</span><span class="va">sleep.semi</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-6.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sleep.semi</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML. t-tests use Satterthwaite's method [</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> semerLmerTest]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula: Reaction ~ Days * Subject + (1 | sub_grp.308) + (1 | sub_grp.309) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.310) + (1 | sub_grp.330) + (1 | sub_grp.331) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.332) + (1 | sub_grp.333) + (1 | sub_grp.334) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.335) + (1 | sub_grp.337) + (1 | sub_grp.349) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.350) + (1 | sub_grp.351) + (1 | sub_grp.352) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.369) + (1 | sub_grp.370) + (1 | sub_grp.371) +  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | sub_grp.372)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Data: sleepstudy</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 1402.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Scaled residuals: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Min      1Q  Median      3Q     Max </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -2.5308 -0.3655  0.0058  0.4992  3.3329 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Groups      Name        Variance  Std.Dev. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.308 (Intercept) 7.689e+03 8.769e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.309 (Intercept) 3.814e+00 1.953e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.310 (Intercept) 1.670e-13 4.087e-07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.330 (Intercept) 7.863e+01 8.867e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.331 (Intercept) 7.393e+01 8.598e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.332 (Intercept) 2.831e+03 5.321e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.333 (Intercept) 1.514e-12 1.230e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.334 (Intercept) 6.942e+01 8.332e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.335 (Intercept) 0.000e+00 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.337 (Intercept) 0.000e+00 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.349 (Intercept) 3.302e+01 5.746e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.350 (Intercept) 3.142e+02 1.773e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.351 (Intercept) 5.314e+01 7.290e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.352 (Intercept) 2.739e+02 1.655e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.369 (Intercept) 0.000e+00 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.370 (Intercept) 0.000e+00 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.371 (Intercept) 1.602e+02 1.266e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  sub_grp.372 (Intercept) 0.000e+00 0.000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                2.918e+02 1.708e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 180, groups:  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate Std. Error        df t value Pr(&gt;|t|)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)      343.8165     5.6885    0.1911  60.440 0.346112    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days              22.7478     1.9581  457.2035  11.617  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject309      -128.2262     7.8715  440.5477 -16.290  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject310      -112.8152     7.8444  434.0057 -14.382  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject330       -36.7402     7.9577  460.0052  -4.617 5.06e-06 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject331       -33.2308     7.9565  468.6450  -4.177 3.53e-05 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject332       -47.4940     8.0120  472.8520  -5.928 5.92e-09 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject333       -27.6582     7.8444  434.0057  -3.526 0.000467 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject334       -45.0516     7.9552  459.4254  -5.663 2.62e-08 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject335       -93.7464     7.8444  442.7850 -11.951  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject337        31.9045     7.8444  434.5141   4.067 5.65e-05 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject349       -65.8362     7.9366  454.7674  -8.295 1.24e-15 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject350       -28.6239     7.9774  464.5716  -3.588 0.000368 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject351       -52.0672     7.9493  466.9362  -6.550 1.52e-10 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject352       -10.4484     7.9759  464.3781  -1.310 0.190843    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject369       -37.7818     7.8444  434.0057  -4.816 2.02e-06 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject370       -52.1147     7.8444  434.3556  -6.644 9.19e-11 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject371       -44.5647     7.9693  471.6561  -5.592 3.81e-08 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject372       -25.9304     7.8444  434.5141  -3.306 0.001026 ** </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject309  -20.4897     2.7156  424.2917  -7.545 2.78e-13 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject310  -16.6329     2.7149  415.7126  -6.127 2.08e-09 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject330  -19.7413     2.7249  430.1181  -7.245 2.02e-12 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject331  -17.1810     2.7245  438.5647  -6.306 7.00e-10 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject332  -14.8812     2.7522  447.6082  -5.407 1.04e-07 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject333  -13.6057     2.7149  415.7126  -5.012 8.00e-07 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject334  -10.5976     2.7242  429.6364  -3.890 0.000116 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject335  -25.6288     2.7149  432.3665  -9.440  &lt; 2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject337   -3.7218     2.7149  423.8086  -1.371 0.171134    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject349   -9.2473     2.7203  419.0531  -3.399 0.000740 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject350   -4.0931     2.7342  436.0366  -1.497 0.135123    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject351  -16.1188     2.7226  437.3315  -5.920 6.50e-09 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject352   -8.5054     2.7333  435.4524  -3.112 0.001982 ** </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject369  -11.3997     2.7149  415.7126  -4.199 3.28e-05 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject370   -4.6916     2.7149  423.8022  -1.728 0.084695 .  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject371  -13.1288     2.7297  441.8650  -4.810 2.08e-06 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject372  -11.4497     2.7149  423.8086  -4.217 3.02e-05 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Correlation matrix not shown by default, as p = 36 &gt; 12.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Use print(x, correlation=TRUE)  or</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>     vcov(x)        if you need it</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">sleep.semi</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Type III Analysis of Variance Table with Satterthwaite's method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Sum Sq Mean Sq NumDF  DenDF F value    Pr(&gt;F)    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days         160019  160019     1 385.67 548.473 &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject      243328   14313    17 422.34  49.060 &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Days:Subject  60104    3536    17 401.98  12.118 &lt; 2.2e-16 ***</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
+<span class="r-in"><span><span class="fu"><a href="R2_glmm.html">R2_glmm</a></span><span class="op">(</span><span class="va">sleep.semi</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # Adjusted R2 for Mixed Models</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Total       Fixed      Random sub_grp.308 sub_grp.309 sub_grp.310 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    "93.42%"    "58.07%"    "35.36%"    "23.48%"     "0.01%"        "0%" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_grp.330 sub_grp.331 sub_grp.332 sub_grp.333 sub_grp.334 sub_grp.335 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     "0.24%"     "0.23%"     "8.64%"        "0%"     "0.21%"        "0%" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_grp.337 sub_grp.349 sub_grp.350 sub_grp.351 sub_grp.352 sub_grp.369 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        "0%"      "0.1%"     "0.96%"     "0.16%"     "0.84%"        "0%" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sub_grp.370 sub_grp.371 sub_grp.372 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        "0%"     "0.49%"        "0%" </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">predout1</span> <span class="op">&lt;-</span> <span class="fu">semipred</span><span class="op">(</span><span class="va">sleep.semi</span>, <span class="st">"Subject"</span>, <span class="st">"Days"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-7.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">predout1</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	1044 obs. of  6 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Subject : Factor w/ 18 levels "308","309","310",..: 1 1 1 1 1 1 1 1 1 1 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Days    : num  0 0.184 0.367 0.551 0.735 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ SE      : num  16.7 15 14.8 14.7 14.4 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Reaction: num  251 252 252 251 251 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ LL      : num  219 223 223 223 222 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ UL      : num  284 282 281 280 279 ...</span>
+<span class="r-in"><span><span class="va">predout2</span> <span class="op">&lt;-</span> <span class="fu">semipred</span><span class="op">(</span><span class="va">sleep.semi</span>, <span class="st">"Subject"</span>, <span class="st">"Days"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="semipred-8.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">predout2</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	58 obs. of  5 variables:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Days    : num  0 0.184 0.367 0.551 0.735 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ Reaction: num  -18.48 -17.43 -15.32 -12.42 -8.98 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ LL      : num  -64.2 -58 -54.4 -50.8 -46.9 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ UL      : num  27.2 23.1 23.8 26 28.9 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ SE_contr: num  23.3 20.7 20 19.6 19.3 ...</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

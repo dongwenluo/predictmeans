@@ -69,7 +69,6 @@ df_term(fm, "nitro:Variety")
 #>        16.08186        16.08186        16.08186        16.08186        16.08186 
 #>  0.6:Marvellous     0.6:Victory 
 #>        16.08186        16.08186 
-## Not run: 
 ## The contrast has a contrast matrix as follows:
 #     0:Golden Rain 0:Marvellous 0:Victory 
 #[1,]            -1            0         1 
@@ -85,7 +84,7 @@ df_term(fm, "nitro:Variety")
 #[2,]                0              0           0
 
 # 1. Enter above contrast matrix into a pop up window, then close the window
-# df_term(fm, "nitro:Variety")
+if (interactive()) df_term(fm, "nitro:Variety")
  
 # 2. Construct the contrast matrix directly
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 

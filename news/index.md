@@ -28,6 +28,19 @@
 - `glmer` Poisson models now give back-transformed means as counts
   (whole numbers, never below zero), as `glm` and `glmmTMB` Poisson
   models already did.
+- [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  limits are now two-sided at the stated level: the default
+  `level = 0.05` gives 95% limits. Earlier versions used
+  `qnorm(1 - level)`, i.e. 90% limits with the default; `level = 0.1`
+  gives those limits.
+- `predictmeans(letterCI = TRUE)` now works with `atvar`: the CI-overlap
+  letters compare the means within each `atvar` group (as in
+  predictmeans 1.1.2). Before, `atvar` was dropped and the letters
+  compared all means. The note under the mean table now says the letters
+  come from the overlap of, e.g., 83.4% CIs, and gives the approximate
+  test level (about 0.05), instead of “significant level ‘0.166’”.
+  `level` keeps its meaning (it sets the CIs). With two `atvar` factors
+  the note is one line (“at each level of A:B”) instead of two.
 
 ### Stable result tables
 
@@ -45,6 +58,18 @@
   - `settings`. They are checked against emmeans in the tests. The
     legacy slots and the printed output are unchanged, and the result
     has class `c("predictmeans", "pdmlist")`.
+- [`coef()`](https://rdrr.io/r/stats/coef.html) and
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  result give the means (model scale) and their covariance matrix,
+  Kenward-Roger adjusted when the means are (equal to emmeans’
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html)). Any contrast of the
+  means can then be tested with `multcomp::glht()` or
+  [`marginaleffects::hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html),
+  e.g. `hypotheses(pm, hypothesis = "pairwise")` (marginaleffects is in
+  Suggests; predictmeans registers its `get_coef`/`set_coef`/`get_vcov`
+  methods; recent marginaleffects versions also need
+  `options(marginaleffects_model_classes = "predictmeans")`).
 
 ### Plots and summaries from the result tables
 
@@ -111,6 +136,103 @@
   - gains `weights`.
 
 ### New options
+
+- New
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md):
+  parametric bootstrap p-values for the terms and coefficients of `lmer`
+  and `glmer` models, simulating from the model without its fixed
+  effects (global null) and refitting. Its result can be passed to
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  as `permlist`, giving bootstrap p-values for pairwise comparisons and
+  contrasts (`p.method` `"bootstrap"` in the `pairs` table).
+
+- `semipred(simultaneous = TRUE)` gives simultaneous confidence bands
+  over the whole curve(s), and over difference curves with `contr`
+  (Ruppert, Wand and Carroll): the critical value is the quantile of the
+  largest standardised deviation from 10,000 draws, with a fixed seed so
+  results repeat (the user’s random numbers are left alone).
+
+- [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  accepts
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits: the means of a factor term include the smooth terms (fixed part
+  plus the smooth’s random effects, as
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
+  at the covariates’ means or at named `covariate` values, with pairwise
+  comparisons (normal-based, any `adj`), letters, and
+  [`coef()`](https://rdrr.io/r/stats/coef.html)/[`vcov()`](https://rdrr.io/r/stats/vcov.html).
+  The result holds the `means`, `pairs` and `settings` tables.
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)’s
+  design step is now an internal function shared by both (its output is
+  unchanged).
+
+- New
+  [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md):
+  R-squared of a mixed model as numbers (class `"pm_r2"`, printed as
+  percentages). `method = "piepho"` (default) gives the values of
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  as proportions; `method = "nakagawa"` gives Nakagawa and Schielzeth’s
+  marginal and conditional R-squared, with random slopes as Johnson
+  (2014), for gaussian and binomial models (sleepstudy: 0.279 and 0.799,
+  as `performance::r2_nakagawa()`).
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  is unchanged.
+
+- New
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md):
+  the slope of a numeric covariate within each level of a factor term,
+  with SEs, df, confidence limits and tests, and pairwise comparisons of
+  the slopes (any `adj`). Equal to emmeans’ `emtrends()` (Kenward-Roger
+  for `lmer`); for [`poly()`](https://rdrr.io/r/stats/poly.html) or
+  splines the slope is taken at `at` (default: the covariate’s mean) by
+  a central difference.
+
+- Response scale: when the means are back-transformed (non-identity link
+  or `trans`), the `means` table has `response.std.error` (delta method,
+  equal to emmeans with `type = "response"`). For a log link or
+  `trans = exp`, the `pairs` table has the ratio of the means with its
+  confidence limits (`ratio`, `ratio.conf.low`, `ratio.conf.high`); for
+  a logit link, the odds ratio (`odds.ratio`, …). The limits use the
+  same df as the differences.
+
+- New
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md):
+  F tests of sets of contrasts among the means of a term. With `by`, the
+  means are compared within each level of the `by` factor(s), as SAS
+  `SLICE` (e.g. nitrogen within each variety); with `ctrmatrix`, any set
+  of contrasts is tested together. For `lmer`: the Kenward-Roger F test
+  equal to
+  [`pbkrtest::KRmodcomp()`](https://rdrr.io/pkg/pbkrtest/man/kr__modcomp.html),
+  or Satterthwaite equal to `lmerTest::contest(joint = TRUE)`, or
+  containment df; nlme df for `lme`; residual df otherwise.
+
+- New
+  [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md)
+  builds the standard families of contrasts among the means of a term
+  for
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md):
+  `"pairwise"`, `"revpairwise"`, `"trt.vs.ctrl"` (Dunnett; exact with
+  `adj = "mvt"`), `"consec"`, `"poly"` (integer orthogonal polynomials),
+  `"eff"` and `"del.eff"`, optionally within each level of `by` factors.
+  Coefficients and names are emmeans’; results through
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  equal emmeans’ `contrast()`.
+
+- New `adj` methods in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md):
+  `"sidak"`, `"scheffe"` and `"mvt"`, as in emmeans (equal to emmeans’
+  p-values for sidak and scheffe; within 1e-3 for mvt). `"mvt"` is the
+  single-step multivariate t adjustment, the exact counterpart of SAS
+  `ADJUST=SIMULATE`; it needs mvtnorm (Suggests), uses a fixed seed so
+  results repeat, and leaves the user’s random numbers as they were. The
+  Scheffe rank is the number of means - 1 for pairs (within each `atvar`
+  group) and the rank of `ctrmatrix` in
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md).
+  With `permlist` only `"sidak"` of the three is allowed.
 
 - [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
@@ -291,6 +413,12 @@
 - [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   without `ctrmatrix` only opens the contrast editor in an interactive
   session.
+- [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  failed (“replacement has 0 rows”) on
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits whose data had a numeric variable not in the prediction grid,
+  such as a numeric grouping id in `(1 | idnum)`, because it tried to
+  undo the centring for it in the grid too.
 
 ### Speed
 
@@ -327,6 +455,19 @@
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   use a sparse Cholesky factor and triangular solves instead of a dense
   n x n inverse.
+
+- Letter groups (`multcompLetters()`, used for all letters) are much
+  faster for many means, with identical letters (checked on 375 random
+  cases): 100 means 4.1 s -\> 0.3 s; 200 means 103 s -\> 2.1 s. The
+  “absorb” step now only checks the letter columns that changed.
+
+- [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  on `lmer` models takes the t values of each refit from the covariance
+  matrix it already has, instead of calling
+  [`summary()`](https://rdrr.io/r/base/summary.html), which computed it
+  again: about 15-20% faster (300 permutations of the Oats split-plot,
+  type III: 4.3 s -\> 3.5 s), with identical results. The nine copies of
+  the per-refit code are now one internal function.
 
 - [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
   computes its traces without n x n matrices. For n = 4,000 it goes from
@@ -424,6 +565,24 @@
   two `atvar` factors, or empty groups). This came from 1.x. P-values
   and letters are now matched to groups and levels by name.
 
+- The examples of
+  [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+  [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md),
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+  and the `lmer` example of
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
+  run again (they were commented out). Permutation examples use 99
+  permutations on one core; slow parts are in `\donttest{}`, and
+  examples with HRW data run only when HRW is installed. The
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  example no longer passes `resp_scale`, which only
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  has; the `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+
 - Three vignettes: “Getting started with predictmeans”, “Adjusted R² for
   generalized linear mixed models” and “Migrating from predictmeans
   1.x”.
@@ -447,8 +606,19 @@
 
 ### Internal
 
-- Help pages are now written with roxygen2: the sources are the
-  `R/doc-*.R` files, and `man/` is generated with
+- The confidence-interval plot uses `geom_errorbar(orientation = "y")`
+  instead of
+  [`geom_errorbarh()`](https://ggplot2.tidyverse.org/reference/geom_linerange.html),
+  which ggplot2 4.0 deprecates; the plot is unchanged.
+
+- `1:length(x)`, `1:nrow(x)` and `1:ncol(x)` are now `seq_along(x)` /
+  [`seq_len()`](https://rdrr.io/r/base/seq.html) throughout (idea from
+  James Curran’s code in 1.1.2); results are unchanged, and empty inputs
+  no longer loop over `c(1, 0)`.
+
+- Help pages are now written with roxygen2: each page’s source is the
+  block above its function (data sets in `R/data.R`, the package page in
+  `R/predictmeans-package.R`), and `man/` is generated with
   `roxygen2::roxygenise(roclets = "rd")`. NAMESPACE is still maintained
   by hand. The rendered pages are unchanged.
 

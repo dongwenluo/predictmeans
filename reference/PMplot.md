@@ -75,7 +75,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 
 
-#> `height` was translated to `width`.
 
   PMplot(predictout$p_valueMatrix)
 ```
