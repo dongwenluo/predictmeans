@@ -54,6 +54,40 @@ vec2mat2 <- function (x, sep = "-")
   x2
 }
 
+## The "absorb" step of the insert-absorb letter algorithm (Piepho 2004), as
+## in multcompView: while a column of the letter matrix A is contained in
+## another, drop it, taking the pairs of columns (i < j) in order and checking
+## j-in-i before i-in-j. multcompView rechecks every pair after each drop. Here
+## only pairs with a 'changed' column are checked: the other columns came out
+## of the previous absorb, so none of them is contained in another, and a
+## column that only lost rows can't come to contain one. Same drops in the
+## same order, so the same letters; 200 means take seconds instead of minutes.
+pm_absorb <- function(A, changed) {
+  repeat {
+    k <- ncol(A)
+    ch <- which(changed)
+    if (k < 2 || length(ch) == 0) return(A)
+    cs <- colSums(A)
+    S <- crossprod(A + 0, A[, ch, drop = FALSE] + 0)   # S[i, t]: rows in both column i and column ch[t]
+    i <- rep(seq_len(k), length(ch))
+    cc <- rep(ch, each = k)
+    s <- as.vector(S)
+    ok <- i != cc
+    c_in_i <- ok & s == cs[cc]                        # column cc within column i
+    i_in_c <- ok & s == cs[i]                         # column i within column cc
+    hit <- which(c_in_i | i_in_c)
+    if (length(hit) == 0) return(A)
+    p <- pmin(i, cc)[hit]
+    q <- pmax(i, cc)[hit]
+    first <- hit[order(p, q)[1]]
+    pq <- c(min(i[first], cc[first]), max(i[first], cc[first]))
+    q_in_p <- if (cc[first] == pq[2]) c_in_i[first] else i_in_c[first]
+    drop <- if (q_in_p) pq[2] else pq[1]
+    A <- A[, -drop, drop = FALSE]
+    changed <- changed[-drop]
+  }
+}
+
 multcompLetters <- function (x, compare = "<", threshold = 0.05,   # function from package 'multcompView'
                              Letters = c(letters, LETTERS, "."), reversed = FALSE)
 {
@@ -99,24 +133,6 @@ multcompLetters <- function (x, compare = "<", threshold = 0.05,   # function fr
     return(Ltrs)
   }
   distinct.pairs <- x2[x, , drop = FALSE]
-  absorb <- function(A.) {
-    k. <- dim(A.)[2]
-    if (k. > 1) {
-      for (i. in 1:(k. - 1)) for (j. in (i. + 1):k.) {
-        if (all(A.[A.[, j.], i.])) {
-          A. <- A.[, -j., drop = FALSE]
-          return(absorb(A.))
-        }
-        else {
-          if (all(A.[A.[, i.], j.])) {
-            A. <- A.[, -i., drop = FALSE]
-            return(absorb(A.))
-          }
-        }
-      }
-    }
-    A.
-  }
   for (i in 1:k2) {
     dpi <- distinct.pairs[i, ]
     ijCols <- (LetMat[dpi[1], ] & LetMat[dpi[2], ])
@@ -125,7 +141,7 @@ multcompLetters <- function (x, compare = "<", threshold = 0.05,   # function fr
       A1[dpi[1], ] <- FALSE
       LetMat[dpi[2], ijCols] <- FALSE
       LetMat <- cbind(LetMat, A1)
-      LetMat <- absorb(LetMat)
+      LetMat <- pm_absorb(LetMat, c(ijCols, rep(TRUE, ncol(A1))))
     }
   }
   sortCols <- function(B) {
@@ -147,7 +163,7 @@ multcompLetters <- function (x, compare = "<", threshold = 0.05,   # function fr
   }
   LetMat. <- sortCols(LetMat)
   if (reversed) {
-    LetMat. <- LetMat.[, rev(1:ncol(LetMat.))]
+    LetMat. <- LetMat.[, rev(seq_len(ncol(LetMat.)))]
   }
   k.ltrs <- dim(LetMat.)[2]
   makeLtrs <- function(kl, ltrs = Letters) {
@@ -332,6 +348,60 @@ doolittle <- function(x, eps = 1e-6) {
 
 ########################
 
+#' Calculate degree of freedom of a modelterm (contrast) for a lmer model
+#'
+#' @description
+#' Calculate the degree of freedom of a modelterm (contrast) for a \code{lmer} model 
+#'   using "Kenward-Roger" or "Satterthwaite" method.
+#' @usage
+#' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL)
+#' @param model Model object returned by \code{lmer}.
+#' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
+#'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
+#' @param covariate Name (in "quotes") of one the covariate variables in the \code{model}.
+#' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} isn't NULL, the programe will ignore modelterm 
+#'   and calculate degree of freedom for the \code{ctrmatrix}.
+#' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
+#' @param type Name (in "quote") for indicating a method for claculating degree of freedom. 
+#'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
+#'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
+#'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row.
+#' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
+#'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
+#'   for the same model.
+#' @author
+#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' @examples
+#' library(predictmeans)
+#' # ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
+#' Oats$nitro <- factor(Oats$nitro)
+#' fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
+#' df_term(fm, "nitro:Variety")
+#' ## The contrast has a contrast matrix as follows:
+#' #     0:Golden Rain 0:Marvellous 0:Victory 
+#' #[1,]            -1            0         1 
+#' #[2,]             0            0         1 
+#' #     0.2:Golden Rain 0.2:Marvellous 0.2:Victory 
+#' #[1,]               0              0           0 
+#' #[2,]               0              0           0 
+#' #     0.4:Golden Rain  0.4:Marvellous 0.4:Victory
+#' #[1,]               0               0           0
+#' #[2,]               0              -1           0
+#' #      0.6:Golden Rain 0.6:Marvellous 0.6:Victory
+#' #[1,]                0              0           0
+#' #[2,]                0              0           0
+#'
+#' # 1. Enter above contrast matrix into a pop up window, then close the window
+#' if (interactive()) df_term(fm, "nitro:Variety")
+#'  
+#' # 2. Construct the contrast matrix directly
+#' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
+#'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
+#' df_term(fm, ctrmatrix=cm, type="Satterthwaite")
+#' @name df_term
+NULL
+
 df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
@@ -441,7 +511,7 @@ as_lmerModLT <- function(model, devfun, tol=1e-8) {
   res@vcov_varpar <- 2 * h_inv # vcov(varpar)
   # Compute Jacobian of cov(beta) for each varpar and save in list:
   Jac <- numDeriv::jacobian(func=get_covbeta, x=varpar_opt, devfun=devfun)
-  res@Jac_list <- lapply(1:ncol(Jac), function(i)
+  res@Jac_list <- lapply(seq_len(ncol(Jac)), function(i)
     array(Jac[, i], dim=rep(length(res@beta), 2))) # k-list of jacobian matrices
   res
 }
@@ -957,7 +1027,7 @@ Ztps <- function(x, k, knots=NULL, range.x=NULL) {
     num.row <- nrow(r)
     num.col <- ncol(r)
     r <- as.vector(r)
-    nzi <- (1:length(r))[r!=0]
+    nzi <- (seq_along(r))[r!=0]
     ans <- rep(0,length(r))
     if ((d+1)%%2!=0) {
       ans[nzi] <- (abs(r[nzi]))^(2*m-d)*log(abs(r[nzi])) # d is even
@@ -1032,14 +1102,14 @@ Ztps <- function(x, k, knots=NULL, range.x=NULL) {
 f_loj_krc <- function(x, y, by.x, by.y) {
 
   # save row id
-  x.temp <- x; x.temp$temp.id <- 1:nrow(x.temp);
+  x.temp <- x; x.temp$temp.id <- seq_len(nrow(x.temp));
 
   # each column names
   x.cn <- colnames(x); y.cn <- colnames(y)
 
   # replace column names of y with same names of x
   # to avoid duplicate fields
-  for(i in 1:length(by.y)) {
+  for(i in seq_along(by.y)) {
     colnames(y)[which(y.cn == by.y[i])] <- by.x[i]
   }
   by.y <- by.x # since two fields are the same now
@@ -1066,6 +1136,33 @@ f_loj_krc <- function(x, y, by.x, by.y) {
 ## LL -- Lower Limit of CI
 ## UL -- Upper Limit of CI
 ## trt_n -- names of treatment
+
+#' Multiple Comparisons Based on the Confidence Intervals
+#'
+#' @description
+#' This function produces letter representations for a multiple comparison test by analyzing the confidence intervals associated with the mean values of different treatments. In particular, if the confidence intervals of two treatments overlap, it indicates that there is no significant difference between them. Conversely, if the confidence intervals do not overlap, it indicates that the treatments are significantly different from each other.
+#' @usage
+#' ci_mcp(LL, UL, trt_n=NULL)
+#' @param LL Lower limits of treatments' confidence interval.
+#' @param UL Upper limits of treatments' confidence interval.
+#' @param trt_n Treatments' names.
+#' @references
+#' Vanessa, C. (05 October 2022),
+#' 	\emph{Confidence tricks: the 83.4\% confidence interval for comparing means}, https://vsni.co.uk/blogs/confidence_trick.
+#' @author
+#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' @examples
+#'   library(predictmeans)
+#'   ci_mcp(LL=c(68.2566,  87.7566, 103.0899, 112.2566), UL=c(90.5212, 110.0212, 125.3545, 134.5212))
+#'   
+#'   data("Oats", package="nlme")
+#'   Oats$nitro <- factor(Oats$nitro)
+#'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
+#'   predictmeans(fm, "nitro", adj="BH", plot=FALSE)$mean_table
+#'   predictmeans(fm, "nitro", pair=TRUE, level=0.166, letterCI = TRUE, plot=FALSE)$mean_table
+#' @name ci_mcp
+NULL
 
 ci_mcp <- function(LL, UL, trt_n=NULL) {
 

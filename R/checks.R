@@ -3,7 +3,8 @@
 ## The p-value adjustment method, matched in any letter case ("Tukey" ->
 ## "tukey", "bh" -> "BH"). 'tukey = FALSE' where only p.adjust() methods work.
 pm_match_adj <- function(adj, tukey = TRUE) {
-  choices <- c("none", if (tukey) "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr")
+  choices <- c("none", if (tukey) "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr",
+               "sidak", "scheffe", "mvt")
   hit <- if (is.character(adj) && length(adj) == 1) choices[tolower(choices) == tolower(adj)] else character(0)
   if (length(hit) == 0) {
     stop("'adj' must be one of ", paste0('"', choices, '"', collapse = ", "), ", not ",

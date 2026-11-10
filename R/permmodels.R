@@ -1,3 +1,64 @@
+#' Permutation Test of Linear Model
+#'
+#' @description
+#' This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
+#' for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+#' @usage
+#' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
+#'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
+#'   fo=NULL, prt=TRUE, ncore=3, seed)
+#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+#' @param nperm The number of permutations. The default is 4999.
+#' @param type type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
+#' @param test.statistic For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
+#'   Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.
+#' @param exact A logical variable to indicate whether or not exact no. of permutations will be used (applicable only to free the permutation case). The default is FALSE.
+#' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.
+#' @param fo A model formula used in the \code{model}; \code{fo!=NULL} when the formula is specified by function \code{formula}.
+#' @param prt A logical variable to indicate whether or not to print output on the screen. The default is TRUE.
+#' @param ncore Number of core for parallel computing, the default value is 3.
+#' @param seed Specify a random number generator seed, for reproducible results.
+#' @return
+#' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+#' @author
+#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' @examples
+#' library(predictmeans)
+#' Oats$nitro <- factor(Oats$nitro)
+#' fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
+#'
+#' \donttest{
+#' ## Permutation test for model terms (99 permutations to keep the example
+#' ## quick; use the default or more in practice)
+#' permlme <- permmodels(model=fm, nperm=99, ncore=1)
+#'
+#' ## Permutation test for multiple comparisons
+#' predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
+#'   permlist=permlme, plot=FALSE, ncore=1)
+#'
+#' ## Permutation test for specified contrasts
+#' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+#'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
+#' contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
+#' }
+#' @name permmodels
+NULL
+
+## Statistics kept from one permutation refit: coefficients and covariance
+## (for permlist), the ANOVA table and the t table. For lmer refits the t
+## values are computed from that covariance (as summary() does) instead of
+## calling summary(), which would compute it again.
+pm_perm_stats <- function(rfitmodel, type, test.statistic) {
+  mp <- mymodelparm(rfitmodel, df = 0)[1:2]
+  if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
+  if (inherits(rfitmodel, "lmerMod")) {
+    se <- sqrt(diag(mp$vcov))
+    coefT <- cbind("Estimate" = mp$coef, "Std. Error" = se, "t value" = mp$coef/se)
+  } else coefT <- coef(summary(rfitmodel))
+  list(mp, aT, coefT)
+}
+
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
 					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed) {
@@ -26,7 +87,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	diff_yname <- setdiff(colnames(mod_df), yname)
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      mod_df[sample(1:nrow(mod_df)), yname, drop=FALSE]
+      mod_df[sample(seq_len(nrow(mod_df))), yname, drop=FALSE]
     }, simplify = !(length(yname) > 1))
 		
 	if (!is.null(fo)) {
@@ -34,25 +95,19 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
     
     } else{	
 	if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)
-      clusterExport(cl, c("mymodelparm", "mymodelparm.default", "model", "mod_df", "yname", "diff_yname", "type", "test.statistic"), envir = environment()) 
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.default", "model", "mod_df", "yname", "diff_yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
 		if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x		
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -61,10 +116,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         if (length(yname) > 1) mod_df <- cbind(mod_df[, diff_yname], x) else mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }
@@ -99,7 +151,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      rowindex <- sample(1:length(errors))
+      rowindex <- sample(seq_along(errors))
       as.data.frame(perm_y <- xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
     })
     
@@ -108,10 +160,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
 	
@@ -119,15 +168,12 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)
       clusterEvalQ(cl, library(nlme))
-      clusterExport(cl, c("mymodelparm", "mymodelparm.lme", "mymodelparm.gls","mymodelparm.default", "model", "mod_df", "yname", "type", "test.statistic"), envir = environment()) 
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.lme", "mymodelparm.gls","mymodelparm.default", "model", "mod_df", "yname", "type", "test.statistic"), envir = environment()) 
       permmod <- parLapplyLB(cl, permy, function(x) {
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -136,10 +182,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
         mod_df[, yname] <- x
         rfitmodel <- try(pm_refit(model, data=mod_df), TRUE)
         if (class(rfitmodel)[1]==class(model)[1]) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }
@@ -171,7 +214,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
-      rowindex <- sample(1:length(errors))
+      rowindex <- sample(seq_along(errors))
 	  if (inherits(model, "glmerMod")) {
   	    perm_y <- slot(model, "resp")$family$linkinv(xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex])) 
 		if (slot(model, "resp")$family$family == "poisson") { 
@@ -193,10 +236,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	      permmod <- lapply(permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
 	
@@ -204,14 +244,11 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     if (.Platform$OS.type=="windows") {
       cl <- makeCluster(ncore)	  
       clusterEvalQ(cl, library(lme4))
-      clusterExport(cl, c("mymodelparm", "mymodelparm.lmerMod", "mymodelparm.default", "model", "type", "test.statistic"), envir = environment())       
+      clusterExport(cl, c("pm_perm_stats", "mymodelparm", "mymodelparm.lmerMod", "mymodelparm.default", "model", "type", "test.statistic"), envir = environment())       
       permmod <- parLapplyLB(cl, permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")){
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       })
       stopCluster(cl)
@@ -219,10 +256,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       permmod <- mclapply(permy, function(x) {
         rfitmodel <- try(refit(model, x), TRUE)
         if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) {
-          mp <- mymodelparm(rfitmodel, df = 0)[1:2]		
-          if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
-		  coefT <- coef(summary(rfitmodel))
-          return(list(mp, aT, coefT))
+          return(pm_perm_stats(rfitmodel, type, test.statistic))
         }
       }, mc.cores=ncore)
     }

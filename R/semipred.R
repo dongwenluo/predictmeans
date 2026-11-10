@@ -1,7 +1,102 @@
+#' Predicted Means of a Semi Paramatric Model with Covariate Variable(s)
+#'
+#' @description
+#' This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
+#' @usage
+#' semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
+#'            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
+#' 		   scales=c("fixed", "free", "free_x", "free_y"),
+#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+#' 		   simultaneous=FALSE)
+#' @param semireg A list object returned by \code{semireg}.
+#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
+#'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
+#' @param covariate Name (in "quotes") of one or two (for \code{Ztps} smooth) the covariate variables in the \code{semireg} shuch as "x1" or c("x1", "x2").
+#' @param sm_term Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.
+#' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
+#' @param covariateV A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
+#' @param boundary A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.
+#' @param level Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
+#'   version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%).
+#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
+#' @param trellis A logical scalar. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.
+#' @param scales Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?
+#' @param plotord A numeric vector specifying the order of plotting for two way interaction (e.g. 
+#'   \code{plotord = c(2, 1)} will put the second variable in \code{modelterm} on the \code{X} 
+#'   axis, the first variable as the grouping variable, and the third one as the panel variable). 
+#'   The defaults are \code{c(1, 2)} for two way interactions.
+#' @param ci A logical scalar to indicate whether to print confidence interval. The default value is TRUE.
+#' @param point A logical scalar to indicate whether to print raw data points. The default value is TRUE.
+#' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
+#' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
+#' @param prt A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.
+#' @param simultaneous If \code{TRUE}, simultaneous confidence bands over the whole curve(s) instead of pointwise
+#'   limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
+#'   predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
+#'   FALSE.
+#' @return
+#' \item{plt}{A ggplot object.}
+#' \item{pred_df}{A data.frame with predcted data.}
+#' @references
+#' Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
+#' @author
+#' Dongwen Luo, Siva Ganesh and John Koolaard
+#' @examples
+#' library(predictmeans)
+#' data(Dialyzer, package="nlme")
+#' str(Dialyzer)
+#'
+#' library(ggplot2)
+#' ggplot(Dialyzer, aes(x=pressure, y=rate, col=QB)) +
+#'   geom_line() +
+#'   facet_wrap(vars(Subject))
+#'
+#' fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
+#'               smoothZ=list(
+#'                 qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)
+#'               ),
+#'               data=Dialyzer)
+#' str(fm$data)
+#' summary(fm$semer)
+#' residplot(fm$semer, group="QB")
+#' anova(fm$semer)
+#' ranova(fm$semer)
+#' R2_glmm(fm$semer)
+#' ap_out1 <- semipred(fm, "QB", "pressure")
+#' str(ap_out1$pred_df)
+#' ap_out2 <- semipred(fm, "QB", "pressure", contr=c(1,2))
+#' str(ap_out2$pred_df)
+#'
+#' \donttest{
+#' str(sleepstudy)
+#' ggplot(sleepstudy, aes(x=Days, y=Reaction)) +
+#'   geom_point() +
+#'   geom_smooth(method="lm", formula=y~x, se=FALSE) +
+#'   facet_wrap(vars(Subject), nrow=2) +
+#'   labs(x="Days of sleep deprivation", y="Average reaction time (ms)")
+#'
+#' sleep.semi <- semireg(Reaction ~ Days*Subject,
+#'                       smoothZ=list(
+#'                         sub_grp=smZ(Days, by=Subject, group=TRUE)
+#'                       ),
+#'                       data=sleepstudy)
+#' residplot(sleep.semi$semer)
+#' summary(sleep.semi$semer)
+#' anova(sleep.semi$semer)
+#' R2_glmm(sleep.semi$semer)
+#'
+#' predout1 <- semipred(sleep.semi, "Subject", "Days")
+#' str(predout1$pred_df)
+#' predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
+#' str(predout2$pred_df)
+#' }
+#' @name semipred
+NULL
+
 semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
                      covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
                      scales=c("fixed", "free", "free_x", "free_y"), 
-                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE) {
+                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE) {
   
   stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))  
   scales <- as.character(scales)
@@ -51,95 +146,18 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     }
   }
   
-  semer <- semireg$semer 
-  vcov_indN <- semireg$Cov_indN
-  cov_lst <- semireg$cov_lst
-  fullCovMat <- semireg$CovMat
-  
-  if (inherits(semer, "glmmTMB")) betaHat <- fixef(semer)$cond else betaHat <- fixef(semer)
-  sig.epsHat <- sigma(semer) 
-  
-  # Kmatrix() understands 'semireg' objects directly: it uses the semireg
-  # data and carries smooth-only covariates in its reference grid.
-  KK <- Kmatrix(semireg, modelterm, covariate, covariateV)
+  des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df)
+  semer <- des$semer; mod_df <- des$mod_df; pred_df <- des$pred_df
+  response <- des$response; response0 <- des$response0
+  D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
 
-  response <- response0 <- KK$response
-  K <- KK$K[, colnames(model.matrix(semer)), drop=FALSE]
-  pred_df <- KK$fctnames
-  if (!(response %in% names(mod_df))) {   # all.vars(str2expression(response0))]
-    mod_df[["response_y"]] <- eval(parse(text=response), mod_df)
-    names(pred_df)[names(pred_df)==response] <- "response_y" 
-    response <- "response_y"
-  }
-  
-  if (is.null(sm_term)) {
-    sm_term <- names(as.list(semireg$smoothZ_call))[-1]
-    sm_term <- intersect(names(vcov_indN), sm_term)
-    sm_Cov <- cov_lst$sm_Cov
-  }else{ 
-    if (length(sm_term)==1) {
-      sm_Cov <- cov_lst[[sm_term]] 
-    }else{
-      sm_term <- intersect(names(vcov_indN), sm_term)
-      sm_termInds <- 1:ncol(getME(semer, "X")) 
-      for (i in sm_term) {
-        stmch_id <- match(i, names(vcov_indN))
-        sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])
-      }  
-      sm_Cov <- fullCovMat[sm_termInds, sm_termInds]
-    }   
-  }
-  
-  u_lst <- list()
-  for (i in sm_term) {
-    u_indx <- grep(i, names(semireg$u_lst))
-    u_lst <- c(u_lst, semireg$u_lst[u_indx])
-  }
-  
-  knots_lst <- semireg$knots_lst[sm_term]
-  range_lst <- semireg$range_lst[sm_term] 
-  type_lst <- semireg$type_lst[sm_term]  
-  call_lst <- as.list(semireg$smoothZ_call)[sm_term]
-  
-  call_lstN <- Z_lstN <- vector("list", length(call_lst))
-  names(call_lstN) <- names(Z_lstN) <- sm_term 
-  
-  for (i in sm_term) {
-    xcall_lst  <- as.list(call_lst[[i]])
-    if (!is.null(xcall_lst$type) && xcall_lst$type=="smspline") xcall_lst$pred <- TRUE
-    if (!is.null(xcall_lst$k)) xcall_lst$k <- NULL
-    if (!is.null(range_lst[[i]]) && type_lst[[i]]!="Ztps") xcall_lst$range.x <- range_lst[[i]]
-    xcall_lst$intKnots <- knots_lst[[i]]
-    call_lstN[[i]] <- as.call(xcall_lst) 
-  }  
-  
-  # Smooth basis for a set of grid rows, in the order of the random effects.
-  smooth_basis <- function(nd) {
-    for (i in sm_term) {
-      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
-    }
-
-    Z_lstNN <- list()
-    for (i in sm_term){
-      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
-    }
-
-    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
-    do.call("cbind", Z_lstNN)
-  }
-
-  # Evaluate the smooth basis on the full reference grid and average it with
-  # the same weights as K, so factors that are averaged over (including 'by'
-  # factors of the smooths) are treated identically in both parts.
-  ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
-  D_mx <- cbind(K,ZN)
-  u_hat <- do.call("c", u_lst)
-  beta_u <- c(betaHat, u_hat)
-  
+  # two-sided (1 - level) limits, pointwise or simultaneous over the curve(s)
+  crit_of <- function(D) if (simultaneous) pm_sim_crit(D, sm_Cov, level) else qnorm(1 - level/2)
+  crit <- crit_of(D_mx)
   stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
-  LL <- y_hat - qnorm(1-level)*stderr
-  UL <- y_hat + qnorm(1-level)*stderr  
+  LL <- y_hat - crit*stderr
+  UL <- y_hat + crit*stderr
   
   if (is.null(trans)) {
     if (!isLMM(semer)) {
@@ -160,8 +178,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       }		
       stderr_mu <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))*weight_fun(y_hat, semer)
       y_hat <- invfun(y_hat)
-      LL <- y_hat - qnorm(1-level)*stderr_mu
-      UL <- y_hat + qnorm(1-level)*stderr_mu
+      LL <- y_hat - crit*stderr_mu
+      UL <- y_hat + crit*stderr_mu
       if (family_n == "binomial"){
         UL <- ifelse(UL > 1, 1, UL)	
         LL <- ifelse(LL < 0, 0, LL)	
@@ -186,17 +204,20 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   pred_df$LL <- LL
   pred_df$UL <- UL
   
+  # Undo semireg()'s centring and scaling. Numeric covariates that are not in
+  # the prediction grid (averaged over) are only in mod_df.
   if (!is.null(attr(mod_df, "numeric_var"))) {
     for (i in attr(mod_df, "numeric_var")) {
+      in_pred <- i %in% names(pred_df)
       if (!is.null(attr(mod_df, paste(i, "sd", sep="_")))) {
         mod_df[[i]] <- mod_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
-        pred_df[[i]] <- pred_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))  
-      }  
-      
+        if (in_pred) pred_df[[i]] <- pred_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
+      }
+
       if (!is.null(attr(mod_df, paste(i, "mean", sep="_")))) {
         mod_df[[i]] <- mod_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
-        pred_df[[i]] <- pred_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))  
-      }  
+        if (in_pred) pred_df[[i]] <- pred_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
+      }
     }
   }
   
@@ -278,6 +299,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
           D_contr <- D_mx_lst[[grp_fct_levl[contr[1]]]] - D_mx_lst[[grp_fct_levl[contr[2]]]]
+          crit_c <- crit_of(D_contr)
           
           if (!isLMM(semer)) {
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))*weight_fun(plt_df_contr[[response]], semer)
@@ -285,11 +307,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))
           }
           if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
           }else{
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr
           }          
           
           plt <- ggplot(plt_df_contr, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))))+
@@ -353,6 +375,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
           D_contr <- D_mx_lst[[grp_fct_levl[contr[1]]]] - D_mx_lst[[grp_fct_levl[contr[2]]]]
+          crit_c <- crit_of(D_contr)
           
           if (!isLMM(semer)) {
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))*weight_fun(plt_df_contr[[response]], semer)
@@ -360,11 +383,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
             stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))
           }
           if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
           }else{
-            plt_df_contr$LL <- plt_df_contr[[response]] - qnorm(1-level)*stderr_contr
-            plt_df_contr$UL <- plt_df_contr[[response]] + qnorm(1-level)*stderr_contr
+            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr
+            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr
           }
           
           if (!is.null(boundary)){
@@ -418,3 +441,99 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
 }
 
 
+
+
+## The design of semipred(): rows D = [K, Z] of the fixed part and the smooth
+## basis on the reference grid of 'modelterm' (and covariate values), the
+## estimates (beta, u) and their covariance up to sigma^2. Also used by
+## predictmeans() for semireg fits.
+pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df) {
+  semer <- semireg$semer 
+  vcov_indN <- semireg$Cov_indN
+  cov_lst <- semireg$cov_lst
+  fullCovMat <- semireg$CovMat
+  
+  if (inherits(semer, "glmmTMB")) betaHat <- fixef(semer)$cond else betaHat <- fixef(semer)
+  sig.epsHat <- sigma(semer) 
+  
+  # Kmatrix() understands 'semireg' objects directly: it uses the semireg
+  # data and carries smooth-only covariates in its reference grid.
+  KK <- Kmatrix(semireg, modelterm, covariate, covariateV)
+
+  response <- response0 <- KK$response
+  K <- KK$K[, colnames(model.matrix(semer)), drop=FALSE]
+  pred_df <- KK$fctnames
+  if (!(response %in% names(mod_df))) {   # all.vars(str2expression(response0))]
+    mod_df[["response_y"]] <- eval(parse(text=response), mod_df)
+    names(pred_df)[names(pred_df)==response] <- "response_y" 
+    response <- "response_y"
+  }
+  
+  if (is.null(sm_term)) {
+    sm_term <- names(as.list(semireg$smoothZ_call))[-1]
+    sm_term <- intersect(names(vcov_indN), sm_term)
+    sm_Cov <- cov_lst$sm_Cov
+  }else{ 
+    if (length(sm_term)==1) {
+      sm_Cov <- cov_lst[[sm_term]] 
+    }else{
+      sm_term <- intersect(names(vcov_indN), sm_term)
+      sm_termInds <- seq_len(ncol(getME(semer, "X"))) 
+      for (i in sm_term) {
+        stmch_id <- match(i, names(vcov_indN))
+        sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])
+      }  
+      sm_Cov <- fullCovMat[sm_termInds, sm_termInds]
+    }   
+  }
+  
+  u_lst <- list()
+  for (i in sm_term) {
+    u_indx <- grep(i, names(semireg$u_lst))
+    u_lst <- c(u_lst, semireg$u_lst[u_indx])
+  }
+  
+  knots_lst <- semireg$knots_lst[sm_term]
+  range_lst <- semireg$range_lst[sm_term] 
+  type_lst <- semireg$type_lst[sm_term]  
+  call_lst <- as.list(semireg$smoothZ_call)[sm_term]
+  
+  call_lstN <- Z_lstN <- vector("list", length(call_lst))
+  names(call_lstN) <- names(Z_lstN) <- sm_term 
+  
+  for (i in sm_term) {
+    xcall_lst  <- as.list(call_lst[[i]])
+    if (!is.null(xcall_lst$type) && xcall_lst$type=="smspline") xcall_lst$pred <- TRUE
+    if (!is.null(xcall_lst$k)) xcall_lst$k <- NULL
+    if (!is.null(range_lst[[i]]) && type_lst[[i]]!="Ztps") xcall_lst$range.x <- range_lst[[i]]
+    xcall_lst$intKnots <- knots_lst[[i]]
+    call_lstN[[i]] <- as.call(xcall_lst) 
+  }  
+  
+  # Smooth basis for a set of grid rows, in the order of the random effects.
+  smooth_basis <- function(nd) {
+    for (i in sm_term) {
+      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
+    }
+
+    Z_lstNN <- list()
+    for (i in sm_term){
+      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
+    }
+
+    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
+    do.call("cbind", Z_lstNN)
+  }
+
+  # Evaluate the smooth basis on the full reference grid and average it with
+  # the same weights as K, so factors that are averaged over (including 'by'
+  # factors of the smooths) are treated identically in both parts.
+  ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
+  D_mx <- cbind(K,ZN)
+  u_hat <- do.call("c", u_lst)
+  beta_u <- c(betaHat, u_hat)
+  
+  list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
+       response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
+       sm_term = sm_term)
+}

@@ -31,6 +31,9 @@ reference:
   - covariatemeans
   - contrastmeans
   - specify_contrast
+  - contrast_family
+  - pm_joint
+  - pm_slopes
   - Kmatrix
 - title: Results
   contents:
@@ -42,6 +45,7 @@ reference:
   contents:
   - df_term
   - R2_glmm
+  - R2_model
   - varcomp
   - se_ranef
   - CookD
@@ -52,6 +56,7 @@ reference:
   - permlmer
   - permanova.lmer
   - permindex
+  - bootmodels
 - title: Semiparametric regression
   contents:
   - semireg

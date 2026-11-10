@@ -48,9 +48,10 @@ predictmeans 2.0 has three aims, with equal weight:
 | Stages to pure functions, part 1: mean table (`pm_mean_table()`), back-transform (`pm_back_transform()`, `pm_final_mean_table()`), compare-stage label helpers; snapshot extended to 36 calls (count data, glm `atvar`, letterCI on the response scale, ":" in levels), all identical | **Done** |
 | Stages to pure functions, part 2: estimate (`pm_model_parms()`, `pm_estimate_means()`), compare (five functions), plots (`pm_make_plots()`), assemble (`pm_legacy_output()`); only setup still works on the call's state (it rewrites the arguments); direct tests of the functions; all 36 snapshot calls identical | **Done** |
 | `ranova()` on `semireg()` fits: refits go through `semireg()` with the smooth bases (class `semerLmerTest`, `update()` method); `copper` data added | **Done** |
-| Ideas from 1.1.2 (CRAN zip, `master` branch, July 2025 tarball), reviewed function by function. Steps: (1) `trans` kept for identity links, `glmer` Poisson counts, `transOff` in plotted data, James Curran credited — **done**; (2) glmmTMB random-effect covariance from `VarCorr()` (`R/re-terms.R`) for `R2_glmm()` (correlated terms, zero-inflation random effects, aliased columns, per-component breakdown) and `semireg_tmb()`, `nearPD` fallback — **done**; (3) `varcomp()` for glmmTMB (delta-method SEs, Wald CIs, lmer layout) — **done**; (4) `residplot()` with aliased glmmTMB coefficients (and Z-ordered random effects), `ci_mcp()` LL = UL, `model.matrix.lme(data =)` — **done**; (5) clear `adj` check, "did you mean" for `modelterm` (`R/checks.R`) — **done**; (6) SE of `glmer` variance components (`vcov_glmerMod()` sd-to-variance Jacobian; `varcomp()` for correlated glmer terms), `letterCI` help note — **done**. Then R CMD check and PR. Optional, not started: `letterCI` level from the test level and with `atvar`, faster `multcompLetters()`, plot helpers / `.data[[ ]]`, `seq_along()` clean-up. Not taken: `predictmeansN()`, `pm()`/`predmeans()`, `combinat`, `PMplot()` as ggplot, `permmodels()` nperm 999, exporting the lme/gls `model.frame`/`terms` methods | In progress |
+| Ideas from 1.1.2 (CRAN zip, `master` branch, July 2025 tarball), reviewed function by function. Steps: (1) `trans` kept for identity links, `glmer` Poisson counts, `transOff` in plotted data, James Curran credited — **done**; (2) glmmTMB random-effect covariance from `VarCorr()` (`R/re-terms.R`) for `R2_glmm()` (correlated terms, zero-inflation random effects, aliased columns, per-component breakdown) and `semireg_tmb()`, `nearPD` fallback — **done**; (3) `varcomp()` for glmmTMB (delta-method SEs, Wald CIs, lmer layout) — **done**; (4) `residplot()` with aliased glmmTMB coefficients (and Z-ordered random effects), `ci_mcp()` LL = UL, `model.matrix.lme(data =)` — **done**; (5) clear `adj` check, "did you mean" for `modelterm` (`R/checks.R`) — **done**; (6) SE of `glmer` variance components (`vcov_glmerMod()` sd-to-variance Jacobian; `varcomp()` for correlated glmer terms), `letterCI` help note — **done**. Then R CMD check and PR. Optional items, done after the PR: `letterCI` with `atvar` and a note giving the CI and approximate test level (`level` keeps setting the CIs, so scripts don't change) — **done**; faster `multcompLetters()` (identical letters, 200 means 103 s -> 2.1 s) — **done**; `seq_along()` clean-up — **done**. Not taken: plot helpers / `.data[[ ]]` (plotting is already in `pm_make_plots()`; `.data[[ ]]` would break responses such as `log(yield)` that `eval(parse())` evaluates). Not taken: `predictmeansN()`, `pm()`/`predmeans()`, `combinat`, `PMplot()` as ggplot, `permmodels()` nperm 999, exporting the lme/gls `model.frame`/`terms` methods | In progress |
 | Deferred until the functions are refined one by one: tidy/LLM polish — `options(predictmeans.plot = FALSE)` to turn plots off in pipelines, `glance()`, `llms.txt` on the pkgdown site, help pages and vignettes leading with `$means`/`$pairs`/`tidy()`. While refining, put new output into the stable tables and avoid argument names that partially match old ones (e.g. `bar` → `barplot`) | Deferred |
-| Next: finish Phase 1 — move help blocks next to their functions and uncomment examples. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
+| Phase 2 in steps (after the 1.1.2 leftovers): (1) `coef()`/`vcov()` of the means (equal to emmeans; `marginaleffects::hypotheses()` works) — **done**; (2) multiplicity: Sidak, Scheffe, single-step multivariate t (`"mvt"`, = SAS `ADJUST=SIMULATE`; mvtnorm in Suggests), in `predictmeans()` (overall and within `atvar`) and `contrastmeans()`, equal to emmeans — **done**; (3) contrast families: `contrast_family()` (pairwise, revpairwise, trt.vs.ctrl, consec, poly, eff, del.eff; `by` groups), equal to emmeans — **done**; (4) joint tests / slices: `pm_joint()` (`by` = SAS `SLICE`, or a `ctrmatrix`; KR equal to pbkrtest, Satterthwaite equal to lmerTest) — **done**; (5) response-scale SEs (delta method) in `means`, ratios / odds ratios in `pairs`, equal to emmeans — **done** (GLMM bias adjustment and response-scale averaging later); (6) slopes by group: `pm_slopes()`, equal to `emtrends()` — **done**; (7) `R2_model()`: Piepho as numbers, Nakagawa option (gaussian, binomial; Johnson's random slopes) — **done**; (8) `predictmeans()` on `semireg` fits (means with the smooth, as `semipred()`; pairs, letters) — **done**; simultaneous bands in `semipred()` (and its limits fixed to two-sided: 95% by default, was 90%) — **done**; (9) `bootmodels()` (parametric bootstrap under the global null for lmer/glmer; usable as `permlist`) — **done**; Freedman–Lane permutations and batched lm permutations wait for a simulation study (not started). SAS validation suite waits for the CSVs | In progress |
+| Next: finish Phase 1 in two steps: (1) examples of the permutation and semiparametric functions run again (99 permutations on one core, slow parts in `\donttest{}`, HRW examples only when HRW is installed); found and fixed a `semipred()` error with numeric variables outside the grid — **done**; (2) help blocks moved next to their functions (data sets in `R/data.R`, package page in `R/predictmeans-package.R`; blocks unchanged, so the help pages are the same) — **done**. Between-within df and SAS-matched non-integer values once CSVs from a real SAS run are available (see `dev/sas/README.md`) | Next |
 
 ### What changed from the blueprint
 
@@ -126,7 +127,8 @@ structures.
 ### 1.4 Engineering and CRAN hygiene
 
 - **Tests:** a testthat suite now exists (38 tests, 167 checks). The examples
-  for permutation and semiparametric functions are still commented out.
+  for permutation and semiparametric functions run again (slow parts in
+  `\donttest{}`).
 - **Global side effects:** `options(scipen = 6)` is never restored
   (`predictmeans`, `contrastmeans`, `permmodels`). `cat()` is used in
   `R2_glmm`; the Kmatrix one now uses `message()`. `set.seed()` is called
@@ -181,14 +183,14 @@ SAS from the PROC MIXED/GLIMMIX documentation.
 | Reference grid, covariate values, weights | `ref_grid(at, cov.reduce, cov.keep, nuisance, counterfactuals)`; weights equal/proportional/outer/cells/flat | `datagrid()`, `newdata = "balanced"`, `by` | `AT`, `OM` (observed margins), `BYLEVEL` | Equal weights; covariates at mean | **Done:** `cov_reduce` (function or `"average"`); `weights` equal/proportional (= SAS `OM`)/outer/cells/flat, matching emmeans |
 | Non-estimable means | Flagged (estimability package) | — | "Non-est" | Silent | **Done** in K (`attr(K, "estimable")`); show in tables — Phase 1 |
 | Complex covariates (`poly`, `ns`, interactions only, smooths) | Yes | Yes | Via pre-computed variables | Mostly failed | **Done** (§11) |
-| Contrast families | pairwise, revpairwise, trt.vs.ctrl, dunnett, poly, consec, eff, del.eff, mean_chg; interaction contrasts; `by` | `hypothesis = ~pairwise / ~reference / ~sequential`, string equations, ratios | `DIFF=ALL/CONTROL`, `LSMESTIMATE`, `SLICEDIFF` | All pairwise; custom matrix; `atvar` ≈ `by` | **`specify_contrast()` done** (named contrasts, like `LSMESTIMATE`); families and interaction contrasts — Phase 2 |
-| Joint tests / slices | `joint_tests()`, `test(joint = TRUE)` | `hypotheses(joint = )` | `SLICE`, `CONTRAST` | — | `pm_joint()` slice F-tests with chosen df — Phase 2 |
-| Multiplicity | tukey, scheffe, sidak, bonferroni, dunnettx, mvt | `p_adjust` (p.adjust methods) | TUKEY(-Kramer), BON, SCHEFFE, SIDAK, DUNNETT, SIMULATE | p.adjust methods + Tukey | Add sidak, scheffe, dunnett and single-step multivariate t (exact counterpart of SAS `SIMULATE`) — Phase 2 |
+| Contrast families | pairwise, revpairwise, trt.vs.ctrl, dunnett, poly, consec, eff, del.eff, mean_chg; interaction contrasts; `by` | `hypothesis = ~pairwise / ~reference / ~sequential`, string equations, ratios | `DIFF=ALL/CONTROL`, `LSMESTIMATE`, `SLICEDIFF` | All pairwise; custom matrix; `atvar` ≈ `by` | **Done:** `specify_contrast()` (named contrasts, like `LSMESTIMATE`); `contrast_family()` (emmeans' families, `by`); interaction contrasts later |
+| Joint tests / slices | `joint_tests()`, `test(joint = TRUE)` | `hypotheses(joint = )` | `SLICE`, `CONTRAST` | — | **Done:** `pm_joint()` slice F-tests with chosen df |
+| Multiplicity | tukey, scheffe, sidak, bonferroni, dunnettx, mvt | `p_adjust` (p.adjust methods) | TUKEY(-Kramer), BON, SCHEFFE, SIDAK, DUNNETT, SIMULATE | p.adjust methods + Tukey | **Done:** sidak, scheffe, single-step multivariate t (`"mvt"`, exact counterpart of SAS `SIMULATE`); Dunnett comes with treatment-vs-control contrasts (step 3) |
 | df for mixed models | KR, Satterthwaite, asymptotic | KR/Satterthwaite only for unit-level predictions; refused for averaged means **(measured)** | CONTAIN, BETWITHIN, RESIDUAL, SATTERTHWAITE, KR, KR2 | KR (falls back to Satterthwaite) for lmer; nlme inner–outer for lme | Explicit `df_method`, adding containment and between-within for lmer (rare in R) — Phase 2 |
 | SE paired with KR df | KR-adjusted covariance | (unit level) | KR-adjusted covariance | **Unadjusted** covariance with KR df: SE 7.8868 vs 7.8962 on unbalanced Oats **(measured)** | **Done as an option** (`vcov_adjust = TRUE`; matches emmeans); default per decision D6 |
 | Response scale | `regrid()`, `type = "response"`, `bias.adjust` | `type = "response"`, `transform`, ratio/lnor comparisons | `ILINK` | Back-transformed means and CIs; no response-scale SEs | Delta-method SEs, ratio/odds-ratio contrasts, GLMM bias adjustment — Phase 2 |
 | Averaged (counterfactual) predictions, AME | `counterfactuals` | `avg_predictions`, `avg_comparisons`, `avg_slopes` | `OM` (link scale) | — | **Done** on the link scale (`cov_reduce = "average"`); response-scale averaging and AME — Phase 2 |
-| Slopes by group | `emtrends()` | `slopes()` | `ESTIMATE` on slope terms | Plots only | `pm_slopes()` — Phase 2 |
+| Slopes by group | `emtrends()` | `slopes()` | `ESTIMATE` on slope terms | Plots only | **Done:** `pm_slopes()` |
 | Robust / clustered vcov | `vcov.` argument | `vcov = "HC3"`, `~cluster` | `EMPIRICAL` | — | `vcov =` argument (matrix or function) — Phase 2 |
 | Equivalence tests | `test(delta, side)` | `equivalence =` | TOST via `ESTIMATE` | — | Phase 2 |
 | Tidy, stable output | `as.data.frame` | Consistent data frames | ODS tables with stable names | Title-case list; dynamic names | **Done**: `means`, `pairs`, `settings`; `tidy()`, `as.data.frame()`; checked against emmeans |
@@ -214,7 +216,7 @@ SAS from the PROC MIXED/GLIMMIX documentation.
   - `pm_contrast()`;
   - `pm_joint()`;
   - `pm_slopes()`.
-- The means object gets `coef()` and `vcov()` methods. Then
+- The means object gets `coef()` and `vcov()` methods (**done**). Then
   `marginaleffects::hypotheses()` and `multcomp::glht()` work on it directly,
   instead of predictmeans re-implementing them.
 
@@ -270,9 +272,9 @@ data.
 
 | Technique | Where | Phase |
 |---|---|---|
-| Skip KR df in permutation refits | `mymodelparm`, `permmodels` | Next |
-| Sparse Cholesky (no fill-reducing permutation, so numbers are unchanged), triangular solves | `permmodels`, `permlmer` | Next |
-| R² traces without n×n matrices | `R2_glmm` | Next |
+| Skip KR df in permutation refits; t values from the refit's covariance instead of `summary()` | `mymodelparm`, `permmodels` | **Done** |
+| Sparse Cholesky (no fill-reducing permutation, so numbers are unchanged), triangular solves | `permmodels`, `permlmer` | **Done** |
+| R² traces without n×n matrices | `R2_glmm` | **Done** |
 | Means covariance V_m = K V Kᵀ once; SEDs from V_m. Never build the m(m−1)/2 × p pairwise matrix (1,000 levels → ~500,000 rows) | `predictmeans` | 1 |
 | KR/Satterthwaite ingredients once per model (adjusted vcov, Jacobian of vcov(β) wrt θ), then vectorised over contrasts; per-model cache for Shiny re-renders | df code | 1 |
 | lm and fixed-θ GLS: all permutations in one matrix solve (`qr.coef(Q, Y)`); balanced multi-stratum ANOVA through projections | `permmodels` | 2 |
@@ -385,7 +387,7 @@ part-time person).
 | Speed fixes that don't change numbers (§1.3) | S | **Done** |
 | Extend frozen reference to `permmodels`, `permlmer`, `R2_glmm`, `varcomp`, `contrastmeans` | S | **Done** (58 cases) |
 | CI on three OSes (GitHub Actions) | S | **Done** |
-| roxygen2 migration; uncomment examples | M | Migration **done** (help sources in `R/doc-*.R`; rendered pages identical); examples open |
+| roxygen2 migration; uncomment examples | M | Migration **done** (help sources next to their functions; rendered pages identical); examples **done** |
 | Benchmarks script | S | **Done** (`dev/benchmarks.R`) |
 
 ### Phase 1 — Engine and object → 2.0.0
@@ -411,10 +413,10 @@ part-time person).
 | Contrast families, joint tests, multiplicity methods (§3) | L | Open |
 | Response scale: delta-method SEs, ratios, bias adjustment, averaged predictions, slopes | L | Open |
 | Freedman–Lane permutation + simulation study; batched lm permutations | L | Open |
-| `bootmodels()` (parametric bootstrap for GLMMs) | M | Open |
-| `R2_model()` (Piepho default, Nakagawa option, numeric result) | M | Open |
+| `bootmodels()` (parametric bootstrap for GLMMs) | M | **Done** (global-null bootstrap for lmer/glmer; a calibration study is still to do) |
+| `R2_model()` (Piepho default, Nakagawa option, numeric result) | M | **Done** (Nakagawa for gaussian and binomial) |
 | mgcv adapter | L | **Done** in Kmatrix and `predictmeans()` |
-| `predictmeans()` accepting `semireg` objects; simultaneous bands in `semipred` | M | Open |
+| `predictmeans()` accepting `semireg` objects; simultaneous bands in `semipred` | M | **Done** |
 | SAS validation suite (§4) | L | Open |
 
 ### Phase 3 — Documentation and AI readiness (alongside Phases 1–2)

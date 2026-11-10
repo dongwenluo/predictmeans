@@ -26,7 +26,7 @@ test_that("glmmTMB random-effect covariance from VarCorr(): equals lmer's; block
   # two terms: each term's block of G is its VarCorr() matrix, at its columns
   # of Z, and the terms do not covary (checked against glmmTMB itself, as
   # lmer and glmmTMB versions can disagree on this nearly singular fit)
-  m3 <- glmmTMB::glmmTMB(Reaction ~ Days + (Days | Subject) + (1 | Days), data = lme4::sleepstudy)
+  m3 <- suppressWarnings(glmmTMB::glmmTMB(Reaction ~ Days + (Days | Subject) + (1 | Days), data = lme4::sleepstudy))
   re <- predictmeans:::pm_re_terms(m3)
   G3 <- sigma(m3)^2 * as.matrix(Matrix::tcrossprod(predictmeans:::pm_tmb_lambda(m3, re)))
   expect_identical(ncol(G3), ncol(lme4::getME(m3, "Z")))

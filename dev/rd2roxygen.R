@@ -1,4 +1,6 @@
 # Convert man/*.Rd to roxygen blocks (one R/doc-<name>.R per page).
+# Used once for the roxygen2 migration; the blocks have since been moved next
+# to their functions (data sets in R/data.R), so don't run it again.
 pkg <- commandArgs(TRUE)[1]
 bs <- "\\"
 rdtext <- function(x) {

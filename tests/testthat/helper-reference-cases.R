@@ -87,16 +87,18 @@ reference_cases <- function() {
   W <- WarsawApts; W$district <- factor(W$district)
   sm1 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
                  smoothZ = list(grp = smZ(construction.date, k = 25)), data = W, prt = FALSE))
-  cap("semi_1", semipred(sm1, covariate = "construction.date", prt = FALSE)$pred_df)
+  # 1.1.1 used qnorm(1 - level) for the limits (90% with the default 0.05);
+  # 2.0 uses qnorm(1 - level/2), so level = 0.1 gives the limits 1.1.1 gave
+  cap("semi_1", semipred(sm1, covariate = "construction.date", level = 0.1, prt = FALSE)$pred_df)
   sm2 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
                  smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
                  data = W, prt = FALSE))
-  cap("semi_2_grp", semipred(sm2, "district", "construction.date", prt = FALSE)$pred_df)
-  cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), prt = FALSE)$pred_df)
+  cap("semi_2_grp", semipred(sm2, "district", "construction.date", level = 0.1, prt = FALSE)$pred_df)
+  cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), level = 0.1, prt = FALSE)$pred_df)
   sm3 <- suppressWarnings(semireg(areaPerMzloty ~ district + surface,
                  smoothZ = list(gc = smZ(construction.date, k = 10)), data = W, prt = FALSE))
-  cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", prt = FALSE)$pred_df)
-  cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", prt = FALSE)$pred_df)
+  cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", level = 0.1, prt = FALSE)$pred_df)
+  cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", level = 0.1, prt = FALSE)$pred_df)
 
   ## Permutation tests, R2, variance components and contrasts
   perm_lmer <- suppressWarnings(permmodels(fm_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
