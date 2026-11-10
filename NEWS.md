@@ -420,6 +420,11 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* For AI assistants and scripted use, `inst/llms-context.md` describes the
+  result tables (every column of `means`, `pairs` and `settings`), the
+  defaults and common recipes (a test checks that it lists every column).
+  The README, which pkgdown turns into the site's home page and `llms.txt`,
+  now describes the package, its main functions and its vignettes.
 * New vignette "Missing cells and non-estimable means": an empty cell in
   the oats split plot (the 1.x averaging rule and its warning, comparisons
   within the observed cells) and confounded factors in a spray trial (NA
