@@ -34,7 +34,12 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+<li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
+    <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
+    <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -270,12 +275,23 @@ terms of a <code>gam</code>.</p>
 <span><span class="co">#&gt; 3         0.01536127         0.8760708          0.9469180    B  3      TRUE</span></span>
 <span><span class="co">#&gt; 4         0.02125403         0.1052064          0.2019331     C 5      TRUE</span></span></code></pre></div>
 <p>For a glm the means are also given on the response scale (here
-probabilities).</p>
+probabilities); see <code><a href="../articles/response-scale.html">vignette("response-scale")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="more">More<a class="anchor" aria-label="anchor" href="#more"></a>
 </h2>
 <ul>
+<li>
+<code><a href="../articles/contrasts.html">vignette("contrasts", package = "predictmeans")</a></code>: other
+adjustments for multiple testing, comparisons with a control, trends,
+joint tests (slices) and slopes.</li>
+<li>
+<code><a href="../articles/response-scale.html">vignette("response-scale", package = "predictmeans")</a></code>:
+GLMs, GLMMs and transformed responses: means and standard errors on the
+response scale, ratios and odds ratios.</li>
+<li>
+<code><a href="../articles/missing-cells.html">vignette("missing-cells", package = "predictmeans")</a></code>:
+empty cells, confounded factors and means that cannot be estimated.</li>
 <li>
 <code><a href="../articles/R2_glmm.html">vignette("R2_glmm", package = "predictmeans")</a></code>: adjusted
 R² for mixed models.</li>
@@ -283,12 +299,14 @@ R² for mixed models.</li>
 <code><a href="../articles/migrating.html">vignette("migrating", package = "predictmeans")</a></code>: what
 changed from version 1.x.</li>
 <li>
-<code><a href="../reference/permmodels.html">?permmodels</a></code>: permutation tests for mixed models; pass
-the result to <code>predictmeans(permlist = )</code> for permutation
-p-values of pairwise comparisons.</li>
+<code><a href="../articles/resampling.html">vignette("resampling", package = "predictmeans")</a></code>:
+permutation and parametric bootstrap tests (<code><a href="../reference/permmodels.html">permmodels()</a></code>,
+<code><a href="../reference/permlmer.html">permlmer()</a></code>, <code><a href="../reference/bootmodels.html">bootmodels()</a></code>), also for pairwise
+comparisons and contrasts through <code>permlist</code>.</li>
 <li>
-<code><a href="../reference/semireg.html">?semireg</a></code>, <code><a href="../reference/semipred.html">?semipred</a></code>: semiparametric
-regression.</li>
+<code><a href="../articles/smooth.html">vignette("smooth", package = "predictmeans")</a></code>: smooth
+curves in mixed models (<code><a href="../reference/semireg.html">semireg()</a></code>,
+<code><a href="../reference/semipred.html">semipred()</a></code>), with simultaneous confidence bands.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

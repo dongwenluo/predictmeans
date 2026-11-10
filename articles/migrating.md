@@ -74,6 +74,26 @@ cases with transformed covariates. See `NEWS.md` for the full list.
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   and
   [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md).
+- **More comparisons**: `adj = "sidak"`, `"scheffe"` and `"mvt"` (exact
+  single-step, as SAS `ADJUST=SIMULATE`);
+  [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md)
+  (Dunnett, polynomial trends, …);
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  for joint F tests and slices;
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  for slopes by group; [`coef()`](https://rdrr.io/r/stats/coef.html) and
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) of the means. See
+  [`vignette("contrasts")`](https://dongwenluo.github.io/predictmeans/articles/contrasts.md).
+- **Response scale**: delta-method standard errors of back-transformed
+  means, and ratios or odds ratios for log and logit models.
+- **[`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)**
+  (R² as numbers, Piepho or Nakagawa),
+  **[`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)**
+  (parametric bootstrap), and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits.
 - **Other model classes** can be added with a few methods (see
   [`?pm_coef`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)).
 - **Fewer dependencies** and faster Kenward–Roger and Satterthwaite

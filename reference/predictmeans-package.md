@@ -4,7 +4,11 @@ This package provides functions to diagnose and make inferences from
 various linear models, such as those obtained from 'aov', 'lm', 'glm',
 'gls', 'lme', 'lmer', 'glmmTMB' and 'semireg'. Inferences include
 predicted means and standard errors, contrasts, multiple comparisons,
-permutation tests, adjusted R-square and graphs.
+permutation tests, adjusted R-square and graphs. Vignettes
+(`browseVignettes("predictmeans")`) show worked examples. For AI
+assistants and scripted use,
+`system.file("llms-context.md", package = "predictmeans")` gives a
+compact description of the result tables, defaults and common recipes.
 
 ## Details
 

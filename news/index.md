@@ -583,6 +583,63 @@
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   has; the `sleepstudy` plot uses ggplot2 instead of latticeExtra.
 
+- For AI assistants and scripted use, `inst/llms-context.md` describes
+  the result tables (every column of `means`, `pairs` and `settings`),
+  the defaults and common recipes (a test checks that it lists every
+  column). The README, which pkgdown turns into the site’s home page and
+  `llms.txt`, now describes the package, its main functions and its
+  vignettes.
+
+- New vignette “Missing cells and non-estimable means”: an empty cell in
+  the oats split plot (the 1.x averaging rule and its warning,
+  comparisons within the observed cells) and confounded factors in a
+  spray trial (NA means with estimable differences, `weights = "cells"`,
+  and writing the nesting into the model).
+
+- New vignette “Smooth curves in mixed models”:
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  on [`nlme::Dialyzer`](https://rdrr.io/pkg/nlme/man/Dialyzer.html),
+  [`ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html) of the
+  smooth terms, pointwise and simultaneous bands, a difference curve,
+  and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on the fit.
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)’s
+  plot title says when the band is simultaneous.
+
+- New vignette “Permutation and bootstrap tests”:
+  [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  and its use as `permlist` in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  for a random slope,
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md),
+  and
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  for a binomial GLMM, with advice on which to use.
+
+- New vignette “Link and response scale”: binomial and Poisson GLMs and
+  GLMMs and a log-transformed response (`trans = exp`), with
+  response-scale means and SEs, odds ratios and ratios, what a
+  back-transformed GLMM mean means, and Piepho’s vs Nakagawa’s R²
+  ([`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)).
+
+- New vignette “Contrasts, joint tests and slopes”: the `adj` methods
+  (including `"mvt"`),
+  [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md)
+  (Dunnett, trends),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  (slices),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`coef()`](https://rdrr.io/r/stats/coef.html)/[`vcov()`](https://rdrr.io/r/stats/vcov.html)
+  with marginaleffects, on the oats split plot. The getting-started and
+  migrating vignettes link to it.
+
 - Three vignettes: “Getting started with predictmeans”, “Adjusted R² for
   generalized linear mixed models” and “Migrating from predictmeans
   1.x”.

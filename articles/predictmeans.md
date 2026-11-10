@@ -229,18 +229,31 @@ predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$mean
 ```
 
 For a glm the means are also given on the response scale (here
-probabilities).
+probabilities); see
+[`vignette("response-scale")`](https://dongwenluo.github.io/predictmeans/articles/response-scale.md).
 
 ## More
 
+- [`vignette("contrasts", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/contrasts.md):
+  other adjustments for multiple testing, comparisons with a control,
+  trends, joint tests (slices) and slopes.
+- [`vignette("response-scale", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/response-scale.md):
+  GLMs, GLMMs and transformed responses: means and standard errors on
+  the response scale, ratios and odds ratios.
+- [`vignette("missing-cells", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/missing-cells.md):
+  empty cells, confounded factors and means that cannot be estimated.
 - [`vignette("R2_glmm", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/R2_glmm.md):
   adjusted R² for mixed models.
 - [`vignette("migrating", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md):
   what changed from version 1.x.
-- [`?permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md):
-  permutation tests for mixed models; pass the result to
-  `predictmeans(permlist = )` for permutation p-values of pairwise
-  comparisons.
-- [`?semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
-  [`?semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md):
-  semiparametric regression.
+- [`vignette("resampling", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/resampling.md):
+  permutation and parametric bootstrap tests
+  ([`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+  [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)),
+  also for pairwise comparisons and contrasts through `permlist`.
+- [`vignette("smooth", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/smooth.md):
+  smooth curves in mixed models
+  ([`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
+  with simultaneous confidence bands.

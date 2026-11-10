@@ -36,7 +36,12 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+<li><a class="dropdown-item" href="articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="articles/resampling.html">Permutation and bootstrap tests</a></li>
+    <li><a class="dropdown-item" href="articles/smooth.html">Smooth curves in mixed models</a></li>
+    <li><a class="dropdown-item" href="articles/missing-cells.html">Missing cells and non-estimable means</a></li>
+    <li><a class="dropdown-item" href="articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
     <li><a class="dropdown-item" href="articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -61,7 +66,91 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="predictmeans">predictmeans<a class="anchor" aria-label="anchor" href="#predictmeans"></a>
 </h1></div>
-<p><strong>Package ‘predcitmeans’:</strong> Offers diagnostic and inference functions for various models (‘aov’, ‘lm’, ‘glm’, etc.). Inferences include predicted means, standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square, and graphical representations. <a href="https://cran.r-project.org/web/packages/predictmeans/index.html" class="external-link uri">https://cran.r-project.org/web/packages/predictmeans/index.html</a>.</p>
+<p>Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and contrasts for linear, generalized linear and mixed models — <code>aov</code>, <code>lm</code>, <code>glm</code>, <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>, <code>glmmTMB</code>, <code>gam</code> and semiparametric <code>semireg</code> models — with Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap tests, R² for mixed models and diagnostics. Results match SAS <code>LSMEANS</code> and emmeans.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"predictmeans"</span><span class="op">)</span>                       <span class="co"># CRAN</span></span>
+<span><span class="co"># remotes::install_github("dongwenluo/predictmeans")    # development version</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span>
+<span><span class="va">Oats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">nlme</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/nlme/man/Oats.html" class="external-link">Oats</a></span><span class="op">)</span></span>
+<span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span>
+<span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm</span><span class="op">$</span><span class="va">means</span>     <span class="co"># one row per mean: estimate, std.error, df, conf.low, conf.high, group, n, ...</span></span>
+<span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span>     <span class="co"># one row per comparison: estimate, std.error, df, statistic, p.value, p.adj, ...</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span></code></pre></div>
+<p>Every <code><a href="reference/predictmeans.html">predictmeans()</a></code> result has three stable data frames, <code>means</code>, <code>pairs</code> and <code>settings</code>, with fixed column names; <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>, <code>tidy()</code>, <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> work on it.</p>
+</div>
+<div class="section level2">
+<h2 id="main-functions">Main functions<a class="anchor" aria-label="anchor" href="#main-functions"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Task</th>
+<th>Function</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Means and pairwise comparisons</td>
+<td>
+<code><a href="reference/predictmeans.html">predictmeans()</a></code>, <code><a href="reference/covariatemeans.html">covariatemeans()</a></code>
+</td>
+</tr>
+<tr>
+<td>Contrasts</td>
+<td>
+<code><a href="reference/specify_contrast.html">specify_contrast()</a></code>, <code><a href="reference/contrast_family.html">contrast_family()</a></code>, <code><a href="reference/contrastmeans.html">contrastmeans()</a></code>
+</td>
+</tr>
+<tr>
+<td>Joint tests (slices) and slopes</td>
+<td>
+<code><a href="reference/pm_joint.html">pm_joint()</a></code>, <code><a href="reference/pm_slopes.html">pm_slopes()</a></code>
+</td>
+</tr>
+<tr>
+<td>Resampling tests</td>
+<td>
+<code><a href="reference/permmodels.html">permmodels()</a></code>, <code><a href="reference/permlmer.html">permlmer()</a></code>, <code><a href="reference/permanova.lmer.html">permanova.lmer()</a></code>, <code><a href="reference/bootmodels.html">bootmodels()</a></code>
+</td>
+</tr>
+<tr>
+<td>Semiparametric models</td>
+<td>
+<code><a href="reference/semireg.html">semireg()</a></code>, <code><a href="reference/semireg_tmb.html">semireg_tmb()</a></code>, <code><a href="reference/semipred.html">semipred()</a></code>
+</td>
+</tr>
+<tr>
+<td>R², variance components, diagnostics</td>
+<td>
+<code><a href="reference/R2_model.html">R2_model()</a></code>, <code><a href="reference/R2_glmm.html">R2_glmm()</a></code>, <code><a href="reference/varcomp.html">varcomp()</a></code>, <code><a href="reference/residplot.html">residplot()</a></code>, <code><a href="reference/CookD.html">CookD()</a></code>
+</td>
+</tr>
+<tr>
+<td>Reference grid / K matrix</td>
+<td><code><a href="reference/Kmatrix.html">Kmatrix()</a></code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<p>The <a href="https://dongwenluo.github.io/predictmeans/">package website</a> has the help pages and vignettes: getting started; contrasts, joint tests and slopes; link and response scale; permutation and bootstrap tests; smooth curves in mixed models; missing cells and non-estimable means; R² for mixed models; and migrating from version 1.x.</p>
+<p>For AI assistants and scripted use, a compact description of the result tables, the defaults and common recipes is installed with the package: <code>system.file("llms-context.md", package = "predictmeans")</code> (<a href="https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.md" class="external-link">on GitHub</a>).</p>
+</div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>

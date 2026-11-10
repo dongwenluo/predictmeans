@@ -34,7 +34,12 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+<li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
+    <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
+    <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -148,6 +153,23 @@ by the names of the means.</li>
 of <code>gam</code> and covariates that enter only through interactions;
 <code>cov_reduce</code> and <code>exclude</code> pass through
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code> and <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>.</li>
+<li>
+<strong>More comparisons</strong>: <code>adj = "sidak"</code>,
+<code>"scheffe"</code> and <code>"mvt"</code> (exact single-step, as SAS
+<code>ADJUST=SIMULATE</code>); <code><a href="../reference/contrast_family.html">contrast_family()</a></code> (Dunnett,
+polynomial trends, …); <code><a href="../reference/pm_joint.html">pm_joint()</a></code> for joint F tests and
+slices; <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> for slopes by group;
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> of the means. See
+<code><a href="../articles/contrasts.html">vignette("contrasts")</a></code>.</li>
+<li>
+<strong>Response scale</strong>: delta-method standard errors of
+back-transformed means, and ratios or odds ratios for log and logit
+models.</li>
+<li>
+<strong><code><a href="../reference/R2_model.html">R2_model()</a></code></strong> (R² as numbers, Piepho or
+Nakagawa), <strong><code><a href="../reference/bootmodels.html">bootmodels()</a></code></strong> (parametric
+bootstrap), and <code><a href="../reference/predictmeans.html">predictmeans()</a></code> on <code><a href="../reference/semireg.html">semireg()</a></code>
+fits.</li>
 <li>
 <strong>Other model classes</strong> can be added with a few methods
 (see <code><a href="../reference/pm_coef.html">?pm_coef</a></code>).</li>
