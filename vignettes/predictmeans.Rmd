@@ -114,12 +114,21 @@ fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug
 predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$means
 ```
 
-For a glm the means are also given on the response scale (here probabilities).
+For a glm the means are also given on the response scale (here probabilities); see
+`vignette("response-scale")`.
 
 ## More
 
+- `vignette("contrasts", package = "predictmeans")`: other adjustments for multiple
+  testing, comparisons with a control, trends, joint tests (slices) and slopes.
+- `vignette("response-scale", package = "predictmeans")`: GLMs, GLMMs and transformed
+  responses: means and standard errors on the response scale, ratios and odds ratios.
+- `vignette("missing-cells", package = "predictmeans")`: empty cells, confounded factors
+  and means that cannot be estimated.
 - `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
 - `vignette("migrating", package = "predictmeans")`: what changed from version 1.x.
-- `?permmodels`: permutation tests for mixed models; pass the result to
-  `predictmeans(permlist = )` for permutation p-values of pairwise comparisons.
-- `?semireg`, `?semipred`: semiparametric regression.
+- `vignette("resampling", package = "predictmeans")`: permutation and parametric
+  bootstrap tests (`permmodels()`, `permlmer()`, `bootmodels()`), also for pairwise
+  comparisons and contrasts through `permlist`.
+- `vignette("smooth", package = "predictmeans")`: smooth curves in mixed models
+  (`semireg()`, `semipred()`), with simultaneous confidence bands.

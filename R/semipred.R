@@ -318,7 +318,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
             geom_line(linewidth=1, col="blue") +
             geom_hline(yintercept=0, linetype="dashed", color = "red") +
             geom_ribbon(aes(ymin = LL, ymax = UL), alpha = 0.6, stat="identity", fill="chartreuse3", col="chartreuse3") +
-            ggtitle(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with", (1-level) * 100, "% CI")) +
+            ggtitle(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI")) +
             labs(x=covariate, y=paste("The difference of ", response, "\n", sep="")) +
             theme_bw() +
             theme(plot.title = element_text(hjust = 0.5)) 
@@ -399,7 +399,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           plt <- ggplot(plt_df_contrN, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) + 
             geom_contour_filled() +
             geom_point(data=plt_df_contrSub, col="red", size=2.5, shape=22) +
-            ggtitle(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with Points at the Area out of", (1-level) * 100, "% CI")) +
+            ggtitle(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with Points at the Area out of", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI")) +
             labs(x=covariate[1], y=paste("The difference of ", response, "\n", sep=""), z=response) +
             theme_bw() +
             theme(plot.title = element_text(hjust = 0.5)) 			

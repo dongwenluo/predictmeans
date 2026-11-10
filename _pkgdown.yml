@@ -16,6 +16,11 @@ articles:
   navbar: ~
   contents:
   - predictmeans
+  - contrasts
+  - response-scale
+  - resampling
+  - smooth
+  - missing-cells
   - R2_glmm
   - migrating
 - title: Worked examples

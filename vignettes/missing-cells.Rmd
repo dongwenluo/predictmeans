@@ -1,0 +1,144 @@
+---
+title: "Missing cells and non-estimable means"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Missing cells and non-estimable means}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = TRUE, warning = TRUE)
+```
+
+A predicted mean is a linear combination of the model's coefficients. When some
+treatment combinations have no data, or two factors are confounded, some of these
+combinations cannot be estimated from the data: emmeans prints them as `nonEst` and SAS
+as `Non-est`. This vignette shows what predictmeans does in these cases and how to get
+means and comparisons that are estimable.
+
+In short:
+
+- **Cell means** of combinations with no data are not shown.
+- **A mean that averages over an empty cell** (e.g. the mean of a nitrogen level over
+  the varieties when one variety lacks that level) keeps the rule of predictmeans 1.x:
+  it is the average of the observed cells, with a warning. Such a mean is not
+  comparable with the means that average over all cells.
+- **Means that the data cannot determine** (because factors are confounded) are `NA`,
+  with a message. Their pairwise differences are still given when they can be
+  estimated, and letters are given among those.
+- The `means` table has an `estimable` column and the number of observations, `n`.
+
+```{r, message = FALSE, warning = FALSE}
+library(predictmeans)
+```
+
+## An empty cell
+
+Suppose the plots of Victory at the highest nitrogen level were lost in the oats split
+plot:
+
+```{r}
+Oats <- as.data.frame(nlme::Oats)
+Oats$N <- factor(Oats$nitro)
+Om <- subset(Oats, !(Variety == "Victory" & N == "0.6"))
+with(Om, table(Variety, N))
+fm <- lmer(yield ~ N * Variety + (1 | Block/Variety), data = Om)
+```
+
+The model with the interaction has one coefficient fewer (lme4 drops it). The cell means
+are those of the 11 combinations with data:
+
+```{r, warning = FALSE}
+pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+nrow(pm_cells$means)
+```
+
+The nitrogen means average over the varieties. For N = 0.6 only two varieties have data,
+so its mean is their average, and predictmeans warns:
+
+```{r}
+pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+pm_n$means[, c("N", "estimate", "std.error", "n")]
+```
+
+That mean leaves out Victory, the lowest-yielding variety at the other nitrogen levels,
+so it is too high compared with the others; emmeans calls it non-estimable. Comparisons
+that stay within the observed cells are sound, e.g. nitrogen levels within each variety:
+
+```{r, warning = FALSE}
+pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE,
+                     prtnum = FALSE)
+within <- subset(pm_v$pairs, !is.na(by))
+head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
+```
+
+or contrasts written with `specify_contrast()`, which refuses means that cannot be
+estimated:
+
+```{r, warning = FALSE}
+cm <- specify_contrast(Kmatrix(fm, "N:Variety"),
+  N_effect_GR_and_M = (`0.6:Golden Rain` + `0.6:Marvellous`)/2 - (`0:Golden Rain` + `0:Marvellous`)/2)
+contrastmeans(fm, "N:Variety", ctrmatrix = cm)[[1]]
+```
+
+## Confounded factors
+
+In this spray trial the highest spray volume was used only with fine droplets, and the
+other two volumes only with medium droplets:
+
+```{r}
+set.seed(3)
+spray <- data.frame(
+  droplet = factor(rep(c("medium", "fine"), c(40, 10)), levels = c("medium", "fine")),
+  vol = factor(c(rep(c("130", "200"), 20), rep("400", 10))),
+  conc = factor(rep(c("none", "half"), 25)))
+spray$y <- 5 + 0.3 * (spray$conc == "half") - 0.4 * (spray$droplet == "fine") +
+  rnorm(50, sd = 0.2)
+with(spray, table(droplet, vol))
+```
+
+In a model with `droplet` and `vol` as separate factors, the effect of volume 400 cannot
+be told apart from that of fine droplets. A volume mean averaged over both droplet sizes
+needs both, so none of the volume means can be estimated:
+
+```{r}
+fs <- lm(y ~ droplet + conc + vol, data = spray)
+pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pv$means[, c("vol", "estimate", "n", "estimable", "group")]
+pv$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
+```
+
+The difference between volumes 130 and 200 (both with medium droplets) can still be
+estimated, and the letters compare those two only.
+
+There are two ways to get means. `weights = "cells"` averages over the observed
+combinations only, weighting them by their numbers of observations; these means depend on
+how the data happen to be spread over the other factors:
+
+```{r}
+predictmeans(fs, "vol", weights = "cells", plot = FALSE, prtnum = FALSE)$means[, c("vol", "estimate", "std.error")]
+```
+
+Better, state the structure in the model: volume is nested in droplet size. The means of
+the observed droplet–volume combinations, averaged equally over `conc`, are then
+estimable (and equal to what emmeans gives after detecting the nesting):
+
+```{r}
+fs2 <- lm(y ~ conc + droplet/vol, data = spray)
+pn <- predictmeans(fs2, "droplet:vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pn$means[, c("droplet", "vol", "estimate", "std.error", "n", "group")]
+```
+
+The warning about missing combinations refers to the three combinations that cannot
+occur in this design.
+
+## Checklist
+
+- Look at the `n` and `estimable` columns of the `means` table, and at warnings and
+  messages.
+- Compare means that average over the same cells; use `atvar` or contrasts within the
+  observed cells when some are empty.
+- When factors are confounded, write the structure into the model (nesting, or one
+  factor for the observed combinations) rather than averaging over combinations that
+  do not exist.

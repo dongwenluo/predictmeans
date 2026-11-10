@@ -420,6 +420,32 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* For AI assistants and scripted use, `inst/llms-context.md` describes the
+  result tables (every column of `means`, `pairs` and `settings`), the
+  defaults and common recipes (a test checks that it lists every column).
+  The README, which pkgdown turns into the site's home page and `llms.txt`,
+  now describes the package, its main functions and its vignettes.
+* New vignette "Missing cells and non-estimable means": an empty cell in
+  the oats split plot (the 1.x averaging rule and its warning, comparisons
+  within the observed cells) and confounded factors in a spray trial (NA
+  means with estimable differences, `weights = "cells"`, and writing the
+  nesting into the model).
+* New vignette "Smooth curves in mixed models": `semireg()` and
+  `semipred()` on `nlme::Dialyzer`, `ranova()` of the smooth terms,
+  pointwise and simultaneous bands, a difference curve, and `predictmeans()`
+  on the fit. `semipred()`'s plot title says when the band is simultaneous.
+* New vignette "Permutation and bootstrap tests": `permmodels()` and its
+  use as `permlist` in `predictmeans()` and `contrastmeans()`, `permlmer()`
+  for a random slope, `permanova.lmer()`, and `bootmodels()` for a binomial
+  GLMM, with advice on which to use.
+* New vignette "Link and response scale": binomial and Poisson GLMs and
+  GLMMs and a log-transformed response (`trans = exp`), with response-scale
+  means and SEs, odds ratios and ratios, what a back-transformed GLMM mean
+  means, and Piepho's vs Nakagawa's R² (`R2_model()`).
+* New vignette "Contrasts, joint tests and slopes": the `adj` methods
+  (including `"mvt"`), `contrast_family()` (Dunnett, trends), `pm_joint()`
+  (slices), `pm_slopes()` and `coef()`/`vcov()` with marginaleffects, on the
+  oats split plot. The getting-started and migrating vignettes link to it.
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".
 * A pkgdown website (built by GitHub Actions and published to GitHub

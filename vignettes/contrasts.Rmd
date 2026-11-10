@@ -1,0 +1,152 @@
+---
+title: "Contrasts, joint tests and slopes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Contrasts, joint tests and slopes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 4.5)
+has_mvt <- requireNamespace("mvtnorm", quietly = TRUE)   # for adj = "mvt"
+```
+
+`predictmeans()` gives the means of a model term and all their pairwise comparisons.
+This vignette shows what to use when the questions are different: comparisons with a
+control, trends, tests of several contrasts at once, slopes of a covariate, and other
+adjustments for multiple testing. The results match emmeans, pbkrtest and lmerTest
+(Kenward–Roger and Satterthwaite) and SAS `LSMEANS`, `SLICE` and `ESTIMATE` statements.
+
+We use the oats split plot again: three varieties on whole plots within six blocks, four
+nitrogen levels on subplots.
+
+```{r}
+library(predictmeans)
+Oats <- as.data.frame(nlme::Oats)
+Oats$N <- factor(Oats$nitro)
+fm <- lmer(yield ~ N * Variety + (1 | Block/Variety), data = Oats)
+```
+
+## Adjusting for multiple comparisons
+
+`adj` sets how the p-values of the pairwise comparisons are adjusted. Besides the
+`p.adjust()` methods (`"holm"`, `"BH"`, `"bonferroni"`, ...) and `"tukey"`, there are
+`"sidak"`, `"scheffe"` and `"mvt"`. `"mvt"` is the single-step multivariate t
+adjustment: it uses the correlations among the comparisons, so it is exact for any
+family of contrasts. It is what SAS `ADJUST=SIMULATE` estimates by simulation; here it
+is computed by package mvtnorm.
+
+```{r, eval = has_mvt}
+p <- sapply(c("none", "tukey", "mvt", "sidak", "scheffe", "holm"), function(a)
+  predictmeans(fm, "N", adj = a, plot = FALSE, prtnum = FALSE)$pairs$p.adj)
+pm <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+data.frame(pair = paste(pm$pairs$level1, "-", pm$pairs$level2), signif(p, 3))
+```
+
+For all pairs of means Tukey and `"mvt"` agree, up to the accuracy of the mvtnorm
+computation (about 1e-4, which shows only for very small p-values); `"mvt"` also covers
+other families, as below. Scheffé protects every possible contrast and is the most
+conservative.
+
+## Families of contrasts
+
+`contrast_family()` builds standard sets of contrasts among the means of a term, with
+the same coefficients and names as emmeans: `"pairwise"`, `"revpairwise"`,
+`"trt.vs.ctrl"`, `"consec"`, `"poly"`, `"eff"` and `"del.eff"`. The result goes to
+`contrastmeans()`.
+
+Each nitrogen level against no nitrogen (Dunnett's comparisons), with the exact Dunnett
+adjustment:
+
+```{r}
+K <- Kmatrix(fm, "N")
+dunnett <- contrast_family(K, "trt.vs.ctrl")
+dunnett
+```
+
+```{r, eval = has_mvt}
+contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
+```
+
+Linear and quadratic trends in nitrogen within each variety (`by`), with integer
+orthogonal polynomial coefficients (the nitrogen levels are equally spaced):
+
+```{r}
+K2 <- Kmatrix(fm, "N:Variety")
+trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+contrastmeans(fm, "N:Variety", ctrmatrix = trends)[[1]]
+```
+
+`specify_contrast()` (see the getting-started vignette) writes any other contrast by
+the names of the means.
+
+## Joint tests and slices
+
+`pm_joint()` tests several contrasts at once with an F test. With `by`, it compares the
+means of the term within each level of the `by` factor, which is SAS
+`LSMEANS N*Variety / SLICE=Variety`:
+
+```{r}
+pm_joint(fm, "N:Variety", by = "Variety")
+pm_joint(fm, "N:Variety", by = "N")
+```
+
+The first table asks whether nitrogen matters within each variety, the second whether
+the varieties differ at each nitrogen level. With `ctrmatrix`, the rows of any contrast
+matrix are tested together, e.g. the departure from a straight line (quadratic and cubic
+terms):
+
+```{r}
+curv <- contrast_family(K, "poly")[c("quadratic", "cubic"), ]
+pm_joint(fm, "N", ctrmatrix = curv)
+```
+
+For REML `lmer` fits the test is the Kenward–Roger F test (as `pbkrtest::KRmodcomp()`);
+`df_method = "Satterthwaite"` gives lmerTest's test, and `"containment"` the SAS
+containment df.
+
+## Slopes of a covariate
+
+When nitrogen is used as a number, the question is how fast yield rises with it in each
+variety. `pm_slopes()` gives the slopes with standard errors, df, confidence limits and
+tests, and compares them (as `emmeans::emtrends()`):
+
+```{r}
+fm2 <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
+pm_slopes(fm2, "nitro", "Variety", adj = "tukey")
+```
+
+The slopes are in yield per unit of nitrogen. With `poly()` or spline terms the slope
+changes along the covariate; `at` sets where it is taken (the default is the
+covariate's mean).
+
+## Any contrast from `coef()` and `vcov()`
+
+`coef()` and `vcov()` give the means of a `predictmeans()` result and their covariance
+matrix (Kenward–Roger adjusted for REML `lmer` fits), named by the levels. Any contrast
+can be computed from them:
+
+```{r}
+pmv <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+b <- coef(pmv)
+L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
+c(estimate = sum(L * b), SE = sqrt(drop(L %*% vcov(pmv) %*% L)))
+```
+
+They also let other packages test contrasts of the means. marginaleffects needs the
+class listed first; `b1`, `b2`, ... are the means in the order of `coef()`:
+
+```{r, eval = requireNamespace("marginaleffects", quietly = TRUE)}
+options(marginaleffects_model_classes = "predictmeans")
+i <- match(c("0.6:Victory", "0.6:Golden Rain"), names(b))
+marginaleffects::hypotheses(pmv, hypothesis = sprintf("b%d - b%d = 0", i[1], i[2]))
+```
+
+marginaleffects uses normal-based tests; the standard error is the same as above.
+
+## More
+
+- `vignette("predictmeans", package = "predictmeans")`: getting started.
+- `?contrastmeans`, `?specify_contrast`, `?contrast_family`, `?pm_joint`, `?pm_slopes`.

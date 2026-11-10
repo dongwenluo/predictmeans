@@ -1,0 +1,135 @@
+---
+title: "Link and response scale"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Link and response scale}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 4)
+```
+
+For generalized linear (mixed) models, and for models of a transformed response such as
+`log(y)`, the means are estimated on the scale of the model, the *link scale*, and then
+back-transformed to the scale of the data, the *response scale*. predictmeans does the
+tests on the link scale, where the model is linear, and reports both scales:
+
+- `means`: `estimate`, `std.error`, `conf.low`, `conf.high` on the link scale, and
+  `response`, `response.std.error`, `response.conf.low`, `response.conf.high` on the
+  response scale;
+- `pairs`: differences on the link scale and, for a log link (or `trans = exp`), the
+  **ratio** of the two means with its confidence limits; for a logit link, the **odds
+  ratio**.
+
+The response-scale standard error comes from the delta method, as emmeans gives with
+`type = "response"`. The confidence limits are the back-transformed link-scale limits,
+so they are not symmetric around the mean.
+
+```{r}
+library(predictmeans)
+```
+
+## Binomial GLM: probabilities and odds ratios
+
+The `Drug` data give the number of mice responding (`R`) out of `N` for four drugs at
+several doses.
+
+```{r}
+data(Drug)
+fm_drug <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
+pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_drug$means[, c("Drug", "estimate", "response", "response.std.error",
+                  "response.conf.low", "response.conf.high")]
+```
+
+`estimate` is the log odds of a response at the mean log dose; `response` is the
+probability. The comparisons are tested on the log-odds scale, and each difference is
+the log of an odds ratio:
+
+```{r}
+pm_drug$pairs[, c("level1", "level2", "estimate", "p.value",
+                  "odds.ratio", "odds.ratio.conf.low", "odds.ratio.conf.high")]
+```
+
+```{r}
+ggplot2::autoplot(pm_drug, type = "response")
+```
+
+## Poisson GLMM: counts and rate ratios
+
+Egg counts of individual females, in containers within populations; the innermost
+random effect (one level per female) models overdispersion.
+
+```{r}
+data(Poisson_ind)
+fm_egg <- glmer(Egg ~ Treatment + Habitat + (1 | Population/Container/individual),
+                family = poisson, data = Poisson_ind)
+pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_egg$means[, c("Treatment", "estimate", "response", "response.std.error",
+                 "response.conf.low", "response.conf.high")]
+pm_egg$pairs[, c("level1", "level2", "p.value", "ratio", "ratio.conf.low", "ratio.conf.high")]
+```
+
+The `ratio` is the expected count under `Exp` divided by that under `Cont`.
+
+For a GLMM the back-transformed mean is the response of a *typical* unit, one whose
+random effects are all zero. With a log link this is smaller than the average count over
+all units, which is `exp(estimate + v/2)`, `v` being the total variance of the random
+effects. Ratios are the same on both definitions, which is one reason to report them.
+
+## A transformed response: `trans = exp`
+
+When the response is transformed before modelling, give the back-transformation with
+`trans` (and `transOff` for, e.g., `log(y + 1)`). Differences of log means are logs of
+ratios of geometric means:
+
+```{r}
+data(Body_length)
+fm_len <- lmer(log(BodyL) ~ Treatment + Habitat + Sex + (1 | Population/Container),
+               data = Body_length)
+pm_len <- predictmeans(fm_len, "Treatment", pairwise = TRUE, trans = exp,
+                       plot = FALSE, prtnum = FALSE)
+pm_len$means[, c("Treatment", "estimate", "response", "response.std.error")]
+pm_len$pairs[, c("level1", "level2", "p.value", "ratio", "ratio.conf.low", "ratio.conf.high")]
+```
+
+## Binomial GLMM: odds ratio and R²
+
+The `Clinical` data give the number of favourable responses out of the patients in each
+treatment group at each of eight clinics.
+
+```{r}
+data(Clinical)
+fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
+                 family = binomial, data = Clinical)
+pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_clin$means[, c("Treatment", "response", "response.conf.low", "response.conf.high")]
+pm_clin$pairs[, c("level1", "level2", "p.value", "odds.ratio",
+                  "odds.ratio.conf.low", "odds.ratio.conf.high")]
+```
+
+`R2_model()` gives the share of the variance explained, as numbers: Piepho's R² (the
+default, also printed by `R2_glmm()`) or Nakagawa and Schielzeth's marginal and
+conditional R².
+
+```{r}
+R2_model(fm_clin)
+R2_model(fm_clin, method = "nakagawa")
+```
+
+The two need not agree. For counts out of totals, as here, Piepho's R² takes the
+residual variance from the model's working weights: with up to 37 patients per group a
+proportion is measured precisely, so the random clinic effects explain most of the rest.
+Nakagawa's R² uses the variance of the latent scale of a single yes/no response, π²/3
+for the logit link, whatever the group sizes. For binary (0/1) data both use the same
+latent variance.
+
+## More
+
+- `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
+- `vignette("contrasts", package = "predictmeans")`: contrasts, joint tests and slopes;
+  they are on the link scale too.
+- `?predictmeans` (arguments `trans`, `transOff`, `count`), `?R2_model`.
