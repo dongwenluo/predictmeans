@@ -1,0 +1,113 @@
+---
+title: "Smooth curves in mixed models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Smooth curves in mixed models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 4)
+```
+
+When a response changes with a covariate along a curve whose shape is not known,
+`semireg()` fits it as a penalized spline inside a linear or generalized linear mixed
+model (Ruppert, Wand and Carroll 2003). The spline's wiggly part is a random effect, so
+the amount of smoothing is estimated by REML along with the other variance components,
+and the usual mixed-model tools apply. `semipred()` predicts the curves with confidence
+bands; `predictmeans()` gives means and comparisons of factor levels with the smooth
+included.
+
+## Data and model
+
+The `Dialyzer` data (package nlme) give the ultrafiltration rate of 20 dialyzers at
+seven transmembrane pressures, at two blood flow rates (`QB`, 200 or 300 dl/min).
+
+```{r}
+library(predictmeans)
+data(Dialyzer, package = "nlme")
+Dialyzer <- as.data.frame(Dialyzer)
+```
+
+The rate rises with pressure and levels off. The model has a linear trend for each blood
+flow rate, a smooth departure from it for each rate (`smZ(..., by = QB, group = TRUE)`),
+and a random intercept and slope for each dialyzer:
+
+```{r}
+fm <- semireg(rate ~ pressure * QB + (pressure | Subject),
+              smoothZ = list(qb = smZ(pressure, k = 4, by = QB, group = TRUE)),
+              data = Dialyzer, prt = FALSE)
+```
+
+`k` is the number of interior knots of the spline. `fm$semer` is the fitted mixed
+model, so the usual tests apply. `ranova()` tests the random terms, including the
+smooth: a significant smooth term means the curve is not a straight line.
+
+```{r}
+ranova(fm$semer)
+```
+
+## Curves with confidence bands
+
+```{r}
+cur <- semipred(fm, "QB", "pressure", prt = FALSE)
+head(cur$pred_df)
+cur$plt
+```
+
+The band is pointwise: at each pressure it covers the true curve with 95% probability
+(`level = 0.05`). Before version 2.0 these limits were 90% limits; `level = 0.1` gives
+them.
+
+A **simultaneous** band covers the whole curve at once with 95% probability, so it is
+wider. Use it to judge the shape of the curve over its whole range:
+
+```{r}
+sim <- semipred(fm, "QB", "pressure", simultaneous = TRUE, prt = FALSE)
+crit <- (sim$pred_df$UL - sim$pred_df$rate) / sim$pred_df$SE
+c(pointwise = qnorm(0.975), simultaneous = crit[1])
+sim$plt
+```
+
+The critical value comes from 10,000 draws of the estimates' distribution, with a fixed
+seed, so the band is the same each time.
+
+## Where do the curves differ?
+
+`contr` gives the difference between two curves, here 300 minus 200 dl/min, with its
+band. Where a simultaneous band excludes zero, the curves differ, with the error rate
+controlled over the whole range of pressures. Here the higher blood flow rate gives a
+higher ultrafiltration rate from a pressure of about 1.2 upwards:
+
+```{r}
+dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), simultaneous = TRUE, prt = FALSE)
+dif$plt
+```
+
+## Means of factor levels
+
+`predictmeans()` accepts a `semireg()` fit. The means of the blood flow rates include
+the smooth (as `semipred()` gives at the same pressure), at the mean pressure or at
+values given by name:
+
+```{r}
+predictmeans(fm, "QB")
+predictmeans(fm, "QB", covariate = c(pressure = 1))$means
+```
+
+The tests are normal-based, as in `semipred()`.
+
+## More
+
+- `?semireg`, `?semipred`, `?smZ`; `semireg_tmb()` fits the same models with
+  glmmTMB, which also allows negative binomial and other families.
+- The worked examples on the package website use larger data sets (apartment prices,
+  school scores, respiratory infections, pollen counts and a spatial smooth of copper
+  grades).
+
+## References
+
+Ruppert, D., Wand, M. P. and Carroll, R. J. (2003). *Semiparametric Regression*.
+Cambridge University Press.

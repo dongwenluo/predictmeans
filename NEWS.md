@@ -420,6 +420,10 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* New vignette "Smooth curves in mixed models": `semireg()` and
+  `semipred()` on `nlme::Dialyzer`, `ranova()` of the smooth terms,
+  pointwise and simultaneous bands, a difference curve, and `predictmeans()`
+  on the fit. `semipred()`'s plot title says when the band is simultaneous.
 * New vignette "Permutation and bootstrap tests": `permmodels()` and its
   use as `permlist` in `predictmeans()` and `contrastmeans()`, `permlmer()`
   for a random slope, `permanova.lmer()`, and `bootmodels()` for a binomial

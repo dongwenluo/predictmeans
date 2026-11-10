@@ -19,6 +19,7 @@ articles:
   - contrasts
   - response-scale
   - resampling
+  - smooth
   - R2_glmm
   - migrating
 - title: Worked examples

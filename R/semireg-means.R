@@ -35,6 +35,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   se <- sqrt(diag(V))
   z <- stats::qnorm(1 - level/2)
   means <- cbind(lab, estimate = est, std.error = se, df = Inf, conf.low = est - z*se, conf.high = est + z*se)
+  rownames(means) <- NULL
 
   semer <- des$semer
   fam <- tryCatch(stats::family(semer), error = function(e) NULL)

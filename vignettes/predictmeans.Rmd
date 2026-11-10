@@ -128,4 +128,5 @@ For a glm the means are also given on the response scale (here probabilities); s
 - `vignette("resampling", package = "predictmeans")`: permutation and parametric
   bootstrap tests (`permmodels()`, `permlmer()`, `bootmodels()`), also for pairwise
   comparisons and contrasts through `permlist`.
-- `?semireg`, `?semipred`: semiparametric regression.
+- `vignette("smooth", package = "predictmeans")`: smooth curves in mixed models
+  (`semireg()`, `semipred()`), with simultaneous confidence bands.
