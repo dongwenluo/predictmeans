@@ -125,6 +125,7 @@ For a glm the means are also given on the response scale (here probabilities); s
   responses: means and standard errors on the response scale, ratios and odds ratios.
 - `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
 - `vignette("migrating", package = "predictmeans")`: what changed from version 1.x.
-- `?permmodels`: permutation tests for mixed models; pass the result to
-  `predictmeans(permlist = )` for permutation p-values of pairwise comparisons.
+- `vignette("resampling", package = "predictmeans")`: permutation and parametric
+  bootstrap tests (`permmodels()`, `permlmer()`, `bootmodels()`), also for pairwise
+  comparisons and contrasts through `permlist`.
 - `?semireg`, `?semipred`: semiparametric regression.

@@ -420,6 +420,10 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* New vignette "Permutation and bootstrap tests": `permmodels()` and its
+  use as `permlist` in `predictmeans()` and `contrastmeans()`, `permlmer()`
+  for a random slope, `permanova.lmer()`, and `bootmodels()` for a binomial
+  GLMM, with advice on which to use.
 * New vignette "Link and response scale": binomial and Poisson GLMs and
   GLMMs and a log-transformed response (`trans = exp`), with response-scale
   means and SEs, odds ratios and ratios, what a back-transformed GLMM mean
