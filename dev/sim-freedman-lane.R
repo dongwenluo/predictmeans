@@ -10,12 +10,15 @@
 ##   F     - the parametric F test (lm) or Satterthwaite F test (lmer).
 ## Type I error (tested term has no effect) and power, at the 5% level.
 ##
-## Run: Rscript dev/sim-freedman-lane.R [R_lm] [R_lmer]   (defaults 2000, 300)
+## Run: Rscript dev/sim-freedman-lane.R [R_lm] [R_lmer] [part]   (defaults 2000, 300, "all")
+## part = "lmer-leverage" runs only the mixed-model design with a covariate
+## with extreme values (dev/sim-freedman-lane-lmer-leverage.rds).
 ## Writes dev/sim-freedman-lane-results.rds and prints the tables.
 
 args <- commandArgs(TRUE)
 R_lm <- if (length(args) >= 1) as.integer(args[1]) else 2000
 R_lmer <- if (length(args) >= 2) as.integer(args[2]) else 300
+part <- if (length(args) >= 3) args[3] else "all"
 nperm <- 199
 alpha <- 0.05
 set.seed(20261110)
@@ -82,7 +85,7 @@ lm_one <- function(d, y, type) {
 }
 
 lm_results <- list()
-for (type in c("balanced", "unbalanced", "covariate", "leverage")) for (en in names(errs)) for (eff in c(0, 1)) {
+if (part == "all") for (type in c("balanced", "unbalanced", "covariate", "leverage")) for (en in names(errs)) for (eff in c(0, 1)) {
   p <- t(replicate(R_lm, {
     d <- make_design(type)
     y <- nuisance(d, type) + eff * c(0, 0.5, 1)[as.integer(d$A)] + errs[[en]](nrow(d))
@@ -109,10 +112,10 @@ chol_lower <- function(m) {          # lower Cholesky factor of V = Z L L' Z' + 
   V <- Matrix::forceSymmetric(Matrix::tcrossprod(ZL) + Matrix::Diagonal(nrow(ZL)))
   Matrix::t(Matrix::chol(V))
 }
-lmer_one <- function(d) {
+lmer_one <- function(d, full_f = y ~ B + A + (1 | block), red_f = y ~ B + (1 | block)) {
   ctl <- lmerControl(calc.derivs = FALSE, check.conv.singular = "ignore")
-  full <- lmer(y ~ B + A + (1 | block), data = d, REML = TRUE, control = ctl)
-  red <- lmer(y ~ B + (1 | block), data = d, REML = TRUE, control = ctl)
+  full <- lmer(full_f, data = d, REML = TRUE, control = ctl)
+  red <- lmer(red_f, data = d, REML = TRUE, control = ctl)
   f_of <- function(m) anova(m)["A", "F value"]          # sequential: A after B
   f_obs <- f_of(full)
   p_F <- suppressMessages(lmerTest::as_lmerModLmerTest(full))
@@ -136,7 +139,7 @@ lmer_one <- function(d) {
 }
 nperm <- 99
 lmer_results <- list()
-for (en in c("normal", "skewed")) for (eff in if (en == "normal") c(0, 1) else 0) {
+if (part == "all") for (en in c("normal", "skewed")) for (eff in if (en == "normal") c(0, 1) else 0) {
   p <- t(replicate(R_lmer, {
     d <- lmer_design()
     d$y <- c(0, 3, 6)[as.integer(d$B)] + eff * c(0, 0.6, 1.2)[as.integer(d$A)] +
@@ -147,6 +150,34 @@ for (en in c("normal", "skewed")) for (eff in if (en == "normal") c(0, 1) else 0
     effect = if (eff == 0) "null (type I)" else "A effect (power)", t(colMeans(p <= alpha)))
   cat(sprintf("lmer %-6s effect=%d: F %.3f raw %.3f FL %.3f\n", en, eff,
               mean(p[, "F"] <= alpha), mean(p[, "raw"] <= alpha), mean(p[, "FL"] <= alpha)))
+}
+
+## lmer with a covariate with extreme values: 8 blocks, each with two units of
+## each A level; x log-normal, larger for A level 3, with a large slope;
+## y ~ x + A + (1 | block), A tested.
+lmer_lev_design <- function() {
+  d <- expand.grid(rep = 1:2, A = factor(1:3), block = factor(1:8))
+  d$x <- exp(rnorm(nrow(d), sd = 1) + 0.8 * (d$A == "3"))
+  d
+}
+if (part == "lmer-leverage") {
+  lev_results <- list()
+  for (en in names(errs)) for (eff in if (en == "normal") c(0, 1) else 0) {
+    p <- t(replicate(R_lmer, {
+      d <- lmer_lev_design()
+      d$y <- 3 * (d$x - mean(d$x)) + eff * c(0, 0.5, 1)[as.integer(d$A)] +
+        rnorm(8, sd = 1)[as.integer(d$block)] + errs[[en]](nrow(d))
+      suppressWarnings(suppressMessages(lmer_one(d, y ~ x + A + (1 | block), y ~ x + (1 | block))))
+    }))
+    lev_results[[paste(en, eff)]] <- data.frame(model = "lmer", design = "blocks, leverage covariate", errors = en,
+      effect = if (eff == 0) "null (type I)" else "A effect (power)", t(colMeans(p <= alpha)), R = R_lmer)
+    cat(sprintf("lmer leverage %-6s effect=%d: F %.3f raw %.3f FL %.3f\n", en, eff,
+                mean(p[, "F"] <= alpha), mean(p[, "raw"] <= alpha), mean(p[, "FL"] <= alpha)))
+  }
+  lev <- do.call(rbind, lev_results); rownames(lev) <- NULL
+  saveRDS(lev, "dev/sim-freedman-lane-lmer-leverage.rds")
+  print(lev, digits = 3)
+  quit(save = "no")
 }
 
 res <- rbind(do.call(rbind, lm_results), do.call(rbind, lmer_results))
