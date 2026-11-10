@@ -302,7 +302,7 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #'   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
 #'   b <- coef(pm)
 #'   L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
-#'   c(estimate = sum(L*b), SE = sqrt(drop(L \%*\% vcov(pm) \%*\% L)))
+#'   c(estimate = sum(L*b), SE = sqrt(drop(L %*% vcov(pm) %*% L)))
 #' @name tidy.predictmeans
 #' @aliases as.data.frame.predictmeans coef.predictmeans vcov.predictmeans
 NULL

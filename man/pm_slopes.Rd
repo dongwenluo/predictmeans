@@ -23,14 +23,14 @@ non-linearly); the default is its mean.}
 
 \item{adj}{Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.}
 
-\item{df_method,vcov_adjust,weights}{As in \code{\link{predictmeans}}.}
+\item{df_method, vcov_adjust, weights}{As in \code{\link{predictmeans}}.}
 }
 \value{
 A list of two data frames:
 \item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{slope}, \code{std.error}, \code{df},
-\code{conf.low}, \code{conf.high}, \code{statistic} (t) and \code{p.value} (of slope = 0).}
+  \code{conf.low}, \code{conf.high}, \code{statistic} (t) and \code{p.value} (of slope = 0).}
 \item{pairs}{one row per pair of levels: \code{level1}, \code{level2}, \code{estimate} (slope of \code{level1} minus
-slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value} and \code{p.adj}.}
+  slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value} and \code{p.adj}.}
 }
 \description{
 The slope (rate of change) of the fitted response in a numeric covariate within each level of a model term, with

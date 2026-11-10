@@ -31,10 +31,10 @@ of \code{\link{contrastmeans}}. The families are those of \pkg{emmeans}, with th
 \describe{
 \item{\code{"pairwise"}, \code{"revpairwise"}}{all pairs, earlier minus later level (or later minus earlier);}
 \item{\code{"trt.vs.ctrl"}}{each level minus the reference level \code{ref} (Dunnett's comparisons; use
-\code{adj = "mvt"} in \code{contrastmeans} for the exact Dunnett adjustment);}
+  \code{adj = "mvt"} in \code{contrastmeans} for the exact Dunnett adjustment);}
 \item{\code{"consec"}}{each level minus the one before;}
 \item{\code{"poly"}}{orthogonal polynomials (linear, quadratic, ...) with integer coefficients, for equally spaced
-levels;}
+  levels;}
 \item{\code{"eff"}}{each level minus the average of all levels;}
 \item{\code{"del.eff"}}{each level minus the average of the other levels.}
 }

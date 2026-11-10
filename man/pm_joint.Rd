@@ -38,10 +38,10 @@ compared within each level of the \code{by} factor(s): the test of \code{nitro} 
 The F statistic and its denominator degrees of freedom follow the model:
 \describe{
 \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997), as
-\code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
-\code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
+  \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
+  \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
 \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
-\code{\link{contrastmeans}}).}
+  \code{\link{contrastmeans}}).}
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 }
 Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
