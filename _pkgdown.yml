@@ -16,6 +16,7 @@ articles:
   navbar: ~
   contents:
   - predictmeans
+  - contrasts
   - R2_glmm
   - migrating
 - title: Worked examples

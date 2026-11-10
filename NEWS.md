@@ -420,6 +420,10 @@
   examples with HRW data run only when HRW is installed. The `semireg_tmb()`
   example no longer passes `resp_scale`, which only `semireg()` has; the
   `sleepstudy` plot uses ggplot2 instead of latticeExtra.
+* New vignette "Contrasts, joint tests and slopes": the `adj` methods
+  (including `"mvt"`), `contrast_family()` (Dunnett, trends), `pm_joint()`
+  (slices), `pm_slopes()` and `coef()`/`vcov()` with marginaleffects, on the
+  oats split plot. The getting-started and migrating vignettes link to it.
 * Three vignettes: "Getting started with predictmeans", "Adjusted R² for
   generalized linear mixed models" and "Migrating from predictmeans 1.x".
 * A pkgdown website (built by GitHub Actions and published to GitHub

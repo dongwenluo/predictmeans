@@ -65,6 +65,14 @@ several `Kmatrix()` cases with transformed covariates. See `NEWS.md` for the ful
 - **Covariates**: `Kmatrix()` handles `poly()`, `ns()`, `log()`, smooth terms of `gam`
   and covariates that enter only through interactions; `cov_reduce` and `exclude` pass
   through `predictmeans()` and `covariatemeans()`.
+- **More comparisons**: `adj = "sidak"`, `"scheffe"` and `"mvt"` (exact single-step,
+  as SAS `ADJUST=SIMULATE`); `contrast_family()` (Dunnett, polynomial trends, ...);
+  `pm_joint()` for joint F tests and slices; `pm_slopes()` for slopes by group;
+  `coef()` and `vcov()` of the means. See `vignette("contrasts")`.
+- **Response scale**: delta-method standard errors of back-transformed means, and
+  ratios or odds ratios for log and logit models.
+- **`R2_model()`** (R² as numbers, Piepho or Nakagawa), **`bootmodels()`** (parametric
+  bootstrap), and `predictmeans()` on `semireg()` fits.
 - **Other model classes** can be added with a few methods (see `?pm_coef`).
 - **Fewer dependencies** and faster Kenward–Roger and Satterthwaite computations.
 

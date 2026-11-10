@@ -118,6 +118,8 @@ For a glm the means are also given on the response scale (here probabilities).
 
 ## More
 
+- `vignette("contrasts", package = "predictmeans")`: other adjustments for multiple
+  testing, comparisons with a control, trends, joint tests (slices) and slopes.
 - `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
 - `vignette("migrating", package = "predictmeans")`: what changed from version 1.x.
 - `?permmodels`: permutation tests for mixed models; pass the result to
