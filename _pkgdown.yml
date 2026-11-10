@@ -17,6 +17,7 @@ articles:
   contents:
   - predictmeans
   - contrasts
+  - response-scale
   - R2_glmm
   - migrating
 - title: Worked examples
