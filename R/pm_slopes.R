@@ -15,7 +15,8 @@
 #' @usage
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 #'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-#'           vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"))
+#'           vcov_adjust = TRUE,
+#'           weights = c("equal", "proportional", "outer", "cells", "flat"))
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param covariate Name (in "quotes") of the numeric covariate.
 #' @param modelterm Name (in "quotes") of the factor term whose levels get a slope each, e.g. \code{"Variety"}.

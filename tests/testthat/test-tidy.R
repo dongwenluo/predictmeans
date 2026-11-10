@@ -122,6 +122,9 @@ test_that("marginaleffects::hypotheses() works on predictmeans results", {
   skip_if_not_installed("marginaleffects")
   fm <- lm(yield ~ Block + nitro*Variety, data = oats_fac())
   pm <- predictmeans(fm, "nitro", pairwise = TRUE, plot = FALSE)
+  # newer marginaleffects only accepts classes listed in this option
+  op <- options(marginaleffects_model_classes = c(getOption("marginaleffects_model_classes"), "predictmeans"))
+  on.exit(options(op), add = TRUE)
   h <- marginaleffects::hypotheses(pm, hypothesis = "n2 - n0 = 0")
   expect_equal(as.numeric(h$estimate), -pm$pairs$estimate[1], tolerance = 1e-8)
   expect_equal(as.numeric(h$std.error), pm$pairs$std.error[1], tolerance = 1e-6)

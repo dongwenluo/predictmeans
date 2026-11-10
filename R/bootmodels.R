@@ -10,7 +10,8 @@
 #' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for bootstrap p-values of
 #' pairwise comparisons or contrasts (\code{p.method} \code{"bootstrap"} in the \code{pairs} table).
 #' @usage
-#' bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL, ncore = 1, prt = TRUE)
+#' bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
+#'            ncore = 1, prt = TRUE)
 #' @param model A model fitted by \code{lmer} or \code{glmer}.
 #' @param nsim Number of simulated data sets, the default is 999.
 #' @param type The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics, Types II
@@ -30,7 +31,7 @@
 #'   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
 #'   \donttest{
 #'   bt <- bootmodels(fm, nsim = 99, seed = 1)   # use 999 or more in practice
-#'   predictmeans(fm, "nitro", permlist = bt, plot = FALSE)$pairs
+#'   predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
 #'   }
 #' @name bootmodels
 NULL

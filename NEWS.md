@@ -50,7 +50,8 @@
   tested with `multcomp::glht()` or `marginaleffects::hypotheses()`, e.g.
   `hypotheses(pm, hypothesis = "pairwise")` (marginaleffects is in
   Suggests; predictmeans registers its `get_coef`/`set_coef`/`get_vcov`
-  methods).
+  methods; recent marginaleffects versions also need
+  `options(marginaleffects_model_classes = "predictmeans")`).
 
 ## Plots and summaries from the result tables
 
@@ -432,6 +433,10 @@
 * New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
 
 ## Internal
+
+* The confidence-interval plot uses `geom_errorbar(orientation = "y")`
+  instead of `geom_errorbarh()`, which ggplot2 4.0 deprecates; the plot is
+  unchanged.
 
 * `1:length(x)`, `1:nrow(x)` and `1:ncol(x)` are now `seq_along(x)` /
   `seq_len()` throughout (idea from James Curran's code in 1.1.2); results

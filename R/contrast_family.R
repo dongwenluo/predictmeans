@@ -17,8 +17,8 @@
 #' \code{atvar} does for pairwise comparisons. Note that \code{contrastmeans} adjusts the p-values of all rows as one
 #' family.
 #' @usage
-#' contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly", "eff", "del.eff"),
-#'                 ref = 1, by = NULL, max.degree = NULL)
+#' contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly",
+#'                 "eff", "del.eff"), ref = 1, by = NULL, max.degree = NULL)
 #' @param .x A \code{\link{Kmatrix}} or \code{\link{predictmeans}} result for the model term, or a character vector of
 #'   the level names (then \code{by} can't be used).
 #' @param family The family of contrasts (see Description).

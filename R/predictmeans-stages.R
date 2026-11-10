@@ -1261,7 +1261,7 @@ pm_code_draw <- quote({
 	    p <- ggplot(bkmt, aes(Mean, Trt))+
         labs(title=mtitle, x="", y="")+
         xlim(xlimv) +
-        geom_point(colour="red") + geom_errorbarh(aes(xmax = UL, xmin=LL ), height=0.2, linewidth=0.8, colour="red") +
+        geom_point(colour="red") + geom_errorbar(aes(xmax = UL, xmin=LL ), width=0.2, linewidth=0.8, colour="red", orientation="y") +
         scale_y_discrete(limits = rev(unique(bkmt$Trt)))+
         geom_point(aes(x=bky, y=Trtn), shape=1, position = position_jitter(width = jitterv, height = jitterv), colour="blue", alpha=0.6, data=newdata2)+
         theme_bw(basesz)

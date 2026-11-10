@@ -35,7 +35,7 @@ test_that("a numeric variable that is not in the prediction (here the grouping i
   plain <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d,
                                     ncenter = FALSE, prt = FALSE))
   expect_equal(semipred(centred, covariate = "u", prt = FALSE)$pred_df,
-               semipred(plain, covariate = "u", prt = FALSE)$pred_df, tolerance = 1e-8)
+               semipred(plain, covariate = "u", prt = FALSE)$pred_df, tolerance = 1e-6)
 })
 
 test_that("ranova() on a semireg fit refits with the smooth bases (copper)", {

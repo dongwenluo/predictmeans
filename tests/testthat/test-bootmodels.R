@@ -13,7 +13,7 @@ test_that("bootmodels(): bootstrap p-values, repeatable, usable as permlist", {
   # nitro has a very large effect: no simulated F reaches the observed one
   expect_equal(b1$ANOVA["nitro", "Boot_p_value"], round(1/20, 4))
   expect_true(all(b1$ANOVA$Boot_p_value >= 1/20 - 1e-8 & b1$ANOVA$Boot_p_value <= 1))
-  r <- predictmeans(fm, "nitro", permlist = b1, plot = FALSE)
+  r <- predictmeans(fm, "nitro", permlist = b1, plot = FALSE, ncore = 1)
   expect_true(all(r$pairs$p.method == "bootstrap"))
   b3 <- bootmodels(fm, nsim = 9, type = "III", seed = 1, prt = FALSE)
   expect_true(is.na(b3$ANOVA["(Intercept)", "Boot_p_value"]))

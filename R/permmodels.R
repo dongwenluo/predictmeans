@@ -35,7 +35,7 @@
 #'
 #' ## Permutation test for multiple comparisons
 #' predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
-#'   permlist=permlme, plot=FALSE)
+#'   permlist=permlme, plot=FALSE, ncore=1)
 #'
 #' ## Permutation test for specified contrasts
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),

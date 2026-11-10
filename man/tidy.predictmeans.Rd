@@ -40,7 +40,8 @@ used by \pkg{broom}); \code{as.data.frame()} needs no other package.
 \code{coef()} and \code{vcov()} return the means (on the model scale, as in the \code{estimate} column) and
 their covariance matrix (Kenward-Roger adjusted when the means are), named by the mean labels. With them,
 \code{multcomp::glht()} or \code{marginaleffects::hypotheses()} can test any contrast of the means, e.g.
-\code{hypotheses(pm, hypothesis = "n2 - n0 = 0")} (normal-based).
+\code{hypotheses(pm, hypothesis = "n2 - n0 = 0")} (normal-based). Recent versions of \pkg{marginaleffects} need
+the class listed first: \code{options(marginaleffects_model_classes = "predictmeans")}.
 }
 \examples{
   library(predictmeans)

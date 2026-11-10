@@ -4,8 +4,8 @@
 \alias{contrast_family}
 \title{Families of Contrasts among Means}
 \usage{
-contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly", "eff", "del.eff"),
-                ref = 1, by = NULL, max.degree = NULL)
+contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly",
+                "eff", "del.eff"), ref = 1, by = NULL, max.degree = NULL)
 }
 \arguments{
 \item{.x}{A \code{\link{Kmatrix}} or \code{\link{predictmeans}} result for the model term, or a character vector of

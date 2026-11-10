@@ -4,7 +4,8 @@
 \alias{bootmodels}
 \title{Parametric Bootstrap Tests for Mixed Models}
 \usage{
-bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL, ncore = 1, prt = TRUE)
+bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
+           ncore = 1, prt = TRUE)
 }
 \arguments{
 \item{model}{A model fitted by \code{lmer} or \code{glmer}.}
@@ -42,7 +43,7 @@ pairwise comparisons or contrasts (\code{p.method} \code{"bootstrap"} in the \co
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   \donttest{
   bt <- bootmodels(fm, nsim = 99, seed = 1)   # use 999 or more in practice
-  predictmeans(fm, "nitro", permlist = bt, plot = FALSE)$pairs
+  predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
   }
 }
 \author{
