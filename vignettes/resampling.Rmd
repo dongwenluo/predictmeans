@@ -51,6 +51,18 @@ perm <- permmodels(fm, nperm = 199, ncore = 1, seed = 1)
 The tables repeat the model's tests with a `Perm_p_value` column: the proportion of
 permuted statistics at least as large as the observed one.
 
+For `lm` and `aov` models, `method = "freedman-lane"` tests each term by permuting the
+residuals of the model without that term and adding them back to its fitted values
+(Freedman and Lane 1983). Permuting the response rejects true null hypotheses too often
+when a covariate with extreme values is related to the tested term (Anderson and
+Legendre 1999); Freedman–Lane keeps the level there. It gives the tables only (no refits
+for `permlist`), and it is fast:
+
+```{r}
+fm_cars <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+permmodels(fm_cars, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+```
+
 ## Pairwise comparisons and contrasts
 
 The same refits give permutation p-values for pairwise comparisons, in the `pairs`
@@ -113,6 +125,11 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 ## Which to use
 
 - **Terms and pairwise comparisons in `lm`, `lme` and `lmer` models**: `permmodels()`.
+- **Terms of `lm` and `aov` models with covariates**, especially skewed ones or ones with
+  extreme values: `permmodels(method = "freedman-lane")`.
+- **Mixed models with a covariate with extreme values**: the Kenward–Roger or
+  Satterthwaite F test (`pm_joint()`, or `anova()` of an lmerTest fit); permutation
+  rejected slightly too often there in a simulation study.
 - **A variance component, or any comparison of two nested `lmer` models**:
   `permlmer()`.
 - **GLMMs**: `bootmodels()`.
@@ -120,6 +137,13 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
   df for `lmer`) agree closely with these, at a fraction of the time.
 
 ## References
+
+Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods
+for tests of partial regression coefficients in a linear model. *Journal of Statistical
+Computation and Simulation* 62, 271–303.
+
+Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of reported
+significance levels. *Journal of Business & Economic Statistics* 1, 292–298.
 
 Lee, O. E. and Braun, T. M. (2012). Permutation tests for random effects in linear mixed
 models. *Biometrics* 68, 486–493.

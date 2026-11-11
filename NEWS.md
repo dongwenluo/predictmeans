@@ -101,6 +101,21 @@
 
 ## New options
 
+* `permmodels(method = "freedman-lane")` for `lm` and `aov` models: each
+  term (and coefficient) is tested by permuting the residuals of the model
+  without it and adding them back to that model's fitted values (Freedman
+  and Lane 1983). Use it when a covariate with extreme values is related to
+  the tested term: in a simulation study (`dev/sim-freedman-lane.md`)
+  permuting the response then rejected 6-7% of true null hypotheses at the
+  5% level, Freedman-Lane 4-5%; in other designs the two agreed. The
+  statistics come from QR projections of blocks of permuted responses, with
+  no refits (4999 permutations of a 1000-row model with 16 tests take about
+  11 seconds on one core). Weights and offsets are allowed; `permlist` is
+  `NULL`, so the result cannot be passed to `predictmeans()`. The default,
+  `method = "raw"`, is unchanged. For mixed models with such a covariate
+  the help page recommends the Kenward-Roger or Satterthwaite F test: the
+  raw scheme was slightly liberal there (6.3%), the F test kept 5%.
+
 * New `bootmodels()`: parametric bootstrap p-values for the terms and
   coefficients of `lmer` and `glmer` models, simulating from the model
   without its fixed effects (global null) and refitting. Its result can be
@@ -186,6 +201,13 @@
   adjusted for a spatial smooth.
 
 ## Bug fixes
+
+* `permlmer()` (and so `permanova.lmer()`): when the tested variance is
+  estimated at 0, the likelihood-ratio statistic is 0 up to optimizer noise
+  (e.g. 3e-14). Permuted statistics of 0 then counted as smaller than the
+  observed one, giving a small p-value instead of 1. Statistics are now
+  rounded to 4 decimals before they are compared. In a simulation study
+  (`dev/sim-study/`) this affected 0.1-0.8% of data sets under the null.
 
 * `predictmeans()` and `covariatemeans()` ignored `trans` for `glm` and
   `glmmTMB` models with an identity link: a gaussian `glmmTMB(log(y) ~ ...)`

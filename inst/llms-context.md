@@ -118,6 +118,9 @@ predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)$pairs
 # permutation / bootstrap p-values for pairs
 perm <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE)
 predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
+# lm/aov with a covariate: Freedman-Lane permutations (tables only, permlist is NULL)
+permmodels(lm(mpg ~ wt + factor(cyl), data = mtcars), type = "II", seed = 1,
+           method = "freedman-lane")
 
 # R2 as numbers; variance components
 R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
