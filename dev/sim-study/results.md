@@ -1,5 +1,13 @@
 | study | cell | method | reject 5% | MC SE | reject 1% | flag | n | failures |
 |---|---|---|---|---|---|---|---|---|
+| sim-perm-confirm | cf_permlmer_crossed | chibar | 0.036 | 0.0059 | 0.005 | conservative | 1000 | 0 |
+| sim-perm-confirm | cf_permlmer_crossed | perm | 0.054 | 0.0071 | 0.005 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_permlmer_sp | chibar | 0.048 | 0.0068 | 0.008 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_permlmer_sp | perm | 0.059 | 0.0075 | 0.012 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_pm_lme_global | F_test | 0.057 | 0.0073 | 0.011 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_pm_lme_global | perm | 0.059 | 0.0075 | 0.014 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_pm_lmer_global | F_test | 0.057 | 0.0073 | 0.010 | ok | 1000 | 0 |
+| sim-perm-confirm | cf_pm_lmer_global | perm | 0.048 | 0.0068 | 0.008 | ok | 1000 | 0 |
 | sim-perm-edge | fx_assoc_skew | fl | 0.041 | 0.0063 | 0.007 | ok | 1000 | 0 |
 | sim-perm-edge | fx_assoc_skew | joint | 0.036 | 0.0059 | 0.011 | conservative | 1000 | 0 |
 | sim-perm-edge | fx_assoc_skew | satt | 0.041 | 0.0063 | 0.008 | ok | 1000 | 0 |

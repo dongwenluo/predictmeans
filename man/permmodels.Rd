@@ -44,7 +44,9 @@ for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code
 \details{
 With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
 \code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
-permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}.
+permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}. The residuals are
+decorrelated with the symmetric square root of their covariance, so the results do not depend on the order of the
+data (predictmeans 1.x used the Cholesky factor, which made tests of terms that vary within blocks reject too often).
 
 With \code{method = "freedman-lane"} (Freedman and Lane, 1983), each test has its own permutations: the
 residuals of the model without the tested term (for type I and II tests also without the terms that contain it;

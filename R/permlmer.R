@@ -12,6 +12,12 @@
 #' @param seed Specify a random number generator seed, for reproducible results.
 #' @return
 #' Permutation p-value.
+#' @details
+#' The residuals of \code{lmer0} are decorrelated with the symmetric square root of their covariance under
+#' \code{lmer0}, permuted, correlated again and added to the fitted values of \code{lmer0} (Lee and Braun, 2012); both models
+#' are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
+#' observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
+#' is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
 #' @references
 #' Oliver E. Lee and Thomas M. Braun (2012),
 #'     \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
@@ -92,35 +98,34 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   thetan[theta0name] <- theta0
   Lambda1n <- getME(lmer1, "Lambda")
   Lambda1n@x <- thetan[getME(lmer1, "Lind")]
-  # V = Z Lambda Lambda' Z' + I, kept sparse; Ut is its lower Cholesky factor.
-  ZL <- getME(lmer1, "Z") %*% Lambda1n
-  V1n <- Matrix::forceSymmetric(Matrix::tcrossprod(ZL) + Matrix::Diagonal(nrow(ZL)))
-  Ut <- Matrix::t(Matrix::chol(V1n))
+  # V = Z Lambda Lambda' Z' + I (H0 variances in H1's structure); W is its
+  # order-invariant square root (pm_whiten(), R/whiten.R).
+  W <- pm_whiten(getME(lmer1, "Z") %*% Lambda1n)
   xbeta <- as.vector(getME(lmer0, "X")%*%fixef0)
   errors <- getME(lmer0, "y") - xbeta
 
   #Weighting the residuals.
-  wterrors <- Matrix::solve(Ut, errors)
+  wterrors <- W$solve(errors)
 
   # permute weighted resid, then unweighted it for 999 times
   # permResid <- matrix(0, length(wterrors), nperm)
   # for (i in 1:nperm) {
   # if(!missing(seed)) set.seed(seed+i)
-  # permResid[, i] <- as.vector(Ut%*%sample(wterrors))
+  # permResid[, i] <- W$mult(sample(wterrors))
   # }
   # permy <- as.data.frame(xbeta+permResid)
   if (ref) {
     if(!missing(seed)) {
       set.seed(seed)
     }
-    permy <- as.data.frame(xbeta+replicate(nperm, as.vector(Ut%*%sample(wterrors))))
+    permy <- as.data.frame(xbeta+replicate(nperm, W$mult(sample(wterrors))))
   } else {
     if(!missing(seed)) {
       set.seed(seed)
     }
     permy <- replicate(nperm, {
       rowindex <- sample(seq_along(errors))
-      as.data.frame(xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
+      as.data.frame(xbeta[rowindex]+W$mult(wterrors[rowindex]))
     })
   }
 
