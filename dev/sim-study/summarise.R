@@ -9,7 +9,7 @@
 ##   "liberal" above it, "conservative" below it (null cells only),
 ##   "power"   for power cells (name ends in "_power").
 
-dirs <- c("dev/sim-perm-ranef", "dev/sim-perm-edge", "dev/sim-perm-followup")
+dirs <- c("dev/sim-perm-ranef", "dev/sim-perm-edge", "dev/sim-perm-followup", "dev/sim-perm-confirm")
 files <- unlist(lapply(dirs, function(d) list.files(d, pattern = "\\.rds$", full.names = TRUE)))
 rows <- lapply(files, function(f) {
   x <- readRDS(f)

@@ -582,9 +582,14 @@ update; R CMD check at the end of each.
    counting, rounding of statistics; `permmodels()`, `permlmer()` and
    `bootmodels()` moved onto it; snapshot test shows identical output.
 2b. **Order-invariant whitening** (`pm_whiten()`, §8) in `permmodels()`
-   (lme, gls, lmer) and `permlmer()`: changes results, so NEWS and the
-   1.1.1 reference values for these two functions are updated with the
-   reason.
+   (lme, gls, lmer) and `permlmer()` — **done** (`R/whiten.R`): symmetric
+   root from q × q eigen decompositions (block roots for nlme). Confirmed
+   with the package functions (`dev/sim-perm-confirm.R`, 1000 data sets):
+   `permlmer()` split plot 0.059, crossed 0.054 (Cholesky 0.064);
+   `permmodels()` global null `lmer` 0.048 (Cholesky 0.062–0.071), `lme`
+   0.059. Much faster with crossed random effects (n = 3000: 0.11 s vs
+   3.9 s; n = 20000: 21 s vs > 30 min). The 1.1.1 reference test compares
+   `perm_lmer`/`perm_lmer_III` without their permutation parts.
 3. **Freedman–Lane for any linear hypothesis in lm/aov:** pairs and
    contrasts in `predictmeans()`/`contrastmeans()` from a permutation object;
    then the decision on making Freedman–Lane the default for lm/aov.

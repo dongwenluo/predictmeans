@@ -170,14 +170,25 @@ Observations, added as cells finish:
   The working-scale tests in the scripts already truncated at 0 and were not
   affected.
 
+### Package check of the new whitening (`dev/sim-perm-confirm.R`, `dev/sim-perm-confirm/`)
+
+With the symmetric root in the package's own `permlmer()` and
+`permmodels()` (1000 data sets each): `permlmer()` split plot 0.059 (χ̄²
+0.048), crossed rows × columns 0.054 (χ̄² 0.036; Cholesky 0.064);
+`permmodels()` global null with `lmer` 0.048 (its F test 0.057; Cholesky
+0.062–0.071) and with `lme` 0.059 (F test 0.057). Timing of the root with
+crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
+(Cholesky over 30 min and 2.9 GB, stopped).
+
 ### Open questions
 
 - ~~Why the joint scheme is liberal under the LMM global null (0.071).~~
   Answered: Cholesky whitening; the symmetric root fixes it.
 - ~~Whether route B or a parametric bootstrap fixes rare binary events.~~
   Answered: both do.
-- Does the symmetric root also improve `permlmer()` (random effects) and the
-  GLMM working scale (where the order-invariant root is not symmetric)?
+- ~~Does the symmetric root also improve `permlmer()`?~~ Yes for the crossed
+  design (0.064 → 0.054); unchanged for the split plot. Still open: the GLMM
+  working scale, where the order-invariant root is not symmetric.
 - Pairwise comparisons by permutation: not yet studied.
 - How a parametric bootstrap from the reduced (Poisson) model behaves under
   overdispersion (expected to fail like the LRT, since it trusts the model).

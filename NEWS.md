@@ -13,7 +13,12 @@
   5.2-5.3% with the symmetric root (`dev/permutation-plan.md`, §3.3).
   Permutation p-values of these functions therefore differ from earlier
   versions. The root is computed from q x q matrices (q random effects),
-  without forming any n x n matrix.
+  without forming any n x n matrix, so it is also much faster with crossed
+  random effects: 0.11 s instead of 3.9 s for n = 3000, and 21 s for
+  n = 20000, where the Cholesky factor took over 30 minutes and 2.9 GB.
+  Confirmed with the package functions (1000 data sets each): `permlmer()`
+  split plot 5.9%, crossed design 5.4% (6.4% before); `permmodels()` with no
+  fixed effects 4.8% (`lmer`, 6.2-7.1% before) and 5.9% (`lme`).
 
 * **Kenward-Roger adjusted standard errors are now the default** for `lmer`
   models fitted by REML, in `predictmeans()` and `contrastmeans()`
