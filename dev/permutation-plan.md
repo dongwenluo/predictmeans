@@ -25,9 +25,10 @@ is consistent with 5%.
   null cases it stayed between 3.9% and 6.4%, except with unequal error
   variances (2.8%, conservative; the χ̄² test 1.8%). It never exceeded 6.4%
   and had slightly more power than the χ̄² test (38% vs 36–37%).
-- **The maintainer's fixed-effect scheme in LMMs: sound but slightly
-  liberal in two cases** — no fixed effects at all (7.1%) and a covariate
-  with extreme values with the F statistic (6.3%, earlier study). Elsewhere
+- **The maintainer's fixed-effect scheme in LMMs: sound; slightly liberal
+  in two cases with Cholesky whitening** — no fixed effects at all (7.1%) and
+  a covariate with extreme values with the F statistic (6.3%, earlier study)
+  — fixed by symmetric-root whitening (follow-ups below). Elsewhere
   3.6–6.0%. Freedman–Lane was within or at the edge of the range in every
   case (4.1–6.4%), and so was the Satterthwaite F test. In LMMs the
   permutation tests do not beat Satterthwaite/Kenward–Roger.
@@ -49,7 +50,28 @@ is consistent with 5%.
 - **Unequal variances by group** (small group with large variance): every
   test failed (23–24%). Permutation cannot fix a wrong variance model.
 
-Recommendations: §7 (table, updated with these results) and §10 (steps).
+**Follow-ups (step 1a, `dev/sim-perm-followup*.R`):**
+
+- **The cause of the liberal fixed-effect results is the Cholesky
+  whitening, not the scheme.** Under the LMM global null the Cholesky
+  versions rejected 6.2–6.7% (8 blocks) and 7.0–8.4% (16 blocks), even with
+  the true V. Whitening with the symmetric square root of V gave 5.2% (the
+  maintainer's scheme) and 5.3% (Freedman–Lane), the same as the exact
+  within-block permutation (5.3%) and Satterthwaite (4.9%). With a covariate
+  with extreme values: (running). The Cholesky factor treats the first unit of
+  each block differently, so the results also depend on how the data are
+  sorted; the symmetric root does not.
+- **Binary GLMMs: route B (quantile back-transform) and the parametric
+  bootstrap both fix the failures of the working scale**: rare events 6.2%
+  and 4.0% (working scale 35.8%), whole plots of 2 both 5.6% (7.8%), on 500
+  data sets each, with fast `nAGQ = 0` refits.
+- **A small bug in `permlmer()` was found and fixed**: when the tested
+  variance is estimated at 0, an observed LRT of 1e-9 could look larger than
+  permuted LRTs of 0 (0.1–0.8% of null data sets). Statistics are now
+  rounded before they are compared.
+
+Recommendations: §7 (table, updated with these results), §10 (steps) and
+§11 (what is ready to decide).
 
 ## 2. What the package has now
 
@@ -82,6 +104,10 @@ Known weaknesses:
   ML refits).
 - No permutation test for GLMMs (`glmer`, `glmmTMB`) at all; GLMM fixed
   effects only through `bootmodels()` (global null), random effects not at all.
+- Residuals are whitened with the Cholesky factor of V, which depends on the
+  order of the data and makes the residual-permutation schemes liberal for
+  within-block terms (found in step 1a; §3.3).
+- `permlmer()` compared LRTs without rounding (fixed in step 1a).
 - Defaults use 3 cores (`ncore = 3`); CRAN and CI allow 2.
 
 ## 3. Are the existing schemes right?
@@ -178,12 +204,25 @@ without the term) kept 5.0%. The new simulation adds the `permlmer()` /
 range in most cases but 7.1% when no fixed effect exists (8 blocks, n = 48),
 which theory did not predict and needs checking (§10, step 6).
 
+**Follow-up.** The 7.1% was not chance (2000 new data sets: 6.2%; 16 blocks:
+8.4%) and not caused by estimating V (true V: 6.5% and 8.1%). The permuted F
+statistics were about 10% too small, in the numerator. The cause is the
+Cholesky factor U: within a block, U applied to a constant gives a pattern
+that rises along the rows (1.41, 1.93, 2.27, 2.52, 2.72, 2.89 for six units
+with equal block and residual variances), and in these data A's levels sit
+in fixed positions within each block, so the pattern lines up with A.
+Whitening with the symmetric square root V^(1/2), which treats the units of
+a block alike, gave 5.2% for the maintainer's scheme and 5.3% for
+Freedman–Lane (2000 data sets), as the exact within-block permutation
+(5.3%).
+
 **Verdict.** Sound and useful — above all because one set of refits serves
 every term and every pairwise comparison, which Freedman–Lane cannot do
-without a separate null model per comparison. Slightly liberal in two of
-eight null cases (6.3%, 7.1%); Freedman–Lane at most 6.4%. The plan keeps it
-(as `method = "raw"`, and for `permlist`) and adds the Freedman–Lane form as
-the default for term tests.
+without a separate null model per comparison. With symmetric-root whitening
+it keeps its level in the case that was hardest. The plan keeps it (as
+`method = "raw"`, and for `permlist`), offers Freedman–Lane, and changes the
+whitening of all residual-permutation schemes (including `permlmer()`) to
+an order-invariant square root.
 
 ### 3.3 Simulation check
 
@@ -224,6 +263,17 @@ Satterthwaite F):
 | no fixed effects (global null) | **0.071** | 0.061 | 0.052 |
 | group sizes 1/2/3 with SD 3/1/1 | **0.243** | **0.226** | **0.237** |
 | power: extreme covariate, A effect | 0.673 | 0.633 | 0.632 |
+
+**Follow-up: whitening** (`dev/sim-perm-followup*.R`; "within" = y permuted
+within blocks, exact under the global null; 2000 data sets, range
+0.040–0.060, except 16 blocks and the covariate case with 1000):
+
+| case | joint, Cholesky | joint, reduced model | joint, true V | FL, Cholesky | joint, symmetric | FL, symmetric | within | Satt |
+|---|---|---|---|---|---|---|---|---|
+| global null, 8 blocks (`fu_lmm_global`) | 0.062 | 0.057 | 0.065 | 0.057 | — | — | 0.048 | 0.048 |
+| global null, 16 blocks (`fu_lmm_global16`) | **0.084** | 0.071 | **0.081** | 0.070 | — | — | 0.057 | 0.052 |
+| global null, 8 blocks (`fu2_lmm_global_sym`) | **0.067** | — | — | 0.060 | **0.052** | **0.053** | 0.053 | 0.049 |
+| extreme covariate, 8 blocks (`fu2_lmm_lev_sym`) | (running) | | | | | | | |
 
 ## 4. Extending both schemes to GLMMs on the working (link) scale
 
@@ -348,11 +398,20 @@ fit, `FL` at the reduced fit; `LRT` = Laplace LRT, χ²):
 | negative binomial fitted as Poisson, extreme covariate | 0.077 | 0.103 | **0.352** | 0 |
 | power: Poisson, extreme covariate, A effect | 0.544 | 0.625 | 0.652 | 0 |
 
+**Follow-up: binary data** (500 data sets, range 0.031–0.069; route B and
+bootstrap refits with `nAGQ = 0`, observed and resampled alike):
+
+| case | route B | parametric bootstrap | Laplace χ̄² | working-scale perm (main study) |
+|---|---|---|---|---|
+| binary, about 5% events | 0.062 | 0.040 | 0.026 | 0.358 |
+| binary, whole plots of 2 | 0.056 | 0.056 | 0.026 | 0.078 |
+
 Reading: on the working scale the Lee–Braun idea works for GLMM variance
 components except for binary data with tiny clusters or rare events, where
 the working response turns each event into a large outlier (about 1/μ) and
 the linear approximation breaks down. There the quantile back-transform
-(route B) or a parametric bootstrap is needed. For fixed effects both
+(route B) or a parametric bootstrap is needed, and both work (follow-up
+table). For fixed effects both
 schemes behave, the maintainer's more conservatively. The mean–variance
 mismatch of the joint scheme (§4.2) shows as lower power, not as a too-high
 level.
@@ -423,10 +482,10 @@ simplicity. Two general results guide the choice:
 | Model | Hypothesis | Candidates | Prior | Now |
 |---|---|---|---|---|
 | lm, aov | terms, coefficients, contrasts | raw; **Freedman–Lane** (done); sign flip + HC studentised (heteroscedastic) | Freedman–Lane | Freedman–Lane (lm study) |
-| gls, lme, lmer | fixed terms, contrasts | raw (maintainer's scheme); **FL whitened, refit**; FL whitened, V fixed (batched); design-restricted | FL whitened | FL for term tests; joint kept for `permlist`; help says KR/Satterthwaite F are as good for LMMs |
-| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep (13 cases fine) |
+| gls, lme, lmer | fixed terms, contrasts | raw (maintainer's scheme); **FL whitened, refit**; FL whitened, V fixed (batched); design-restricted | FL whitened | both schemes with **symmetric-root whitening** (each kept its level then); joint for `permlist`, FL for term tests; help says KR/Satterthwaite F are as good for LMMs |
+| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep (13 cases fine); tie fix done; move to symmetric-root whitening after a confirming run |
 | glm | terms, coefficients | raw (current); FL on working scale (batched, score-like); Potter; **sign-flip effective score** | sign flip or FL working | not yet studied |
-| glmer, glmmTMB | random effects | **working-scale LRT (route A)**; cluster-label permutation; route B; parametric bootstrap LRT | route A | route A for counts and binomial; route B or bootstrap for binary with small clusters or rare events (automatic switch with a message) |
+| glmer, glmmTMB | random effects | **working-scale LRT (route A)**; cluster-label permutation; route B; parametric bootstrap LRT | route A | route A for counts and binomial with trials; **route B for binary (0/1) responses** (bootstrap as an option); `nAGQ = 0` refits |
 | glmer, glmmTMB | fixed terms | joint and FL on the working scale (weighted-LMM refits); V fixed (batched); route B; design-based; per-term parametric bootstrap | open | FL by default (power); joint as the robust option and for `permlist`; check V-fixed batching |
 
 ## 8. Design: one engine for all schemes
@@ -444,7 +503,14 @@ simplicity. Two general results guide the choice:
   own reduced model. Old `permlist` lists stay accepted.
 - **Layers:** (1) `pm_working(model)`: z, w, φ, η, μ, offset, X, Z, G for
   lm/glm/lmer/glmer/glmmTMB/lme/gls (validated against `R2_glmm()` and
-  `simulate()`); (2) `pm_whiten(V)`: sparse or Woodbury Cholesky; (3)
+  `simulate()`); (2) `pm_whiten(V)`: an order-invariant square root W with W W' = V,
+  not the Cholesky factor (§3.3). For V = D + A A' (D diagonal: I for LMMs,
+  φ diag(1/w) on the GLMM working scale; A = Z Λ, n × q) take
+  W = D^(1/2) M^(1/2) with M = I + D^(-1/2) A A' D^(-1/2); M^(1/2) =
+  I + Q (diag(sqrt(1 + s²)) − I) Q' from the thin SVD D^(-1/2) A = Q S R',
+  so the cost is O(n q²) and no n × n matrix is formed; W is unchanged by
+  reordering the data. For LMMs (D = I) W is the symmetric root tested in
+  §3.3; for GLMMs (D ≠ I) it is not symmetric, and step 1b checks it; (3)
   permutation indices, free or restricted (`permindex()`), with the seed
   handled by `pm_with_seed()`; (4) statistics: batched GLS F/t with V fixed,
   or refits (weighted `lmer`, GLMM) when variance parameters must be
@@ -489,17 +555,27 @@ update; R CMD check at the end of each.
 
 1. **Check `permlmer()`, the maintainer's scheme, and both on the GLMM
    working scale** — **done** (§3.3, §4.4; 37 cases).
-1a. **Follow-ups from the study** (before building): (i) why the joint
-   scheme gave 7.1% under the global null in an LMM (rerun with 5000 data
-   sets; look at the p-value distribution; compare V from the full vs the
-   reduced model); (ii) route B (quantile back-transform) and a parametric
-   bootstrap for binary GLMMs with small clusters and rare events; (iii) a
-   rule for switching (e.g. fewer than about 5 events or non-events per
-   cluster on average); (iv) parametric bootstrap as a reference in the
-   main cases (needed for a paper).
-2. **Engine, part 1 (no change in results):** `pm_whiten()`, permutation
-   indices, failure counting; `permmodels()`, `permlmer()` and
+1a. **Follow-ups** — **done**: (i) the 7.1% came from Cholesky whitening;
+   the symmetric root fixes it; (ii) route B and the parametric bootstrap
+   fix binary GLMMs; (iii) rule: route B for 0/1 responses, the working
+   scale for counts and binomial with trials (simpler than a threshold on
+   events per cluster, and covers every failing case); (iv) the bootstrap
+   reference in the main cases is left for the paper; (v) the tie bug in
+   `permlmer()` fixed.
+1b. **Second, smaller study** (can run while steps 2–5 are built): pairwise
+   comparisons and contrasts (per-pair and familywise error for `permlist`
+   from the joint scheme vs Freedman–Lane per pair vs t with KR df);
+   `permlmer()` and the GLMM working scale with symmetric-root whitening
+   (rerun 4–5 cases); glm without random effects; glmmTMB families (nbinom2,
+   beta); route B vs bootstrap under overdispersion; parametric bootstrap
+   reference for the paper.
+2. **Engine, part 1 (no change in results):** permutation indices, failure
+   counting, rounding of statistics; `permmodels()`, `permlmer()` and
    `bootmodels()` moved onto it; snapshot test shows identical output.
+2b. **Order-invariant whitening** (`pm_whiten()`, §8) in `permmodels()`
+   (lme, gls, lmer) and `permlmer()`: changes results, so NEWS and the
+   1.1.1 reference values for these two functions are updated with the
+   reason.
 3. **Freedman–Lane for any linear hypothesis in lm/aov:** pairs and
    contrasts in `predictmeans()`/`contrastmeans()` from a permutation object;
    then the decision on making Freedman–Lane the default for lm/aov.
@@ -529,8 +605,9 @@ parts. The table says what each decision rests on.
 | One engine: hypotheses as L matrices, a permutation object instead of a list of refits, shared indices and seeds, failure counts, rounded statistics | design; the tie bug found in `permlmer()` shows why statistics must be compared after rounding | **yes** | — |
 | lm/aov terms: Freedman–Lane by default | Freedman–Lane study (2000 sets per case), literature | **yes** | pairwise comparisons (below) |
 | LMM random effects: keep Lee–Braun (`permlmer()`), with the tie fix | 13 null cases, 2 power cases | **yes** | — |
-| LMM fixed terms: Freedman–Lane by default, the maintainer's scheme kept as an option and for `permlist` | 8 null cases; FL within range in all | **nearly** | the global-null follow-up (FU_GLOBAL) |
-| GLMM random effects: working scale for counts and binomial with trials; route B or bootstrap for binary data | 9 + 2 cases | **nearly** | FU_PAIRS; route B vs bootstrap under overdispersion |
+| Whitening: an order-invariant (symmetric) square root of V instead of the Cholesky factor, in every residual-permutation scheme | 2 follow-up cases: 6.0–6.7% → 5.2–5.3%; theory (order dependence) | **yes** | a confirming rerun of `permlmer()` cases (step 1b) |
+| LMM fixed terms: both schemes with symmetric whitening; joint for `permlist`, Freedman–Lane for term tests | 8 null cases + 4 follow-up cases | **yes** | — |
+| GLMM random effects: working scale for counts and binomial with trials; route B for 0/1 responses | 9 + 2 cases | **yes** | route B vs bootstrap under overdispersion (option, not structure) |
 | GLMM fixed terms: which default (joint or FL) | 7 null cases, 1 power case | **no** | pairwise comparisons; parametric bootstrap reference; overdispersion fitted as nbinom (glmmTMB) |
 | **Pairwise comparisons and contrasts by permutation** (`predictmeans(permlist = )`), the main use in predictmeans | none: only whole-term tests were simulated | **no** | a study of per-pair and familywise error (none, Holm, Tukey-type) for the joint scheme's `permlist` vs Freedman–Lane per pair vs t tests with KR df |
 | glm (no random effects) | none | **no** | raw vs Freedman–Lane on the working scale vs sign flipping |
@@ -538,9 +615,10 @@ parts. The table says what each decision rests on.
 | gls/lme (nlme) | none directly; same whitening as lmer | assumed | one or two cases to confirm |
 
 So the build can start with the parts that are ready — the engine (step
-2), Freedman–Lane for lm/aov (step 3), `permlmer()` for GLMMs (step 5) —
-while a second, smaller study covers pairwise comparisons, glm, glmmTMB
-families and the GLMM fixed-effect default. The pairwise study matters
+2), order-invariant whitening (2b), Freedman–Lane for lm/aov (step 3),
+`permlmer()` for GLMMs (step 5) — while the second, smaller study (step 1b)
+covers pairwise comparisons, glm, glmmTMB families and the GLMM fixed-effect
+default. The pairwise study matters
 most: predictmeans is mainly used for comparisons of means, and the choice
 between one set of refits (the maintainer's `permlist`) and a null model per
 comparison (Freedman–Lane) is the central structural decision.
@@ -563,8 +641,11 @@ comparison (Freedman–Lane) is the central structural decision.
 
 - The working-scale approximation fails for binary data with rare events
   (35.8% instead of 5% for a variance component) and is liberal with whole
-  plots of 2 (7.8%): found in the study. Needs route B, a bootstrap, or a
-  refusal with a message in those cases.
+  plots of 2 (7.8%). Route B (6.2%, 5.6%) and the bootstrap (4.0%, 5.6%) fix
+  both; route B is the plan for 0/1 responses.
+- Changing the whitening changes `permmodels()` and `permlmer()` results for
+  mixed models (not only in the hard cases), so it is a visible change with
+  a NEWS entry, not a refactor.
 - Unequal variances between groups break every test studied (23–24%);
   permutation is no cure for a wrong variance model. The help should say so.
 - Second-moment exchangeability (Commenges 2003) is all residual-based

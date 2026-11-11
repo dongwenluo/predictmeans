@@ -66,6 +66,7 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | 2026-11-11 08:02 | `sim-perm-ranef.R 1000 99` (10 cells) | same | R 4.3.3, lme4 1.1.35.1, Matrix 1.6.5, lmerTest 3.1.3, predictmeans 1.1.1.9000 |
 | 2026-11-11 09:26 | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
 | 2026-11-11 10:00–13:00 | `sim-perm-edge.R 1000 99 all 4` (23 cells, about 7.5 min each) | same | same |
+| 2026-11-11 (later; the sandbox clock jumped) | `sim-perm-followup.R 99 … 4` (4 cells) and `sim-perm-followup2.R 99 all 4` (2 cells) | same | same |
 
 ## 4. Results so far
 
@@ -133,11 +134,46 @@ Observations, added as cells finish:
    strongest argument for the methods.
 5. With unequal group variances nothing works (0.23–0.24).
 
+### Follow-ups (step 1a; `dev/sim-perm-followup.R`, `dev/sim-perm-followup2.R`, results in `dev/sim-perm-followup/`)
+
+- LMM global null, 8 blocks, 2000 data sets: joint (Cholesky, full model)
+  0.062, joint (reduced model) 0.057, joint with the **true** V 0.065,
+  Freedman–Lane 0.057, exact within-block permutation 0.048, Satterthwaite
+  0.048. 16 blocks (1000 sets): 0.084, 0.071, 0.081, 0.070, 0.057, 0.052. So
+  the excess is not chance and not from estimating V; it grows with more
+  blocks.
+- Diagnosis (30 and 20 data sets × 99 permutations, 16 blocks): the
+  permuted F statistics average 0.93–0.95 under the joint scheme against
+  1.04 under the exact within-block permutation; the residual variance
+  estimates agree (0.937 vs 0.935), the sum of squares for A is about 8%
+  smaller (1.70 vs 1.85). Cause: the Cholesky factor U is order-dependent;
+  within a block U·1 rises along the rows (1.41 … 2.89 for 6 units with
+  equal variances), and A's levels sit in fixed positions in each block.
+- Symmetric square root of V instead (2000 new data sets, 8 blocks):
+  joint 0.052, Freedman–Lane 0.053 (Cholesky on the same data: 0.067,
+  0.060), within 0.053, Satterthwaite 0.049. **Fixed.**
+- Binary GLMMs, test of the whole-plot variance (500 data sets each; fits
+  with `nAGQ = 0`, about 150 times faster than Laplace refits on rare-event
+  data, which also often failed): rare events route B 0.062, parametric
+  bootstrap 0.040, Laplace χ̄² 0.026 (4 failed fits of 500); whole plots of
+  2 route B 0.056, bootstrap 0.056, Laplace χ̄² 0.026. Both fix the
+  working-scale failures (0.358, 0.078).
+- Tie bug: rejections of `permlmer()` in data sets whose LRT was 0 up to
+  optimizer noise were 0.1–0.8% of null data sets (from the saved p-values;
+  e.g. split plot 0.059 → 0.056 without them, crossed 0.064 → 0.060, tiny
+  plots 0.056 → 0.048). Fixed in the package (LRTs rounded to 4 decimals).
+  The working-scale tests in the scripts already truncated at 0 and were not
+  affected.
+
 ### Open questions
 
-- Why the joint scheme is liberal under the LMM global null (0.071).
-- Whether route B (quantile back-transform) or a parametric bootstrap fixes
-  rare binary events; a rule for when to switch.
+- ~~Why the joint scheme is liberal under the LMM global null (0.071).~~
+  Answered: Cholesky whitening; the symmetric root fixes it.
+- ~~Whether route B or a parametric bootstrap fixes rare binary events.~~
+  Answered: both do.
+- Does the symmetric root also improve `permlmer()` (random effects) and the
+  GLMM working scale (where the order-invariant root is not symmetric)?
+- Pairwise comparisons by permutation: not yet studied.
 - How a parametric bootstrap from the reduced (Poisson) model behaves under
   overdispersion (expected to fail like the LRT, since it trusts the model).
 
@@ -162,6 +198,13 @@ What would be new, as far as the review in `dev/permutation-plan.md` found
   component (Zeng et al. 2015, PQL working response). For fixed effects in
   GLMMs there is no established permutation test; parametric bootstrap is
   the usual reference.
+
+**Update after the follow-ups (2026-11-11):** the whitening finding adds a
+clear methodological point for a paper: Cholesky-whitened residual
+permutation (as in Lee and Braun 2012 and in our schemes) is order-dependent
+and liberal for within-block fixed effects, increasingly so with more
+blocks; an order-invariant square root removes the problem. To be checked
+against the literature (we have not seen it reported).
 
 **Update after the edge cases (2026-11-11):** yes, probably worth writing
 up, centred on GLMMs: the working-scale permutation tests keep their level
