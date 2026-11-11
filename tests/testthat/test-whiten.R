@@ -11,7 +11,7 @@ whiten_case <- function() {
 
 test_that("pm_whiten() gives the symmetric square root of I + A A'", {
   cs <- whiten_case()
-  V <- as.matrix(Matrix::tcrossprod(cs$A)) + diag(30)
+  V <- unname(as.matrix(Matrix::tcrossprod(cs$A))) + diag(30)
   W <- pm_whiten(cs$A)
   Wm <- W$mult(diag(30))
   expect_equal(Wm %*% t(Wm), V, tolerance = 1e-10)
@@ -25,11 +25,11 @@ test_that("pm_whiten() with a diagonal D is a square root and does not depend on
   cs <- whiten_case()
   dd <- seq(0.5, 3, length.out = 30)
   W <- pm_whiten(cs$A, dd)$mult(diag(30))
-  expect_equal(W %*% t(W), diag(dd) + as.matrix(Matrix::tcrossprod(cs$A)), tolerance = 1e-10)
+  expect_equal(W %*% t(W), diag(dd) + unname(as.matrix(Matrix::tcrossprod(cs$A))), tolerance = 1e-10)
   p <- c(30:16, 1:15)
   Wp <- pm_whiten(cs$A[p, ], dd[p])$mult(diag(30))
   expect_equal(Wp, W[p, p], tolerance = 1e-10)
-  V <- as.matrix(Matrix::tcrossprod(cs$A)) + diag(30)
+  V <- unname(as.matrix(Matrix::tcrossprod(cs$A))) + diag(30)
   # the Cholesky factor used before 2.0 does depend on the order
   expect_gt(max(abs(t(chol(V[p, p])) - t(chol(V))[p, p])), 0.1)
 })
