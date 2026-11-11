@@ -152,6 +152,11 @@ Observations, added as cells finish:
 - Symmetric square root of V instead (2000 new data sets, 8 blocks):
   joint 0.052, Freedman–Lane 0.053 (Cholesky on the same data: 0.067,
   0.060), within 0.053, Satterthwaite 0.049. **Fixed.**
+- Extreme covariate related to A (1000 sets): joint Cholesky 0.063, FL
+  Cholesky 0.054, joint symmetric 0.064, FL symmetric 0.046, Satterthwaite
+  0.052. The symmetric root does not cure the joint scheme here (the
+  raw-permutation weakness with extreme covariates); FL with the symmetric
+  root is fine.
 - Binary GLMMs, test of the whole-plot variance (500 data sets each; fits
   with `nAGQ = 0`, about 150 times faster than Laplace refits on rare-event
   data, which also often failed): rare events route B 0.062, parametric
