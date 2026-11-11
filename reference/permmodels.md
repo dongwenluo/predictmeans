@@ -9,7 +9,7 @@ effects and permutation F-tests for the terms in a linear model such as
 ``` r
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed)
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"))
 ```
 
 ## Arguments
@@ -64,13 +64,57 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
   Specify a random number generator seed, for reproducible results.
 
+- method:
+
+  How the data are permuted: `"raw"` (the default) or `"freedman-lane"`
+  (`lm` and `aov` models only). See Details.
+
 ## Value
 
 The function produces permutation t-test table for coefficients of
 (fixed) effects, permutation ANOVA table for model terms and a model
 parameter list `permlist`, a list containing `nsim=4999` times
 permutation refitted `model` parameters which are used in functions
-`predictmeans` and `contrastmeans`.
+`predictmeans` and `contrastmeans`. With `method = "freedman-lane"`,
+`permlist` is `NULL`.
+
+## Details
+
+With `method = "raw"`, the response is permuted for `lm`, `aov` and
+`glm` models; for `gls`, `lme` and `lmer` models the fitted values and
+the decorrelated residuals of the model are permuted together. Each
+permutation refits the model, and the refits are kept in `permlist`.
+
+With `method = "freedman-lane"` (Freedman and Lane, 1983), each test has
+its own permutations: the residuals of the model without the tested term
+(for type I and II tests also without the terms that contain it; for a t
+test, without that coefficient) are permuted and added back to that
+model's fitted values, and the statistic is computed again. The
+statistics come from QR projections, so no model is refitted and it is
+fast; weights and offsets are allowed. Use it when the model has a
+covariate with extreme values (skewed, or with outliers) that is related
+to the tested term: in a simulation study, permuting the response then
+rejected 6 to 7% of true null hypotheses at the 5% level, and
+Freedman-Lane 4 to 5% (Anderson and Legendre (1999) found the same). In
+other designs the two methods agreed.
+
+For mixed models with a covariate with extreme values related to the
+tested term, the same study found the `"raw"` scheme slightly liberal
+(6.3% at the 5% level), while the Satterthwaite F test kept the level
+(4.6%); prefer the Kenward-Roger or Satterthwaite F test there (e.g.
+[`anova()`](https://rdrr.io/r/stats/anova.html) of an lmerTest fit, or
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)).
+
+## References
+
+Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
+permutation methods for tests of partial regression coefficients in a
+linear model. *Journal of Statistical Computation and Simulation*, 62,
+271-303.
+
+Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of
+reported significance levels. *Journal of Business & Economic
+Statistics*, 1, 292-298.
 
 ## Author
 
@@ -219,4 +263,29 @@ contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlm
 #> [2,]              0           0
 #> 
 # }
+
+## Freedman-Lane permutations for a linear model with a covariate
+fm2 <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#> 
+#> Coefficients of (fixed) effects:
+#>              Estimate Std. Error t value Pr(>|t|) Perm_p_value
+#> (Intercept)   33.9908     1.8878 18.0056   0.0000           NA
+#> wt            -3.2056     0.7539 -4.2521   0.0002        0.001
+#> factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009
+#> factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003
+#> 
+#> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations.
+#> 
+#> ANOVA:
+#> Anova Table (Type II tests)
+#> 
+#>  Response: mpg
+#>               Sum Sq Df F value Pr(>F) Perm_p_value
+#> wt          118.2039  1 18.0801 0.0002        0.001
+#> factor(cyl)  95.2633  2  7.2856 0.0028        0.005
+#> Residuals   183.0586 28                            
+#> 
+#> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations.
+#> 
 ```

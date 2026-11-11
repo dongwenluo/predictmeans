@@ -95,6 +95,40 @@ perm <- permmodels(fm, nperm = 199, ncore = 1, seed = 1)
 The tables repeat the model’s tests with a `Perm_p_value` column: the
 proportion of permuted statistics at least as large as the observed one.
 
+For `lm` and `aov` models, `method = "freedman-lane"` tests each term by
+permuting the residuals of the model without that term and adding them
+back to its fitted values (Freedman and Lane 1983). Permuting the
+response rejects true null hypotheses too often when a covariate with
+extreme values is related to the tested term (Anderson and Legendre
+1999); Freedman–Lane keeps the level there. It gives the tables only (no
+refits for `permlist`), and it is fast:
+
+``` r
+
+fm_cars <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+permmodels(fm_cars, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#> 
+#> Coefficients of (fixed) effects:
+#>              Estimate Std. Error t value Pr(>|t|) Perm_p_value
+#> (Intercept)   33.9908     1.8878 18.0056   0.0000           NA
+#> wt            -3.2056     0.7539 -4.2521   0.0002        0.001
+#> factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009
+#> factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003
+#> 
+#> Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.
+#> 
+#> ANOVA:
+#> Anova Table (Type II tests)
+#> 
+#>  Response: mpg
+#>               Sum Sq Df F value Pr(>F) Perm_p_value
+#> wt          118.2039  1 18.0801 0.0002        0.001
+#> factor(cyl)  95.2633  2  7.2856 0.0028        0.005
+#> Residuals   183.0586 28                            
+#> 
+#> Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
+```
+
 ## Pairwise comparisons and contrasts
 
 The same refits give permutation p-values for pairwise comparisons, in
@@ -203,6 +237,15 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 
 - **Terms and pairwise comparisons in `lm`, `lme` and `lmer` models**:
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md).
+- **Terms of `lm` and `aov` models with covariates**, especially skewed
+  ones or ones with extreme values:
+  `permmodels(method = "freedman-lane")`.
+- **Mixed models with a covariate with extreme values**: the
+  Kenward–Roger or Satterthwaite F test
+  ([`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+  or [`anova()`](https://rdrr.io/r/stats/anova.html) of an lmerTest
+  fit); permutation rejected slightly too often there in a simulation
+  study.
 - **A variance component, or any comparison of two nested `lmer`
   models**:
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md).
@@ -213,6 +256,15 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
   of the time.
 
 ## References
+
+Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
+permutation methods for tests of partial regression coefficients in a
+linear model. *Journal of Statistical Computation and Simulation* 62,
+271–303.
+
+Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of
+reported significance levels. *Journal of Business & Economic
+Statistics* 1, 292–298.
 
 Lee, O. E. and Braun, T. M. (2012). Permutation tests for random effects
 in linear mixed models. *Biometrics* 68, 486–493.

@@ -159,13 +159,44 @@ structure; the model is then refitted to each.</p>
 <p>The tables repeat the model’s tests with a <code>Perm_p_value</code>
 column: the proportion of permuted statistics at least as large as the
 observed one.</p>
+<p>For <code>lm</code> and <code>aov</code> models,
+<code>method = "freedman-lane"</code> tests each term by permuting the
+residuals of the model without that term and adding them back to its
+fitted values (Freedman and Lane 1983). Permuting the response rejects
+true null hypotheses too often when a covariate with extreme values is
+related to the tested term (Anderson and Legendre 1999); Freedman–Lane
+keeps the level there. It gives the tables only (no refits for
+<code>permlist</code>), and it is fast:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fm_cars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cyl</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_cars</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, method <span class="op">=</span> <span class="st">"freedman-lane"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
+<span><span class="co">#&gt;              Estimate Std. Error t value Pr(&gt;|t|) Perm_p_value</span></span>
+<span><span class="co">#&gt; (Intercept)   33.9908     1.8878 18.0056   0.0000           NA</span></span>
+<span><span class="co">#&gt; wt            -3.2056     0.7539 -4.2521   0.0002        0.001</span></span>
+<span><span class="co">#&gt; factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009</span></span>
+<span><span class="co">#&gt; factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ANOVA:</span></span>
+<span><span class="co">#&gt; Anova Table (Type II tests)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  Response: mpg</span></span>
+<span><span class="co">#&gt;               Sum Sq Df F value Pr(&gt;F) Perm_p_value</span></span>
+<span><span class="co">#&gt; wt          118.2039  1 18.0801 0.0002        0.001</span></span>
+<span><span class="co">#&gt; factor(cyl)  95.2633  2  7.2856 0.0028        0.005</span></span>
+<span><span class="co">#&gt; Residuals   183.0586 28                            </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="pairwise-comparisons-and-contrasts">Pairwise comparisons and contrasts<a class="anchor" aria-label="anchor" href="#pairwise-comparisons-and-contrasts"></a>
 </h2>
 <p>The same refits give permutation p-values for pairwise comparisons,
 in the <code>pairs</code> table and the legacy p-value matrix:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"statistic"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate statistic p.value    p.method</span></span>
@@ -176,7 +207,7 @@ in the <code>pairs</code> table and the legacy p-value matrix:</p>
 <span><span class="co">#&gt; 5    0.2    0.6 -24.500000 -5.523302   0.005 permutation</span></span>
 <span><span class="co">#&gt; 6    0.4    0.6  -9.166667 -2.066542   0.050 permutation</span></span></code></pre></div>
 <p>and for contrasts:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span><span class="op">)</span>, <span class="st">"trt.vs.ctrl"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span>, permlist <span class="op">=</span> <span class="va">perm</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         Estimate Std. Error t value Permuted Pr(&gt;|t|)</span></span>
@@ -199,7 +230,7 @@ useful for random effects, where the usual chi-square reference
 distribution is wrong because the null value of a variance lies on the
 boundary. Does the slope for <code>Days</code> vary between
 subjects?</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="va">Days</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span></span>
 <span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">fm0</span>, <span class="va">fm1</span>, nperm <span class="op">=</span> <span class="fl">99</span>, ncore <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -222,7 +253,7 @@ fitted without its fixed effects (an intercept and the same random
 effects: the global null hypothesis), refits the full model to each and
 compares the statistics. Unlike permutation, it works for GLMMs. For the
 clinical trial data (a binomial GLMM):</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Clinical</span><span class="op">)</span></span>
 <span><span class="va">fm_clin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Favorable</span>, <span class="va">Total</span> <span class="op">-</span> <span class="va">Favorable</span><span class="op">)</span> <span class="op">~</span> <span class="va">Treatment</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Clinic</span><span class="op">)</span>,</span>
 <span>                 family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">Clinical</span><span class="op">)</span></span>
@@ -240,7 +271,7 @@ clinical trial data (a binomial GLMM):</p>
 <span><span class="co">#&gt; Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model.</span></span></code></pre></div>
 <p>Its result is used as a <code>permlist</code>; the <code>pairs</code>
 table then says <code>"bootstrap"</code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
@@ -256,6 +287,15 @@ table then says <code>"bootstrap"</code>:</p>
 <code>lme</code> and <code>lmer</code> models</strong>:
 <code><a href="../reference/permmodels.html">permmodels()</a></code>.</li>
 <li>
+<strong>Terms of <code>lm</code> and <code>aov</code> models with
+covariates</strong>, especially skewed ones or ones with extreme values:
+<code>permmodels(method = "freedman-lane")</code>.</li>
+<li>
+<strong>Mixed models with a covariate with extreme values</strong>:
+the Kenward–Roger or Satterthwaite F test (<code><a href="../reference/pm_joint.html">pm_joint()</a></code>, or
+<code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> of an lmerTest fit); permutation rejected slightly
+too often there in a simulation study.</li>
+<li>
 <strong>A variance component, or any comparison of two nested
 <code>lmer</code> models</strong>: <code><a href="../reference/permlmer.html">permlmer()</a></code>.</li>
 <li>
@@ -268,6 +308,13 @@ at a fraction of the time.</li>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
+<p>Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
+permutation methods for tests of partial regression coefficients in a
+linear model. <em>Journal of Statistical Computation and Simulation</em>
+62, 271–303.</p>
+<p>Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of
+reported significance levels. <em>Journal of Business &amp; Economic
+Statistics</em> 1, 292–298.</p>
 <p>Lee, O. E. and Braun, T. M. (2012). Permutation tests for random
 effects in linear mixed models. <em>Biometrics</em> 68, 486–493.</p>
 </div>

@@ -137,6 +137,24 @@
 
 ### New options
 
+- `permmodels(method = "freedman-lane")` for `lm` and `aov` models: each
+  term (and coefficient) is tested by permuting the residuals of the
+  model without it and adding them back to that model’s fitted values
+  (Freedman and Lane 1983). Use it when a covariate with extreme values
+  is related to the tested term: in a simulation study
+  (`dev/sim-freedman-lane.md`) permuting the response then rejected 6-7%
+  of true null hypotheses at the 5% level, Freedman-Lane 4-5%; in other
+  designs the two agreed. The statistics come from QR projections of
+  blocks of permuted responses, with no refits (4999 permutations of a
+  1000-row model with 16 tests take about 11 seconds on one core).
+  Weights and offsets are allowed; `permlist` is `NULL`, so the result
+  cannot be passed to
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+  The default, `method = "raw"`, is unchanged. For mixed models with
+  such a covariate the help page recommends the Kenward-Roger or
+  Satterthwaite F test: the raw scheme was slightly liberal there
+  (6.3%), the F test kept 5%.
+
 - New
   [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md):
   parametric bootstrap p-values for the terms and coefficients of `lmer`
@@ -260,6 +278,16 @@
 
 ### Bug fixes
 
+- [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  (and so
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)):
+  when the tested variance is estimated at 0, the likelihood-ratio
+  statistic is 0 up to optimizer noise (e.g. 3e-14). Permuted statistics
+  of 0 then counted as smaller than the observed one, giving a small
+  p-value instead of 1. Statistics are now rounded to 4 decimals before
+  they are compared. In a simulation study (`dev/sim-study/`) this
+  affected 0.1-0.8% of data sets under the null.
+
 - [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   and
   [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
@@ -267,6 +295,7 @@
   a gaussian `glmmTMB(log(y) ~ ...)` with `trans = exp` showed no
   back-transformed means. `trans` is now used whenever the link is the
   identity; models with another link still use its inverse.
+
 - In the back-transformed plots of
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   and
@@ -274,7 +303,9 @@
   the data points were not shifted by `transOff` when the response was
   transformed before modelling (e.g. a column holding `log(y + 1)`, with
   `transOff = 1`), so they sat `transOff` above the means.
+
 - [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md):
+
   - for `glmmTMB` models with correlated random effects, e.g.
     `(Days | Subject)`, the random-effect variance was wrong (84.32%
     instead of the 78.71% that `lmer` gives for `sleepstudy`) and the
@@ -290,8 +321,10 @@
     zero-inflation part, or with coefficients dropped as aliased;
   - `over_disp = TRUE` finds the observation-level random effect
     wherever it is in the formula (glmmTMB keeps the formula’s order).
+
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
   for `glmer` models:
+
   - the SEs of the variances were wrong: converting from SDs used the
     derivative 0.5/sqrt(sd) instead of 0.5/sd (0.2845 instead of 0.2280
     for the `cbpp` example; glmmTMB gives 0.2294), and covariances
@@ -300,11 +333,14 @@
     the full Jacobian;
   - failed for models with more than one variance parameter, e.g.
     `(Days | Subject)` (“invalid ‘row.names’ length”).
+
 - The `letterCI` help says when CI overlap matches the pairwise tests
   and when it finds fewer or more differences, with a reference
   (Maghsoodloo and Huang, 2010; from the 1.1.2 help).
+
 - Clearer messages for two common mistakes (ideas from James Curran’s
   `isValidTerm()` and `adj` check on the `master` branch):
+
   - a `modelterm` with its factors in another order or letter case:
     `'Variety:nitro' is not a term of the model. Did you mean 'nitro:Variety'?`;
     otherwise the message lists the model’s terms;
@@ -318,18 +354,23 @@
     The
     [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
     help no longer lists `"tukey"`, which it never supported.
+
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md):
+
   - failed for `glmmTMB` models with coefficients dropped as aliased;
   - in the “random effects vs fitted” panel of `glmer` and `glmmTMB`
     models with a correlated term, e.g. `(Days | Subject)`, the random
     effects were matched to the wrong columns of Z
     ([`ranef()`](https://rdrr.io/pkg/nlme/man/random.effects.html) lists
     them by component, Z by level).
+
 - [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/ci_mcp.md)
   stopped when a lower and upper limit were equal (a mean with SE 0).
+
 - The internal
   [`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html) method
   for `lme` models accepts `data =`.
+
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
   for `glmmTMB` models gave wrong confidence limits (the upper limit
   could be below the estimate), read correlation parameters as log
@@ -340,6 +381,7 @@
   `sleepstudy`), and Wald CIs on the log scale for variances and the
   Fisher z scale for correlations. `ci = FALSE` now works for these
   models.
+
 - [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   with `predict_info = TRUE`: the random-effect covariance was wrong for
   correlated terms (same cause as in
@@ -347,24 +389,29 @@
   A singular covariance is detected without computing all eigenvalues,
   and a system that is not positive definite falls back to `nearPD()`
   instead of failing.
+
 - [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   failed with “non-conformable arguments” for every model with a missing
   treatment combination, even for contrasts that do not involve it. It
   now works, and stops with a clear message only when a contrast uses a
   mean that cannot be estimated.
+
 - Tukey-adjusted p-values within `atvar` levels used the number of pairs
   instead of the number of means. With 4 means per level, Tukey was
   computed for 6 means, so p-values were too large (0.350 instead of
   0.197 in the Oats example). For `lmer` models they also used one
   averaged df instead of each pair’s df. Both now match emmeans.
+
 - [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   failed for every `lmer` model with a missing treatment combination
   (“replacement has 12 rows, data has 11”).
+
 - [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   failed for `lmer` models fitted by ML (`REML = FALSE`). Satterthwaite
   df are now used for such fits, with a message;
   [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   falls back to Satterthwaite with a warning instead of stopping.
+
 - [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
   and
   [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
@@ -376,6 +423,7 @@
   [`nlme::Oats`](https://rdrr.io/pkg/nlme/man/Oats.html), so the
   permutation tests were for a different model. Refits now use the
   model’s own data and check that they reproduce its coefficients.
+
 - [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
@@ -384,35 +432,45 @@
   now find the data of `gls` models fitted inside a function;
   [`nlme::getData()`](https://rdrr.io/pkg/nlme/man/getData.html) does
   not.
+
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
   failed for every `lmer` model: it refitted with ML and then asked for
   Kenward-Roger df, which needs REML. It now works and agrees with
   `lme`.
+
 - [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
   failed for `gls` models without a correlation structure.
+
 - [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md):
+
   - for `glmmTMB` models it now finds data that are not in the global
     environment;
   - `over_disp = TRUE` gives a clear message when the model has no
     observation-level random effect.
+
 - [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+
   - passing two or more of the deprecated `mplot`, `barplot`, `pplot`,
     `bkplot` arguments gave an error instead of a deprecation warning;
   - `trans = NULL` gave an error.
+
 - [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   with `permlist` counted permuted statistics strictly greater than the
   observed one. It now counts “greater or equal” (after rounding), as
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   does, so both give the same permutation p-value for the same contrast.
+
 - [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
   [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   and
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
   no longer leave `options(scipen = 6)` set after they return; printed
   results look the same.
+
 - [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   without `ctrmatrix` only opens the contrast editor in an interactive
   session.
+
 - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   failed (“replacement has 0 rows”) on
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
