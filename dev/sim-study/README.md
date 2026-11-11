@@ -64,7 +64,7 @@ is exact at the 5% and 1% levels when exchangeability holds.
 |---|---|---|---|
 | 2026-11-10 | `sim-freedman-lane.R` (lm 2000 sets; lmer 300; lmer leverage confirm 1000) | sandbox, 4 cores Xeon 2.1 GHz | R 4.3.3, lme4 1.1.35.1, Matrix 1.6.5 |
 | 2026-11-11 08:02 | `sim-perm-ranef.R 1000 99` (10 cells) | same | R 4.3.3, lme4 1.1.35.1, Matrix 1.6.5, lmerTest 3.1.3, predictmeans 1.1.1.9000 |
-| 2026-11-11 (queued) | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
+| 2026-11-11 09:26 | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
 | 2026-11-11 (queued) | `sim-perm-edge.R 1000 99 all 4` (23 cells) | same | same |
 
 ## 4. Results so far
@@ -72,9 +72,24 @@ is exact at the 5% and 1% levels when exchangeability holds.
 See `results.md` (regenerate with `Rscript dev/sim-study/summarise.R`).
 Observations, added as cells finish:
 
-- LMM split plot, test of the whole-plot variance (`permlmer()`): normal
-  0.059, skewed errors and block effects 0.049, 20% missing 0.054; the χ̄²
-  reference 0.046–0.049. All within the Monte Carlo range.
+- LMM, test of a variance component (`permlmer()`, Lee–Braun): split plot
+  normal 0.059, skewed errors and block effects 0.049, 20% missing 0.054,
+  random slope 0.052; χ̄² reference 0.046–0.049. All within the Monte Carlo
+  range. Power (whole-plot SD 0.5): permutation 0.383, χ̄² 0.366.
+- LMM fixed term with an extreme-value covariate, `permanova.lmer()` form
+  (LRT statistic, reduced-model xb and V): joint 0.053, Freedman–Lane 0.050,
+  ML LRT χ² 0.052. Unlike the `permmodels()` form with an F statistic (6.3%
+  in `sim-freedman-lane.md`), the joint scheme kept its level here.
+- GLMM variance component on the working scale (`work_perm`), split plot,
+  6 blocks: binary 0.065 (just above the range), binomial with 10 trials
+  0.049, Poisson 0.059. The Laplace LRT with the χ̄² reference was very
+  conservative: 0.019, 0.013, 0.008. Power (Poisson, whole-plot SD 0.4):
+  working-scale permutation 0.637, working χ̄² 0.620, Laplace χ̄² 0.547.
+  So for GLMM variance components the working-scale permutation test is
+  close to nominal and more powerful than the usual test.
+- Note on the run: the first batch ended with an error after "SIM DONE"
+  because its script was edited while it ran (Rscript reads the file as it
+  goes); all cells had been saved. Scripts are not edited during runs now.
 
 ## 5. Is it worth a paper?
 
