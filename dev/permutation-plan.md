@@ -11,7 +11,8 @@ schemes right? (random effects; the maintainer's fixed-effect scheme) · 4
 Extending both to GLMMs on the working scale · 5 What "most robust" means · 6
 Literature by model class · 7 Candidates and current recommendation · 8
 Design: one engine · 9 Simulation study to choose the defaults · 10 Steps ·
-11 Decisions for the maintainer · 12 Risks · 13 References
+11 Is there enough evidence to decide? · 12 Decisions for the maintainer ·
+13 Risks · 14 References
 
 ## 1. Summary
 
@@ -518,7 +519,33 @@ update; R CMD check at the end of each.
 9. **`method = "auto"`**, documentation (help pages, the resampling
    vignette with a "which test for which model" table), NEWS, R CMD check, PR.
 
-## 11. Decisions for the maintainer
+## 11. Is there enough evidence to decide the structure?
+
+Yes for the overall structure and for most defaults; not yet for four
+parts. The table says what each decision rests on.
+
+| Decision | Evidence | Ready? | Missing |
+|---|---|---|---|
+| One engine: hypotheses as L matrices, a permutation object instead of a list of refits, shared indices and seeds, failure counts, rounded statistics | design; the tie bug found in `permlmer()` shows why statistics must be compared after rounding | **yes** | — |
+| lm/aov terms: Freedman–Lane by default | Freedman–Lane study (2000 sets per case), literature | **yes** | pairwise comparisons (below) |
+| LMM random effects: keep Lee–Braun (`permlmer()`), with the tie fix | 13 null cases, 2 power cases | **yes** | — |
+| LMM fixed terms: Freedman–Lane by default, the maintainer's scheme kept as an option and for `permlist` | 8 null cases; FL within range in all | **nearly** | the global-null follow-up (FU_GLOBAL) |
+| GLMM random effects: working scale for counts and binomial with trials; route B or bootstrap for binary data | 9 + 2 cases | **nearly** | FU_PAIRS; route B vs bootstrap under overdispersion |
+| GLMM fixed terms: which default (joint or FL) | 7 null cases, 1 power case | **no** | pairwise comparisons; parametric bootstrap reference; overdispersion fitted as nbinom (glmmTMB) |
+| **Pairwise comparisons and contrasts by permutation** (`predictmeans(permlist = )`), the main use in predictmeans | none: only whole-term tests were simulated | **no** | a study of per-pair and familywise error (none, Holm, Tukey-type) for the joint scheme's `permlist` vs Freedman–Lane per pair vs t tests with KR df |
+| glm (no random effects) | none | **no** | raw vs Freedman–Lane on the working scale vs sign flipping |
+| glmmTMB families (nbinom1/2, beta, Gamma) | none; variance table in §4.1 unchecked | **no** | family-by-family check of V, then a few null cases |
+| gls/lme (nlme) | none directly; same whitening as lmer | assumed | one or two cases to confirm |
+
+So the build can start with the parts that are ready — the engine (step
+2), Freedman–Lane for lm/aov (step 3), `permlmer()` for GLMMs (step 5) —
+while a second, smaller study covers pairwise comparisons, glm, glmmTMB
+families and the GLMM fixed-effect default. The pairwise study matters
+most: predictmeans is mainly used for comparisons of means, and the choice
+between one set of refits (the maintainer's `permlist`) and a null model per
+comparison (Freedman–Lane) is the central structural decision.
+
+## 12. Decisions for the maintainer
 
 1. Make Freedman–Lane the default for lm/aov once it also gives pairs
    (step 3)? Recommended: yes.
@@ -532,7 +559,7 @@ update; R CMD check at the end of each.
 6. Where to run the large GLMM simulation cases (here they take hours on
    4 cores)?
 
-## 12. Risks
+## 13. Risks
 
 - The working-scale approximation fails for binary data with rare events
   (35.8% instead of 5% for a variance component) and is liberal with whole
@@ -548,7 +575,7 @@ update; R CMD check at the end of each.
 - Run time: GLMM-refit schemes are slow; batched V-fixed schemes are fast but
   ignore variance re-estimation.
 
-## 13. References
+## 14. References
 
 Checked against publisher or index records (title, journal, year) during
 this review; full texts were not all available, so method details for some
