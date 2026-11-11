@@ -65,7 +65,7 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | 2026-11-10 | `sim-freedman-lane.R` (lm 2000 sets; lmer 300; lmer leverage confirm 1000) | sandbox, 4 cores Xeon 2.1 GHz | R 4.3.3, lme4 1.1.35.1, Matrix 1.6.5 |
 | 2026-11-11 08:02 | `sim-perm-ranef.R 1000 99` (10 cells) | same | R 4.3.3, lme4 1.1.35.1, Matrix 1.6.5, lmerTest 3.1.3, predictmeans 1.1.1.9000 |
 | 2026-11-11 09:26 | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
-| 2026-11-11 (queued) | `sim-perm-edge.R 1000 99 all 4` (23 cells) | same | same |
+| 2026-11-11 10:00–13:00 | `sim-perm-edge.R 1000 99 all 4` (23 cells, about 7.5 min each) | same | same |
 
 ## 4. Results so far
 
@@ -87,6 +87,60 @@ Observations, added as cells finish:
   working-scale permutation 0.637, working χ̄² 0.620, Laplace χ̄² 0.547.
   So for GLMM variance components the working-scale permutation test is
   close to nominal and more powerful than the usual test.
+- GLMM fixed effects on the working scale (joint / Freedman–Lane /
+  Laplace LRT χ²): binomial with extreme covariate 0.045 / 0.044 / 0.040;
+  Poisson with extreme covariate 0.040 / 0.056 / 0.054; binary with an
+  associated factor 0.038 / 0.050 / 0.048. Power (Poisson): 0.544 / 0.625 /
+  0.652 — the joint scheme is conservative in GLMMs and loses power.
+
+### Edge cases (`dev/sim-perm-edge/`)
+
+- LMM random effects (`permlmer()` / χ̄²): 3 blocks 0.052 / 0.040; t3 data
+  0.039 / 0.035; unequal error SDs 0.028 / 0.018; singular H0 fit 0.052 /
+  0.036; plots of 1–4 units 0.056 / 0.045; crossed rows × columns 0.064 /
+  0.046; correlated random slope 0.055 / 0.044; power with 3 blocks 0.381 /
+  0.358. Lee–Braun never above 6.4%.
+- LMM fixed effects (joint / FL / Satterthwaite): 3 blocks with extreme
+  covariate 0.060 / 0.064 / 0.059; associated factor with skewed errors
+  0.036 / 0.041 / 0.041; empty cells 0.055 / 0.050 / 0.046; **global null
+  0.071** / 0.061 / 0.052 (unexpected for the joint scheme; to investigate);
+  **group sizes 1/2/3 with SDs 3/1/1: 0.243 / 0.226 / 0.237** (all fail; the
+  model's variance assumption is wrong); power 0.673 / 0.633 / 0.632.
+- GLMM random effects on the working scale (perm / work χ̄² / Laplace χ̄²):
+  binary whole plots of 2 **0.078** / 0.069 / 0.017; **rare binary events
+  0.358 / 0.483** / 0.023 (137 of 1000 fits failed); Poisson mean 0.4 0.058 /
+  0.049 / 0.011; **negative binomial fitted as Poisson 0.098** / 0.091 /
+  **0.631**; 3 blocks 0.046 / 0.033 / 0.002.
+- GLMM fixed effects (joint / FL / LRT): overdispersed counts 0.077 / 0.103 /
+  **0.352**; rare binary events 0.040 / 0.070 / 0.071 (15 failed fits);
+  3 blocks 0.052 / 0.052 / 0.040; global null 0.060 / 0.067 / 0.053.
+
+### Main findings
+
+1. Lee–Braun (`permlmer()`) is robust in LMMs: 13 null cases, never above
+   6.4%, more power than the χ̄² test.
+2. On the GLMM working scale the same idea keeps the level for counts and
+   binomial data, where the usual Laplace LRT with χ̄² is very conservative
+   (0.2–2.3%) and less powerful (0.547 vs 0.637). It fails for rare binary
+   events (0.358): the working response turns each event into an outlier of
+   size about 1/μ.
+3. The maintainer's fixed-effect scheme is close to nominal in most cases
+   but liberal under the LMM global null (0.071) and with an extreme
+   covariate (0.063, F form). In GLMMs it is conservative (0.038–0.060) and
+   the most robust to rare events and overdispersion, at a cost in power.
+4. Under unmodelled overdispersion the asymptotic GLMM tests break down
+   (0.35, 0.63) while the permutation tests stay near 0.08–0.10 — the
+   strongest argument for the methods.
+5. With unequal group variances nothing works (0.23–0.24).
+
+### Open questions
+
+- Why the joint scheme is liberal under the LMM global null (0.071).
+- Whether route B (quantile back-transform) or a parametric bootstrap fixes
+  rare binary events; a rule for when to switch.
+- How a parametric bootstrap from the reduced (Poisson) model behaves under
+  overdispersion (expected to fail like the LRT, since it trusts the model).
+
 - Note on the run: the first batch ended with an error after "SIM DONE"
   because its script was edited while it ran (Rscript reads the file as it
   goes); all cells had been saved. Scripts are not edited during runs now.
@@ -109,7 +163,15 @@ What would be new, as far as the review in `dev/permutation-plan.md` found
   GLMMs there is no established permutation test; parametric bootstrap is
   the usual reference.
 
-Worth writing up if the edge cases show that (a) the working-scale GLMM
+**Update after the edge cases (2026-11-11):** yes, probably worth writing
+up, centred on GLMMs: the working-scale permutation tests keep their level
+where the usual Laplace tests are far too conservative (variance components)
+or far too liberal (overdispersion), with clear limits (rare binary events,
+unequal variances) that a paper should report. Before writing: the
+parametric bootstrap comparison, route B for binary data, the global-null
+puzzle, power curves, and a literature search on the joint scheme.
+
+Original criterion: worth writing up if the edge cases show that (a) the working-scale GLMM
 tests keep their level where the Laplace LRT / Wald tests do not (small
 samples, overdispersion, rare events), and (b) they compare well with the
 parametric bootstrap at lower cost. Possible outlets: *Computational

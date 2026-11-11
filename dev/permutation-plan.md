@@ -15,7 +15,40 @@ Design: one engine · 9 Simulation study to choose the defaults · 10 Steps ·
 
 ## 1. Summary
 
-(To be completed when the simulation in §3 and §4.4 has finished.)
+Results of 37 simulated cases (1000 data sets each, 99 permutations; full
+tables in `dev/sim-study/results.md`, research log in
+`dev/sim-study/README.md`). Rates are type I error at the 5% level; 3.6–6.4%
+is consistent with 5%.
+
+- **Random effects in LMMs (`permlmer()`, Lee–Braun): keep as it is.** In 13
+  null cases it stayed between 3.9% and 6.4%, except with unequal error
+  variances (2.8%, conservative; the χ̄² test 1.8%). It never exceeded 6.4%
+  and had slightly more power than the χ̄² test (38% vs 36–37%).
+- **The maintainer's fixed-effect scheme in LMMs: sound but slightly
+  liberal in two cases** — no fixed effects at all (7.1%) and a covariate
+  with extreme values with the F statistic (6.3%, earlier study). Elsewhere
+  3.6–6.0%. Freedman–Lane was within or at the edge of the range in every
+  case (4.1–6.4%), and so was the Satterthwaite F test. In LMMs the
+  permutation tests do not beat Satterthwaite/Kenward–Roger.
+- **Random effects in GLMMs on the working scale (the new `permglmer()`):
+  works for counts and binomial data, fails for rare binary events.** Poisson
+  5.9%, low counts 5.8%, binomial with 10 trials 4.9%, 3 blocks 4.6%; binary
+  data 6.5% (whole plots of 5) and 7.8% (whole plots of 2); rare binary events
+  (about 5%) 35.8% — unusable. The usual Laplace LRT with the χ̄² reference
+  was very conservative (0.2–2.3%) and less powerful (55% vs 64%).
+- **Fixed effects in GLMMs on the working scale: both schemes keep the level
+  in well-specified models** (joint 3.8–6.0%, Freedman–Lane 4.4–6.7%, LRT
+  4.0–5.4%). The joint scheme is more conservative and less powerful (54%
+  vs 63% for Freedman–Lane, 65% for the LRT) but more robust with rare events
+  (4.0% vs 7.0%).
+- **Overdispersion not in the model** (negative binomial counts fitted as
+  Poisson): the LRT rejected 35% (fixed effect) and 63% (whole-plot variance)
+  of true null hypotheses; the working-scale permutation tests 7.7–10.3%.
+  Still above 5%, but this is where permutation helps most.
+- **Unequal variances by group** (small group with large variance): every
+  test failed (23–24%). Permutation cannot fix a wrong variance model.
+
+Recommendations: §7 (table, updated with these results) and §10 (steps).
 
 ## 2. What the package has now
 
@@ -140,13 +173,16 @@ skewed; 300 data sets) and with skewed or heavy-tailed errors, but rejected
 6.3% (1000 data sets) with a covariate with extreme values, where the
 Freedman–Lane version (y* = xb0 + U0 e0[π], xb0 and U0 from the model
 without the term) kept 5.0%. The new simulation adds the `permlmer()` /
-`permanova.lmer()` form (§3.3).
+`permanova.lmer()` form and edge cases (§3.3): the scheme was within the
+range in most cases but 7.1% when no fixed effect exists (8 blocks, n = 48),
+which theory did not predict and needs checking (§10, step 6).
 
 **Verdict.** Sound and useful — above all because one set of refits serves
 every term and every pairwise comparison, which Freedman–Lane cannot do
-without a separate null model per comparison. Slightly liberal in the
-known hard case. The plan keeps it (as `method = "raw"`) and adds the
-Freedman–Lane form, with the default chosen by the study (§9).
+without a separate null model per comparison. Slightly liberal in two of
+eight null cases (6.3%, 7.1%); Freedman–Lane at most 6.4%. The plan keeps it
+(as `method = "raw"`, and for `permlist`) and adds the Freedman–Lane form as
+the default for term tests.
 
 ### 3.3 Simulation check
 
@@ -154,7 +190,39 @@ Freedman–Lane form, with the default chosen by the study (§9).
 case, 99 permutations; results between 0.036 and 0.064 are consistent with
 5%):
 
-(Simulation running: results for §3.3 will be added here.)
+**Random effects, LMM** (`perm` = `permlmer()`; `χ̄²` = REML LRT with the
+50:50 mixture):
+
+| case | perm | χ̄² |
+|---|---|---|
+| split plot (6 blocks), normal | 0.059 | 0.046 |
+| split plot, skewed errors and block effects | 0.049 | 0.046 |
+| split plot, 20% missing | 0.054 | 0.049 |
+| random slope (H0 random intercept) | 0.052 | 0.049 |
+| 3 blocks | 0.052 | 0.040 |
+| t3 errors and block effects | 0.039 | 0.035 |
+| error SD 0.5/1/2 by subplot factor | 0.028 | 0.018 |
+| block variance 0 (singular H0 fit) | 0.052 | 0.036 |
+| plots of 1–4 units | 0.056 | 0.045 |
+| crossed rows × columns | 0.064 | 0.046 |
+| correlated random slope (2 parameters) | 0.055 | 0.044 |
+| power: split plot, whole-plot SD 0.5 | 0.383 | 0.366 |
+| power: 3 blocks, whole-plot SD 0.7 | 0.381 | 0.358 |
+
+**Fixed effects, LMM** (`joint` = maintainer's scheme; `FL` =
+Freedman–Lane; F of the term from refits of the full model; `Satt` =
+Satterthwaite F):
+
+| case | joint | FL | Satt |
+|---|---|---|---|
+| extreme covariate, 8 blocks (LRT form of `permanova.lmer()`) | 0.053 | 0.050 | 0.052 (χ² LRT) |
+| extreme covariate, 8 blocks (F form; `sim-freedman-lane`) | 0.063 | 0.050 | 0.046 |
+| extreme covariate, 3 blocks | 0.060 | 0.064 | 0.059 |
+| associated factor, skewed errors | 0.036 | 0.041 | 0.041 |
+| empty cells, large effect of the other factor | 0.055 | 0.050 | 0.046 |
+| no fixed effects (global null) | **0.071** | 0.061 | 0.052 |
+| group sizes 1/2/3 with SD 3/1/1 | **0.243** | **0.226** | **0.237** |
+| power: extreme covariate, A effect | 0.673 | 0.633 | 0.632 |
 
 ## 4. Extending both schemes to GLMMs on the working (link) scale
 
@@ -249,7 +317,44 @@ binomial or Poisson data). Two routes are sound:
 
 ### 4.4 Pilot results (route A)
 
-(Simulation running: results for §4.4 will be added here.)
+**Random effects, GLMM** (`perm` = Lee–Braun on the working scale;
+`work χ̄²` = the working-scale LRT with the χ̄² reference, no permutation;
+`Laplace χ̄²` = the usual GLMM LRT):
+
+| case (split plot unless stated) | perm | work χ̄² | Laplace χ̄² | failed fits |
+|---|---|---|---|---|
+| binary, whole plots of 5 | 0.065 | 0.046 | 0.019 | 0 |
+| binary, whole plots of 2 | **0.078** | 0.069 | 0.017 | 3 |
+| binary, about 5% events | **0.358** | **0.483** | 0.023 | 137 |
+| binomial, 10 trials | 0.049 | 0.042 | 0.013 | 0 |
+| Poisson | 0.059 | 0.052 | 0.008 | 0 |
+| Poisson, mean about 0.4 | 0.058 | 0.049 | 0.011 | 0 |
+| Poisson, 3 blocks | 0.046 | 0.033 | 0.002 | 0 |
+| negative binomial fitted as Poisson | **0.098** | 0.091 | **0.631** | 0 |
+| power: Poisson, whole-plot SD 0.4 | 0.637 | 0.620 | 0.547 | 0 |
+
+**Fixed effects, GLMM** (working scale; `joint` linearised at the full
+fit, `FL` at the reduced fit; `LRT` = Laplace LRT, χ²):
+
+| case | joint | FL | LRT | failed fits |
+|---|---|---|---|---|
+| binomial (10 trials), extreme covariate | 0.045 | 0.044 | 0.040 | 0 |
+| Poisson, extreme covariate | 0.040 | 0.056 | 0.054 | 1 |
+| binary, associated factor | 0.038 | 0.050 | 0.048 | 0 |
+| binomial, 3 blocks, extreme covariate | 0.052 | 0.052 | 0.040 | 0 |
+| Poisson, no fixed effects | 0.060 | 0.067 | 0.053 | 0 |
+| binary, 5–10% events, associated factor | 0.040 | 0.070 | 0.071 | 15 |
+| negative binomial fitted as Poisson, extreme covariate | 0.077 | 0.103 | **0.352** | 0 |
+| power: Poisson, extreme covariate, A effect | 0.544 | 0.625 | 0.652 | 0 |
+
+Reading: on the working scale the Lee–Braun idea works for GLMM variance
+components except for binary data with tiny clusters or rare events, where
+the working response turns each event into a large outlier (about 1/μ) and
+the linear approximation breaks down. There the quantile back-transform
+(route B) or a parametric bootstrap is needed. For fixed effects both
+schemes behave, the maintainer's more conservatively. The mean–variance
+mismatch of the joint scheme (§4.2) shows as lower power, not as a too-high
+level.
 
 ## 5. What "most robust" means here
 
@@ -312,17 +417,16 @@ simplicity. Two general results guide the choice:
 
 ## 7. Candidates and current recommendation
 
-Recommendations before our study ("prior"); the study (§9) decides the
-defaults.
+"Prior" = before the study; "Now" = after the 37 cases of §3.3 and §4.4.
 
-| Model | Hypothesis | Candidates | Prior |
-|---|---|---|---|
-| lm, aov | terms, coefficients, contrasts | raw; **Freedman–Lane** (done); sign flip + HC studentised (heteroscedastic) | Freedman–Lane |
-| gls, lme, lmer | fixed terms, contrasts | raw (current); **FL whitened, refit**; FL whitened, V fixed (batched); design-restricted | FL whitened |
-| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep |
-| glm | terms, coefficients | raw (current); FL on working scale (batched, score-like); Potter; **sign-flip effective score** | sign flip or FL working, by simulation |
-| glmer, glmmTMB | random effects | **working-scale LRT (route A)**; cluster-label permutation (single intercept); parametric bootstrap LRT | route A if the pilot holds |
-| glmer, glmmTMB | fixed terms | FL working scale (V fixed, batched); FL working scale with weighted-LMM refits; route B; design-based; per-term parametric bootstrap | open: by simulation |
+| Model | Hypothesis | Candidates | Prior | Now |
+|---|---|---|---|---|
+| lm, aov | terms, coefficients, contrasts | raw; **Freedman–Lane** (done); sign flip + HC studentised (heteroscedastic) | Freedman–Lane | Freedman–Lane (lm study) |
+| gls, lme, lmer | fixed terms, contrasts | raw (maintainer's scheme); **FL whitened, refit**; FL whitened, V fixed (batched); design-restricted | FL whitened | FL for term tests; joint kept for `permlist`; help says KR/Satterthwaite F are as good for LMMs |
+| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep (13 cases fine) |
+| glm | terms, coefficients | raw (current); FL on working scale (batched, score-like); Potter; **sign-flip effective score** | sign flip or FL working | not yet studied |
+| glmer, glmmTMB | random effects | **working-scale LRT (route A)**; cluster-label permutation; route B; parametric bootstrap LRT | route A | route A for counts and binomial; route B or bootstrap for binary with small clusters or rare events (automatic switch with a message) |
+| glmer, glmmTMB | fixed terms | joint and FL on the working scale (weighted-LMM refits); V fixed (batched); route B; design-based; per-term parametric bootstrap | open | FL by default (power); joint as the robust option and for `permlist`; check V-fixed batching |
 
 ## 8. Design: one engine for all schemes
 
@@ -382,8 +486,16 @@ Extends `dev/sim-freedman-lane.R` and `dev/sim-perm-ranef.R`.
 Each step is one message / one PR-sized piece, with tests, NEWS and a plan
 update; R CMD check at the end of each.
 
-1. **Check `permlmer()` and pilot route A** (this step): theory (§3),
-   simulation (`dev/sim-perm-ranef.R`).
+1. **Check `permlmer()`, the maintainer's scheme, and both on the GLMM
+   working scale** — **done** (§3.3, §4.4; 37 cases).
+1a. **Follow-ups from the study** (before building): (i) why the joint
+   scheme gave 7.1% under the global null in an LMM (rerun with 5000 data
+   sets; look at the p-value distribution; compare V from the full vs the
+   reduced model); (ii) route B (quantile back-transform) and a parametric
+   bootstrap for binary GLMMs with small clusters and rare events; (iii) a
+   rule for switching (e.g. fewer than about 5 events or non-events per
+   cluster on average); (iv) parametric bootstrap as a reference in the
+   main cases (needed for a paper).
 2. **Engine, part 1 (no change in results):** `pm_whiten()`, permutation
    indices, failure counting; `permmodels()`, `permlmer()` and
    `bootmodels()` moved onto it; snapshot test shows identical output.
@@ -422,11 +534,12 @@ update; R CMD check at the end of each.
 
 ## 12. Risks
 
-- The working-scale approximation is poorest for binary data with few
-  observations per cluster (PQL's known weakness). The permutation test only
-  needs the statistic to rank data sets sensibly and the permuted data to
-  mimic the null, so it may still hold its level — the pilot and study
-  decide.
+- The working-scale approximation fails for binary data with rare events
+  (35.8% instead of 5% for a variance component) and is liberal with whole
+  plots of 2 (7.8%): found in the study. Needs route B, a bootstrap, or a
+  refusal with a message in those cases.
+- Unequal variances between groups break every test studied (23–24%);
+  permutation is no cure for a wrong variance model. The help should say so.
 - Second-moment exchangeability (Commenges 2003) is all residual-based
   schemes can offer outside normal models; small-sample type I error must be
   checked case by case.
