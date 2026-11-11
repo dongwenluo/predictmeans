@@ -6,8 +6,9 @@ robust permutation test for each model class, and extend `permlmer()` to
 This file reviews what the package does now, checks the existing ideas
 against theory and simulation, surveys the literature, and sets out the steps.
 
-Contents: 1 Summary · 2 What the package has now · 3 Is `permlmer()` right?
-· 4 Permuting GLMMs on the working scale · 5 What "most robust" means · 6
+Contents: 1 Summary · 2 What the package has now · 3 Are the existing
+schemes right? (random effects; the maintainer's fixed-effect scheme) · 4
+Extending both to GLMMs on the working scale · 5 What "most robust" means · 6
 Literature by model class · 7 Candidates and current recommendation · 8
 Design: one engine · 9 Simulation study to choose the defaults · 10 Steps ·
 11 Decisions for the maintainer · 12 Risks · 13 References
@@ -49,7 +50,15 @@ Known weaknesses:
   effects only through `bootmodels()` (global null), random effects not at all.
 - Defaults use 3 cores (`ncore = 3`); CRAN and CI allow 2.
 
-## 3. Is `permlmer()` right? (random effects)
+## 3. Are the existing schemes right?
+
+Two ideas are in the package: the test of random effects in `permlmer()`
+(§3.1), and the maintainer's own scheme for fixed effects in mixed models,
+used by `permmodels()` for lme/gls/lmer and by `permlmer()`/`permanova.lmer()`
+when the fixed effects differ (§3.2). Both are checked here and both are
+extended to GLMMs in §4.
+
+### 3.1 Random effects: `permlmer()`
 
 **What it does.** For H0 model `m0` and H1 model `m1` with the same fixed
 effects, both fitted by REML:
@@ -92,19 +101,62 @@ variance components.
 - If H0's fit is singular (θ0 = 0 for a remaining component) V0 is still
   valid.
 
-**Fixed effects (the `ref = FALSE` branch, used by `permanova.lmer()`).**
-This part is not in Lee and Braun. Permuting H0's fitted values together
-with the residuals is the "raw" scheme; the Freedman–Lane version keeps the
-fitted values in place, y* = X β̂0 + U e[π], i.e. the same formula as for
-random effects.
+### 3.2 Fixed effects: the maintainer's scheme
 
-**Simulation check.** `dev/sim-perm-ranef.R` (results in
-`dev/sim-perm-ranef/`, 1000 data sets per case, 99 permutations; results
-between 0.036 and 0.064 are consistent with 5%):
+**What it does.** With fitted values xb = X β̂ and whitened residuals
+e = U⁻¹(y − xb) (U U' = V, the fitted covariance), each permutation uses the
+same index π for both:
 
-(Running; results to be added.)
+  y* = xb[π] + U e[π]
 
-## 4. Permuting GLMMs on the working (link) scale
+and the model is refitted to y*. `permmodels()` (lme, gls, lmer) takes xb and
+V from the full model and keeps every refit, so one set of refits gives
+p-values for all terms, all coefficients, and (through `permlist`) all
+pairwise comparisons and contrasts. `permlmer(m0, m1)` with different fixed
+effects (and so `permanova.lmer()`) takes xb and V from the reduced model
+and uses a likelihood-ratio statistic.
+
+**What it amounts to.** With independent errors (V = I) it is exactly
+permuting the response, y* = y[π]: the raw-data permutation of Manly, exact
+under the global null. With correlated data it carries that idea over:
+each unit's fixed part moves with its residual, while U keeps the
+correlation structure (blocks, plots) in place. So it is the mixed-model
+form of the "raw" scheme, and shares its properties:
+
+- it tests the global null well (no fixed effect but the intercept);
+- for one term when other terms have effects, the permuted data have the
+  other terms' effects scrambled into noise, so the reference distribution
+  is for a different nuisance configuration. With a studentised statistic
+  (F, t) this usually matters little; it matters when a covariate has
+  extreme values and is related to the tested term (Anderson and Legendre
+  1999 for linear models);
+- even under the global null it is approximate in mixed models (the
+  re-correlated permuted residuals do not reproduce the data's joint
+  distribution exactly unless V = I), which matters little in practice.
+
+**Evidence so far.** In the Freedman–Lane study (`dev/sim-freedman-lane.md`)
+this scheme kept 5% for `lmer` with an associated factor (5.7% normal, 6.0%
+skewed; 300 data sets) and with skewed or heavy-tailed errors, but rejected
+6.3% (1000 data sets) with a covariate with extreme values, where the
+Freedman–Lane version (y* = xb0 + U0 e0[π], xb0 and U0 from the model
+without the term) kept 5.0%. The new simulation adds the `permlmer()` /
+`permanova.lmer()` form (§3.3).
+
+**Verdict.** Sound and useful — above all because one set of refits serves
+every term and every pairwise comparison, which Freedman–Lane cannot do
+without a separate null model per comparison. Slightly liberal in the
+known hard case. The plan keeps it (as `method = "raw"`) and adds the
+Freedman–Lane form, with the default chosen by the study (§9).
+
+### 3.3 Simulation check
+
+`dev/sim-perm-ranef.R` (results in `dev/sim-perm-ranef/`, 1000 data sets per
+case, 99 permutations; results between 0.036 and 0.064 are consistent with
+5%):
+
+(Simulation running: results for §3.3 will be added here.)
+
+## 4. Extending both schemes to GLMMs on the working (link) scale
 
 ### 4.1 The working linear mixed model
 
@@ -143,10 +195,25 @@ This is exactly the V that `R2_glmm()` builds (`ZGZ' + diag(s²/w)`, with
   D⁻¹ Z (G⁻¹ + Z' D⁻¹ Z)⁻¹ Z' D⁻¹ with D = φ diag(1/w)), as lme4 already
   computes; `permlmer()` would also gain from this for large n.
 
-### 4.2 Permuting
+### 4.2 Permuting on the working scale
 
-As in `permlmer()`: marginal working residuals r = z − X β̂0, whiten
-e = U⁻¹ r (U U' = V0), permute, re-correlate: z* = X β̂0 + U e[π].
+The same formulas as for linear mixed models, with z for y and V from §4.1:
+
+- **Random effects (Lee–Braun):** linearise the H0 fit; marginal working
+  residuals r = z − X β̂0; whiten e = U⁻¹ r (U U' = V0); permute;
+  re-correlate: z* = X β̂0 + U e[π].
+- **Fixed effects, maintainer's scheme:** linearise the full fit;
+  z* = xb[π] + U e[π] with xb = X β̂ and e = U⁻¹(z − xb); one set of refits
+  serves all terms, coefficients and pairs (a `permlist`).
+- **Fixed effects, Freedman–Lane:** linearise the fit without the tested
+  term; z* = xb0 + U0 e0[π].
+
+One difference from linear models: in a GLMM the working variance of a unit
+depends on its mean (w is computed from μ). Under the maintainer's scheme a
+unit receives another unit's fixed part xb[π] but keeps its own working
+variance, so mean and variance no longer match; Freedman–Lane keeps each
+unit's mean and variance together. The pilot (§4.4) shows whether this
+matters.
 
 ### 4.3 Can the permuted data be back-transformed to the response scale?
 
@@ -180,9 +247,9 @@ binomial or Poisson data). Two routes are sound:
   close to a semi-parametric bootstrap and costs two GLMM fits per
   permutation; it is a candidate for the simulation, not a first choice.
 
-### 4.4 Pilot results (route A, variance components)
+### 4.4 Pilot results (route A)
 
-(Running; results to be added.)
+(Simulation running: results for §4.4 will be added here.)
 
 ## 5. What "most robust" means here
 
