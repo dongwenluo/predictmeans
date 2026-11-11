@@ -125,8 +125,11 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   }
 
   # Calculating the likelihood ratio test statistic for each permutation.
+  # LRTs are rounded to 4 decimals: when the tested variance is estimated at
+  # 0 the LRT is 0 up to optimizer noise, and without rounding permuted
+  # values of 0 could count as smaller than an observed 1e-9.
   lrtest1 <- 2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))
-  lrtest1 <- ifelse(lrtest1 < 0, 0, lrtest1)
+  lrtest1 <- round(max(as.numeric(lrtest1), 0), 4)
 
   if (.Platform$OS.type=="windows") {
 	  cl <- makeCluster(ncore)
@@ -146,7 +149,7 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
 
   #Calculating the p-values.
   lrtest <- na.omit(unlist(lrtest2))
-  lrtest <- ifelse(lrtest < 0, 0, lrtest)
+  lrtest <- round(pmax(lrtest, 0), 4)
   perm_p <- (sum(lrtest >= lrtest1) +1)/(length(lrtest) + 1)
   aod <- anova(lmer0, lmer1, refit=!ref)
   aod$'Perm-p' <- c(NA, perm_p)

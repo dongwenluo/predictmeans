@@ -202,6 +202,13 @@
 
 ## Bug fixes
 
+* `permlmer()` (and so `permanova.lmer()`): when the tested variance is
+  estimated at 0, the likelihood-ratio statistic is 0 up to optimizer noise
+  (e.g. 3e-14). Permuted statistics of 0 then counted as smaller than the
+  observed one, giving a small p-value instead of 1. Statistics are now
+  rounded to 4 decimals before they are compared. In a simulation study
+  (`dev/sim-study/`) this affected 0.1-0.8% of data sets under the null.
+
 * `predictmeans()` and `covariatemeans()` ignored `trans` for `glm` and
   `glmmTMB` models with an identity link: a gaussian `glmmTMB(log(y) ~ ...)`
   with `trans = exp` showed no back-transformed means. `trans` is now used
