@@ -2,6 +2,19 @@
 
 ## Changes that affect results or scripts
 
+* **Permutation tests of mixed models decorrelate residuals with the
+  symmetric square root of their covariance** instead of the Cholesky
+  factor: `permmodels()` for `lme`, `gls` and `lmer` models and
+  `permlmer()` (so `permanova.lmer()`). The Cholesky factor depends on the
+  order of the data (it treats the first unit of each block differently), so
+  results changed when the data were sorted differently, and tests of terms
+  that vary within blocks rejected too often: in simulations 6-8% of true
+  null hypotheses at the 5% level, increasing with the number of blocks;
+  5.2-5.3% with the symmetric root (`dev/permutation-plan.md`, §3.3).
+  Permutation p-values of these functions therefore differ from earlier
+  versions. The root is computed from q x q matrices (q random effects),
+  without forming any n x n matrix.
+
 * **Kenward-Roger adjusted standard errors are now the default** for `lmer`
   models fitted by REML, in `predictmeans()` and `contrastmeans()`
   (`vcov_adjust = TRUE`). This matches SAS `DDFM=KR` and emmeans. Standard

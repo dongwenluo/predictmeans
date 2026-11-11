@@ -25,6 +25,13 @@ Permutation p-value.
 \description{
 This function provides permutation tests for the terms in a linear mixed model of \code{lmer}.
 }
+\details{
+The residuals of \code{lmer0} are decorrelated with the symmetric square root of their covariance under
+\code{lmer0}, permuted, correlated again and added to the fitted values of \code{lmer0} (Lee and Braun, 2012); both models
+are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
+observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
+is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
+}
 \examples{
 library(predictmeans)
 ## Test random effects (99 permutations to keep the example quick;

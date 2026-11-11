@@ -40,9 +40,10 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ## Permutation tests of terms and coefficients
 
 For linear models the response is permuted. For mixed models the residuals are first
-decorrelated with the Cholesky factor of their estimated covariance, permuted, and
+decorrelated with the symmetric square root of their estimated covariance, permuted, and
 correlated again (Lee and Braun 2012), so each permuted data set keeps the model's
-correlation structure; the model is then refitted to each.
+correlation structure; the model is then refitted to each. (predictmeans 1.x used the
+Cholesky factor, whose results depended on the order of the data.)
 
 ```{r}
 perm <- permmodels(fm, nperm = 199, ncore = 1, seed = 1)

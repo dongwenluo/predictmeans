@@ -26,7 +26,9 @@
 #' @details
 #' With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
 #' \code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
-#' permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}.
+#' permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}. The residuals are
+#' decorrelated with the symmetric square root of their covariance, so the results do not depend on the order of the
+#' data (predictmeans 1.x used the Cholesky factor, which made tests of terms that vary within blocks reject too often).
 #'
 #' With \code{method = "freedman-lane"} (Freedman and Lane, 1983), each test has its own permutations: the
 #' residuals of the model without the tested term (for type I and II tests also without the terms that contain it;
@@ -182,16 +184,16 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     mod_df <- mod_df[ord_X_y[[2]], ]
     xbeta <- as.vector(X_y[, col_names]%*%beta)
     errors <- X_y[, "y"] - xbeta
-    V_matrix <- Matrix::bdiag(V_list)
-    Ut <- t(chol(V_matrix))
+    # order-invariant square root of the block-diagonal V (R/whiten.R)
+    W <- pm_whiten_blocks(V_list)
     
     #Weighting the residuals.
-    wterrors <- solve(Ut, errors)    
+    wterrors <- W$solve(errors)    
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
       rowindex <- sample(seq_along(errors))
-      as.data.frame(perm_y <- xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
+      as.data.frame(perm_y <- xbeta[rowindex]+W$mult(wterrors[rowindex]))
     })
     
 	if (!is.null(fo)) {
@@ -239,23 +241,21 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     theta <- getME(model, "theta")
     fixef <- fixef(model) 
     Lambda <- getME(model, "Lambda")
-    # V = Z Lambda Lambda' Z' + I, kept sparse; Ut is its lower Cholesky factor.
-    ZL <- getME(model, "Z") %*% Lambda
-    V <- Matrix::forceSymmetric(Matrix::tcrossprod(ZL) + Matrix::Diagonal(nrow(ZL)))
-    Ut <- Matrix::t(Matrix::chol(V))
+    # V = Z Lambda Lambda' Z' + I; W is its order-invariant square root (R/whiten.R)
+    W <- pm_whiten(getME(model, "Z") %*% Lambda)
     xbeta <- as.vector(getME(model, "X")%*%fixef)
     if (inherits(model, "glmerMod")) {
       errors <- slot(model, "resp")$family$linkfun(getME(model, "y")) - xbeta 
 	  }else errors <- getME(model, "y") - xbeta
     
     #Weighting the residuals.
-    wterrors <- Matrix::solve(Ut, errors)
+    wterrors <- W$solve(errors)
     
     if(!missing(seed)) set.seed(seed)  
     permy <- replicate(nperm, {
       rowindex <- sample(seq_along(errors))
 	  if (inherits(model, "glmerMod")) {
-  	    perm_y <- slot(model, "resp")$family$linkinv(xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex])) 
+  	    perm_y <- slot(model, "resp")$family$linkinv(xbeta[rowindex]+W$mult(wterrors[rowindex])) 
 		if (slot(model, "resp")$family$family == "poisson") { 
 		  perm_y[perm_y<=0] <- 0
 		  perm_y <- round(perm_y, 0)
@@ -268,7 +268,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 		  perm_y[perm_y<=0] <- 0		
 		}
 		as.data.frame(perm_y)
-		}else as.data.frame(perm_y <- xbeta[rowindex]+as.vector(Ut%*%wterrors[rowindex]))
+		}else as.data.frame(perm_y <- xbeta[rowindex]+W$mult(wterrors[rowindex]))
     })
     
 	if (!is.null(fo)) {

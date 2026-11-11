@@ -21,8 +21,19 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
   mixed <- grepl("lmer|lme_|_lme|glmer|clin|tmb|miss_lmer|atp|semi|perm|r2_|varcomp|contr_", names(ref)) &
     !grepl("_K($|_)", names(ref)) & !grepl("^perm_lm", names(ref))
   names(mixed) <- names(ref)
+  # Since 2.0 permmodels() whitens mixed-model residuals with an
+  # order-invariant square root instead of the Cholesky factor (NEWS), so the
+  # permutation p-values and refits of these cases differ from 1.1.1; their
+  # other parts (estimates, SEs, ANOVA tables) are still compared.
+  rewhitened <- c("perm_lmer", "perm_lmer_III")
+  strip_perm <- function(x) {
+    x <- x[setdiff(names(x), "permlist")]
+    lapply(x, function(tab) tab[, setdiff(colnames(tab), "Perm_p_value"), drop = FALSE])
+  }
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
-    expect_equal(clean_reference(new[[nm]]), clean_reference(ref[[nm]]),
+    a <- new[[nm]]; b <- ref[[nm]]
+    if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
+    expect_equal(clean_reference(a), clean_reference(b),
                  tolerance = if (mixed[[nm]]) 2e-2 else 1e-6, label = nm)
   }
 })
