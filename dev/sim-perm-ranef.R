@@ -15,6 +15,10 @@
 ##   glmm_bin10    binomial (10 trials) GLMM split plot, same test
 ##   glmm_pois     Poisson GLMM split plot, same test
 ##   glmm_pois_power  Poisson, whole-plot SD 0.4 (power)
+##   glmm_fix_lev_bin10, glmm_fix_lev_pois  fixed factor A with a covariate with
+##                 extreme values in a GLMM (binomial 10 trials; Poisson), A null
+##   glmm_fix_lev_pois_power  as above, A effect (power)
+##   glmm_fix_assoc_bin1  binary GLMM, A tested, B (large effect) associated with A
 ## Methods:
 ##   perm      permlmer() as in the package (lmer cells)
 ##   chibar    REML LRT with the 50:50 chi-square(0):chi-square(1) reference
@@ -22,6 +26,10 @@
 ##             whiten the marginal working residuals with V0 = Z G Z' + diag(1/w),
 ##             permute, re-correlate, refit weighted LMMs to z*, REML LRT
 ##   glmm_chibar  GLMM Laplace LRT with the 50:50 reference
+##   joint     GLMM fixed term: the maintainer's scheme on the working scale
+##             (full-model fitted values and whitened residuals permuted together)
+##   fl        GLMM fixed term: Freedman-Lane on the working scale (reduced model)
+##   lrt_chisq GLMM fixed term: Laplace LRT with the chi-square reference
 ##
 ## Run: Rscript dev/sim-perm-ranef.R [R] [nperm] [cells] [cores]
 ##   e.g. Rscript dev/sim-perm-ranef.R 1000 99 lmm_sp_norm,glmm_bin1 4
@@ -117,6 +125,49 @@ glmm_test <- function(d, f0, f1, family) {
   c(work_perm = pval_perm(s, obs), work_chibar = chibar(obs), glmm_chibar = chibar(lrt_glmm))
 }
 
+## linearise a glmer fit: working response z, working weights w, fitted
+## fixed part xb, lower Cholesky factor U of V = Z G Z' + diag(1/w), and the
+## whitened marginal working residuals e
+linearise <- function(g) {
+  eta <- g@resp$eta - g@resp$offset
+  fam <- stats::family(g)
+  w <- g@resp$sqrtWrkWt()^2
+  z <- eta + (g@resp$y - g@resp$mu) / fam$mu.eta(eta)
+  xb <- as.vector(getME(g, "X") %*% fixef(g))
+  ZL <- getME(g, "Z") %*% getME(g, "Lambda")
+  U <- Matrix::t(Matrix::chol(Matrix::forceSymmetric(Matrix::tcrossprod(ZL) + Matrix::Diagonal(x = 1 / w))))
+  list(z = z, w = w, xb = xb, U = U, e = as.vector(Matrix::solve(U, z - xb)))
+}
+
+## fixed term of a GLMM on the working scale. "joint" = the maintainer's
+## scheme (as permmodels() for lmer): linearise the full model, permute its
+## fitted values and whitened residuals together. "fl" = Freedman-Lane:
+## linearise the reduced model, keep its fitted values, permute its whitened
+## residuals. Statistic: F of the term from a weighted LMM of the working
+## response (term last, sequential), observed and permuted alike.
+glmm_fixed <- function(d, f0, f1, family, term) {
+  g0 <- glmer(f0, data = d, family = family, control = gctl)
+  g1 <- glmer(f1, data = d, family = family, control = gctl)
+  lrt <- 2 * (as.numeric(logLik(g1)) - as.numeric(logLik(g0)))
+  wf1 <- stats::update(f1, z ~ .)
+  Fstat <- function(m) stats::anova(m)[term, "F value"]
+  setup <- function(L) {
+    dz <- d; dz$z <- L$z; dz$w <- L$w
+    lme4::lmer(wf1, data = dz, weights = w, REML = TRUE, control = ctl)
+  }
+  L1 <- linearise(g1); L0 <- linearise(g0)
+  t1 <- setup(L1); t0 <- setup(L0)
+  obs_j <- Fstat(t1); obs_f <- Fstat(t0)
+  sj <- sf <- numeric(nperm)
+  for (k in seq_len(nperm)) {
+    i <- sample.int(nrow(d))
+    sj[k] <- tryCatch(Fstat(refit(t1, L1$xb[i] + as.vector(L1$U %*% L1$e[i]))), error = function(e) NA)
+    sf[k] <- tryCatch(Fstat(refit(t0, L0$xb + as.vector(L0$U %*% L0$e[i]))), error = function(e) NA)
+  }
+  c(joint = pval_perm(sj, obs_j), fl = pval_perm(sf, obs_f),
+    lrt_chisq = stats::pchisq(lrt, df = length(fixef(g1)) - length(fixef(g0)), lower.tail = FALSE))
+}
+
 ## ---- cells -----------------------------------------------------------------
 one_set <- function(cell) {
   switch(cell,
@@ -139,6 +190,28 @@ one_set <- function(cell) {
       d$x <- exp(rnorm(nrow(d)) + 0.8 * (d$A == "3"))
       d$y <- 3 * (d$x - mean(d$x)) + rnorm(8)[d$block] + rnorm(nrow(d))
       lmm_fixed(d, y ~ x + (1 | block), y ~ x + A + (1 | block))
+    },
+    glmm_fix_lev_bin10 = , glmm_fix_lev_pois = , glmm_fix_lev_pois_power = {
+      d <- expand.grid(rep = 1:2, A = factor(1:3), block = factor(1:8))
+      d$x <- exp(rnorm(nrow(d)) + 0.8 * (d$A == "3"))
+      xc <- d$x - mean(d$x)
+      bl <- 0.5 * rnorm(8)[d$block]
+      if (cell == "glmm_fix_lev_bin10") {
+        d$n <- 10; d$r <- rbinom(nrow(d), 10, plogis(-0.5 + 0.3 * xc + bl))
+        glmm_fixed(d, cbind(r, n - r) ~ x + (1 | block), cbind(r, n - r) ~ x + A + (1 | block), binomial, "A")
+      } else {
+        eff <- if (cell == "glmm_fix_lev_pois_power") c(0, 0.25, 0.5)[d$A] else 0
+        d$y <- rpois(nrow(d), exp(1 + 0.15 * xc + eff + bl))
+        glmm_fixed(d, y ~ x + (1 | block), y ~ x + A + (1 | block), poisson, "A")
+      }
+    },
+    glmm_fix_assoc_bin1 = {
+      cl <- rbind(cbind(1, c(1, 1, 1, 2)), cbind(2, c(2, 2, 2, 3)), cbind(3, c(3, 3, 3, 1)))
+      d <- do.call(rbind, lapply(1:8, function(b) data.frame(block = b, A = cl[, 1], B = cl[, 2])))
+      d <- d[rep(seq_len(nrow(d)), each = 2), ]
+      d$block <- factor(d$block); d$A <- factor(d$A); d$B <- factor(d$B)
+      d$y <- rbinom(nrow(d), 1, plogis(c(-1, 0, 1)[d$B] + 0.7 * rnorm(8)[d$block]))
+      glmm_fixed(d, y ~ B + (1 | block), y ~ B + A + (1 | block), binomial, "A")
     },
     glmm_bin1 = , glmm_bin10 = , glmm_pois = , glmm_pois_power = {
       nsub <- if (cell == "glmm_bin1") 5 else 3
