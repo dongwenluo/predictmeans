@@ -107,7 +107,7 @@ in the table above).
 **The tables above:** the R values for the balanced oats and the
 unstructured repeated measures are confirmed by SAS (e.g. Marvellous − Victory
 12.1667, UN(1,1) 2.5868); the chat tables were wrong. The missing-whole-plot
-values (2a, 2b) still wait for a run of the fixed script.
+values (2a, 2b) are confirmed by the second run (below).
 
 **Genstat (sent at the same time):** `Nitro` was a `VARIATE`, so its model has
 a linear nitrogen effect (1 df), not the factor of the SAS runs. Fitted that
@@ -118,3 +118,23 @@ give, is 7.079), i.e. its predictions included the Block.Variety random term;
 its denominator df for Variety in the unbalanced designs (8.7, 8.8) differ
 from both KR (9.16, 9.13) and Satterthwaite (8.26, 8.33). The repeated
 measures failed in Genstat (ASREML fault 1009).
+
+## The second SAS run (fixed script, 2026-11-12)
+
+`sas-results-2026-11-12-run2.txt` / `sas-results-run2.csv`: the same 16 runs
+with the intended data (68 and 67 observations). `compare-sas.R` reads the
+observation counts and builds each data set as that run did:
+`Rscript dev/sas/compare-sas.R <lib> dev/sas/sas-results-run2.csv`.
+
+With `df_method` = "containment", "between-within", "Satterthwaite" and
+"KR-SAS" (and `gls` for the repeated measures), every value agrees within one
+unit of SAS's last printed digit: all 60 variance components, 272 LS-means
+and 976 differences (estimates, SEs, df) and 48 F tests with their df — except
+65 LS-mean SEs off by about 2e-5 (relative), where the REML iterations
+stopped. SAS confirms the R values of the tables above for 2a and 2b
+(variance components 179.22, 131.32, 169.41 and 188.74, 118.59, 171.02;
+Variety LS-means 103.15, 109.79, 97.625). With a whole plot missing the
+expected and observed information differ much more than with one subplot
+missing: Kenward-Roger df for Golden Rain − Victory 9.25 (pbkrtest,
+`"Kenward-Roger"`) against SAS's 8.35 (`"KR-SAS"`), and 9.16 against 8.26 for
+the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.

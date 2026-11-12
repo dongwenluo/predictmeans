@@ -19,16 +19,17 @@ tok <- scan("dev/sas/oats.txt", what = "", quiet = TRUE)
 oats <- data.frame(Block = tok[c(TRUE, FALSE, FALSE, FALSE)], Variety = substr(tok[c(FALSE, TRUE, FALSE, FALSE)], 1, 8),
                    Nitro = tok[c(FALSE, FALSE, TRUE, FALSE)], Yield = as.numeric(tok[c(FALSE, FALSE, FALSE, TRUE)]))
 oats[1:3] <- lapply(oats[1:3], factor)
-## The SAS run of 2026-11-12 deleted nothing for OATS_MISSWP: the script
-## compared Variety (read as 8 characters, "GoldenRa") with 'GoldenRain'. So
-## OATS_MISSWP was the full data (72 observations, as its "Number of
-## Observations Used" shows) and OATS_MISS lacked only Block II x Victory x
-## 0.6 (71). The data below are those SAS used; pm-reference.sas is fixed
-## for later runs.
+## The data each SAS run used, from its "Number of Observations Used": the
+## first run (2026-11-12) read Variety as 8 characters, so OATS_MISSWP
+## deleted nothing (72 observations) and OATS_MISS lacked only Block II x
+## Victory x 0.6 (71); the fixed script gives 68 and 67.
+nobs <- function(dname) as.integer(sas$est[sas$table == "nobs" & sas$data == dname][1])
+wp_out <- !(oats$Block == "I" & oats$Variety == "GoldenRa")
+sp_out <- !(oats$Block == "II" & oats$Variety == "Victory" & oats$Nitro == "0.6")
 data_sets <- list(
   OATS = oats,
-  OATS_MISSWP = oats,
-  OATS_MISS = droplevels(subset(oats, !(Block == "II" & Variety == "Victory" & Nitro == "0.6"))))
+  OATS_MISSWP = if (identical(nobs("OATS_MISSWP"), 72L)) oats else droplevels(oats[wp_out, ]),
+  OATS_MISS = droplevels(oats[sp_out & (if (identical(nobs("OATS_MISS"), 71L)) TRUE else wp_out), ]))
 rp <- read.table("dev/sas/rep.txt", col.names = c("Subj", "Group", "Time1", "Time2", "Time3"))
 rep_long <- data.frame(Subj = factor(rep(rp$Subj, each = 3)), Group = factor(rep(rp$Group, each = 3)),
                        Time = factor(rep(1:3, nrow(rp))), Y = as.vector(t(as.matrix(rp[3:5]))))

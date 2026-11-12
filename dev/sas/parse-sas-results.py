@@ -51,6 +51,10 @@ for line in lines:
         data = m.group(1)
         table = None
         continue
+    m = re.match(r"Number of Observations Used\s+(\d+)", s)
+    if m:
+        rows.append(dict(run=run, data=data, ddfm=ddfm, table="nobs", effect="", est=m.group(1)))
+        continue
     m = re.match(r"Degrees of Freedom Method\s+(.+)$", s)
     if m:
         ddfm = DDFM[m.group(1).strip()]
