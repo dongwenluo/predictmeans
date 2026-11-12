@@ -148,6 +148,17 @@ For REML `lmer` fits the test is the Kenward–Roger F test (as
 `df_method = "Satterthwaite"` gives lmerTest’s test, and `"containment"`
 the SAS containment df.
 
+`contrastmeans(..., joint = TRUE)` adds the same joint test to the t
+tests of the individual contrasts (and, with a `permlist`, a permutation
+p-value of the joint F):
+
+``` r
+
+contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)[["Joint F test of the contrasts"]]
+#>               df1 df2 F.ratio p.value
+#> all contrasts   2  45  1.3669  0.2653
+```
+
 ## Slopes of a covariate
 
 When nitrogen is used as a number, the question is how fast yield rises

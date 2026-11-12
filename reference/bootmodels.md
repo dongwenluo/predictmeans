@@ -39,7 +39,7 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 
 - ncore:
 
-  Number of cores for refitting (not on Windows), the default is 1.
+  Number of cores for refitting, the default is 1.
 
 - prt:
 

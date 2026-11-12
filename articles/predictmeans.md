@@ -250,8 +250,10 @@ probabilities); see
   permutation and parametric bootstrap tests
   ([`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
-  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)),
-  also for pairwise comparisons and contrasts through `permlist`.
+  [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md),
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md))
+  for linear, generalized linear and mixed models, also for pairwise
+  comparisons and contrasts through `permlist`.
 - [`vignette("smooth", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/smooth.md):
   smooth curves in mixed models
   ([`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),

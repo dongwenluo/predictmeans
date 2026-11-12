@@ -199,6 +199,13 @@ terms):</p>
 (as <code><a href="https://rdrr.io/pkg/pbkrtest/man/kr__modcomp.html" class="external-link">pbkrtest::KRmodcomp()</a></code>);
 <code>df_method = "Satterthwaite"</code> gives lmerTest’s test, and
 <code>"containment"</code> the SAS containment df.</p>
+<p><code>contrastmeans(..., joint = TRUE)</code> adds the same joint
+test to the t tests of the individual contrasts (and, with a
+<code>permlist</code>, a permutation p-value of the joint F):</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="va">curv</span>, joint <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[[</span><span class="st">"Joint F test of the contrasts"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt;               df1 df2 F.ratio p.value</span></span>
+<span><span class="co">#&gt; all contrasts   2  45  1.3669  0.2653</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="slopes-of-a-covariate">Slopes of a covariate<a class="anchor" aria-label="anchor" href="#slopes-of-a-covariate"></a>
@@ -207,7 +214,7 @@ terms):</p>
 rises with it in each variety. <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> gives the slopes
 with standard errors, df, confidence limits and tests, and compares them
 (as <code><a href="https://rvlenth.github.io/emmeans/reference/emtrends.html" class="external-link">emmeans::emtrends()</a></code>):</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pm_slopes.html">pm_slopes</a></span><span class="op">(</span><span class="va">fm2</span>, <span class="st">"nitro"</span>, <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Slopes of 'nitro' at 0.3 </span></span>
@@ -235,7 +242,7 @@ covariate’s mean).</p>
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code> result and their covariance matrix
 (Kenward–Roger adjusted for REML <code>lmer</code> fits), named by the
 levels. Any contrast can be computed from them:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pmv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">pmv</span><span class="op">)</span></span>
 <span><span class="va">L</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Victory"</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Golden Rain"</span><span class="op">)</span></span>
@@ -246,7 +253,7 @@ levels. Any contrast can be computed from them:</p>
 marginaleffects needs the class listed first; <code>b1</code>,
 <code>b2</code>, … are the means in the order of
 <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>marginaleffects_model_classes <span class="op">=</span> <span class="st">"predictmeans"</span><span class="op">)</span></span>
 <span><span class="va">i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0.6:Victory"</span>, <span class="st">"0.6:Golden Rain"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">marginaleffects</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">pmv</span>, hypothesis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"b%d - b%d = 0"</span>, <span class="va">i</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">i</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>

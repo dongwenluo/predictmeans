@@ -62,7 +62,7 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">Df</span>, <span class="va">permlist</span>,</span>
 <span>                vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
-<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -88,9 +88,11 @@ The <code>modelterm</code> must be given exactly as it appears in the printed mo
 
 <dt id="arg-adj">adj<a class="anchor" aria-label="anchor" href="#arg-adj"></a></dt>
 <dd><p>Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons.
-The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-"mvt", in any letter case. "sidak", "scheffe" (rank of <code>ctrmatrix</code>) and "mvt" (single-step multivariate t, the exact counterpart of SAS
-<code>ADJUST=SIMULATE</code>; needs package <span class="pkg">mvtnorm</span>) are as in <span class="pkg">emmeans</span>.
+The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
+"mvt" and "westfall", in any letter case. "sidak", "scheffe" (rank of <code>ctrmatrix</code>) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+<code>ADJUST=SIMULATE</code>; needs package <span class="pkg">mvtnorm</span>) are as in <span class="pkg">emmeans</span>. With <code>permlist</code>, "mvt" gives the
+single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
+1993); "westfall" needs <code>permlist</code>, and "scheffe" is not available with it.
 The default method is "none".</p></dd>
 
 
@@ -101,7 +103,9 @@ the <code>Df</code> needs to be specified, while for the other models, <code>Df<
 
 <dt id="arg-permlist">permlist<a class="anchor" aria-label="anchor" href="#arg-permlist"></a></dt>
 <dd><p>A model parameter list containing <code>nsim</code> parameters produced by the function <code>permmodels</code>. When <code>permlist != NULL</code>, the option <code>Df</code> will be non-functional. This is a key
-option for the permutation test.</p></dd>
+option for the permutation test. With the result of <code>permmodels(method = "freedman-lane")</code> (<code>lm</code> and
+<code>aov</code> models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
+0. With a <code>permlist</code>, <code>vcov_adjust</code> is not used (the permuted refits use the unadjusted covariance).</p></dd>
 
 
 <dt id="arg-vcov-adjust">vcov_adjust<a class="anchor" aria-label="anchor" href="#arg-vcov-adjust"></a></dt>
@@ -121,6 +125,15 @@ over them (<code>"equal"</code>, the default, <code>"proportional"</code>, <code
 fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>; see
 <code><a href="predictmeans.html">predictmeans</a></code>).</p></dd>
 
+
+<dt id="arg-joint">joint<a class="anchor" aria-label="anchor" href="#arg-joint"></a></dt>
+<dd><p>Logical: also test all the contrasts together (all of them zero), as <code><a href="pm_joint.html">pm_joint</a></code> does: an F
+test with Kenward-Roger (REML <code>lmer</code> fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+denominator df, <span class="pkg">nlme</span>'s df for <code>lme</code>, the residual df for other models (normal-based, i.e. chi-square /
+df1, when there is none). Contrasts that are linear combinations of others are dropped, so <code>df1</code> is the rank
+of <code>ctrmatrix</code>. With <code>permlist</code>, also a permutation p-value of the joint Wald F statistic, from the same
+permutations (for Freedman-Lane, the model with all the contrasts zero). The default is <code>FALSE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -130,6 +143,11 @@ fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"cont
 
 <dt>K</dt>
 <dd><p>A contrast matrix.</p></dd>
+
+</dl><p>and, with <code>joint = TRUE</code>, a third,</p>
+<dl><dt>Joint F test of the contrasts</dt>
+<dd><p><code>df1</code>, <code>df2</code>, <code>F.ratio</code> and <code>p.value</code> of the joint test
+(and <code>Perm_p_value</code> with <code>permlist</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -192,6 +210,34 @@ fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"cont
 <span class="r-out co"><span class="r-pr">#&gt;</span>      0.6:Marvellous 0.6:Victory</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,]              0           0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [2,]              0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># 3. ... and both contrasts tested together (an F test with 2 numerator df)</span></span></span>
+<span class="r-in"><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span>, joint<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Probabilities will be calculated using ‘10’ Df. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value df Pr(&gt;|t|)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 10   0.4021</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 10   0.0008</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value &lt; 0.0001."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $K</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]            -1            0         1               0              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]             0            0         1               0              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]           0               0              0           0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]           0               0             -1           0               0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.6:Marvellous 0.6:Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]              0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]              0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $`Joint F test of the contrasts`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               df1 df2 F.ratio p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> all contrasts   2  10 12.4991  0.0019</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

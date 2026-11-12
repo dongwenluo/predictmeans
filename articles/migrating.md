@@ -45,6 +45,18 @@ drop. It is now `NA`, with a message; pairwise differences that are
 estimable are still shown. Means over empty cells keep the 1.x rule: the
 average of the observed cells, with a warning.
 
+### Permutation tests
+
+[`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+now uses Freedman–Lane permutations by default (`method = "auto"`): each
+term, coefficient or pair is tested with the model without it, so the
+other terms keep their effects. It also works for `glm`, `glmer` and
+`glmmTMB` models, and needs no refits. Mixed-model residuals are
+decorrelated with the symmetric square root of their covariance instead
+of the Cholesky factor, whose results depended on the order of the data.
+For the 1.x scheme use `method = "raw"`; its p-values for mixed models
+still differ slightly from 1.x because of the new square root.
+
 ### Bugs fixed
 
 Some 1.x results were wrong and are now correct, for example `permlist`
@@ -94,6 +106,18 @@ cases with transformed covariates. See `NEWS.md` for the full list.
   on
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fits.
+- **Permutation tests for GLMs and GLMMs**:
+  [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  on the working scale,
+  [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  (also
+  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
+  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md))
+  for nested GLMMs, and `perms` for permutations restricted by the
+  design
+  ([`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)).
+  See
+  [`vignette("resampling")`](https://dongwenluo.github.io/predictmeans/articles/resampling.md).
 - **Other model classes** can be added with a few methods (see
   [`?pm_coef`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)).
 - **Fewer dependencies** and faster Kenward–Roger and Satterthwaite

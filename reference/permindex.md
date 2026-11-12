@@ -1,6 +1,14 @@
 # Permutation Index
 
-This function obtains permutation index for a dataset.
+This function obtains permutation index for a dataset: free
+permutations, permutations within blocks, permutations of whole groups
+(e.g. whole plots), or of whole groups within blocks. The result can be
+given to
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+or
+[`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+(argument `perms`) for tests that permute only as the design allows
+(restricted, or design-based, permutation tests).
 
 ## Usage
 
@@ -28,11 +36,24 @@ permindex(data, block=NULL, group=NULL, nsim=4999, seed)
 
 - seed:
 
-  Specify a random number generator seed, for reproducible results.
+  Specify a random number generator seed, for reproducible results. The
+  user's random number stream is left as it was.
 
 ## Value
 
-A matrix has 'nsim' columns of permuted index.
+A matrix with one row per row of `data` and up to `nsim` columns, each a
+permutation of the row numbers of `data` (row i of the permuted data is
+row `index[i]` of `data`). Duplicated permutations are dropped, so there
+are fewer columns when the design allows fewer distinct permutations.
+
+## Details
+
+Groups are permuted as whole units, so the groups that change places
+(within a block, if `block` is given) must have the same number of rows.
+The data need not be sorted: before predictmeans 2.0 the indices
+referred to the data sorted by `block` and `group`, so they were right
+only for data already in that order (the permutations are the same as
+before for sorted data and the same `seed`).
 
 ## Author
 
@@ -126,42 +147,42 @@ Dongwen Luo, Siva Ganesh and John Koolaard
                         # Permute obs within each block only.
   cbind(data, permindex(data, group="group", nsim=5)) 
 #>    block group  1  2  3  4  5
-#> 1      1     1 10 16 16 11  8
-#> 2      1     1 12 13 13  6  5
-#> 3      1     1  4 17 15  5  4
-#> 4      1     1  5 21 18  8  3
-#> 5      1     2  7 24 21 10  2
-#> 6      1     2  6 18 20 12 12
-#> 7      1     2  2 14 19  7 11
-#> 8      1     2  3 19 17  4  1
-#> 9      1     3  9 23 14  9  9
-#> 10     1     3 11 22 23  2 10
-#> 11     1     3  8 20 24  3  6
-#> 12     1     3  1 15 22  1  7
-#> 13     2     1 31  9 35 15 22
-#> 14     2     1 36 12 26 16 18
-#> 15     2     1 30  2 28 20 14
-#> 16     2     1 32  3 27 14 23
-#> 17     2     2 25  6 33 17 24
-#> 18     2     2 34 11 34 22 20
-#> 19     2     2 35  1 25 18 19
-#> 20     2     2 26  4 32 24 21
-#> 21     2     3 29  7 36 23 16
-#> 22     2     3 33  5 31 19 13
-#> 23     2     3 27  8 29 13 17
-#> 24     2     3 28 10 30 21 15
-#> 25     3     1 20 25 12 30 35
-#> 26     3     1 22 29 11 26 28
-#> 27     3     1 17 28  7 27 31
-#> 28     3     1 15 35  9 34 29
-#> 29     3     2 21 36  8 35 36
-#> 30     3     2 19 30 10 36 30
-#> 31     3     2 18 31  5 29 26
-#> 32     3     2 24 34  2 28 32
-#> 33     3     3 23 32  1 32 27
-#> 34     3     3 13 26  3 25 25
-#> 35     3     3 16 27  6 33 33
-#> 36     3     3 14 33  4 31 34
+#> 1      1     1 26  8  8 27 16
+#> 2      1     1 28  5  5 14 13
+#> 3      1     1  4 17  7 13  4
+#> 4      1     1 13 29 18 16  3
+#> 5      1     2 23 25 35  7 30
+#> 6      1     2 36 28 10  8 18
+#> 7      1     2 22  2 12 20  6
+#> 8      1     2 24  3 11  6 31
+#> 9      1     3 20  9 28 22 35
+#> 10     1     3 30 21 27 10 12
+#> 11     1     3 17 12 15 11 23
+#> 12     1     3  7 35 25 34 21
+#> 13     2     1 15 32 29 26  2
+#> 14     2     1 14 18 20 28 28
+#> 15     2     1  2  6 19 15 27
+#> 16     2     1  3 19 17  4  1
+#> 17     2     2  9 14 33 17 32
+#> 18     2     2 34 27 34 30 20
+#> 19     2     2 35  1  9 18 19
+#> 20     2     2 10  4 24 32 29
+#> 21     2     3 29 36 16 35 36
+#> 22     2     3 19 22 26 36 22
+#> 23     2     3 18 23 13 21 10
+#> 24     2     3 32 34  2 12 24
+#> 25     3     1 25 31  6 25 25
+#> 26     3     1 27 30 31  2 26
+#> 27     3     1 16 20 32  3 14
+#> 28     3     1  1  7 30  1 15
+#> 29     3     2 21 15 36 31  8
+#> 30     3     2 33 13 23 19  5
+#> 31     3     2 11 16 21  5 17
+#> 32     3     2 12 26 22 29  7
+#> 33     3     3 31 24  1 24 11
+#> 34     3     3  5 10  3  9  9
+#> 35     3     3  8 11 14 33 33
+#> 36     3     3  6 33  4 23 34
                         # Permute groups as a whole block first, 
                         # then permute obs within each group.
   cbind(data, permindex(data, nsim=5))  # Free permutation.
@@ -202,4 +223,37 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 34     3     3 19 20 25 32 29
 #> 35     3     3 15 34  5 18 16
 #> 36     3     3 21 27 33  2 35
+
+  ## A randomisation test of nitrogen in a randomised block design:
+  ## permutations within blocks only
+  Oats$nitro <- factor(Oats$nitro)
+  fm <- lm(yield ~ Block + nitro, data = Oats)
+  idx <- permindex(Oats, block = "Block", nsim = 199, seed = 1)
+  permmodels(fm, perms = idx, ncore = 1)
+#> 
+#> Coefficients of (fixed) effects:
+#>             Estimate Std. Error t value Pr(>|t|) Perm_p_value
+#> (Intercept)  79.3889     3.7668 21.0759   0.0000           NA
+#> Block.L      29.4823     4.6134  6.3906   0.0000        0.070
+#> Block.Q      20.0124     4.6134  4.3379   0.0001        1.000
+#> Block.C       5.3728     4.6134  1.1646   0.2486        0.005
+#> Block^4       4.7718     4.6134  1.0343   0.3049        1.000
+#> Block^5      -1.2651     4.6134 -0.2742   0.7848        0.005
+#> nitro0.2     19.5000     5.3271  3.6605   0.0005        0.005
+#> nitro0.4     34.8333     5.3271  6.5389   0.0000        0.005
+#> nitro0.6     44.0000     5.3271  8.2597   0.0000        0.005
+#> 
+#> Note: Perm_p_value of t test is obtained using ‘199’ Freedman-Lane permutations.
+#> 
+#> ANOVA:
+#> Analysis of Variance Table
+#> 
+#>  Response: yield
+#>           Df   Sum Sq   Mean Sq F value Pr(>F) Perm_p_value
+#> Block      5 15875.28 3175.0556 12.4317      0            1
+#> nitro      3 20020.50 6673.5000 26.1297      0        0.005
+#> Residuals 63 16090.17  255.3995                            
+#> 
+#> Note: Perm_p_value of F test is obtained using ‘199’ Freedman-Lane permutations.
+#> 
 ```

@@ -1,6 +1,9 @@
 # Permutation ANOVA for `lmer` Model
 
-This function provides permutation ANOVA for `lmer` model.
+This function provides permutation ANOVA for `lmer` model (and, since
+predictmeans 2.0, `glmer` model): each term is tested by
+[`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+comparing the model with and without it.
 
 ## Usage
 
@@ -13,7 +16,7 @@ permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2"
 
 - model:
 
-  Model object returned by `lmer`.
+  Model object returned by `lmer` or `glmer`.
 
 - nperm:
 

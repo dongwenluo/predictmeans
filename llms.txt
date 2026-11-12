@@ -135,9 +135,12 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   : Permutation Test of Linear Model
 
 - [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   :
 
-  Permutation Test of random or fixed effects for `lmer` model.
+  Permutation Test of random or fixed effects for `lmer`, `glmer` and
+  `glmmTMB` models.
 
 - [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
   :

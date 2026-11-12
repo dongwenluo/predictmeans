@@ -2,21 +2,23 @@
 
 This function provides permutation t-tests for coefficients of (fixed)
 effects and permutation F-tests for the terms in a linear model such as
-`aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`.
+`aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer` and `glmmTMB`.
 
 ## Usage
 
 ``` r
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"))
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+  refit=TRUE)
 ```
 
 ## Arguments
 
 - model:
 
-  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`.
+  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`,
+  `glmer` or `glmmTMB`.
 
 - nperm:
 
@@ -66,19 +68,55 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 - method:
 
-  How the data are permuted: `"raw"` (the default) or `"freedman-lane"`
-  (`lm` and `aov` models only). See Details.
+  How the data are permuted: `"freedman-lane"` or `"raw"`; `"auto"` (the
+  default) chooses the more robust one for the model class, which is
+  `"freedman-lane"` for every class at present. `"raw"` is the scheme of
+  predictmeans 1.x. See Details.
+
+- perms:
+
+  Optional matrix of permutations to use instead of free ones, one row
+  per observation used in the model and one column per permutation (e.g.
+  from
+  [`permindex`](https://dongwenluo.github.io/predictmeans/reference/permindex.md),
+  for permutations within blocks or of whole plots); `nperm` is then its
+  number of columns. Use `exact = TRUE` when its columns are all the
+  permutations the design allows.
+
+- refit:
+
+  For `method = "freedman-lane"` with mixed models (`lmer`, `lme`,
+  `gls`, and `glmer`, `glmmTMB` through their working linear mixed
+  model): refit the model to each permuted data set (the default), so
+  the variance parameters are estimated again each time. `FALSE` holds
+  the covariance of the data at the fit (no refits, much faster), which
+  rejects slightly too often when the variance parameters rest on few
+  units (e.g. whole plots of a split plot with few blocks).
 
 ## Value
 
 The function produces permutation t-test table for coefficients of
-(fixed) effects, permutation ANOVA table for model terms and a model
-parameter list `permlist`, a list containing `nsim=4999` times
-permutation refitted `model` parameters which are used in functions
-`predictmeans` and `contrastmeans`. With `method = "freedman-lane"`,
-`permlist` is `NULL`.
+(fixed) effects, permutation ANOVA table for model terms and (with
+`method = "raw"`) a model parameter list `permlist`, a list containing
+`nsim=4999` times permutation refitted `model` parameters which are used
+in functions `predictmeans` and `contrastmeans`. With
+`method = "freedman-lane"`, `permlist` is `NULL` and the result has a
+fourth component, `perm`: what is needed to test any comparison with the
+same permutations. Give the whole result to
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+or
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+(argument `permlist`) for Freedman-Lane p-values of pairwise comparisons
+and contrasts. If refits fail, the number left out is in attribute
+`"failures"`.
 
 ## Details
+
+With `method = "auto"` (the default since predictmeans 2.0) the method
+is chosen by model class from a simulation study
+(`dev/permutation-plan.md` in the package sources): at present
+Freedman-Lane for every class. Use `method = "raw"` for the results of
+predictmeans 1.x.
 
 With `method = "raw"`, the response is permuted for `lm`, `aov` and
 `glm` models; for `gls`, `lme` and `lmer` models the fitted values and
@@ -107,7 +145,47 @@ tested term, the same study found the `"raw"` scheme slightly liberal
 (6.3% at the 5% level), while the Satterthwaite F test kept the level
 (4.6%); prefer the Kenward-Roger or Satterthwaite F test there (e.g.
 [`anova()`](https://rdrr.io/r/stats/anova.html) of an lmerTest fit, or
-[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)).
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)),
+or `method = "freedman-lane"` (4.6%).
+
+Since predictmeans 2.0, `method = "freedman-lane"` also handles `lmer`,
+`lme` and `gls` models, and `glm`, `glmer` and `glmmTMB` models. For
+`lmer`, `lme` and `gls` models (with `refit = TRUE`, the default) the
+model without the tested term is fitted, its residuals are decorrelated
+with the symmetric square root of its covariance, permuted, correlated
+again and added to its fitted values, and the model is refitted to each
+permuted data set; the statistics are the model's Wald t and F
+statistics (unadjusted covariance). One set of refits serves a term and
+its coefficients; pairs and contrasts in
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+get one set of refits for their family (the model with all the compared
+means equal). With `refit = FALSE` the covariance of the data, V, is
+fixed at the fitted model: the data and the design are decorrelated with
+the symmetric square root of V, so least squares on them gives the same
+statistics, and Freedman-Lane permutations are done as for `lm`, without
+refits. That is much faster, but the permuted statistics then behave as
+if V were known, so comparisons whose error rests on few units rejected
+too many true null hypotheses in a simulation study (whole-plot factor
+of a split plot with 6 blocks: 8.6% at the 5% level, against 5.0% with
+refits; pairs of whole-plot means 6.2%). GLMs and GLMMs are first
+linearised at the fit (working response and working variances on the
+link scale, as in
+[`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md));
+GLMMs are then treated as the working linear mixed model (weights from
+the working variances), refitted to each permuted working response when
+`refit = TRUE`. Their t and F statistics are Wald statistics on the
+working scale with the dispersion estimated from the working residuals,
+so overdispersion affects them much less than likelihood-ratio tests (in
+a pilot study with overdispersed counts: 8-10% against 35% at the 5%
+level). For these classes the tables show these statistics and the
+permutation p-values; type I tests are sequential in the GLS metric (as
+[`anova()`](https://rdrr.io/r/stats/anova.html) of lme4 and nlme). The
+result can be given to
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+and
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+as for `lm`. For `glmer` and `glmmTMB` models only
+`method = "freedman-lane"` is available.
 
 ## References
 
@@ -138,30 +216,30 @@ fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 permlme <- permmodels(model=fm, nperm=99, ncore=1)
 #> 
 #> Coefficients of (fixed) effects:
-#>                              Value Std.Error DF t-value p-value Perm_p_value
-#> (Intercept)                80.0000    9.1070 45  8.7845  0.0000           NA
-#> nitro0.2                   18.5000    7.6830 45  2.4079  0.0202         0.01
-#> nitro0.4                   34.6667    7.6830 45  4.5122  0.0000         0.01
-#> nitro0.6                   44.8333    7.6830 45  5.8354  0.0000         0.01
-#> VarietyMarvellous           6.6667    9.7150 10  0.6862  0.5082         0.44
-#> VarietyVictory             -8.5000    9.7150 10 -0.8749  0.4021         0.37
-#> nitro0.2:VarietyMarvellous  3.3333   10.8653 45  0.3068  0.7604         0.71
-#> nitro0.4:VarietyMarvellous -4.1667   10.8653 45 -0.3835  0.7032         0.69
-#> nitro0.6:VarietyMarvellous -4.6667   10.8653 45 -0.4295  0.6696         0.68
-#> nitro0.2:VarietyVictory    -0.3333   10.8653 45 -0.0307  0.9757         0.96
-#> nitro0.4:VarietyVictory     4.6667   10.8653 45  0.4295  0.6696         0.66
-#> nitro0.6:VarietyVictory     2.1667   10.8653 45  0.1994  0.8428         0.84
+#>                            Estimate Std. Error t value Perm_p_value
+#> (Intercept)                 80.0000     9.1070  8.7845           NA
+#> nitro0.2                    18.5000     7.6830  2.4079         0.01
+#> nitro0.4                    34.6667     7.6830  4.5122         0.01
+#> nitro0.6                    44.8333     7.6830  5.8354         0.01
+#> VarietyMarvellous            6.6667     9.7150  0.6862         0.48
+#> VarietyVictory              -8.5000     9.7150 -0.8749         0.39
+#> nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068         0.73
+#> nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835         0.67
+#> nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295         0.69
+#> nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307         0.96
+#> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295         0.70
+#> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994         0.84
 #> 
-#> Note: Perm_p_value of t test is obtained using ‘99’ permutations.
+#> Note: Perm_p_value of t test is obtained using ‘99’ Freedman-Lane permutations.
 #> 
 #> ANOVA:
-#>               numDF denDF  F-value p-value Perm_p_value
-#> (Intercept)       1    45 245.1433  0.0000             
-#> nitro             3    45  37.6856  0.0000         0.01
-#> Variety           2    10   1.4853  0.2724         0.24
-#> nitro:Variety     6    45   0.3028  0.9322         0.88
+#> Type I F tests (Freedman-Lane permutations; the model refitted to each permuted data set)
+#>               Df F value Perm_p_value
+#> nitro          3 37.6856         0.01
+#> Variety        2  1.4853         0.30
+#> nitro:Variety  6  0.3028         0.96
 #> 
-#> Note: Perm_p_value of F test is obtained using ‘99’ permutations.
+#> Note: Perm_p_value of F test is obtained using ‘99’ Freedman-Lane permutations.
 #> 
 
 ## Permutation test for multiple comparisons
@@ -206,34 +284,34 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #>     0     0.2   0.4  0.6 Group
 #> 0   1                    A    
 #> 0.2 0.015 1               B   
-#> 0.4 0.015 0.06  1         BC  
-#> 0.6 0.015 0.015 0.17 1     C  
+#> 0.4 0.015 0.048 1          C  
+#> 0.6 0.015 0.015 0.15 1     C  
 #> 
 #> $Marvellous
-#>     0    0.2  0.4  0.6 Group
-#> 0   1                  A    
-#> 0.2 0.02 1              B   
-#> 0.4 0.02 0.25 1         B   
-#> 0.6 0.02 0.06 0.24 1    B   
+#>     0    0.2   0.4  0.6 Group
+#> 0   1                   A    
+#> 0.2 0.02 1               B   
+#> 0.4 0.02 0.23  1         BC  
+#> 0.6 0.02 0.045 0.23 1     C  
 #> 
 #> $Victory
 #>     0     0.2   0.4  0.6 Group
 #> 0   1                    A    
 #> 0.2 0.036 1               B   
 #> 0.4 0.015 0.015 1          C  
-#> 0.6 0.015 0.015 0.28 1     C  
+#> 0.6 0.015 0.015 0.27 1     C  
 #> 
 #> $mean_table
 #> $mean_table$Table
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
 #> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  
 #> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806        BC
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C
 #> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C
-#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806        A 
-#> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139         B
-#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806         B
-#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         B
+#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  
+#> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B 
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C
 #> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  
 #> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B 
 #> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C
@@ -266,18 +344,78 @@ contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlm
 #> [1,]              0           0
 #> [2,]              0           0
 #> 
+
+## The same by lmer, type II tests; refit = FALSE is much faster (no refits)
+fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
+permmodels(fm3, nperm = 99, type = "II", seed = 1, ncore = 1)
+#> 
+#> Coefficients of (fixed) effects:
+#>                            Estimate Std. Error t value Perm_p_value
+#> (Intercept)                 80.0000     9.1070  8.7844           NA
+#> nitro0.2                    18.5000     7.6829  2.4079         0.02
+#> nitro0.4                    34.6667     7.6829  4.5122         0.01
+#> nitro0.6                    44.8333     7.6829  5.8354         0.01
+#> VarietyMarvellous            6.6667     9.7150  0.6862         0.57
+#> VarietyVictory              -8.5000     9.7150 -0.8749         0.43
+#> nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068         0.78
+#> nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835         0.71
+#> nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295         0.71
+#> nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307         0.99
+#> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295         0.66
+#> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994         0.92
+#> 
+#> Note: Perm_p_value of t test is obtained using ‘99’ Freedman-Lane permutations.
+#> 
+#> ANOVA:
+#> Type II F tests (Freedman-Lane permutations; the model refitted to each permuted data set)
+#>               Df F value Perm_p_value
+#> nitro          3 37.6857         0.01
+#> Variety        2  1.4853         0.24
+#> nitro:Variety  6  0.3028         0.93
+#> 
+#> Note: Perm_p_value of F test is obtained using ‘99’ Freedman-Lane permutations.
+#> 
+permmodels(fm3, nperm = 999, type = "II", seed = 1, refit = FALSE)
+#> 
+#> Coefficients of (fixed) effects:
+#>                            Estimate Std. Error t value Perm_p_value
+#> (Intercept)                 80.0000     9.1070  8.7844           NA
+#> nitro0.2                    18.5000     7.6829  2.4079        0.019
+#> nitro0.4                    34.6667     7.6829  4.5122        0.001
+#> nitro0.6                    44.8333     7.6829  5.8354        0.001
+#> VarietyMarvellous            6.6667     9.7150  0.6862        0.494
+#> VarietyVictory              -8.5000     9.7150 -0.8749        0.390
+#> nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068        0.753
+#> nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835        0.712
+#> nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295        0.654
+#> nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307        0.975
+#> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.688
+#> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.849
+#> 
+#> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations.
+#> 
+#> ANOVA:
+#> Type II F tests with the covariance of the data fixed at the fitted model
+#>               Df F value Perm_p_value
+#> nitro          3 37.6857        0.001
+#> Variety        2  1.4853        0.230
+#> nitro:Variety  6  0.3028        0.939
+#> 
+#> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations.
+#> 
 # }
 
 ## Freedman-Lane permutations for a linear model with a covariate
-fm2 <- lm(mpg ~ wt + factor(cyl), data = mtcars)
-permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+mtcars$cyl <- factor(mtcars$cyl)
+fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
+pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 #> 
 #> Coefficients of (fixed) effects:
-#>              Estimate Std. Error t value Pr(>|t|) Perm_p_value
-#> (Intercept)   33.9908     1.8878 18.0056   0.0000           NA
-#> wt            -3.2056     0.7539 -4.2521   0.0002        0.001
-#> factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009
-#> factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003
+#>             Estimate Std. Error t value Pr(>|t|) Perm_p_value
+#> (Intercept)  33.9908     1.8878 18.0056   0.0000           NA
+#> wt           -3.2056     0.7539 -4.2521   0.0002        0.001
+#> cyl6         -4.2556     1.3861 -3.0702   0.0047        0.009
+#> cyl8         -6.0709     1.6523 -3.6742   0.0010        0.003
 #> 
 #> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations.
 #> 
@@ -285,11 +423,25 @@ permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 #> Anova Table (Type II tests)
 #> 
 #>  Response: mpg
-#>               Sum Sq Df F value Pr(>F) Perm_p_value
-#> wt          118.2039  1 18.0801 0.0002        0.001
-#> factor(cyl)  95.2633  2  7.2856 0.0028        0.005
-#> Residuals   183.0586 28                            
+#>             Sum Sq Df F value Pr(>F) Perm_p_value
+#> wt        118.2039  1 18.0801 0.0002        0.001
+#> cyl        95.2633  2  7.2856 0.0028        0.005
+#> Residuals 183.0586 28                            
 #> 
 #> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations.
 #> 
+## ... and for the pairwise comparisons of the cyl means
+predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+#> 
+#>  The predicted means are estimated at 
+#>     wt 
+#> 3.2172 
+#>   level1 level2 estimate std.error df statistic p.value p.adj      lsd
+#> 1      4      6 4.255582  1.386073 NA  3.070244   0.009 0.009 2.772146
+#> 2      4      8 6.070860  1.652288 NA  3.674214   0.003 0.003 3.304576
+#> 3      6      8 1.815277  1.357634 NA  1.337089   0.185 0.185 2.715268
+#>      p.method
+#> 1 permutation
+#> 2 permutation
+#> 3 permutation
 ```

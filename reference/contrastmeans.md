@@ -9,7 +9,7 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
 ```
 
 ## Arguments
@@ -40,11 +40,14 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
   Name (in "quote") for indicating a method for adjusting p-values of
   pairwise comparisons. The choices are "none", "holm", "hochberg",
-  "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-  "mvt", in any letter case. "sidak", "scheffe" (rank of `ctrmatrix`)
-  and "mvt" (single-step multivariate t, the exact counterpart of SAS
-  `ADJUST=SIMULATE`; needs package mvtnorm) are as in emmeans. The
-  default method is "none".
+  "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe", "mvt"
+  and "westfall", in any letter case. "sidak", "scheffe" (rank of
+  `ctrmatrix`) and "mvt" (single-step multivariate t, the exact
+  counterpart of SAS `ADJUST=SIMULATE`; needs package mvtnorm) are as in
+  emmeans. With `permlist`, "mvt" gives the single-step and "westfall"
+  the step-down max-\|t\| adjustment of the permutation p-values
+  (Westfall and Young, 1993); "westfall" needs `permlist`, and "scheffe"
+  is not available with it. The default method is "none".
 
 - Df:
 
@@ -56,7 +59,11 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
   A model parameter list containing `nsim` parameters produced by the
   function `permmodels`. When `permlist != NULL`, the option `Df` will
-  be non-functional. This is a key option for the permutation test.
+  be non-functional. This is a key option for the permutation test. With
+  the result of `permmodels(method = "freedman-lane")` (`lm` and `aov`
+  models), each contrast is tested by Freedman-Lane permutations of the
+  model in which that contrast is 0. With a `permlist`, `vcov_adjust` is
+  not used (the permuted refits use the unadjusted covariance).
 
 - vcov_adjust:
 
@@ -82,6 +89,19 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   or `"containment"` (SAS `DDFM=CONTAIN`; see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
 
+- joint:
+
+  Logical: also test all the contrasts together (all of them zero), as
+  [`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  does: an F test with Kenward-Roger (REML `lmer` fits, the scaled F of
+  Kenward and Roger, 1997) or Satterthwaite (ML fits) denominator df,
+  nlme's df for `lme`, the residual df for other models (normal-based,
+  i.e. chi-square / df1, when there is none). Contrasts that are linear
+  combinations of others are dropped, so `df1` is the rank of
+  `ctrmatrix`. With `permlist`, also a permutation p-value of the joint
+  Wald F statistic, from the same permutations (for Freedman-Lane, the
+  model with all the contrasts zero). The default is `FALSE`.
+
 ## Value
 
 There are two components in the output which are
@@ -93,6 +113,13 @@ There are two components in the output which are
 - K:
 
   A contrast matrix.
+
+and, with `joint = TRUE`, a third,
+
+- Joint F test of the contrasts:
+
+  `df1`, `df2`, `F.ratio` and `p.value` of the joint test (and
+  `Perm_p_value` with `permlist`).
 
 ## References
 
@@ -155,5 +182,33 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 #>      0.6:Marvellous 0.6:Victory
 #> [1,]              0           0
 #> [2,]              0           0
+#> 
+
+# 3. ... and both contrasts tested together (an F test with 2 numerator df)
+contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+#> 
+#>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .
+#>  Probabilities will be calculated using ‘10’ Df. 
+#> $`The t tests of the specified contrasts`
+#>      Estimate Std. Error t value df Pr(>|t|)
+#> [1,]  -8.5000      9.715 -0.8749 10   0.4021
+#> [2,] -45.6667      9.715 -4.7006 10   0.0008
+#> attr(,"Note")
+#> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
+#> 
+#> $K
+#>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
+#> [1,]            -1            0         1               0              0
+#> [2,]             0            0         1               0              0
+#>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
+#> [1,]           0               0              0           0               0
+#> [2,]           0               0             -1           0               0
+#>      0.6:Marvellous 0.6:Victory
+#> [1,]              0           0
+#> [2,]              0           0
+#> 
+#> $`Joint F test of the contrasts`
+#>               df1 df2 F.ratio p.value
+#> all contrasts   2  10 12.4991  0.0019
 #> 
 ```

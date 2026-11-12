@@ -63,8 +63,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   "scheffe" and "mvt". "sidak", "scheffe" (rank of the family: number of
   means - 1) and "mvt" (single-step multivariate t, the exact
   counterpart of SAS `ADJUST=SIMULATE`; needs package mvtnorm) are as in
-  emmeans. "tukey", "scheffe" and "mvt" are not available with
-  `permlist`. The default method is "none"; letter case does not matter
+  emmeans. With `permlist`, "tukey" and "mvt" give the single-step
+  max-\|t\| adjustment of the permutation p-values (the permutation
+  version of Tukey's test: each pair's \|t\| is compared with the
+  largest \|t\| of the family in each permuted data set), and "westfall"
+  the step-down max-\|t\| of Westfall and Young (1993), which is
+  uniformly more powerful; both use the correlation between the
+  comparisons. "westfall" needs `permlist`; "scheffe" is not available
+  with it. The default method is "none"; letter case does not matter
   ("Tukey" works). Note that LSD can't be adjusted except for
   "bonferroni" method.
 
@@ -217,7 +223,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   A model parameter list produced by the function `permmodels`. When
   `permlist != NULL`, the option `Df` will be non-functional. This is a
-  key option for pairwise comparisons via permutation tests.
+  key option for pairwise comparisons via permutation tests. With the
+  result of `permmodels(method = "freedman-lane")` (`lm` and `aov`
+  models), each pair is tested by Freedman-Lane permutations of the
+  model in which that pair's means are equal. With a `permlist`,
+  `vcov_adjust` is not used: the observed t statistics are compared with
+  those of the permuted refits, which use the unadjusted covariance.
 
 - ncore:
 

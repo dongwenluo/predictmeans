@@ -118,6 +118,20 @@ that are estimable are still shown. Means over empty cells keep the 1.x
 rule: the average of the observed cells, with a warning.</p>
 </div>
 <div class="section level3">
+<h3 id="permutation-tests">Permutation tests<a class="anchor" aria-label="anchor" href="#permutation-tests"></a>
+</h3>
+<p><code><a href="../reference/permmodels.html">permmodels()</a></code> now uses Freedman–Lane permutations by
+default (<code>method = "auto"</code>): each term, coefficient or pair
+is tested with the model without it, so the other terms keep their
+effects. It also works for <code>glm</code>, <code>glmer</code> and
+<code>glmmTMB</code> models, and needs no refits. Mixed-model residuals
+are decorrelated with the symmetric square root of their covariance
+instead of the Cholesky factor, whose results depended on the order of
+the data. For the 1.x scheme use <code>method = "raw"</code>; its
+p-values for mixed models still differ slightly from 1.x because of the
+new square root.</p>
+</div>
+<div class="section level3">
 <h3 id="bugs-fixed">Bugs fixed<a class="anchor" aria-label="anchor" href="#bugs-fixed"></a>
 </h3>
 <p>Some 1.x results were wrong and are now correct, for example
@@ -170,6 +184,13 @@ models.</li>
 Nakagawa), <strong><code><a href="../reference/bootmodels.html">bootmodels()</a></code></strong> (parametric
 bootstrap), and <code><a href="../reference/predictmeans.html">predictmeans()</a></code> on <code><a href="../reference/semireg.html">semireg()</a></code>
 fits.</li>
+<li>
+<strong>Permutation tests for GLMs and GLMMs</strong>:
+<code><a href="../reference/permmodels.html">permmodels()</a></code> on the working scale, <code><a href="../reference/permlmer.html">permlmer()</a></code>
+(also <code><a href="../reference/permlmer.html">permglmer()</a></code>, <code><a href="../reference/permlmer.html">permglmmTMB()</a></code>) for nested
+GLMMs, and <code>perms</code> for permutations restricted by the design
+(<code><a href="../reference/permindex.html">permindex()</a></code>). See
+<code><a href="../articles/resampling.html">vignette("resampling")</a></code>.</li>
 <li>
 <strong>Other model classes</strong> can be added with a few methods
 (see <code><a href="../reference/pm_coef.html">?pm_coef</a></code>).</li>
