@@ -9,6 +9,12 @@
 #' The result has the same form as that of \code{\link{permmodels}}: its \code{permlist} can be given to
 #' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for bootstrap p-values of
 #' pairwise comparisons or contrasts (\code{p.method} \code{"bootstrap"} in the \code{pairs} table).
+#'
+#' In a simulation study (500 data sets per case, 5\% level; \code{dev/sim-boot.R} in the package sources) the
+#' bootstrap corrected the liberal Wald chi-square test of a whole-plot factor in a split plot with 6 blocks (10\%
+#' to 6-7\%, as Kenward-Roger) and kept the level in Poisson and binomial GLMMs, also when other terms had effects.
+#' Like the likelihood-ratio test it relies on the model: with overdispersed counts fitted as Poisson it rejected
+#' 37\% of true null hypotheses, where \code{\link{permmodels}} (Freedman-Lane on the working scale) gave 7\%.
 #' @usage
 #' bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
 #'            ncore = 1, prt = TRUE)

@@ -273,6 +273,30 @@ Reading:
   fixed was liberal there (10.0%). `permlmer()` (quantile route) is the most
   accurate for rare binary events (5.1%).
 
+### Calibration of `bootmodels()` (`dev/sim-boot/`, 199 bootstrap samples)
+
+`bootmodels()` simulates from the global null model (intercept and the random
+effects) and refits; its type II Wald chi-square p-values for a null term,
+against the same statistic referred to chi-square (`wald`), Kenward–Roger F
+(LMM) and the likelihood-ratio test (GLMM). 500 data sets per cell (range for
+a true 5%: 3.1–6.9%).
+
+| cell | bootstrap | Wald χ² | KR F / LRT | bootstrap pair A1−A2 |
+|---|---|---|---|---|
+| split plot (6 blocks), whole-plot factor null, sub-plot factor with effects | 0.072 | **0.104** | KR 0.070 | 0.052 |
+| split plot, global null | 0.056 | **0.102** | KR 0.056 | 0.068 |
+| Poisson GLMM, covariate with extreme values (effect), A null | 0.046 | 0.046 | LRT 0.046 | |
+| binomial GLMM, 3 blocks | 0.054 | 0.056 | LRT 0.060 | |
+| negative binomial counts fitted as Poisson | **0.374** | **0.368** | LRT **0.376** | |
+
+Reading: the bootstrap corrects the liberal Wald chi-square of a whole-plot
+factor (10% → 6–7%, as KR) and keeps the level for GLMMs whose family is
+right, also when other terms have effects although it simulates from the
+global null. It trusts the model, so with overdispersed counts fitted as
+Poisson it fails exactly as the LRT does (37%), where Freedman–Lane on the
+working scale (`permmodels()`) gave 7.4% (study 1b part 2). The answer to the
+open question below: a parametric bootstrap is no remedy for a wrong family.
+
 ### Step 13: when is `refit = FALSE` safe? (`dev/sim-perm-refit/`, 199 permutations)
 
 Split plot, `lmer(y ~ A * B + (1 | block) + (1 | block:A))`, 4 whole plots
@@ -355,8 +379,8 @@ hard for every method (9%). Hence `robust = TRUE` flips signs.
   Freedman–Lane with V fixed (no refits) for LMMs, on the working scale for
   glm and GLMMs, against raw permutation and KR F / LRT, including
   overdispersed counts and rare binary events.
-- How a parametric bootstrap from the reduced (Poisson) model behaves under
-  overdispersion (expected to fail like the LRT, since it trusts the model).
+- ~~How a parametric bootstrap from the reduced (Poisson) model behaves under
+  overdispersion~~: it fails like the LRT (37%; `dev/sim-boot/`).
 
 - Note on the run: the first batch ended with an error after "SIM DONE"
   because its script was edited while it ran (Rscript reads the file as it

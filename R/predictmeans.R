@@ -13,7 +13,8 @@
 #'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
@@ -104,7 +105,51 @@
 #'   REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 #'   smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 #'   residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
-#'   covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other model classes.
+#'   covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
+#'   \code{gls} models: the subject is the coarsest random-effect grouping (\code{lmer}, \code{lme}) or the grouping of
+#'   the correlation structure (\code{gls}); an effect constant within subjects gets the between-subject df, and the
+#'   others the df of their subject-by-effect interaction (for example Block x Variety in a split plot); with an
+#'   unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
+#'   between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
+#'   used unless \code{vcov_adjust = TRUE} is given.
+#'   \code{"KR-SAS"} is Kenward-Roger as SAS PROC MIXED \code{DDFM=KR} computes it: with the observed
+#'   information of the variance parameters where \code{"Kenward-Roger"} (as \pkg{pbkrtest} and \pkg{emmeans}) uses
+#'   the expected information; the two agree in balanced designs and differ slightly otherwise (about 1\% in the df
+#'   of a split plot with one plot missing).
+#'   For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
+#'   variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
+#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-SAS"} give Kenward-Roger df and adjusted
+#'   standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
+#'   \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
+#'   Other choices are ignored for other model classes.
+#' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
+#'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
+#'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
+#'   (cluster-robust CR1, as \code{sandwich::vcovCL()}). For any model: a covariance matrix of the coefficients, or
+#'   a function that returns one from the model (for mixed models e.g. from the \pkg{clubSandwich} package). The
+#'   degrees of freedom stay those of the model (the residual df; for \code{lmer} Kenward-Roger or Satterthwaite df
+#'   computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
+#'   (for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
+#'   covariance.
+#' @param equivalence Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+#'   differences: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
+#'   scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+#'   one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+#'   \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
+#'   (normal-based in \code{contrastmeans}).
+#' @param bias_adjust Logical: adjust the back-transformed means (non-identity link or \code{trans}) for the random
+#'   effects (and, for a transformed response of a linear model, the residual error): \eqn{h(\eta) + \sigma^2 h''(\eta)/2}
+#'   instead of \eqn{h(\eta)}, the second-order approximation of the mean over the population (as emmeans'
+#'   \code{bias.adjust}); the response-scale SEs follow by the delta method. Without it (the default) the
+#'   back-transformed mean is that of a unit with all random effects zero.
+#' @param sigma With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
+#'   random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a
+#'   transformed response of a linear (mixed) model; models with random slopes need it given.
+#' @param average How means average over the other factors when they are back-transformed: \code{"link"} (the default;
+#'   average on the link scale, then back-transform) or \code{"response"} (back-transform each cell of the reference
+#'   grid, then average with the same weights, as emmeans' \code{regrid()}: the mean of the response, e.g. a mean
+#'   count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
+#'   stay on the link scale.
 #' @return
 #' \item{Predicted Means}{A table of predicted means.}
 #'  \item{Standard Error of Means}{A table of standard errors of predicted means.}
@@ -127,14 +172,15 @@
 #'  \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
 #'  level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
 #'  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
-#'  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{conf.low} and \code{conf.high} (limits of
+#'  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
+#'  \code{equivalence}: the TOST p-value), \code{conf.low} and \code{conf.high} (limits of
 #'  the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
 #'  the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
 #'  within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
 #'  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
 #'  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
 #'  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
-#'  degrees-of-freedom method, \code{vcov_adjust}, number of permutations, covariate values, model class and
+#'  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), number of permutations, covariate values, model class and
 #'  package version.}
 #'  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
 #'  the \code{means}, \code{pairs} and \code{settings} slots are not printed.
@@ -189,8 +235,11 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
   vcov_adjust_default <- missing(vcov_adjust)
+  average <- match.arg(average)
+  pm_equiv_margins(equivalence)                  # check early
 
   ## Bias output towards fixed notation. See ?options for more info
   op <- options(scipen = 6)
@@ -209,8 +258,10 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
   # SAS DDFM=CONTAIN uses the unadjusted covariance
-  if (df_method == "containment" && vcov_adjust_default) vcov_adjust <- FALSE
+  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
   vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
+  vcov <- pm_vcov_with_perm(vcov, permlist)
+  if (!is.null(vcov)) vcov_adjust <- FALSE     # the given covariance replaces the adjusted one
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

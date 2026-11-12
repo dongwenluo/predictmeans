@@ -11,6 +11,12 @@
 #' \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997), as
 #'   \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
 #'   \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
+#' \item{KR-SAS}{(\code{lmer}) as Kenward-Roger, with the observed information of the variance parameters (SAS
+#'   \code{DDFM=KR}; see \code{\link{predictmeans}}).}
+#' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
+#'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
+#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-SAS"}}{as for \code{lmer} (Satterthwaite df of the
+#'   F test, lmerTest's rule).}
 #' \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
 #'   \code{\link{contrastmeans}}).}
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
@@ -19,8 +25,8 @@
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-#'          weights = c("equal", "proportional", "outer", "cells", "flat"))
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+#'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
 #' @param by Optional name(s) of factor(s) of \code{modelterm}: test the differences among the means within each of
@@ -28,8 +34,11 @@
 #'   tested.
 #' @param ctrmatrix Optional contrast matrix over the means of \code{modelterm} (as for \code{\link{contrastmeans}},
 #'   e.g. from \code{\link{contrast_family}} or \code{\link{specify_contrast}}); its rows are tested together.
-#' @param df_method For \code{lmer} models: the denominator df (see Details).
+#' @param df_method For \code{lmer} models (\code{"between-within"} also for \code{lme} and \code{gls}): the
+#'   denominator df (see Details).
 #' @param weights How the means average over other factors, as in \code{\link{predictmeans}}.
+#' @param vcov Optional covariance of the coefficients, as in \code{\link{predictmeans}}: the F statistic is then
+#'   the Wald F with this covariance, and the denominator df those of the model's own test.
 #' @return
 #' A data frame with one row per test: the \code{by} levels (if any), \code{df1}, \code{df2}, \code{F.ratio} and
 #' \code{p.value}. Attribute \code{"df_method"} says how \code{df2} was found.
@@ -52,8 +61,8 @@
 NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
-                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-                     weights = c("equal", "proportional", "outer", "cells", "flat")) {
+                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+                     weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
   if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
@@ -103,6 +112,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   mp <- mymodelparm(model, df = 0)
+  Vuser <- pm_vcov_resolve(model, vcov, names(mp$coef))
   K <- KK[, mp$estimable, drop = FALSE]
   K[!est_flag, ] <- 0
   other_df <- NULL
@@ -113,35 +123,47 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
     rd <- mymodelparm(model)$df
     other_df <- if (is.numeric(rd) && length(rd) == 1 && is.finite(rd) && rd > 0) rd else Inf
   }
-  cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else NULL
+  cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else
+    if (identical(df_type, "between-within")) pm_betwithin_df(model)[[modelterm]] else NULL
 
   res <- t(vapply(sets, function(C) {
-    pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df)
+    pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df, Vuser)
   }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
-  attr(out, "df_method") <- if (inherits(model, "lmerMod")) df_type else if (inherits(model, "lme")) "nlme" else "residual"
+  attr(out, "df_method") <- if (identical(df_method, "KR-SAS") && identical(df_type, "Kenward-Roger")) "KR-SAS" else
+    if (inherits(model, "lmerMod") || any(df_type %in% c("between-within", "Satterthwaite", "Kenward-Roger"))) df_type else
+    if (inherits(model, "lme")) "nlme" else "residual"
+  if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
   out
 }
 
 ## F test of L beta = 0: c(df1, df2, F, p). Rows of L that are linear
 ## combinations of others are dropped first.
-pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df) {
+pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df, Vuser = NULL) {
   beta <- mp$coef
   V <- as.matrix(mp$vcov)
   r <- qr(t(L))
   q <- r$rank
   if (q == 0) return(c(0, NA, NA, NA))
   L <- L[r$pivot[seq_len(q)], , drop = FALSE]
+  if (!is.null(Vuser)) {
+    # a given covariance ('vcov'): its Wald F, with the denominator df of the
+    # model's own test
+    out <- pm_joint_ftest(model, L, mp, df_type, vcov_adj, other_df, cont_df)
+    b <- L %*% beta
+    Fv <- as.numeric(t(b) %*% solve(L %*% Vuser %*% t(L), b)) / q
+    return(c(q, out[2], Fv, stats::pf(Fv, q, out[2], lower.tail = FALSE)))
+  }
   wald <- function(Vb) {
     b <- L %*% beta
     as.numeric(t(b) %*% solve(L %*% Vb %*% t(L), b))
   }
-  if (inherits(model, "lmerMod") && identical(df_type, "Kenward-Roger")) {
+  if (identical(df_type, "Kenward-Roger") && !is.null(attr(vcov_adj, "P"))) {   # lmer, lme, gls
     kr <- pm_kr_ftest(model, L, PhiA = vcov_adj)
     return(unname(c(q, kr["ddf"], kr["stat"], kr["p.value"])))
   }
-  if (inherits(model, "lmerMod") && identical(df_type, "Satterthwaite")) {
+  if (identical(df_type, "Satterthwaite") && inherits(vcov_adj, "pm_satt")) {   # lmer, and lme/gls (R/satt-nlme.R)
     # lmerTest's rule for several contrasts (contestMD): split L V L' into
     # its eigen-directions, each with a Satterthwaite df nu_m, and combine
     # E = sum(nu_m / (nu_m - 2)), df2 = 2E / (E - q)

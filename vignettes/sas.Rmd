@@ -1,0 +1,65 @@
+---
+title: "Matching SAS PROC MIXED"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Matching SAS PROC MIXED}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
+```
+
+predictmeans aims to give the numbers SAS PROC MIXED gives for the same model. This page
+shows which arguments correspond to which SAS options, and what has been checked.
+
+## Options
+
+| SAS PROC MIXED | predictmeans |
+|---|---|
+| `METHOD=REML` | `lmer(..., REML = TRUE)`, `lme()`, `gls()` (the defaults) |
+| `LSMEANS / DIFF CL` | `predictmeans()`: `$means`, `$pairs` |
+| `LSMEANS / OM` | `weights = "proportional"` |
+| `LSMEANS / ADJUST=TUKEY`, `SIMULATE` | `adj = "tukey"`, `"mvt"` |
+| `ESTIMATE`, `CONTRAST` | `contrastmeans()`, `pm_joint()` |
+| `DDFM=CONTAIN` | `df_method = "containment"` |
+| `DDFM=BETWITHIN` | `df_method = "between-within"` (`lmer`, `lme`, `gls`) |
+| `DDFM=SATTERTHWAITE` | `df_method = "Satterthwaite"` (`lmer`, `lme`, `gls`) |
+| `DDFM=KR` | `df_method = "KR-SAS"` (`lmer`, `lme`, `gls`) |
+| `REPEATED / TYPE=UN SUBJECT=` | `gls(..., correlation = corSymm(), weights = varIdent())` |
+| `EMPIRICAL` | `vcov = "HC0"` (or `"HC3"`, `~ cluster`; `lm`/`glm`) |
+
+`df_method = "Kenward-Roger"` (the default for REML `lmer` fits) is Kenward–Roger as
+pbkrtest and emmeans compute it, with the *expected* information of the variance
+parameters; SAS uses the *observed* information. They agree in balanced designs. With
+missing data they can differ: for the split plot below with one whole plot missing, the
+Kenward–Roger df of a whole-plot comparison are 9.25 with `"Kenward-Roger"` and 8.35 with
+`"KR-SAS"` (and in SAS).
+
+```{r}
+library(predictmeans)
+Oats <- as.data.frame(nlme::Oats)
+Oats$nitro <- factor(Oats$nitro)
+oats_wp <- droplevels(subset(Oats, !(Block == "I" & Variety == "Golden Rain")))
+fm <- lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = oats_wp)
+dfs <- sapply(c("containment", "between-within", "Satterthwaite", "Kenward-Roger", "KR-SAS"),
+              function(m) predictmeans(fm, "Variety", df_method = m, plot = FALSE,
+                                       prtnum = FALSE)$pairs$df)
+rownames(dfs) <- c("Golden Rain - Marvellous", "Golden Rain - Victory", "Marvellous - Victory")
+round(dfs, 2)
+```
+
+The SAS values for these pairs are, in the same order: containment 9, 9, 9; between-within
+9, 9, 9; Satterthwaite 8.35, 8.35, 8.10 (as here); Kenward–Roger 8.35, 8.35, 8.10.
+
+## What was checked
+
+The SAS program `dev/sas/pm-reference.sas` (in the package sources) fits four data sets —
+Yates' oats split plot, the same with one sub-plot missing, with one whole plot missing,
+and a repeated-measures trial with an unstructured covariance — with the four `DDFM`
+methods: 16 PROC MIXED runs. Their output was compared with predictmeans value by value
+(`dev/sas/compare-sas.R`): every variance component, LS-mean, difference (estimate, SE,
+df, limits) and Type 3 F test with its df agrees with what SAS prints, to its last digit,
+except LS-mean SEs that differ by about 2e-5 (relative) where the two programs stop
+their REML iterations.

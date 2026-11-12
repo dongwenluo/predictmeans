@@ -179,10 +179,11 @@ pm_code_estimate <- quote({
     mdf <- ctr.matrix$data
   }
   response <- ctr.matrix$response
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default)
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
   mp <- parms$mp
   df_type <- parms$df_type
   vcov_adj <- parms$vcov_adj
+  vcov_label <- parms$vcov_label
   est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, vars, mp, ndecimal)
   K <- est$K
   label <- est$label
@@ -199,13 +200,17 @@ pm_code_estimate <- quote({
 ## Coefficients, covariance and df method of the model (pure function).
 ## lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits) unless
 ## 'df_method' says otherwise; the adjusted covariance is computed once and
-## shared by all df calculations. Returns list(mp, df_type, vcov_adj).
-pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default) {
+## shared by all df calculations. 'vcov' (see R/vcov.R) replaces the
+## covariance of the coefficients (the df stay the model's). Returns
+## list(mp, df_type, vcov_adj, vcov_label).
+pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default, vcov = NULL) {
+  if (!is.null(vcov)) vcov_adjust <- FALSE          # the user's covariance replaces the adjusted one
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
-  # containment df with the adjusted covariance only when asked for explicitly
-  if (identical(df_type, "containment") && vcov_adjust && lme4::getME(model, "is_REML"))
+  # containment and between-within df with the adjusted covariance only when asked for explicitly
+  if (any(df_type %in% c("containment", "between-within")) && vcov_adjust && inherits(model, "lmerMod") &&
+      lme4::getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
@@ -216,7 +221,9 @@ pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default) {
       mp$vcov <- as.matrix(vcov_adj)
     }
   }
-  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj)
+  V <- pm_vcov_resolve(model, vcov, names(mp$coef))
+  if (!is.null(V)) mp$vcov <- V
+  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj, vcov_label = attr(V, "label"))
 }
 
 ## Predicted means, their SEs and the legacy mean/SE tables (pure function).
@@ -404,7 +411,21 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
 pm_compare_df <- function(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj) {
       if (length(Df) == 0) {
 
-        if (inherits(model, "lme")) {
+        if (inherits(model, c("lme", "gls")) && any(df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
+          # Satterthwaite or Kenward-Roger df of each mean and each pair (R/satt-nlme.R)
+          pm_df_raw <- pm_nlme_df(K, model, df_type, vcov_adj)
+          mt$Df <- round(pm_df_raw, 2)
+          Df_diff <- pm_nlme_df(rK, model, df_type, vcov_adj)
+          Df <- mean(Df_diff)
+          pairDf <- round(Df, 2)
+        } else if (identical(df_type, "between-within")) {
+          # SAS DDFM=BETWITHIN: one df for the term, its means and their pairs
+          Df <- unname(pm_betwithin_df(model)[modelterm])
+          pm_df_raw <- rep(Df, nrow(K))
+          mt$Df <- Df
+          Df_diff <- rep(Df, nrow(rK))
+          pairDf <- Df
+        } else if (inherits(model, "lme")) {
           Df <- terms(model$fixDF)[modelterm]
     		  names(Df) <- NULL
     		  mt$Df <- round(Df, 2)

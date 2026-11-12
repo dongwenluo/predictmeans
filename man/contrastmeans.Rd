@@ -6,8 +6,8 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
-                level=0.05)
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+                level=0.05, vcov=NULL, equivalence=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -44,8 +44,11 @@ predictmeans 1.x. It has no effect for other models.}
 over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).}
 
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
-fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
-\code{\link{predictmeans}}).}
+fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
+\code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
+\code{"Kenward-Roger"} and \code{"KR-SAS"};
+see \code{\link{predictmeans}}.}
 
 \item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
@@ -58,6 +61,23 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
 with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
 \code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.}
+
+\item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
+and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
+as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
+(cluster-robust CR1, as \code{sandwich::vcovCL()}). For any model: a covariance matrix of the coefficients, or
+a function that returns one from the model (for mixed models e.g. from the \pkg{clubSandwich} package). The
+degrees of freedom stay those of the model (the residual df; for \code{lmer} Kenward-Roger or Satterthwaite df
+computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
+(for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
+covariance.}
+
+\item{equivalence}{Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+contrasts: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
+scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+\code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
+(normal-based in \code{contrastmeans}).}
 }
 \value{
 There are two components in the output which are

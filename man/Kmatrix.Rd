@@ -59,8 +59,9 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
  \item{preddf}{The data of the predictor variables used in model fitting.}
  \item{refgrid}{The reference grid used to build \code{K}: a list with the grid data (\code{grid}), the sparse
  weight matrix \code{W} that averages grid rows into rows of \code{K}, and the rows of \code{fctnames}
- (\code{target}). Any other basis evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged
- in the same way as \code{W \%*\% basis}.}
+ (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
+ evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
+ \code{W \%*\% basis}.}
 }
 \description{
 This function obtains a matrix of coefficients (the linear functions \eqn{K} such that the

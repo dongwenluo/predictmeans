@@ -4,9 +4,16 @@
    Data: Yates oats (dev/sas/oats.txt) and the repeated-measures trial
    (dev/sas/rep.txt), inlined below. */
 
-%let out = ./pm_sas_out;   /* folder for the CSV files */
+%let out = ~/pm_sas_out;   /* folder for the CSV files, in your SAS home (SAS OnDemand: Files > Home) */
+options dlcreatedir;       /* the LIBNAME below creates the folder if it does not exist */
+libname pmout "&out";
+libname pmout clear;
 
 data Oats;
+  /* length first: list input reads character values as 8 characters by
+     default, which made 'GoldenRain' 'GoldenRa' (the first run, 2026-11-12,
+     then deleted nothing for Oats_MissWP) */
+  length Block $ 3 Variety $ 10 Nitro $ 3;
   input Block $ Variety $ Nitro $ Yield @@;
   datalines;
 I   Victory     0.0 111  I   Victory     0.2 130  I   Victory     0.4 157  I   Victory     0.6 174

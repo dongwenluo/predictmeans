@@ -14,9 +14,9 @@
 #' of the terms with the covariate, otherwise the residual df.
 #' @usage
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
 #'           vcov_adjust = TRUE,
-#'           weights = c("equal", "proportional", "outer", "cells", "flat"))
+#'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param covariate Name (in "quotes") of the numeric covariate.
 #' @param modelterm Name (in "quotes") of the factor term whose levels get a slope each, e.g. \code{"Variety"}.
@@ -24,7 +24,7 @@
 #'   non-linearly); the default is its mean.
 #' @param level Significance level for the confidence limits, the default is 0.05.
 #' @param adj Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.
-#' @param df_method,vcov_adjust,weights As in \code{\link{predictmeans}}.
+#' @param df_method,vcov_adjust,weights,vcov As in \code{\link{predictmeans}}.
 #' @return
 #' A list of two data frames:
 #' \item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{slope}, \code{std.error}, \code{df},
@@ -42,10 +42,13 @@
 NULL
 
 pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-                      vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat")) {
+                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+                      vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
+                      vcov = NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
+  # as in predictmeans(): containment and between-within df with the unadjusted covariance
+  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
   weights <- match.arg(weights)
   adj <- pm_match_adj(adj)
   if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
@@ -64,7 +67,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   rownames(lab) <- NULL
   levs <- do.call(paste, c(lapply(lab, as.character), sep = ":"))
 
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default)
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
   mp <- parms$mp
   L <- (kp$K - km$K)/(2*h)
   L <- L[, mp$estimable, drop = FALSE]
@@ -105,6 +108,15 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
 
 ## Degrees of freedom of rows L (coefficient space) of slope contrasts.
 pm_slope_df <- function(model, L, modelterm, covariate, mp, parms) {
+  if (identical(parms$df_type, "between-within")) {
+    # the smallest between-within df of the terms with the covariate
+    bw <- pm_betwithin_df(model)
+    with_cov <- vapply(strsplit(names(bw), ":"), function(v) covariate %in% v, logical(1))
+    return(rep(min(bw[with_cov]), nrow(L)))
+  }
+  if (inherits(model, c("lme", "gls")) && any(parms$df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
+    return(as.numeric(pm_nlme_df(L, model, parms$df_type, parms$vcov_adj)))
+  }
   if (inherits(model, "lmerMod")) {
     return(as.numeric(df_term(model, modelterm, ctrmatrix = L, type = parms$df_type, vcov_adj = parms$vcov_adj)))
   }

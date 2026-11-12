@@ -30,7 +30,11 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 - `plot = FALSE` in scripts (the default `TRUE` draws plots); `prtnum = FALSE` suppresses
   printing of the reference-grid note.
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, Satterthwaite for ML),
-  `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"`.
+  `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
+  (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-SAS"` (Kenward-Roger with the observed
+  information, as SAS `DDFM=KR`; `"Kenward-Roger"` matches pbkrtest/emmeans). For `lme` and `gls`,
+  `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-SAS"` work with any correlation/variance structure
+  (default: nlme or residual df).
 - `vcov_adjust = TRUE` (default): Kenward-Roger adjusted covariance for REML `lmer`, as SAS
   `DDFM=KR` and emmeans; `FALSE` reproduces predictmeans 1.x standard errors.
 - `weights`: `"equal"` (default), `"proportional"` (= SAS `OM`), `"outer"`, `"cells"`,
@@ -63,13 +67,17 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | `estimate` | mean of `level1` minus mean of `level2` (link scale) |
 | `std.error`, `df`, `statistic`, `p.value` | t test of the difference |
 | `p.adj` | p-value adjusted by `adj` (within each `by` level with `atvar`) |
+| `p.equiv` | with `equivalence = d` or `c(lower, upper)`: TOST p-value (difference within the margins) |
 | `lsd` | least significant difference at `level` |
 | `p.method` | `"t"`, `"tukey"`, `"permutation"` or `"bootstrap"` |
 | `ratio`, `ratio.conf.low`, `ratio.conf.high` | log link or `trans = exp`: ratio of the means |
 | `odds.ratio`, `odds.ratio.conf.low`, `odds.ratio.conf.high` | logit link: odds ratio |
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
-`vcov_adjust`, `nperm`, `covariates`, `model_class`, `version`.
+`vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
+`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `bias_adjust` (the SD
+used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `nperm`, `covariates`,
+`model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
 `summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "pvalue", "response"))`,
@@ -157,6 +165,12 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   "raw"` reproduces 1.x. For GLMs/GLMMs it works on the link (working) scale.
   `permlmer()` for GLMMs uses the working scale, and randomised quantile residuals for
   0/1 responses. With a `permlist`, `vcov_adjust` (Kenward-Roger) is not used.
+- `vcov = "HC3"` (or `"HC0"`-`"HC2"`, `~ cluster`) gives robust SEs for lm/glm in `predictmeans()`,
+  `contrastmeans()`, `pm_slopes()` and `pm_joint()`; a matrix or a function works for any model (e.g.
+  clubSandwich for mixed models). The df stay the model's.
+- Back-transformed means (`response` columns) are those of a unit with random effects zero, averaged on
+  the link scale. `bias_adjust = TRUE` (with `sigma`) gives population means (emmeans' `bias.adjust`);
+  `average = "response"` averages the back-transformed cells (emmeans' `regrid()`).
 - `permstats()` gives standardised effect sizes and `param.size`, the rejection rate of the
   parametric test in the permuted data sets (near `level` when the parametric test suits
   the data). `permcombine()` combines tests of several responses made with the same

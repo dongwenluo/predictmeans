@@ -80,6 +80,18 @@ random effects are all zero. With a log link this is smaller than the average co
 all units, which is `exp(estimate + v/2)`, `v` being the total variance of the random
 effects. Ratios are the same on both definitions, which is one reason to report them.
 
+`bias_adjust = TRUE` gives that population mean instead (to second order, as emmeans'
+`bias.adjust`), with the random-effect variance as default `sigma`; `average = "response"`
+averages the back-transformed cells over the other factors (here Habitat), rather than
+back-transforming the average on the link scale:
+
+```{r}
+pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "response",
+                       plot = FALSE, prtnum = FALSE)
+pm_pop$means[, c("Treatment", "response", "response.std.error")]
+pm_pop$settings[c("bias_adjust", "average")]
+```
+
 ## A transformed response: `trans = exp`
 
 When the response is transformed before modelling, give the back-transformation with

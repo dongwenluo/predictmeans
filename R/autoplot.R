@@ -164,7 +164,8 @@ print.summary.predictmeans <- function(x, ...) {
   fmt <- function(v) format(signif(v, x$digits))
   conf <- paste0((1 - s$level) * 100, "%")
   cat("Predicted means for '", s$modelterm, "' (", s$model_class, " model; df: ", s$df_method,
-      if (isTRUE(s$vcov_adjust)) ", Kenward-Roger adjusted SEs" else "", ")\n", sep = "")
+      if (isTRUE(s$vcov_adjust)) ", Kenward-Roger adjusted SEs" else "",
+      if (!is.null(s$vcov) && !identical(s$vcov, "model")) paste0(", covariance: ", s$vcov) else "", ")\n", sep = "")
   cat("Confidence limits: ", if (identical(s$df_method, "permutation")) "mean +/- 2 SE" else conf, "\n\n", sep = "")
   print(x$table, row.names = FALSE, digits = x$digits)
   cat("\n")
