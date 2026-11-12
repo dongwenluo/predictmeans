@@ -66,14 +66,17 @@ pm_fit_env <- function(model) {
 ## in the wrong place for models fitted inside a function; fall back to the
 ## fitting environment found by pm_fit_env().
 pm_get_data <- function(model) {
-  d <- tryCatch(nlme::getData(model), error = function(e) NULL)
-  if (is.data.frame(d)) return(d)
   cl <- stats::getCall(model)
-  if (is.null(cl$data)) {
-    stop("Can't find the data used to fit the model; please refit it with a 'data' argument.", call. = FALSE)
-  }
-  d <- tryCatch(eval(cl$data, pm_fit_env(model)), error = function(e) NULL)
+  # first where the model was fitted: nlme::getData() can find another data
+  # set of the same name (e.g. nlme's own Oats) when the model was fitted in
+  # a function
+  d <- if (is.null(cl$data)) NULL else tryCatch(eval(cl$data, pm_fit_env(model)), error = function(e) NULL)
   if (!is.data.frame(d)) {
+    d <- tryCatch(nlme::getData(model), error = function(e) NULL)
+    if (is.data.frame(d)) return(d)
+    if (is.null(cl$data)) {
+      stop("Can't find the data used to fit the model; please refit it with a 'data' argument.", call. = FALSE)
+    }
     stop("Can't find the data used to fit the model; please supply them via 'data'.", call. = FALSE)
   }
   if (!is.null(cl$subset)) {

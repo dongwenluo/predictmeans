@@ -164,7 +164,8 @@ pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names, idx = NULL)
 ## |t| of the row is computed again by least squares. The statistic is the
 ## t value of the fitted model (as predictmeans() shows it), so the
 ## p-value tests that comparison alone, whatever the other means are.
-pm_perm_fl_t <- function(perm, L, model = NULL) {
+pm_perm_fl_t <- function(perm, L, model = NULL, ncore = 1) {
+  if (identical(perm$scheme, "freedman-lane-refit")) return(pm_perm_fl_refit_t(perm, L, model, ncore))
   X <- perm$X
   z <- perm$z
   L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))

@@ -159,13 +159,17 @@
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 
 * **`permmodels(method = "freedman-lane")` for mixed models, GLMs and
-  GLMMs** (`lmer`, `lme`, `gls`, `glm`, `glmer`, `glmmTMB`). Mixed models:
-  the covariance of the data is fixed at the fit, the data and design are
-  decorrelated with its symmetric square root, and the Freedman-Lane
-  permutations are done as for `lm`, without refits (the statistics are
-  the model's Wald t and F, unadjusted covariance). GLMs and GLMMs: the same
-  on the working (link) scale, with the dispersion estimated from the
-  working residuals. Terms (types I, II, III), coefficients, and pairs and
+  GLMMs** (`lmer`, `lme`, `gls`, `glm`, `glmer`, `glmmTMB`). Linear mixed
+  models: the model without the tested term is fitted, its decorrelated
+  residuals permuted and added back, and the model refitted to each
+  permuted data set (one set of refits per term; pairs and contrasts get
+  one set for their family); the statistics are the model's Wald t and F
+  (unadjusted covariance). `refit = FALSE` fixes the covariance of the data
+  at the fit instead (decorrelated least squares, no refits, much faster,
+  but slightly liberal when the variance parameters rest on few units:
+  6.2% for whole-plot pairs with 6 blocks in study 1b). GLMs and GLMMs: the
+  V-fixed version on the working (link) scale, with the dispersion
+  estimated from the working residuals. Terms (types I, II, III), coefficients, and pairs and
   contrasts in `predictmeans()`/`contrastmeans()` all use the same
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).

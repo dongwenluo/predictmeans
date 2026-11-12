@@ -6,9 +6,15 @@
 ##   raw       permmodels(), the 1.x scheme (lm/glm: response permuted;
 ##             lmer/lme: fitted values and decorrelated residuals together;
 ##             refits)
-##   fl        permmodels(method = "freedman-lane"): V fixed at the fit,
-##             decorrelated least squares (GLM/GLMM: on the working scale),
-##             no refits
+##   fl        permmodels(method = "freedman-lane", refit = FALSE): V fixed at
+##             the fit, decorrelated least squares (GLM/GLMM: on the working
+##             scale), no refits
+##   flr       permmodels(method = "freedman-lane") for lmer/lme: the model
+##             without the term fitted, its decorrelated residuals permuted,
+##             the full model refitted to each permuted data set
+##   (pairs cell) flr: pairs by Freedman-Lane with refits from the model with
+##             all the factor's means equal (predictmeans(permlist = )), kr:
+##             predictmeans() t tests
 ##   permlmer  permlmer(H0, H1) for GLMMs (working scale with weighted lmer
 ##             refits; quantile residuals and GLMM refits for 0/1 data)
 ##   kr / lrt / param   the usual test: Kenward-Roger F (lmer), likelihood
@@ -28,9 +34,11 @@ pA <- function(tab, term = "A") as.numeric(tab[term, "Perm_p_value"])
 lmm_term <- function(d, f, type = "II") {
   m <- lmer(f, data = d, control = ctl)
   raw <- permmodels(m, nperm = nperm, type = type, prt = FALSE, ncore = 1)$ANOVA
-  fl <- permmodels(m, nperm = nperm, type = type, prt = FALSE, method = "freedman-lane")$ANOVA
+  fl <- permmodels(m, nperm = nperm, type = type, prt = FALSE, method = "freedman-lane", refit = FALSE)$ANOVA
+  # (refits for the tested term only, to save time)
+  flr <- predictmeans:::pm_perm_fl_refit(m, nperm, type, FALSE, NULL, FALSE, NULL, 1, only = "A")$ANOVA
   kr <- anova(lmerTest::as_lmerModLmerTest(m), type = type, ddf = "Kenward-Roger")["A", "Pr(>F)"]
-  c(raw = pA(raw), fl = pA(fl), kr = kr)
+  c(raw = pA(raw), fl = pA(fl), flr = pA(flr), kr = kr)
 }
 
 glm_term <- function(d, f, family) {
@@ -53,6 +61,17 @@ glmm_term <- function(d, f0, f1, family, tmb = FALSE) {
 }
 pm_fixef <- predictmeans:::pm_fixef
 
+## rows: differences of the A means (averaged over B), pairs i < j
+pair_rows <- function(m, d) {
+  grid <- expand.grid(A = factor(levels(d$A), levels = levels(d$A)), B = factor(levels(d$B), levels = levels(d$B)))
+  X <- model.matrix(~ A * B, grid)
+  M <- rowsum(X, grid$A) / nlevels(d$B)
+  pr <- utils::combn(nlevels(d$A), 2)
+  L <- M[pr[2, ], ] - M[pr[1, ], ]
+  rownames(L) <- paste0(pr[1, ], "v", pr[2, ])
+  L
+}
+
 rcbd <- function(nblock = 8, reps = 1) {
   d <- expand.grid(rep = seq_len(reps), A = factor(1:4), block = factor(seq_len(nblock)))
   d[order(d$block, d$A), ]
@@ -72,7 +91,8 @@ description <- list(
   fx2_glmm_rare = "binary GLMM, about 5-10% events, A tested with B associated, 8 blocks x 3; A null",
   fx2_tmb_nb2 = "glmmTMB nbinom2 (size 2) y ~ x + A + (1|block), as fx2_glmm_nb but the right family; A null",
   fx2_lmm_lev_power = "as fx2_lmm_lev with A effects (0, 0.5, 1)",
-  fx2_glmm_pois_power = "as fx2_glmm_pois_lev with A effects (0, 0.2, 0.4) on the log scale")
+  fx2_glmm_pois_power = "as fx2_glmm_pois_lev with A effects (0, 0.2, 0.4) on the log scale",
+  fx2_sp_pairs = "split plot, 6 blocks, A (whole plot) means (0,0,0,2), B (0,1,2); pairs of A means by Freedman-Lane with refits (as pr_sp_A_partial)")
 
 one_set <- function(cell) {
   switch(cell,
@@ -101,8 +121,9 @@ one_set <- function(cell) {
       d$y <- rnorm(8)[d$block] + c(1, 1, 2, 3)[d$A] * rnorm(nrow(d))
       m <- lme(y ~ A, random = ~ 1 | block, weights = varIdent(form = ~ 1 | A), data = d)
       raw <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, ncore = 1)$ANOVA
-      fl <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane")$ANOVA
-      c(raw = pA(raw), fl = pA(fl), param = anova(m)["A", "p-value"])
+      fl <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane", refit = FALSE)$ANOVA
+      flr <- predictmeans:::pm_perm_fl_refit(m, nperm, "II", FALSE, NULL, FALSE, NULL, 1, only = "A")$ANOVA
+      c(raw = pA(raw), fl = pA(fl), flr = pA(flr), param = anova(m)["A", "p-value"])
     },
     fx2_glm_pois_lev = , fx2_glm_binom_lev = , fx2_glm_nb = {
       d <- lev_design(8)
@@ -126,6 +147,23 @@ one_set <- function(cell) {
       if (cell == "fx2_tmb_nb2") {
         glmm_term(d, y ~ x + (1 | block), y ~ x + A + (1 | block), nbinom2, tmb = TRUE)
       } else glmm_term(d, y ~ x + (1 | block), y ~ x + A + (1 | block), poisson)
+    },
+    fx2_sp_pairs = {
+      d <- sp_design()
+      d <- d[order(d$block, d$wp, d$sub), ]
+      d$y <- c(0, 0, 0, 2)[d$A] + c(0, 1, 2)[d$B] + rnorm(6)[d$block] + rnorm(nlevels(d$wpid))[d$wpid] + rnorm(nrow(d))
+      m <- lmer(y ~ A * B + (1 | block) + (1 | block:A), data = d, control = ctl)
+      perm <- structure(list(scheme = "freedman-lane-refit", nperm = nperm, exact = FALSE,
+                             start = attr(predictmeans:::pm_perm_stream(nrow(d)), "start"), idx = NULL,
+                             coef_names = names(fixef(m))), class = "pm_perm")
+      pr <- as.data.frame(predictmeans(m, "A", plot = FALSE, prtnum = FALSE)$pairs)
+      L <- pair_rows(m, d)
+      p_flr <- predictmeans:::pm_perm_fl_refit_t(perm, L, m, 1)
+      key <- paste0(pr$level1, "v", pr$level2)
+      p_kr <- pr$p.value[match(rownames(L), key)]
+      nul <- rownames(L) %in% c("1v2", "1v3", "2v3")
+      c(setNames(p_flr, paste0("flr.", rownames(L))), setNames(p_kr, paste0("kr.", rownames(L))),
+        flr.holm = min(p.adjust(p_flr, "holm")[nul]), kr.holm = min(p.adjust(p_kr, "holm")[nul]))
     },
     fx2_glmm_binom3 = {
       d <- lev_design(3); d <- d[rep(seq_len(nrow(d)), each = 2), ]

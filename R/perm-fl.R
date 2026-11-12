@@ -90,7 +90,10 @@ pm_fl_design <- function(model) {
        call. = FALSE)
 }
 
-pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL) {
+pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit = FALSE, ncore = 1) {
+  if (refit && inherits(model, c("lmerMod", "lme", "gls"))) {
+    return(pm_perm_fl_refit(model, nperm, type, exact, seed, prt, perms, ncore))
+  }
   des <- pm_fl_design(model)
   X <- des$X
   z <- des$z
@@ -225,8 +228,9 @@ pm_fl_tables <- function(X, z, df_res, tests, pval, type, kind) {
                       "F value" = round(vapply(tests[terms], `[[`, numeric(1), "value"), 4),
                       Perm_p_value = round(unname(pval[terms]), 4), check.names = FALSE, row.names = terms)
   tl <- c(I = "I", "1" = "I", II = "II", "2" = "II", III = "III", "3" = "III")[[type]]
-  attr(ANOVA, "heading") <- paste0("Type ", tl, " F tests ",
-                                   if (kind == "working") "on the working (link) scale, " else "",
-                                   "with the covariance of the data fixed at the fitted model")
+  attr(ANOVA, "heading") <- if (kind == "refit") {
+    paste0("Type ", tl, " F tests (Freedman-Lane permutations; the model refitted to each permuted data set)")
+  } else paste0("Type ", tl, " F tests ", if (kind == "working") "on the working (link) scale, " else "",
+                "with the covariance of the data fixed at the fitted model")
   list(COEF = COEF, ANOVA = ANOVA)
 }

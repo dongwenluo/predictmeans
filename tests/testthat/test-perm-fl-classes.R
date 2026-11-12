@@ -4,7 +4,7 @@ test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   Om <- Oats[-c(1, 5, 9, 20, 33), ]
   m1 <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Om)
-  r1 <- permmodels(m1, nperm = 49, type = "II", seed = 1, prt = FALSE, method = "freedman-lane")
+  r1 <- permmodels(m1, nperm = 49, type = "II", seed = 1, prt = FALSE, method = "freedman-lane", refit = FALSE)
   # car's type II hypotheses (as pm_anova()), unadjusted covariance: Wald chi-square / df
   a1 <- pm_anova(m1, type = "II", test.statistic = "Chisq")
   expect_equal(r1$ANOVA[, "F value"], round(unname(a1[, "Chisq"] / a1[, "Df"]), 4))
@@ -12,7 +12,7 @@ test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
   expect_equal(unname(r1$COEFFICENTS[, "t value"]), round(unname(ct[, "t value"]), 4))
   # the same model by lme: the same F (both REML)
   m2 <- nlme::lme(yield ~ nitro * Variety, random = ~ 1 | Block/Variety, data = Om)
-  r2 <- permmodels(m2, nperm = 49, type = "II", seed = 1, prt = FALSE, method = "freedman-lane")
+  r2 <- permmodels(m2, nperm = 49, type = "II", seed = 1, prt = FALSE, method = "freedman-lane", refit = FALSE)
   expect_equal(r2$ANOVA[, "F value"], r1$ANOVA[, "F value"], tolerance = 1e-3)
   # a pair that is one coefficient: the same test as that coefficient's
   pm <- predictmeans(m1, "nitro", permlist = r1, plot = FALSE, prtnum = FALSE, ncore = 1)

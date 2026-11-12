@@ -6,7 +6,8 @@
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL)
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+  refit=TRUE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
@@ -39,6 +40,11 @@ chooses the more robust one for the model class, which is \code{"freedman-lane"}
 model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
 whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
 permutations the design allows.}
+
+\item{refit}{For \code{method = "freedman-lane"} with \code{lmer}, \code{lme} and \code{gls} models: refit the
+model to each permuted data set (the default), so the variance parameters are estimated again each time.
+\code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
+often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).}
 }
 \value{
 The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
@@ -78,10 +84,17 @@ the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Sat
 \code{\link{pm_joint}}), or \code{method = "freedman-lane"} (4.6\%).
 
 Since predictmeans 2.0, \code{method = "freedman-lane"} also handles \code{lmer}, \code{lme} and \code{gls} models,
-and \code{glm}, \code{glmer} and \code{glmmTMB} models. For mixed models the covariance of the data, V, is fixed at
-the fitted model: the data and the design are decorrelated with the symmetric square root of V, so least squares
-on them gives the model's estimates and its Wald t and F statistics (unadjusted covariance), and Freedman-Lane
-permutations are done as for \code{lm}, without refits. GLMs and GLMMs are first linearised at the fit (working
+and \code{glm}, \code{glmer} and \code{glmmTMB} models. For \code{lmer}, \code{lme} and \code{gls} models (with
+\code{refit = TRUE}, the default) the model without the tested term is fitted, its residuals are decorrelated with
+the symmetric square root of its covariance, permuted, correlated again and added to its fitted values, and the
+model is refitted to each permuted data set; the statistics are the model's Wald t and F statistics (unadjusted
+covariance). One set of refits serves a term and its coefficients; pairs and contrasts in \code{predictmeans()}
+get one set of refits for their family (the model with all the compared means equal). With \code{refit = FALSE}
+the covariance of the data, V, is fixed at the fitted model: the data and the design are decorrelated with the
+symmetric square root of V, so least squares on them gives the same statistics, and Freedman-Lane permutations
+are done as for \code{lm}, without refits. That is much faster, but the permuted statistics then behave as if V
+were known, so comparisons whose error rests on few units (whole plots of a split plot with 6 blocks) rejected
+6.2\% of true null hypotheses at the 5\% level in a simulation study. GLMs and GLMMs are first linearised at the fit (working
 response and working variances on the link scale, as in \code{\link{permlmer}}); their t and F statistics are Wald
 statistics on the working scale with the dispersion estimated from the working residuals, so overdispersion
 affects them much less than likelihood-ratio tests (in a pilot study with overdispersed counts: 8-10\% against 35\%

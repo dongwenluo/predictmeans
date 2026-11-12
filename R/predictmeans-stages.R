@@ -500,7 +500,7 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
         nsim <- pm_perm_n(permlist)
         t.p.values <- if (!is.null(permlist[["perm"]])) {
           # Freedman-Lane: each pair tested with its own reduced model
-          pm_perm_fl_t(permlist[["perm"]], rK, model)
+          pm_perm_fl_t(permlist[["perm"]], rK, model, ncore)
         } else {
           pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
         }
