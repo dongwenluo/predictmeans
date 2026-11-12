@@ -72,6 +72,8 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | 2026-11-11 (later; the sandbox clock jumped) | `sim-perm-followup.R 99 … 4` (4 cells) and `sim-perm-followup2.R 99 all 4` (2 cells) | same | same |
 | 2026-11-12 00:07– | `sim-perm-pairs.R 1000 199 … 3` (8 cells; `pr_rcbd_power` 500 sets) | same | same, predictmeans 1.1.1.9000 after step 2 (engine) |
 | 2026-11-12 (after the pairs run) | `sim-perm-fixed.R 1000 199 … 3` (LMM and glm cells), `500 199 … 3` (GLMM, lme and power cells) | same | same, predictmeans after steps 6–8, glmmTMB 1.1.8 |
+| 2026-11-12 07:2x– | `sim-perm-refit.R 500 199 rf_sp_b12,rf_sp_b24,rf_sp_b48 3` (step 13) | same | same, predictmeans after step 11 |
+| 2026-11-12 07:3x | `sim-perm-robust.R 2000 199 all 1` (permutation version, 6 cells), then again with sign flips (9 cells) | same | same, predictmeans after step 12 |
 
 ## 4. Results so far
 
@@ -270,6 +272,67 @@ Reading:
   and much more robust to overdispersion than the LRT (7.4% vs 33.9%); V
   fixed was liberal there (10.0%). `permlmer()` (quantile route) is the most
   accurate for rare binary events (5.1%).
+
+### Step 13: when is `refit = FALSE` safe? (`dev/sim-perm-refit/`, 199 permutations)
+
+Split plot, `lmer(y ~ A * B + (1 | block) + (1 | block:A))`, 4 whole plots
+(A) x 3 subplots (B) per block, A null, B effects (0, 1, 2); test of A (type
+II). `V fixed` = `refit = FALSE`; `refits` = Freedman–Lane with refits (the
+default); `KR` = Kenward–Roger F. 500 data sets per cell (range for a true
+5%: 3.1–6.9%; for 1%: 0.1–1.9%; for 10%: 7.3–12.7%). The 6-block row is
+`fx2_lmm_sp` of study 1b part 2.
+
+| blocks (whole-plot error df) | V fixed 1% / 5% / 10% | refits 1% / 5% / 10% | KR 1% / 5% / 10% |
+|---|---|---|---|
+| 6 (15) | 0.020 / **0.086** / 0.146 | 0.004 / 0.050 / 0.096 | 0.004 / 0.046 / 0.102 |
+| 12 (33) | 0.028 / **0.072** / 0.118 | 0.010 / 0.062 / 0.106 | 0.010 / 0.064 / 0.098 |
+| 24 (69) | 0.018 / 0.060 / 0.102 | 0.016 / 0.054 / 0.096 | 0.020 / 0.056 / 0.090 |
+| 48 (141) | 0.012 / 0.056 / 0.128 | 0.012 / 0.046 / 0.128 | 0.012 / 0.056 / 0.122 |
+
+Time for 199 permutations of the three terms on one core: V fixed 0.1–0.4 s,
+refits 7.6 s (6 blocks), 8.3 s (12), 10.7 s (24), 25.3 s (48).
+
+Reading: holding V at its fitted value treats it as known, so the test is
+liberal when V rests on few units, about twice the nominal rate at 1% with
+15–33 df; the excess fades slowly and is within Monte Carlo error at 141
+df. Refits are right at every size. (At 10% with 48 blocks all three
+methods gave 12.2–12.8%: the same data sets, so chance in those data.) So `refit = TRUE` stays the default,
+and `refit = FALSE` is enough when the tested terms' error df exceed about
+100.
+
+### Step 12: unequal variances, `permmodels(robust = TRUE)` (`dev/sim-perm-robust/`, 199 resamples)
+
+`lm(y ~ x + A)` with error variances that the model ignores; true null.
+`F` = usual F test; `FL` = Freedman–Lane permutations of the usual F;
+`robust perm` = HC3 Wald F with Freedman–Lane permutations (first version,
+`dev/sim-perm-robust/permutation-version/`); `robust flip` = HC3 Wald F with
+random signs of the reduced model's residuals (wild bootstrap; the
+package's `robust = TRUE`); `HC3 F` = HC3 Wald F against F(q, residual df),
+as `car::Anova(white.adjust = "hc3")`. 2000 data sets per cell (range for a
+true 5%: 4.0–6.0%).
+
+| cell | F | FL | robust perm | **robust flip** | HC3 F |
+|---|---|---|---|---|---|
+| A groups 6/12/18, SD 3/1/1 | 0.207 | 0.211 | 0.071 | **0.058** | 0.067 |
+| groups 3/6/9 | 0.202 | 0.203 | 0.090 | **0.073** | 0.080 |
+| groups 12/24/36 | 0.192 | 0.191 | 0.060 | **0.051** | 0.057 |
+| equal SDs (control) | 0.052 | 0.051 | 0.056 | **0.054** | 0.060 |
+| slope, SD = abs(x) + 0.2, n = 36 | 0.220 | 0.220 | 0.080 | **0.050** | 0.064 |
+| same, n = 108 | 0.234 | 0.226 | 0.053 | **0.046** | 0.048 |
+| groups 6/12/18, skewed errors | 0.234 | 0.243 | | **0.094** | 0.111 |
+| groups 3/6/9, skewed errors | 0.232 | 0.238 | | **0.092** | 0.135 |
+| slope, skewed errors | 0.192 | 0.185 | | **0.040** | 0.051 |
+
+(A pilot with 1000 data sets and skewed errors gave robust perm 0.136,
+0.159, 0.076 in the three skewed cells.)
+
+Reading: with unequal variances every test that trusts the model's
+variance rejects about 20% of true null hypotheses, permutation included.
+HC3 studentisation removes most of the excess; flipping signs instead of
+permuting keeps each residual's variance with its unit and was the closest
+to 5% in every unequal-variance case, and as good as the others with equal
+variances. A tiny group with a large variance and skewed errors is still
+hard for every method (9%). Hence `robust = TRUE` flips signs.
 
 ### Open questions
 

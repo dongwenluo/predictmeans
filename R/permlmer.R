@@ -4,18 +4,18 @@
 #' This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
 #' linear mixed model of \code{glmer} or \code{glmmTMB} (also as \code{permglmer()} and \code{permglmmTMB()}).
 #' @usage
-#' permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#' permlmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 #'          method=c("auto", "working", "quantile"))
-#' permglmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#' permglmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 #'           method=c("auto", "working", "quantile"))
-#' permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#' permglmmTMB(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 #'             method=c("auto", "working", "quantile"))
 #' @param lmer0 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0, note that \code{lmer0} model must nest within
 #'   \code{lmer1} model.
 #' @param lmer1 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1, note that \code{lmer0} model must nest within
 #'   \code{lmer1} model.
 #' @param nperm Number of permutation, the default value is 999.
-#' @param ncore Number of core for parallel computing, the default value is 3.
+#' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
 #' @param plot Plot permutation distribution or not, the default value is FALSE.
 #' @param seed Specify a random number generator seed, for reproducible results. The user's random number stream is
 #'   left as it was.
@@ -87,7 +87,7 @@
 #' @name permlmer
 NULL
 
-permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permlmer <- function(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
                      method=c("auto", "working", "quantile")){
 
   c_deparse <- function (...)

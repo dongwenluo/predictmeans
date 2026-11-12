@@ -17,13 +17,15 @@
 ## stream has its own random number state and the user's stream is left as it
 ## was; without one it draws from the user's stream (as set.seed() before the
 ## call would).
-pm_perm_stream <- function(n, seed = NULL, state = NULL) {
+pm_perm_stream <- function(n, seed = NULL, state = NULL, flip = FALSE) {
   genv <- globalenv()
   shared <- is.null(seed) && is.null(state)
   if (!is.null(seed)) state <- pm_with_seed(seed, get(".Random.seed", envir = genv, inherits = FALSE))
   if (shared && !exists(".Random.seed", envir = genv, inherits = FALSE)) set.seed(NULL)
   start <- if (shared) get(".Random.seed", envir = genv, inherits = FALSE) else state
-  draw <- function(m) matrix(vapply(seq_len(m), function(i) sample.int(n), integer(n)), nrow = n)
+  # flip = TRUE: random signs (+1/-1) instead of permutations (wild bootstrap)
+  draw <- if (flip) function(m) matrix(sample(c(-1L, 1L), n * m, replace = TRUE), nrow = n) else
+    function(m) matrix(vapply(seq_len(m), function(i) sample.int(n), integer(n)), nrow = n)
   f <- function(m) {
     if (shared) return(draw(m))
     old <- get0(".Random.seed", envir = genv, inherits = FALSE)
@@ -42,8 +44,8 @@ pm_perm_stream <- function(n, seed = NULL, state = NULL) {
 ## Permutations from a matrix given by the user (e.g. permindex()), or from
 ## pm_perm_stream(): a function giving the next m permutations. 'perms' must
 ## have one row per observation and permutations of 1:n as columns.
-pm_perm_source <- function(n, seed = NULL, perms = NULL, state = NULL) {
-  if (is.null(perms)) return(pm_perm_stream(n, seed, state))
+pm_perm_source <- function(n, seed = NULL, perms = NULL, state = NULL, flip = FALSE) {
+  if (is.null(perms)) return(pm_perm_stream(n, seed, state, flip))
   perms <- pm_perm_check_index(perms, n)
   pos <- 0L
   f <- function(m) {
@@ -169,6 +171,13 @@ pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names, idx = NULL)
 ## p-value tests that comparison alone, whatever the other means are.
 pm_perm_fl_t <- function(perm, L, model = NULL, ncore = 1) {
   if (identical(perm$scheme, "freedman-lane-refit")) return(pm_perm_fl_refit_t(perm, L, model, ncore))
+  if (isTRUE(perm$robust)) {
+    L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
+    if (ncol(L) != ncol(perm$X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
+      stop("'permlist' was made for a different model.", call. = FALSE)
+    }
+    return(pm_perm_fl_t_robust(perm, L))
+  }
   X <- perm$X
   z <- perm$z
   L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
@@ -336,6 +345,7 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
   if (ncol(L) != ncol(X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
     stop("'permlist' was made for a different model.", call. = FALSE)
   }
+  if (isTRUE(perm$robust)) return(pm_perm_fl_T_robust(perm, L))
   n <- nrow(X)
   qrX <- qr(X)
   df_res <- n - qrX$rank
@@ -367,4 +377,44 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
     done <- done + m
   }
   list(obs = as.vector(abs_t(matrix(z))), T = do.call(cbind, Tl), Fobs = Fstat(matrix(z)), F = unlist(Fl))
+}
+
+## ---- Confidence intervals ------------------------------------------------------
+## Permutation-t critical values: a contrast's interval is estimate +- c * SE,
+## with c the critical value of its permutation test at level alpha, so the
+## interval holds the values the test would not reject if the permutation
+## distribution of |t| does not depend on them (as with a pivot; the same
+## permutations, no new refits). With the +1 rule a p-value is <= alpha
+## exactly when |t| exceeds the k-th largest permuted |t|, k = floor(alpha (B
+## + 1)); c is that value (Inf when B is too small). 'family' (one label per
+## row; NA for none): rows in a family share the critical value of the
+## largest |t| of the family (simultaneous intervals, a permutation version
+## of Tukey's), as pm_perm_maxT() tests.
+pm_perm_crit <- function(T, alpha, family = NULL) {
+  T <- as.matrix(T)
+  kth <- function(x) {
+    x <- sort(x[!is.na(x)], decreasing = TRUE)
+    k <- floor(alpha * (length(x) + 1))
+    if (k >= 1 && k <= length(x)) x[k] else Inf
+  }
+  out <- apply(T, 1, kth)
+  if (!is.null(family)) {
+    for (f in unique(stats::na.omit(family))) {
+      rows <- which(family == f)
+      out[rows] <- kth(apply(T[rows, , drop = FALSE], 2, max))
+    }
+  }
+  out
+}
+
+## Printing a permutation object (the 'perm' component of permmodels()):
+## what it holds, not the random number state.
+print.pm_perm <- function(x, ...) {
+  scheme <- c("freedman-lane" = "Freedman-Lane", "freedman-lane-refit" = "Freedman-Lane with refits")[x$scheme]
+  if (is.na(scheme)) scheme <- x$scheme
+  cat("Permutation object: ", scheme, if (isTRUE(x$robust)) " (robust HC3 statistics)", ", ", x$nperm,
+      if (isTRUE(x$flip)) " sign flips (wild bootstrap)" else " permutations", if (!is.null(x$idx)) " (given)",
+      ", ", length(x$coef_names), " coefficients.\n", sep = "")
+  cat("Give the whole result of permmodels() to predictmeans() or contrastmeans() as 'permlist'.\n")
+  invisible(x)
 }

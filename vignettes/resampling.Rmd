@@ -192,6 +192,56 @@ pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE, prtnum 
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 ```
 
+## Unequal variances: `robust = TRUE`
+
+No permutation scheme repairs a variance model that is wrong: when groups have very
+different error variances and the model assumes them equal, the F test and the
+permutation tests above all reject true null hypotheses far too often (about 20% at the
+5% level in our simulations with group SDs 3, 1, 1). For `lm`, `aov` and `glm` models,
+`robust = TRUE` uses heteroscedasticity-robust (HC3) t and F statistics and flips the signs
+of the reduced model's residuals at random instead of permuting them (a wild bootstrap),
+so each residual keeps its own variance:
+
+```{r}
+mt <- transform(mtcars, cyl = factor(cyl))
+fm_mt <- lm(mpg ~ wt + cyl, data = mt)
+permmodels(fm_mt, nperm = 999, type = "II", seed = 1, robust = TRUE)
+```
+
+Pairs and contrasts from this result use the robust statistics and robust standard errors.
+For mixed models, model the variances instead (e.g. `lme(..., weights = varIdent())`) and
+use `permmodels()` on that model.
+
+## More from the permutations: `permstats()` and `permcombine()`
+
+`permmodels()` keeps the permuted statistics. `permstats()` turns them into a
+standardised effect size for each term and coefficient, and checks the parametric test
+against them: `param.size` is the proportion of permuted data sets (in which the term has
+no effect) where the parametric test rejects at `level`. Near `level`, the parametric test
+suits these data; well above it, its p-values are too small here.
+
+```{r}
+p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1, prt = FALSE)
+permstats(p_mpg)
+```
+
+When the same model is fitted to several responses measured on the same units (traits,
+time points), results made with the same permutations (same rows, `seed` and `nperm`) can
+be combined. `permcombine()` gives, for each term, one p-value for "no effect on any
+response" (Fisher's or Tippett's combination; Pesarin and Salmaso 2010) and p-values
+adjusted for testing every response (min-p; Westfall and Young 1993). The responses'
+correlation is kept by the shared permutations, without a multivariate model.
+
+```{r}
+p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1,
+                     prt = FALSE)
+permcombine(mpg = p_mpg, qsec = p_qsec)
+```
+
+For many comparisons within one response, such as a treatment difference at each of
+several time points, `contrastmeans(..., permlist = , adj = "westfall")` gives the
+max-statistic (step-down max-|t|) adjustment over the time points.
+
 ## Which to use
 
 | Model | Terms, coefficients, pairs, contrasts | Random effects, nested models |
@@ -201,6 +251,8 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 | `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane with refits); or the Kenward–Roger F test | `permlmer()` |
 | `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale, with refits) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test | |
+| `lm`, `glm` with unequal variances | `permmodels(robust = TRUE)` (HC3 statistics, sign flips) | |
+| several responses, same units | `permcombine()` of `permmodels()` results with the same `seed` | |
 
 - With large samples and well-behaved residuals the F and t tests (with Kenward–Roger
   df for `lmer`) agree closely with these, at a fraction of the time.
@@ -210,6 +262,15 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
   (in the package sources: `dev/permutation-plan.md` and `dev/sim-study/`).
 
 ## References
+
+Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at last. *Journal of
+Econometrics* 146, 162–169.
+
+DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for correlation and
+regression coefficients. *Journal of the American Statistical Association* 112, 1211–1220.
+
+Pesarin, F. and Salmaso, L. (2010). *Permutation Tests for Complex Data: Theory,
+Applications and Software*. Wiley.
 
 Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods
 for tests of partial regression coefficients in a linear model. *Journal of Statistical

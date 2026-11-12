@@ -141,7 +141,20 @@ pm_tidy_parts <- function(e) {
     }
     pairs$p.adj <- p_adj
     lsd_level <- g("level")
-    pairs$lsd <- if (perm) 2*dses else stats::qt(1 - lsd_level/2, pdf)*dses
+    # critical values: t quantiles, or with a permlist those of the permutation
+    # distribution of |t| (simultaneous within each family with a max-|t| adj)
+    pT <- g("perm_T")
+    crit <- if (perm && !is.null(pT)) {
+      maxt_fam <- if (adj %in% pm_perm_maxt_methods) { if (is.null(atvar)) rep("all", length(cm)) else by } else NULL
+      pm_perm_crit(pT$T, lsd_level, family = maxt_fam)
+    } else if (perm) {
+      rep(NA_real_, length(cm))
+    } else stats::qt(1 - lsd_level/2, pdf)
+    # a robust permlist (permmodels(robust = TRUE)) studentises with HC3 SEs
+    ci_se <- if (!is.null(pT$se)) pT$se else dses
+    pairs$conf.low <- cm - crit*ci_se
+    pairs$conf.high <- cm + crit*ci_se
+    pairs$lsd <- crit*ci_se
     pairs$p.method <- if (perm) {
       if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else "permutation"
     } else if (adj == "tukey") "tukey" else "t"
@@ -150,11 +163,11 @@ pm_tidy_parts <- function(e) {
     # logit scale: the log of the odds ratio
     kind <- pm_ratio_kind(trans, model, isTRUE(g("link_scale")))
     if (!is.null(kind)) {
-      crit_p <- if (perm) rep(2, length(cm)) else stats::qt(1 - slevel/2, pdf)
+      crit_p <- crit
       pre <- if (kind == "log") "ratio" else "odds.ratio"
       pairs[[pre]] <- exp(cm)
-      pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*dses)
-      pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*dses)
+      pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*ci_se)
+      pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*ci_se)
     }
   }
 

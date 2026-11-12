@@ -30,8 +30,18 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
     x <- x[setdiff(names(x), "permlist")]
     lapply(x, function(tab) tab[, setdiff(colnames(tab), "Perm_p_value"), drop = FALSE])
   }
+  # Since 2.0 contrastmeans() tables also have confidence limits; the 1.1.1
+  # columns are compared.
+  strip_ci <- function(x) {
+    if (is.list(x) && !is.null(x[["The t tests of the specified contrasts"]])) {
+      tab <- x[["The t tests of the specified contrasts"]]
+      x[["The t tests of the specified contrasts"]] <-
+        structure(tab[, setdiff(colnames(tab), c("lower.CL", "upper.CL")), drop = FALSE], Note = attr(tab, "Note"))
+    }
+    x
+  }
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
-    a <- new[[nm]]; b <- ref[[nm]]
+    a <- strip_ci(new[[nm]]); b <- ref[[nm]]
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
     expect_equal(clean_reference(a), clean_reference(b),
                  tolerance = if (mixed[[nm]]) 2e-2 else 1e-6, label = nm)

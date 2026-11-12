@@ -317,8 +317,7 @@ pm_anova_glm_III <- function(model, test = c("LR", "F")) {
 ## Doolittle factor of X'X in the term's columns, i.e. the rows of the
 ## Cholesky factor R of X'X (Doolittle's t(L) is R with rows scaled, which
 ## does not change a Wald test). Returns a list of L matrices named by term.
-pm_type1_L <- function(X, labels) {
-  asgn <- attr(X, "assign")
+pm_type1_L <- function(X, labels, asgn = attr(X, "assign")) {
   R <- chol(crossprod(as.matrix(X)))
   out <- lapply(seq_along(labels), function(j) R[asgn == j, , drop = FALSE])
   names(out) <- labels

@@ -2,6 +2,12 @@
 
 ## Changes that affect results or scripts
 
+* **`ncore = 1` by default** in `permmodels()`, `permlmer()` (and
+  `permglmer()`, `permglmmTMB()`), `permanova.lmer()` and `predictmeans()`
+  (it was 3; `bootmodels()` already used 1). Results are the same; scripts
+  that relied on three cores for speed should set `ncore`. CRAN and many
+  shared machines allow at most 2 cores.
+
 * **`permmodels()` uses Freedman-Lane permutations by default**
   (`method = "auto"`, which chooses the more robust scheme for the model
   class; at present Freedman-Lane for every class). Each term, coefficient
@@ -168,9 +174,11 @@
   one set for their family); the statistics are the model's Wald t and F
   (unadjusted covariance). `refit = FALSE` fixes the covariance of the data
   at the fit instead (decorrelated least squares, no refits, much faster,
-  but slightly liberal when the variance parameters rest on few units:
-  8.6% for the whole-plot factor of a split plot with 6 blocks, against
-  5.0% with refits; 6.2% for whole-plot pairs). GLMs: the V-fixed version on
+  but liberal when the variance parameters rest on few units: for the
+  whole-plot factor of a split plot 8.6%, 7.2%, 6.0% and 5.6% with 6, 12,
+  24 and 48 blocks, against 5.0%, 6.2%, 5.4% and 4.6% with refits; 6.2% for
+  whole-plot pairs with 6 blocks). The help of `permmodels()` says when
+  `refit = FALSE` is enough (error df of the tested terms above about 100). GLMs: the V-fixed version on
   the working (link) scale, with the dispersion estimated from the working
   residuals; GLMMs: the working linear mixed model, refitted to each
   permuted working response (or V fixed with `refit = FALSE`). Terms (types I, II, III), coefficients, and pairs and
@@ -178,12 +186,52 @@
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).
 
+* **Confidence limits of pairs and contrasts**, also by permutation. The
+  `pairs` table of `predictmeans()` gains `conf.low` and `conf.high` (limits
+  of each difference at `level`), and `contrastmeans()` tables gain
+  `lower.CL` and `upper.CL` (new argument `level`). With a `permlist` they
+  are permutation-t limits: estimate +- c SE with c the critical value of
+  the permutation test (the k-th largest permuted |t|, k = floor(level
+  (nperm + 1))), from the same permutations; with a max-|t| adjustment
+  (`adj = "tukey"`, `"mvt"`, `"westfall"`) c comes from the largest |t| of
+  the family, so the limits are simultaneous (a permutation version of
+  Tukey's intervals). The `lsd` column with a `permlist` is now this
+  permutation LSD (it was 2 SED), and so are the ratio limits for log and
+  logit models.
+
 * `contrastmeans(joint = TRUE)` also tests all the contrasts together: the
   F test of `pm_joint()` (Kenward-Roger or Satterthwaite df for `lmer`,
   nlme's df for `lme`, the residual df otherwise; contrasts that are linear
   combinations of others are dropped), and with a `permlist` a permutation
   p-value of the joint Wald F from the same permutations. The result gains
   a third component, `Joint F test of the contrasts`.
+
+* `permmodels(robust = TRUE)` for `lm`, `aov` and `glm` models whose error
+  variances are unequal while the model assumes them equal:
+  heteroscedasticity-robust statistics (HC3 sandwich t and Wald F;
+  DiCiccio and Romano 2017), with the signs of the reduced model's residuals
+  flipped at random instead of permuted (a wild bootstrap), so each residual
+  keeps its own variance. In a simulation with group SDs 3, 1, 1 the usual
+  and permutation F tests rejected about 20% of true null hypotheses at the
+  5% level; robust permutations 6-9%, sign flips less (see
+  `dev/sim-perm-robust.R`). Type II F values equal
+  `car::Anova(white.adjust = "hc3")`. Pairs and contrasts from the result
+  use the robust t, and their confidence limits use robust standard errors.
+  The `perm` component of `permmodels()` results now prints a one-line
+  summary instead of its contents.
+
+* New `permstats()`: from the permutations kept by `permmodels()`
+  (Freedman-Lane), for each term and coefficient a standardised effect size
+  (observed statistic against the mean and SD of the permuted ones) and a
+  check of the parametric test: its p-value and `param.size`, the proportion
+  of permuted data sets (no effect of the term) in which it rejects at
+  `level` (residual, Satterthwaite or nlme df; Wald chi-square for GLMMs).
+
+* New `permcombine()`: nonparametric combination of permutation tests made
+  with the same permutations, e.g. one model fitted to several responses on
+  the same units (same `seed`, `nperm`): for each term, a combined p-value
+  (Fisher or Tippett) and min-p adjusted p-values over the responses, with
+  their correlation kept.
 
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):

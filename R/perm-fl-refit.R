@@ -102,6 +102,7 @@ pm_fl_F <- function(Xw, zw, A, B) {
 pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore, only = NULL) {
   # GLMMs: the same with the working linear mixed model (pm_working_lmm())
   glmm <- inherits(model, c("glmerMod", "glmmTMB"))
+  model0 <- model
   if (glmm) model <- pm_working_lmm(model)
   P <- pm_lmm_parts(model)
   ord <- P$ord
@@ -138,6 +139,8 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
   back <- order(ord)                              # internal order -> model order
   pval <- numeric(0)
   failures <- 0
+  # the permuted statistics (NA for failed refits), for permstats() and permcombine()
+  st <- list(obs = numeric(0), T = NULL, df1 = numeric(0), Ls = list())
   # ('only': test these terms only; used by the simulation scripts)
   if (!is.null(only)) tests <- tests[intersect(names(tests), only)]
   for (k in names(tests)) {
@@ -154,11 +157,19 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
       cv <- P$coefvcov(m)
       c(pm_fl_F(Ws$solve(X), Ws$solve(ys), tk$A, tk$B), abs(cv$b[tk$cols]) / sqrt(diag(cv$V)[tk$cols]))
     }
-    sims <- pm_perm_drop(pm_perm_map(seq_len(nperm), one, ncore, P$packages))
-    failures <- max(failures, sims$failures)
-    S <- matrix(unlist(sims$res), ncol = length(sims$res))
+    res <- pm_perm_map(seq_len(nperm), one, ncore, P$packages)
+    bad <- vapply(res, function(r) is.null(r) || inherits(r, "try-error"), logical(1))
+    failures <- max(failures, sum(bad))
+    S <- matrix(NA_real_, 1 + length(tk$cols), nperm)
+    S[, !bad] <- unlist(res[!bad])
+    cn <- paste0("coef:", colnames(X)[tk$cols])
     pval[k] <- pm_perm_p(tk$value, S[1, ], exact)
-    pval[paste0("coef:", colnames(X)[tk$cols])] <- pm_perm_p(t_obs[tk$cols], S[-1, , drop = FALSE], exact)
+    pval[cn] <- pm_perm_p(t_obs[tk$cols], S[-1, , drop = FALSE], exact)
+    st$obs[c(k, cn)] <- c(tk$value, t_obs[tk$cols])
+    st$T <- rbind(st$T, S)
+    st$df1[c(k, cn)] <- c(tk$df, rep(1, length(cn)))
+    I <- diag(ncol(X))
+    st$Ls[c(k, cn)] <- c(list(I[tk$cols, , drop = FALSE]), lapply(tk$cols, function(j) I[j, , drop = FALSE]))
     tests[[k]] <- tk
   }
   tabs <- pm_fl_tables(Xw, zw, n - qr(Xw)$rank, tests, pval, type, if (glmm) "refit-working" else "refit")
@@ -180,6 +191,9 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
                          start = attr(src, "start"), idx = attr(src, "matrix"), coef_names = colnames(X),
                          wmodel = if (glmm) model),
                     class = "pm_perm")
+  rownames(st$T) <- names(st$obs)
+  perm$stats <- pm_perm_statset(model0, st$obs, st$T, pval[names(st$obs)], st$df1,
+                                ifelse(startsWith(names(st$obs), "coef:"), "t", "F"), st$Ls, n - qr(Xw)$rank, n)
   out <- list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
   if (failures > 0) attr(out, "failures") <- failures
   out
