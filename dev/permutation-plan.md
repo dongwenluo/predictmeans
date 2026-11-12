@@ -617,13 +617,23 @@ update; R CMD check at the end of each.
    `permlmer()` take its matrix as `perms` (`pm_perm_source()`); the lme/gls
    path maps it through its internal reordering (tested: same p-values for
    shuffled data).
-4. **Working-scale layer `pm_working()`** for glm, glmer, glmmTMB (no zero
-   inflation): weights, dispersion, G on the absolute scale, checked family by
-   family against `simulate()` and `R2_glmm()`; fix `R2_glmm()` if the beta
-   or negative binomial variance is wrong.
-5. **`permlmer()` for GLMMs (route A)**, aliases `permglmer()` and
-   `permglmmTMB()`; cluster-label permutation for a single random
-   intercept as an option; tests against the pilot.
+4. **Working-scale layer `pm_working()`** — **done** (`R/working.R`) for
+   glm, glmer, glmmTMB (no zero inflation, dispformula ~1; families poisson,
+   binomial, nbinom1, nbinom2, Gamma, gaussian, beta): z, working variances
+   on the absolute scale (offsets handled), A = Z L with ZGZ' = AA'. Checked:
+   glmer equals the pilot's `linearise()`; glmmTMB equals glmer for the same
+   model; each glmmTMB family's variance against `simulate()` (ratio
+   1.00 ± 0.03). `R2_glmm()` was wrong for nbinom1, nbinom2 and beta (and
+   ignored offsets): fixed with these variances.
+5. **`permlmer()` for GLMMs** — **done** (`R/permglmm.R`), aliases
+   `permglmer()` and `permglmmTMB()`: route A (working scale, weighted
+   `lmer` refits, REML for random effects, ML for fixed effects;
+   Lee–Braun / Freedman–Lane from the H0 linearisation) by default; route B
+   (quantile, GLMM refits with `nAGQ = 0`) for 0/1 responses
+   (`method = "auto"`). Observation-level random effects are refused on the
+   working scale (not separable from the working residual; `bootmodels()`).
+   Cluster-label permutation not added (restricted permutations via
+   `perms` cover it).
 6. **Mixed-model fixed effects:** FL whitened (refit and V-fixed) for
    lme/gls/lmer; `permanova.lmer()` on the engine; simulation; default.
 7. **GLM fixed effects:** sign-flip effective score (own code, no new
