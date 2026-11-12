@@ -31,10 +31,13 @@ source("dev/sim-perm-lib.R")
 suppressPackageStartupMessages({ library(nlme); library(glmmTMB) })
 
 pA <- function(tab, term = "A") as.numeric(tab[term, "Perm_p_value"])
+## (dev/sim-perm-fixed-raw.R sets raw_only = TRUE to recompute the raw column)
+if (!exists("raw_only")) raw_only <- FALSE
 
 lmm_term <- function(d, f, type = "II") {
   m <- lmer(f, data = d, control = ctl)
-  raw <- permmodels(m, nperm = nperm, type = type, prt = FALSE, ncore = 1)$ANOVA
+  raw <- permmodels(m, nperm = nperm, type = type, prt = FALSE, ncore = 1, method = "raw")$ANOVA
+  if (raw_only) return(c(raw = pA(raw)))
   fl <- permmodels(m, nperm = nperm, type = type, prt = FALSE, method = "freedman-lane", refit = FALSE)$ANOVA
   # (refits for the tested term only, to save time)
   flr <- predictmeans:::pm_perm_fl_refit(m, nperm, type, FALSE, NULL, FALSE, NULL, 1, only = "A")$ANOVA
@@ -44,7 +47,7 @@ lmm_term <- function(d, f, type = "II") {
 
 glm_term <- function(d, f, family) {
   m <- glm(f, family = family, data = d)                      # A is the last term
-  raw <- permmodels(m, nperm = nperm, type = "I", prt = FALSE, ncore = 1)$ANOVA
+  raw <- permmodels(m, nperm = nperm, type = "I", prt = FALSE, ncore = 1, method = "raw")$ANOVA
   fl <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane")$ANOVA
   lrt <- anova(m, test = "Chisq")["A", "Pr(>Chi)"]
   c(raw = pA(raw), fl = pA(fl), lrt = lrt)
@@ -123,7 +126,8 @@ one_set <- function(cell) {
       d <- rcbd(8, 2)
       d$y <- rnorm(8)[d$block] + c(1, 1, 2, 3)[d$A] * rnorm(nrow(d))
       m <- lme(y ~ A, random = ~ 1 | block, weights = varIdent(form = ~ 1 | A), data = d)
-      raw <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, ncore = 1)$ANOVA
+      raw <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, ncore = 1, method = "raw")$ANOVA
+      if (raw_only) return(c(raw = pA(raw)))
       fl <- permmodels(m, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane", refit = FALSE)$ANOVA
       flr <- predictmeans:::pm_perm_fl_refit(m, nperm, "II", FALSE, NULL, FALSE, NULL, 1, only = "A")$ANOVA
       c(raw = pA(raw), fl = pA(fl), flr = pA(flr), param = anova(m)["A", "p-value"])
