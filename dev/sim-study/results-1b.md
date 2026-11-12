@@ -27,6 +27,10 @@ Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-
 | pr_rcbd_partial | flpair | 0.052 | 0.057 | 0.045 |  | 1.000 |
 | pr_rcbd_partial | flterm | 0.051 | 0.052 | 0.050 | 0.042 | 1.000 |
 | pr_rcbd_partial | param | 0.048 | 0.050 | 0.048 | 0.037 | 1.000 |
+| pr_rcbd_power | joint |  |  |  |  | 0.276 |
+| pr_rcbd_power | flpair |  |  |  |  | 0.282 |
+| pr_rcbd_power | flterm |  |  |  |  | 0.285 |
+| pr_rcbd_power | param |  |  |  |  | 0.278 |
 | pr_rcbd_skew_partial | joint | 0.046 | 0.052 | 0.027 | 0.024 | 0.998 |
 | pr_rcbd_skew_partial | flpair | 0.051 | 0.057 | 0.040 |  | 0.999 |
 | pr_rcbd_skew_partial | flterm | 0.052 | 0.058 | 0.036 | 0.030 | 0.999 |
