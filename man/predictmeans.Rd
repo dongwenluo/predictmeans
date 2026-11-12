@@ -167,7 +167,10 @@ covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other 
  \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
  level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
- (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{lsd} and \code{p.method}; for a log
+ (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{conf.low} and \code{conf.high} (limits of
+the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
+the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
+within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},

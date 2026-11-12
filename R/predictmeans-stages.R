@@ -505,10 +505,10 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
         nsim <- pm_perm_n(permlist)
         # permutation p-values; with a max-|t| adjustment also the joint
         # permutation distribution of the pairs' |t| (perm_T)
-        fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore,
-                              joint = adj %in% pm_perm_maxt_methods)
+        # (the joint distribution also gives the permutation confidence intervals)
+        fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore, joint = TRUE)
         t.p.values <- fam$p
-        if (adj %in% pm_perm_maxt_methods) perm_T <- fam[c("obs", "T")]
+        perm_T <- fam[c("obs", "T")]
 
       } # end of if (is.null(permlist))
 
@@ -594,7 +594,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
   p_valueMatrix <- NULL
       dses.df$tvalue <- t.v
       dses.df$pvalue <- t.p.values
-      maxt <- !is.null(perm_T)        # permutation max-|t| within each atvar group
+      maxt <- !is.null(perm_T) && adj %in% pm_perm_maxt_methods   # permutation max-|t| within each atvar group
       if (adj %in% pm_adjust_extra_methods || maxt) dses.df$pair_id <- seq_len(nrow(dses.df))   # row of the pair (pair_cor, p.extra)
       if (!maxt && adj %in% c("tukey", pm_adjust_extra_methods)) {
         dses.df$pair_df <- if (adj == "sidak") NA_real_ else rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)

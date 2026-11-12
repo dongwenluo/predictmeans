@@ -6,7 +6,8 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+                level=0.05)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -52,6 +53,11 @@ denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models
 df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}
+
+\item{level}{Significance level for the confidence limits of the contrasts (\code{lower.CL}, \code{upper.CL}); the
+default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
+with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
+\code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.}
 }
 \value{
 There are two components in the output which are

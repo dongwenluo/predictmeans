@@ -766,6 +766,16 @@ value for predictmeans:
 11. **Permutation confidence intervals** for pairs and contrasts by test
     inversion (Garthwaite 1996): the values δ not rejected by Freedman–Lane
     tests of Lβ = δ (offset along the contrast); cheap with V fixed.
+    — **Done** as permutation-t intervals (`pm_perm_crit()`): estimate ± c SE
+    with c the critical value of the permutation test of the studentised
+    statistic (k-th largest permuted |t|, k = ⌊α(B + 1)⌋), from the same
+    permutations; simultaneous with a max-|t| adjustment. This inverts the
+    test exactly when the permutation distribution of |t| does not depend on
+    δ (a pivot); a search over δ (Garthwaite) would need new refits for
+    every δ in mixed models. Checked: with refits the limits exclude 0
+    exactly when p ≤ α. `pairs` gains `conf.low`/`conf.high` (t limits
+    without a permlist), `lsd` with a permlist is the permutation LSD (was
+    2 SED); `contrastmeans()` gains `lower.CL`/`upper.CL` and `level`.
 12. **Studentised (heteroscedasticity-robust) Freedman–Lane** for lm/glm
     (DiCiccio and Romano 2017), for unequal variances that are not modelled.
 13. **When is `refit = FALSE` safe?** A small study with 30, 60 and 120

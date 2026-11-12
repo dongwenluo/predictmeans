@@ -184,6 +184,19 @@
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).
 
+* **Confidence limits of pairs and contrasts**, also by permutation. The
+  `pairs` table of `predictmeans()` gains `conf.low` and `conf.high` (limits
+  of each difference at `level`), and `contrastmeans()` tables gain
+  `lower.CL` and `upper.CL` (new argument `level`). With a `permlist` they
+  are permutation-t limits: estimate +- c SE with c the critical value of
+  the permutation test (the k-th largest permuted |t|, k = floor(level
+  (nperm + 1))), from the same permutations; with a max-|t| adjustment
+  (`adj = "tukey"`, `"mvt"`, `"westfall"`) c comes from the largest |t| of
+  the family, so the limits are simultaneous (a permutation version of
+  Tukey's intervals). The `lsd` column with a `permlist` is now this
+  permutation LSD (it was 2 SED), and so are the ratio limits for log and
+  logit models.
+
 * `contrastmeans(joint = TRUE)` also tests all the contrasts together: the
   F test of `pm_joint()` (Kenward-Roger or Satterthwaite df for `lmer`,
   nlme's df for `lme`, the residual df otherwise; contrasts that are linear

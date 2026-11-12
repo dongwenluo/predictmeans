@@ -7,7 +7,8 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+#'                 level=0.05)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -41,6 +42,10 @@
 #'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 #'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 #'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
+#' @param level Significance level for the confidence limits of the contrasts (\code{lower.CL}, \code{upper.CL}); the
+#'   default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
+#'   with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
+#'   \code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.
 #' @return
 #' There are two components in the output which are
 #' \item{Table}{A table showing t-test results for the specified linear contrasts.}
@@ -90,7 +95,8 @@ NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE) {
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+                          level=0.05) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -222,8 +228,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     t.p.value <- if (adj %in% pm_adjust_extra_methods) {
       pm_adjust_extra(adj, as.vector(t.v), t.p.value, Df, rank = qr(ctrmatrix)$rank, R = cor.contr)
     } else p.adjust(t.p.value, adj)
-    out.put <- cbind(cm, ses, t.v, Df, t.p.value)
-    colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)")
+    crit <- stats::qt(1 - level/2, Df)
+    out.put <- cbind(cm, ses, t.v, Df, t.p.value, cm - crit*ses, cm + crit*ses)
+    colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
@@ -233,7 +240,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   # permutation p-values; for adj = "mvt" / "westfall" the joint permutation
   # distribution of the contrasts' |t| (max-|t|, Westfall-Young)
   maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
-  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = maxt || isTRUE(joint))
+  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = TRUE)
   per.p <- fam$p
   if (nrow(rK) > 1 && adj != "none") {
     per.p <- if (maxt) {
@@ -242,8 +249,10 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
       pm_adjust_extra("sidak", as.vector(t.v), per.p, NA_real_)
     } else p.adjust(per.p, adj)
   }
-  out.put <- cbind(cm, ses, t.v, per.p)
-  colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
+  # permutation-t limits (simultaneous with a max-|t| adjustment)
+  crit <- pm_perm_crit(fam$T, level, family = if (maxt) rep(1, nrow(rK)))
+  out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ses, cm + crit*ses)
+  colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
   rownames(out.put) <- rownames(ctrmatrix)
   attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
                                  if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),

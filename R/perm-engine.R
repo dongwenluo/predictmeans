@@ -368,3 +368,31 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
   }
   list(obs = as.vector(abs_t(matrix(z))), T = do.call(cbind, Tl), Fobs = Fstat(matrix(z)), F = unlist(Fl))
 }
+
+## ---- Confidence intervals ------------------------------------------------------
+## Permutation-t critical values: a contrast's interval is estimate +- c * SE,
+## with c the critical value of its permutation test at level alpha, so the
+## interval holds the values the test would not reject if the permutation
+## distribution of |t| does not depend on them (as with a pivot; the same
+## permutations, no new refits). With the +1 rule a p-value is <= alpha
+## exactly when |t| exceeds the k-th largest permuted |t|, k = floor(alpha (B
+## + 1)); c is that value (Inf when B is too small). 'family' (one label per
+## row; NA for none): rows in a family share the critical value of the
+## largest |t| of the family (simultaneous intervals, a permutation version
+## of Tukey's), as pm_perm_maxT() tests.
+pm_perm_crit <- function(T, alpha, family = NULL) {
+  T <- as.matrix(T)
+  kth <- function(x) {
+    x <- sort(x[!is.na(x)], decreasing = TRUE)
+    k <- floor(alpha * (length(x) + 1))
+    if (k >= 1 && k <= length(x)) x[k] else Inf
+  }
+  out <- apply(T, 1, kth)
+  if (!is.null(family)) {
+    for (f in unique(stats::na.omit(family))) {
+      rows <- which(family == f)
+      out[rows] <- kth(apply(T[rows, , drop = FALSE], 2, max))
+    }
+  }
+  out
+}
