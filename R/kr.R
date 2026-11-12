@@ -160,7 +160,8 @@ pm_vcov_kr <- function(model, information = c("expected", "observed")) {
 pm_kr_ftest <- function(model, L, PhiA = pm_vcov_kr(model)) {
   if (!is.matrix(L)) L <- matrix(L, nrow = 1)
   Phi <- as.matrix(stats::vcov(model))
-  beta <- lme4::fixef(model)
+  beta <- if (inherits(model, "merMod")) lme4::fixef(model) else if (inherits(model, "lme")) nlme::fixef(model) else
+    stats::coef(model)
   Theta <- t(L) %*% solve(L %*% Phi %*% t(L), L)
   P <- attr(PhiA, "P")
   W <- attr(PhiA, "W")

@@ -114,8 +114,8 @@ pm_slope_df <- function(model, L, modelterm, covariate, mp, parms) {
     with_cov <- vapply(strsplit(names(bw), ":"), function(v) covariate %in% v, logical(1))
     return(rep(min(bw[with_cov]), nrow(L)))
   }
-  if (identical(parms$df_type, "Satterthwaite") && inherits(model, c("lme", "gls"))) {
-    return(as.numeric(pm_satt_ddf(L, parms$vcov_adj)))
+  if (inherits(model, c("lme", "gls")) && any(parms$df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
+    return(as.numeric(pm_nlme_df(L, model, parms$df_type, parms$vcov_adj)))
   }
   if (inherits(model, "lmerMod")) {
     return(as.numeric(df_term(model, modelterm, ctrmatrix = L, type = parms$df_type, vcov_adj = parms$vcov_adj)))

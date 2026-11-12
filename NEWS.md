@@ -273,9 +273,14 @@
   Satterthwaite df use the Hessian of the REML log-likelihood, as SAS does.
   For the unstructured repeated measures of the SAS reference run, the df
   are 10 to 10.2 as SAS gives, where the residual df (the default for
-  `gls`) are 30. `"Kenward-Roger"` for these models falls back to
-  Satterthwaite with a warning (it is for `lmer` models). The default for
-  `lme` and `gls` is unchanged.
+  `gls`) are 30. `"Kenward-Roger"` and `"KR-SAS"` give Kenward-Roger df,
+  F tests and adjusted standard errors for these models too (numerical
+  derivatives of the data covariance; the second-derivative term is left
+  out, so the result does not depend on nlme's parameterisation and equals
+  SAS DDFM=KR for variance components and unstructured covariances): the
+  SAS run's KR F tests (Time 1616.03 with 9 df) are reproduced, and `lme`
+  equals `lmer`'s Kenward-Roger. The default for `lme` and `gls` is
+  unchanged.
 
 * Equivalence tests: `predictmeans(equivalence = d)` (or
   `c(lower, upper)`) adds `p.equiv` to the `pairs` table, the TOST p-value

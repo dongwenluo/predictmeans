@@ -15,7 +15,7 @@
 #'   \code{DDFM=KR}; see \code{\link{predictmeans}}).}
 #' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
-#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}}{as for \code{lmer} (Satterthwaite df of the
+#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-SAS"}}{as for \code{lmer} (Satterthwaite df of the
 #'   F test, lmerTest's rule).}
 #' \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
 #'   \code{\link{contrastmeans}}).}
@@ -132,7 +132,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
   attr(out, "df_method") <- if (identical(df_method, "KR-SAS") && identical(df_type, "Kenward-Roger")) "KR-SAS" else
-    if (inherits(model, "lmerMod") || any(df_type %in% c("between-within", "Satterthwaite"))) df_type else
+    if (inherits(model, "lmerMod") || any(df_type %in% c("between-within", "Satterthwaite", "Kenward-Roger"))) df_type else
     if (inherits(model, "lme")) "nlme" else "residual"
   if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
   out
@@ -159,7 +159,7 @@ pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df, V
     b <- L %*% beta
     as.numeric(t(b) %*% solve(L %*% Vb %*% t(L), b))
   }
-  if (inherits(model, "lmerMod") && identical(df_type, "Kenward-Roger")) {
+  if (identical(df_type, "Kenward-Roger") && !is.null(attr(vcov_adj, "P"))) {   # lmer, lme, gls
     kr <- pm_kr_ftest(model, L, PhiA = vcov_adj)
     return(unname(c(q, kr["ddf"], kr["stat"], kr["p.value"])))
   }

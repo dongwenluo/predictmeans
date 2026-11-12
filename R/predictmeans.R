@@ -118,7 +118,8 @@
 #'   of a split plot with one plot missing).
 #'   For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
 #'   variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
-#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} falls back to it with a warning; their default stays
+#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-SAS"} give Kenward-Roger df and adjusted
+#'   standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
 #'   \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
 #'   Other choices are ignored for other model classes.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}

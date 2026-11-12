@@ -411,11 +411,11 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
 pm_compare_df <- function(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj) {
       if (length(Df) == 0) {
 
-        if (identical(df_type, "Satterthwaite") && inherits(model, c("lme", "gls"))) {
-          # Satterthwaite df of each mean and each pair (R/satt-nlme.R)
-          pm_df_raw <- pm_satt_ddf(K, vcov_adj)
+        if (inherits(model, c("lme", "gls")) && any(df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
+          # Satterthwaite or Kenward-Roger df of each mean and each pair (R/satt-nlme.R)
+          pm_df_raw <- pm_nlme_df(K, model, df_type, vcov_adj)
           mt$Df <- round(pm_df_raw, 2)
-          Df_diff <- pm_satt_ddf(rK, vcov_adj)
+          Df_diff <- pm_nlme_df(rK, model, df_type, vcov_adj)
           Df <- mean(Df_diff)
           pairDf <- round(Df, 2)
         } else if (identical(df_type, "between-within")) {

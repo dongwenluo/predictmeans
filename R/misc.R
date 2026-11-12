@@ -1255,12 +1255,10 @@ pm_df_method <- function(model, df_method) {
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-SAS")) {
-    # nlme models: Satterthwaite (R/satt-nlme.R); Kenward-Roger only for lmer
-    if (df_method != "Satterthwaite") {
-      warning("Kenward-Roger df are available for lmer models; using Satterthwaite df for this ", class(model)[1],
-              " model.", call. = FALSE)
-    }
-    return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
+    # nlme models (R/satt-nlme.R): Satterthwaite, or Kenward-Roger (expected or, "KR-SAS", observed information)
+    if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
+    return(list(df_type = "Kenward-Roger",
+                vcov_adj = pm_vcov_kr_nlme(model, if (df_method == "KR-SAS") "observed" else "expected")))
   }
   if (!inherits(model, "lmerMod")) {
     if (df_method != "auto") {
