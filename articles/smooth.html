@@ -128,12 +128,12 @@ line.</p>
 <code class="sourceCode R"><span><span class="va">cur</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cur</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    QB pressure        SE     rate        LL       UL</span></span>
-<span><span class="co">#&gt; 1 200    0.235 1.0383106 2.720144 0.6850929 4.755195</span></span>
-<span><span class="co">#&gt; 2 200    0.240 1.0224196 3.029840 1.0259342 5.033745</span></span>
-<span><span class="co">#&gt; 3 200    0.245 1.0080356 3.339669 1.3639555 5.315382</span></span>
-<span><span class="co">#&gt; 4 200    0.250 0.9950326 3.649587 1.6993595 5.599816</span></span>
-<span><span class="co">#&gt; 5 200    0.255 0.9832890 3.959551 2.0323396 5.886762</span></span>
-<span><span class="co">#&gt; 6 200    0.260 0.9726889 4.269514 2.3630789 6.175949</span></span>
+<span><span class="co">#&gt; 1 200    0.235 1.0383105 2.720144 0.6850932 4.755196</span></span>
+<span><span class="co">#&gt; 2 200    0.240 1.0224196 3.029840 1.0259345 5.033745</span></span>
+<span><span class="co">#&gt; 3 200    0.245 1.0080356 3.339669 1.3639558 5.315383</span></span>
+<span><span class="co">#&gt; 4 200    0.250 0.9950326 3.649588 1.6993597 5.599816</span></span>
+<span><span class="co">#&gt; 5 200    0.255 0.9832890 3.959551 2.0323399 5.886762</span></span>
+<span><span class="co">#&gt; 6 200    0.260 0.9726889 4.269514 2.3630792 6.175949</span></span>
 <span><span class="va">cur</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>
 <p>The band is pointwise: at each pressure it covers the true curve with
@@ -147,7 +147,7 @@ curve over its whole range:</p>
 <span><span class="va">crit</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">UL</span> <span class="op">-</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">rate</span><span class="op">)</span> <span class="op">/</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span>, simultaneous <span class="op">=</span> <span class="va">crit</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    pointwise simultaneous </span></span>
-<span><span class="co">#&gt;     1.959964     2.960623</span></span>
+<span><span class="co">#&gt;     1.959964     2.970263</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
 <p>The critical value comes from 10,000 draws of the estimates’

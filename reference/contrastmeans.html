@@ -62,7 +62,8 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">Df</span>, <span class="va">permlist</span>,</span>
 <span>                vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
-<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
+<span>                level<span class="op">=</span><span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -134,6 +135,13 @@ df1, when there is none). Contrasts that are linear combinations of others are d
 of <code>ctrmatrix</code>. With <code>permlist</code>, also a permutation p-value of the joint Wald F statistic, from the same
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is <code>FALSE</code>.</p></dd>
 
+
+<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
+<dd><p>Significance level for the confidence limits of the contrasts (<code>lower.CL</code>, <code>upper.CL</code>); the
+default 0.05 gives 95% limits. They are t limits, or with <code>permlist</code> permutation-t limits: estimate +- c SE,
+with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
+<code>adj</code> "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -194,9 +202,9 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Probabilities will be calculated using ‘10’ Df. </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value df Pr(&gt;|t|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 10   0.4021</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 10   0.0008</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value df Pr(&gt;|t|) lower.CL upper.CL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value &lt; 0.0001."</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -218,9 +226,9 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Probabilities will be calculated using ‘10’ Df. </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value df Pr(&gt;|t|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 10   0.4021</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 10   0.0008</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value df Pr(&gt;|t|) lower.CL upper.CL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value &lt; 0.0001."</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

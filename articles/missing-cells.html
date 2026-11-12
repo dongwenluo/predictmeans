@@ -161,8 +161,10 @@ refuses means that cannot be estimated:</p>
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/specify_contrast.html">specify_contrast</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span>,</span>
 <span>  N_effect_GR_and_M <span class="op">=</span> <span class="op">(</span><span class="va">`0.6:Golden Rain`</span> <span class="op">+</span> <span class="va">`0.6:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span> <span class="op">-</span> <span class="op">(</span><span class="va">`0:Golden Rain`</span> <span class="op">+</span> <span class="va">`0:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                   Estimate Std. Error t value      df Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; N_effect_GR_and_M     42.5     5.4742  7.7637 40.0194        0</span></span>
+<span><span class="co">#&gt;                   Estimate Std. Error t value      df Pr(&gt;|t|) lower.CL</span></span>
+<span><span class="co">#&gt; N_effect_GR_and_M     42.5     5.4742  7.7637 40.0194        0  31.4365</span></span>
+<span><span class="co">#&gt;                   upper.CL</span></span>
+<span><span class="co">#&gt; N_effect_GR_and_M  53.5635</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value &lt; 0.0001."</span></span></code></pre></div>
 </div>

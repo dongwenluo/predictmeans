@@ -57,11 +57,11 @@ linear mixed model of <code>glmer</code> or <code>glmmTMB</code> (also as <code>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">3</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">1</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>         method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"working"</span>, <span class="st">"quantile"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">permglmer</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">3</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
+<span><span class="fu">permglmer</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">1</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>          method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"working"</span>, <span class="st">"quantile"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">permglmmTMB</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">3</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
+<span><span class="fu">permglmmTMB</span><span class="op">(</span><span class="va">lmer0</span>, <span class="va">lmer1</span>, nperm <span class="op">=</span> <span class="fl">999</span>, ncore<span class="op">=</span><span class="fl">1</span>, plot<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">seed</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>            method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"working"</span>, <span class="st">"quantile"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,7 +84,7 @@ linear mixed model of <code>glmer</code> or <code>glmmTMB</code> (also as <code>
 
 
 <dt id="arg-ncore">ncore<a class="anchor" aria-label="anchor" href="#arg-ncore"></a></dt>
-<dd><p>Number of core for parallel computing, the default value is 3.</p></dd>
+<dd><p>Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).</p></dd>
 
 
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>

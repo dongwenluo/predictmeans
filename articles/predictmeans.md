@@ -84,13 +84,13 @@ head(pm$pairs)
 #> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00000
 #> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23076
 #> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23076
-#>    statistic     p.value      p.adj      lsd p.method
-#> 1 -0.6862226 0.497802553         NA 19.83437    tukey
-#> 2  0.8749338 0.388508430         NA 19.83437    tukey
-#> 3  1.5611564 0.128895708         NA 19.83437    tukey
-#> 4 -2.4079299 0.020203579 0.09004252 15.47425    tukey
-#> 5 -1.2180451 0.232628352         NA 19.83437    tukey
-#> 6 -2.7792016 0.009281366         NA 19.83437    tukey
+#>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
+#> 1 -0.6862226 0.497802553         NA -26.501036 13.167703 19.83437    tukey
+#> 2  0.8749338 0.388508430         NA -11.334370 28.334370 19.83437    tukey
+#> 3  1.5611564 0.128895708         NA  -4.667703 35.001036 19.83437    tukey
+#> 4 -2.4079299 0.020203579 0.09004252 -33.974251 -3.025749 15.47425    tukey
+#> 5 -1.2180451 0.232628352         NA -31.667703  8.001036 19.83437    tukey
+#> 6 -2.7792016 0.009281366         NA -46.834370 -7.165630 19.83437    tukey
 ```
 
 The same tables come from
@@ -104,10 +104,10 @@ head(as.data.frame(pm, what = "pairs"), 3)
 #> 1 0:Golden Rain 0:Marvellous <NA> -6.666667   9.71502 30.23076 -0.6862226
 #> 2 0:Golden Rain    0:Victory <NA>  8.500000   9.71502 30.23076  0.8749338
 #> 3  0:Marvellous    0:Victory <NA> 15.166667   9.71502 30.23076  1.5611564
-#>     p.value p.adj      lsd p.method
-#> 1 0.4978026    NA 19.83437    tukey
-#> 2 0.3885084    NA 19.83437    tukey
-#> 3 0.1288957    NA 19.83437    tukey
+#>     p.value p.adj   conf.low conf.high      lsd p.method
+#> 1 0.4978026    NA -26.501036  13.16770 19.83437    tukey
+#> 2 0.3885084    NA -11.334370  28.33437 19.83437    tukey
+#> 3 0.1288957    NA  -4.667703  35.00104 19.83437    tukey
 ```
 
 ## Plots
@@ -181,9 +181,12 @@ cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
     ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`)) / 2)
 contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 #> $`The t tests of the specified contrasts`
-#>                            Estimate Std. Error t value df Pr(>|t|)
-#> N_effect_Victory               47.0     7.6829  6.1174 45   0.0000
-#> N_effect_Victory_vs_others      4.5     9.4097  0.4782 45   0.6348
+#>                            Estimate Std. Error t value df Pr(>|t|) lower.CL
+#> N_effect_Victory               47.0     7.6829  6.1174 45   0.0000  31.5257
+#> N_effect_Victory_vs_others      4.5     9.4097  0.4782 45   0.6348 -14.4520
+#>                            upper.CL
+#> N_effect_Victory            62.4743
+#> N_effect_Victory_vs_others  23.4520
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 #> 

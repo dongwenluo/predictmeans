@@ -230,10 +230,10 @@ means:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span><span class="op">)</span>, <span class="st">"trt.vs.ctrl"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span>, permlist <span class="op">=</span> <span class="va">perm</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt;         Estimate Std. Error t value Permuted Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; 0.2 - 0  19.5000     4.4358  4.3961             0.005</span></span>
-<span><span class="co">#&gt; 0.4 - 0  34.8333     4.4358  7.8529             0.005</span></span>
-<span><span class="co">#&gt; 0.6 - 0  44.0000     4.4358  9.9194             0.005</span></span>
+<span><span class="co">#&gt;         Estimate Std. Error t value Permuted Pr(&gt;|t|) lower.CL upper.CL</span></span>
+<span><span class="co">#&gt; 0.2 - 0  19.5000     4.4358  4.3961             0.005  11.2629  27.7371</span></span>
+<span><span class="co">#&gt; 0.4 - 0  34.8333     4.4358  7.8529             0.005  26.8245  42.8422</span></span>
+<span><span class="co">#&gt; 0.6 - 0  44.0000     4.4358  9.9194             0.005  35.5097  52.4903</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The permuted p-value is obtained using '199' permutations."</span></span></code></pre></div>
 <p>With <code>method = "raw"</code> all pairs use the same refits.
@@ -403,6 +403,88 @@ table then says <code>"bootstrap"</code>:</p>
 <span><span class="co">#&gt; 1 control   drug -0.7382041    0.03 bootstrap</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="unequal-variances-robust-true">Unequal variances: <code>robust = TRUE</code><a class="anchor" aria-label="anchor" href="#unequal-variances-robust-true"></a>
+</h2>
+<p>No permutation scheme repairs a variance model that is wrong: when
+groups have very different error variances and the model assumes them
+equal, the F test and the permutation tests above all reject true null
+hypotheses far too often (about 20% at the 5% level in our simulations
+with group SDs 3, 1, 1). For <code>lm</code>, <code>aov</code> and
+<code>glm</code> models, <code>robust = TRUE</code> uses
+heteroscedasticity-robust (HC3) t and F statistics and flips the signs
+of the reduced model’s residuals at random instead of permuting them (a
+wild bootstrap), so each residual keeps its own variance:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="va">mtcars</span>, cyl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cyl</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fm_mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, robust <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Coefficients of (fixed) effects (robust standard errors):</span></span>
+<span><span class="co">#&gt;             Estimate Robust SE t value Perm_p_value</span></span>
+<span><span class="co">#&gt; (Intercept)  33.9908    2.1414 15.8734           NA</span></span>
+<span><span class="co">#&gt; wt           -3.2056    0.7548 -4.2467        0.001</span></span>
+<span><span class="co">#&gt; cyl6         -4.2556    1.2893 -3.3007        0.003</span></span>
+<span><span class="co">#&gt; cyl8         -6.0709    1.6077 -3.7761        0.004</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ANOVA:</span></span>
+<span><span class="co">#&gt; Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)</span></span>
+<span><span class="co">#&gt;     Df F value Perm_p_value</span></span>
+<span><span class="co">#&gt; wt   1 18.0348        0.001</span></span>
+<span><span class="co">#&gt; cyl  2  7.1814        0.007</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).</span></span></code></pre></div>
+<p>Pairs and contrasts from this result use the robust statistics and
+robust standard errors. For mixed models, model the variances instead
+(e.g. <code>lme(..., weights = varIdent())</code>) and use
+<code><a href="../reference/permmodels.html">permmodels()</a></code> on that model.</p>
+</div>
+<div class="section level2">
+<h2 id="more-from-the-permutations-permstats-and-permcombine">More from the permutations: <code>permstats()</code> and
+<code>permcombine()</code><a class="anchor" aria-label="anchor" href="#more-from-the-permutations-permstats-and-permcombine"></a>
+</h2>
+<p><code><a href="../reference/permmodels.html">permmodels()</a></code> keeps the permuted statistics.
+<code><a href="../reference/permstats.html">permstats()</a></code> turns them into a standardised effect size for
+each term and coefficient, and checks the parametric test against them:
+<code>param.size</code> is the proportion of permuted data sets (in
+which the term has no effect) where the parametric test rejects at
+<code>level</code>. Near <code>level</code>, the parametric test suits
+these data; well above it, its p-values are too small here.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_mpg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">p_mpg</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           statistic df1 df2      p.param p.perm       ses param.size</span></span>
+<span><span class="co">#&gt; wt        18.080056   1  28 0.0002130435  0.001 11.695665 0.04904905</span></span>
+<span><span class="co">#&gt; cyl        7.285567   2  28 0.0028353022  0.005  4.622323 0.05705706</span></span>
+<span><span class="co">#&gt; coef:wt    4.252065   1  28 0.0002130435  0.001  5.599425 0.04904905</span></span>
+<span><span class="co">#&gt; coef:cyl6  3.070244   1  28 0.0047178339  0.009  3.291703 0.05905906</span></span>
+<span><span class="co">#&gt; coef:cyl8  3.674214   1  28 0.0009991893  0.003  4.186066 0.05405405</span></span></code></pre></div>
+<p>When the same model is fitted to several responses measured on the
+same units (traits, time points), results made with the same
+permutations (same rows, <code>seed</code> and <code>nperm</code>) can
+be combined. <code><a href="../reference/permcombine.html">permcombine()</a></code> gives, for each term, one
+p-value for “no effect on any response” (Fisher’s or Tippett’s
+combination; Pesarin and Salmaso 2010) and p-values adjusted for testing
+every response (min-p; Westfall and Young 1993). The responses’
+correlation is kept by the shared permutations, without a multivariate
+model.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_qsec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                     prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permcombine.html">permcombine</a></span><span class="op">(</span>mpg <span class="op">=</span> <span class="va">p_mpg</span>, qsec <span class="op">=</span> <span class="va">p_qsec</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             mpg  qsec combined adj.mpg adj.qsec</span></span>
+<span><span class="co">#&gt; wt        0.001 0.002    0.001   0.002    0.003</span></span>
+<span><span class="co">#&gt; cyl       0.005 0.002    0.002   0.008    0.004</span></span>
+<span><span class="co">#&gt; coef:wt   0.001 0.002    0.001   0.002    0.003</span></span>
+<span><span class="co">#&gt; coef:cyl6 0.009 0.002    0.002   0.016    0.003</span></span>
+<span><span class="co">#&gt; coef:cyl8 0.003 0.002    0.003   0.004    0.003</span></span></code></pre></div>
+<p>For many comparisons within one response, such as a treatment
+difference at each of several time points,
+<code>contrastmeans(..., permlist = , adj = "westfall")</code> gives the
+max-statistic (step-down max-|t|) adjustment over the time points.</p>
+</div>
+<div class="section level2">
 <h2 id="which-to-use">Which to use<a class="anchor" aria-label="anchor" href="#which-to-use"></a>
 </h2>
 <table class="table">
@@ -458,6 +540,22 @@ responses</td>
 test</td>
 <td></td>
 </tr>
+<tr class="even">
+<td>
+<code>lm</code>, <code>glm</code> with unequal variances</td>
+<td>
+<code>permmodels(robust = TRUE)</code> (HC3 statistics, sign
+flips)</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>several responses, same units</td>
+<td>
+<code><a href="../reference/permcombine.html">permcombine()</a></code> of <code><a href="../reference/permmodels.html">permmodels()</a></code> results with
+the same <code>seed</code>
+</td>
+<td></td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -476,6 +574,13 @@ power of each scheme (in the package sources:
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
+<p>Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at
+last. <em>Journal of Econometrics</em> 146, 162–169.</p>
+<p>DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests
+for correlation and regression coefficients. <em>Journal of the American
+Statistical Association</em> 112, 1211–1220.</p>
+<p>Pesarin, F. and Salmaso, L. (2010). <em>Permutation Tests for Complex
+Data: Theory, Applications and Software</em>. Wiley.</p>
 <p>Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
 permutation methods for tests of partial regression coefficients in a
 linear model. <em>Journal of Statistical Computation and Simulation</em>

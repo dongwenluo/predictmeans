@@ -7,11 +7,11 @@ model of `lmer`, and in a generalized linear mixed model of `glmer` or
 ## Usage
 
 ``` r
-permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permlmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
          method=c("auto", "working", "quantile"))
-permglmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permglmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
           method=c("auto", "working", "quantile"))
-permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permglmmTMB(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
             method=c("auto", "working", "quantile"))
 ```
 
@@ -33,7 +33,8 @@ permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
 
 - ncore:
 
-  Number of core for parallel computing, the default value is 3.
+  Number of cores for parallel computing, the default value is 1 (before
+  predictmeans 2.0: 3).
 
 - plot:
 

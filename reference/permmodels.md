@@ -9,8 +9,8 @@ effects and permutation F-tests for the terms in a linear model such as
 ``` r
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-  refit=TRUE)
+  fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+  refit=TRUE, robust=FALSE)
 ```
 
 ## Arguments
@@ -60,7 +60,8 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 - ncore:
 
-  Number of core for parallel computing, the default value is 3.
+  Number of cores for parallel computing, the default value is 1 (before
+  predictmeans 2.0: 3).
 
 - seed:
 
@@ -90,8 +91,35 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   model): refit the model to each permuted data set (the default), so
   the variance parameters are estimated again each time. `FALSE` holds
   the covariance of the data at the fit (no refits, much faster), which
-  rejects slightly too often when the variance parameters rest on few
-  units (e.g. whole plots of a split plot with few blocks).
+  rejects too often when the variance parameters rest on few units. In a
+  simulation (test of the whole-plot factor of a split plot, true null,
+  5% level) `refit = FALSE` rejected 8.6%, 7.2%, 6.0% and 5.6% with 6,
+  12, 24 and 48 blocks (whole-plot error df 15, 33, 69 and 141), and
+  refits 5.0%, 6.2%, 5.4% and 4.6% (Kenward-Roger 4.6% to 6.4%); at the
+  1% level `refit = FALSE` rejected up to 2.8%. So `refit = FALSE` suits
+  a quick look, or a final test when the error df of the tested terms
+  exceed about 100; otherwise keep the refits (for 199 permutations of
+  the split plot's three terms on one core: 8 s with 6 blocks, 25 s with
+  48).
+
+- robust:
+
+  For `lm`, `aov` and `glm` models with `method = "freedman-lane"`:
+  tests for error variances that are unequal while the model assumes
+  them equal. The statistics are heteroscedasticity-robust (HC3
+  sandwich) t and Wald F statistics (DiCiccio and Romano, 2017), and the
+  signs of the reduced model's residuals are flipped at random instead
+  of permuted (a wild bootstrap; Davidson and Flachaire, 2008), so each
+  residual stays with its own unit and keeps its variance. In a
+  simulation with group SDs 3, 1, 1 (2000 data sets per case) the usual
+  and permutation F tests rejected 19-24% of true null hypotheses at the
+  5% level, these tests 5-7% (normal errors) or about 9% (strongly
+  skewed errors, against 11-14% for the HC3 F test), and 5.4% with equal
+  variances. The tables show the robust statistics; pairs and contrasts
+  from the result use them too (robust t, and confidence limits from
+  robust standard errors). Type II tests match
+  `car::Anova(model, type = "II", white.adjust = "hc3")`. Not with
+  `perms`. The default is `FALSE`.
 
 ## Value
 
@@ -189,6 +217,13 @@ as for `lm`. For `glmer` and `glmmTMB` models only
 
 ## References
 
+Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at
+last. *Journal of Econometrics*, 146, 162-169.
+
+DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for
+correlation and regression coefficients. *Journal of the American
+Statistical Association*, 112, 1211-1220.
+
 Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
 permutation methods for tests of partial regression coefficients in a
 linear model. *Journal of Statistical Computation and Simulation*, 62,
@@ -259,21 +294,21 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 9.715028 7.682958 9.160827 
+#> 9.715030 7.682956 9.160828 
 #> attr(,"For the Same Level of Factor")
-#>             nitro  Variety
-#> Aveg.SED 9.715028 7.682958
-#> Min.SED  9.715028 7.682958
-#> Max.SED  9.715028 7.682958
+#>            nitro  Variety
+#> Aveg.SED 9.71503 7.682956
+#> Min.SED  9.71503 7.682956
+#> Max.SED  9.71503 7.682956
 #> 
 #> $`Approximated LSD`
 #>  Max.LSD  Min.LSD Aveg.LSD 
-#> 19.43006 15.36592 18.32165 
+#> 19.43006 15.36591 18.32166 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.LSD 19.43006 15.36592
-#> Min.LSD  19.43006 15.36592
-#> Max.LSD  19.43006 15.36592
+#> Aveg.LSD 19.43006 15.36591
+#> Min.LSD  19.43006 15.36591
+#> Max.LSD  19.43006 15.36591
 #> attr(,"Note")
 #> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
 #> 
@@ -306,15 +341,15 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
 #> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  
 #> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C
-#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C
-#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4527 132.8806         C
+#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0473         C
+#> 2   Marvellous     0  86.6667 9.10696 NA  68.4527 104.8806       A  
 #> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B 
-#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC
-#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9527 135.3806        BC
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0473         C
 #> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  
-#> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B 
-#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C
+#> 6      Victory   0.2  89.6667 9.10696 NA  71.4527 107.8806        B 
+#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0473         C
 #> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C
 #> 
 #> $mean_table$Note
@@ -327,9 +362,9 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 #> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value Permuted Pr(>|t|)
-#> [1,]  -8.5000      9.715 -0.8749              0.37
-#> [2,] -45.6667      9.715 -4.7006              0.01
+#>      Estimate Std. Error t value Permuted Pr(>|t|) lower.CL upper.CL
+#> [1,]  -8.5000      9.715 -0.8749              0.37 -31.6879  14.6879
+#> [2,] -45.6667      9.715 -4.7006              0.01 -68.1443 -23.1890
 #> attr(,"Note")
 #> [1] "The permuted p-value is obtained using ‘99’ permutations."
 #> 
@@ -436,12 +471,32 @@ predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
 #>  The predicted means are estimated at 
 #>     wt 
 #> 3.2172 
-#>   level1 level2 estimate std.error df statistic p.value p.adj      lsd
-#> 1      4      6 4.255582  1.386073 NA  3.070244   0.009 0.009 2.772146
-#> 2      4      8 6.070860  1.652288 NA  3.674214   0.003 0.003 3.304576
-#> 3      6      8 1.815277  1.357634 NA  1.337089   0.185 0.185 2.715268
-#>      p.method
-#> 1 permutation
-#> 2 permutation
-#> 3 permutation
+#>   level1 level2 estimate std.error df statistic p.value p.adj  conf.low
+#> 1      4      6 4.255582  1.386073 NA  3.070244   0.009 0.009  1.281825
+#> 2      4      8 6.070860  1.652288 NA  3.674214   0.003 0.003  2.625644
+#> 3      6      8 1.815277  1.357634 NA  1.337089   0.185 0.185 -1.036960
+#>   conf.high      lsd    p.method
+#> 1  7.229339 2.973757 permutation
+#> 2  9.516075 3.445215 permutation
+#> 3  4.667515 2.852238 permutation
+## Robust (HC3) statistics, for error variances that differ between the cyl groups
+permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
+#> 
+#> Coefficients of (fixed) effects (robust standard errors):
+#>             Estimate Robust SE t value Perm_p_value
+#> (Intercept)  33.9908    2.1414 15.8734           NA
+#> wt           -3.2056    0.7548 -4.2467        0.001
+#> cyl6         -4.2556    1.2893 -3.3007        0.003
+#> cyl8         -6.0709    1.6077 -3.7761        0.004
+#> 
+#> Note: Perm_p_value of robust t test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> 
+#> ANOVA:
+#> Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)
+#>     Df F value Perm_p_value
+#> wt   1 18.0348        0.001
+#> cyl  2  7.1814        0.007
+#> 
+#> Note: Perm_p_value of robust F test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> 
 ```

@@ -170,10 +170,10 @@ and for contrasts:
 
 cm <- contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl")
 contrastmeans(fm, "nitro", ctrmatrix = cm, permlist = perm)[[1]]
-#>         Estimate Std. Error t value Permuted Pr(>|t|)
-#> 0.2 - 0  19.5000     4.4358  4.3961             0.005
-#> 0.4 - 0  34.8333     4.4358  7.8529             0.005
-#> 0.6 - 0  44.0000     4.4358  9.9194             0.005
+#>         Estimate Std. Error t value Permuted Pr(>|t|) lower.CL upper.CL
+#> 0.2 - 0  19.5000     4.4358  4.3961             0.005  11.2629  27.7371
+#> 0.4 - 0  34.8333     4.4358  7.8529             0.005  26.8245  42.8422
+#> 0.6 - 0  44.0000     4.4358  9.9194             0.005  35.5097  52.4903
 #> attr(,"Note")
 #> [1] "The permuted p-value is obtained using '199' permutations."
 ```
@@ -374,6 +374,100 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 #> 1 control   drug -0.7382041    0.03 bootstrap
 ```
 
+## Unequal variances: `robust = TRUE`
+
+No permutation scheme repairs a variance model that is wrong: when
+groups have very different error variances and the model assumes them
+equal, the F test and the permutation tests above all reject true null
+hypotheses far too often (about 20% at the 5% level in our simulations
+with group SDs 3, 1, 1). For `lm`, `aov` and `glm` models,
+`robust = TRUE` uses heteroscedasticity-robust (HC3) t and F statistics
+and flips the signs of the reduced model’s residuals at random instead
+of permuting them (a wild bootstrap), so each residual keeps its own
+variance:
+
+``` r
+
+mt <- transform(mtcars, cyl = factor(cyl))
+fm_mt <- lm(mpg ~ wt + cyl, data = mt)
+permmodels(fm_mt, nperm = 999, type = "II", seed = 1, robust = TRUE)
+#> 
+#> Coefficients of (fixed) effects (robust standard errors):
+#>             Estimate Robust SE t value Perm_p_value
+#> (Intercept)  33.9908    2.1414 15.8734           NA
+#> wt           -3.2056    0.7548 -4.2467        0.001
+#> cyl6         -4.2556    1.2893 -3.3007        0.003
+#> cyl8         -6.0709    1.6077 -3.7761        0.004
+#> 
+#> Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> 
+#> ANOVA:
+#> Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)
+#>     Df F value Perm_p_value
+#> wt   1 18.0348        0.001
+#> cyl  2  7.1814        0.007
+#> 
+#> Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).
+```
+
+Pairs and contrasts from this result use the robust statistics and
+robust standard errors. For mixed models, model the variances instead
+(e.g. `lme(..., weights = varIdent())`) and use
+[`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+on that model.
+
+## More from the permutations: `permstats()` and `permcombine()`
+
+[`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+keeps the permuted statistics.
+[`permstats()`](https://dongwenluo.github.io/predictmeans/reference/permstats.md)
+turns them into a standardised effect size for each term and
+coefficient, and checks the parametric test against them: `param.size`
+is the proportion of permuted data sets (in which the term has no
+effect) where the parametric test rejects at `level`. Near `level`, the
+parametric test suits these data; well above it, its p-values are too
+small here.
+
+``` r
+
+p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1, prt = FALSE)
+permstats(p_mpg)
+#>           statistic df1 df2      p.param p.perm       ses param.size
+#> wt        18.080056   1  28 0.0002130435  0.001 11.695665 0.04904905
+#> cyl        7.285567   2  28 0.0028353022  0.005  4.622323 0.05705706
+#> coef:wt    4.252065   1  28 0.0002130435  0.001  5.599425 0.04904905
+#> coef:cyl6  3.070244   1  28 0.0047178339  0.009  3.291703 0.05905906
+#> coef:cyl8  3.674214   1  28 0.0009991893  0.003  4.186066 0.05405405
+```
+
+When the same model is fitted to several responses measured on the same
+units (traits, time points), results made with the same permutations
+(same rows, `seed` and `nperm`) can be combined.
+[`permcombine()`](https://dongwenluo.github.io/predictmeans/reference/permcombine.md)
+gives, for each term, one p-value for “no effect on any response”
+(Fisher’s or Tippett’s combination; Pesarin and Salmaso 2010) and
+p-values adjusted for testing every response (min-p; Westfall and Young
+1993). The responses’ correlation is kept by the shared permutations,
+without a multivariate model.
+
+``` r
+
+p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1,
+                     prt = FALSE)
+permcombine(mpg = p_mpg, qsec = p_qsec)
+#>             mpg  qsec combined adj.mpg adj.qsec
+#> wt        0.001 0.002    0.001   0.002    0.003
+#> cyl       0.005 0.002    0.002   0.008    0.004
+#> coef:wt   0.001 0.002    0.001   0.002    0.003
+#> coef:cyl6 0.009 0.002    0.002   0.016    0.003
+#> coef:cyl8 0.003 0.002    0.003   0.004    0.003
+```
+
+For many comparisons within one response, such as a treatment difference
+at each of several time points,
+`contrastmeans(..., permlist = , adj = "westfall")` gives the
+max-statistic (step-down max-\|t\|) adjustment over the time points.
+
 ## Which to use
 
 | Model | Terms, coefficients, pairs, contrasts | Random effects, nested models |
@@ -383,6 +477,8 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 | `lmer`, `lme`, `gls` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane with refits); or the Kenward–Roger F test | [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md) |
 | `glmer`, `glmmTMB` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane on the working scale, with refits) | [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md): working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test |  |
+| `lm`, `glm` with unequal variances | `permmodels(robust = TRUE)` (HC3 statistics, sign flips) |  |
+| several responses, same units | [`permcombine()`](https://dongwenluo.github.io/predictmeans/reference/permcombine.md) of [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) results with the same `seed` |  |
 
 - With large samples and well-behaved residuals the F and t tests (with
   Kenward–Roger df for `lmer`) agree closely with these, at a fraction
@@ -395,6 +491,16 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
   `dev/sim-study/`).
 
 ## References
+
+Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at
+last. *Journal of Econometrics* 146, 162–169.
+
+DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for
+correlation and regression coefficients. *Journal of the American
+Statistical Association* 112, 1211–1220.
+
+Pesarin, F. and Salmaso, L. (2010). *Permutation Tests for Complex Data:
+Theory, Applications and Software*. Wiley.
 
 Anderson, M. J. and Legendre, P. (1999). An empirical comparison of
 permutation methods for tests of partial regression coefficients in a

@@ -76,10 +76,10 @@ dunnett
 ``` r
 
 contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
-#>         Estimate Std. Error t value df Pr(>|t|)
-#> 0.2 - 0  19.5000     4.4358  4.3961 45    2e-04
-#> 0.4 - 0  34.8333     4.4358  7.8529 45    0e+00
-#> 0.6 - 0  44.0000     4.4358  9.9194 45    0e+00
+#>         Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
+#> 0.2 - 0  19.5000     4.4358  4.3961 45    2e-04  10.5659  28.4341
+#> 0.4 - 0  34.8333     4.4358  7.8529 45    0e+00  25.8993  43.7674
+#> 0.6 - 0  44.0000     4.4358  9.9194 45    0e+00  35.0659  52.9341
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value < 0.0001."
 ```
@@ -93,13 +93,20 @@ equally spaced):
 K2 <- Kmatrix(fm, "N:Variety")
 trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
 contrastmeans(fm, "N:Variety", ctrmatrix = trends)[[1]]
-#>                        Estimate Std. Error t value df Pr(>|t|)
-#> Golden Rain: linear    150.6667    24.2956  6.2014 45   0.0000
-#> Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45   0.4471
-#> Marvellous: linear     129.1667    24.2956  5.3165 45   0.0000
-#> Marvellous: quadratic  -12.1667    10.8653 -1.1198 45   0.2688
-#> Victory: linear        162.1667    24.2956  6.6747 45   0.0000
-#> Victory: quadratic     -10.5000    10.8653 -0.9664 45   0.3390
+#>                        Estimate Std. Error t value df Pr(>|t|) lower.CL
+#> Golden Rain: linear    150.6667    24.2956  6.2014 45   0.0000 101.7328
+#> Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45   0.4471 -30.2172
+#> Marvellous: linear     129.1667    24.2956  5.3165 45   0.0000  80.2328
+#> Marvellous: quadratic  -12.1667    10.8653 -1.1198 45   0.2688 -34.0506
+#> Victory: linear        162.1667    24.2956  6.6747 45   0.0000 113.2328
+#> Victory: quadratic     -10.5000    10.8653 -0.9664 45   0.3390 -32.3839
+#>                        upper.CL
+#> Golden Rain: linear    199.6005
+#> Golden Rain: quadratic  13.5506
+#> Marvellous: linear     178.1005
+#> Marvellous: quadratic    9.7172
+#> Victory: linear        211.1005
+#> Victory: quadratic      11.3839
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 ```

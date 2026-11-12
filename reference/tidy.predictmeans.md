@@ -116,13 +116,13 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00000
 #> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23076
 #> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23076
-#>    statistic     p.value      p.adj      lsd p.method
-#> 1 -0.6862226 0.497802553         NA 19.83437    tukey
-#> 2  0.8749338 0.388508430         NA 19.83437    tukey
-#> 3  1.5611564 0.128895708         NA 19.83437    tukey
-#> 4 -2.4079299 0.020203579 0.09004252 15.47425    tukey
-#> 5 -1.2180451 0.232628352         NA 19.83437    tukey
-#> 6 -2.7792016 0.009281366         NA 19.83437    tukey
+#>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
+#> 1 -0.6862226 0.497802553         NA -26.501036 13.167703 19.83437    tukey
+#> 2  0.8749338 0.388508430         NA -11.334370 28.334370 19.83437    tukey
+#> 3  1.5611564 0.128895708         NA  -4.667703 35.001036 19.83437    tukey
+#> 4 -2.4079299 0.020203579 0.09004252 -33.974251 -3.025749 15.47425    tukey
+#> 5 -1.2180451 0.232628352         NA -31.667703  8.001036 19.83437    tukey
+#> 6 -2.7792016 0.009281366         NA -46.834370 -7.165630 19.83437    tukey
 
   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
   b <- coef(pm)

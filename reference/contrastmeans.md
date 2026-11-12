@@ -9,7 +9,8 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+                level=0.05)
 ```
 
 ## Arguments
@@ -102,6 +103,16 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   Wald F statistic, from the same permutations (for Freedman-Lane, the
   model with all the contrasts zero). The default is `FALSE`.
 
+- level:
+
+  Significance level for the confidence limits of the contrasts
+  (`lower.CL`, `upper.CL`); the default 0.05 gives 95% limits. They are
+  t limits, or with `permlist` permutation-t limits: estimate +- c SE,
+  with c the critical value of the permutation test (the k-th largest
+  permuted \|t\|, k = floor(level (nperm + 1))); with `adj` "mvt" or
+  "westfall" c comes from the largest \|t\| of the contrasts, so the
+  limits are simultaneous.
+
 ## Value
 
 There are two components in the output which are
@@ -166,9 +177,9 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 #>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .
 #>  Probabilities will be calculated using ‘10’ Df. 
 #> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value df Pr(>|t|)
-#> [1,]  -8.5000      9.715 -0.8749 10   0.4021
-#> [2,] -45.6667      9.715 -4.7006 10   0.0008
+#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
+#> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464
+#> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
@@ -190,9 +201,9 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .
 #>  Probabilities will be calculated using ‘10’ Df. 
 #> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value df Pr(>|t|)
-#> [1,]  -8.5000      9.715 -0.8749 10   0.4021
-#> [2,] -45.6667      9.715 -4.7006 10   0.0008
+#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
+#> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464
+#> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 

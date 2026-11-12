@@ -158,25 +158,25 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
 
 #>        Variety xvar      ses      Mean        LL        UL     factors
-#> 1  Golden Rain  0.0 8.570716  81.90000  62.80325 100.99675 Golden Rain
-#> 2  Golden Rain  0.1 8.150210  89.43333  71.27353 107.59313 Golden Rain
-#> 3  Golden Rain  0.2 7.887152  96.96667  79.39300 114.54034 Golden Rain
-#> 4  Golden Rain  0.3 7.797494 104.50000  87.12610 121.87390 Golden Rain
-#> 5  Golden Rain  0.4 7.887152 112.03333  94.45966 129.60700 Golden Rain
-#> 6  Golden Rain  0.5 8.150210 119.56667 101.40687 137.72647 Golden Rain
-#> 7  Golden Rain  0.6 8.570716 127.10000 108.00325 146.19675 Golden Rain
-#> 8   Marvellous  0.0 8.570716  90.41667  71.31992 109.51341  Marvellous
-#> 9   Marvellous  0.1 8.150210  96.87500  78.71520 115.03480  Marvellous
-#> 10  Marvellous  0.2 7.887152 103.33333  85.75966 120.90700  Marvellous
-#> 11  Marvellous  0.3 7.797494 109.79167  92.41777 127.16557  Marvellous
-#> 12  Marvellous  0.4 7.887152 116.25000  98.67633 133.82367  Marvellous
-#> 13  Marvellous  0.5 8.150210 122.70833 104.54853 140.86813  Marvellous
-#> 14  Marvellous  0.6 8.570716 129.16667 110.06992 148.26341  Marvellous
-#> 15     Victory  0.0 8.570716  73.30000  54.20325  92.39675     Victory
-#> 16     Victory  0.1 8.150210  81.40833  63.24853  99.56813     Victory
-#> 17     Victory  0.2 7.887152  89.51667  71.94300 107.09034     Victory
-#> 18     Victory  0.3 7.797494  97.62500  80.25110 114.99890     Victory
-#> 19     Victory  0.4 7.887152 105.73333  88.15966 123.30700     Victory
-#> 20     Victory  0.5 8.150210 113.84167  95.68187 132.00147     Victory
-#> 21     Victory  0.6 8.570716 121.95000 102.85325 141.04675     Victory
+#> 1  Golden Rain  0.0 8.570714  81.90000  62.80326 100.99674 Golden Rain
+#> 2  Golden Rain  0.1 8.150208  89.43333  71.27354 107.59313 Golden Rain
+#> 3  Golden Rain  0.2 7.887150  96.96667  79.39300 114.54033 Golden Rain
+#> 4  Golden Rain  0.3 7.797492 104.50000  87.12611 121.87389 Golden Rain
+#> 5  Golden Rain  0.4 7.887150 112.03333  94.45967 129.60700 Golden Rain
+#> 6  Golden Rain  0.5 8.150208 119.56667 101.40687 137.72646 Golden Rain
+#> 7  Golden Rain  0.6 8.570714 127.10000 108.00326 146.19674 Golden Rain
+#> 8   Marvellous  0.0 8.570714  90.41667  71.31993 109.51341  Marvellous
+#> 9   Marvellous  0.1 8.150208  96.87500  78.71521 115.03479  Marvellous
+#> 10  Marvellous  0.2 7.887150 103.33333  85.75967 120.90700  Marvellous
+#> 11  Marvellous  0.3 7.797492 109.79167  92.41777 127.16556  Marvellous
+#> 12  Marvellous  0.4 7.887150 116.25000  98.67634 133.82366  Marvellous
+#> 13  Marvellous  0.5 8.150208 122.70833 104.54854 140.86813  Marvellous
+#> 14  Marvellous  0.6 8.570714 129.16667 110.06993 148.26341  Marvellous
+#> 15     Victory  0.0 8.570714  73.30000  54.20326  92.39674     Victory
+#> 16     Victory  0.1 8.150208  81.40833  63.24854  99.56813     Victory
+#> 17     Victory  0.2 7.887150  89.51667  71.94300 107.09033     Victory
+#> 18     Victory  0.3 7.797492  97.62500  80.25111 114.99889     Victory
+#> 19     Victory  0.4 7.887150 105.73333  88.15967 123.30700     Victory
+#> 20     Victory  0.5 8.150208 113.84167  95.68187 132.00146     Victory
+#> 21     Victory  0.6 8.570714 121.95000 102.85326 141.04674     Victory
 ```

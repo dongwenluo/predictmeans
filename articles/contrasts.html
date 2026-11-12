@@ -141,10 +141,10 @@ the exact Dunnett adjustment:</p>
 <span><span class="co">#&gt; 0.6 - 0 -1   0   0   1</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="va">dunnett</span>, adj <span class="op">=</span> <span class="st">"mvt"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt;         Estimate Std. Error t value df Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; 0.2 - 0  19.5000     4.4358  4.3961 45    2e-04</span></span>
-<span><span class="co">#&gt; 0.4 - 0  34.8333     4.4358  7.8529 45    0e+00</span></span>
-<span><span class="co">#&gt; 0.6 - 0  44.0000     4.4358  9.9194 45    0e+00</span></span>
+<span><span class="co">#&gt;         Estimate Std. Error t value df Pr(&gt;|t|) lower.CL upper.CL</span></span>
+<span><span class="co">#&gt; 0.2 - 0  19.5000     4.4358  4.3961 45    2e-04  10.5659  28.4341</span></span>
+<span><span class="co">#&gt; 0.4 - 0  34.8333     4.4358  7.8529 45    0e+00  25.8993  43.7674</span></span>
+<span><span class="co">#&gt; 0.6 - 0  44.0000     4.4358  9.9194 45    0e+00  35.0659  52.9341</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value &lt; 0.0001."</span></span></code></pre></div>
 <p>Linear and quadratic trends in nitrogen within each variety
@@ -154,13 +154,20 @@ nitrogen levels are equally spaced):</p>
 <code class="sourceCode R"><span><span class="va">K2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span></span>
 <span><span class="va">trends</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K2</span>, <span class="st">"poly"</span>, by <span class="op">=</span> <span class="st">"Variety"</span>, max.degree <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">trends</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                        Estimate Std. Error t value df Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; Golden Rain: linear    150.6667    24.2956  6.2014 45   0.0000</span></span>
-<span><span class="co">#&gt; Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45   0.4471</span></span>
-<span><span class="co">#&gt; Marvellous: linear     129.1667    24.2956  5.3165 45   0.0000</span></span>
-<span><span class="co">#&gt; Marvellous: quadratic  -12.1667    10.8653 -1.1198 45   0.2688</span></span>
-<span><span class="co">#&gt; Victory: linear        162.1667    24.2956  6.6747 45   0.0000</span></span>
-<span><span class="co">#&gt; Victory: quadratic     -10.5000    10.8653 -0.9664 45   0.3390</span></span>
+<span><span class="co">#&gt;                        Estimate Std. Error t value df Pr(&gt;|t|) lower.CL</span></span>
+<span><span class="co">#&gt; Golden Rain: linear    150.6667    24.2956  6.2014 45   0.0000 101.7328</span></span>
+<span><span class="co">#&gt; Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45   0.4471 -30.2172</span></span>
+<span><span class="co">#&gt; Marvellous: linear     129.1667    24.2956  5.3165 45   0.0000  80.2328</span></span>
+<span><span class="co">#&gt; Marvellous: quadratic  -12.1667    10.8653 -1.1198 45   0.2688 -34.0506</span></span>
+<span><span class="co">#&gt; Victory: linear        162.1667    24.2956  6.6747 45   0.0000 113.2328</span></span>
+<span><span class="co">#&gt; Victory: quadratic     -10.5000    10.8653 -0.9664 45   0.3390 -32.3839</span></span>
+<span><span class="co">#&gt;                        upper.CL</span></span>
+<span><span class="co">#&gt; Golden Rain: linear    199.6005</span></span>
+<span><span class="co">#&gt; Golden Rain: quadratic  13.5506</span></span>
+<span><span class="co">#&gt; Marvellous: linear     178.1005</span></span>
+<span><span class="co">#&gt; Marvellous: quadratic    9.7172</span></span>
+<span><span class="co">#&gt; Victory: linear        211.1005</span></span>
+<span><span class="co">#&gt; Victory: quadratic      11.3839</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value &lt; 0.0001."</span></span></code></pre></div>
 <p><code><a href="../reference/specify_contrast.html">specify_contrast()</a></code> (see the getting-started vignette)

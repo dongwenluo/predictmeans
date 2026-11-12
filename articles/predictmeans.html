@@ -155,13 +155,13 @@ frames, so they are easy to filter, join or export.</p>
 <span><span class="co">#&gt; 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00000</span></span>
 <span><span class="co">#&gt; 5  0:Marvellous 0.2:Golden Rain        &lt;NA&gt; -11.833333  9.715020 30.23076</span></span>
 <span><span class="co">#&gt; 6     0:Victory 0.2:Golden Rain        &lt;NA&gt; -27.000000  9.715020 30.23076</span></span>
-<span><span class="co">#&gt;    statistic     p.value      p.adj      lsd p.method</span></span>
-<span><span class="co">#&gt; 1 -0.6862226 0.497802553         NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 2  0.8749338 0.388508430         NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 3  1.5611564 0.128895708         NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 4 -2.4079299 0.020203579 0.09004252 15.47425    tukey</span></span>
-<span><span class="co">#&gt; 5 -1.2180451 0.232628352         NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 6 -2.7792016 0.009281366         NA 19.83437    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;    statistic     p.value      p.adj   conf.low conf.high      lsd p.method</span></span>
+<span><span class="co">#&gt; 1 -0.6862226 0.497802553         NA -26.501036 13.167703 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 2  0.8749338 0.388508430         NA -11.334370 28.334370 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 3  1.5611564 0.128895708         NA  -4.667703 35.001036 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 4 -2.4079299 0.020203579 0.09004252 -33.974251 -3.025749 15.47425    tukey</span></span>
+<span><span class="co">#&gt; 5 -1.2180451 0.232628352         NA -31.667703  8.001036 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 6 -2.7792016 0.009281366         NA -46.834370 -7.165630 19.83437    tukey</span></span></code></pre></div>
 <p>The same tables come from <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or, with the
 generics package, <code>tidy()</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -170,10 +170,10 @@ generics package, <code>tidy()</code>:</p>
 <span><span class="co">#&gt; 1 0:Golden Rain 0:Marvellous &lt;NA&gt; -6.666667   9.71502 30.23076 -0.6862226</span></span>
 <span><span class="co">#&gt; 2 0:Golden Rain    0:Victory &lt;NA&gt;  8.500000   9.71502 30.23076  0.8749338</span></span>
 <span><span class="co">#&gt; 3  0:Marvellous    0:Victory &lt;NA&gt; 15.166667   9.71502 30.23076  1.5611564</span></span>
-<span><span class="co">#&gt;     p.value p.adj      lsd p.method</span></span>
-<span><span class="co">#&gt; 1 0.4978026    NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 2 0.3885084    NA 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 3 0.1288957    NA 19.83437    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;     p.value p.adj   conf.low conf.high      lsd p.method</span></span>
+<span><span class="co">#&gt; 1 0.4978026    NA -26.501036  13.16770 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 2 0.3885084    NA -11.334370  28.33437 19.83437    tukey</span></span>
+<span><span class="co">#&gt; 3 0.1288957    NA  -4.667703  35.00104 19.83437    tukey</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="plots">Plots<a class="anchor" aria-label="anchor" href="#plots"></a>
@@ -232,9 +232,12 @@ means; <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code
 <span>    <span class="op">(</span><span class="op">(</span><span class="va">`0.6:Golden Rain`</span> <span class="op">-</span> <span class="va">`0:Golden Rain`</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">`0.6:Marvellous`</span> <span class="op">-</span> <span class="va">`0:Marvellous`</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $`The t tests of the specified contrasts`</span></span>
-<span><span class="co">#&gt;                            Estimate Std. Error t value df Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; N_effect_Victory               47.0     7.6829  6.1174 45   0.0000</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others      4.5     9.4097  0.4782 45   0.6348</span></span>
+<span><span class="co">#&gt;                            Estimate Std. Error t value df Pr(&gt;|t|) lower.CL</span></span>
+<span><span class="co">#&gt; N_effect_Victory               47.0     7.6829  6.1174 45   0.0000  31.5257</span></span>
+<span><span class="co">#&gt; N_effect_Victory_vs_others      4.5     9.4097  0.4782 45   0.6348 -14.4520</span></span>
+<span><span class="co">#&gt;                            upper.CL</span></span>
+<span><span class="co">#&gt; N_effect_Victory            62.4743</span></span>
+<span><span class="co">#&gt; N_effect_Victory_vs_others  23.4520</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value &lt; 0.0001."</span></span>
 <span><span class="co">#&gt; </span></span>

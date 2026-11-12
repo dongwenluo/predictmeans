@@ -8,7 +8,7 @@ comparing the model with and without it.
 ## Usage
 
 ``` r
-permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"),
+permanova.lmer(model, nperm = 999, ncore=1, type = c("I", "II", "III",  "1", "2", "3"),
  ...)
 ```
 
@@ -24,7 +24,8 @@ permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2"
 
 - ncore:
 
-  Number of core for parallel computing, the default value is 3.
+  Number of cores for parallel computing, the default value is 1 (before
+  predictmeans 2.0: 3).
 
 - type:
 
@@ -77,8 +78,8 @@ permanova.lmer(fm, nperm=99, ncore=1, type=2)
 fm0 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 anova(fm0)
 #>               numDF denDF   F-value p-value
-#> (Intercept)       1    45 245.14333  <.0001
-#> nitro             3    45  37.68561  <.0001
+#> (Intercept)       1    45 245.14299  <.0001
+#> nitro             3    45  37.68562  <.0001
 #> Variety           2    10   1.48534  0.2724
 #> nitro:Variety     6    45   0.30282  0.9322
 ```

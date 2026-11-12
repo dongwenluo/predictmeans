@@ -13,7 +13,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+  ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 ```
@@ -232,8 +232,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - ncore:
 
-  Number of core for parallel computing when `permlist != NULL`, the
-  default value is 3.
+  Number of cores for parallel computing when `permlist != NULL`, the
+  default value is 1 (before predictmeans 2.0: 3).
 
 - ndecimal:
 
@@ -351,10 +351,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `by` (the level of `atvar`, when given; `NA` for pairs across levels),
   `estimate` (mean of `level1` minus mean of `level2`), `std.error`,
   `df`, `statistic` (t), `p.value`, `p.adj` (adjusted by `adj`, within
-  each level of `atvar` when given), `lsd` and `p.method`; for a log
-  link or `trans = exp` also `ratio` (of the back-transformed means,
-  `exp(estimate)`), `ratio.conf.low` and `ratio.conf.high`, and for a
-  logit link `odds.ratio` with its limits.
+  each level of `atvar` when given), `conf.low` and `conf.high` (limits
+  of the difference at `level`), `lsd` (the half-width of those limits)
+  and `p.method`; with `permlist` the limits are permutation-t limits
+  (estimate +- c SE, c the critical value of the permutation test;
+  simultaneous within each family with `adj` "tukey", "mvt" or
+  "westfall"); for a log link or `trans = exp` also `ratio` (of the
+  back-transformed means, `exp(estimate)`), `ratio.conf.low` and
+  `ratio.conf.high`, and for a logit link `odds.ratio` with its limits.
 
 - settings:
 
@@ -450,7 +454,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 4.435758 4.435758 4.435758 
+#> 4.435757 4.435757 4.435757 
 #> 
 #> $LSD
 #>  Max.LSD  Min.LSD Aveg.LSD 
@@ -462,7 +466,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> $`Pairwise p-value`
 #>          0     0.2     0.4     0.6
-#> 0   1.0000 -4.3961 -7.8528 -9.9194
+#> 0   1.0000 -4.3961 -7.8529 -9.9194
 #> 0.2 0.0001  1.0000 -3.4568 -5.5233
 #> 0.4 0.0000  0.0014  1.0000 -2.0665
 #> 0.6 0.0000  0.0000  0.0446  1.0000
@@ -501,12 +505,12 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 9.715028 7.682958 9.160827 
+#> 9.715030 7.682956 9.160828 
 #> attr(,"For the Same Level of Factor")
-#>             nitro  Variety
-#> Aveg.SED 9.715028 7.682958
-#> Min.SED  9.715028 7.682958
-#> Max.SED  9.715028 7.682958
+#>            nitro  Variety
+#> Aveg.SED 9.71503 7.682956
+#> Min.SED  9.71503 7.682956
+#> Max.SED  9.71503 7.682956
 #> 
 #> $LSD
 #>  Max.LSD  Min.LSD Aveg.LSD 
@@ -548,18 +552,18 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> $mean_table
 #> $mean_table$Table
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-#> 1  Golden Rain     0  80.0000 9.10696 45  61.6577  98.3423       A  
-#> 4  Golden Rain   0.2  98.5000 9.10696 45  80.1577 116.8423        B 
+#> 1  Golden Rain     0  80.0000 9.10696 45  61.6576  98.3424       A  
+#> 4  Golden Rain   0.2  98.5000 9.10696 45  80.1576 116.8424        B 
 #> 7  Golden Rain   0.4 114.6667 9.10696 45  96.3243 133.0090         C
 #> 10 Golden Rain   0.6 124.8333 9.10696 45 106.4910 143.1757         C
 #> 2   Marvellous     0  86.6667 9.10696 45  68.3243 105.0090       A  
-#> 5   Marvellous   0.2 108.5000 9.10696 45  90.1577 126.8423        B 
+#> 5   Marvellous   0.2 108.5000 9.10696 45  90.1576 126.8424        B 
 #> 8   Marvellous   0.4 117.1667 9.10696 45  98.8243 135.5090        BC
 #> 11  Marvellous   0.6 126.8333 9.10696 45 108.4910 145.1757         C
-#> 3      Victory     0  71.5000 9.10696 45  53.1577  89.8423       A  
+#> 3      Victory     0  71.5000 9.10696 45  53.1576  89.8424       A  
 #> 6      Victory   0.2  89.6667 9.10696 45  71.3243 108.0090        B 
 #> 9      Victory   0.4 110.8333 9.10696 45  92.4910 129.1757         C
-#> 12     Victory   0.6 118.5000 9.10696 45 100.1577 136.8423         C
+#> 12     Victory   0.6 118.5000 9.10696 45 100.1576 136.8424         C
 #> 
 #> $mean_table$Note
 #> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"

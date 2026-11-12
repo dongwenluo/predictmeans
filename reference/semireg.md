@@ -288,7 +288,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
     geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
     coord_cartesian(ylim = c(0, 0.2)))
 }
-#> Warning: Model failed to converge with max|grad| = 0.0988371 (tol = 0.002, component 1)
+#> Warning: Model failed to converge with max|grad| = 0.098837 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Generalized linear mixed model fit by maximum likelihood (Laplace
 #>   Approximation) [glmerMod]
@@ -305,9 +305,9 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #> Number of obs: 1200, groups:  idnum, 275; grp, 8
 #> Fixed Effects:
 #> (Intercept)          age    vitAdefic       female       height      stunted  
-#>   -3.157599    -0.500259     0.666179    -0.505901    -0.033005     0.454817  
+#>   -3.157600    -0.500259     0.666169    -0.505904    -0.033005     0.454801  
 #>      visit2       visit3       visit4       visit5       visit6  
-#>   -1.107216    -0.572606    -1.275788     0.473009    -0.004683  
+#>   -1.107210    -0.572607    -1.275798     0.473009    -0.004679  
 
 
 # }

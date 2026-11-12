@@ -84,6 +84,12 @@
 - [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)
   : Permutation Index
 
+- [`permstats()`](https://dongwenluo.github.io/predictmeans/reference/permstats.md)
+  : Effect Sizes and Model Checks from Permutations
+
+- [`permcombine()`](https://dongwenluo.github.io/predictmeans/reference/permcombine.md)
+  : Combine Permutation Tests of Several Responses
+
 - [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
   : Parametric Bootstrap Tests for Mixed Models
 

@@ -100,19 +100,19 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> Note: Boot_p_value is from ‘99’ parametric bootstrap samples under the global null model.
 #> 
   predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
-#>   level1 level2   estimate std.error df statistic p.value p.adj      lsd
-#> 1      0    0.2 -19.500000  4.435752 NA -4.396098    0.01  0.01 8.871504
-#> 2      0    0.4 -34.833333  4.435752 NA -7.852859    0.01  0.01 8.871504
-#> 3    0.2    0.4 -15.333333  4.435752 NA -3.456761    0.01  0.01 8.871504
-#> 4      0    0.6 -44.000000  4.435752 NA -9.919400    0.01  0.01 8.871504
-#> 5    0.2    0.6 -24.500000  4.435752 NA -5.523302    0.01  0.01 8.871504
-#> 6    0.4    0.6  -9.166667  4.435752 NA -2.066542    0.06  0.06 8.871504
-#>    p.method
-#> 1 bootstrap
-#> 2 bootstrap
-#> 3 bootstrap
-#> 4 bootstrap
-#> 5 bootstrap
-#> 6 bootstrap
+#>   level1 level2   estimate std.error df statistic p.value p.adj  conf.low
+#> 1      0    0.2 -19.500000  4.435752 NA -4.396098    0.01  0.01 -29.32361
+#> 2      0    0.4 -34.833333  4.435752 NA -7.852859    0.01  0.01 -43.98725
+#> 3    0.2    0.4 -15.333333  4.435752 NA -3.456761    0.01  0.01 -23.69685
+#> 4      0    0.6 -44.000000  4.435752 NA -9.919400    0.01  0.01 -53.65647
+#> 5    0.2    0.6 -24.500000  4.435752 NA -5.523302    0.01  0.01 -32.96682
+#> 6    0.4    0.6  -9.166667  4.435752 NA -2.066542    0.06  0.06 -18.51942
+#>    conf.high      lsd  p.method
+#> 1  -9.676390 9.823610 bootstrap
+#> 2 -25.679414 9.153919 bootstrap
+#> 3  -6.969817 8.363516 bootstrap
+#> 4 -34.343534 9.656466 bootstrap
+#> 5 -16.033178 8.466822 bootstrap
+#> 6   0.186089 9.352756 bootstrap
   # }
 ```

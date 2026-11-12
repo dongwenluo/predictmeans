@@ -103,8 +103,10 @@ which refuses means that cannot be estimated:
 cm <- specify_contrast(Kmatrix(fm, "N:Variety"),
   N_effect_GR_and_M = (`0.6:Golden Rain` + `0.6:Marvellous`)/2 - (`0:Golden Rain` + `0:Marvellous`)/2)
 contrastmeans(fm, "N:Variety", ctrmatrix = cm)[[1]]
-#>                   Estimate Std. Error t value      df Pr(>|t|)
-#> N_effect_GR_and_M     42.5     5.4742  7.7637 40.0194        0
+#>                   Estimate Std. Error t value      df Pr(>|t|) lower.CL
+#> N_effect_GR_and_M     42.5     5.4742  7.7637 40.0194        0  31.4365
+#>                   upper.CL
+#> N_effect_GR_and_M  53.5635
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 ```

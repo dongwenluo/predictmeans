@@ -67,9 +67,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
                          ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`))/2)
   contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 #> $`The t tests of the specified contrasts`
-#>                    Estimate Std. Error t value df Pr(>|t|)
-#> N_effect_Victory       47.0     7.6829  6.1174 45   0.0000
-#> N_effect_vs_others      4.5     9.4097  0.4782 45   0.6348
+#>                    Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
+#> N_effect_Victory       47.0     7.6829  6.1174 45   0.0000  31.5257  62.4743
+#> N_effect_vs_others      4.5     9.4097  0.4782 45   0.6348 -14.4520  23.4520
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
