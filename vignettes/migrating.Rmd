@@ -47,6 +47,16 @@ number that depended on which coefficient R happened to drop. It is now `NA`, wi
 message; pairwise differences that are estimable are still shown. Means over empty cells
 keep the 1.x rule: the average of the observed cells, with a warning.
 
+### Permutation tests
+
+`permmodels()` now uses Freedman–Lane permutations by default (`method = "auto"`): each
+term, coefficient or pair is tested with the model without it, so the other terms keep
+their effects. It also works for `glm`, `glmer` and `glmmTMB` models, and needs no
+refits. Mixed-model residuals are decorrelated with the symmetric square root of their
+covariance instead of the Cholesky factor, whose results depended on the order of the
+data. For the 1.x scheme use `method = "raw"`; its p-values for mixed models still
+differ slightly from 1.x because of the new square root.
+
 ### Bugs fixed
 
 Some 1.x results were wrong and are now correct, for example `permlist` together with
@@ -73,6 +83,9 @@ several `Kmatrix()` cases with transformed covariates. See `NEWS.md` for the ful
   ratios or odds ratios for log and logit models.
 - **`R2_model()`** (R² as numbers, Piepho or Nakagawa), **`bootmodels()`** (parametric
   bootstrap), and `predictmeans()` on `semireg()` fits.
+- **Permutation tests for GLMs and GLMMs**: `permmodels()` on the working scale,
+  `permlmer()` (also `permglmer()`, `permglmmTMB()`) for nested GLMMs, and `perms` for
+  permutations restricted by the design (`permindex()`). See `vignette("resampling")`.
 - **Other model classes** can be added with a few methods (see `?pm_coef`).
 - **Fewer dependencies** and faster Kenward–Roger and Satterthwaite computations.
 
