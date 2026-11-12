@@ -191,6 +191,7 @@ pm_tidy_parts <- function(e) {
     atvar = atvar,
     df_method = df_method,
     vcov_adjust = isTRUE(g("vcov_adjust")),
+    vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     model_class = class(model)[1],

@@ -7,7 +7,7 @@
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
-                level=0.05)
+                level=0.05, vcov=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -58,6 +58,16 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
 with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
 \code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.}
+
+\item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
+and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
+as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
+(cluster-robust CR1, as \code{sandwich::vcovCL()}). For any model: a covariance matrix of the coefficients, or
+a function that returns one from the model (for mixed models e.g. from the \pkg{clubSandwich} package). The
+degrees of freedom stay those of the model (the residual df; for \code{lmer} Kenward-Roger or Satterthwaite df
+computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
+(for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
+covariance.}
 }
 \value{
 There are two components in the output which are

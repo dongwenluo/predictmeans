@@ -7,7 +7,7 @@
 pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"))
+          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{predictmeans}}.}
@@ -23,7 +23,7 @@ non-linearly); the default is its mean.}
 
 \item{adj}{Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.}
 
-\item{df_method, vcov_adjust, weights}{As in \code{\link{predictmeans}}.}
+\item{df_method, vcov_adjust, weights, vcov}{As in \code{\link{predictmeans}}.}
 }
 \value{
 A list of two data frames:

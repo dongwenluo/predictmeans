@@ -179,10 +179,11 @@ pm_code_estimate <- quote({
     mdf <- ctr.matrix$data
   }
   response <- ctr.matrix$response
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default)
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
   mp <- parms$mp
   df_type <- parms$df_type
   vcov_adj <- parms$vcov_adj
+  vcov_label <- parms$vcov_label
   est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, vars, mp, ndecimal)
   K <- est$K
   label <- est$label
@@ -199,8 +200,11 @@ pm_code_estimate <- quote({
 ## Coefficients, covariance and df method of the model (pure function).
 ## lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits) unless
 ## 'df_method' says otherwise; the adjusted covariance is computed once and
-## shared by all df calculations. Returns list(mp, df_type, vcov_adj).
-pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default) {
+## shared by all df calculations. 'vcov' (see R/vcov.R) replaces the
+## covariance of the coefficients (the df stay the model's). Returns
+## list(mp, df_type, vcov_adj, vcov_label).
+pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default, vcov = NULL) {
+  if (!is.null(vcov)) vcov_adjust <- FALSE          # the user's covariance replaces the adjusted one
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
@@ -216,7 +220,9 @@ pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default) {
       mp$vcov <- as.matrix(vcov_adj)
     }
   }
-  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj)
+  V <- pm_vcov_resolve(model, vcov, names(mp$coef))
+  if (!is.null(V)) mp$vcov <- V
+  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj, vcov_label = attr(V, "label"))
 }
 
 ## Predicted means, their SEs and the legacy mean/SE tables (pure function).

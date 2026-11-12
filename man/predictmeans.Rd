@@ -11,7 +11,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), vcov=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -144,6 +144,16 @@ REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \cod
 smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other model classes.}
+
+\item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
+and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
+as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
+(cluster-robust CR1, as \code{sandwich::vcovCL()}). For any model: a covariance matrix of the coefficients, or
+a function that returns one from the model (for mixed models e.g. from the \pkg{clubSandwich} package). The
+degrees of freedom stay those of the model (the residual df; for \code{lmer} Kenward-Roger or Satterthwaite df
+computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
+(for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
+covariance.}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}
@@ -174,7 +184,7 @@ within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
- degrees-of-freedom method, \code{vcov_adjust}, number of permutations, covariate values, model class and
+ degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), number of permutations, covariate values, model class and
  package version.}
  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
  the \code{means}, \code{pairs} and \code{settings} slots are not printed.

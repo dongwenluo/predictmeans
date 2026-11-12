@@ -233,6 +233,18 @@
   (Fisher or Tippett) and min-p adjusted p-values over the responses, with
   their correlation kept.
 
+* New argument `vcov` in `predictmeans()`, `contrastmeans()`,
+  `pm_slopes()` and `pm_joint()`: another covariance of the coefficients
+  for the standard errors, tests and limits. For `lm`, `aov` and `glm`,
+  `vcov = "HC0"` to `"HC3"` (heteroscedasticity-consistent; equal to
+  `car::hccm()` and to `sandwich::vcovHC()`) or `vcov = ~ cluster`
+  (cluster-robust CR1, as `sandwich::vcovCL()`), with no new dependency;
+  for any model a covariance matrix or a function of the model (for mixed
+  models e.g. from clubSandwich). The df stay the model's. Means, pairs and
+  slopes equal emmeans with the same covariance (`vcov. =`). The `settings`
+  table records it (`vcov`). With a `permlist` it is not used (see
+  `permmodels(robust = TRUE)`).
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

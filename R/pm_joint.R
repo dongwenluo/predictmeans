@@ -20,7 +20,7 @@
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
 #'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-#'          weights = c("equal", "proportional", "outer", "cells", "flat"))
+#'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
 #' @param by Optional name(s) of factor(s) of \code{modelterm}: test the differences among the means within each of
@@ -30,6 +30,8 @@
 #'   e.g. from \code{\link{contrast_family}} or \code{\link{specify_contrast}}); its rows are tested together.
 #' @param df_method For \code{lmer} models: the denominator df (see Details).
 #' @param weights How the means average over other factors, as in \code{\link{predictmeans}}.
+#' @param vcov Optional covariance of the coefficients, as in \code{\link{predictmeans}}: the F statistic is then
+#'   the Wald F with this covariance, and the denominator df those of the model's own test.
 #' @return
 #' A data frame with one row per test: the \code{by} levels (if any), \code{df1}, \code{df2}, \code{F.ratio} and
 #' \code{p.value}. Attribute \code{"df_method"} says how \code{df2} was found.
@@ -53,7 +55,7 @@ NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-                     weights = c("equal", "proportional", "outer", "cells", "flat")) {
+                     weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
   if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
@@ -103,6 +105,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   mp <- mymodelparm(model, df = 0)
+  Vuser <- pm_vcov_resolve(model, vcov, names(mp$coef))
   K <- KK[, mp$estimable, drop = FALSE]
   K[!est_flag, ] <- 0
   other_df <- NULL
@@ -116,23 +119,32 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else NULL
 
   res <- t(vapply(sets, function(C) {
-    pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df)
+    pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df, Vuser)
   }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
   attr(out, "df_method") <- if (inherits(model, "lmerMod")) df_type else if (inherits(model, "lme")) "nlme" else "residual"
+  if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
   out
 }
 
 ## F test of L beta = 0: c(df1, df2, F, p). Rows of L that are linear
 ## combinations of others are dropped first.
-pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df) {
+pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df, Vuser = NULL) {
   beta <- mp$coef
   V <- as.matrix(mp$vcov)
   r <- qr(t(L))
   q <- r$rank
   if (q == 0) return(c(0, NA, NA, NA))
   L <- L[r$pivot[seq_len(q)], , drop = FALSE]
+  if (!is.null(Vuser)) {
+    # a given covariance ('vcov'): its Wald F, with the denominator df of the
+    # model's own test
+    out <- pm_joint_ftest(model, L, mp, df_type, vcov_adj, other_df, cont_df)
+    b <- L %*% beta
+    Fv <- as.numeric(t(b) %*% solve(L %*% Vuser %*% t(L), b)) / q
+    return(c(q, out[2], Fv, stats::pf(Fv, q, out[2], lower.tail = FALSE)))
+  }
   wald <- function(Vb) {
     b <- L %*% beta
     as.numeric(t(b) %*% solve(L %*% Vb %*% t(L), b))

@@ -6,7 +6,7 @@
 \usage{
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-         weights = c("equal", "proportional", "outer", "cells", "flat"))
+         weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{predictmeans}}.}
@@ -23,6 +23,9 @@ e.g. from \code{\link{contrast_family}} or \code{\link{specify_contrast}}); its 
 \item{df_method}{For \code{lmer} models: the denominator df (see Details).}
 
 \item{weights}{How the means average over other factors, as in \code{\link{predictmeans}}.}
+
+\item{vcov}{Optional covariance of the coefficients, as in \code{\link{predictmeans}}: the F statistic is then
+the Wald F with this covariance, and the denominator df those of the model's own test.}
 }
 \value{
 A data frame with one row per test: the \code{by} levels (if any), \code{df1}, \code{df2}, \code{F.ratio} and

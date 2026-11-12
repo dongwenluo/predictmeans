@@ -16,7 +16,7 @@
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 #'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
 #'           vcov_adjust = TRUE,
-#'           weights = c("equal", "proportional", "outer", "cells", "flat"))
+#'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param covariate Name (in "quotes") of the numeric covariate.
 #' @param modelterm Name (in "quotes") of the factor term whose levels get a slope each, e.g. \code{"Variety"}.
@@ -24,7 +24,7 @@
 #'   non-linearly); the default is its mean.
 #' @param level Significance level for the confidence limits, the default is 0.05.
 #' @param adj Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.
-#' @param df_method,vcov_adjust,weights As in \code{\link{predictmeans}}.
+#' @param df_method,vcov_adjust,weights,vcov As in \code{\link{predictmeans}}.
 #' @return
 #' A list of two data frames:
 #' \item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{slope}, \code{std.error}, \code{df},
@@ -43,7 +43,8 @@ NULL
 
 pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
                       df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-                      vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat")) {
+                      vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
+                      vcov = NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -64,7 +65,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   rownames(lab) <- NULL
   levs <- do.call(paste, c(lapply(lab, as.character), sep = ":"))
 
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default)
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
   mp <- parms$mp
   L <- (kp$K - km$K)/(2*h)
   L <- L[, mp$estimable, drop = FALSE]

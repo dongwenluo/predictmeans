@@ -69,7 +69,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | `odds.ratio`, `odds.ratio.conf.low`, `odds.ratio.conf.high` | logit link: odds ratio |
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
-`vcov_adjust`, `nperm`, `covariates`, `model_class`, `version`.
+`vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
+`"user matrix"`, `"user function"`), `nperm`, `covariates`, `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
 `summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "pvalue", "response"))`,
@@ -157,6 +158,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   "raw"` reproduces 1.x. For GLMs/GLMMs it works on the link (working) scale.
   `permlmer()` for GLMMs uses the working scale, and randomised quantile residuals for
   0/1 responses. With a `permlist`, `vcov_adjust` (Kenward-Roger) is not used.
+- `vcov = "HC3"` (or `"HC0"`-`"HC2"`, `~ cluster`) gives robust SEs for lm/glm in `predictmeans()`,
+  `contrastmeans()`, `pm_slopes()` and `pm_joint()`; a matrix or a function works for any model (e.g.
+  clubSandwich for mixed models). The df stay the model's.
 - `permstats()` gives standardised effect sizes and `param.size`, the rejection rate of the
   parametric test in the permuted data sets (near `level` when the parametric test suits
   the data). `permcombine()` combines tests of several responses made with the same

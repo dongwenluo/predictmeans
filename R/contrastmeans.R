@@ -8,7 +8,7 @@
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
-#'                 level=0.05)
+#'                 level=0.05, vcov=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -46,6 +46,15 @@
 #'   default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
 #'   with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
 #'   \code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.
+#' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
+#'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
+#'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
+#'   (cluster-robust CR1, as \code{sandwich::vcovCL()}). For any model: a covariance matrix of the coefficients, or
+#'   a function that returns one from the model (for mixed models e.g. from the \pkg{clubSandwich} package). The
+#'   degrees of freedom stay those of the model (the residual df; for \code{lmer} Kenward-Roger or Satterthwaite df
+#'   computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
+#'   (for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
+#'   covariance.
 #' @return
 #' There are two components in the output which are
 #' \item{Table}{A table showing t-test results for the specified linear contrasts.}
@@ -96,7 +105,7 @@ NULL
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
-                          level=0.05) {
+                          level=0.05, vcov=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -170,23 +179,15 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   KK[bad_row, ] <- 0
   df_method <- match.arg(df_method)
-  dfm <- pm_df_method(model, df_method)
-  df_type <- dfm$df_type
-  vcov_adj <- dfm$vcov_adj
-  if (identical(df_type, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
-  if (!missing(permlist)) vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
-  # containment df with the adjusted covariance only when asked for explicitly
-  if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
-    vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
-  mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
-  if (vcov_adjust) {
-    if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
-      # the default applies to REML lmer fits only; say so only when asked for
-      if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
-    } else {
-      mp$vcov <- as.matrix(vcov_adj)
-    }
+  if (identical(df_method, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
+  if (!missing(permlist)) {
+    vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
+    vcov <- pm_vcov_with_perm(vcov, permlist)
   }
+  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
+  mp <- parms$mp
+  df_type <- parms$df_type
+  vcov_adj <- parms$vcov_adj
   K <- KK[, mp$estimable, drop=FALSE]
   rK <- ctrmatrix%*%K
 
@@ -233,6 +234,10 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
+    if (!is.null(parms$vcov_label)) {
+      attr(out.put, "Note") <- paste0(attr(out.put, "Note"), " Standard errors from the covariance given by 'vcov' (",
+                                      parms$vcov_label, ").")
+    }
     }else{
   	nsim <- pm_perm_n(permlist)
   if (adj == "scheffe") stop("adj = \"scheffe\" is not available for permutation p-values; use another 'adj'.",
@@ -264,13 +269,14 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (isTRUE(joint)) {
     # all the contrasts together: the F test of pm_joint(), and with a
     # permlist the permutation p-value of the joint Wald F
-    jt <- pm_joint(model, modelterm, ctrmatrix = ctrmatrix, df_method = df_method, weights = weights)
+    jt <- pm_joint(model, modelterm, ctrmatrix = ctrmatrix, df_method = df_method, weights = weights, vcov = vcov)
     if (!missing(permlist)) jt$Perm_p_value <- pm_perm_p(fam$Fobs, fam$F, fam$exact)
     dfm <- attr(jt, "df_method")
     jt[] <- lapply(jt, function(v) if (is.numeric(v)) round(v, 4) else v)
     rownames(jt) <- "all contrasts"
     attr(jt, "Note") <- paste0("F test of all the contrasts together (", nrow(ctrmatrix), " contrasts, rank ", jt$df1,
-                               "; denominator df: ", dfm, ")",
+                               "; denominator df: ", dfm,
+                               if (!is.null(attr(jt, "vcov"))) paste0("; covariance: ", attr(jt, "vcov")), ")",
                                if (!missing(permlist)) paste0("; Perm_p_value from ", sQuote(nsim), " permutations"),
                                ".")
     out[["Joint F test of the contrasts"]] <- jt
