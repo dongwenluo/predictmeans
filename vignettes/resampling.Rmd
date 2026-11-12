@@ -55,9 +55,10 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
   each time (one set of refits per term). `refit = FALSE` instead fixes the covariance
   of the data at the fit, which turns the model into a linear model with no refits:
   much faster, but slightly liberal when the variance parameters rest on few units
-  (whole plots with few blocks). GLMs and GLMMs are first linearised at the fit (working
-  response and working variances on the link scale) and use the fixed-covariance
-  version.
+  (whole plots with few blocks: 8.6% instead of 5% in a simulation study, against 5.0%
+  with refits). GLMs and GLMMs are first linearised at the fit (working response and
+  working variances on the link scale); a GLMM is then treated as its working linear
+  mixed model and refitted in the same way.
 - **Raw** (`method = "raw"`, the scheme of predictmeans 1.x). The response (`lm`, `glm`)
   or the fitted values together with the decorrelated residuals (mixed models) are
   permuted, and the model is refitted to each permuted data set. The refits are kept in
@@ -186,7 +187,7 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 | `lm`, `aov` | `permmodels()` (Freedman–Lane) | — |
 | `glm` | `permmodels()` (Freedman–Lane on the working scale) | — |
 | `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane with refits); or the Kenward–Roger F test | `permlmer()` |
-| `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
+| `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale, with refits) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test | |
 
 - With large samples and well-behaved residuals the F and t tests (with Kenward–Roger
