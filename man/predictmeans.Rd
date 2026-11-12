@@ -8,7 +8,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+  jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
@@ -99,7 +100,9 @@ The default is \code{c("mean", "pval", "back")}.}
 
 \item{bkplot}{Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.}
 
-\item{plot}{An option for drawing plots, or not. The default is TRUE.}
+\item{plot}{An option for drawing plots, or not. The default is TRUE, unless
+\code{options(predictmeans.plot = FALSE)} is set (e.g. for scripts, reports and pipelines that use the
+\code{means} and \code{pairs} tables only).}
 
 \item{jitterv}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
 
@@ -250,17 +253,23 @@ The \code{predictmeans} function becomes confused if a factor or covariate is ch
 }
 \examples{
   library(predictmeans)
-  ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
   Oats$nitro <- factor(Oats$nitro)
-  fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-  predictmeans(fm, "nitro", adj="BH")
-  predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", line=FALSE)
-  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", 
-    barplot=TRUE, line=FALSE)
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data=Oats)
+  ## The results as tables (columns described under Value)
+  pm <- predictmeans(fm, "nitro", plot=FALSE)
+  pm$means
+  pm$pairs
+  pm$settings
+  summary(pm)
+  ## Means within each variety, Tukey-adjusted pairs, plots
+  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
+    which.plots=c("mean", "bar", "pval", "back"), line=FALSE)
   names(predictout)
   print(predictout$predictmeansPlot)
   print(predictout$predictmeansBarPlot)
+  ## lme fits work the same way
+  fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+  predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
 }
 \references{
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),

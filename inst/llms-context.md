@@ -27,8 +27,10 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. Giving `adj` or `atvar` turns on
   pairwise comparisons.
 - `level`: significance level for confidence limits and LSDs, default 0.05.
-- `plot = FALSE` in scripts (the default `TRUE` draws plots); `prtnum = FALSE` suppresses
-  printing of the reference-grid note.
+- `plot = FALSE` in scripts (the default `TRUE` draws plots), or `options(predictmeans.plot = FALSE)`
+  once; `prtnum = FALSE` suppresses printing of the reference-grid note.
+- `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
+  method, adjustment, SED range, mean LSD).
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, Satterthwaite for ML),
   `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
   (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-SAS"` (Kenward-Roger with the observed

@@ -5,9 +5,12 @@
 \alias{as.data.frame.predictmeans}
 \alias{coef.predictmeans}
 \alias{vcov.predictmeans}
+\alias{glance.predictmeans}
 \title{Predicted Means and Pairwise Comparisons as Data Frames}
 \usage{
 \method{tidy}{predictmeans}(x, what = c("means", "pairs"), ...)
+
+\method{glance}{predictmeans}(x, ...)
 
 \method{as.data.frame}{predictmeans}(x, row.names = NULL, optional = FALSE,
               what = c("means", "pairs"), ...)
@@ -30,10 +33,13 @@
 \item{\dots}{Not used.}
 }
 \value{
-A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix.
+A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix. \code{glance()} gives one row:
+\code{modelterm}, \code{n.means}, \code{n.pairs}, \code{nobs} (observations in the cells), \code{df.method},
+\code{adjust}, \code{level}, \code{vcov}, \code{vcov.adjust}, \code{sed.min}, \code{sed.mean}, \code{sed.max}
+(standard errors of the differences), \code{lsd.mean}, \code{nperm} and \code{model.class}.
 }
 \description{
-Return the \code{means} or \code{pairs} table of a \code{\link{predictmeans}} result. The tables have fixed column
+Return the \code{means} or \code{pairs} table of a \code{\link{predictmeans}} result (\code{glance()}: one row describing it). The tables have fixed column
 names (see the Value section of \code{\link{predictmeans}}) and unrounded values, which makes them easy to use in
 further analysis, reports, Shiny apps or AI tools. \code{tidy()} is the generic from package \pkg{generics} (also
 used by \pkg{broom}); \code{as.data.frame()} needs no other package.
@@ -51,6 +57,7 @@ the class listed first: \code{options(marginaleffects_model_classes = "predictme
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
   as.data.frame(pm)
   head(as.data.frame(pm, what = "pairs"))
+  if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
 
   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
   b <- coef(pm)

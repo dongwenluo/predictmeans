@@ -245,6 +245,12 @@
   table records it (`vcov`). With a `permlist` it is not used (see
   `permmodels(robust = TRUE)`).
 
+* `glance()` (generics/broom) of a `predictmeans()` result: one row with
+  the term, numbers of means and pairs, df method, adjustment, covariance,
+  SED range and mean LSD. `options(predictmeans.plot = FALSE)` turns the
+  plots off by default (scripts, reports, pipelines). The examples of
+  `?predictmeans` start from the `means`, `pairs` and `settings` tables.
+
 * SAS validation: the tests compare every variance component, LS-mean,
   difference and Type 3 test of 16 SAS PROC MIXED runs (split plot,
   sub-plot or whole plot missing, unstructured repeated measures; containment,
