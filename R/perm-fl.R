@@ -192,8 +192,8 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
   # coefficients: |t| (the F of one column is t^2)
   cf <- startsWith(names(tests), "coef:")
   Ls <- lapply(tests, function(tk) diag(ncol(X))[setdiff(tk$B, tk$A), , drop = FALSE])
-  obs[cf] <- sqrt(obs[cf])
-  Tm[cf, ] <- sqrt(Tm[cf, ])
+  obs[cf] <- sqrt(pmax(obs[cf], 0))                # (an F of 0 can come out as -1e-16)
+  Tm[cf, ] <- sqrt(pmax(Tm[cf, ], 0))
   perm$stats <- pm_perm_statset(model, obs, Tm, pval, vapply(tests, `[[`, numeric(1), "df"),
                                 ifelse(cf, "t", "F"), Ls, df_res, n)
   list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
