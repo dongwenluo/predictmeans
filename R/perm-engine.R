@@ -297,17 +297,34 @@ pm_perm_maxT <- function(obs, T, stepdown = FALSE, digits = 6, p_raw = NULL) {
 pm_perm_family <- function(permlist, L, model, obs, ncore = 1, joint = FALSE) {
   perm <- permlist[["perm"]]
   if (is.null(perm)) {
-    Tm <- pm_perm_tstats(permlist[[1]], L)
-    return(list(p = pm_perm_p(obs, Tm), obs = obs, T = Tm))
+    refits <- permlist[[1]]
+    Tm <- pm_perm_tstats(refits, L)
+    Lr <- pm_indep_rows(L)
+    mp <- mymodelparm(model, df = 0)
+    Fs <- vapply(refits, function(x) pm_waldF(Lr, x$coef, x$vcov), numeric(1))
+    return(list(p = pm_perm_p(obs, Tm), obs = obs, T = Tm, Fobs = pm_waldF(Lr, mp$coef, mp$vcov), F = Fs,
+                exact = FALSE))
   }
   if (identical(perm$scheme, "freedman-lane-refit")) {
     J <- pm_perm_fl_refit_t(perm, L, model, ncore, joint = TRUE)
-    return(list(p = pm_perm_p(J$obs, J$T, perm$exact), obs = J$obs, T = J$T))
+    return(c(list(p = pm_perm_p(J$obs, J$T, perm$exact), exact = perm$exact), J))
   }
   p <- pm_perm_fl_t(perm, L, model)
   if (!joint) return(list(p = p))
   J <- pm_perm_fl_T(perm, L, model)
-  list(p = p, obs = J$obs, T = J$T)
+  c(list(p = p, exact = perm$exact), J)
+}
+
+## Rows of L without those that are linear combinations of others.
+pm_indep_rows <- function(L) {
+  r <- qr(t(L))
+  L[r$pivot[seq_len(r$rank)], , drop = FALSE]
+}
+
+## Wald F of L b = 0 (L with independent rows), covariance V.
+pm_waldF <- function(L, b, V) {
+  d <- L %*% b
+  as.numeric(crossprod(d, solve(L %*% as.matrix(V) %*% t(L), d))) / nrow(L)
 }
 
 ## Freedman-Lane, V fixed: the joint permutation distribution of the |t| of
@@ -329,16 +346,25 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
   }
   q <- qr(t(L))
   N <- qr.Q(q, complete = TRUE)[, -seq_len(q$rank), drop = FALSE]
-  f0 <- if (ncol(N)) qr.fitted(qr(X %*% N), z) else rep(0, n)
+  qrN <- if (ncol(N)) qr(X %*% N) else NULL
+  f0 <- if (ncol(N)) qr.fitted(qrN, z) else rep(0, n)
   e0 <- z - f0
+  # joint F of all rows: (RSS of the reduced model - RSS) / rank over RSS / df
+  Fstat <- function(Y) {
+    rss <- colSums(qr.resid(qrX, Y)^2)
+    rss0 <- if (is.null(qrN)) colSums(Y^2) else colSums(qr.resid(qrN, Y)^2)
+    ((rss0 - rss) / q$rank) / (rss / df_res)
+  }
   perms <- pm_perm_source(n, perms = perm$idx, state = perm$start)
   chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
   done <- 0L
-  Tl <- list()
+  Tl <- Fl <- list()
   while (done < perm$nperm) {
     m <- min(chunk, perm$nperm - done)
-    Tl[[length(Tl) + 1]] <- abs_t(f0 + matrix(e0[perms(m)], n))
+    Y <- f0 + matrix(e0[perms(m)], n)
+    Tl[[length(Tl) + 1]] <- abs_t(Y)
+    Fl[[length(Fl) + 1]] <- Fstat(Y)
     done <- done + m
   }
-  list(obs = as.vector(abs_t(matrix(z))), T = do.call(cbind, Tl))
+  list(obs = as.vector(abs_t(matrix(z))), T = do.call(cbind, Tl), Fobs = Fstat(matrix(z)), F = unlist(Fl))
 }

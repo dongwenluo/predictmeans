@@ -208,13 +208,17 @@ pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1, joint = FALSE) {
   idx <- pm_perm_source(n, perms = perm$idx, state = perm$start)(perm$nperm)
   back <- order(ord)
   tstat <- function(cv) abs(as.vector(L %*% cv$b)) / sqrt(rowSums((L %*% cv$V) * L))
-  obs <- tstat(P$coefvcov(model))
-  one <- function(i) tstat(P$coefvcov(P$refit_full((f0 + R0$W$mult(e0[idx[, i]]))[back])))
+  Lr <- pm_indep_rows(L)
+  stats <- function(cv) c(tstat(cv), pm_waldF(Lr, cv$b, cv$V))
+  s0 <- stats(P$coefvcov(model))
+  one <- function(i) stats(P$coefvcov(P$refit_full((f0 + R0$W$mult(e0[idx[, i]]))[back])))
   sims <- pm_perm_drop(pm_perm_map(seq_len(perm$nperm), one, ncore, P$packages))
-  Tm <- matrix(unlist(sims$res), nrow = nrow(L))
-  # joint = TRUE: the observed |t| and the k x B matrix of permuted |t| (for max-|t|)
-  if (joint) return(list(obs = obs, T = Tm))
-  pm_perm_p(obs, Tm, perm$exact)
+  S <- matrix(unlist(sims$res), nrow = nrow(L) + 1)
+  k <- nrow(L)
+  # joint = TRUE: the observed |t|, the k x B matrix of permuted |t| (for
+  # max-|t|), and the joint Wald F of all rows, observed and permuted
+  if (joint) return(list(obs = s0[seq_len(k)], T = S[seq_len(k), , drop = FALSE], Fobs = s0[k + 1], F = S[k + 1, ]))
+  pm_perm_p(s0[seq_len(k)], S[seq_len(k), , drop = FALSE], perm$exact)
 }
 
 ## The working linear mixed model of a GLMM (glmer, glmmTMB): the working

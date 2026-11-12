@@ -178,6 +178,13 @@
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).
 
+* `contrastmeans(joint = TRUE)` also tests all the contrasts together: the
+  F test of `pm_joint()` (Kenward-Roger or Satterthwaite df for `lmer`,
+  nlme's df for `lme`, the residual df otherwise; contrasts that are linear
+  combinations of others are dropped), and with a `permlist` a permutation
+  p-value of the joint Wald F from the same permutations. The result gains
+  a third component, `Joint F test of the contrasts`.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

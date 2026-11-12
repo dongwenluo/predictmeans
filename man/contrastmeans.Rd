@@ -6,7 +6,7 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -45,11 +45,21 @@ over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
 \code{\link{predictmeans}}).}
+
+\item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
+test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
+of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
+permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}
 }
 \value{
 There are two components in the output which are
 \item{Table}{A table showing t-test results for the specified linear contrasts.}
 \item{K}{A contrast matrix.}
+and, with \code{joint = TRUE}, a third,
+\item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
+(and \code{Perm_p_value} with \code{permlist}).}
 }
 \description{
 Performs t-tests (or permuted t-tests) of specified contrasts for linear models 
@@ -85,6 +95,9 @@ if (interactive()) contrastmeans(fm, "nitro:Variety")
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
+
+# 3. ... and both contrasts tested together (an F test with 2 numerator df)
+contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 }
 \references{
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),

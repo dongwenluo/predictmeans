@@ -7,7 +7,7 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -35,10 +35,19 @@
 #' @param df_method Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 #'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
 #'   \code{\link{predictmeans}}).
+#' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
+#'   test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+#'   denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+#'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
+#'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
+#'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
 #' @return
 #' There are two components in the output which are
 #' \item{Table}{A table showing t-test results for the specified linear contrasts.}
 #' \item{K}{A contrast matrix.}
+#' and, with \code{joint = TRUE}, a third,
+#' \item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
+#'   (and \code{Perm_p_value} with \code{permlist}).}
 #' @references
 #' Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 #'     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
@@ -73,12 +82,15 @@
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
 #'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 #' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
+#'
+#' # 3. ... and both contrasts tested together (an F test with 2 numerator df)
+#' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #' @name contrastmeans
 NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -221,7 +233,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   # permutation p-values; for adj = "mvt" / "westfall" the joint permutation
   # distribution of the contrasts' |t| (max-|t|, Westfall-Young)
   maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
-  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = maxt)
+  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = maxt || isTRUE(joint))
   per.p <- fam$p
   if (nrow(rK) > 1 && adj != "none") {
     per.p <- if (maxt) {
@@ -238,5 +250,20 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                                  if (maxt) paste0(" (", if (adj == "westfall") "step-down" else "single-step",
                                                   " max-|t| of the permutations)"), ".")
   }
-  return(list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix))
+  out <- list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix)
+  if (isTRUE(joint)) {
+    # all the contrasts together: the F test of pm_joint(), and with a
+    # permlist the permutation p-value of the joint Wald F
+    jt <- pm_joint(model, modelterm, ctrmatrix = ctrmatrix, df_method = df_method, weights = weights)
+    if (!missing(permlist)) jt$Perm_p_value <- pm_perm_p(fam$Fobs, fam$F, fam$exact)
+    dfm <- attr(jt, "df_method")
+    jt[] <- lapply(jt, function(v) if (is.numeric(v)) round(v, 4) else v)
+    rownames(jt) <- "all contrasts"
+    attr(jt, "Note") <- paste0("F test of all the contrasts together (", nrow(ctrmatrix), " contrasts, rank ", jt$df1,
+                               "; denominator df: ", dfm, ")",
+                               if (!missing(permlist)) paste0("; Perm_p_value from ", sQuote(nsim), " permutations"),
+                               ".")
+    out[["Joint F test of the contrasts"]] <- jt
+  }
+  out
 }
