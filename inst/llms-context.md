@@ -144,8 +144,8 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   factors) are NA, with their estimable differences kept. Check `estimable` and `n`.
 - `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
   the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).
-- `permmodels()`, `permlmer()` and `predictmeans(permlist = )` use `ncore = 3` by
-  default; use `ncore = 1` or 2 in package checks and on shared machines. With `permlist`,
+- `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use
+  `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down
   permutation max-|t| (Westfall-Young); `"scheffe"` is not available.
 - `permmodels()` defaults to Freedman-Lane since 2.0 (`method = "auto"`); `method =

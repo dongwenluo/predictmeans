@@ -2,6 +2,12 @@
 
 ## Changes that affect results or scripts
 
+* **`ncore = 1` by default** in `permmodels()`, `permlmer()` (and
+  `permglmer()`, `permglmmTMB()`), `permanova.lmer()` and `predictmeans()`
+  (it was 3; `bootmodels()` already used 1). Results are the same; scripts
+  that relied on three cores for speed should set `ncore`. CRAN and many
+  shared machines allow at most 2 cores.
+
 * **`permmodels()` uses Freedman-Lane permutations by default**
   (`method = "auto"`, which chooses the more robust scheme for the model
   class; at present Freedman-Lane for every class). Each term, coefficient

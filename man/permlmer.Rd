@@ -6,11 +6,11 @@
 \alias{permglmmTMB}
 \title{Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.}
 \usage{
-permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permlmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
          method=c("auto", "working", "quantile"))
-permglmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permglmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
           method=c("auto", "working", "quantile"))
-permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+permglmmTMB(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
             method=c("auto", "working", "quantile"))
 }
 \arguments{
@@ -22,7 +22,7 @@ permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
 
 \item{nperm}{Number of permutation, the default value is 999.}
 
-\item{ncore}{Number of core for parallel computing, the default value is 3.}
+\item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
 
 \item{plot}{Plot permutation distribution or not, the default value is FALSE.}
 

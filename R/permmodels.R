@@ -7,7 +7,7 @@
 #' @usage
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
 #'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-#'   fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+#'   fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
 #'   refit=TRUE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #'   \code{glmer} or \code{glmmTMB}.
@@ -19,7 +19,7 @@
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.
 #' @param fo A model formula used in the \code{model}; \code{fo!=NULL} when the formula is specified by function \code{formula}.
 #' @param prt A logical variable to indicate whether or not to print output on the screen. The default is TRUE.
-#' @param ncore Number of core for parallel computing, the default value is 3.
+#' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
 #' @param seed Specify a random number generator seed, for reproducible results.
 #' @param method How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
 #'   chooses the more robust one for the model class, which is \code{"freedman-lane"} for every class at present.
@@ -149,7 +149,7 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL) {
 
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
-					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+					   data=NULL, fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
 					   refit=TRUE) {
   
   op <- options(scipen = 6)

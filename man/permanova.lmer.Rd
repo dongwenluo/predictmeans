@@ -4,7 +4,7 @@
 \alias{permanova.lmer}
 \title{Permutation ANOVA for \code{lmer} Model}
 \usage{
-permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"),
+permanova.lmer(model, nperm = 999, ncore=1, type = c("I", "II", "III",  "1", "2", "3"),
  ...)
 }
 \arguments{
@@ -12,7 +12,7 @@ permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2"
 
 \item{nperm}{Number of permutation, the default value is 999.}
 
-\item{ncore}{Number of core for parallel computing, the default value is 3.}
+\item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
 
 \item{type}{The type of ANOVA table requested (using SAS terminology) with Type I being the familiar 
 sequential ANOVA table.}

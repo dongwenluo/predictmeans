@@ -11,7 +11,7 @@
 #'   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
 #'   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
 #'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-#'   ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+#'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -84,7 +84,7 @@
 #'   models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
 #'   With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
 #'   permuted refits, which use the unadjusted covariance.
-#' @param ncore Number of core for parallel computing when \code{permlist != NULL}, the default value is 3.
+#' @param ncore Number of cores for parallel computing when \code{permlist != NULL}, the default value is 1 (before predictmeans 2.0: 3).
 #' @param ndecimal An option for specifying number of decimal point to be print at predicted means table. The default is 4.
 #' @param cov_reduce How covariates that are not varied are handled when building the predicted means: a function such as
 #'   \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
@@ -183,7 +183,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  plotylab=NULL,
 						  which.plots = c("mean", "pval", "back"),
 						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
-						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=3, ndecimal=4,
+						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {

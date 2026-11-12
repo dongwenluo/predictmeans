@@ -717,10 +717,10 @@ New, from study 1b:
    adjustment (permutation Tukey) is possible from the same refits and is a
    natural next step (not built).
 
-Still open:
+Confirmed by the maintainer after PR #27: Freedman–Lane by default for every
+class (1), refits by default for mixed models (7), and
 
-4. Default `ncore = 1` for all resampling functions? Recommended: yes
-   (CRAN and CI allow 2; the default is still 3).
+4. `ncore = 1` by default for all resampling functions — **done** (was 3).
 
 ## 12b. Next steps (after the 2.0 build; maintainer's questions on data size and other uses)
 

@@ -6,7 +6,7 @@
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
+  fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
   refit=TRUE)
 }
 \arguments{
@@ -28,7 +28,7 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 
 \item{prt}{A logical variable to indicate whether or not to print output on the screen. The default is TRUE.}
 
-\item{ncore}{Number of core for parallel computing, the default value is 3.}
+\item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
 
 \item{seed}{Specify a random number generator seed, for reproducible results.}
 

@@ -9,7 +9,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
-  ncore=3, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+  ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
 }
@@ -117,7 +117,7 @@ models), each pair is tested by Freedman-Lane permutations of the model in which
 With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
 permuted refits, which use the unadjusted covariance.}
 
-\item{ncore}{Number of core for parallel computing when \code{permlist != NULL}, the default value is 3.}
+\item{ncore}{Number of cores for parallel computing when \code{permlist != NULL}, the default value is 1 (before predictmeans 2.0: 3).}
 
 \item{ndecimal}{An option for specifying number of decimal point to be print at predicted means table. The default is 4.}
 

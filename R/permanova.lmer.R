@@ -4,11 +4,11 @@
 #' This function provides permutation ANOVA for \code{lmer} model (and, since predictmeans 2.0, \code{glmer} model):
 #' each term is tested by \code{\link{permlmer}} comparing the model with and without it.
 #' @usage
-#' permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"),
+#' permanova.lmer(model, nperm = 999, ncore=1, type = c("I", "II", "III",  "1", "2", "3"),
 #'  ...)
 #' @param model Model object returned by \code{lmer} or \code{glmer}.
 #' @param nperm Number of permutation, the default value is 999.
-#' @param ncore Number of core for parallel computing, the default value is 3.
+#' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
 #' @param type The type of ANOVA table requested (using SAS terminology) with Type I being the familiar 
 #' sequential ANOVA table.
 #' @param ... Use to setup option: seed -- Specify a random number generator seed, for reproducible 
@@ -34,7 +34,7 @@
 #' @name permanova.lmer
 NULL
 
-permanova.lmer <- function(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"), ...)  { # perms
+permanova.lmer <- function(model, nperm = 999, ncore=1, type = c("I", "II", "III",  "1", "2", "3"), ...)  { # perms
 
   if (!inherits(model, c("lmerMod", "glmerMod"))) {
     stop("The model must be a lmer or glmer object!")
