@@ -486,16 +486,19 @@ simplicity. Two general results guide the choice:
 
 ## 7. Candidates and current recommendation
 
-"Prior" = before the study; "Now" = after the 37 cases of §3.3 and §4.4.
+"Prior" = before the studies; "Then" = after the 37 cases of §3.3 and §4.4;
+"Built (2.0)" = what `permmodels(method = "auto")` and `permlmer()` do now,
+after study 1b (`dev/sim-study/README.md`, `results-1b.md`).
 
-| Model | Hypothesis | Candidates | Prior | Now |
-|---|---|---|---|---|
-| lm, aov | terms, coefficients, contrasts | raw; **Freedman–Lane** (done); sign flip + HC studentised (heteroscedastic) | Freedman–Lane | Freedman–Lane (lm study) |
-| gls, lme, lmer | fixed terms, contrasts | raw (maintainer's scheme); **FL whitened, refit**; FL whitened, V fixed (batched); design-restricted | FL whitened | **Freedman–Lane with symmetric-root whitening** for term tests (4.6–5.3%); the maintainer's scheme (symmetric root) for `permlist`, noting 6.4% with extreme covariates; help says KR/Satterthwaite F are as good for LMMs |
-| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep (13 cases fine); tie fix done; move to symmetric-root whitening after a confirming run |
-| glm | terms, coefficients | raw (current); FL on working scale (batched, score-like); Potter; **sign-flip effective score** | sign flip or FL working | not yet studied |
-| glmer, glmmTMB | random effects | **working-scale LRT (route A)**; cluster-label permutation; route B; parametric bootstrap LRT | route A | route A for counts and binomial with trials; **route B for binary (0/1) responses** (bootstrap as an option); `nAGQ = 0` refits |
-| glmer, glmmTMB | fixed terms | joint and FL on the working scale (weighted-LMM refits); V fixed (batched); route B; design-based; per-term parametric bootstrap | open | FL by default (power); joint as the robust option and for `permlist`; check V-fixed batching |
+| Model | Hypothesis | Candidates | Prior | Then | Built (2.0) |
+|---|---|---|---|---|---|
+| lm, aov | terms, coefficients, pairs, contrasts | raw; **Freedman–Lane**; sign flip + HC | Freedman–Lane | Freedman–Lane | **Freedman–Lane** (batched; pairs with their own reduced model) |
+| gls, lme, lmer | fixed terms, coefficients | raw (maintainer's); FL whitened V fixed; **FL whitened with refits**; design-restricted | FL whitened | FL symmetric root 4.6–5.3% | **Freedman–Lane with refits** (split-plot whole-plot term 5.0%, V fixed 8.6%, raw see B2; extreme covariate 5.4%; unbalanced 4.8%); `refit = FALSE` for V fixed; `perms` for design-restricted |
+| gls, lme, lmer | pairs, contrasts | joint `permlist` (refits under the global null); FL per pair / per term, V fixed or refits | — | not studied | **Freedman–Lane with refits, one reduced model per family** (whole-plot pairs 5.2%; V fixed 6.2%); joint `permlist` with `method = "raw"` (3.9–5.9%) |
+| lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep; symmetric root | **kept** (symmetric root; `perms`) |
+| glm | terms, coefficients, pairs | raw; FL on the working scale; Potter; sign-flip score | sign flip or FL working | not studied | **Freedman–Lane on the working scale** (V fixed; see B2 numbers) |
+| glmer, glmmTMB | random effects | working-scale LRT (route A); cluster labels; route B; bootstrap | route A | route A; route B for 0/1 | **`permlmer()` route A; route B for 0/1 responses** |
+| glmer, glmmTMB | fixed terms, pairs | joint / FL working (refits); V fixed; route B; bootstrap | open | FL | **Freedman–Lane with refits of the working LMM** (Poisson 5.8%, binomial 3 blocks 6.2%, rare binary 4.1%, nbinom2 6.8%, overdispersed 7.4% vs LRT 33.9%); `permlmer()` for nested pairs (route B for 0/1) |
 
 ## 8. Design: one engine for all schemes
 
@@ -688,17 +691,35 @@ comparison (Freedman–Lane) is the central structural decision.
 
 ## 12. Decisions for the maintainer
 
-1. Make Freedman–Lane the default for lm/aov once it also gives pairs
-   (step 3)? Recommended: yes.
-2. Extend `permlmer()` to GLMMs with `permglmer()`/`permglmmTMB()` aliases,
-   rather than separate functions? Recommended: yes.
-3. Own code for sign flipping and the working scale (no flipscores, permuco,
-   RLRsim dependencies)? Recommended: yes, as with car and pbkrtest.
-4. Default `ncore = 1` for all resampling functions? Recommended: yes.
-5. glmmTMB zero-inflation and `dispformula` models out of scope at first?
-   Recommended: yes.
-6. Where to run the large GLMM simulation cases (here they take hours on
-   4 cores)?
+Taken as recommended in the 2.0 build (to confirm in the PR):
+
+1. Freedman–Lane the default for lm/aov — **done**, and for every other
+   class too: `permmodels(method = "auto")` (the default) is Freedman–Lane;
+   `method = "raw"` gives the 1.x scheme.
+2. `permlmer()` extended to GLMMs with `permglmer()`/`permglmmTMB()`
+   aliases — **done**.
+3. Own code, no new dependencies — **done** (no flipscores, permuco,
+   RLRsim; sign-flip score tests not added).
+5. glmmTMB zero-inflation and `dispformula` models out of scope — **done**
+   (clear error).
+6. Simulations run in the sandbox (4 cores), in parts that resume.
+
+New, from study 1b:
+
+7. **Refits by default for mixed models** (`refit = TRUE`): Freedman–Lane
+   re-estimates the variance parameters for each permuted data set. Holding
+   V fixed is much faster but rejected 8.6% of true nulls for a split-plot
+   whole-plot factor (refits 5.0%). Costs one set of refits per term (Oats:
+   about 8 s for 199 permutations of three terms on one core).
+8. Pairs and contrasts by permutation use one reduced model per family (all
+   compared means equal) and one set of refits; a max-|t| familywise
+   adjustment (permutation Tukey) is possible from the same refits and is a
+   natural next step (not built).
+
+Still open:
+
+4. Default `ncore = 1` for all resampling functions? Recommended: yes
+   (CRAN and CI allow 2; the default is still 3).
 
 ## 13. Risks
 
