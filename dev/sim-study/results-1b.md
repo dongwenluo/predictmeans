@@ -48,7 +48,25 @@ Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-
 
 | cell | n | method | reject 5% | reject 1% |
 |---|---|---|---|---|
+| fx2_lmm_lev | 500 | raw | 0.052 | 0.004 |
+| fx2_lmm_lev | 500 | fl | 0.050 | 0.006 |
+| fx2_lmm_lev | 500 | flr | 0.054 | 0.008 |
+| fx2_lmm_lev | 500 | kr | 0.048 | 0.006 |
 | fx2_lmm_sp | 500 | raw | 0.054 | 0.006 |
 | fx2_lmm_sp | 500 | fl | 0.086 | 0.020 |
 | fx2_lmm_sp | 500 | flr | 0.050 | 0.004 |
 | fx2_lmm_sp | 500 | kr | 0.046 | 0.004 |
+| fx2_sp_pairs | 500 | flr.1v2 | 0.054 | 0.020 |
+| fx2_sp_pairs | 500 | flr.1v3 | 0.052 | 0.008 |
+| fx2_sp_pairs | 500 | flr.1v4 | 0.822 | 0.500 |
+| fx2_sp_pairs | 500 | flr.2v3 | 0.050 | 0.014 |
+| fx2_sp_pairs | 500 | flr.2v4 | 0.808 | 0.502 |
+| fx2_sp_pairs | 500 | flr.3v4 | 0.818 | 0.528 |
+| fx2_sp_pairs | 500 | kr.1v2 | 0.056 | 0.014 |
+| fx2_sp_pairs | 500 | kr.1v3 | 0.050 | 0.012 |
+| fx2_sp_pairs | 500 | kr.1v4 | 0.832 | 0.556 |
+| fx2_sp_pairs | 500 | kr.2v3 | 0.048 | 0.010 |
+| fx2_sp_pairs | 500 | kr.2v4 | 0.826 | 0.558 |
+| fx2_sp_pairs | 500 | kr.3v4 | 0.822 | 0.566 |
+| fx2_sp_pairs | 500 | flr.holm | 0.042 | 0.000 |
+| fx2_sp_pairs | 500 | kr.holm | 0.040 | 0.008 |
