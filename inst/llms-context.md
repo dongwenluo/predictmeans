@@ -116,9 +116,14 @@ predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)$pairs
 # predictmeans(lmer(log(y) ~ ...), "A", trans = exp, plot = FALSE)   # ratios of geometric means
 
 # permutation p-values for terms and pairs (Freedman-Lane by default, any model class:
-# lm, aov, glm, lme, gls, lmer, glmer, glmmTMB; no refits)
+# lm, aov, glm, lme, gls, lmer, glmer, glmmTMB; mixed models refitted, refit = FALSE is faster)
 perm <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
 predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
+# unequal error variances in lm/glm: HC3 statistics with sign flips (wild bootstrap)
+# permmodels(lm_fit, nperm = 999, seed = 1, robust = TRUE)
+# effect sizes and a check of the parametric test; several responses combined
+permstats(perm)
+# permcombine(y1 = perm1, y2 = perm2)   # same rows, same seed and nperm
 # the 1.x scheme (response / fitted values permuted, refits kept in permlist)
 perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE, method = "raw")
 # random effects or any two nested mixed models (lmer, glmer, glmmTMB)
@@ -152,6 +157,10 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   "raw"` reproduces 1.x. For GLMs/GLMMs it works on the link (working) scale.
   `permlmer()` for GLMMs uses the working scale, and randomised quantile residuals for
   0/1 responses. With a `permlist`, `vcov_adjust` (Kenward-Roger) is not used.
+- `permstats()` gives standardised effect sizes and `param.size`, the rejection rate of the
+  parametric test in the permuted data sets (near `level` when the parametric test suits
+  the data). `permcombine()` combines tests of several responses made with the same
+  permutations (Fisher or Tippett) and gives min-p adjusted p-values over the responses.
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
   `simultaneous = TRUE` gives simultaneous bands. `predictmeans()` on a `semireg()` fit
   gives means with the smooth included and normal-based tests.

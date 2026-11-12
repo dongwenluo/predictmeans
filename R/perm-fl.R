@@ -155,10 +155,10 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
     tests[[k]]$e0 <- z - f0
     tests[[k]]$value <- stat(tests[[k]], matrix(z))
     tests[[k]]$df <- rank_of(tests[[k]]$B) - rank_of(tests[[k]]$A)
-    tests[[k]]$obs <- round(tests[[k]]$value, 6)
-    tests[[k]]$count <- 0
   }
 
+  # the permuted statistics of every test (kept for permstats() and permcombine())
+  Tm <- matrix(NA_real_, length(tests), nperm, dimnames = list(names(tests), NULL))
   perms <- pm_perm_source(n, seed, perms)
   chunk <- max(1L, min(nperm, floor(2e6 / n)))
   done <- 0L
@@ -167,12 +167,12 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
     idx <- perms(m)
     for (k in names(tests)) {
       tk <- tests[[k]]
-      Y <- tk$f0 + matrix(tk$e0[idx], n)
-      tests[[k]]$count <- tk$count + sum(round(stat(tk, Y), 6) >= tk$obs)
+      Tm[k, done + seq_len(m)] <- stat(tk, tk$f0 + matrix(tk$e0[idx], n))
     }
     done <- done + m
   }
-  pval <- vapply(tests, function(tk) (tk$count + !exact) / (nperm + !exact), numeric(1))
+  obs <- vapply(tests, `[[`, numeric(1), "value")
+  pval <- stats::setNames(pm_perm_p(obs, Tm, exact), names(tests))
 
   tabs <- if (des$kind == "lm") pm_fl_tables_lm(model, type, pval) else pm_fl_tables(X, z, df_res, tests, pval, type, des$kind)
   COEF <- tabs$COEF
@@ -188,8 +188,15 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
     print(ANOVA)
     cat("\nNote: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
   }
-  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA,
-       perm = pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), colnames(X), attr(perms, "matrix")))
+  perm <- pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), colnames(X), attr(perms, "matrix"))
+  # coefficients: |t| (the F of one column is t^2)
+  cf <- startsWith(names(tests), "coef:")
+  Ls <- lapply(tests, function(tk) diag(ncol(X))[setdiff(tk$B, tk$A), , drop = FALSE])
+  obs[cf] <- sqrt(obs[cf])
+  Tm[cf, ] <- sqrt(Tm[cf, ])
+  perm$stats <- pm_perm_statset(model, obs, Tm, pval, vapply(tests, `[[`, numeric(1), "df"),
+                                ifelse(cf, "t", "F"), Ls, df_res, n)
+  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
 }
 
 ## Tables for lm and aov: the model's own coefficient and ANOVA tables with

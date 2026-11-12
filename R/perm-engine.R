@@ -17,13 +17,15 @@
 ## stream has its own random number state and the user's stream is left as it
 ## was; without one it draws from the user's stream (as set.seed() before the
 ## call would).
-pm_perm_stream <- function(n, seed = NULL, state = NULL) {
+pm_perm_stream <- function(n, seed = NULL, state = NULL, flip = FALSE) {
   genv <- globalenv()
   shared <- is.null(seed) && is.null(state)
   if (!is.null(seed)) state <- pm_with_seed(seed, get(".Random.seed", envir = genv, inherits = FALSE))
   if (shared && !exists(".Random.seed", envir = genv, inherits = FALSE)) set.seed(NULL)
   start <- if (shared) get(".Random.seed", envir = genv, inherits = FALSE) else state
-  draw <- function(m) matrix(vapply(seq_len(m), function(i) sample.int(n), integer(n)), nrow = n)
+  # flip = TRUE: random signs (+1/-1) instead of permutations (wild bootstrap)
+  draw <- if (flip) function(m) matrix(sample(c(-1L, 1L), n * m, replace = TRUE), nrow = n) else
+    function(m) matrix(vapply(seq_len(m), function(i) sample.int(n), integer(n)), nrow = n)
   f <- function(m) {
     if (shared) return(draw(m))
     old <- get0(".Random.seed", envir = genv, inherits = FALSE)
@@ -42,8 +44,8 @@ pm_perm_stream <- function(n, seed = NULL, state = NULL) {
 ## Permutations from a matrix given by the user (e.g. permindex()), or from
 ## pm_perm_stream(): a function giving the next m permutations. 'perms' must
 ## have one row per observation and permutations of 1:n as columns.
-pm_perm_source <- function(n, seed = NULL, perms = NULL, state = NULL) {
-  if (is.null(perms)) return(pm_perm_stream(n, seed, state))
+pm_perm_source <- function(n, seed = NULL, perms = NULL, state = NULL, flip = FALSE) {
+  if (is.null(perms)) return(pm_perm_stream(n, seed, state, flip))
   perms <- pm_perm_check_index(perms, n)
   pos <- 0L
   f <- function(m) {
@@ -411,7 +413,8 @@ print.pm_perm <- function(x, ...) {
   scheme <- c("freedman-lane" = "Freedman-Lane", "freedman-lane-refit" = "Freedman-Lane with refits")[x$scheme]
   if (is.na(scheme)) scheme <- x$scheme
   cat("Permutation object: ", scheme, if (isTRUE(x$robust)) " (robust HC3 statistics)", ", ", x$nperm,
-      " permutations", if (!is.null(x$idx)) " (given)", ", ", length(x$coef_names), " coefficients.\n", sep = "")
+      if (isTRUE(x$flip)) " sign flips (wild bootstrap)" else " permutations", if (!is.null(x$idx)) " (given)",
+      ", ", length(x$coef_names), " coefficients.\n", sep = "")
   cat("Give the whole result of permmodels() to predictmeans() or contrastmeans() as 'permlist'.\n")
   invisible(x)
 }

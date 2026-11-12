@@ -33,12 +33,16 @@
 #'   (the default), so the variance parameters are estimated again each time.
 #'   \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
 #'   often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).
-#' @param robust For \code{lm}, \code{aov} and \code{glm} models with \code{method = "freedman-lane"}: use
-#'   heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics, observed and permuted alike, which keeps
-#'   the Freedman-Lane test valid (in large samples) when the error variances are unequal and the model ignores
-#'   it (DiCiccio and Romano, 2017). The tables then show the robust statistics; pairs and contrasts from the
+#' @param robust For \code{lm}, \code{aov} and \code{glm} models with \code{method = "freedman-lane"}: tests for
+#'   error variances that are unequal while the model assumes them equal. The statistics are
+#'   heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics (DiCiccio and Romano, 2017), and the signs of
+#'   the reduced model's residuals are flipped at random instead of permuted (a wild bootstrap; Davidson and
+#'   Flachaire, 2008), so each residual stays with its own unit and keeps its variance. In a simulation with
+#'   group SDs 3, 1, 1 the usual and permutation F tests rejected 19-21\% of true null hypotheses at the 5\%
+#'   level, these tests 5-7\% (see Details). The tables show the robust statistics; pairs and contrasts from the
 #'   result use them too (robust t, and confidence limits from robust standard errors). Type II tests match
-#'   \code{car::Anova(model, type = "II", white.adjust = "hc3")}. The default is \code{FALSE}.
+#'   \code{car::Anova(model, type = "II", white.adjust = "hc3")}. Not with \code{perms}. The default is
+#'   \code{FALSE}.
 #' @return
 #' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
 #' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
@@ -93,6 +97,9 @@
 #' result can be given to \code{\link{predictmeans}} and \code{\link{contrastmeans}} as for \code{lm}. For \code{glmer} and
 #' \code{glmmTMB} models only \code{method = "freedman-lane"} is available.
 #' @references
+#' Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at last. \emph{Journal of Econometrics},
+#' 146, 162-169.
+#'
 #' DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for correlation and regression
 #' coefficients. \emph{Journal of the American Statistical Association}, 112, 1211-1220.
 #'

@@ -36,17 +36,18 @@ test_that("robust tables: HC3 standard errors and Wald F tests", {
   expect_output(print(r1$perm), "robust HC3")
 })
 
-test_that("robust p-value of a coefficient by hand (given permutations)", {
+test_that("robust p-value of a coefficient by hand (sign flips of the reduced model's residuals)", {
   d <- robust_data()
   fm <- lm(y ~ x + A, data = d)
-  set.seed(5)
-  P <- replicate(19, sample(30))
-  r <- permmodels(fm, perms = P, type = "III", robust = TRUE, prt = FALSE)
+  r <- permmodels(fm, nperm = 19, seed = 5, type = "III", robust = TRUE, prt = FALSE)
+  expect_output(print(r$perm), "sign flips")
+  SG <- pm_perm_stream(30, seed = 5, flip = TRUE)(19)
+  expect_true(all(SG %in% c(-1, 1)))
   X <- model.matrix(fm)
   red <- lm(d$y ~ X[, -2] - 1)                     # reduced model without x
   tobs <- abs(coef(fm)["x"]) / sqrt(hc3(fm)["x", "x"])
-  tperm <- apply(P, 2, function(i) {
-    ys <- fitted(red) + residuals(red)[i]
+  tperm <- apply(SG, 2, function(s) {
+    ys <- fitted(red) + residuals(red) * s
     f <- lm(ys ~ X - 1)
     abs(coef(f)[2]) / sqrt(hc3(f)[2, 2])
   })
@@ -85,6 +86,7 @@ test_that("robust = TRUE: glm on the working scale; errors for mixed models and 
   expect_true(all(rg$ANOVA$Perm_p_value > 0 & rg$ANOVA$Perm_p_value <= 1))
   fm <- lm(y ~ x + A, data = d)
   expect_error(permmodels(fm, nperm = 9, robust = TRUE, method = "raw", prt = FALSE), "freedman-lane")
+  expect_error(permmodels(fm, perms = replicate(9, sample(30)), robust = TRUE, prt = FALSE), "perms")
   m <- lme4::lmer(y ~ x + (1 | A), data = d)
   expect_error(permmodels(m, nperm = 9, robust = TRUE, prt = FALSE), "lm, aov and glm")
 })

@@ -781,11 +781,18 @@ value for predictmeans:
     — **Done** as `permmodels(robust = TRUE)` (`R/perm-robust.R`): HC3 Wald
     t and F for every test (each a hypothesis matrix L: type I Cholesky rows,
     type II car's hypotheses, type III the term's columns; reduced model the
-    null space of L), batched over permutations with no refits; glm on the
-    working scale. Pairs and contrasts use robust t and robust-SE limits.
-    Checked: SEs and type III F by hand, type II F equal to
+    null space of L), batched with no refits; glm on the working scale.
+    The reduced model's residuals get random signs instead of being
+    permuted (wild bootstrap, Rademacher weights; Davidson and Flachaire
+    2008; "sign flipping" in Winkler et al. 2014), because the simulation
+    (`dev/sim-perm-robust.R`) found permutations of HC3 statistics still
+    liberal in small samples (SD 3/1/1 with groups 3/6/9: 9.0%; SD ∝ |x|:
+    8.0%; skewed errors 15.9%) and sign flips closer to 5% in every
+    unequal-variance case, with equal variances unaffected (see
+    `dev/sim-study/README.md`). Pairs and contrasts use robust t and
+    robust-SE limits. Checked: SEs and type III F by hand, type II F equal to
     `car::Anova(white.adjust = "hc3")`, a coefficient's p-value by hand from
-    given permutations. Simulation: `dev/sim-perm-robust.R`.
+    the sign matrix.
 13. **When is `refit = FALSE` safe?** A small study with 30, 60 and 120
     groups; then possibly `refit = "auto"` by the number of groups.
 14. Later: nonparametric combination of dependent tests (several traits,
@@ -794,6 +801,23 @@ value for predictmeans:
     the false discovery proportion for many traits (Hemerik, Solari and
     Goeman 2019), standardised effect sizes against the permutation null,
     and a parametric-vs-permutation p-value plot as a model diagnostic.
+    — **Done in part.** `permmodels()` (Freedman–Lane paths) keeps the
+    permuted statistics in `perm$stats` (tests x permutations, NA for failed
+    refits; with the df of the usual parametric test: residual,
+    Satterthwaite for lmer, nlme for lme, Inf for GLMMs). `permstats()`:
+    standardised effect size (Gotelli and McCabe 2002), parametric and
+    permutation p-values, and `param.size`, the rejection rate of the
+    parametric test in the permuted data sets (a calibration check of the
+    parametric test for these data, as a number instead of a plot).
+    `permcombine()`: NPC of results with identical permutations (Fisher,
+    Tippett) and single-step min-p adjusted p-values over the responses.
+    Max-statistic over time points: `contrastmeans(adj = "westfall")` with a
+    permlist (step 10). Not done: cluster tests over curves and FDP bounds
+    (they need many tests over a continuum, e.g. spectra or growth curves;
+    worth doing when such a use case comes up). Checked by hand: effect
+    sizes and `param.size` from Freedman–Lane F computed with `lm()`;
+    Fisher and Tippett combination and min-p from the stored statistics;
+    Satterthwaite df equal to lmerTest's, lme df to `anova()`.
 
 ## 13. Risks
 
@@ -892,6 +916,17 @@ come from abstracts:
   EEG- and MEG-data. *J. Neurosci. Methods* 164, 177–190.
 - Anderson, M. J. and Robinson, J. (2001). Permutation tests for linear
   models. *Aust. N. Z. J. Stat.* 43, 75–88.
+- Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at last.
+  *J. Econometrics* 146, 162–169. (Rademacher weights; step 12.)
+- Gotelli, N. J. and McCabe, D. J. (2002). Species co-occurrence: a
+  meta-analysis of J. M. Diamond's assembly rules model. *Ecology* 83,
+  2091–2096. (Standardised effect size against a null model; step 14.)
+- Pesarin, F. and Salmaso, L. (2010). *Permutation Tests for Complex Data:
+  Theory, Applications and Software*. Wiley. (NPC; step 14.)
+- Winkler, A. M., Webster, M. A., Brooks, J. C., Tracey, I., Smith, S. M.
+  and Nichols, T. E. (2016). Non-parametric combination and related
+  permutation tests for neuroimaging. *Hum. Brain Mapp.* 37, 1486–1511.
+  (Fisher/Tippett NPC with synchronised permutations; step 14.)
 
 From memory (to be checked before they are cited in help pages):
 Carpenter, Goldstein and Rasbash (2003), *JRSS C* 52, 431–443; Chung and

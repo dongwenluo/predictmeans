@@ -204,15 +204,32 @@
   p-value of the joint Wald F from the same permutations. The result gains
   a third component, `Joint F test of the contrasts`.
 
-* `permmodels(robust = TRUE)` for `lm`, `aov` and `glm` models:
-  Freedman-Lane permutations of heteroscedasticity-robust statistics (HC3
-  sandwich t and Wald F, observed and permuted alike), which stay valid in
-  large samples when the error variances are unequal and the model ignores
-  it (DiCiccio and Romano 2017). Type II F values equal
+* `permmodels(robust = TRUE)` for `lm`, `aov` and `glm` models whose error
+  variances are unequal while the model assumes them equal:
+  heteroscedasticity-robust statistics (HC3 sandwich t and Wald F;
+  DiCiccio and Romano 2017), with the signs of the reduced model's residuals
+  flipped at random instead of permuted (a wild bootstrap), so each residual
+  keeps its own variance. In a simulation with group SDs 3, 1, 1 the usual
+  and permutation F tests rejected about 20% of true null hypotheses at the
+  5% level; robust permutations 6-9%, sign flips less (see
+  `dev/sim-perm-robust.R`). Type II F values equal
   `car::Anova(white.adjust = "hc3")`. Pairs and contrasts from the result
   use the robust t, and their confidence limits use robust standard errors.
   The `perm` component of `permmodels()` results now prints a one-line
   summary instead of its contents.
+
+* New `permstats()`: from the permutations kept by `permmodels()`
+  (Freedman-Lane), for each term and coefficient a standardised effect size
+  (observed statistic against the mean and SD of the permuted ones) and a
+  check of the parametric test: its p-value and `param.size`, the proportion
+  of permuted data sets (no effect of the term) in which it rejects at
+  `level` (residual, Satterthwaite or nlme df; Wald chi-square for GLMMs).
+
+* New `permcombine()`: nonparametric combination of permutation tests made
+  with the same permutations, e.g. one model fitted to several responses on
+  the same units (same `seed`, `nperm`): for each term, a combined p-value
+  (Fisher or Tippett) and min-p adjusted p-values over the responses, with
+  their correlation kept.
 
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):

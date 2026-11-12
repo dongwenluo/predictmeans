@@ -1,15 +1,21 @@
-## Heteroscedasticity-robust Freedman-Lane permutation tests for lm, aov and
-## glm models (permmodels(robust = TRUE); plan step 12).
+## Heteroscedasticity-robust Freedman-Lane tests for lm, aov and glm models
+## (permmodels(robust = TRUE); plan step 12).
 ##
 ## With unequal error variances that the model ignores, permuting residuals
 ## is not exact, and permutation tests of unstudentised (or classically
-## studentised) statistics can reject far too often (23-24% at the 5% level in
-## the simulation study). Studentising with a heteroscedasticity-consistent
-## (sandwich) standard error makes the Freedman-Lane test asymptotically valid
-## (DiCiccio and Romano, 2017, JASA 112, 1211-1220). Here the statistics are
+## studentised) statistics can reject far too often (19-23% at the 5% level in
+## dev/sim-perm-robust.R). Studentising with a heteroscedasticity-consistent
+## (sandwich) standard error makes the Freedman-Lane permutation test
+## asymptotically valid (DiCiccio and Romano, 2017, JASA 112, 1211-1220), and
+## flipping the signs of the reduced model's residuals instead of permuting
+## them (a wild bootstrap with Rademacher weights; Davidson and Flachaire 2008;
+## Winkler et al. 2014) keeps each residual with its own unit, and so its
+## variance: in the simulation it was closer to 5% in every case with unequal
+## variances (e.g. 5.8% against 7.3%; skewed errors 9.4% against 15.9%) and
+## 5.5% with equal variances. So robust = TRUE flips signs. The statistics are
 ## HC3 Wald statistics: |t| = |L b| / sqrt(L S L') for one row, F = (L b)'
 ## (L S L')^(-1) (L b) / q for q rows, S = (X'X)^-1 X' diag(r^2 / (1 - h)^2) X
-## (X'X)^-1, computed for blocks of permuted responses at once (no refits).
+## (X'X)^-1, computed for blocks of resampled responses at once (no refits).
 ## Each test is a hypothesis matrix L (type I: rows of the Cholesky factor of
 ## X'X, as lmerTest; type II: car's hypotheses in the least-squares metric;
 ## type III: the term's columns; a coefficient or a pair: one row), and its
@@ -58,6 +64,11 @@ pm_perm_fl_robust <- function(model, nperm, type, exact, seed, prt, perms = NULL
   if (!inherits(model, "lm")) {
     stop("robust = TRUE is for lm, aov and glm models.", call. = FALSE)
   }
+  if (!is.null(perms)) {
+    stop("'perms' cannot be used with robust = TRUE (the residuals' signs are flipped, not permuted).",
+         call. = FALSE)
+  }
+  exact <- FALSE
   des <- pm_fl_design(model)
   X <- des$X
   z <- des$z
@@ -91,24 +102,25 @@ pm_perm_fl_robust <- function(model, nperm, type, exact, seed, prt, perms = NULL
     tk$f0 <- R0$f0
     tk$e0 <- R0$e0
     tk$value <- stat(tk, matrix(z))
-    tk$obs <- round(tk$value, 6)
     tk$df <- nrow(tk$L)
-    tk$count <- 0
     tests[[k]] <- tk
   }
-  src <- pm_perm_source(n, seed, perms)
+  # the permuted statistics (kept for permstats() and permcombine())
+  Tm <- matrix(NA_real_, length(tests), nperm, dimnames = list(names(tests), NULL))
+  src <- pm_perm_source(n, seed, flip = TRUE)
   chunk <- max(1L, min(nperm, floor(2e6 / n)))
   done <- 0L
   while (done < nperm) {
     m <- min(chunk, nperm - done)
-    idx <- src(m)
+    sg <- src(m)
     for (k in names(tests)) {
       tk <- tests[[k]]
-      tests[[k]]$count <- tk$count + sum(round(stat(tk, tk$f0 + matrix(tk$e0[idx], n)), 6) >= tk$obs)
+      Tm[k, done + seq_len(m)] <- stat(tk, tk$f0 + tk$e0 * sg)
     }
     done <- done + m
   }
-  pval <- vapply(tests, function(tk) (tk$count + !exact) / (nperm + !exact), numeric(1))
+  obs <- vapply(tests, `[[`, numeric(1), "value")
+  pval <- stats::setNames(pm_perm_p(obs, Tm, exact), names(tests))
 
   # tables: least-squares (working-scale) estimates with HC3 standard errors
   b <- qr.coef(P$qr, z)
@@ -128,20 +140,26 @@ pm_perm_fl_robust <- function(model, nperm, type, exact, seed, prt, perms = NULL
   tl <- c(I = "I", "1" = "I", II = "II", "2" = "II", III = "III", "3" = "III")[[type]]
   attr(ANOVA, "heading") <- paste0("Type ", tl, " robust (HC3) Wald F tests",
                                    if (des$kind == "working") " on the working (link) scale" else "",
-                                   " (Freedman-Lane permutations)")
+                                   " (Freedman-Lane residuals, sign flips)")
   if (prt) {
     if (!is.null(COEF)) {
       cat("\nCoefficients of (fixed) effects (robust standard errors):\n")
       print(COEF)
-      cat("\nNote: Perm_p_value of robust t test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n")
+      cat("\nNote: Perm_p_value of robust t test is obtained using", sQuote(nperm),
+          "sign flips of the Freedman-Lane residuals (wild bootstrap).\n")
     }
     cat("\nANOVA:\n")
     cat(attr(ANOVA, "heading"), "\n", sep = "")
     print(ANOVA)
-    cat("\nNote: Perm_p_value of robust F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
+    cat("\nNote: Perm_p_value of robust F test is obtained using", sQuote(nperm),
+        "sign flips of the Freedman-Lane residuals (wild bootstrap).\n\n")
   }
-  perm <- pm_perm_fl_object(X, z, nperm, exact, attr(src, "start"), colnames(X), attr(src, "matrix"))
+  perm <- pm_perm_fl_object(X, z, nperm, exact, attr(src, "start"), colnames(X))
   perm$robust <- TRUE
+  perm$flip <- TRUE
+  perm$stats <- pm_perm_statset(model, obs, Tm, pval, vapply(tests, `[[`, numeric(1), "df"),
+                                ifelse(startsWith(names(tests), "coef:"), "t", "F"), lapply(tests, `[[`, "L"),
+                                P$df_res, n)
   list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
 }
 
@@ -160,14 +178,14 @@ pm_perm_fl_t_robust <- function(perm, L) {
     R0
   })
   count <- valid <- numeric(nrow(L))
-  src <- pm_perm_source(n, perms = perm$idx, state = perm$start)
+  src <- pm_perm_source(n, state = perm$start, flip = TRUE)
   chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
   done <- 0L
   while (done < perm$nperm) {
     m <- min(chunk, perm$nperm - done)
-    idx <- src(m)
+    sg <- src(m)
     for (j in seq_len(nrow(L))) {
-      tj <- round(as.vector(pm_hc_absT(P, L[j, , drop = FALSE], red[[j]]$f0 + matrix(red[[j]]$e0[idx], n))), 6)
+      tj <- round(as.vector(pm_hc_absT(P, L[j, , drop = FALSE], red[[j]]$f0 + red[[j]]$e0 * sg)), 6)
       ok <- !is.na(tj)
       count[j] <- count[j] + sum(tj[ok] >= red[[j]]$obs)
       valid[j] <- valid[j] + sum(ok)
@@ -184,13 +202,13 @@ pm_perm_fl_T_robust <- function(perm, L) {
   P <- pm_hc_parts(X)
   Lr <- pm_indep_rows(L)
   R0 <- pm_hc_reduced(X, z, L)
-  src <- pm_perm_source(n, perms = perm$idx, state = perm$start)
+  src <- pm_perm_source(n, state = perm$start, flip = TRUE)
   chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
   done <- 0L
   Tl <- Fl <- list()
   while (done < perm$nperm) {
     m <- min(chunk, perm$nperm - done)
-    Y <- R0$f0 + matrix(R0$e0[src(m)], n)
+    Y <- R0$f0 + R0$e0 * src(m)
     Tl[[length(Tl) + 1]] <- pm_hc_absT(P, L, Y)
     Fl[[length(Fl) + 1]] <- pm_hc_F(P, Lr, Y)
     done <- done + m
