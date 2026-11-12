@@ -578,9 +578,16 @@ update; R CMD check at the end of each.
    (rerun 4–5 cases); glm without random effects; glmmTMB families (nbinom2,
    beta); route B vs bootstrap under overdispersion; parametric bootstrap
    reference for the paper.
-2. **Engine, part 1 (no change in results):** permutation indices, failure
-   counting, rounding of statistics; `permmodels()`, `permlmer()` and
-   `bootmodels()` moved onto it; snapshot test shows identical output.
+2. **Engine, part 1 (no change in results)** — **done** (`R/perm-engine.R`):
+   `pm_perm_stream()` (indices with a private seed, drawable in chunks),
+   `pm_perm_map()` (refits, parallel, errors → failures), `pm_perm_drop()`,
+   `pm_perm_p()` (rounded comparison, +1 rule, NAs left out),
+   `pm_perm_tstats()` (|t| of contrasts from a permlist). `permmodels()`
+   (raw and Freedman–Lane), `permlmer()`, `bootmodels()` and the pair and
+   contrast p-values use it. `dev/snapshot-perm.R` (33 calls) and
+   `dev/snapshot-predictmeans.R`: identical, except that a seed no longer
+   moves the user's random number stream. Found and fixed: `cbind(R, F)`
+   responses permuted only `F`.
 2b. **Order-invariant whitening** (`pm_whiten()`, §8) in `permmodels()`
    (lme, gls, lmer) and `permlmer()` — **done** (`R/whiten.R`): symmetric
    root from q × q eigen decompositions (block roots for nlme). Confirmed

@@ -498,29 +498,7 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 		    }
       }else{
         nsim <- length(permlist[[1]])
-
-        tValue <- function(x, rK){
-          cm <- rK%*%x$coef
-          vcovm <- x$vcov
-          vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-          ses <- sqrt(diag(vcov.contr))
-          t.v <- cm/ses
-          return(t.v)
-        }
-
-        if (.Platform$OS.type=="windows") {
-          cl <- makeCluster(ncore)
-          clusterExport(cl, c("tValue", "rK", "t.v"), envir = environment())
-          t.TableL <- parLapplyLB(cl, permlist[[1]], function(x) round(abs(tValue(x, rK)),6) >= round(abs(t.v), 6))
-          stopCluster(cl)
-        }else{
-          t.TableL <- mclapply(permlist[[1]], function(x) {
-            round(abs(tValue(x, rK)),6) >= round(abs(t.v), 6)
-          }, mc.cores=ncore)
-        }
-
-        t.TableL <- matrix(unlist(t.TableL), ncol = length(t.TableL))
-        t.p.values <-  (rowSums(t.TableL)+1)/(nsim+1)
+        t.p.values <- pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
 
       } # end of if (is.null(permlist))
 

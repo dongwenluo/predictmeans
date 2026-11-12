@@ -207,20 +207,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
   	nsim <- length(permlist[[1]])
-    tValue <- function(x, rK){
-    cm <- rK%*%x$coef
-    vcovm <- x$vcov
-    vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-    ses <- sqrt(diag(vcov.contr))
-    t.v <- cm/ses
-    return(t.v)
-  }
-
-  if (nctr==1) {
-    per.p <- (sum(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
-  } else {
-    per.p <- (rowSums(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
-  }
+  per.p <- pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
   rownames(out.put) <- rownames(ctrmatrix)

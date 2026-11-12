@@ -17,7 +17,7 @@ and III Wald chi-square statistics.}
 
 \item{seed}{Optional random number seed, for reproducible results; the user's random number stream is left as it was.}
 
-\item{ncore}{Number of cores for refitting (not on Windows), the default is 1.}
+\item{ncore}{Number of cores for refitting, the default is 1.}
 
 \item{prt}{Logical: print the tables? The default is TRUE.}
 }

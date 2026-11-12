@@ -17,7 +17,7 @@
 #' @param type The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics, Types II
 #'   and III Wald chi-square statistics.
 #' @param seed Optional random number seed, for reproducible results; the user's random number stream is left as it was.
-#' @param ncore Number of cores for refitting (not on Windows), the default is 1.
+#' @param ncore Number of cores for refitting, the default is 1.
 #' @param prt Logical: print the tables? The default is TRUE.
 #' @return
 #' Invisibly, a list with \code{permlist} (the coefficients and covariance matrices of the refits),
@@ -64,26 +64,25 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
     rf <- tryCatch(suppressMessages(suppressWarnings(lme4::refit(model, newresp = y))), error = function(e) NULL)
     if (is.null(rf)) NULL else stats_of(rf)
   }
-  cores <- if (.Platform$OS.type == "windows") 1L else as.integer(ncore)
-  res <- if (cores > 1) parallel::mclapply(ysim, one, mc.cores = cores) else lapply(ysim, one)
-  res <- res[!vapply(res, is.null, logical(1))]
+  res <- pm_perm_drop(pm_perm_map(ysim, one, ncore, packages = "lme4"))
+  failures <- res$failures
+  res <- res$res
   B <- length(res)
   if (B == 0) stop("No refit to simulated data succeeded.")
 
   obs <- stats_of(model)
-  pval <- function(sim, o) (rowSums(round(sim, 6) >= round(o, 6)) + 1)/(B + 1)
   # coefficients: |t|
   t_obs <- abs(obs[[1]]$coef/sqrt(diag(obs[[1]]$vcov)))
   t_sim <- vapply(res, function(r) abs(r[[1]]$coef/sqrt(diag(r[[1]]$vcov))), numeric(length(t_obs)))
   ctab <- stats::coef(summary(model))
-  bp <- pval(matrix(t_sim, nrow = length(t_obs)), t_obs)
+  bp <- pm_perm_p(t_obs, t_sim)
   if ("(Intercept)" %in% rownames(ctab)) bp[rownames(ctab) == "(Intercept)"] <- NA
   COEF <- round(cbind(ctab, Boot_p_value = bp), 4)
   # terms
   aT <- obs[[2]]
   scol <- if (type %in% c("I", "1")) "F value" else "Chisq"
   s_sim <- vapply(res, function(r) r[[2]][, scol], numeric(nrow(aT)))
-  ap <- pval(matrix(s_sim, nrow = nrow(aT)), aT[, scol])
+  ap <- pm_perm_p(aT[, scol], s_sim)
   ap[rownames(aT) == "(Intercept)"] <- NA            # the null model keeps the intercept
   ANOVA <- round(cbind(aT, Boot_p_value = ap), 4)
   attr(ANOVA, "heading") <- attr(aT, "heading")
@@ -92,9 +91,11 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
     print(COEF)
     cat("\nANOVA:\n")
     print(ANOVA)
-    cat("\nNote: Boot_p_value is from", sQuote(B), "parametric bootstrap samples under the global null model.\n\n")
+    cat("\nNote: Boot_p_value is from ", sQuote(B), " parametric bootstrap samples under the global null model",
+        pm_perm_failnote(failures), ".\n\n", sep = "")
   }
   out <- list(permlist = lapply(res, `[[`, 1), COEFFICENTS = COEF, ANOVA = ANOVA)
   attr(out, "resampling") <- "parametric bootstrap"
+  if (failures > 0) attr(out, "failures") <- failures
   invisible(out)
 }

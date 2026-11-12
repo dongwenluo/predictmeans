@@ -104,60 +104,37 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   xbeta <- as.vector(getME(lmer0, "X")%*%fixef0)
   errors <- getME(lmer0, "y") - xbeta
 
-  #Weighting the residuals.
   wterrors <- W$solve(errors)
 
-  # permute weighted resid, then unweighted it for 999 times
-  # permResid <- matrix(0, length(wterrors), nperm)
-  # for (i in 1:nperm) {
-  # if(!missing(seed)) set.seed(seed+i)
-  # permResid[, i] <- W$mult(sample(wterrors))
-  # }
-  # permy <- as.data.frame(xbeta+permResid)
-  if (ref) {
-    if(!missing(seed)) {
-      set.seed(seed)
-    }
-    permy <- as.data.frame(xbeta+replicate(nperm, W$mult(sample(wterrors))))
-  } else {
-    if(!missing(seed)) {
-      set.seed(seed)
-    }
-    permy <- replicate(nperm, {
-      rowindex <- sample(seq_along(errors))
-      as.data.frame(xbeta[rowindex]+W$mult(wterrors[rowindex]))
-    })
+  # Random effects (same fixed effects): the decorrelated residuals are
+  # permuted. Fixed effects: fitted values and decorrelated residuals are
+  # permuted together.
+  idx <- pm_perm_stream(length(errors), if (missing(seed)) NULL else seed)(nperm)
+  permy <- function(k) {
+    r <- idx[, k]
+    if (ref) xbeta + W$mult(wterrors[r]) else xbeta[r] + W$mult(wterrors[r])
   }
 
-  # Calculating the likelihood ratio test statistic for each permutation.
-  # LRTs are rounded to 4 decimals: when the tested variance is estimated at
-  # 0 the LRT is 0 up to optimizer noise, and without rounding permuted
-  # values of 0 could count as smaller than an observed 1e-9.
-  lrtest1 <- 2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))
-  lrtest1 <- round(max(as.numeric(lrtest1), 0), 4)
-
-  if (.Platform$OS.type=="windows") {
-	  cl <- makeCluster(ncore)
-	  clusterEvalQ(cl, library(lme4))
-	  clusterExport(cl, c("lmer0", "lmer1", "ref"), envir = environment())
-	  lrtest2 <- parLapplyLB(cl, permy, function(x) {
-		LRT <- try(2*(logLik(refit(lmer1, x), REML=ref) - logLik(refit(lmer0, x), REML=ref)), TRUE)
-		LRT <- ifelse(is.numeric(LRT), LRT, NA)
-	  })
-	  stopCluster(cl)
-  } else {
-	  lrtest2 <- mclapply(permy, function(x) {
-		LRT <- try(2*(logLik(suppressMessages(refit(lmer1, x)), REML=ref) - logLik(suppressMessages(refit(lmer0, x)), REML=ref)), TRUE)
-		LRT <- ifelse(is.numeric(LRT), LRT, NA)
-	  }, mc.cores=ncore)
-  }
-
-  #Calculating the p-values.
-  lrtest <- na.omit(unlist(lrtest2))
-  lrtest <- round(pmax(lrtest, 0), 4)
-  perm_p <- (sum(lrtest >= lrtest1) +1)/(length(lrtest) + 1)
+  # Likelihood-ratio statistics. They are compared after rounding to 4
+  # decimals (pm_perm_p()): when the tested variance is estimated at 0 the
+  # LRT is 0 up to optimizer noise, and without rounding permuted values of 0
+  # could count as smaller than an observed 1e-9.
+  lrtest1 <- max(as.numeric(2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))), 0)
+  lrtest2 <- pm_perm_map(seq_len(nperm), function(k) {
+    y <- permy(k)
+    as.numeric(2*(logLik(suppressMessages(refit(lmer1, y)), REML=ref) -
+                  logLik(suppressMessages(refit(lmer0, y)), REML=ref)))
+  }, ncore, packages = "lme4")
+  lrtest2 <- pm_perm_drop(lrtest2)
+  lrtest <- pmax(unlist(lrtest2$res), 0)
+  ok <- !is.na(lrtest)
+  failures <- lrtest2$failures + sum(!ok)
+  lrtest <- round(lrtest[ok], 4)
+  lrtest1 <- round(lrtest1, 4)
+  perm_p <- pm_perm_p(lrtest1, lrtest, digits = 4)
   aod <- anova(lmer0, lmer1, refit=!ref)
   aod$'Perm-p' <- c(NA, perm_p)
+  if (failures > 0) attr(aod, "failures") <- failures
 
   if (plot) {
     dev.new()

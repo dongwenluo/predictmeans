@@ -220,6 +220,14 @@
 
 ## Bug fixes
 
+* `permmodels()` for `glm`, `lm` and `aov` models permutes all the variables
+  of the response together: `cbind(R, F)` (successes, failures) permuted only
+  `F`, so the totals changed; a transformed response such as `log(y)` failed
+  even with `data`. `cbind(R, N - R)` was already right and gives the same
+  results. When the response's variables are not in the data (e.g. a model
+  of `log(y)` without `data`), the error now says so, and a model with
+  several responses gets a clear error.
+
 * `permlmer()` (and so `permanova.lmer()`): when the tested variance is
   estimated at 0, the likelihood-ratio statistic is 0 up to optimizer noise
   (e.g. 3e-14). Permuted statistics of 0 then counted as smaller than the
@@ -499,6 +507,19 @@
 * New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
 
 ## Internal
+
+* The permutation and bootstrap tests share one engine (`R/perm-engine.R`):
+  permutation indices, refits (in parallel if asked), failure counts and
+  p-values from statistics rounded before they are compared. `permmodels()`,
+  `permlmer()` (so `permanova.lmer()`), `bootmodels()` and the permutation
+  p-values of pairs and contrasts in `predictmeans()` and `contrastmeans()`
+  use it. Results are unchanged (checked with `dev/snapshot-perm.R` on 33
+  calls and `dev/snapshot-predictmeans.R`), with three small differences:
+  with `seed`, the user's random number stream is left as it was (as
+  `bootmodels()` already did); refits that fail with an error are left out
+  and counted instead of stopping the function, the count shown in the note
+  under the tables and in attribute `"failures"`; `bootmodels()` also uses
+  several cores on Windows.
 
 * The confidence-interval plot uses `geom_errorbar(orientation = "y")`
   instead of `geom_errorbarh()`, which ggplot2 4.0 deprecates; the plot is
