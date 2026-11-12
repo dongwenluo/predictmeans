@@ -22,7 +22,10 @@
 #'   \code{aov} models only). See Details.
 #' @return
 #' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
-#' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL}.
+#' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
+#' \code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
+#' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
+#' pairwise comparisons and contrasts. If refits fail, the number left out is in attribute \code{"failures"}.
 #' @details
 #' With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
 #' \code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
@@ -74,8 +77,11 @@
 #' }
 #'
 #' ## Freedman-Lane permutations for a linear model with a covariate
-#' fm2 <- lm(mpg ~ wt + factor(cyl), data = mtcars)
-#' permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#' mtcars$cyl <- factor(mtcars$cyl)
+#' fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
+#' pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#' ## ... and for the pairwise comparisons of the cyl means
+#' predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
 #' @name permmodels
 NULL
 
@@ -258,7 +264,9 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 ## the sqrt(weights) scale. The statistics come from QR projections of whole
 ## blocks of permuted responses, so no model is refitted. The same
 ## permutations are used for every test. Returns the tables of permmodels()
-## with permlist = NULL.
+## with permlist = NULL, and 'perm', a permutation object with which
+## predictmeans() and contrastmeans() test pairs and contrasts by
+## Freedman-Lane permutations (pm_perm_fl_t()).
 pm_perm_fl <- function(model, nperm, type, exact, seed, prt) {
   mf <- stats::model.frame(model)
   y <- stats::model.response(mf)
@@ -366,5 +374,6 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt) {
     print(ANOVA)
     cat("\nNote: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
   }
-  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA)
+  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA,
+       perm = pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), pm_perm_coef_names(model)))
 }

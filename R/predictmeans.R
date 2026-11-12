@@ -76,7 +76,10 @@
 #' @param newwd A logical variable to indicate whether to print graph in a new window. The default is FALSE.
 #' @param permlist A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 #'   the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
-#'   permutation tests.
+#'   permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
+#'   models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
+#'   With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
+#'   permuted refits, which use the unadjusted covariance.
 #' @param ncore Number of core for parallel computing when \code{permlist != NULL}, the default value is 3.
 #' @param ndecimal An option for specifying number of decimal point to be print at predicted means table. The default is 4.
 #' @param cov_reduce How covariates that are not varied are handled when building the predicted means: a function such as
@@ -200,6 +203,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   df_method <- match.arg(df_method)
   # SAS DDFM=CONTAIN uses the unadjusted covariance
   if (df_method == "containment" && vcov_adjust_default) vcov_adjust <- FALSE
+  vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

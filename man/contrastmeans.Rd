@@ -28,7 +28,9 @@ The default method is "none".}
 the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).}
 
 \item{permlist}{A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
-option for the permutation test.}
+option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+\code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
+0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).}
 
 \item{vcov_adjust}{For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the

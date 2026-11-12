@@ -5,22 +5,27 @@
 ##   pm_perm_map()     refits, in parallel if asked, failures kept as NULL;
 ##   pm_perm_drop()    drops failed refits and counts them;
 ##   pm_perm_p()       p-values from rounded statistics;
-##   pm_perm_tstats()  |t| of contrasts from a list of refits (permlist).
+##   pm_perm_tstats()  |t| of contrasts from a list of refits (permlist);
+##   pm_perm_fl_t()    Freedman-Lane p-values of contrasts (lm/aov), from the
+##                     permutation object of permmodels(method = "freedman-lane").
 ## See dev/permutation-plan.md, section 8.
 
 ## Permutation indices. pm_perm_stream(n, seed) returns a function that gives
 ## the next m permutations of 1:n as an n x m integer matrix; successive calls
 ## continue the same stream, so drawing in chunks gives the same permutations
-## as drawing all at once. With a seed the stream has its own random number
-## state and the user's stream is left as it was; without one it draws from
-## the user's stream (as set.seed() before the call would).
-pm_perm_stream <- function(n, seed = NULL) {
-  state <- if (is.null(seed)) NULL else
-    pm_with_seed(seed, get(".Random.seed", envir = globalenv(), inherits = FALSE))
+## as drawing all at once. With a seed (or a saved random number 'state') the
+## stream has its own random number state and the user's stream is left as it
+## was; without one it draws from the user's stream (as set.seed() before the
+## call would).
+pm_perm_stream <- function(n, seed = NULL, state = NULL) {
+  genv <- globalenv()
+  shared <- is.null(seed) && is.null(state)
+  if (!is.null(seed)) state <- pm_with_seed(seed, get(".Random.seed", envir = genv, inherits = FALSE))
+  if (shared && !exists(".Random.seed", envir = genv, inherits = FALSE)) set.seed(NULL)
+  start <- if (shared) get(".Random.seed", envir = genv, inherits = FALSE) else state
   draw <- function(m) matrix(vapply(seq_len(m), function(i) sample.int(n), integer(n)), nrow = n)
-  function(m) {
-    if (is.null(state)) return(draw(m))
-    genv <- globalenv()
+  f <- function(m) {
+    if (shared) return(draw(m))
     old <- get0(".Random.seed", envir = genv, inherits = FALSE)
     on.exit(if (is.null(old)) rm(".Random.seed", envir = genv) else assign(".Random.seed", old, envir = genv))
     assign(".Random.seed", state, envir = genv)
@@ -28,6 +33,10 @@ pm_perm_stream <- function(n, seed = NULL) {
     state <<- get(".Random.seed", envir = genv, inherits = FALSE)
     out
   }
+  # the random number state before the first draw: pm_perm_stream(n, state =
+  # attr(f, "start")) gives the same permutations again
+  attr(f, "start") <- start
+  f
 }
 
 ## Apply FUN to each element of X (usually one permuted or simulated data set
@@ -89,4 +98,99 @@ pm_perm_tstats <- function(refits, rK) {
 ## ("" when none failed).
 pm_perm_failnote <- function(failures, what = "refits") {
   if (failures > 0) paste0(" (", failures, " ", what, " failed and were left out)") else ""
+}
+
+## Was a permlist given (predictmeans(), contrastmeans())? Old scripts pass
+## "" or "NULL" for none.
+pm_perm_given <- function(permlist) {
+  if (is.null(permlist)) return(FALSE)
+  if (is.character(permlist)) return(!all(permlist %in% c("NULL", "")))
+  TRUE
+}
+
+## Number of permutations behind a permlist (refits, or a permutation object).
+pm_perm_n <- function(permlist) {
+  if (!is.null(permlist[["perm"]])) permlist[["perm"]]$nperm else length(permlist[[1]])
+}
+
+## Permutation object of permmodels(method = "freedman-lane"): what is needed
+## to test any linear hypothesis later (pairs, contrasts) with the same
+## permutations: the (weighted) design matrix X without aliased columns, the
+## response z (offset removed, weighted), the random number state that
+## regenerates the permutations, and names to check that a later call uses
+## the same model.
+pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names) {
+  structure(list(scheme = "freedman-lane", X = X, z = z, nperm = as.integer(nperm), exact = exact,
+                 start = start, coef_names = coef_names),
+            class = "pm_perm")
+}
+
+## Freedman-Lane p-values of the contrasts in the rows of L (columns: the
+## model's non-aliased coefficients), one test per row: the model with that
+## contrast set to 0 (X N, N a basis of the null space of the row) gives
+## fitted values and residuals; the residuals are permuted, added back, and
+## |t| of the row is computed again by least squares. The statistic is the
+## t value of the fitted model (as predictmeans() shows it), so the
+## p-value tests that comparison alone, whatever the other means are.
+pm_perm_fl_t <- function(perm, L, model = NULL) {
+  X <- perm$X
+  z <- perm$z
+  L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
+  if (ncol(L) != ncol(X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
+    stop("'permlist' was made for a different model.", call. = FALSE)
+  }
+  n <- nrow(X)
+  qrX <- qr(X)
+  df_res <- n - qrX$rank
+  XtXi <- solve(crossprod(X))
+  se1 <- sqrt(rowSums((L %*% XtXi) * L))
+  abs_t <- function(j, Y) {
+    B <- qr.coef(qrX, Y)
+    s <- sqrt(colSums(qr.resid(qrX, Y)^2) / df_res)
+    abs(as.vector(L[j, , drop = FALSE] %*% B)) / (se1[j] * s)
+  }
+  k <- nrow(L)
+  red <- lapply(seq_len(k), function(j) {
+    q <- qr(t(L[j, , drop = FALSE]))
+    N <- qr.Q(q, complete = TRUE)[, -seq_len(q$rank), drop = FALSE]
+    f0 <- if (ncol(N)) qr.fitted(qr(X %*% N), z) else rep(0, n)
+    list(f0 = f0, e0 = z - f0, obs = round(abs_t(j, matrix(z)), 6))
+  })
+  count <- valid <- numeric(k)
+  perms <- pm_perm_stream(n, state = perm$start)
+  chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
+  done <- 0L
+  while (done < perm$nperm) {
+    m <- min(chunk, perm$nperm - done)
+    idx <- perms(m)
+    for (j in seq_len(k)) {
+      tj <- round(abs_t(j, red[[j]]$f0 + matrix(red[[j]]$e0[idx], n)), 6)
+      ok <- !is.na(tj)
+      count[j] <- count[j] + sum(tj[ok] >= red[[j]]$obs)
+      valid[j] <- valid[j] + sum(ok)
+    }
+    done <- done + m
+  }
+  p <- (count + !perm$exact) / (valid + !perm$exact)
+  p[se1 == 0 | !is.finite(se1)] <- NA
+  p
+}
+
+## Names of the non-aliased coefficients of an lm/aov model.
+pm_perm_coef_names <- function(model) {
+  b <- stats::coef(model)
+  names(b)[!is.na(b)]
+}
+
+## With a permlist, permutation p-values compare the observed t statistics
+## with those of the refits, which use the unadjusted covariance; the
+## observed ones must use it too, so the Kenward-Roger adjustment
+## (vcov_adjust) is not used. Returns the vcov_adjust to use.
+pm_perm_vcov_adjust <- function(model, permlist, vcov_adjust, vcov_adjust_default) {
+  if (!pm_perm_given(permlist) || !isTRUE(vcov_adjust)) return(vcov_adjust)
+  if (!vcov_adjust_default && inherits(model, "lmerMod")) {
+    warning("'vcov_adjust = TRUE' is not used with 'permlist': permutation p-values compare t statistics ",
+            "from the unadjusted covariance, as the refits do.", call. = FALSE)
+  }
+  FALSE
 }

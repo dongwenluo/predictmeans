@@ -107,7 +107,7 @@ pm_code_setup <- quote({
     atvar <- NULL
   }
 
-  if (!is.null(permlist) && !unique(permlist%in%c("NULL", ""))) {
+  if (pm_perm_given(permlist)) {
     pairwise <- TRUE
 
     if (adj %in% c("tukey", "scheffe", "mvt")){
@@ -303,7 +303,7 @@ pm_code_compare <- quote({
     SED.out <- NA
     LSD <- NA
   }else {
-    perm <- !(is.null(permlist) || all(permlist%in%c("NULL", "")))
+    perm <- pm_perm_given(permlist)
     list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar),
              envir = environment())
     if (!perm) {
@@ -497,8 +497,13 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 	        t.p.values <- 2 * pt(-abs(t.v), Df)
 		    }
       }else{
-        nsim <- length(permlist[[1]])
-        t.p.values <- pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
+        nsim <- pm_perm_n(permlist)
+        t.p.values <- if (!is.null(permlist[["perm"]])) {
+          # Freedman-Lane: each pair tested with its own reduced model
+          pm_perm_fl_t(permlist[["perm"]], rK, model)
+        } else {
+          pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
+        }
 
       } # end of if (is.null(permlist))
 
@@ -694,7 +699,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
 ## Mean table with confidence limits.
 pm_stage_mean_table <- function(st) eval(pm_code_mean_table, st)
 pm_code_mean_table <- quote({
-  mt_res <- pm_mean_table(mt, vars, perm = !(is.null(permlist) || all(permlist%in%c("NULL", ""))),
+  mt_res <- pm_mean_table(mt, vars, perm = pm_perm_given(permlist),
                           slevel = slevel, ndecimal = ndecimal)
   meanTable <- mt_res$table
   slevel <- mt_res$slevel
@@ -729,7 +734,7 @@ pm_stage_backtransform <- function(st) eval(pm_code_backtransform, st)
 pm_code_backtransform <- quote({
   if (!is.null(trans)) {
     Mean <- Trt <- ciPlot <- NULL
-    perm <- !(is.null(permlist) || all(permlist%in%c("NULL", "")))
+    perm <- pm_perm_given(permlist)
     bkmt <- pm_back_transform(bkmt, trans, transOff, perm = perm, slevel = slevel,
                               ndecimal = ndecimal, count = count)
     nc <- ncol(bkmt)   # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
@@ -1285,7 +1290,7 @@ pm_legacy_output <- function(x) {
 
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
 
-      if (all(is.null(permlist) || all(permlist%in%c("NULL", "")), adj %in% c("none", "bonferroni"))) {
+      if (all(!pm_perm_given(permlist), adj %in% c("none", "bonferroni"))) {
         outputlist <- list("Predicted Means" = mean.table, "Standard Error of Means" = se.table,
                            "Standard Error of Differences" = SED.out, LSD = LSD, "Pairwise LSDs"=round(LSDm,ndecimal+1),
                            "Pairwise p-value" = round(t.p.valuem, 4), predictmeansPlot=predictmeansPlot,
@@ -1321,7 +1326,7 @@ pm_legacy_output <- function(x) {
       outputlist[[listlength+9]] <- p_valueMatrix
 
       # print(outputlist)
-      if (is.null(permlist) || all(permlist%in%c("NULL", ""))) {
+      if (!pm_perm_given(permlist)) {
         names(outputlist)<- c("Predicted Means", "Standard Error of Means", "Standard Error of Differences",
                               "LSD", paste("Pairwise comparison p-value (adjusted by '", adj, "' method)", sep=""),
                               atvar.levels, "mean_table", "predictmeansPlot", "predictmeansBarPlot", "p_valueMatrix")[seq_along(outputlist)]

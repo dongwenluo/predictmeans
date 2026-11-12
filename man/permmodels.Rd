@@ -35,7 +35,10 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 }
 \value{
 The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
-With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL}.
+With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
+\code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
+\code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
+pairwise comparisons and contrasts. If refits fail, the number left out is in attribute \code{"failures"}.
 }
 \description{
 This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
@@ -84,8 +87,11 @@ contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlm
 }
 
 ## Freedman-Lane permutations for a linear model with a covariate
-fm2 <- lm(mpg ~ wt + factor(cyl), data = mtcars)
-permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+mtcars$cyl <- factor(mtcars$cyl)
+fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
+pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+## ... and for the pairwise comparisons of the cyl means
+predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
 }
 \references{
 Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial

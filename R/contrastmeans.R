@@ -21,7 +21,9 @@
 #' @param Df A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 #'     the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).
 #' @param permlist A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
-#' 	option for the permutation test.
+#' 	option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+#'   \code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
+#'   0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).
 #' @param vcov_adjust For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 #'   adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 #'   Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
@@ -148,6 +150,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
   if (identical(df_type, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
+  if (!missing(permlist)) vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
   # containment df with the adjusted covariance only when asked for explicitly
   if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
@@ -206,8 +209,10 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
-  	nsim <- length(permlist[[1]])
-  per.p <- pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
+  	nsim <- pm_perm_n(permlist)
+  per.p <- if (!is.null(permlist[["perm"]])) {
+    pm_perm_fl_t(permlist[["perm"]], rK, model)       # Freedman-Lane, one reduced model per contrast
+  } else pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
   rownames(out.put) <- rownames(ctrmatrix)

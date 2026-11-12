@@ -20,6 +20,15 @@
   split plot 5.9%, crossed design 5.4% (6.4% before); `permmodels()` with no
   fixed effects 4.8% (`lmer`, 6.2-7.1% before) and 5.9% (`lme`).
 
+* With a `permlist`, `predictmeans()` and `contrastmeans()` no longer use
+  the Kenward-Roger adjusted covariance (`vcov_adjust`): the permutation
+  p-value compares the observed t statistic with those of the permuted
+  refits, which use the unadjusted covariance, so the observed one must use
+  it too. Before, unbalanced REML `lmer` fits compared an adjusted observed
+  t (slightly smaller) with unadjusted permuted ones, so p-values were
+  slightly too large; balanced designs are unchanged. `vcov_adjust = TRUE`
+  given explicitly with a `permlist` gives a warning.
+
 * **Kenward-Roger adjusted standard errors are now the default** for `lmer`
   models fitted by REML, in `predictmeans()` and `contrastmeans()`
   (`vcov_adjust = TRUE`). This matches SAS `DDFM=KR` and emmeans. Standard
@@ -128,9 +137,13 @@
   5% level, Freedman-Lane 4-5%; in other designs the two agreed. The
   statistics come from QR projections of blocks of permuted responses, with
   no refits (4999 permutations of a 1000-row model with 16 tests take about
-  11 seconds on one core). Weights and offsets are allowed; `permlist` is
-  `NULL`, so the result cannot be passed to `predictmeans()`. The default,
-  `method = "raw"`, is unchanged. For mixed models with such a covariate
+  11 seconds on one core). Weights and offsets are allowed. `permlist` is
+  `NULL`; instead the result has a component `perm` (what is needed to test
+  any comparison with the same permutations), and the whole result can be
+  given to `predictmeans()` and `contrastmeans()` (argument `permlist`):
+  each pair or contrast is then tested by Freedman-Lane permutations of the
+  model in which that comparison is zero, so its p-value does not depend on
+  the other means. The default, `method = "raw"`, is unchanged. For mixed models with such a covariate
   the help page recommends the Kenward-Roger or Satterthwaite F test: the
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 

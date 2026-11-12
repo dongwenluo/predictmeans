@@ -597,9 +597,22 @@ update; R CMD check at the end of each.
    0.059. Much faster with crossed random effects (n = 3000: 0.11 s vs
    3.9 s; n = 20000: 21 s vs > 30 min). The 1.1.1 reference test compares
    `perm_lmer`/`perm_lmer_III` without their permutation parts.
-3. **Freedman–Lane for any linear hypothesis in lm/aov:** pairs and
-   contrasts in `predictmeans()`/`contrastmeans()` from a permutation object;
-   then the decision on making Freedman–Lane the default for lm/aov.
+3. **Freedman–Lane for any linear hypothesis in lm/aov** — **done**:
+   `permmodels(method = "freedman-lane")` returns a permutation object
+   (`perm`: X, z, the random number state of the permutations, coefficient
+   names); `pm_perm_fl_t()` tests each row of an L matrix with its own
+   reduced model (X N, N the null space of the row), regenerating the same
+   permutations in chunks; `predictmeans()`/`contrastmeans()` use it.
+   Checked against direct refits (pair 2 v 3 by merging levels). Also fixed:
+   with a `permlist`, observed t used the KR-adjusted SE while the refits
+   use the unadjusted one; now `vcov_adjust` is not used with a `permlist`.
+   The default for lm/aov is decided in step 9 (`method = "auto"`).
+3b. **`permindex()`** (maintainer's question: still used? worth keeping?):
+   not used inside the package, but exported and the natural source of
+   restricted (design-based) permutations. Fix it (indices for the data's
+   own order, not a sorted copy; duplicate check with a separator; error for
+   whole-group swaps of unequal sizes; seed without moving the user's
+   stream, same draws) and let `permmodels()`/`permlmer()` take its matrix.
 4. **Working-scale layer `pm_working()`** for glm, glmer, glmmTMB (no zero
    inflation): weights, dispersion, G on the absolute scale, checked family by
    family against `simulate()` and `R2_glmm()`; fix `R2_glmm()` if the beta

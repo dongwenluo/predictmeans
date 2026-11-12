@@ -108,7 +108,10 @@ The default is \code{c("mean", "pval", "back")}.}
 
 \item{permlist}{A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
-permutation tests.}
+permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
+models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
+With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
+permuted refits, which use the unadjusted covariance.}
 
 \item{ncore}{Number of core for parallel computing when \code{permlist != NULL}, the default value is 3.}
 
