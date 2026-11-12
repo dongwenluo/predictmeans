@@ -722,6 +722,55 @@ Still open:
 4. Default `ncore = 1` for all resampling functions? Recommended: yes
    (CRAN and CI allow 2; the default is still 3).
 
+## 12b. Next steps (after the 2.0 build; maintainer's questions on data size and other uses)
+
+**Does data size matter?** Yes, in five ways (details in the answer recorded
+in `dev/sim-study/README.md`, study 1b):
+
+- The smallest p-value is 1/(number of distinct permutations + 1); restricted
+  permutations of few units (e.g. 4 blocks of 2 whole plots: 16) cannot reach
+  0.05. `permindex()` drops duplicates; `exact = TRUE` then.
+- Raw permutation of a randomised design is exact at any n; Freedman–Lane
+  (residual permutation) is approximate, closest to exact (Anderson and
+  Robinson 2001), and its error shrinks with n. Study 1b's hardest cells were
+  the smallest (3 blocks; 48 observations with nbinom2).
+- Mixed models with few groups: V poorly estimated, so V fixed is liberal
+  (8.6% with 6 blocks) and refits are needed; with many groups V fixed is as
+  good and much faster.
+- Large n makes F/t tests accurate for shape violations, but not for a
+  wrong mean–variance relation (overdispersion: LRT 32.9% at any n), where
+  permutation with estimated dispersion stays near 5–7%.
+- No size fixes a wrong variance model (unequal group variances, not
+  modelled: 23–24% for every test); that needs studentised statistics.
+
+**Other uses of the permutation results** (literature in §14b), in order of
+value for predictmeans:
+
+10. **Westfall–Young max-|t| adjustment** for pairs and contrasts with a
+    `permlist`: single-step (a permutation Tukey test; `adj = "tukey"` or
+    `"mvt"`) and step-down (`adj = "westfall"`), within each family (each
+    `atvar` group). Uses the correlation between the comparisons; strong
+    familywise control under subset pivotality (Westfall and Young 1993);
+    more powerful than Holm. Needs the joint permutation distribution of all
+    the family's t statistics: the refits of a `permlist` (raw, bootstrap,
+    Freedman–Lane with refits) give it; Freedman–Lane with V fixed computes it
+    from one reduced model for the family (all compared means equal).
+    In study 1b part 1 the single-step max-|t| matched Tukey's familywise
+    error. **Current step.**
+11. **Permutation confidence intervals** for pairs and contrasts by test
+    inversion (Garthwaite 1996): the values δ not rejected by Freedman–Lane
+    tests of Lβ = δ (offset along the contrast); cheap with V fixed.
+12. **Studentised (heteroscedasticity-robust) Freedman–Lane** for lm/glm
+    (DiCiccio and Romano 2017), for unequal variances that are not modelled.
+13. **When is `refit = FALSE` safe?** A small study with 30, 60 and 120
+    groups; then possibly `refit = "auto"` by the number of groups.
+14. Later: nonparametric combination of dependent tests (several traits,
+    time points; Pesarin and Salmaso 2010), max-statistic / cluster tests
+    over time and curves (Maris and Oostenveld 2007), simultaneous bounds on
+    the false discovery proportion for many traits (Hemerik, Solari and
+    Goeman 2019), standardised effect sizes against the permutation null,
+    and a parametric-vs-permutation p-value plot as a model diagnostic.
+
 ## 13. Risks
 
 - The working-scale approximation fails for binary data with rare events
@@ -800,6 +849,25 @@ come from abstracts:
 - Zeng, P. et al. (2015). Permutation-based variance component test in
   generalized linear mixed model with application to multilocus genetic
   association study. *BMC Med. Res. Methodol.* 15, 37.
+
+### 14b. References for §12b (checked by web search, Nov 2026)
+
+- Westfall, P. H. and Young, S. S. (1993). *Resampling-Based Multiple
+  Testing*. Wiley. (Step-down max-T/min-P; R `multtest::mt.maxT`; SAS PROC
+  MULTTEST.)
+- Garthwaite, P. H. (1996). Confidence intervals from randomization tests.
+  *Biometrics* 52, 1387–1393.
+- DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for
+  correlation and regression coefficients. *JASA* 112, 1211–1220.
+- Pesarin, F. and Salmaso, L. (2010). The permutation testing approach: a
+  review. *Statistica* 70, 481–509. (Nonparametric combination.)
+- Hemerik, J., Solari, A. and Goeman, J. J. (2019). Permutation-based
+  simultaneous confidence bounds for the false discovery proportion.
+  *Biometrika* 106, 635–649.
+- Maris, E. and Oostenveld, R. (2007). Nonparametric statistical testing of
+  EEG- and MEG-data. *J. Neurosci. Methods* 164, 177–190.
+- Anderson, M. J. and Robinson, J. (2001). Permutation tests for linear
+  models. *Aust. N. Z. J. Stat.* 43, 75–88.
 
 From memory (to be checked before they are cited in help pages):
 Carpenter, Goldstein and Rasbash (2003), *JRSS C* 52, 431–443; Chung and
