@@ -236,7 +236,7 @@ data). 500 data sets per cell (range 0.031–0.069), 1000 for glm (0.036–0.064
 | LMM split plot, whole-plot factor (6 blocks) | 0.058 | **0.086** | **0.050** | | KR 0.046 |
 | LMM split plot, whole-plot pairs (null pairs; Holm) | | (pairs study 0.062) | 0.052 (Holm 0.042) | | KR 0.051 (0.040) |
 | LMM covariate with extreme values | 0.060 | 0.050 | 0.054 | | KR 0.048 |
-| LMM unbalanced (20% missing) | RAWUNBAL | 0.056 | 0.048 | | KR 0.054 |
+| LMM unbalanced (20% missing) | 0.052 | 0.056 | 0.048 | | KR 0.054 |
 | lme, varIdent | 0.036 | 0.042 | 0.036 | | nlme F 0.042 |
 | glm Poisson, extreme covariate | **0.008** | 0.058 | | | LRT 0.055 |
 | glm binomial, extreme covariate | **0.006** | 0.042 | | | LRT 0.050 |
