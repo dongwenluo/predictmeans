@@ -128,7 +128,8 @@ pm_tidy_parts <- function(e) {
       }
     }
     p_adj <- rep(NA_real_, length(p))
-    if (adj %in% pm_adjust_extra_methods && length(g("p.extra")) == length(p)) {
+    if ((adj %in% pm_adjust_extra_methods || (perm && adj %in% pm_perm_maxt_methods)) &&
+        length(g("p.extra")) == length(p)) {
       p_adj <- g("p.extra")              # computed with the legacy tables
     } else if (is.null(atvar)) {
       p_adj <- adjust_group(seq_along(p))

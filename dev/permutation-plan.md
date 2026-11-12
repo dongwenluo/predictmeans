@@ -724,8 +724,7 @@ Still open:
 
 ## 12b. Next steps (after the 2.0 build; maintainer's questions on data size and other uses)
 
-**Does data size matter?** Yes, in five ways (details in the answer recorded
-in `dev/sim-study/README.md`, study 1b):
+**Does data size matter?** Yes, in five ways:
 
 - The smallest p-value is 1/(number of distinct permutations + 1); restricted
   permutations of few units (e.g. 4 blocks of 2 whole plots: 16) cannot reach
@@ -756,7 +755,14 @@ value for predictmeans:
     Freedman–Lane with refits) give it; Freedman–Lane with V fixed computes it
     from one reduced model for the family (all compared means equal).
     In study 1b part 1 the single-step max-|t| matched Tukey's familywise
-    error. **Current step.**
+    error. — **Done** (`pm_perm_maxT()`, `pm_perm_family()`,
+    `pm_perm_fl_T()`): `adj = "tukey"`/`"mvt"` single step, `"westfall"` step
+    down, for the pairs of `predictmeans()` (overall and within `atvar`) and
+    the rows of `contrastmeans()`; the adjusted p-value is never below the
+    unadjusted one (with V fixed the two come from different reduced
+    models). Checked: equals the definition on a toy matrix and by hand from
+    the refits of a raw permlist; Oats nitro pairs agree with Tukey within
+    0.005. `contrastmeans()` used to ignore `adj` with a permlist (fixed).
 11. **Permutation confidence intervals** for pairs and contrasts by test
     inversion (Garthwaite 1996): the values δ not rejected by Freedman–Lane
     tests of Lβ = δ (offset along the contrast); cheap with V fixed.

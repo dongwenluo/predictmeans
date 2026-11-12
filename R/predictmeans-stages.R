@@ -23,7 +23,7 @@ pm_stage_setup <- function(st) eval(pm_code_setup, st)
 pm_code_setup <- quote({
 
   pm_check_modelterm(model, modelterm)
-  adj <- pm_match_adj(adj)
+  adj <- pm_match_adj(adj, westfall = TRUE)
 
   all.null = function(...){
     all(unlist(lapply(list(...), is.null)))
@@ -109,10 +109,13 @@ pm_code_setup <- quote({
 
   if (pm_perm_given(permlist)) {
     pairwise <- TRUE
-
-    if (adj %in% c("tukey", "scheffe", "mvt")){
-      stop("adj = \"", adj, "\" is not available for permutation p-values; use another 'adj'.", call. = FALSE)
+    # "tukey", "mvt": single-step max-|t|; "westfall": step-down (pm_perm_maxT())
+    if (adj == "scheffe") {
+      stop("adj = \"scheffe\" is not available for permutation p-values; use another 'adj'.", call. = FALSE)
     }
+  } else if (adj == "westfall") {
+    stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
+         "\"mvt\" (single step) or \"holm\".", call. = FALSE)
   }
 
   if (!is.null(atvar) && !unique(atvar%in%c("NULL", ""))){
@@ -314,14 +317,16 @@ pm_code_compare <- quote({
 
     if (pairwise) {
       p_valueMatrix <- NULL
+      perm_T <- NULL
       list2env(pm_pair_pvalues(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm),
                envir = environment())
       if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
         list2env(pm_pairs_overall(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                                  adj, perm, nsim, level, slevel, meandecr, Df_diff, pair_cor), envir = environment())
+                                  adj, perm, nsim, level, slevel, meandecr, Df_diff, pair_cor, perm_T),
+                 envir = environment())
       } else {
         list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                                Df_diff, adj, slevel, pair_cor), envir = environment())
+                                Df_diff, adj, slevel, pair_cor, perm_T), envir = environment())
       }
     }
   } # end of if (nK == 1) ... else
@@ -477,7 +482,7 @@ pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, p
 ## t values and raw p-values of the pairs (t, Tukey or permutation).
 pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm = NULL) {
       t.v <- cm/dses
-      pair_cor <- p.extra <- NULL
+      pair_cor <- p.extra <- perm_T <- NULL
 
       # correlation of the pairwise contrasts, for adj = "mvt"
       if (!perm && adj == "mvt") pair_cor <- stats::cov2cor(as.matrix(rK %*% tcrossprod(vcovm, rK)))
@@ -498,28 +503,33 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
 		    }
       }else{
         nsim <- pm_perm_n(permlist)
-        t.p.values <- if (!is.null(permlist[["perm"]])) {
-          # Freedman-Lane: each pair tested with its own reduced model
-          pm_perm_fl_t(permlist[["perm"]], rK, model, ncore)
-        } else {
-          pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
-        }
+        # permutation p-values; with a max-|t| adjustment also the joint
+        # permutation distribution of the pairs' |t| (perm_T)
+        fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore,
+                              joint = adj %in% pm_perm_maxt_methods)
+        t.p.values <- fam$p
+        if (adj %in% pm_perm_maxt_methods) perm_T <- fam[c("obs", "T")]
 
       } # end of if (is.null(permlist))
 
-  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim", "pair_cor", "p.extra"), environment())
+  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim", "pair_cor", "p.extra", "perm_T"), environment())
 }
 
 ## Overall pairwise tables: p-values (t value above the diagonal), LSDs and
 ## the matrix used for letter groups.
 pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                             adj, perm, nsim, level, slevel, meandecr, Df_diff = NULL, pair_cor = NULL) {
+                             adj, perm, nsim, level, slevel, meandecr, Df_diff = NULL, pair_cor = NULL,
+                             perm_T = NULL) {
   tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
   rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
   tvm[upper.tri(tvm)] <- t.v
   p_valueMatrix <- NULL
 
-        if (adj=="tukey"){
+        if (perm && adj %in% pm_perm_maxt_methods) {
+          # permutation max-|t| over all the pairs (Westfall-Young)
+          p.extra <- pm_perm_maxT(perm_T$obs, perm_T$T, stepdown = adj == "westfall", p_raw = as.vector(t.p.values))
+          t.p.valuem[upper.tri(t.p.valuem)] <- p.extra
+        }else if (adj=="tukey"){
           t.p.valuem[upper.tri(t.p.valuem)] <- p.tukey
         }else if (adj %in% pm_adjust_extra_methods) {
           # all pairs as one family (with permutation p-values only "sidak", which needs no df)
@@ -580,12 +590,13 @@ pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey,
 ## Pairwise tables within each level of 'atvar': adjusted p-values, letters
 ## and the means ordered by 'atvar'.
 pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                           Df_diff, adj, slevel, pair_cor = NULL) {
+                           Df_diff, adj, slevel, pair_cor = NULL, perm_T = NULL) {
   p_valueMatrix <- NULL
       dses.df$tvalue <- t.v
       dses.df$pvalue <- t.p.values
-      if (adj %in% pm_adjust_extra_methods) dses.df$pair_id <- seq_len(nrow(dses.df))   # row of the pair (pair_cor, p.extra)
-      if (adj %in% c("tukey", pm_adjust_extra_methods)) {
+      maxt <- !is.null(perm_T)        # permutation max-|t| within each atvar group
+      if (adj %in% pm_adjust_extra_methods || maxt) dses.df$pair_id <- seq_len(nrow(dses.df))   # row of the pair (pair_cor, p.extra)
+      if (!maxt && adj %in% c("tukey", pm_adjust_extra_methods)) {
         dses.df$pair_df <- if (adj == "sidak") NA_real_ else rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)
       }
 
@@ -610,6 +621,9 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
         t_valueN <- length(na.omit(x$tvalue))
         if (t_valueN < 2) {
           atvar.df$adj.pvalue[idx] <- x$pvalue
+        } else if (maxt) {
+          atvar.df$adj.pvalue[idx] <- pm_perm_maxT(perm_T$obs[x$pair_id], perm_T$T[x$pair_id, , drop = FALSE],
+                                                   stepdown = adj == "westfall", p_raw = x$pvalue)
         } else if (adj=="tukey") {
           # Tukey's range distribution needs the number of means, k, in
           # this level; the group holds all k(k-1)/2 pairs among them.
@@ -624,7 +638,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
         }
       }
 
-      if (adj %in% pm_adjust_extra_methods) {   # adjusted p-values by pair, for the stable pairs table
+      if (adj %in% pm_adjust_extra_methods || maxt) {   # adjusted p-values by pair, for the stable pairs table
         p.extra <- rep(NA_real_, nrow(dses.df))
         p.extra[atvar.df$pair_id] <- atvar.df$adj.pvalue
       }

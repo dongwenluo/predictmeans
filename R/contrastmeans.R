@@ -14,9 +14,11 @@
 #' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
 #' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-#'   "mvt", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
-#'   \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}.
+#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
+#'   "mvt" and "westfall", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+#'   \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With \code{permlist}, "mvt" gives the
+#'   single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
+#'   1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 #'   The default method is "none".
 #' @param Df A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 #'     the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).
@@ -89,7 +91,11 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     ctrnames <- NULL
   }
   weights <- match.arg(weights)
-  adj <- pm_match_adj(adj, tukey = FALSE)
+  adj <- pm_match_adj(adj, tukey = FALSE, westfall = TRUE)
+  if (adj == "westfall" && missing(permlist)) {
+    stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
+         "\"mvt\" (single step) or \"holm\".", call. = FALSE)
+  }
   KK <- Kmatrix(model, modelterm, weights=weights)$K
   termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {
@@ -210,13 +216,27 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
   	nsim <- pm_perm_n(permlist)
-  per.p <- if (!is.null(permlist[["perm"]])) {
-    pm_perm_fl_t(permlist[["perm"]], rK, model)       # Freedman-Lane, one reduced model per contrast
-  } else pm_perm_p(abs(as.vector(t.v)), pm_perm_tstats(permlist[[1]], rK))
+  if (adj == "scheffe") stop("adj = \"scheffe\" is not available for permutation p-values; use another 'adj'.",
+                             call. = FALSE)
+  # permutation p-values; for adj = "mvt" / "westfall" the joint permutation
+  # distribution of the contrasts' |t| (max-|t|, Westfall-Young)
+  maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
+  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = maxt)
+  per.p <- fam$p
+  if (nrow(rK) > 1 && adj != "none") {
+    per.p <- if (maxt) {
+      pm_perm_maxT(fam$obs, fam$T, stepdown = adj == "westfall", p_raw = per.p)
+    } else if (adj == "sidak") {
+      pm_adjust_extra("sidak", as.vector(t.v), per.p, NA_real_)
+    } else p.adjust(per.p, adj)
+  }
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
   rownames(out.put) <- rownames(ctrmatrix)
-  attr(out.put,"Note") <- paste("The permuted p-value is obtained using", sQuote(nsim), "permutations.")
+  attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
+                                 if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),
+                                 if (maxt) paste0(" (", if (adj == "westfall") "step-down" else "single-step",
+                                                  " max-|t| of the permutations)"), ".")
   }
   return(list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix))
 }

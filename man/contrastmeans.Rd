@@ -19,9 +19,11 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 \item{ctrnames}{Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)}
 
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-"mvt", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
-\code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}.
+The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
+"mvt" and "westfall", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+\code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With \code{permlist}, "mvt" gives the
+single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
+1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 The default method is "none".}
 
 \item{Df}{A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 

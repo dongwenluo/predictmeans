@@ -178,6 +178,19 @@
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).
 
+* **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
+  `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
+  each comparison's |t| is compared with the largest |t| of its family in
+  each permuted data set (single-step max-|t|, the permutation version of
+  Tukey's test), and the new `adj = "westfall"`: the same step down
+  (Westfall and Young 1993), uniformly more powerful. Families are all the
+  pairs, or the pairs within each `atvar` level, or the rows of a contrast
+  matrix. They use the correlation between the comparisons, so they are
+  more powerful than Holm or Bonferroni. For the nitrogen pairs of the Oats
+  example the permutation Tukey p-values agree with Tukey's to within 0.005.
+  Before, these adjustments were not available with a `permlist`, and
+  `contrastmeans()` ignored `adj` when given a `permlist`; now it applies it.
+
 * **`permlmer()` tests GLMMs** (`glmer` or `glmmTMB` models; also as
   `permglmer()` and `permglmmTMB()`), random effects and fixed effects. By
   default counts and binomial data with several trials are permuted on the

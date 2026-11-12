@@ -188,7 +188,7 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
 ## Freedman-Lane p-values, with refits, of the contrasts in the rows of L:
 ## the reduced model has all of them zero (one set of refits for the
 ## family); each row's |t| is compared with its |t| in the refits.
-pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1) {
+pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1, joint = FALSE) {
   if (!identical(pm_perm_coef_names(model), perm$coef_names)) {
     stop("'permlist' was made for a different model.", call. = FALSE)
   }
@@ -211,7 +211,10 @@ pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1) {
   obs <- tstat(P$coefvcov(model))
   one <- function(i) tstat(P$coefvcov(P$refit_full((f0 + R0$W$mult(e0[idx[, i]]))[back])))
   sims <- pm_perm_drop(pm_perm_map(seq_len(perm$nperm), one, ncore, P$packages))
-  pm_perm_p(obs, matrix(unlist(sims$res), nrow = nrow(L)), perm$exact)
+  Tm <- matrix(unlist(sims$res), nrow = nrow(L))
+  # joint = TRUE: the observed |t| and the k x B matrix of permuted |t| (for max-|t|)
+  if (joint) return(list(obs = obs, T = Tm))
+  pm_perm_p(obs, Tm, perm$exact)
 }
 
 ## The working linear mixed model of a GLMM (glmer, glmmTMB): the working

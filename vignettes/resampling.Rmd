@@ -101,8 +101,20 @@ contrastmeans(fm, "nitro", ctrmatrix = cm, permlist = perm)[[1]]
 ```
 
 With `method = "raw"` all pairs use the same refits. `adj` adjusts the permutation
-p-values with any `p.adjust()` method or `"sidak"`. `"tukey"`, `"scheffe"` and `"mvt"`
-need the t distribution and are not available with `permlist`. With a `permlist`, the
+p-values with any `p.adjust()` method or `"sidak"`, and with the max-|t| method of
+Westfall and Young (1993), which uses the correlation between the comparisons:
+`adj = "tukey"` (or `"mvt"`) compares each pair's |t| with the largest |t| of the family
+in each permuted data set (a permutation Tukey test), and `adj = "westfall"` does the
+same step by step, which is more powerful. In a simulation study this kept the
+familywise error rate as Tukey's test does.
+
+```{r}
+pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall", plot = FALSE,
+                    prtnum = FALSE, ncore = 1)
+pmw$pairs[, c("level1", "level2", "p.value", "p.adj")]
+```
+
+With a `permlist`, the
 observed t statistics use the unadjusted covariance (no Kenward–Roger adjustment), as
 the permuted ones do.
 
@@ -211,3 +223,5 @@ Computational and Graphical Statistics* 5, 236–244.
 
 Lee, O. E. and Braun, T. M. (2012). Permutation tests for random effects in linear mixed
 models. *Biometrics* 68, 486–493.
+
+Westfall, P. H. and Young, S. S. (1993). *Resampling-Based Multiple Testing*. Wiley.

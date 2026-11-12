@@ -241,3 +241,104 @@ pm_perm_vcov_adjust <- function(model, permlist, vcov_adjust, vcov_adjust_defaul
 pm_perm_auto_method <- function(model) {
   "freedman-lane"
 }
+
+## ---- Multiplicity: Westfall-Young max-|t| -------------------------------------
+## adj values that use the joint permutation distribution of a family's
+## |t| statistics when a permlist is given: "tukey" and "mvt" give the
+## single-step max-|t| (the permutation version of Tukey's and of the
+## multivariate t adjustment), "westfall" the step-down max-|t| of Westfall
+## and Young (1993), which is uniformly more powerful.
+pm_perm_maxt_methods <- c("tukey", "mvt", "westfall")
+
+## Adjusted p-values from the observed |t| of a family ('obs', length k) and
+## their permuted values ('T', k x B, the same permutations for all rows).
+## Single step: p_j = (#{b: max_i T[i, b] >= obs_j} + 1) / (B + 1). Step down:
+## the hypotheses in decreasing order of |t|, each compared with the maximum
+## over itself and those after it, then made monotone (Westfall and Young
+## 1993, algorithm 2.8). Statistics are rounded as in pm_perm_p();
+## permutations with an NA statistic are left out. 'p_raw' (the unadjusted
+## permutation p-values) is a floor: with V fixed they come from one reduced
+## model per comparison and the joint distribution from one for the family,
+## and an adjusted p-value is never below its unadjusted one.
+pm_perm_maxT <- function(obs, T, stepdown = FALSE, digits = 6, p_raw = NULL) {
+  T <- round(matrix(T, nrow = length(obs)), digits)
+  obs <- round(obs, digits)
+  out <- rep(NA_real_, length(obs))
+  ok <- !is.na(obs)
+  if (!any(ok)) return(out)
+  T <- T[ok, colSums(is.na(T[ok, , drop = FALSE])) == 0, drop = FALSE]
+  o <- obs[ok]
+  B <- ncol(T)
+  floor_raw <- function(x) if (is.null(p_raw)) x else pmax(x, p_raw)
+  if (!stepdown) {
+    mx <- if (B) apply(T, 2, max) else numeric(0)
+    out[ok] <- (vapply(o, function(v) sum(mx >= v), numeric(1)) + 1) / (B + 1)
+    return(floor_raw(out))
+  }
+  ord <- order(o, decreasing = TRUE)
+  cm <- T[ord, , drop = FALSE]            # cm[s, b] = max over the hypotheses s, s + 1, ...
+  if (nrow(cm) > 1) for (r in (nrow(cm) - 1):1) cm[r, ] <- pmax(cm[r, ], cm[r + 1, ])
+  q <- cummax((rowSums(cm >= o[ord]) + 1) / (B + 1))
+  res <- numeric(length(o))
+  res[ord] <- q
+  out[ok] <- res
+  floor_raw(out)
+}
+
+## Permutation p-values of the contrasts in the rows of L (a family: the pairs
+## of predictmeans() or the rows of a contrast matrix) from a permlist, and,
+## with joint = TRUE, the joint permutation distribution of their |t|
+## (obs: observed |t|; T: k x B) for pm_perm_maxT().
+##   refits (method = "raw", bootmodels()): |t| of each refit; 'obs' is the
+##     observed |t| as predictmeans() computes it;
+##   Freedman-Lane with refits: one reduced model for the family;
+##   Freedman-Lane, V fixed: p-values from one reduced model per row; the
+##     joint distribution from one reduced model for the family.
+pm_perm_family <- function(permlist, L, model, obs, ncore = 1, joint = FALSE) {
+  perm <- permlist[["perm"]]
+  if (is.null(perm)) {
+    Tm <- pm_perm_tstats(permlist[[1]], L)
+    return(list(p = pm_perm_p(obs, Tm), obs = obs, T = Tm))
+  }
+  if (identical(perm$scheme, "freedman-lane-refit")) {
+    J <- pm_perm_fl_refit_t(perm, L, model, ncore, joint = TRUE)
+    return(list(p = pm_perm_p(J$obs, J$T, perm$exact), obs = J$obs, T = J$T))
+  }
+  p <- pm_perm_fl_t(perm, L, model)
+  if (!joint) return(list(p = p))
+  J <- pm_perm_fl_T(perm, L, model)
+  list(p = p, obs = J$obs, T = J$T)
+}
+
+## Freedman-Lane, V fixed: the joint permutation distribution of the |t| of
+## all rows of L, from the reduced model with all of them zero.
+pm_perm_fl_T <- function(perm, L, model = NULL) {
+  X <- perm$X
+  z <- perm$z
+  L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
+  if (ncol(L) != ncol(X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
+    stop("'permlist' was made for a different model.", call. = FALSE)
+  }
+  n <- nrow(X)
+  qrX <- qr(X)
+  df_res <- n - qrX$rank
+  se1 <- sqrt(rowSums((L %*% solve(crossprod(X))) * L))
+  abs_t <- function(Y) {
+    s <- sqrt(colSums(qr.resid(qrX, Y)^2) / df_res)
+    abs(L %*% qr.coef(qrX, Y)) / outer(se1, s)
+  }
+  q <- qr(t(L))
+  N <- qr.Q(q, complete = TRUE)[, -seq_len(q$rank), drop = FALSE]
+  f0 <- if (ncol(N)) qr.fitted(qr(X %*% N), z) else rep(0, n)
+  e0 <- z - f0
+  perms <- pm_perm_source(n, perms = perm$idx, state = perm$start)
+  chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
+  done <- 0L
+  Tl <- list()
+  while (done < perm$nperm) {
+    m <- min(chunk, perm$nperm - done)
+    Tl[[length(Tl) + 1]] <- abs_t(f0 + matrix(e0[perms(m)], n))
+    done <- done + m
+  }
+  list(obs = as.vector(abs_t(matrix(z))), T = do.call(cbind, Tl))
+}
