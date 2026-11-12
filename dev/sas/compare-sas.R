@@ -121,7 +121,8 @@ for (run in unique(sas$run)) {
     check(run, "covparm", "est", r_cp, cp$est, cp$effect)
     for (term in c("Group", "Time", "Group*Time")) {
       mt <- sub("\\*", ":", term)
-      dfm <- if (ddfm == "BETWITHIN") "between-within" else "auto"
+      # gls: CONTAIN = the residual df ("auto"); KR falls back to Satterthwaite (KR is for lmer)
+      dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = , KR = "Satterthwaite", "auto")
       pm <- suppressMessages(suppressWarnings(predictmeans(g, mt, plot = FALSE, prtnum = FALSE, pairwise = TRUE,
                                                            df_method = dfm)))
       L <- S[S$table == "lsmeans" & S$effect == term, ]
@@ -131,7 +132,7 @@ for (run in unique(sas$run)) {
       i <- match(key, mkey)
       check(run, "lsmeans", "est", mm$estimate[i], L$est, key)
       check(run, "lsmeans", "se", mm$std.error[i], L$se, key)
-      if (ddfm %in% c("CONTAIN", "BETWITHIN")) check(run, "lsmeans", "df", mm$df[i], L$df, key)
+      check(run, "lsmeans", "df", mm$df[i], L$df, key)
       D <- S[S$table == "diffs" & S$effect == term, ]
       k1 <- if (term == "Group*Time") paste(lab(D$level1), lab(D$level2), sep = ":") else lab(D$level1)
       k2 <- if (term == "Group*Time") paste(lab(D$level3), lab(D$level4), sep = ":") else lab(D$level2)
@@ -142,8 +143,18 @@ for (run in unique(sas$run)) {
       dk <- paste(k1, "-", k2)
       check(run, "diffs", "est", sgn * pr$estimate[j], D$est, dk)
       check(run, "diffs", "se", pr$std.error[j], D$se, dk)
-      if (ddfm %in% c("CONTAIN", "BETWITHIN")) check(run, "diffs", "df", pr$df[j], D$df, dk)
+      check(run, "diffs", "df", pr$df[j], D$df, dk)
     }
+    T3 <- S[S$table == "tests3", ]
+    dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = , KR = "Satterthwaite", "auto")
+    cT <- contr.helmert(3)
+    jt <- suppressWarnings(rbind(pm_joint(g, "Group", df_method = dfm), pm_joint(g, "Time", df_method = dfm),
+                                 pm_joint(g, "Group:Time", ctrmatrix = t(kronecker(contr.helmert(2), cT)),
+                                          df_method = dfm)))
+    rownames(jt) <- c("Group", "Time", "Group*Time")
+    i <- match(T3$effect, rownames(jt))
+    check(run, "tests3", "F", jt$F.ratio[i], T3$F, T3$effect)
+    check(run, "tests3", "dendf", jt$df2[i], T3$dendf, T3$effect)
   }
 }
 rep_df <- do.call(rbind, report)

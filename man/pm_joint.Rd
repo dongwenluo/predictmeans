@@ -48,6 +48,8 @@ The F statistic and its denominator degrees of freedom follow the model:
 \code{DDFM=KR}; see \code{\link{predictmeans}}).}
 \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
+\item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}}{as for \code{lmer} (Satterthwaite df of the
+F test, lmerTest's rule).}
 \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
   \code{\link{contrastmeans}}).}
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}

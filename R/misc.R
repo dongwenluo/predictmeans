@@ -1254,8 +1254,19 @@ pm_df_method <- function(model, df_method) {
     warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
     return(list(df_type = NULL, vcov_adj = NULL))
   }
+  if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-SAS")) {
+    # nlme models: Satterthwaite (R/satt-nlme.R); Kenward-Roger only for lmer
+    if (df_method != "Satterthwaite") {
+      warning("Kenward-Roger df are available for lmer models; using Satterthwaite df for this ", class(model)[1],
+              " model.", call. = FALSE)
+    }
+    return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
+  }
   if (!inherits(model, "lmerMod")) {
-    if (df_method != "auto") warning("'df_method' applies to lmer models only (\"between-within\" also to lme and gls); ignored.")
+    if (df_method != "auto") {
+      warning("'df_method' applies to lmer models only (\"between-within\" and \"Satterthwaite\" also to lme and ",
+              "gls); ignored.")
+    }
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   reml <- lme4::getME(model, "is_REML")

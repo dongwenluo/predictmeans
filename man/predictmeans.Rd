@@ -154,6 +154,10 @@ used unless \code{vcov_adjust = TRUE} is given.
 information of the variance parameters where \code{"Kenward-Roger"} (as \pkg{pbkrtest} and \pkg{emmeans}) uses
 the expected information; the two agree in balanced designs and differ slightly otherwise (about 1\% in the df
 of a split plot with one plot missing).
+For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
+variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
+checked against SAS PROC MIXED), and \code{"Kenward-Roger"} falls back to it with a warning; their default stays
+\pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
 Other choices are ignored for other model classes.}
 
 \item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}

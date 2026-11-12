@@ -36,7 +36,8 @@
 #' @param df_method Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 #'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 #'   for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
-#'   \code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); see \code{\link{predictmeans}}.
+#'   \code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"};
+#'   see \code{\link{predictmeans}}.
 #' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 #'   test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
 #'   denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
@@ -196,6 +197,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (all(missing(permlist), missing(Df))){
     df_custom <- if (identical(df_type, "between-within")) {
       rep(unname(pm_betwithin_df(model)[modelterm]), nrow(rK))       # SAS DDFM=BETWITHIN
+    } else if (identical(df_type, "Satterthwaite") && inherits(model, c("lme", "gls"))) {
+      pm_satt_ddf(rK, vcov_adj)                                      # R/satt-nlme.R
     } else pm_df(model, rK)
 	  if (!is.null(df_custom)) {
 	    Df <- rep_len(as.numeric(df_custom), nrow(rK))

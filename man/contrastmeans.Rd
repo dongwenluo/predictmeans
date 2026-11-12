@@ -46,7 +46,8 @@ over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
-\code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); see \code{\link{predictmeans}}.}
+\code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"};
+see \code{\link{predictmeans}}.}
 
 \item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)

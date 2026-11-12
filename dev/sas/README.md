@@ -83,7 +83,7 @@ Agreement within one unit of SAS's last printed digit:
 | LSMEANS, differences: estimates | all | all | all |
 | SEs | all | within 4e-5 (relative), from the variance components above | all |
 | CONTAIN df | all | all | all (30) |
-| SATTERTHWAITE df | all | all | SAS ≈ 10; predictmeans uses the residual df (30) for `gls` |
+| SATTERTHWAITE df | all | all | SAS ≈ 10; predictmeans used the residual df (30) for `gls` — now `df_method = "Satterthwaite"` gives SAS's values |
 | KR df | all | 1% higher in predictmeans (e.g. 9.87 vs 9.79, 31.46 vs 31.3) | SAS ≈ 9–10; predictmeans 30 |
 | Type 3 F (KR: scaled F) | all | all | — |
 | BETWITHIN df | not in predictmeans | | |

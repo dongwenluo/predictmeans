@@ -266,6 +266,17 @@
   gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
   `"Satterthwaite"`, every df of that SAS run now agrees with SAS.
 
+* `df_method = "Satterthwaite"` for `lme` and `gls` models, with any
+  correlation and variance structure, in `predictmeans()`,
+  `contrastmeans()`, `pm_joint()` and `pm_slopes()`: the covariance of the
+  data is rebuilt from the fit (checked against `vcov()`), and the
+  Satterthwaite df use the Hessian of the REML log-likelihood, as SAS does.
+  For the unstructured repeated measures of the SAS reference run, the df
+  are 10 to 10.2 as SAS gives, where the residual df (the default for
+  `gls`) are 30. `"Kenward-Roger"` for these models falls back to
+  Satterthwaite with a warning (it is for `lmer` models). The default for
+  `lme` and `gls` is unchanged.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in
