@@ -39,6 +39,38 @@ pm_perm_stream <- function(n, seed = NULL, state = NULL) {
   f
 }
 
+## Permutations from a matrix given by the user (e.g. permindex()), or from
+## pm_perm_stream(): a function giving the next m permutations. 'perms' must
+## have one row per observation and permutations of 1:n as columns.
+pm_perm_source <- function(n, seed = NULL, perms = NULL, state = NULL) {
+  if (is.null(perms)) return(pm_perm_stream(n, seed, state))
+  perms <- pm_perm_check_index(perms, n)
+  pos <- 0L
+  f <- function(m) {
+    out <- perms[, pos + seq_len(m), drop = FALSE]
+    pos <<- pos + m
+    out
+  }
+  attr(f, "matrix") <- perms
+  f
+}
+
+## Check a matrix of permutation indices: one row per observation used in
+## the model, each column a permutation of 1:n.
+pm_perm_check_index <- function(perms, n) {
+  perms <- as.matrix(perms)
+  if (nrow(perms) != n) {
+    stop("'perms' must have one row per observation used in the model (", n, "), not ", nrow(perms), ".",
+         call. = FALSE)
+  }
+  if (!is.numeric(perms) || any(perms != round(perms)) ||
+      any(apply(perms, 2, function(p) anyDuplicated(p) > 0 || min(p) < 1 || max(p) > n))) {
+    stop("each column of 'perms' must be a permutation of 1 to ", n, ".", call. = FALSE)
+  }
+  storage.mode(perms) <- "integer"
+  perms
+}
+
 ## Apply FUN to each element of X (usually one permuted or simulated data set
 ## each), on 'ncore' cores: forked processes (mclapply) on Unix, a socket
 ## cluster on Windows with 'packages' attached on each worker. An error in
@@ -119,9 +151,9 @@ pm_perm_n <- function(permlist) {
 ## response z (offset removed, weighted), the random number state that
 ## regenerates the permutations, and names to check that a later call uses
 ## the same model.
-pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names) {
+pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names, idx = NULL) {
   structure(list(scheme = "freedman-lane", X = X, z = z, nperm = as.integer(nperm), exact = exact,
-                 start = start, coef_names = coef_names),
+                 start = start, idx = idx, coef_names = coef_names),
             class = "pm_perm")
 }
 
@@ -157,7 +189,7 @@ pm_perm_fl_t <- function(perm, L, model = NULL) {
     list(f0 = f0, e0 = z - f0, obs = round(abs_t(j, matrix(z)), 6))
   })
   count <- valid <- numeric(k)
-  perms <- pm_perm_stream(n, state = perm$start)
+  perms <- pm_perm_source(n, perms = perm$idx, state = perm$start)
   chunk <- max(1L, min(perm$nperm, floor(2e6 / n)))
   done <- 0L
   while (done < perm$nperm) {

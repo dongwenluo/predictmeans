@@ -147,6 +147,12 @@
   the help page recommends the Kenward-Roger or Satterthwaite F test: the
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 
+* `permmodels()` and `permlmer()` (so `permanova.lmer()`) take a matrix of
+  permutations, `perms`, e.g. from `permindex()`: permutations within
+  blocks or of whole plots, for tests that permute only as the design
+  allows (randomisation tests). With `method = "freedman-lane"` the same
+  permutations are used for pairs and contrasts in `predictmeans()`.
+
 * New `bootmodels()`: parametric bootstrap p-values for the terms and
   coefficients of `lmer` and `glmer` models, simulating from the model
   without its fixed effects (global null) and refitting. Its result can be
@@ -232,6 +238,16 @@
   adjusted for a spatial smooth.
 
 ## Bug fixes
+
+* `permindex()` returns indices for the rows of the data as given. Before,
+  with `block` or `group` it sorted the data first and returned indices
+  for the sorted copy, which were wrong unless the data were already sorted
+  by block and group (as in its examples). For sorted data and the same
+  `seed` the permutations are unchanged. Also: duplicated permutations are
+  found with a separator between indices (`1, 12` and `11, 2` were taken
+  as the same), whole groups of unequal size can no longer change places
+  (that mixed rows of different groups; now an error), and `seed` leaves
+  the user's random number stream as it was.
 
 * `permmodels()` for `glm`, `lm` and `aov` models permutes all the variables
   of the response together: `cbind(R, F)` (successes, failures) permuted only

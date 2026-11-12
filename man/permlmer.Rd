@@ -4,7 +4,7 @@
 \alias{permlmer}
 \title{Permutation Test of random or fixed effects for \code{lmer} model.}
 \usage{
-permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed)
+permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL)
 }
 \arguments{
 \item{lmer0}{\code{lmer} model under H0, note that \code{lmer0} model must nest within \code{lmer1} model.}
@@ -18,6 +18,9 @@ permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed)
 \item{plot}{Plot permutation distribution or not, the default value is FALSE.}
 
 \item{seed}{Specify a random number generator seed, for reproducible results.}
+
+\item{perms}{Optional matrix of permutations to use instead of free ones, one row per observation and one column
+per permutation (e.g. from \code{\link{permindex}}); \code{nperm} is then its number of columns.}
 }
 \value{
 Permutation p-value.

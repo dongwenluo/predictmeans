@@ -607,12 +607,16 @@ update; R CMD check at the end of each.
    with a `permlist`, observed t used the KR-adjusted SE while the refits
    use the unadjusted one; now `vcov_adjust` is not used with a `permlist`.
    The default for lm/aov is decided in step 9 (`method = "auto"`).
-3b. **`permindex()`** (maintainer's question: still used? worth keeping?):
-   not used inside the package, but exported and the natural source of
-   restricted (design-based) permutations. Fix it (indices for the data's
-   own order, not a sorted copy; duplicate check with a separator; error for
-   whole-group swaps of unequal sizes; seed without moving the user's
-   stream, same draws) and let `permmodels()`/`permlmer()` take its matrix.
+3b. **`permindex()`** (maintainer's question: still used? worth keeping?)
+   — **done**: it was not used inside the package, but it is exported and
+   the natural source of restricted (design-based) permutations, so kept and
+   fixed: indices for the data's own order (1.x: for a sorted copy), a
+   separator in the duplicate check, an error for whole-group swaps of
+   unequal sizes, and a seed that leaves the user's stream alone (same
+   draws for sorted data). `permmodels()` (raw and Freedman–Lane) and
+   `permlmer()` take its matrix as `perms` (`pm_perm_source()`); the lme/gls
+   path maps it through its internal reordering (tested: same p-values for
+   shuffled data).
 4. **Working-scale layer `pm_working()`** for glm, glmer, glmmTMB (no zero
    inflation): weights, dispersion, G on the absolute scale, checked family by
    family against `simulate()` and `R2_glmm()`; fix `R2_glmm()` if the beta

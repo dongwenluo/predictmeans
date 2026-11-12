@@ -3,13 +3,15 @@
 #' @description
 #' This function provides permutation tests for the terms in a linear mixed model of \code{lmer}.
 #' @usage
-#' permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed)
+#' permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL)
 #' @param lmer0 \code{lmer} model under H0, note that \code{lmer0} model must nest within \code{lmer1} model.
 #' @param lmer1 \code{lmer} model under H1, note that \code{lmer0} model must nest within \code{lmer1} model.
 #' @param nperm Number of permutation, the default value is 999.
 #' @param ncore Number of core for parallel computing, the default value is 3.
 #' @param plot Plot permutation distribution or not, the default value is FALSE.
 #' @param seed Specify a random number generator seed, for reproducible results.
+#' @param perms Optional matrix of permutations to use instead of free ones, one row per observation and one column
+#'   per permutation (e.g. from \code{\link{permindex}}); \code{nperm} is then its number of columns.
 #' @return
 #' Permutation p-value.
 #' @details
@@ -46,7 +48,7 @@
 #' @name permlmer
 NULL
 
-permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
+permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL){
 
   if (any(!inherits(lmer0, "lmerMod"), !inherits(lmer1, "lmerMod"))) {
     stop("The model must be a lmer object!")
@@ -109,7 +111,8 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   # Random effects (same fixed effects): the decorrelated residuals are
   # permuted. Fixed effects: fitted values and decorrelated residuals are
   # permuted together.
-  idx <- pm_perm_stream(length(errors), if (missing(seed)) NULL else seed)(nperm)
+  if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
+  idx <- pm_perm_source(length(errors), if (missing(seed)) NULL else seed, perms)(nperm)
   permy <- function(k) {
     r <- idx[, k]
     if (ref) xbeta + W$mult(wterrors[r]) else xbeta[r] + W$mult(wterrors[r])

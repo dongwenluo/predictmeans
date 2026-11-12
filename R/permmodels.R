@@ -6,7 +6,7 @@
 #' @usage
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
 #'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-#'   fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"))
+#'   fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param nperm The number of permutations. The default is 4999.
 #' @param type type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
@@ -20,6 +20,10 @@
 #' @param seed Specify a random number generator seed, for reproducible results.
 #' @param method How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"} (\code{lm} and
 #'   \code{aov} models only). See Details.
+#' @param perms Optional matrix of permutations to use instead of free ones, one row per observation used in the
+#'   model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
+#'   whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
+#'   permutations the design allows.
 #' @return
 #' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
 #' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
@@ -101,7 +105,7 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic) {
 
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
-					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane")) {
+					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL) {
   
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -110,11 +114,12 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   test.statistic <- match.arg(test.statistic)	
   method <- match.arg(method)
   seed <- if (missing(seed)) NULL else seed
+  if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
   if (method == "freedman-lane") {
     if (!inherits(model, "lm") || inherits(model, "glm")) {
       stop("method = \"freedman-lane\" is available for lm and aov models.", call. = FALSE)
     }
-    return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt)))
+    return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt, perms)))
   }
   if (inherits(model, "glm") && !(test.statistic %in% c("LR", "Wald", "F"))) test.statistic <- "LR"
   if (any(inherits(model, "gls"), inherits(model, "lme"))) test.statistic <- "Chisq"
@@ -140,7 +145,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       stop("Can't find the response variable(s) ", paste(sQuote(yname), collapse = ", "),
            " in the data; please give the data used to fit the model in 'data'.", call. = FALSE)
     }
-    idx <- pm_perm_stream(nrow(mod_df), seed)(nperm)
+    idx <- pm_perm_source(nrow(mod_df), seed, perms)(nperm)
     one <- function(k) {
       d <- mod_df
       d[yname] <- mod_df[idx[, k], yname, drop = FALSE]
@@ -172,7 +177,12 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     # order-invariant square root of the block-diagonal V (R/whiten.R)
     W <- pm_whiten_blocks(V_list)
     wterrors <- W$solve(errors)    
-    idx <- pm_perm_stream(length(errors), seed)(nperm)
+    idx <- pm_perm_source(length(errors), seed, perms)(nperm)
+    if (!is.null(perms)) {
+      # the data were reordered by group: map the user's permutations
+      ord <- ord_X_y[[2]]
+      idx <- matrix(order(ord)[idx[ord, , drop = FALSE]], nrow = length(ord))
+    }
     one <- function(k) {
       r <- idx[, k]
       d <- mod_df
@@ -199,7 +209,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     xbeta <- as.vector(getME(model, "X")%*%fixef)
     errors <- getME(model, "y") - xbeta
     wterrors <- W$solve(errors)
-    idx <- pm_perm_stream(length(errors), seed)(nperm)
+    idx <- pm_perm_source(length(errors), seed, perms)(nperm)
     one <- function(k) {
       r <- idx[, k]
       rfitmodel <- refit(model, xbeta[r] + W$mult(wterrors[r]))
@@ -267,7 +277,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 ## with permlist = NULL, and 'perm', a permutation object with which
 ## predictmeans() and contrastmeans() test pairs and contrasts by
 ## Freedman-Lane permutations (pm_perm_fl_t()).
-pm_perm_fl <- function(model, nperm, type, exact, seed, prt) {
+pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL) {
   mf <- stats::model.frame(model)
   y <- stats::model.response(mf)
   if (!is.null(dim(y))) stop("method = \"freedman-lane\" needs a single response.", call. = FALSE)
@@ -339,7 +349,7 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt) {
     tests[[k]]$count <- 0
   }
 
-  perms <- pm_perm_stream(n, seed)
+  perms <- pm_perm_source(n, seed, perms)
   chunk <- max(1L, min(nperm, floor(2e6 / n)))
   done <- 0L
   while (done < nperm) {
@@ -375,5 +385,6 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt) {
     cat("\nNote: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
   }
   list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA,
-       perm = pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), pm_perm_coef_names(model)))
+       perm = pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), pm_perm_coef_names(model),
+                                attr(perms, "matrix")))
 }

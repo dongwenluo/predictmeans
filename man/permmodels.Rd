@@ -6,7 +6,7 @@
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"))
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -32,6 +32,11 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 
 \item{method}{How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"} (\code{lm} and
 \code{aov} models only). See Details.}
+
+\item{perms}{Optional matrix of permutations to use instead of free ones, one row per observation used in the
+model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
+whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
+permutations the design allows.}
 }
 \value{
 The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.

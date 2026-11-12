@@ -15,13 +15,25 @@ permindex(data, block=NULL, group=NULL, nsim=4999, seed)
 
 \item{nsim}{The number of permutations. The default is 4999.}
 
-\item{seed}{Specify a random number generator seed, for reproducible results.}
+\item{seed}{Specify a random number generator seed, for reproducible results. The user's random number stream is
+left as it was.}
 }
 \value{
-A matrix has 'nsim' columns of permuted index.
+A matrix with one row per row of \code{data} and up to \code{nsim} columns, each a permutation of the row numbers
+of \code{data} (row i of the permuted data is row \code{index[i]} of \code{data}). Duplicated permutations are
+dropped, so there are fewer columns when the design allows fewer distinct permutations.
 }
 \description{
-This function obtains permutation index for a dataset.
+This function obtains permutation index for a dataset: free permutations, permutations within blocks, permutations
+of whole groups (e.g. whole plots), or of whole groups within blocks. The result can be given to
+\code{\link{permmodels}} or \code{\link{permlmer}} (argument \code{perms}) for tests that permute only as the
+design allows (restricted, or design-based, permutation tests).
+}
+\details{
+Groups are permuted as whole units, so the groups that change places (within a block, if \code{block} is given)
+must have the same number of rows. The data need not be sorted: before predictmeans 2.0 the indices referred to
+the data sorted by \code{block} and \code{group}, so they were right only for data already in that order (the
+permutations are the same as before for sorted data and the same \code{seed}).
 }
 \examples{
   library(predictmeans)
@@ -37,6 +49,13 @@ This function obtains permutation index for a dataset.
                         # Permute groups as a whole block first, 
                         # then permute obs within each group.
   cbind(data, permindex(data, nsim=5))  # Free permutation.
+
+  ## A randomisation test of nitrogen in a randomised block design:
+  ## permutations within blocks only
+  Oats$nitro <- factor(Oats$nitro)
+  fm <- lm(yield ~ Block + nitro, data = Oats)
+  idx <- permindex(Oats, block = "Block", nsim = 199, seed = 1)
+  permmodels(fm, perms = idx, ncore = 1)
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
