@@ -245,6 +245,12 @@
   table records it (`vcov`). With a `permlist` it is not used (see
   `permmodels(robust = TRUE)`).
 
+* SAS validation: the tests compare every variance component, LS-mean,
+  difference and Type 3 test of 16 SAS PROC MIXED runs (split plot,
+  sub-plot or whole plot missing, unstructured repeated measures; containment,
+  between-within, Satterthwaite and Kenward-Roger df) with predictmeans
+  (`tests/testthat/test-sas-reference.R`).
+
 * `df_method = "between-within"` (SAS `DDFM=BETWITHIN`) in
   `predictmeans()`, `contrastmeans()`, `pm_joint()`, `pm_slopes()` and
   `df_term()`, for `lmer`, `lme` and `gls` models: effects constant within

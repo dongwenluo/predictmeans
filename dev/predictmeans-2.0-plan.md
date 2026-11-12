@@ -419,7 +419,7 @@ part-time person).
 | `R2_model()` (Piepho default, Nakagawa option, numeric result) | M | **Done** (Nakagawa for gaussian and binomial) |
 | mgcv adapter | L | **Done** in Kmatrix and `predictmeans()` |
 | `predictmeans()` accepting `semireg` objects; simultaneous bands in `semipred` | M | **Done** |
-| SAS validation suite (§4) | L | Open |
+| SAS validation suite (§4) | L | **Done**: `tests/testthat/test-sas-reference.R` checks all 16 PROC MIXED runs of `dev/sas/pm-reference.sas` (2,600+ values; `_data/sas/`, provenance in its README) |
 
 ### Phase 3 — Documentation and AI readiness (alongside Phases 1–2)
 

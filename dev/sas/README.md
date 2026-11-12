@@ -121,6 +121,11 @@ measures failed in Genstat (ASREML fault 1009).
 
 ## The second SAS run (fixed script, 2026-11-12)
 
+These values are the package's SAS reference tests:
+`tests/testthat/_data/sas/proc-mixed-reference.csv.gz` and
+`tests/testthat/test-sas-reference.R` (all 16 runs, every value).
+
+
 `sas-results-2026-11-12-run2.txt` / `sas-results-run2.csv`: the same 16 runs
 with the intended data (68 and 67 observations). `compare-sas.R` reads the
 observation counts and builds each data set as that run did:
