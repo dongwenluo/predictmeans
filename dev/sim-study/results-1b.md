@@ -56,6 +56,10 @@ Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-
 | fx2_lmm_sp | 500 | fl | 0.086 | 0.020 |
 | fx2_lmm_sp | 500 | flr | 0.050 | 0.004 |
 | fx2_lmm_sp | 500 | kr | 0.046 | 0.004 |
+| fx2_lmm_unbal | 500 | raw | 0.046 | 0.012 |
+| fx2_lmm_unbal | 500 | fl | 0.056 | 0.010 |
+| fx2_lmm_unbal | 500 | flr | 0.048 | 0.010 |
+| fx2_lmm_unbal | 500 | kr | 0.054 | 0.008 |
 | fx2_sp_pairs | 500 | flr.1v2 | 0.054 | 0.020 |
 | fx2_sp_pairs | 500 | flr.1v3 | 0.052 | 0.008 |
 | fx2_sp_pairs | 500 | flr.1v4 | 0.822 | 0.500 |
