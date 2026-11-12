@@ -75,3 +75,12 @@ test_that("permmodels() uses Freedman-Lane by default (method = \"auto\")", {
   expect_identical(a, permmodels(fm, nperm = 19, seed = 1, prt = FALSE, method = "freedman-lane"))
   expect_length(permmodels(fm, nperm = 19, seed = 1, prt = FALSE, ncore = 1, method = "raw")$permlist, 19)
 })
+
+test_that("Freedman-Lane on the working scale leaves out rows with zero weight", {
+  data(Drug, package = "predictmeans", envir = environment())
+  w <- rep(1, nrow(Drug)); w[1:2] <- 0
+  g <- glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug, weights = w)
+  g2 <- glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug[-(1:2), ])
+  expect_equal(permmodels(g, nperm = 19, seed = 1, prt = FALSE)$ANOVA,
+               permmodels(g2, nperm = 19, seed = 1, prt = FALSE)$ANOVA)
+})

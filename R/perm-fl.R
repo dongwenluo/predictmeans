@@ -45,13 +45,17 @@ pm_fl_design <- function(model) {
     wk <- pm_working(model)
     X0 <- if (inherits(model, "glm")) stats::model.matrix(model) else lme4::getME(model, "X")
     asgn <- attr(X0, "assign")[match(colnames(wk$X), colnames(X0))]
+    # rows with zero prior weight carry no information
+    keep <- is.finite(wk$resvar) & wk$resvar > 0
+    Xk <- wk$X[keep, , drop = FALSE]
+    zk <- wk$z[keep]
     if (ncol(wk$A)) {
-      W <- pm_whiten(wk$A, wk$resvar)
-      X <- W$solve(wk$X)
-      z <- W$solve(wk$z)
+      W <- pm_whiten(wk$A[keep, , drop = FALSE], wk$resvar[keep])
+      X <- W$solve(Xk)
+      z <- W$solve(zk)
     } else {
-      X <- wk$X / sqrt(wk$resvar)
-      z <- wk$z / sqrt(wk$resvar)
+      X <- Xk / sqrt(wk$resvar[keep])
+      z <- zk / sqrt(wk$resvar[keep])
     }
     colnames(X) <- colnames(wk$X)
     return(list(X = X, z = as.vector(z), asgn = asgn, Terms = stats::terms(model), ord = NULL, kind = "working"))
