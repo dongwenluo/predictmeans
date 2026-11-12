@@ -128,7 +128,8 @@ For a glm the means are also given on the response scale (here probabilities); s
 - `vignette("R2_glmm", package = "predictmeans")`: adjusted R² for mixed models.
 - `vignette("migrating", package = "predictmeans")`: what changed from version 1.x.
 - `vignette("resampling", package = "predictmeans")`: permutation and parametric
-  bootstrap tests (`permmodels()`, `permlmer()`, `bootmodels()`), also for pairwise
-  comparisons and contrasts through `permlist`.
+  bootstrap tests (`permmodels()`, `permlmer()`, `permindex()`, `bootmodels()`) for
+  linear, generalized linear and mixed models, also for pairwise comparisons and
+  contrasts through `permlist`.
 - `vignette("smooth", package = "predictmeans")`: smooth curves in mixed models
   (`semireg()`, `semipred()`), with simultaneous confidence bands.

@@ -34,8 +34,12 @@ variable trnasformation in the model.}
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe"
 and "mvt". "sidak", "scheffe" (rank of the family: number of means - 1) and "mvt" (single-step multivariate t, the exact
-counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. "tukey", "scheffe" and "mvt" are not available
-with \code{permlist}. 
+counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With
+\code{permlist}, "tukey" and "mvt" give the single-step max-|t| adjustment of the permutation p-values (the
+permutation version of Tukey's test: each pair's |t| is compared with the largest |t| of the family in each
+permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
+powerful; both use the correlation between the comparisons. "westfall" needs \code{permlist}; "scheffe" is not
+available with it. 
 The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
 except for "bonferroni" method.}
 
@@ -108,7 +112,10 @@ The default is \code{c("mean", "pval", "back")}.}
 
 \item{permlist}{A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
-permutation tests.}
+permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
+models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
+With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
+permuted refits, which use the unadjusted covariance.}
 
 \item{ncore}{Number of core for parallel computing when \code{permlist != NULL}, the default value is 3.}
 

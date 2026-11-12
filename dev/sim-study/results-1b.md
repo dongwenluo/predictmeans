@@ -1,0 +1,120 @@
+# Study 1b results
+
+Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-0.064 (1000 data sets),
+0.031-0.069 (500).
+
+## Pairwise comparisons
+
+| cell | method | per pair (mean) | per pair (max) | FWER Holm | FWER max-t / Tukey | power (mean) |
+|---|---|---|---|---|---|---|
+| pr_gls_ar1 | joint | 0.039 | 0.046 | 0.032 | 0.043 |  |
+| pr_gls_ar1 | flpair | 0.061 | 0.064 | 0.054 |  |  |
+| pr_gls_ar1 | flterm | 0.062 | 0.067 | 0.053 | 0.072 |  |
+| pr_gls_ar1 | param | 0.059 | 0.062 | 0.060 | 0.067 |  |
+| pr_lev_global | joint | 0.057 | 0.061 | 0.061 | 0.067 |  |
+| pr_lev_global | flpair | 0.054 | 0.060 | 0.045 |  |  |
+| pr_lev_global | flterm | 0.053 | 0.058 | 0.044 | 0.056 |  |
+| pr_lev_global | param | 0.052 | 0.055 | 0.045 | 0.051 |  |
+| pr_lme_varident | joint | 0.059 | 0.067 | 0.034 | 0.065 |  |
+| pr_lme_varident | flpair | 0.069 | 0.075 | 0.053 |  |  |
+| pr_lme_varident | flterm | 0.069 | 0.078 | 0.054 | 0.086 |  |
+| pr_lme_varident | param | 0.065 | 0.073 | 0.067 | 0.079 |  |
+| pr_rcbd_global | joint | 0.054 | 0.068 | 0.028 | 0.058 |  |
+| pr_rcbd_global | flpair | 0.058 | 0.071 | 0.033 |  |  |
+| pr_rcbd_global | flterm | 0.057 | 0.072 | 0.037 | 0.065 |  |
+| pr_rcbd_global | param | 0.056 | 0.069 | 0.047 | 0.059 |  |
+| pr_rcbd_partial | joint | 0.044 | 0.047 | 0.040 | 0.032 | 1.000 |
+| pr_rcbd_partial | flpair | 0.052 | 0.057 | 0.045 |  | 1.000 |
+| pr_rcbd_partial | flterm | 0.051 | 0.052 | 0.050 | 0.042 | 1.000 |
+| pr_rcbd_partial | param | 0.048 | 0.050 | 0.048 | 0.037 | 1.000 |
+| pr_rcbd_power | joint |  |  |  |  | 0.276 |
+| pr_rcbd_power | flpair |  |  |  |  | 0.282 |
+| pr_rcbd_power | flterm |  |  |  |  | 0.285 |
+| pr_rcbd_power | param |  |  |  |  | 0.278 |
+| pr_rcbd_skew_partial | joint | 0.046 | 0.052 | 0.027 | 0.024 | 0.998 |
+| pr_rcbd_skew_partial | flpair | 0.051 | 0.057 | 0.040 |  | 0.999 |
+| pr_rcbd_skew_partial | flterm | 0.052 | 0.058 | 0.036 | 0.030 | 0.999 |
+| pr_rcbd_skew_partial | param | 0.048 | 0.055 | 0.034 | 0.029 | 0.999 |
+| pr_sp_A_partial | joint | 0.055 | 0.059 | 0.036 | 0.034 | 0.807 |
+| pr_sp_A_partial | flpair | 0.062 | 0.065 | 0.055 |  | 0.832 |
+| pr_sp_A_partial | flterm | 0.062 | 0.068 | 0.054 | 0.047 | 0.831 |
+| pr_sp_A_partial | param | 0.050 | 0.055 | 0.038 | 0.028 | 0.809 |
+| pr_sp_B_partial | joint | 0.048 | 0.048 | 0.048 | 0.021 | 1.000 |
+| pr_sp_B_partial | flpair | 0.054 | 0.054 | 0.054 |  | 1.000 |
+| pr_sp_B_partial | flterm | 0.049 | 0.049 | 0.049 | 0.018 | 1.000 |
+| pr_sp_B_partial | param | 0.052 | 0.052 | 0.052 | 0.017 | 1.000 |
+
+## Tests of a fixed term
+
+| cell | n | method | reject 5% | reject 1% |
+|---|---|---|---|---|
+| fx2_glm_binom_lev | 1000 | raw | 0.006 | 0.000 |
+| fx2_glm_binom_lev | 1000 | fl | 0.042 | 0.009 |
+| fx2_glm_binom_lev | 1000 | lrt | 0.050 | 0.012 |
+| fx2_glm_nb | 999 | raw | 0.019 | 0.003 |
+| fx2_glm_nb | 999 | fl | 0.061 | 0.021 |
+| fx2_glm_nb | 999 | lrt | 0.329 | 0.178 |
+| fx2_glm_pois_lev | 999 | raw | 0.008 | 0.001 |
+| fx2_glm_pois_lev | 999 | fl | 0.058 | 0.013 |
+| fx2_glm_pois_lev | 999 | lrt | 0.055 | 0.017 |
+| fx2_glmm_binom3 | 500 | fl | 0.066 | 0.010 |
+| fx2_glmm_binom3 | 500 | flr | 0.062 | 0.012 |
+| fx2_glmm_binom3 | 500 | permlmer | 0.062 | 0.018 |
+| fx2_glmm_binom3 | 500 | lrt | 0.064 | 0.024 |
+| fx2_glmm_nb | 499 | fl | 0.100 | 0.024 |
+| fx2_glmm_nb | 499 | flr | 0.074 | 0.020 |
+| fx2_glmm_nb | 499 | permlmer | 0.086 | 0.028 |
+| fx2_glmm_nb | 499 | lrt | 0.339 | 0.190 |
+| fx2_glmm_pois_lev | 500 | fl | 0.048 | 0.010 |
+| fx2_glmm_pois_lev | 500 | flr | 0.058 | 0.016 |
+| fx2_glmm_pois_lev | 500 | permlmer | 0.060 | 0.014 |
+| fx2_glmm_pois_lev | 500 | lrt | 0.052 | 0.012 |
+| fx2_glmm_pois_power | 499 | fl | 0.433 | 0.190 |
+| fx2_glmm_pois_power | 499 | flr | 0.429 | 0.198 |
+| fx2_glmm_pois_power | 499 | permlmer | 0.453 | 0.198 |
+| fx2_glmm_pois_power | 499 | lrt | 0.475 | 0.248 |
+| fx2_glmm_rare | 491 | fl | 0.031 | 0.004 |
+| fx2_glmm_rare | 491 | flr | 0.041 | 0.006 |
+| fx2_glmm_rare | 491 | permlmer | 0.051 | 0.014 |
+| fx2_glmm_rare | 491 | lrt | 0.071 | 0.022 |
+| fx2_lme_varident | 500 | raw | 0.036 | 0.008 |
+| fx2_lme_varident | 500 | fl | 0.042 | 0.010 |
+| fx2_lme_varident | 500 | flr | 0.036 | 0.008 |
+| fx2_lme_varident | 500 | param | 0.042 | 0.014 |
+| fx2_lmm_lev | 500 | raw | 0.060 | 0.012 |
+| fx2_lmm_lev | 500 | flr_all | 0.052 | 0.004 |
+| fx2_lmm_lev | 500 | fl | 0.050 | 0.006 |
+| fx2_lmm_lev | 500 | flr | 0.054 | 0.008 |
+| fx2_lmm_lev | 500 | kr | 0.048 | 0.006 |
+| fx2_lmm_lev_power | 500 | raw | 0.626 | 0.402 |
+| fx2_lmm_lev_power | 500 | fl | 0.634 | 0.368 |
+| fx2_lmm_lev_power | 500 | flr | 0.626 | 0.326 |
+| fx2_lmm_lev_power | 500 | kr | 0.626 | 0.372 |
+| fx2_lmm_sp | 500 | raw | 0.058 | 0.012 |
+| fx2_lmm_sp | 500 | flr_all | 0.054 | 0.006 |
+| fx2_lmm_sp | 500 | fl | 0.086 | 0.020 |
+| fx2_lmm_sp | 500 | flr | 0.050 | 0.004 |
+| fx2_lmm_sp | 500 | kr | 0.046 | 0.004 |
+| fx2_lmm_unbal | 500 | raw | 0.052 | 0.012 |
+| fx2_lmm_unbal | 500 | flr_all | 0.046 | 0.012 |
+| fx2_lmm_unbal | 500 | fl | 0.056 | 0.010 |
+| fx2_lmm_unbal | 500 | flr | 0.048 | 0.010 |
+| fx2_lmm_unbal | 500 | kr | 0.054 | 0.008 |
+| fx2_sp_pairs | 500 | flr.1v2 | 0.054 | 0.020 |
+| fx2_sp_pairs | 500 | flr.1v3 | 0.052 | 0.008 |
+| fx2_sp_pairs | 500 | flr.1v4 | 0.822 | 0.500 |
+| fx2_sp_pairs | 500 | flr.2v3 | 0.050 | 0.014 |
+| fx2_sp_pairs | 500 | flr.2v4 | 0.808 | 0.502 |
+| fx2_sp_pairs | 500 | flr.3v4 | 0.818 | 0.528 |
+| fx2_sp_pairs | 500 | kr.1v2 | 0.056 | 0.014 |
+| fx2_sp_pairs | 500 | kr.1v3 | 0.050 | 0.012 |
+| fx2_sp_pairs | 500 | kr.1v4 | 0.832 | 0.556 |
+| fx2_sp_pairs | 500 | kr.2v3 | 0.048 | 0.010 |
+| fx2_sp_pairs | 500 | kr.2v4 | 0.826 | 0.558 |
+| fx2_sp_pairs | 500 | kr.3v4 | 0.822 | 0.566 |
+| fx2_sp_pairs | 500 | flr.holm | 0.042 | 0.000 |
+| fx2_sp_pairs | 500 | kr.holm | 0.040 | 0.008 |
+| fx2_tmb_nb2 | 500 | fl | 0.066 | 0.020 |
+| fx2_tmb_nb2 | 500 | flr | 0.068 | 0.020 |
+| fx2_tmb_nb2 | 500 | permlmer | 0.056 | 0.022 |
+| fx2_tmb_nb2 | 500 | lrt | 0.070 | 0.020 |

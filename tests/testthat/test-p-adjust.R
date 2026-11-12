@@ -61,7 +61,7 @@ test_that("mvt repeats exactly and leaves the user's random numbers alone", {
 test_that("with permutation p-values sidak works; scheffe and mvt stop", {
   d <- oats_unbal()
   fm <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = d)
-  pl <- permmodels(fm, nperm = 30, ncore = 1, seed = 1, prt = FALSE)
+  pl <- permmodels(fm, method = "raw", nperm = 30, ncore = 1, seed = 1, prt = FALSE)
   r <- predictmeans(fm, "nitro", permlist = pl, adj = "sidak", plot = FALSE, ncore = 1)
   m <- sum(!is.na(r$pairs$p.value))
   expect_equal(r$pairs$p.adj, 1 - (1 - r$pairs$p.value)^m)

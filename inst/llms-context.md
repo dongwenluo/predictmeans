@@ -115,12 +115,17 @@ predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)$pairs
 # transformed response
 # predictmeans(lmer(log(y) ~ ...), "A", trans = exp, plot = FALSE)   # ratios of geometric means
 
-# permutation / bootstrap p-values for pairs
-perm <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE)
+# permutation p-values for terms and pairs (Freedman-Lane by default, any model class:
+# lm, aov, glm, lme, gls, lmer, glmer, glmmTMB; no refits)
+perm <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
 predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
-# lm/aov with a covariate: Freedman-Lane permutations (tables only, permlist is NULL)
-permmodels(lm(mpg ~ wt + factor(cyl), data = mtcars), type = "II", seed = 1,
-           method = "freedman-lane")
+# the 1.x scheme (response / fitted values permuted, refits kept in permlist)
+perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE, method = "raw")
+# random effects or any two nested mixed models (lmer, glmer, glmmTMB)
+# permlmer(fm0, fm1, nperm = 999, ncore = 1, seed = 1)    # permglmer(), permglmmTMB() too
+# randomisation test: permutations within blocks
+idx <- permindex(Oats, block = "Block", nsim = 999, seed = 1)
+permmodels(lm(yield ~ Block + nitro, data = Oats), perms = idx, prt = FALSE)$ANOVA
 
 # R2 as numbers; variance components
 R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
@@ -140,8 +145,13 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
 - `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
   the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).
 - `permmodels()`, `permlmer()` and `predictmeans(permlist = )` use `ncore = 3` by
-  default; use `ncore = 1` or 2 in package checks and on shared machines. `adj` options
-  `"tukey"`, `"scheffe"` and `"mvt"` are not available with `permlist`.
+  default; use `ncore = 1` or 2 in package checks and on shared machines. With `permlist`,
+  `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down
+  permutation max-|t| (Westfall-Young); `"scheffe"` is not available.
+- `permmodels()` defaults to Freedman-Lane since 2.0 (`method = "auto"`); `method =
+  "raw"` reproduces 1.x. For GLMs/GLMMs it works on the link (working) scale.
+  `permlmer()` for GLMMs uses the working scale, and randomised quantile residuals for
+  0/1 responses. With a `permlist`, `vcov_adjust` (Kenward-Roger) is not used.
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
   `simultaneous = TRUE` gives simultaneous bands. `predictmeans()` on a `semireg()` fit
   gives means with the smooth included and normal-based tests.

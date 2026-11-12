@@ -7,21 +7,25 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
 #' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
 #' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-#'   "mvt", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
-#'   \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}.
+#'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
+#'   "mvt" and "westfall", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+#'   \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With \code{permlist}, "mvt" gives the
+#'   single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
+#'   1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 #'   The default method is "none".
 #' @param Df A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 #'     the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).
 #' @param permlist A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
-#' 	option for the permutation test.
+#' 	option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+#'   \code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
+#'   0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).
 #' @param vcov_adjust For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 #'   adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 #'   Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
@@ -31,10 +35,19 @@
 #' @param df_method Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 #'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
 #'   \code{\link{predictmeans}}).
+#' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
+#'   test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+#'   denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+#'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
+#'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
+#'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
 #' @return
 #' There are two components in the output which are
 #' \item{Table}{A table showing t-test results for the specified linear contrasts.}
 #' \item{K}{A contrast matrix.}
+#' and, with \code{joint = TRUE}, a third,
+#' \item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
+#'   (and \code{Perm_p_value} with \code{permlist}).}
 #' @references
 #' Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 #'     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
@@ -69,12 +82,15 @@
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
 #'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 #' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
+#'
+#' # 3. ... and both contrasts tested together (an F test with 2 numerator df)
+#' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #' @name contrastmeans
 NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment")) {
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -87,7 +103,11 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     ctrnames <- NULL
   }
   weights <- match.arg(weights)
-  adj <- pm_match_adj(adj, tukey = FALSE)
+  adj <- pm_match_adj(adj, tukey = FALSE, westfall = TRUE)
+  if (adj == "westfall" && missing(permlist)) {
+    stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
+         "\"mvt\" (single step) or \"holm\".", call. = FALSE)
+  }
   KK <- Kmatrix(model, modelterm, weights=weights)$K
   termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {
@@ -148,6 +168,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
   if (identical(df_type, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
+  if (!missing(permlist)) vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
   # containment df with the adjusted covariance only when asked for explicitly
   if (identical(df_type, "containment") && vcov_adjust && getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
@@ -206,25 +227,43 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     }else{
-  	nsim <- length(permlist[[1]])
-    tValue <- function(x, rK){
-    cm <- rK%*%x$coef
-    vcovm <- x$vcov
-    vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-    ses <- sqrt(diag(vcov.contr))
-    t.v <- cm/ses
-    return(t.v)
-  }
-
-  if (nctr==1) {
-    per.p <- (sum(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
-  } else {
-    per.p <- (rowSums(sapply(permlist[[1]], function(x) round(abs(tValue(x, rK)), 6) >= round(abs(t.v), 6)))+1)/(nsim + 1)
+  	nsim <- pm_perm_n(permlist)
+  if (adj == "scheffe") stop("adj = \"scheffe\" is not available for permutation p-values; use another 'adj'.",
+                             call. = FALSE)
+  # permutation p-values; for adj = "mvt" / "westfall" the joint permutation
+  # distribution of the contrasts' |t| (max-|t|, Westfall-Young)
+  maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
+  fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = maxt || isTRUE(joint))
+  per.p <- fam$p
+  if (nrow(rK) > 1 && adj != "none") {
+    per.p <- if (maxt) {
+      pm_perm_maxT(fam$obs, fam$T, stepdown = adj == "westfall", p_raw = per.p)
+    } else if (adj == "sidak") {
+      pm_adjust_extra("sidak", as.vector(t.v), per.p, NA_real_)
+    } else p.adjust(per.p, adj)
   }
   out.put <- cbind(cm, ses, t.v, per.p)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)")
   rownames(out.put) <- rownames(ctrmatrix)
-  attr(out.put,"Note") <- paste("The permuted p-value is obtained using", sQuote(nsim), "permutations.")
+  attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
+                                 if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),
+                                 if (maxt) paste0(" (", if (adj == "westfall") "step-down" else "single-step",
+                                                  " max-|t| of the permutations)"), ".")
   }
-  return(list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix))
+  out <- list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix)
+  if (isTRUE(joint)) {
+    # all the contrasts together: the F test of pm_joint(), and with a
+    # permlist the permutation p-value of the joint Wald F
+    jt <- pm_joint(model, modelterm, ctrmatrix = ctrmatrix, df_method = df_method, weights = weights)
+    if (!missing(permlist)) jt$Perm_p_value <- pm_perm_p(fam$Fobs, fam$F, fam$exact)
+    dfm <- attr(jt, "df_method")
+    jt[] <- lapply(jt, function(v) if (is.numeric(v)) round(v, 4) else v)
+    rownames(jt) <- "all contrasts"
+    attr(jt, "Note") <- paste0("F test of all the contrasts together (", nrow(ctrmatrix), " contrasts, rank ", jt$df1,
+                               "; denominator df: ", dfm, ")",
+                               if (!missing(permlist)) paste0("; Perm_p_value from ", sQuote(nsim), " permutations"),
+                               ".")
+    out[["Joint F test of the contrasts"]] <- jt
+  }
+  out
 }

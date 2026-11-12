@@ -2,6 +2,19 @@
 
 ## Changes that affect results or scripts
 
+* **`permmodels()` uses Freedman-Lane permutations by default**
+  (`method = "auto"`, which chooses the more robust scheme for the model
+  class; at present Freedman-Lane for every class). Each term, coefficient
+  or pair is then tested with the model without it, so the other terms keep
+  their effects; permuting the response (1.x) tests the global null. In a
+  simulation study (study 1b, `dev/sim-study/`), with a covariate in the
+  model, permuting a GLM's response rejected only 0.6-1.9% of true null
+  hypotheses at the 5% level (little power), Freedman-Lane 4.2-6.1%; for
+  linear mixed models Freedman-Lane with refits kept 3.6-5.4% in every
+  case, and pairs of means 5.2%. The result has no `permlist` of refits but
+  can still be given to `predictmeans()` and `contrastmeans()`
+  (`permlist = `). Use `method = "raw"` for the 1.x scheme and results.
+
 * **Permutation tests of mixed models decorrelate residuals with the
   symmetric square root of their covariance** instead of the Cholesky
   factor: `permmodels()` for `lme`, `gls` and `lmer` models and
@@ -19,6 +32,15 @@
   Confirmed with the package functions (1000 data sets each): `permlmer()`
   split plot 5.9%, crossed design 5.4% (6.4% before); `permmodels()` with no
   fixed effects 4.8% (`lmer`, 6.2-7.1% before) and 5.9% (`lme`).
+
+* With a `permlist`, `predictmeans()` and `contrastmeans()` no longer use
+  the Kenward-Roger adjusted covariance (`vcov_adjust`): the permutation
+  p-value compares the observed t statistic with those of the permuted
+  refits, which use the unadjusted covariance, so the observed one must use
+  it too. Before, unbalanced REML `lmer` fits compared an adjusted observed
+  t (slightly smaller) with unadjusted permuted ones, so p-values were
+  slightly too large; balanced designs are unchanged. `vcov_adjust = TRUE`
+  given explicitly with a `permlist` gives a warning.
 
 * **Kenward-Roger adjusted standard errors are now the default** for `lmer`
   models fitted by REML, in `predictmeans()` and `contrastmeans()`
@@ -128,11 +150,81 @@
   5% level, Freedman-Lane 4-5%; in other designs the two agreed. The
   statistics come from QR projections of blocks of permuted responses, with
   no refits (4999 permutations of a 1000-row model with 16 tests take about
-  11 seconds on one core). Weights and offsets are allowed; `permlist` is
-  `NULL`, so the result cannot be passed to `predictmeans()`. The default,
-  `method = "raw"`, is unchanged. For mixed models with such a covariate
+  11 seconds on one core). Weights and offsets are allowed. `permlist` is
+  `NULL`; instead the result has a component `perm` (what is needed to test
+  any comparison with the same permutations), and the whole result can be
+  given to `predictmeans()` and `contrastmeans()` (argument `permlist`):
+  each pair or contrast is then tested by Freedman-Lane permutations of the
+  model in which that comparison is zero, so its p-value does not depend on
+  the other means. The default, `method = "raw"`, is unchanged. For mixed models with such a covariate
   the help page recommends the Kenward-Roger or Satterthwaite F test: the
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
+
+* **`permmodels(method = "freedman-lane")` for mixed models, GLMs and
+  GLMMs** (`lmer`, `lme`, `gls`, `glm`, `glmer`, `glmmTMB`). Linear mixed
+  models: the model without the tested term is fitted, its decorrelated
+  residuals permuted and added back, and the model refitted to each
+  permuted data set (one set of refits per term; pairs and contrasts get
+  one set for their family); the statistics are the model's Wald t and F
+  (unadjusted covariance). `refit = FALSE` fixes the covariance of the data
+  at the fit instead (decorrelated least squares, no refits, much faster,
+  but slightly liberal when the variance parameters rest on few units:
+  8.6% for the whole-plot factor of a split plot with 6 blocks, against
+  5.0% with refits; 6.2% for whole-plot pairs). GLMs: the V-fixed version on
+  the working (link) scale, with the dispersion estimated from the working
+  residuals; GLMMs: the working linear mixed model, refitted to each
+  permuted working response (or V fixed with `refit = FALSE`). Terms (types I, II, III), coefficients, and pairs and
+  contrasts in `predictmeans()`/`contrastmeans()` all use the same
+  permutations. `glmer` and `glmmTMB` models can now be given to
+  `permmodels()` (Freedman-Lane only).
+
+* `contrastmeans(joint = TRUE)` also tests all the contrasts together: the
+  F test of `pm_joint()` (Kenward-Roger or Satterthwaite df for `lmer`,
+  nlme's df for `lme`, the residual df otherwise; contrasts that are linear
+  combinations of others are dropped), and with a `permlist` a permutation
+  p-value of the joint Wald F from the same permutations. The result gains
+  a third component, `Joint F test of the contrasts`.
+
+* **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
+  `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
+  each comparison's |t| is compared with the largest |t| of its family in
+  each permuted data set (single-step max-|t|, the permutation version of
+  Tukey's test), and the new `adj = "westfall"`: the same step down
+  (Westfall and Young 1993), uniformly more powerful. Families are all the
+  pairs, or the pairs within each `atvar` level, or the rows of a contrast
+  matrix. They use the correlation between the comparisons, so they are
+  more powerful than Holm or Bonferroni. For the nitrogen pairs of the Oats
+  example the permutation Tukey p-values agree with Tukey's to within 0.005.
+  Before, these adjustments were not available with a `permlist`, and
+  `contrastmeans()` ignored `adj` when given a `permlist`; now it applies it.
+
+* **`permlmer()` tests GLMMs** (`glmer` or `glmmTMB` models; also as
+  `permglmer()` and `permglmmTMB()`), random effects and fixed effects. By
+  default counts and binomial data with several trials are permuted on the
+  working (link) scale: the H0 model is linearised (working response and
+  variances, the covariance of the data also having the random effects,
+  as in `R2_glmm()`), the decorrelated working residuals are permuted, and
+  the statistic is the likelihood-ratio statistic of weighted linear mixed
+  models of the working responses. 0/1 responses use randomised quantile
+  residuals mapped back to 0/1 and GLMM refits (`method = "quantile"`). In
+  the simulation study (`dev/sim-study/`) the working scale kept the 5%
+  level for counts and binomial data with trials (4.6-5.9%) and was much
+  more robust than the usual likelihood-ratio test with overdispersed counts
+  (9.8% against 63%); for 0/1 responses with rare events it failed (36%),
+  and the quantile method kept the level (5.6-6.2%). glmmTMB families:
+  poisson, binomial, nbinom1, nbinom2, Gamma, gaussian, beta (no zero
+  inflation or dispersion model).
+
+* `permanova.lmer()` also tests the terms of `glmer` models (each term by
+  `permlmer()` on the working scale), and builds the reduced models where
+  the model was fitted (it used `update()`, which looks for the data in the
+  wrong place when the model was fitted inside a function).
+
+* `permmodels()` and `permlmer()` (so `permanova.lmer()`) take a matrix of
+  permutations, `perms`, e.g. from `permindex()`: permutations within
+  blocks or of whole plots, for tests that permute only as the design
+  allows (randomisation tests). With `method = "freedman-lane"` the same
+  permutations are used for pairs and contrasts in `predictmeans()`.
 
 * New `bootmodels()`: parametric bootstrap p-values for the terms and
   coefficients of `lmer` and `glmer` models, simulating from the model
@@ -219,6 +311,49 @@
   adjusted for a spatial smooth.
 
 ## Bug fixes
+
+* Refits inside `permmodels()`, `permlmer()` and the other functions that
+  refit a model failed for models fitted inside a function with the formula
+  or family given as a variable (e.g. `fit <- function(f, d) lmer(f, data =
+  d)`): the variable was looked up where the model was fitted, and not
+  found (or, for `family`, the function `family()` was found). The refits
+  now use the model's formula and family objects. Also, raw permutations of
+  `lmer` models took the variable names from the call (`lmer(f, ...)` gave
+  a column `f`).
+
+* `permmodels()` for `lmer` models, type I: the observed table was
+  lmerTest's type III table (its `anova()` default) while the permuted
+  statistics were sequential F statistics from lme4, so in unbalanced data
+  the p-values compared different statistics (e.g. F 3.64 against 3.99 for
+  the same data). Now the table is lmerTest's type I table and the permuted
+  refits compute the same type I F (Wald tests of the same hypotheses).
+  Balanced data are unchanged.
+
+* `R2_glmm()` (and `R2_model()`) for `glmmTMB` models with families
+  `nbinom1`, `nbinom2` and `beta` used the wrong observation-level variance
+  (it multiplied by `sigma()^2`, which for these families is not a
+  variance), and ignored offsets in all families. For example, a Poisson
+  model with an offset gave 67% with glmmTMB and 82% with glmer; now both
+  give 82%. A beta model gave 0.08%, now 37%. The variances are those of
+  the new working-scale code, checked against `simulate()`.
+
+* `permindex()` returns indices for the rows of the data as given. Before,
+  with `block` or `group` it sorted the data first and returned indices
+  for the sorted copy, which were wrong unless the data were already sorted
+  by block and group (as in its examples). For sorted data and the same
+  `seed` the permutations are unchanged. Also: duplicated permutations are
+  found with a separator between indices (`1, 12` and `11, 2` were taken
+  as the same), whole groups of unequal size can no longer change places
+  (that mixed rows of different groups; now an error), and `seed` leaves
+  the user's random number stream as it was.
+
+* `permmodels()` for `glm`, `lm` and `aov` models permutes all the variables
+  of the response together: `cbind(R, F)` (successes, failures) permuted only
+  `F`, so the totals changed; a transformed response such as `log(y)` failed
+  even with `data`. `cbind(R, N - R)` was already right and gives the same
+  results. When the response's variables are not in the data (e.g. a model
+  of `log(y)` without `data`), the error now says so, and a model with
+  several responses gets a clear error.
 
 * `permlmer()` (and so `permanova.lmer()`): when the tested variance is
   estimated at 0, the likelihood-ratio statistic is 0 up to optimizer noise
@@ -499,6 +634,19 @@
 * New data sets `Body_length` and `Poisson_ind` (used in the R² vignette).
 
 ## Internal
+
+* The permutation and bootstrap tests share one engine (`R/perm-engine.R`):
+  permutation indices, refits (in parallel if asked), failure counts and
+  p-values from statistics rounded before they are compared. `permmodels()`,
+  `permlmer()` (so `permanova.lmer()`), `bootmodels()` and the permutation
+  p-values of pairs and contrasts in `predictmeans()` and `contrastmeans()`
+  use it. Results are unchanged (checked with `dev/snapshot-perm.R` on 33
+  calls and `dev/snapshot-predictmeans.R`), with three small differences:
+  with `seed`, the user's random number stream is left as it was (as
+  `bootmodels()` already did); refits that fail with an error are left out
+  and counted instead of stopping the function, the count shown in the note
+  under the tables and in attribute `"failures"`; `bootmodels()` also uses
+  several cores on Windows.
 
 * The confidence-interval plot uses `geom_errorbar(orientation = "y")`
   instead of `geom_errorbarh()`, which ggplot2 4.0 deprecates; the plot is

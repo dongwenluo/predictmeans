@@ -128,7 +128,8 @@ pm_tidy_parts <- function(e) {
       }
     }
     p_adj <- rep(NA_real_, length(p))
-    if (adj %in% pm_adjust_extra_methods && length(g("p.extra")) == length(p)) {
+    if ((adj %in% pm_adjust_extra_methods || (perm && adj %in% pm_perm_maxt_methods)) &&
+        length(g("p.extra")) == length(p)) {
       p_adj <- g("p.extra")              # computed with the legacy tables
     } else if (is.null(atvar)) {
       p_adj <- adjust_group(seq_along(p))
@@ -177,7 +178,7 @@ pm_tidy_parts <- function(e) {
     atvar = atvar,
     df_method = df_method,
     vcov_adjust = isTRUE(g("vcov_adjust")),
-    nperm = if (perm) length(permlist[[1]]) else NA_integer_,
+    nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     model_class = class(model)[1],
     version = as.character(utils::packageVersion("predictmeans"))

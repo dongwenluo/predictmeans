@@ -37,7 +37,7 @@ test_that("permmodels() type II works with aliased coefficients", {
   Oats$nitro <- factor(Oats$nitro)
   Oats$n2 <- Oats$nitro
   m <- lm(yield ~ nitro + n2 + Variety, Oats)
-  p <- suppressMessages(permmodels(m, nperm = 9, type = "II", prt = FALSE, ncore = 1, seed = 1))
+  p <- suppressMessages(permmodels(m, method = "raw", nperm = 9, type = "II", prt = FALSE, ncore = 1, seed = 1))
   expect_true("Variety" %in% rownames(p$ANOVA))
   skip_if_not_installed("car")
   ref <- suppressMessages(car::Anova(m, type = "II"))

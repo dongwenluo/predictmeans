@@ -6,7 +6,7 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"))
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -19,16 +19,20 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 \item{ctrnames}{Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)}
 
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
-The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe" and
-"mvt", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
-\code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}.
+The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
+"mvt" and "westfall", in any letter case. "sidak", "scheffe" (rank of \code{ctrmatrix}) and "mvt" (single-step multivariate t, the exact counterpart of SAS
+\code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With \code{permlist}, "mvt" gives the
+single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
+1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 The default method is "none".}
 
 \item{Df}{A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
 the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).}
 
 \item{permlist}{A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
-option for the permutation test.}
+option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+\code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
+0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).}
 
 \item{vcov_adjust}{For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
@@ -41,11 +45,21 @@ over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
 \code{\link{predictmeans}}).}
+
+\item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
+test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
+of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
+permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}
 }
 \value{
 There are two components in the output which are
 \item{Table}{A table showing t-test results for the specified linear contrasts.}
 \item{K}{A contrast matrix.}
+and, with \code{joint = TRUE}, a third,
+\item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
+(and \code{Perm_p_value} with \code{permlist}).}
 }
 \description{
 Performs t-tests (or permuted t-tests) of specified contrasts for linear models 
@@ -81,6 +95,9 @@ if (interactive()) contrastmeans(fm, "nitro:Variety")
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
+
+# 3. ... and both contrasts tested together (an F test with 2 numerator df)
+contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 }
 \references{
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),

@@ -74,8 +74,55 @@ test_that("Freedman-Lane: large effects, aov, seeds and unsupported models", {
   expect_null(ra$COEFFICENTS)
   expect_equal(as.numeric(ra$ANOVA["x", "Perm_p_value"]), 1 / 50)
 
-  expect_error(permmodels(glm(y ~ A, data = d), nperm = 9, method = "freedman-lane"),
-               "lm and aov")
+  # glm models are permuted on the working scale (test-perm-fl-classes.R)
+  expect_s3_class(permmodels(glm(y ~ A, data = d), nperm = 9, prt = FALSE, method = "freedman-lane")$perm, "pm_perm")
   fl2 <- lm(cbind(y, x) ~ A, data = d)
   expect_error(permmodels(fl2, nperm = 9, method = "freedman-lane"), "single response")
+})
+
+test_that("Freedman-Lane p-values of pairs and contrasts equal direct refits", {
+  d <- fl_data()
+  fm <- lm(y ~ x + A, data = d)
+  r <- permmodels(fm, nperm = 99, seed = 5, prt = FALSE, method = "freedman-lane")
+  expect_s3_class(r$perm, "pm_perm")
+  idx <- fl_idx(5, 99, 24)
+  # pair 2 v 3: the reduced model merges levels 2 and 3 of A
+  dd <- d; dd$A23 <- factor(ifelse(d$A == "1", "1", "23"))
+  red <- lm(y ~ x + A23, data = dd)
+  f0 <- fitted(red); e0 <- resid(red)
+  tobs <- abs(coef(summary(lm(y ~ x + relevel(A, "2"), data = d)))["relevel(A, \"2\")3", "t value"])
+  ts <- apply(idx, 2, function(i) {
+    dd$y <- f0 + e0[i]
+    abs(coef(summary(lm(y ~ x + relevel(A, "2"), data = dd)))["relevel(A, \"2\")3", "t value"])
+  })
+  p23 <- (sum(round(ts, 6) >= round(tobs, 6)) + 1) / 100
+  L <- rbind(c(0, 0, 1, 0), c(0, 0, -1, 1))       # 1 v 2 and 2 v 3 on (Intercept, x, A2, A3)
+  expect_equal(pm_perm_fl_t(r$perm, L, fm)[2], p23)
+  # 1 v 2 is the coefficient A2: the same test as its t test in the table
+  expect_equal(pm_perm_fl_t(r$perm, L, fm)[1], unname(r$COEFFICENTS["A2", "Perm_p_value"]), tolerance = 1e-4)
+
+  # predictmeans() and contrastmeans() use it
+  pm <- predictmeans(fm, "A", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)
+  expect_identical(pm$pairs$p.method, rep("permutation", 3))
+  expect_identical(pm$settings$nperm, 99L)
+  key <- paste(pm$pairs$level1, pm$pairs$level2)
+  expect_equal(pm$pairs$p.value[key == "2 3"], p23)
+  cm <- contrastmeans(fm, "A", ctrmatrix = rbind(c(0, -1, 1)), permlist = r)
+  expect_equal(unname(cm[[1]][1, "Permuted Pr(>|t|)"]), round(p23, 4))
+  # a different model
+  expect_error(predictmeans(lm(y ~ A, data = d), "A", permlist = r, plot = FALSE, prtnum = FALSE),
+               "different model")
+})
+
+test_that("with a permlist, observed t statistics use the unadjusted covariance", {
+  Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
+  Om <- Oats[-c(1, 5, 9, 20, 33), ]
+  m <- lme4::lmer(yield ~ nitro + Variety + (1 | Block/Variety), data = Om)
+  pl <- permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  a <- predictmeans(m, "nitro", permlist = pl, plot = FALSE, prtnum = FALSE, ncore = 1)
+  b <- predictmeans(m, "nitro", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE, ncore = 1)
+  expect_equal(a$pairs$std.error, b$pairs$std.error)
+  expect_false(a$settings$vcov_adjust)
+  expect_warning(predictmeans(m, "nitro", permlist = pl, vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE, ncore = 1),
+                 "unadjusted covariance")
 })

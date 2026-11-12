@@ -8,7 +8,7 @@ permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2"
  ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{lmer}.}
+\item{model}{Model object returned by \code{lmer} or \code{glmer}.}
 
 \item{nperm}{Number of permutation, the default value is 999.}
 
@@ -24,7 +24,8 @@ results.}
 Permutation ANOVA table.
 }
 \description{
-This function provides permutation ANOVA for \code{lmer} model.
+This function provides permutation ANOVA for \code{lmer} model (and, since predictmeans 2.0, \code{glmer} model):
+each term is tested by \code{\link{permlmer}} comparing the model with and without it.
 }
 \examples{
 library(predictmeans)

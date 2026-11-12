@@ -30,7 +30,7 @@ m_nest <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot 
 ds <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")), rep = 1:4)
 ds <- ds[!(ds$date == "d2" & ds$trt == "a"), ]; ds$y <- as.numeric(ds$trt) + rnorm(nrow(ds))
 m_single <- lm(y ~ date * trt, data = ds)
-perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
+perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1, method = "raw"))
 calls <- list(
   lm_def = quote(predictmeans(m_lm, "nitro")),
   lm_int = quote(predictmeans(m_lm, "nitro:Variety")),

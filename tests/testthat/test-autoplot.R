@@ -52,7 +52,7 @@ test_that("summary() describes the result", {
   expect_true(any(grepl("^LSD \\(5%\\): min", out)))
   expect_true(any(grepl("adjusted by 'tukey'", out)))
   expect_true(any(grepl("Means sharing a letter", out)))
-  perm <- suppressWarnings(permmodels(fm, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))
   pp <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, prtnum = FALSE, ncore = 1)
   expect_true(any(grepl("permutation \\(9 permutations\\)", capture.output(print(summary(pp))))))
 })

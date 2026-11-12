@@ -48,6 +48,9 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | `dev/sim-perm-ranef.R` | `dev/sim-perm-ranef/<cell>.rds` | main cases: split plot, random slope, GLMM pilots, GLMM fixed effects |
 | `dev/sim-perm-edge.R` (+ `dev/sim-perm-lib.R`) | `dev/sim-perm-edge/<cell>.rds` | edge cases (each cell's description is stored in its file and listed in the script) |
 | `dev/sim-study/summarise.R` | `dev/sim-study/results.csv`, `results.md` | all of the above, with Monte Carlo SE and flags |
+| `dev/sim-perm-pairs.R` | `dev/sim-perm-pairs/<cell>.rds` | study 1b part 1: pairwise comparisons (joint permlist, Freedman–Lane per pair and per term with V fixed, parametric t / Tukey), 199 permutations |
+| `dev/sim-perm-fixed.R` | `dev/sim-perm-fixed/<cell>.rds` | study 1b part 2: term tests with the package's own `permmodels()` raw and Freedman–Lane, `permlmer()` for GLMMs, against KR F / LRT, 199 permutations |
+| `dev/sim-study/summarise-pairs.R` | `dev/sim-study/results-1b.md` | study 1b: per-pair and familywise error, power; term tests |
 
 - Seeds: data set i of a cell uses `set.seed(sum(utf8ToInt(cell)) * 1000 + i)`,
   so results do not depend on cores or platform; any cell can be rerun.
@@ -67,6 +70,8 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | 2026-11-11 09:26 | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
 | 2026-11-11 10:00–13:00 | `sim-perm-edge.R 1000 99 all 4` (23 cells, about 7.5 min each) | same | same |
 | 2026-11-11 (later; the sandbox clock jumped) | `sim-perm-followup.R 99 … 4` (4 cells) and `sim-perm-followup2.R 99 all 4` (2 cells) | same | same |
+| 2026-11-12 00:07– | `sim-perm-pairs.R 1000 199 … 3` (8 cells; `pr_rcbd_power` 500 sets) | same | same, predictmeans 1.1.1.9000 after step 2 (engine) |
+| 2026-11-12 (after the pairs run) | `sim-perm-fixed.R 1000 199 … 3` (LMM and glm cells), `500 199 … 3` (GLMM, lme and power cells) | same | same, predictmeans after steps 6–8, glmmTMB 1.1.8 |
 
 ## 4. Results so far
 
@@ -180,6 +185,92 @@ With the symmetric root in the package's own `permlmer()` and
 crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
 (Cholesky over 30 min and 2.9 GB, stopped).
 
+### Study 1b, part 1: pairwise comparisons (`dev/sim-perm-pairs/`, 199 permutations)
+
+1000 data sets per null cell (500 for power); per-pair rates are the mean
+over the true null pairs (largest in brackets); familywise error (FWER) is
+over the true null pairs.
+
+| cell | joint (permlist) | FL per pair, V fixed | FL per term, V fixed | t (KR / nlme) | FWER max-\|t\| joint / FL term / Tukey |
+|---|---|---|---|---|---|
+| RCBD, global null | 0.054 (0.068) | 0.058 (0.071) | 0.057 (0.072) | 0.056 (0.069) | 0.058 / 0.065 / 0.059 |
+| RCBD, one mean 3 SD away | 0.044 (0.047) | 0.052 (0.057) | 0.051 (0.052) | 0.048 (0.050) | 0.032 / 0.042 / 0.037 |
+| RCBD, skewed, partial null | 0.046 (0.052) | 0.051 (0.057) | 0.052 (0.058) | 0.048 (0.055) | 0.024 / 0.030 / 0.029 |
+| split plot, whole-plot pairs | 0.055 (0.059) | **0.062 (0.065)** | **0.062 (0.068)** | 0.050 (0.055) | 0.034 / 0.047 / 0.028 |
+| split plot, sub-plot pair | 0.048 | 0.054 | 0.049 | 0.052 | (one null pair) |
+| covariate with extreme values | 0.057 (0.061) | 0.054 (0.060) | 0.053 (0.058) | 0.052 (0.055) | **0.067** / 0.056 / 0.051 |
+| lme, varIdent (SD 1,1,2,3) | 0.059 (0.067) | **0.069 (0.075)** | **0.069 (0.078)** | 0.065 (0.073) | 0.065 / 0.086 / 0.079 |
+| gls, AR(1) | 0.039 (0.046) | 0.061 (0.064) | 0.062 (0.067) | 0.059 (0.062) | 0.043 / 0.072 / 0.067 |
+| power (means 0, 0.4, 0.8, 1.2) | 0.276 | 0.282 | 0.285 | 0.278 | |
+
+Reading:
+
+- One set of refits under the global null (the maintainer's `permlist`)
+  works for pairs: 3.9–5.9% per pair, never above the Monte Carlo range;
+  slightly conservative when other means differ (4.4–4.6%), and its max-|t|
+  familywise error is right except with a covariate with extreme values
+  (6.7%, the known weakness of permuting fitted values).
+- Freedman–Lane with V fixed (no refits) is right in block designs (5.1–5.8%)
+  but liberal where V rests on estimated variance parameters with little
+  information: whole-plot pairs with 6 blocks (6.2%), varIdent (6.9%), AR(1)
+  (6.1%) — the same as the parametric t, since both treat V as known. Hence
+  Freedman–Lane **with refits** for linear mixed models (V estimated again
+  for each permuted data set), checked in part 2 (`fx2_sp_pairs`,
+  `fx2_lme_varident`).
+- Freedman–Lane per term (one reduced model for all pairs of a factor) is as
+  good as per pair, and gives a max-|t| familywise adjustment that matches
+  Tukey's (a permutation Tukey test): this is the scheme used for pairs with
+  refits.
+- Power was the same for all methods.
+
+### Study 1b, part 2: tests of a fixed term with the package code (`dev/sim-perm-fixed/`, 199 permutations)
+
+`raw` = `permmodels(method = "raw")` (1.x scheme); `FL fixed` = Freedman–Lane
+with V fixed (`refit = FALSE`); `FL refit` = Freedman–Lane with refits (the
+2.0 default for mixed models; for GLMMs the working linear mixed model);
+`permlmer` = `permlmer(H0, H1)` (working scale; quantile route for 0/1
+data). 500 data sets per cell (range 0.031–0.069), 1000 for glm (0.036–0.064).
+
+| cell | raw | FL fixed | FL refit | permlmer | usual test |
+|---|---|---|---|---|---|
+| LMM split plot, whole-plot factor (6 blocks) | 0.058 | **0.086** | **0.050** | | KR 0.046 |
+| LMM split plot, whole-plot pairs (null pairs; Holm) | | (pairs study 0.062) | 0.052 (Holm 0.042) | | KR 0.051 (0.040) |
+| LMM covariate with extreme values | 0.060 | 0.050 | 0.054 | | KR 0.048 |
+| LMM unbalanced (20% missing) | 0.052 | 0.056 | 0.048 | | KR 0.054 |
+| lme, varIdent | 0.036 | 0.042 | 0.036 | | nlme F 0.042 |
+| glm Poisson, extreme covariate | **0.008** | 0.058 | | | LRT 0.055 |
+| glm binomial, extreme covariate | **0.006** | 0.042 | | | LRT 0.050 |
+| glm, negative binomial counts fitted as Poisson | 0.019 | 0.061 | | | LRT **0.329** |
+| GLMM Poisson, extreme covariate | | 0.048 | 0.058 | 0.060 | LRT 0.052 |
+| GLMM, negative binomial fitted as Poisson | | **0.100** | 0.074 | 0.086 | LRT **0.339** |
+| GLMM binomial, 3 blocks | | 0.066 | 0.062 | 0.062 | LRT 0.064 |
+| GLMM binary, rare events | | 0.031 | 0.041 | 0.051 | LRT 0.071 |
+| glmmTMB nbinom2 (right family) | | 0.066 | 0.068 | 0.056 | LRT 0.070 |
+| power: LMM, extreme covariate | 0.626 | 0.634 | 0.626 | | KR 0.626 |
+| power: GLMM Poisson (A effects 0, 0.2, 0.4) | | 0.433 | 0.429 | 0.453 | LRT 0.475 |
+
+Notes: in the first runs of the LMM and glm cells the "raw" column was
+Freedman–Lane (the script relied on the default, which had become
+`"auto"`); the glm cells were rerun and the LMM raw column recomputed on the
+same data sets (`dev/sim-perm-fixed-raw.R`; the old column is kept as
+`flr_all`, a second Freedman–Lane-with-refits run: 0.054, 0.052, 0.046).
+
+Reading:
+
+- Linear mixed models: Freedman–Lane with refits kept the level everywhere
+  (3.6–5.4%), with the same power as the others; with V fixed it was
+  liberal for the whole-plot factor (8.6%), because the permuted statistics
+  then treat V as known. Hence the 2.0 default (refits).
+- glm: permuting the response (1.x) was extremely conservative with a
+  covariate (0.6–1.9%: it scrambles the covariate's effect), Freedman–Lane on
+  the working scale kept the level (4.2–6.1%), and it was robust to
+  overdispersion where the LRT failed (6.1% vs 32.9%).
+- GLMMs: Freedman–Lane with refits of the working LMM 4.1–6.8% in
+  well-specified models (nbinom2 with 48 observations: every test 5.6–7.0%),
+  and much more robust to overdispersion than the LRT (7.4% vs 33.9%); V
+  fixed was liberal there (10.0%). `permlmer()` (quantile route) is the most
+  accurate for rare binary events (5.1%).
+
 ### Open questions
 
 - ~~Why the joint scheme is liberal under the LMM global null (0.071).~~
@@ -189,7 +280,18 @@ crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
 - ~~Does the symmetric root also improve `permlmer()`?~~ Yes for the crossed
   design (0.064 → 0.054); unchanged for the split plot. Still open: the GLMM
   working scale, where the order-invariant root is not symmetric.
-- Pairwise comparisons by permutation: not yet studied.
+- ~~Pairwise comparisons by permutation~~: study 1b part 1 (`dev/sim-perm-pairs.R`),
+  results above and in `results-1b.md`. Designs: RCBD (global null; partial null with
+  one mean 3 SD away; skewed errors), split plot (whole-plot and sub-plot
+  pairs, partial nulls), covariate with extreme values, `lme` with
+  `varIdent`, `gls` with AR(1), power. Question: is one set of refits
+  under the global null (the maintainer's `permlist`) good enough for each
+  pair and for the family (max-|t|), or is a reduced model per pair
+  (Freedman–Lane) needed?
+- ~~Term tests with the package code~~ (`dev/sim-perm-fixed.R`), results above:
+  Freedman–Lane with V fixed (no refits) for LMMs, on the working scale for
+  glm and GLMMs, against raw permutation and KR F / LRT, including
+  overdispersed counts and rare binary events.
 - How a parametric bootstrap from the reduced (Poisson) model behaves under
   overdispersion (expected to fail like the LRT, since it trusts the model).
 

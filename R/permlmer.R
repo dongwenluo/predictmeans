@@ -1,26 +1,60 @@
-#' Permutation Test of random or fixed effects for \code{lmer} model.
+#' Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.
 #'
 #' @description
-#' This function provides permutation tests for the terms in a linear mixed model of \code{lmer}.
+#' This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
+#' linear mixed model of \code{glmer} or \code{glmmTMB} (also as \code{permglmer()} and \code{permglmmTMB()}).
 #' @usage
-#' permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed)
-#' @param lmer0 \code{lmer} model under H0, note that \code{lmer0} model must nest within \code{lmer1} model.
-#' @param lmer1 \code{lmer} model under H1, note that \code{lmer0} model must nest within \code{lmer1} model.
+#' permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#'          method=c("auto", "working", "quantile"))
+#' permglmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#'           method=c("auto", "working", "quantile"))
+#' permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+#'             method=c("auto", "working", "quantile"))
+#' @param lmer0 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0, note that \code{lmer0} model must nest within
+#'   \code{lmer1} model.
+#' @param lmer1 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1, note that \code{lmer0} model must nest within
+#'   \code{lmer1} model.
 #' @param nperm Number of permutation, the default value is 999.
 #' @param ncore Number of core for parallel computing, the default value is 3.
 #' @param plot Plot permutation distribution or not, the default value is FALSE.
-#' @param seed Specify a random number generator seed, for reproducible results.
+#' @param seed Specify a random number generator seed, for reproducible results. The user's random number stream is
+#'   left as it was.
+#' @param perms Optional matrix of permutations to use instead of free ones, one row per observation and one column
+#'   per permutation (e.g. from \code{\link{permindex}}); \code{nperm} is then its number of columns.
+#' @param method For GLMMs only: \code{"working"} permutes on the working (link) scale, \code{"quantile"} permutes
+#'   quantile residuals of a 0/1 response and refits the GLMMs; \code{"auto"} (the default) uses \code{"quantile"} for
+#'   0/1 responses and \code{"working"} otherwise. See Details.
 #' @return
-#' Permutation p-value.
+#' The \code{anova()} table of the two models with the permutation p-value in column \code{Perm-p}; for GLMMs,
+#' attribute \code{"method"} says which method was used, and attribute \code{"failures"} gives the number of refits
+#' that failed and were left out (if any).
 #' @details
 #' The residuals of \code{lmer0} are decorrelated with the symmetric square root of their covariance under
 #' \code{lmer0}, permuted, correlated again and added to the fitted values of \code{lmer0} (Lee and Braun, 2012); both models
 #' are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
 #' observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
 #' is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
+#'
+#' For GLMMs (\code{glmer} or \code{glmmTMB}; since predictmeans 2.0), \code{method = "working"} does the same on the
+#' working (link) scale: \code{lmer0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
+#' working variance \eqn{\phi V(\mu)/(a (d\mu/d\eta)^2)}; the covariance of z also has the random effects, as in
+#' \code{\link{R2_glmm}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
+#' statistic of weighted linear mixed models fitted to the working responses (REML when the two models have the same
+#' fixed effects, ML otherwise). In simulations it kept the 5\% level for counts and for binomial data with several
+#' trials, and was much more robust than the usual likelihood-ratio test when counts were overdispersed. For 0/1
+#' responses the working scale fails when events are rare or clusters tiny (36\% rejections at the 5\% level), so
+#' \code{method = "quantile"} is used: randomised quantile residuals (Dunn and Smyth, 1996) of the response given the
+#' conditional means of \code{lmer0} are permuted and mapped back to 0/1 responses, and both models are refitted
+#' (\code{glmer} fits with \code{nAGQ = 0}, for the observed data too, so the statistic can differ from the
+#' \code{Chisq} column); it kept the level (5.6-6.2\%). A random effect with one level per observation (often used
+#' for overdispersion) cannot be used on the working scale; \code{\link{bootmodels}} can test it. \code{glmmTMB} models must have no zero inflation and the
+#' default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, gaussian and beta are handled.
 #' @references
 #' Oliver E. Lee and Thomas M. Braun (2012),
 #'     \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
+#'
+#' Peter K. Dunn and Gordon K. Smyth (1996),
+#'     \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -42,22 +76,33 @@
 #' fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #' \donttest{
 #' permlmer(fm0, fm, nperm=99, ncore=1)
+#'
+#' ## A GLMM: do tick counts vary between locations, beyond broods?
+#' gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)
+#' gm2 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION), family = poisson,
+#'              data = lme4::grouseticks)
+#' permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 #' }
+#' @aliases permglmer permglmmTMB
 #' @name permlmer
 NULL
 
-permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
-
-  if (any(!inherits(lmer0, "lmerMod"), !inherits(lmer1, "lmerMod"))) {
-    stop("The model must be a lmer object!")
-  }
-  if (!setequal(getME(lmer0, "y"), getME(lmer1, "y"))) {
-    stop("Please check the response in your model!")
-  }
+permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+                     method=c("auto", "working", "quantile")){
 
   c_deparse <- function (...)
     paste(deparse(..., width.cutoff = 500), collapse = "")
   lmernames <- vapply(as.list(sys.call()[-1L]), c_deparse, "")
+  if (inherits(lmer0, c("glmerMod", "glmmTMB")) || inherits(lmer1, c("glmerMod", "glmmTMB"))) {
+    return(pm_permglmm(lmer0, lmer1, nperm, ncore, if (missing(seed)) NULL else seed, perms,
+                       match.arg(method), plot, lmernames[1:2]))
+  }
+  if (any(!inherits(lmer0, "lmerMod"), !inherits(lmer1, "lmerMod"))) {
+    stop("The models must be lmer, glmer or glmmTMB fits!")
+  }
+  if (!setequal(getME(lmer0, "y"), getME(lmer1, "y"))) {
+    stop("Please check the response in your model!")
+  }
 
   theta0 <- getME(lmer0, "theta")
   theta1 <- getME(lmer1, "theta")
@@ -104,60 +149,38 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   xbeta <- as.vector(getME(lmer0, "X")%*%fixef0)
   errors <- getME(lmer0, "y") - xbeta
 
-  #Weighting the residuals.
   wterrors <- W$solve(errors)
 
-  # permute weighted resid, then unweighted it for 999 times
-  # permResid <- matrix(0, length(wterrors), nperm)
-  # for (i in 1:nperm) {
-  # if(!missing(seed)) set.seed(seed+i)
-  # permResid[, i] <- W$mult(sample(wterrors))
-  # }
-  # permy <- as.data.frame(xbeta+permResid)
-  if (ref) {
-    if(!missing(seed)) {
-      set.seed(seed)
-    }
-    permy <- as.data.frame(xbeta+replicate(nperm, W$mult(sample(wterrors))))
-  } else {
-    if(!missing(seed)) {
-      set.seed(seed)
-    }
-    permy <- replicate(nperm, {
-      rowindex <- sample(seq_along(errors))
-      as.data.frame(xbeta[rowindex]+W$mult(wterrors[rowindex]))
-    })
+  # Random effects (same fixed effects): the decorrelated residuals are
+  # permuted. Fixed effects: fitted values and decorrelated residuals are
+  # permuted together.
+  if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
+  idx <- pm_perm_source(length(errors), if (missing(seed)) NULL else seed, perms)(nperm)
+  permy <- function(k) {
+    r <- idx[, k]
+    if (ref) xbeta + W$mult(wterrors[r]) else xbeta[r] + W$mult(wterrors[r])
   }
 
-  # Calculating the likelihood ratio test statistic for each permutation.
-  # LRTs are rounded to 4 decimals: when the tested variance is estimated at
-  # 0 the LRT is 0 up to optimizer noise, and without rounding permuted
-  # values of 0 could count as smaller than an observed 1e-9.
-  lrtest1 <- 2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))
-  lrtest1 <- round(max(as.numeric(lrtest1), 0), 4)
-
-  if (.Platform$OS.type=="windows") {
-	  cl <- makeCluster(ncore)
-	  clusterEvalQ(cl, library(lme4))
-	  clusterExport(cl, c("lmer0", "lmer1", "ref"), envir = environment())
-	  lrtest2 <- parLapplyLB(cl, permy, function(x) {
-		LRT <- try(2*(logLik(refit(lmer1, x), REML=ref) - logLik(refit(lmer0, x), REML=ref)), TRUE)
-		LRT <- ifelse(is.numeric(LRT), LRT, NA)
-	  })
-	  stopCluster(cl)
-  } else {
-	  lrtest2 <- mclapply(permy, function(x) {
-		LRT <- try(2*(logLik(suppressMessages(refit(lmer1, x)), REML=ref) - logLik(suppressMessages(refit(lmer0, x)), REML=ref)), TRUE)
-		LRT <- ifelse(is.numeric(LRT), LRT, NA)
-	  }, mc.cores=ncore)
-  }
-
-  #Calculating the p-values.
-  lrtest <- na.omit(unlist(lrtest2))
-  lrtest <- round(pmax(lrtest, 0), 4)
-  perm_p <- (sum(lrtest >= lrtest1) +1)/(length(lrtest) + 1)
+  # Likelihood-ratio statistics. They are compared after rounding to 4
+  # decimals (pm_perm_p()): when the tested variance is estimated at 0 the
+  # LRT is 0 up to optimizer noise, and without rounding permuted values of 0
+  # could count as smaller than an observed 1e-9.
+  lrtest1 <- max(as.numeric(2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))), 0)
+  lrtest2 <- pm_perm_map(seq_len(nperm), function(k) {
+    y <- permy(k)
+    as.numeric(2*(logLik(suppressMessages(refit(lmer1, y)), REML=ref) -
+                  logLik(suppressMessages(refit(lmer0, y)), REML=ref)))
+  }, ncore, packages = "lme4")
+  lrtest2 <- pm_perm_drop(lrtest2)
+  lrtest <- pmax(unlist(lrtest2$res), 0)
+  ok <- !is.na(lrtest)
+  failures <- lrtest2$failures + sum(!ok)
+  lrtest <- round(lrtest[ok], 4)
+  lrtest1 <- round(lrtest1, 4)
+  perm_p <- pm_perm_p(lrtest1, lrtest, digits = 4)
   aod <- anova(lmer0, lmer1, refit=!ref)
   aod$'Perm-p' <- c(NA, perm_p)
+  if (failures > 0) attr(aod, "failures") <- failures
 
   if (plot) {
     dev.new()
@@ -166,3 +189,7 @@ permlmer <- function(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed){
   }
   return(aod)
 }
+
+permglmer <- permlmer
+
+permglmmTMB <- permlmer
