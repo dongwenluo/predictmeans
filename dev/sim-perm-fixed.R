@@ -11,7 +11,8 @@
 ##             scale), no refits
 ##   flr       permmodels(method = "freedman-lane") for lmer/lme: the model
 ##             without the term fitted, its decorrelated residuals permuted,
-##             the full model refitted to each permuted data set
+##             the full model refitted to each permuted data set; for GLMMs
+##             the same with the working linear mixed model
 ##   (pairs cell) flr: pairs by Freedman-Lane with refits from the model with
 ##             all the factor's means equal (predictmeans(permlist = )), kr:
 ##             predictmeans() t tests
@@ -53,11 +54,13 @@ glmm_term <- function(d, f0, f1, family, tmb = FALSE) {
   fit <- function(f) if (tmb) glmmTMB(f, family = family, data = d) else glmer(f, family = family, data = d, control = gctl)
   g0 <- fit(f0)
   g1 <- fit(f1)
-  fl <- permmodels(g1, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane")$ANOVA
+  fl <- permmodels(g1, nperm = nperm, type = "II", prt = FALSE, method = "freedman-lane", refit = FALSE)$ANOVA
+  # refits of the working LMM, for the tested term only (to save time)
+  flr <- predictmeans:::pm_perm_fl_refit(g1, nperm, "II", FALSE, NULL, FALSE, NULL, 1, only = "A")$ANOVA
   pl <- permlmer(g0, g1, nperm = nperm, ncore = 1)$`Perm-p`[2]
   df <- length(pm_fixef(g1)) - length(pm_fixef(g0))
   lrt <- stats::pchisq(2 * (as.numeric(logLik(g1)) - as.numeric(logLik(g0))), df, lower.tail = FALSE)
-  c(fl = pA(fl), permlmer = pl, lrt = lrt)
+  c(fl = pA(fl), flr = pA(flr), permlmer = pl, lrt = lrt)
 }
 pm_fixef <- predictmeans:::pm_fixef
 

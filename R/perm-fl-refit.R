@@ -100,6 +100,9 @@ pm_fl_F <- function(Xw, zw, A, B) {
 }
 
 pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore, only = NULL) {
+  # GLMMs: the same with the working linear mixed model (pm_working_lmm())
+  glmm <- inherits(model, c("glmerMod", "glmmTMB"))
+  if (glmm) model <- pm_working_lmm(model)
   P <- pm_lmm_parts(model)
   ord <- P$ord
   X <- P$X[ord, , drop = FALSE]                  # internal (group) order
@@ -158,7 +161,7 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
     pval[paste0("coef:", colnames(X)[tk$cols])] <- pm_perm_p(t_obs[tk$cols], S[-1, , drop = FALSE], exact)
     tests[[k]] <- tk
   }
-  tabs <- pm_fl_tables(Xw, zw, n - qr(Xw)$rank, tests, pval, type, "refit")
+  tabs <- pm_fl_tables(Xw, zw, n - qr(Xw)$rank, tests, pval, type, if (glmm) "refit-working" else "refit")
   COEF <- tabs$COEF
   ANOVA <- tabs$ANOVA
   failnote <- pm_perm_failnote(failures)
@@ -174,7 +177,8 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
         failnote, ".\n\n", sep = "")
   }
   perm <- structure(list(scheme = "freedman-lane-refit", nperm = as.integer(nperm), exact = exact,
-                         start = attr(src, "start"), idx = attr(src, "matrix"), coef_names = colnames(X)),
+                         start = attr(src, "start"), idx = attr(src, "matrix"), coef_names = colnames(X),
+                         wmodel = if (glmm) model),
                     class = "pm_perm")
   out <- list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
   if (failures > 0) attr(out, "failures") <- failures
@@ -188,6 +192,7 @@ pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1) {
   if (!identical(pm_perm_coef_names(model), perm$coef_names)) {
     stop("'permlist' was made for a different model.", call. = FALSE)
   }
+  if (!is.null(perm$wmodel)) model <- perm$wmodel      # a GLMM: its working linear mixed model
   P <- pm_lmm_parts(model)
   L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
   if (ncol(L) != ncol(P$X)) stop("'permlist' was made for a different model.", call. = FALSE)
@@ -207,4 +212,24 @@ pm_perm_fl_refit_t <- function(perm, L, model, ncore = 1) {
   one <- function(i) tstat(P$coefvcov(P$refit_full((f0 + R0$W$mult(e0[idx[, i]]))[back])))
   sims <- pm_perm_drop(pm_perm_map(seq_len(perm$nperm), one, ncore, P$packages))
   pm_perm_p(obs, matrix(unlist(sims$res), nrow = nrow(L)), perm$exact)
+}
+
+## The working linear mixed model of a GLMM (glmer, glmmTMB): the working
+## response of pm_working() fitted by lmer with the GLMM's fixed and random
+## terms and weights 1/(working variance), by REML. Freedman-Lane with refits
+## of this model is the GLMM version of pm_perm_fl_refit().
+pm_working_lmm <- function(model) {
+  wk <- pm_working(model)
+  n <- length(wk$z)
+  if (any(vapply(pm_re_terms(model), function(tm) tm$nl >= n, logical(1)))) {
+    stop("A random effect with one level per observation cannot be used on the working scale; use refit = FALSE.",
+         call. = FALSE)
+  }
+  d <- pm_model_rows(model)
+  d$.pm_z <- wk$z
+  .pm_wts <- 1 / wk$resvar
+  f <- pm_working_formula(stats::formula(model))
+  environment(f) <- environment()
+  ctl <- lme4::lmerControl(calc.derivs = FALSE, check.conv.singular = "ignore")
+  suppressWarnings(suppressMessages(lme4::lmer(f, data = d, weights = .pm_wts, REML = TRUE, control = ctl)))
 }

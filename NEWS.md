@@ -167,9 +167,11 @@
   (unadjusted covariance). `refit = FALSE` fixes the covariance of the data
   at the fit instead (decorrelated least squares, no refits, much faster,
   but slightly liberal when the variance parameters rest on few units:
-  6.2% for whole-plot pairs with 6 blocks in study 1b). GLMs and GLMMs: the
-  V-fixed version on the working (link) scale, with the dispersion
-  estimated from the working residuals. Terms (types I, II, III), coefficients, and pairs and
+  8.6% for the whole-plot factor of a split plot with 6 blocks, against
+  5.0% with refits; 6.2% for whole-plot pairs). GLMs: the V-fixed version on
+  the working (link) scale, with the dispersion estimated from the working
+  residuals; GLMMs: the working linear mixed model, refitted to each
+  permuted working response (or V fixed with `refit = FALSE`). Terms (types I, II, III), coefficients, and pairs and
   contrasts in `predictmeans()`/`contrastmeans()` all use the same
   permutations. `glmer` and `glmmTMB` models can now be given to
   `permmodels()` (Freedman-Lane only).

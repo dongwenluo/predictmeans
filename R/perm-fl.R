@@ -91,7 +91,7 @@ pm_fl_design <- function(model) {
 }
 
 pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit = FALSE, ncore = 1) {
-  if (refit && inherits(model, c("lmerMod", "lme", "gls"))) {
+  if (refit && inherits(model, c("lmerMod", "lme", "gls", "glmerMod", "glmmTMB"))) {
     return(pm_perm_fl_refit(model, nperm, type, exact, seed, prt, perms, ncore))
   }
   des <- pm_fl_design(model)
@@ -230,6 +230,9 @@ pm_fl_tables <- function(X, z, df_res, tests, pval, type, kind) {
   tl <- c(I = "I", "1" = "I", II = "II", "2" = "II", III = "III", "3" = "III")[[type]]
   attr(ANOVA, "heading") <- if (kind == "refit") {
     paste0("Type ", tl, " F tests (Freedman-Lane permutations; the model refitted to each permuted data set)")
+  } else if (kind == "refit-working") {
+    paste0("Type ", tl, " F tests on the working (link) scale (Freedman-Lane permutations; the working linear ",
+           "mixed model refitted to each permuted data set)")
   } else paste0("Type ", tl, " F tests ", if (kind == "working") "on the working (link) scale, " else "",
                 "with the covariance of the data fixed at the fitted model")
   list(COEF = COEF, ANOVA = ANOVA)

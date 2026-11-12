@@ -37,3 +37,21 @@ test_that("Freedman-Lane with refits for lme and gls; refit = FALSE holds V", {
   pmg <- predictmeans(g, "nitro", permlist = rg, plot = FALSE, prtnum = FALSE, ncore = 1)
   expect_true(all(pmg$pairs$p.value > 0 & pmg$pairs$p.value <= 1))
 })
+
+test_that("Freedman-Lane with refits for GLMMs uses the working linear mixed model", {
+  skip_on_cran()
+  data(Clinical, package = "predictmeans", envir = environment())
+  gm <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic), family = binomial, data = Clinical)
+  r <- permmodels(gm, nperm = 19, seed = 1, prt = FALSE, ncore = 1)
+  expect_match(attr(r$ANOVA, "heading"), "working linear mixed model refitted")
+  expect_s4_class(r$perm$wmodel, "lmerMod")
+  # the working LMM: z on the GLMM's terms with weights 1/(working variance)
+  W <- pm_working(gm)
+  dz <- Clinical; dz$z <- W$z; dz$w <- 1 / W$resvar
+  wl <- lme4::lmer(z ~ Treatment + (1 | Clinic), data = dz, weights = w)
+  expect_equal(unname(lme4::fixef(r$perm$wmodel)), unname(lme4::fixef(wl)), tolerance = 1e-6)
+  # the pair (two levels) is the coefficient's test
+  pm <- predictmeans(gm, "Treatment", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)
+  expect_equal(pm$pairs$p.value, unname(r$COEFFICENTS["Treatmentdrug", "Perm_p_value"]), tolerance = 1e-4)
+  expect_equal(permmodels(gm, nperm = 19, seed = 1, prt = FALSE, refit = FALSE)$perm$scheme, "freedman-lane")
+})

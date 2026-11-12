@@ -41,8 +41,9 @@ model and one column per permutation (e.g. from \code{\link{permindex}}, for per
 whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
 permutations the design allows.}
 
-\item{refit}{For \code{method = "freedman-lane"} with \code{lmer}, \code{lme} and \code{gls} models: refit the
-model to each permuted data set (the default), so the variance parameters are estimated again each time.
+\item{refit}{For \code{method = "freedman-lane"} with mixed models (\code{lmer}, \code{lme}, \code{gls}, and
+\code{glmer}, \code{glmmTMB} through their working linear mixed model): refit the model to each permuted data set
+(the default), so the variance parameters are estimated again each time.
 \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
 often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).}
 }
@@ -93,10 +94,13 @@ get one set of refits for their family (the model with all the compared means eq
 the covariance of the data, V, is fixed at the fitted model: the data and the design are decorrelated with the
 symmetric square root of V, so least squares on them gives the same statistics, and Freedman-Lane permutations
 are done as for \code{lm}, without refits. That is much faster, but the permuted statistics then behave as if V
-were known, so comparisons whose error rests on few units (whole plots of a split plot with 6 blocks) rejected
-6.2\% of true null hypotheses at the 5\% level in a simulation study. GLMs and GLMMs are first linearised at the fit (working
-response and working variances on the link scale, as in \code{\link{permlmer}}); their t and F statistics are Wald
-statistics on the working scale with the dispersion estimated from the working residuals, so overdispersion
+were known, so comparisons whose error rests on few units rejected too many true null hypotheses in a simulation
+study (whole-plot factor of a split plot with 6 blocks: 8.6\% at the 5\% level, against 5.0\% with refits; pairs of
+whole-plot means 6.2\%). GLMs and GLMMs are first linearised at the fit (working
+response and working variances on the link scale, as in \code{\link{permlmer}}); GLMMs are then treated as the
+working linear mixed model (weights from the working variances), refitted to each permuted working response when
+\code{refit = TRUE}. Their t and F statistics are Wald statistics on the working scale with the dispersion
+estimated from the working residuals, so overdispersion
 affects them much less than likelihood-ratio tests (in a pilot study with overdispersed counts: 8-10\% against 35\%
 at the 5\% level). For these classes the tables show these statistics and the permutation
 p-values; type I tests are sequential in the GLS metric (as \code{anova()} of \pkg{lme4} and \pkg{nlme}). The
