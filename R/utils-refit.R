@@ -83,7 +83,7 @@ pm_get_data <- function(model) {
     keep <- eval(cl$subset, d, pm_fit_env(model))
     d <- d[keep, , drop = FALSE]
   }
-  na_act <- model$na.action
+  na_act <- if (isS4(model)) attr(stats::model.frame(model), "na.action") else model$na.action
   if (!is.null(na_act) && inherits(na_act, "omit")) d <- d[-na_act, , drop = FALSE]
   d
 }
