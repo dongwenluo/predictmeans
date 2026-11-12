@@ -2,6 +2,17 @@
 
 ## Changes that affect results or scripts
 
+* **`permmodels()` uses Freedman-Lane permutations by default**
+  (`method = "auto"`, which chooses the more robust scheme for the model
+  class; at present Freedman-Lane for every class). Each term, coefficient
+  or pair is then tested with the model without it, so the other terms keep
+  their effects; permuting the response (1.x) tests the global null and
+  rejected true null hypotheses too often with covariates that have extreme
+  values. Freedman-Lane needs no refits, so it is also much faster. The
+  result has no `permlist` of refits but can still be given to
+  `predictmeans()` and `contrastmeans()` (`permlist = `). Use
+  `method = "raw"` for the 1.x scheme and results.
+
 * **Permutation tests of mixed models decorrelate residuals with the
   symmetric square root of their covariance** instead of the Cholesky
   factor: `permmodels()` for `lme`, `gls` and `lmer` models and

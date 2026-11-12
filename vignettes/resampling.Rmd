@@ -15,20 +15,23 @@ F and t tests rest on the model's distributional assumptions and, for mixed mode
 approximate degrees of freedom. With few experimental units, skewed residuals or a
 GLMM, resampling tests are a useful check. predictmeans has:
 
-- `permmodels()`: permutation tests of the terms and coefficients of `lm`, `glm`, `aov`,
-  `gls`, `lme` and `lmer` models;
-- `permlmer()` and `permanova.lmer()`: permutation likelihood-ratio tests for `lmer`
-  models, including tests of random effects;
+- `permmodels()`: permutation tests of the terms and coefficients of `lm`, `aov`, `glm`,
+  `gls`, `lme`, `lmer`, `glmer` and `glmmTMB` models;
+- `permlmer()` (also as `permglmer()` and `permglmmTMB()`) and `permanova.lmer()`:
+  permutation likelihood-ratio tests comparing two nested mixed models, including tests
+  of random effects;
+- `permindex()`: permutations restricted by the design (within blocks, of whole plots),
+  for randomisation tests;
 - `bootmodels()`: parametric bootstrap tests for `lmer` and `glmer` models.
 
 The results of `permmodels()` and `bootmodels()` can be passed to `predictmeans()` and
 `contrastmeans()` (argument `permlist`), which then give resampling p-values for pairwise
 comparisons and contrasts.
 
-The examples below use 99 or 199 resamples so that they run quickly; use 999 or more in
+The examples below use 99 to 999 resamples so that they run quickly; use 999 or more in
 practice. The smallest p-value possible is 1/(number of resamples + 1). `ncore` sets the
-number of cores used for the refits (`ncore = 1` here, as for CRAN checks); `seed` makes
-the results reproducible.
+number of cores used for refits (`ncore = 1` here, as for CRAN checks); `seed` makes
+the results reproducible without changing your own random number stream.
 
 ```{r}
 library(predictmeans)
@@ -37,37 +40,48 @@ Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ```
 
-## Permutation tests of terms and coefficients
+## How the data are permuted
 
-For linear models the response is permuted. For mixed models the residuals are first
-decorrelated with the symmetric square root of their estimated covariance, permuted, and
-correlated again (Lee and Braun 2012), so each permuted data set keeps the model's
-correlation structure; the model is then refitted to each. (predictmeans 1.x used the
-Cholesky factor, whose results depended on the order of the data.)
+`permmodels()` has two schemes.
+
+- **Freedman–Lane** (`method = "freedman-lane"`; the default, through `method =
+  "auto"`). For each test, the model without the tested term (for a pair of means: with
+  the two means equal) gives fitted values and residuals; the residuals are permuted
+  and added back to those fitted values, and the statistic is computed again (Freedman
+  and Lane 1983). The other terms keep their effects, so each test is of its own term.
+  For mixed models the covariance of the data, V, is fixed at the fit: the data and the
+  design are decorrelated with the symmetric square root of V, which turns the model
+  into a linear model with the model's own estimates, t and F statistics. GLMs and GLMMs
+  are first linearised at the fit (working response and working variances on the link
+  scale). No model is refitted, so this is fast.
+- **Raw** (`method = "raw"`, the scheme of predictmeans 1.x). The response (`lm`, `glm`)
+  or the fitted values together with the decorrelated residuals (mixed models) are
+  permuted, and the model is refitted to each permuted data set. The refits are kept in
+  `permlist`. This scrambles the effects of all the terms at once, so it tests the
+  global null hypothesis; with a covariate that has extreme values and is related to the
+  tested term it rejected true null hypotheses too often (6–7% at the 5% level, against
+  4–5% for Freedman–Lane, in a simulation study; Anderson and Legendre 1999 found the
+  same for linear models).
 
 ```{r}
-perm <- permmodels(fm, nperm = 199, ncore = 1, seed = 1)
+perm <- permmodels(fm, nperm = 999, seed = 1)
 ```
 
-The tables repeat the model's tests with a `Perm_p_value` column: the proportion of
-permuted statistics at least as large as the observed one.
-
-For `lm` and `aov` models, `method = "freedman-lane"` tests each term by permuting the
-residuals of the model without that term and adding them back to its fitted values
-(Freedman and Lane 1983). Permuting the response rejects true null hypotheses too often
-when a covariate with extreme values is related to the tested term (Anderson and
-Legendre 1999); Freedman–Lane keeps the level there. It gives the tables only (no refits
-for `permlist`), and it is fast:
+For `lm`, `aov`, `lme` and `gls` models the tables are the model's own tests with a
+`Perm_p_value` column; for the other classes they show the statistics that were
+permuted (Wald t and F with the covariance of the data fixed at the fit).
 
 ```{r}
 fm_cars <- lm(mpg ~ wt + factor(cyl), data = mtcars)
-permmodels(fm_cars, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+permmodels(fm_cars, nperm = 999, type = "II", seed = 1)
 ```
 
 ## Pairwise comparisons and contrasts
 
-The same refits give permutation p-values for pairwise comparisons, in the `pairs`
-table and the legacy p-value matrix:
+The same permutations give p-values for pairwise comparisons, in the `pairs` table and
+the legacy p-value matrix. With Freedman–Lane each pair is tested with its own reduced
+model, in which that pair's means are equal, so its p-value does not depend on the other
+means:
 
 ```{r}
 pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, prtnum = FALSE, ncore = 1)
@@ -81,13 +95,29 @@ cm <- contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl")
 contrastmeans(fm, "nitro", ctrmatrix = cm, permlist = perm)[[1]]
 ```
 
-`adj` adjusts the permutation p-values with any `p.adjust()` method or `"sidak"`.
-`"tukey"`, `"scheffe"` and `"mvt"` need the t distribution and are not available with
-`permlist`.
+With `method = "raw"` all pairs use the same refits. `adj` adjusts the permutation
+p-values with any `p.adjust()` method or `"sidak"`. `"tukey"`, `"scheffe"` and `"mvt"`
+need the t distribution and are not available with `permlist`. With a `permlist`, the
+observed t statistics use the unadjusted covariance (no Kenward–Roger adjustment), as
+the permuted ones do.
+
+## GLMs and GLMMs
+
+For GLMs and GLMMs `permmodels()` works on the working (link) scale, with the dispersion
+estimated from the working residuals, which makes it much less sensitive to
+overdispersion than the likelihood-ratio test. For the clinical trial data (a binomial
+GLMM):
+
+```{r}
+data(Clinical)
+fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
+                 family = binomial, data = Clinical)
+perm_clin <- permmodels(fm_clin, nperm = 999, seed = 1)
+```
 
 ## Testing random effects: `permlmer()`
 
-`permlmer()` compares two nested `lmer` models with a permutation likelihood-ratio test
+`permlmer()` compares two nested mixed models with a permutation likelihood-ratio test
 (Lee and Braun 2012). This is useful for random effects, where the usual chi-square
 reference distribution is wrong because the null value of a variance lies on the
 boundary. Does the slope for `Days` vary between subjects?
@@ -98,20 +128,42 @@ fm0 <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
 permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 ```
 
-`permanova.lmer()` applies the same test to each fixed term of an `lmer` model in turn
-(Type I, II or III), for an ANOVA table with permutation p-values.
+For GLMMs (`glmer` or `glmmTMB`, also as `permglmer()` and `permglmmTMB()`) the same is
+done on the working scale. For 0/1 responses, where the working scale fails with rare
+events or tiny clusters, randomised quantile residuals are permuted instead and the
+GLMMs refitted (`method = "quantile"`, chosen automatically). Do tick counts vary between
+locations, beyond the variation between broods?
+
+```{r}
+gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson,
+             data = lme4::grouseticks)
+gm2 <- update(gm1, . ~ . + (1 | LOCATION))
+permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
+```
+
+`permanova.lmer()` applies the same test to each fixed term of an `lmer` or `glmer`
+model in turn (Type I, II or III), for an ANOVA table with permutation p-values.
+
+## Permutations restricted by the design: `permindex()`
+
+In a designed experiment the randomisation defines which permutations are possible:
+treatments are randomised within blocks, whole-plot treatments to whole plots.
+`permindex()` gives such permutations, and `permmodels()` and `permlmer()` use them
+through `perms` (a randomisation test):
+
+```{r}
+fm_rcb <- lm(yield ~ Block + nitro, data = Oats)
+idx <- permindex(Oats, block = "Block", nsim = 999, seed = 1)
+permmodels(fm_rcb, perms = idx)$ANOVA
+```
 
 ## Parametric bootstrap: `bootmodels()`
 
 `bootmodels()` simulates new responses from the model fitted without its fixed effects
 (an intercept and the same random effects: the global null hypothesis), refits the full
-model to each and compares the statistics. Unlike permutation, it works for GLMMs.
-For the clinical trial data (a binomial GLMM):
+model to each and compares the statistics. For the clinical trial data:
 
 ```{r}
-data(Clinical)
-fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
-                 family = binomial, data = Clinical)
 boot <- bootmodels(fm_clin, nsim = 99, seed = 1)
 ```
 
@@ -125,17 +177,20 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 
 ## Which to use
 
-- **Terms and pairwise comparisons in `lm`, `lme` and `lmer` models**: `permmodels()`.
-- **Terms of `lm` and `aov` models with covariates**, especially skewed ones or ones with
-  extreme values: `permmodels(method = "freedman-lane")`.
-- **Mixed models with a covariate with extreme values**: the Kenward–Roger or
-  Satterthwaite F test (`pm_joint()`, or `anova()` of an lmerTest fit); permutation
-  rejected slightly too often there in a simulation study.
-- **A variance component, or any comparison of two nested `lmer` models**:
-  `permlmer()`.
-- **GLMMs**: `bootmodels()`.
+| Model | Terms, coefficients, pairs, contrasts | Random effects, nested models |
+|---|---|---|
+| `lm`, `aov` | `permmodels()` (Freedman–Lane) | — |
+| `glm` | `permmodels()` (Freedman–Lane on the working scale) | — |
+| `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane, V fixed); or the Kenward–Roger F test | `permlmer()` |
+| `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
+| designed experiments | `permmodels(perms = permindex(...))` for a randomisation test | |
+
 - With large samples and well-behaved residuals the F and t tests (with Kenward–Roger
   df for `lmer`) agree closely with these, at a fraction of the time.
+- `bootmodels()` simulates from the global null model; it is useful as a check for GLMMs
+  and very small samples.
+- The choices come from simulation studies of the type I error and power of each scheme
+  (in the package sources: `dev/permutation-plan.md` and `dev/sim-study/`).
 
 ## References
 
@@ -145,6 +200,9 @@ Computation and Simulation* 62, 271–303.
 
 Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of reported
 significance levels. *Journal of Business & Economic Statistics* 1, 292–298.
+
+Dunn, P. K. and Smyth, G. K. (1996). Randomized quantile residuals. *Journal of
+Computational and Graphical Statistics* 5, 236–244.
 
 Lee, O. E. and Braun, T. M. (2012). Permutation tests for random effects in linear mixed
 models. *Biometrics* 68, 486–493.
