@@ -493,10 +493,10 @@ after study 1b (`dev/sim-study/README.md`, `results-1b.md`).
 | Model | Hypothesis | Candidates | Prior | Then | Built (2.0) |
 |---|---|---|---|---|---|
 | lm, aov | terms, coefficients, pairs, contrasts | raw; **Freedman–Lane**; sign flip + HC | Freedman–Lane | Freedman–Lane | **Freedman–Lane** (batched; pairs with their own reduced model) |
-| gls, lme, lmer | fixed terms, coefficients | raw (maintainer's); FL whitened V fixed; **FL whitened with refits**; design-restricted | FL whitened | FL symmetric root 4.6–5.3% | **Freedman–Lane with refits** (split-plot whole-plot term 5.0%, V fixed 8.6%, raw see B2; extreme covariate 5.4%; unbalanced 4.8%); `refit = FALSE` for V fixed; `perms` for design-restricted |
+| gls, lme, lmer | fixed terms, coefficients | raw (maintainer's); FL whitened V fixed; **FL whitened with refits**; design-restricted | FL whitened | FL symmetric root 4.6–5.3% | **Freedman–Lane with refits** (split-plot whole-plot term 5.0%, V fixed 8.6%, raw 5.8%; extreme covariate 5.4%, raw 6.0%; unbalanced 4.8%; lme varIdent 3.6%); `refit = FALSE` for V fixed; `perms` for design-restricted |
 | gls, lme, lmer | pairs, contrasts | joint `permlist` (refits under the global null); FL per pair / per term, V fixed or refits | — | not studied | **Freedman–Lane with refits, one reduced model per family** (whole-plot pairs 5.2%; V fixed 6.2%); joint `permlist` with `method = "raw"` (3.9–5.9%) |
 | lmer | random effects | **Lee–Braun** (`permlmer()`) | keep | keep; symmetric root | **kept** (symmetric root; `perms`) |
-| glm | terms, coefficients, pairs | raw; FL on the working scale; Potter; sign-flip score | sign flip or FL working | not studied | **Freedman–Lane on the working scale** (V fixed; see B2 numbers) |
+| glm | terms, coefficients, pairs | raw; FL on the working scale; Potter; sign-flip score | sign flip or FL working | not studied | **Freedman–Lane on the working scale** (V fixed: 4.2–5.8%, overdispersed 6.1% vs LRT 32.9%; raw 0.6–1.9%) |
 | glmer, glmmTMB | random effects | working-scale LRT (route A); cluster labels; route B; bootstrap | route A | route A; route B for 0/1 | **`permlmer()` route A; route B for 0/1 responses** |
 | glmer, glmmTMB | fixed terms, pairs | joint / FL working (refits); V fixed; route B; bootstrap | open | FL | **Freedman–Lane with refits of the working LMM** (Poisson 5.8%, binomial 3 blocks 6.2%, rare binary 4.1%, nbinom2 6.8%, overdispersed 7.4% vs LRT 33.9%); `permlmer()` for nested pairs (route B for 0/1) |
 
@@ -658,8 +658,9 @@ update; R CMD check at the end of each.
    7.7–10% against LRT 35%). Sign-flip score tests not added (not needed
    if study 1b part 2 confirms the level; then for a later version).
    `permmodels()` raw is refused for glmer/glmmTMB (Freedman–Lane only).
-9. **`method = "auto"`**, documentation (help pages, the resampling
-   vignette with a "which test for which model" table), NEWS, R CMD check, PR.
+9. **`method = "auto"`** — **done**: Freedman–Lane for every class (refits for
+   mixed models), from study 1b; help pages, the resampling vignette with a
+   "which test for which model" table, NEWS, migrating vignette.
 
 ## 11. Is there enough evidence to decide the structure?
 
