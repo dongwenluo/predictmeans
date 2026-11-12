@@ -4,7 +4,10 @@
    Data: Yates oats (dev/sas/oats.txt) and the repeated-measures trial
    (dev/sas/rep.txt), inlined below. */
 
-%let out = ./pm_sas_out;   /* folder for the CSV files */
+%let out = ~/pm_sas_out;   /* folder for the CSV files, in your SAS home (SAS OnDemand: Files > Home) */
+options dlcreatedir;       /* the LIBNAME below creates the folder if it does not exist */
+libname pmout "&out";
+libname pmout clear;
 
 data Oats;
   /* length first: list input reads character values as 8 characters by
