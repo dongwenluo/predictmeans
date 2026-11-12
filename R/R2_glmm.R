@@ -108,6 +108,13 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
     s^2 * (sum(B^2) - sum(Matrix::colSums(B)^2)/n)
   }
   resid_var <- s^2/prior_weight
+  # glmmTMB: the working variance of pm_working() (checked against simulate()):
+  # the formula above is wrong for nbinom1, nbinom2 and beta (sigma() is not a
+  # variance scale there) and ignored offsets
+  if (inherits(model, "glmmTMB") && family_n != "gaussian" && !(family_n == "binomial" && all(yobs %in% c(0, 1)))) {
+    wk <- tryCatch(pm_working_tmb(model), error = function(e) NULL)
+    if (!is.null(wk)) resid_var <- wk$resvar
+  }
   sum_resid <- if (length(resid_var) == 1) n*resid_var else sum(resid_var)
   all_cols <- seq_len(ncol(ZL))
 

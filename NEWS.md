@@ -147,6 +147,23 @@
   the help page recommends the Kenward-Roger or Satterthwaite F test: the
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 
+* **`permlmer()` tests GLMMs** (`glmer` or `glmmTMB` models; also as
+  `permglmer()` and `permglmmTMB()`), random effects and fixed effects. By
+  default counts and binomial data with several trials are permuted on the
+  working (link) scale: the H0 model is linearised (working response and
+  variances, the covariance of the data also having the random effects,
+  as in `R2_glmm()`), the decorrelated working residuals are permuted, and
+  the statistic is the likelihood-ratio statistic of weighted linear mixed
+  models of the working responses. 0/1 responses use randomised quantile
+  residuals mapped back to 0/1 and GLMM refits (`method = "quantile"`). In
+  the simulation study (`dev/sim-study/`) the working scale kept the 5%
+  level for counts and binomial data with trials (4.6-5.9%) and was much
+  more robust than the usual likelihood-ratio test with overdispersed counts
+  (9.8% against 63%); for 0/1 responses with rare events it failed (36%),
+  and the quantile method kept the level (5.6-6.2%). glmmTMB families:
+  poisson, binomial, nbinom1, nbinom2, Gamma, gaussian, beta (no zero
+  inflation or dispersion model).
+
 * `permmodels()` and `permlmer()` (so `permanova.lmer()`) take a matrix of
   permutations, `perms`, e.g. from `permindex()`: permutations within
   blocks or of whole plots, for tests that permute only as the design
@@ -238,6 +255,14 @@
   adjusted for a spatial smooth.
 
 ## Bug fixes
+
+* `R2_glmm()` (and `R2_model()`) for `glmmTMB` models with families
+  `nbinom1`, `nbinom2` and `beta` used the wrong observation-level variance
+  (it multiplied by `sigma()^2`, which for these families is not a
+  variance), and ignored offsets in all families. For example, a Poisson
+  model with an offset gave 67% with glmmTMB and 82% with glmer; now both
+  give 82%. A beta model gave 0.08%, now 37%. The variances are those of
+  the new working-scale code, checked against `simulate()`.
 
 * `permindex()` returns indices for the rows of the data as given. Before,
   with `block` or `group` it sorted the data first and returned indices

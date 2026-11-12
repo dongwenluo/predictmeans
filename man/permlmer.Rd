@@ -2,14 +2,23 @@
 % Please edit documentation in R/permlmer.R
 \name{permlmer}
 \alias{permlmer}
-\title{Permutation Test of random or fixed effects for \code{lmer} model.}
+\alias{permglmer}
+\alias{permglmmTMB}
+\title{Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.}
 \usage{
-permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL)
+permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+         method=c("auto", "working", "quantile"))
+permglmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+          method=c("auto", "working", "quantile"))
+permglmmTMB(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL,
+            method=c("auto", "working", "quantile"))
 }
 \arguments{
-\item{lmer0}{\code{lmer} model under H0, note that \code{lmer0} model must nest within \code{lmer1} model.}
+\item{lmer0}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0, note that \code{lmer0} model must nest within
+\code{lmer1} model.}
 
-\item{lmer1}{\code{lmer} model under H1, note that \code{lmer0} model must nest within \code{lmer1} model.}
+\item{lmer1}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1, note that \code{lmer0} model must nest within
+\code{lmer1} model.}
 
 \item{nperm}{Number of permutation, the default value is 999.}
 
@@ -17,16 +26,24 @@ permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed, perms=NULL)
 
 \item{plot}{Plot permutation distribution or not, the default value is FALSE.}
 
-\item{seed}{Specify a random number generator seed, for reproducible results.}
+\item{seed}{Specify a random number generator seed, for reproducible results. The user's random number stream is
+left as it was.}
 
 \item{perms}{Optional matrix of permutations to use instead of free ones, one row per observation and one column
 per permutation (e.g. from \code{\link{permindex}}); \code{nperm} is then its number of columns.}
+
+\item{method}{For GLMMs only: \code{"working"} permutes on the working (link) scale, \code{"quantile"} permutes
+quantile residuals of a 0/1 response and refits the GLMMs; \code{"auto"} (the default) uses \code{"quantile"} for
+0/1 responses and \code{"working"} otherwise. See Details.}
 }
 \value{
-Permutation p-value.
+The \code{anova()} table of the two models with the permutation p-value in column \code{Perm-p}; for GLMMs,
+attribute \code{"method"} says which method was used, and attribute \code{"failures"} gives the number of refits
+that failed and were left out (if any).
 }
 \description{
-This function provides permutation tests for the terms in a linear mixed model of \code{lmer}.
+This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
+linear mixed model of \code{glmer} or \code{glmmTMB} (also as \code{permglmer()} and \code{permglmmTMB()}).
 }
 \details{
 The residuals of \code{lmer0} are decorrelated with the symmetric square root of their covariance under
@@ -34,6 +51,21 @@ The residuals of \code{lmer0} are decorrelated with the symmetric square root of
 are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
 observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
 is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
+
+For GLMMs (\code{glmer} or \code{glmmTMB}; since predictmeans 2.0), \code{method = "working"} does the same on the
+working (link) scale: \code{lmer0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
+working variance \eqn{\phi V(\mu)/(a (d\mu/d\eta)^2)}; the covariance of z also has the random effects, as in
+\code{\link{R2_glmm}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
+statistic of weighted linear mixed models fitted to the working responses (REML when the two models have the same
+fixed effects, ML otherwise). In simulations it kept the 5\% level for counts and for binomial data with several
+trials, and was much more robust than the usual likelihood-ratio test when counts were overdispersed. For 0/1
+responses the working scale fails when events are rare or clusters tiny (36\% rejections at the 5\% level), so
+\code{method = "quantile"} is used: randomised quantile residuals (Dunn and Smyth, 1996) of the response given the
+conditional means of \code{lmer0} are permuted and mapped back to 0/1 responses, and both models are refitted
+(\code{glmer} fits with \code{nAGQ = 0}, for the observed data too, so the statistic can differ from the
+\code{Chisq} column); it kept the level (5.6-6.2\%). A random effect with one level per observation (often used
+for overdispersion) cannot be used on the working scale; \code{\link{bootmodels}} can test it. \code{glmmTMB} models must have no zero inflation and the
+default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, gaussian and beta are handled.
 }
 \examples{
 library(predictmeans)
@@ -54,11 +86,20 @@ fm0 <- lmer(yield ~ nitro+Variety+(1|Block/Variety), data=Oats)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 \donttest{
 permlmer(fm0, fm, nperm=99, ncore=1)
+
+## A GLMM: do tick counts vary between locations, beyond broods?
+gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)
+gm2 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION), family = poisson,
+             data = lme4::grouseticks)
+permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 }
 }
 \references{
 Oliver E. Lee and Thomas M. Braun (2012),
-    \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
+  \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
+
+Peter K. Dunn and Gordon K. Smyth (1996),
+  \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

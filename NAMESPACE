@@ -63,5 +63,5 @@ importMethodsFrom("Matrix",
   importFrom("utils", "as.roman", "combn", "edit")
 
 export(pm_coef, pm_vcov, pm_basis, pm_data, pm_df, pm_linkinv)
-export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permindex, permlmer, permmodels, pm_joint, pm_slopes, PMplot, predictmeans, R2_glmm, R2_model, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
+export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permglmer, permglmmTMB, permindex, permlmer, permmodels, pm_joint, pm_slopes, PMplot, predictmeans, R2_glmm, R2_model, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
 S3method(update, semerLmerTest)
