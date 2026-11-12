@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -203,6 +204,16 @@ adjusted standard errors and Kenward–Roger df, as SAS
 <span><span class="co">#&gt;                    [,1]</span></span>
 <span><span class="co">#&gt; Satterthwaite  8.868755</span></span>
 <span><span class="co">#&gt; containment   10.000000</span></span></code></pre></div>
+<p><code>df_method = "between-within"</code> gives SAS’s
+<code>DDFM=BETWITHIN</code> df, and <code>"KR-SAS"</code> Kenward–Roger
+as SAS computes it (with the observed information;
+<code>"Kenward-Roger"</code> matches pbkrtest and emmeans, and the two
+agree in balanced designs). For <code>lme</code> and <code>gls</code>
+models with correlation or variance structures,
+<code>"Satterthwaite"</code>, <code>"Kenward-Roger"</code> and
+<code>"KR-SAS"</code> are available too.
+<code><a href="../articles/sas.html">vignette("sas", package = "predictmeans")</a></code> shows how each
+matches SAS PROC MIXED.</p>
 </div>
 <div class="section level2">
 <h2 id="averaging-over-other-factors">Averaging over other factors<a class="anchor" aria-label="anchor" href="#averaging-over-other-factors"></a>

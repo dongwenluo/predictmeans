@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -269,6 +270,62 @@ marginaleffects needs the class listed first; <code>b1</code>,
 <span><span class="co">#&gt;   b12-b10=0    -6.33       9.72 -0.652    0.514 1.0 -25.4   12.7</span></span></code></pre></div>
 <p>marginaleffects uses normal-based tests; the standard error is the
 same as above.</p>
+</div>
+<div class="section level2">
+<h2 id="equivalence-tests">Equivalence tests<a class="anchor" aria-label="anchor" href="#equivalence-tests"></a>
+</h2>
+<p>To show that two treatments do not differ by more than a margin that
+matters in practice, give the margin with <code>equivalence</code> (a
+number <code>d</code> for the region <code>-d</code> to <code>d</code>,
+or <code>c(lower, upper)</code>). The <code>pairs</code> table then has
+<code>p.equiv</code>, the p-value of two one-sided t tests (TOST): below
+<code>level</code>, the difference lies within the margin.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, equivalence <span class="op">=</span> <span class="fl">15</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pe</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.equiv"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2   estimate std.error    p.equiv</span></span>
+<span><span class="co">#&gt; 1      0    0.2 -19.500000  4.435752 0.84211223</span></span>
+<span><span class="co">#&gt; 2      0    0.4 -34.833333  4.435752 0.99997388</span></span>
+<span><span class="co">#&gt; 3    0.2    0.4 -15.333333  4.435752 0.52978457</span></span>
+<span><span class="co">#&gt; 4      0    0.6 -44.000000  4.435752 0.99999998</span></span>
+<span><span class="co">#&gt; 5    0.2    0.6 -24.500000  4.435752 0.98116609</span></span>
+<span><span class="co">#&gt; 6    0.4    0.6  -9.166667  4.435752 0.09757395</span></span></code></pre></div>
+<p><code>contrastmeans(..., equivalence = )</code> does the same for
+contrasts.</p>
+</div>
+<div class="section level2">
+<h2 id="robust-and-clustered-standard-errors">Robust and clustered standard errors<a class="anchor" aria-label="anchor" href="#robust-and-clustered-standard-errors"></a>
+</h2>
+<p>When the error variance differs between groups and the model assumes
+it is constant, <code>vcov = "HC3"</code> (or <code>"HC0"</code> to
+<code>"HC2"</code>) gives heteroscedasticity-consistent standard errors
+for <code>lm</code>, <code>aov</code> and <code>glm</code> models, and
+<code>vcov = ~ Block</code> cluster-robust ones. They work in
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
+<code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> and <code><a href="../reference/pm_joint.html">pm_joint()</a></code>; the df stay the
+model’s:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">N</span> <span class="op">+</span> <span class="va">Variety</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
+<span><span class="va">pmh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fl</span>, <span class="st">"N"</span>, vcov <span class="op">=</span> <span class="st">"HC3"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pmh</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2   estimate std.error      p.value</span></span>
+<span><span class="co">#&gt; 1      0    0.2 -19.500000  4.864548 1.688713e-04</span></span>
+<span><span class="co">#&gt; 2      0    0.4 -34.833333  5.500868 3.207893e-08</span></span>
+<span><span class="co">#&gt; 3    0.2    0.4 -15.333333  5.859926 1.117925e-02</span></span>
+<span><span class="co">#&gt; 4      0    0.6 -44.000000  5.212147 7.666905e-12</span></span>
+<span><span class="co">#&gt; 5    0.2    0.6 -24.500000  5.589782 4.694785e-05</span></span>
+<span><span class="co">#&gt; 6    0.4    0.6  -9.166667  6.151535 1.413395e-01</span></span>
+<span><span class="va">pmh</span><span class="op">$</span><span class="va">settings</span><span class="op">$</span><span class="va">vcov</span></span>
+<span><span class="co">#&gt; [1] "HC3"</span></span>
+<span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fl</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span>, vcov <span class="op">=</span> <span class="op">~</span> <span class="va">Block</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt;      Estimate Std. Error t value df Pr(&gt;|t|) lower.CL upper.CL</span></span>
+<span><span class="co">#&gt; [1,]  19.5000     4.3162  4.5179 61        0  10.8693  28.1307</span></span>
+<span><span class="co">#&gt; [2,]  15.3333     2.5716  5.9627 61        0  10.1912  20.4755</span></span>
+<span><span class="co">#&gt; attr(,"Note")</span></span>
+<span><span class="co">#&gt; [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value &lt; 0.0001. Standard errors from the covariance given by 'vcov' (CR1, clusters: Block)."</span></span></code></pre></div>
+<p>For any model, including mixed models, <code>vcov</code> also takes a
+covariance matrix of the coefficients or a function that returns one
+(e.g. from the clubSandwich package).</p>
 </div>
 <div class="section level2">
 <h2 id="more">More<a class="anchor" aria-label="anchor" href="#more"></a>

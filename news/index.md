@@ -320,6 +320,94 @@
   (Fisher or Tippett) and min-p adjusted p-values over the responses,
   with their correlation kept.
 
+- New argument `vcov` in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md):
+  another covariance of the coefficients for the standard errors, tests
+  and limits. For `lm`, `aov` and `glm`, `vcov = "HC0"` to `"HC3"`
+  (heteroscedasticity-consistent; equal to
+  [`car::hccm()`](https://rdrr.io/pkg/car/man/hccm.html) and to
+  [`sandwich::vcovHC()`](https://rdrr.io/pkg/sandwich/man/vcovHC.html))
+  or `vcov = ~ cluster` (cluster-robust CR1, as
+  [`sandwich::vcovCL()`](https://rdrr.io/pkg/sandwich/man/vcovCL.html)),
+  with no new dependency; for any model a covariance matrix or a
+  function of the model (for mixed models e.g. from clubSandwich). The
+  df stay the model’s. Means, pairs and slopes equal emmeans with the
+  same covariance (`vcov. =`). The `settings` table records it (`vcov`).
+  With a `permlist` it is not used (see `permmodels(robust = TRUE)`).
+
+- `df_method = "between-within"` (SAS `DDFM=BETWITHIN`) in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md),
+  for `lmer`, `lme` and `gls` models: effects constant within subjects
+  get the between-subject df, the others the df of their
+  subject-by-effect interaction; with an unstructured covariance (`gls`
+  with `corSymm`) every effect gets the between-subject df. Equal to SAS
+  PROC MIXED on the split plot (Variety 10, Nitro 15, Variety x Nitro
+  30, 29 with a plot missing) and the unstructured repeated measures
+  (10). As for containment, the unadjusted covariance is used unless
+  `vcov_adjust = TRUE`.
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  with containment df now also uses the unadjusted covariance by
+  default, as
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  does.
+
+- `df_method = "KR-SAS"`: Kenward-Roger as SAS PROC MIXED `DDFM=KR`
+  computes it, with the observed information of the variance parameters
+  (computed in closed form) where `"Kenward-Roger"` (pbkrtest, emmeans)
+  uses the expected information. Same results in balanced designs; with
+  one plot missing in the split plot of the SAS reference run, “KR-SAS”
+  reproduces SAS’s df and SEs (e.g. 9.79 and 31.3, where “Kenward-Roger”
+  gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
+  `"Satterthwaite"`, every df of that SAS run now agrees with SAS.
+
+- `df_method = "Satterthwaite"` for `lme` and `gls` models, with any
+  correlation and variance structure, in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  and
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md):
+  the covariance of the data is rebuilt from the fit (checked against
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html)), and the Satterthwaite
+  df use the Hessian of the REML log-likelihood, as SAS does. For the
+  unstructured repeated measures of the SAS reference run, the df are 10
+  to 10.2 as SAS gives, where the residual df (the default for `gls`)
+  are 30. `"Kenward-Roger"` and `"KR-SAS"` give Kenward-Roger df, F
+  tests and adjusted standard errors for these models too (numerical
+  derivatives of the data covariance; the second-derivative term is left
+  out, so the result does not depend on nlme’s parameterisation and
+  equals SAS DDFM=KR for variance components and unstructured
+  covariances): the SAS run’s KR F tests (Time 1616.03 with 9 df) are
+  reproduced, and `lme` equals `lmer`’s Kenward-Roger. The default for
+  `lme` and `gls` is unchanged.
+
+- Equivalence tests: `predictmeans(equivalence = d)` (or
+  `c(lower, upper)`) adds `p.equiv` to the `pairs` table, the TOST
+  p-value (two one-sided t tests; below `level`, the difference lies
+  within the margins), equal to emmeans’
+  `test(..., side = "equivalence")`; `contrastmeans(equivalence =)` adds
+  it to the contrast table. The margins are on the scale of the
+  comparisons and are recorded in `settings`.
+
+- Back-transformed means for GLMMs and transformed responses:
+  `predictmeans(bias_adjust = TRUE)` gives h(eta) + sigma^2 h’‘(eta)/2,
+  the mean over the population of random effects (default sigma: the SD
+  of the random intercepts, plus the residual SD for a transformed
+  response), and `average = "response"` back-transforms the cells of the
+  reference grid before averaging them (the mean of the response, e.g. a
+  mean count), both with delta-method SEs; equal to emmeans’
+  `bias.adjust` and `regrid()`. They change only the `response` columns
+  of `means`; the settings record them (`bias_adjust`, `average`).
+
 - **Permutation Tukey and Westfall-Young adjustments.** With a
   `permlist`,
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)

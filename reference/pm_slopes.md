@@ -11,9 +11,9 @@ and SAS `ESTIMATE` statements on slope terms.
 
 ``` r
 pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"))
+          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```
 
 ## Arguments
@@ -48,7 +48,7 @@ pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
   in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
-- df_method, vcov_adjust, weights:
+- df_method, vcov_adjust, weights, vcov:
 
   As in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).

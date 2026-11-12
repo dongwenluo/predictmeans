@@ -31,6 +31,7 @@
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -70,7 +71,8 @@
 <span>  mplot<span class="op">=</span><span class="cn">NULL</span>, barplot<span class="op">=</span><span class="cn">NULL</span>, pplot<span class="op">=</span><span class="cn">NULL</span>, bkplot<span class="op">=</span><span class="cn">NULL</span>, plot<span class="op">=</span><span class="cn">TRUE</span>, jitterv<span class="op">=</span><span class="fl">0.2</span>, basesz<span class="op">=</span><span class="fl">12</span>, prtnum<span class="op">=</span><span class="cn">TRUE</span>, prtplt<span class="op">=</span><span class="cn">TRUE</span>, newwd<span class="op">=</span><span class="cn">FALSE</span>, permlist<span class="op">=</span><span class="cn">NULL</span>, </span>
 <span>  ncore<span class="op">=</span><span class="fl">1</span>, ndecimal<span class="op">=</span><span class="fl">4</span>, cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>, vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>,</span>
 <span>  weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
-<span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-SAS"</span><span class="op">)</span>, vcov<span class="op">=</span><span class="cn">NULL</span>,</span>
+<span>  equivalence<span class="op">=</span><span class="cn">NULL</span>, bias_adjust<span class="op">=</span><span class="cn">FALSE</span>, sigma<span class="op">=</span><span class="cn">NULL</span>, average<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link"</span>, <span class="st">"response"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -285,7 +287,66 @@ factor's own frequencies), <code>"cells"</code> (each mean weights the cells by 
 REML fits and Satterthwaite for ML fits. <code>"containment"</code> gives the SAS <code>DDFM=CONTAIN</code> df: the
 smallest rank contribution to \([X Z]\) of the random effects that contain <code>modelterm</code>, or the
 residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
-covariance is used unless <code>vcov_adjust = TRUE</code> is given. Ignored for other model classes.</p></dd>
+covariance is used unless <code>vcov_adjust = TRUE</code> is given. <code>"between-within"</code> gives the SAS <code>DDFM=BETWITHIN</code> df, for <code>lmer</code>, <code>lme</code> and
+<code>gls</code> models: the subject is the coarsest random-effect grouping (<code>lmer</code>, <code>lme</code>) or the grouping of
+the correlation structure (<code>gls</code>); an effect constant within subjects gets the between-subject df, and the
+others the df of their subject-by-effect interaction (for example Block x Variety in a split plot); with an
+unstructured covariance (<code>gls</code> with <code>corSymm</code>) and no random effects every effect gets the
+between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
+used unless <code>vcov_adjust = TRUE</code> is given.
+<code>"KR-SAS"</code> is Kenward-Roger as SAS PROC MIXED <code>DDFM=KR</code> computes it: with the observed
+information of the variance parameters where <code>"Kenward-Roger"</code> (as <span class="pkg">pbkrtest</span> and <span class="pkg">emmeans</span>) uses
+the expected information; the two agree in balanced designs and differ slightly otherwise (about 1% in the df
+of a split plot with one plot missing).
+For <code>lme</code> and <code>gls</code> models, <code>"Satterthwaite"</code> gives Satterthwaite df with any correlation and
+variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
+checked against SAS PROC MIXED), and <code>"Kenward-Roger"</code> and <code>"KR-SAS"</code> give Kenward-Roger df and adjusted
+standard errors (equal to SAS <code>DDFM=KR</code> for variance components and unstructured covariances); their default stays
+<span class="pkg">nlme</span>'s df (<code>lme</code>) or the residual df (<code>gls</code>).
+Other choices are ignored for other model classes.</p></dd>
+
+
+<dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
+<dd><p>Optional covariance of the coefficients to use instead of the model's. For <code>lm</code>, <code>aov</code>
+and <code>glm</code> models: <code>"HC0"</code>, <code>"HC1"</code>, <code>"HC2"</code> or <code>"HC3"</code> (heteroscedasticity-consistent,
+as <code><a href="https://rdrr.io/pkg/sandwich/man/vcovHC.html" class="external-link">sandwich::vcovHC()</a></code>), or a one-sided formula naming a cluster variable of the data, e.g. <code>~ Block</code>
+(cluster-robust CR1, as <code><a href="https://rdrr.io/pkg/sandwich/man/vcovCL.html" class="external-link">sandwich::vcovCL()</a></code>). For any model: a covariance matrix of the coefficients, or
+a function that returns one from the model (for mixed models e.g. from the <span class="pkg">clubSandwich</span> package). The
+degrees of freedom stay those of the model (the residual df; for <code>lmer</code> Kenward-Roger or Satterthwaite df
+computed from the model), and <code>vcov_adjust</code> is not used. With a <code>permlist</code>, <code>vcov</code> is not used
+(for robust permutation tests see <code>permmodels(robust = TRUE)</code>). The default <code>NULL</code> uses the model's
+covariance.</p></dd>
+
+
+<dt id="arg-equivalence">equivalence<a class="anchor" aria-label="anchor" href="#arg-equivalence"></a></dt>
+<dd><p>Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+differences: a positive number \(d\) (equivalence region \(-d\) to \(d\)) or <code>c(lower, upper)</code>, on the
+scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+one-sided p-values; below <code>level</code>, the difference lies within the margins (as emmeans'
+<code>test(..., side = "equivalence")</code>). Not adjusted for multiplicity; with a <code>permlist</code> it is t-based
+(normal-based in <code>contrastmeans</code>).</p></dd>
+
+
+<dt id="arg-bias-adjust">bias_adjust<a class="anchor" aria-label="anchor" href="#arg-bias-adjust"></a></dt>
+<dd><p>Logical: adjust the back-transformed means (non-identity link or <code>trans</code>) for the random
+effects (and, for a transformed response of a linear model, the residual error): \(h(\eta) + \sigma^2 h''(\eta)/2\)
+instead of \(h(\eta)\), the second-order approximation of the mean over the population (as emmeans'
+<code>bias.adjust</code>); the response-scale SEs follow by the delta method. Without it (the default) the
+back-transformed mean is that of a unit with all random effects zero.</p></dd>
+
+
+<dt id="arg-sigma">sigma<a class="anchor" aria-label="anchor" href="#arg-sigma"></a></dt>
+<dd><p>With <code>bias_adjust = TRUE</code>: the SD to adjust for. The default is the square root of the summed
+random-intercept variances (<code>glmer</code>, <code>glmmTMB</code>, <code>lme</code>), plus the residual variance for a
+transformed response of a linear (mixed) model; models with random slopes need it given.</p></dd>
+
+
+<dt id="arg-average">average<a class="anchor" aria-label="anchor" href="#arg-average"></a></dt>
+<dd><p>How means average over the other factors when they are back-transformed: <code>"link"</code> (the default;
+average on the link scale, then back-transform) or <code>"response"</code> (back-transform each cell of the reference
+grid, then average with the same weights, as emmeans' <code>regrid()</code>: the mean of the response, e.g. a mean
+count). Both change only the <code>response</code> columns of <code>means</code>; the printed tables and the <code>pairs</code>
+stay on the link scale.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -336,7 +397,8 @@ covariance is used unless <code>vcov_adjust = TRUE</code> is given. Ignored for 
 <dd><p>A data frame with one row per pairwise comparison: <code>level1</code>, <code>level2</code>, <code>by</code> (the
  level of <code>atvar</code>, when given; <code>NA</code> for pairs across levels), <code>estimate</code> (mean of <code>level1</code>
  minus mean of <code>level2</code>), <code>std.error</code>, <code>df</code>, <code>statistic</code> (t), <code>p.value</code>, <code>p.adj</code>
- (adjusted by <code>adj</code>, within each level of <code>atvar</code> when given), <code>conf.low</code> and <code>conf.high</code> (limits of
+ (adjusted by <code>adj</code>, within each level of <code>atvar</code> when given), <code>p.equiv</code> (with
+ <code>equivalence</code>: the TOST p-value), <code>conf.low</code> and <code>conf.high</code> (limits of
 the difference at <code>level</code>), <code>lsd</code> (the half-width of those limits) and <code>p.method</code>; with <code>permlist</code>
 the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
 within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a log
@@ -345,7 +407,7 @@ within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a lo
 
  <dt>settings</dt>
 <dd><p>A list with the options used: model term, significance level, adjustment method, <code>atvar</code>,
- degrees-of-freedom method, <code>vcov_adjust</code>, number of permutations, covariate values, model class and
+ degrees-of-freedom method, <code>vcov_adjust</code>, <code>vcov</code> (<code>"model"</code>, <code>"HC3"</code>, ...), number of permutations, covariate values, model class and
  package version.</p></dd>
 
 </dl><p>The result has class <code>c("predictmeans", "pdmlist")</code>. Printing shows the same output as earlier versions;
@@ -421,7 +483,7 @@ within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a lo
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`Standard Error of Differences`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.SED  Min.SED Aveg.SED </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4.435757 4.435757 4.435757 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4.435758 4.435758 4.435758 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $LSD</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.LSD  Min.LSD Aveg.LSD </span>
@@ -433,7 +495,7 @@ within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a lo
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`Pairwise p-value`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          0     0.2     0.4     0.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1.0000 -4.3961 -7.8529 -9.9194</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1.0000 -4.3961 -7.8528 -9.9194</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.0001  1.0000 -3.4568 -5.5233</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.0000  0.0014  1.0000 -2.0665</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.0000  0.0000  0.0446  1.0000</span>
@@ -472,12 +534,12 @@ within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a lo
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`Standard Error of Differences`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.SED  Min.SED Aveg.SED </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9.715030 7.682956 9.160828 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9.715028 7.682958 9.160827 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"For the Same Level of Factor")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            nitro  Variety</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.SED 9.71503 7.682956</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Min.SED  9.71503 7.682956</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Max.SED  9.71503 7.682956</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             nitro  Variety</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.SED 9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Min.SED  9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Max.SED  9.715028 7.682958</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $LSD</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.LSD  Min.LSD Aveg.LSD </span>
@@ -519,18 +581,18 @@ within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a lo
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Table</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain     0  80.0000 9.10696 45  61.6576  98.3424       A  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain   0.2  98.5000 9.10696 45  80.1576 116.8424        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain     0  80.0000 9.10696 45  61.6577  98.3423       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain   0.2  98.5000 9.10696 45  80.1577 116.8423        B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain   0.4 114.6667 9.10696 45  96.3243 133.0090         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 10 Golden Rain   0.6 124.8333 9.10696 45 106.4910 143.1757         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 45  68.3243 105.0090       A  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 45  90.1576 126.8424        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 45  90.1577 126.8423        B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 45  98.8243 135.5090        BC</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 45 108.4910 145.1757         C</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      Victory     0  71.5000 9.10696 45  53.1576  89.8424       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      Victory     0  71.5000 9.10696 45  53.1577  89.8423       A  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6      Victory   0.2  89.6667 9.10696 45  71.3243 108.0090        B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9      Victory   0.4 110.8333 9.10696 45  92.4910 129.1757         C</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12     Victory   0.6 118.5000 9.10696 45 100.1576 136.8424         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12     Victory   0.6 118.5000 9.10696 45 100.1577 136.8423         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Note</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"</span>

@@ -25,6 +25,7 @@
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -186,27 +187,27 @@ factor's own frequencies), <code>"cells"</code> (each mean weights the cells by 
 <span class="r-in"><span>  <span class="fu">covariatemeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, covariate<span class="op">=</span><span class="st">"nitro"</span>, covariateV<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.6</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pltdf</span></span></span>
 <span class="r-plt img"><img src="covariatemeans-2.png" alt="" width="700" height="433"></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Variety xvar      ses      Mean        LL        UL     factors</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain  0.0 8.570714  81.90000  62.80326 100.99674 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  Golden Rain  0.1 8.150208  89.43333  71.27354 107.59313 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  Golden Rain  0.2 7.887150  96.96667  79.39300 114.54033 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain  0.3 7.797492 104.50000  87.12611 121.87389 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Golden Rain  0.4 7.887150 112.03333  94.45967 129.60700 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Golden Rain  0.5 8.150208 119.56667 101.40687 137.72646 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain  0.6 8.570714 127.10000 108.00326 146.19674 Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous  0.0 8.570714  90.41667  71.31993 109.51341  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   Marvellous  0.1 8.150208  96.87500  78.71521 115.03479  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10  Marvellous  0.2 7.887150 103.33333  85.75967 120.90700  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous  0.3 7.797492 109.79167  92.41777 127.16556  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12  Marvellous  0.4 7.887150 116.25000  98.67634 133.82366  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13  Marvellous  0.5 8.150208 122.70833 104.54854 140.86813  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14  Marvellous  0.6 8.570714 129.16667 110.06993 148.26341  Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15     Victory  0.0 8.570714  73.30000  54.20326  92.39674     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16     Victory  0.1 8.150208  81.40833  63.24854  99.56813     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17     Victory  0.2 7.887150  89.51667  71.94300 107.09033     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18     Victory  0.3 7.797492  97.62500  80.25111 114.99889     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19     Victory  0.4 7.887150 105.73333  88.15967 123.30700     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20     Victory  0.5 8.150208 113.84167  95.68187 132.00146     Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21     Victory  0.6 8.570714 121.95000 102.85326 141.04674     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain  0.0 8.570716  81.90000  62.80325 100.99675 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  Golden Rain  0.1 8.150210  89.43333  71.27353 107.59313 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  Golden Rain  0.2 7.887152  96.96667  79.39300 114.54034 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain  0.3 7.797494 104.50000  87.12610 121.87390 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Golden Rain  0.4 7.887152 112.03333  94.45966 129.60700 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Golden Rain  0.5 8.150210 119.56667 101.40687 137.72647 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain  0.6 8.570716 127.10000 108.00325 146.19675 Golden Rain</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous  0.0 8.570716  90.41667  71.31992 109.51341  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9   Marvellous  0.1 8.150210  96.87500  78.71520 115.03480  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10  Marvellous  0.2 7.887152 103.33333  85.75966 120.90700  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous  0.3 7.797494 109.79167  92.41777 127.16557  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12  Marvellous  0.4 7.887152 116.25000  98.67633 133.82367  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13  Marvellous  0.5 8.150210 122.70833 104.54853 140.86813  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14  Marvellous  0.6 8.570716 129.16667 110.06992 148.26341  Marvellous</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15     Victory  0.0 8.570716  73.30000  54.20325  92.39675     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16     Victory  0.1 8.150210  81.40833  63.24853  99.56813     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17     Victory  0.2 7.887152  89.51667  71.94300 107.09034     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18     Victory  0.3 7.797494  97.62500  80.25110 114.99890     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19     Victory  0.4 7.887152 105.73333  88.15966 123.30700     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20     Victory  0.5 8.150210 113.84167  95.68187 132.00147     Victory</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21     Victory  0.6 8.570716 121.95000 102.85325 141.04675     Victory</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

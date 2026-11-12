@@ -294,21 +294,21 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 9.715030 7.682956 9.160828 
+#> 9.715028 7.682958 9.160827 
 #> attr(,"For the Same Level of Factor")
-#>            nitro  Variety
-#> Aveg.SED 9.71503 7.682956
-#> Min.SED  9.71503 7.682956
-#> Max.SED  9.71503 7.682956
+#>             nitro  Variety
+#> Aveg.SED 9.715028 7.682958
+#> Min.SED  9.715028 7.682958
+#> Max.SED  9.715028 7.682958
 #> 
 #> $`Approximated LSD`
 #>  Max.LSD  Min.LSD Aveg.LSD 
-#> 19.43006 15.36591 18.32166 
+#> 19.43006 15.36592 18.32165 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.LSD 19.43006 15.36591
-#> Min.LSD  19.43006 15.36591
-#> Max.LSD  19.43006 15.36591
+#> Aveg.LSD 19.43006 15.36592
+#> Min.LSD  19.43006 15.36592
+#> Max.LSD  19.43006 15.36592
 #> attr(,"Note")
 #> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
 #> 
@@ -341,15 +341,15 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
 #> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  
 #> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4527 132.8806         C
-#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0473         C
-#> 2   Marvellous     0  86.6667 9.10696 NA  68.4527 104.8806       A  
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C
+#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C
+#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  
 #> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B 
-#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9527 135.3806        BC
-#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0473         C
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C
 #> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  
-#> 6      Victory   0.2  89.6667 9.10696 NA  71.4527 107.8806        B 
-#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0473         C
+#> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B 
+#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C
 #> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C
 #> 
 #> $mean_table$Note

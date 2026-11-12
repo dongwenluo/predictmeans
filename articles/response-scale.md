@@ -112,6 +112,28 @@ smaller than the average count over all units, which is
 effects. Ratios are the same on both definitions, which is one reason to
 report them.
 
+`bias_adjust = TRUE` gives that population mean instead (to second
+order, as emmeans’ `bias.adjust`), with the random-effect variance as
+default `sigma`; `average = "response"` averages the back-transformed
+cells over the other factors (here Habitat), rather than
+back-transforming the average on the link scale:
+
+``` r
+
+pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "response",
+                       plot = FALSE, prtnum = FALSE)
+pm_pop$means[, c("Treatment", "response", "response.std.error")]
+#>   Treatment response response.std.error
+#> 1       Exp 7.282088          1.1947770
+#> 2      Cont 4.379663          0.7246393
+pm_pop$settings[c("bias_adjust", "average")]
+#> $bias_adjust
+#> [1] 0.6532427
+#> 
+#> $average
+#> [1] "response"
+```
+
 ## A transformed response: `trans = exp`
 
 When the response is transformed before modelling, give the

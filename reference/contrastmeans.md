@@ -9,8 +9,8 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
-                level=0.05)
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+                level=0.05, vcov=NULL, equivalence=NULL)
 ```
 
 ## Arguments
@@ -87,8 +87,11 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
   Denominator df for `lmer` models: `"auto"` (Kenward-Roger for REML
   fits, Satterthwaite for ML fits), `"Kenward-Roger"`, `"Satterthwaite"`
-  or `"containment"` (SAS `DDFM=CONTAIN`; see
-  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+  or `"containment"` (SAS `DDFM=CONTAIN`), and for `lmer`, `lme` and
+  `gls` models `"between-within"` (SAS `DDFM=BETWITHIN`), and `"KR-SAS"`
+  (Kenward-Roger as SAS `DDFM=KR`); for `lme` and `gls` also
+  `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-SAS"`; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
 - joint:
 
@@ -112,6 +115,35 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   permuted \|t\|, k = floor(level (nperm + 1))); with `adj` "mvt" or
   "westfall" c comes from the largest \|t\| of the contrasts, so the
   limits are simultaneous.
+
+- vcov:
+
+  Optional covariance of the coefficients to use instead of the model's.
+  For `lm`, `aov` and `glm` models: `"HC0"`, `"HC1"`, `"HC2"` or `"HC3"`
+  (heteroscedasticity-consistent, as
+  [`sandwich::vcovHC()`](https://rdrr.io/pkg/sandwich/man/vcovHC.html)),
+  or a one-sided formula naming a cluster variable of the data, e.g.
+  `~ Block` (cluster-robust CR1, as
+  [`sandwich::vcovCL()`](https://rdrr.io/pkg/sandwich/man/vcovCL.html)).
+  For any model: a covariance matrix of the coefficients, or a function
+  that returns one from the model (for mixed models e.g. from the
+  clubSandwich package). The degrees of freedom stay those of the model
+  (the residual df; for `lmer` Kenward-Roger or Satterthwaite df
+  computed from the model), and `vcov_adjust` is not used. With a
+  `permlist`, `vcov` is not used (for robust permutation tests see
+  `permmodels(robust = TRUE)`). The default `NULL` uses the model's
+  covariance.
+
+- equivalence:
+
+  Optional equivalence margins for equivalence tests (two one-sided t
+  tests, TOST) of the contrasts: a positive number \\d\\ (equivalence
+  region \\-d\\ to \\d\\) or `c(lower, upper)`, on the scale of the
+  comparisons (the link scale for GLMs: e.g. log ratios). The TOST
+  p-value is the larger of the two one-sided p-values; below `level`,
+  the difference lies within the margins (as emmeans'
+  `test(..., side = "equivalence")`). Not adjusted for multiplicity;
+  with a `permlist` it is t-based (normal-based in `contrastmeans`).
 
 ## Value
 

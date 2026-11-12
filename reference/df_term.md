@@ -7,7 +7,7 @@ model using "Kenward-Roger" or "Satterthwaite" method.
 
 ``` r
 df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL)
+          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
 ```
 
 ## Arguments
@@ -43,7 +43,11 @@ df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
   "containment". The default method is "Kenward-Roger". Kenward-Roger
   needs a REML fit; for models fitted by ML, Satterthwaite is used with
   a warning. "containment" gives the SAS `DDFM=CONTAIN` df of
-  `modelterm` (needed then) for every row.
+  `modelterm` (needed then) for every row, and "between-within" the SAS
+  `DDFM=BETWITHIN` df (see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md));
+  "KR-SAS" is Kenward-Roger with the observed information of the
+  variance parameters, as SAS `DDFM=KR`.
 
 - vcov_adj:
 

@@ -31,6 +31,7 @@ at least as large as the observed one. Useful for GLMMs and small samples, where
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -107,6 +108,11 @@ and III Wald chi-square statistics.</p></dd>
     <p>The result has the same form as that of <code><a href="permmodels.html">permmodels</a></code>: its <code>permlist</code> can be given to
 <code><a href="predictmeans.html">predictmeans</a></code> or <code><a href="contrastmeans.html">contrastmeans</a></code> (argument <code>permlist</code>) for bootstrap p-values of
 pairwise comparisons or contrasts (<code>p.method</code> <code>"bootstrap"</code> in the <code>pairs</code> table).</p>
+<p>In a simulation study (500 data sets per case, 5% level; <code>dev/sim-boot.R</code> in the package sources) the
+bootstrap corrected the liberal Wald chi-square test of a whole-plot factor in a split plot with 6 blocks (10%
+to 6-7%, as Kenward-Roger) and kept the level in Poisson and binomial GLMMs, also when other terms had effects.
+Like the likelihood-ratio test it relies on the model: with overdispersed counts fitted as Poisson it rejected
+37% of true null hypotheses, where <code><a href="permmodels.html">permmodels</a></code> (Freedman-Lane on the working scale) gave 7%.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

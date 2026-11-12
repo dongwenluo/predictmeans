@@ -533,7 +533,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  41.435   0.147  41.584
+    ##  28.001   0.113  28.035
 
 ``` r
 
@@ -1760,7 +1760,7 @@ kable(anova(mod1$semer))
 
 |                   |   Sum Sq |  Mean Sq | NumDF |    DenDF |  F value |   Pr(\>F) |
 |:------------------|---------:|---------:|------:|---------:|---------:|----------:|
-| construction.date | 500.9997 | 500.9997 |     1 | 1871.012 | 1.579118 | 0.2090446 |
+| construction.date | 500.9997 | 500.9997 |     1 | 1871.012 | 1.579118 | 0.2090447 |
 
 - **RANOVA**
 
@@ -1862,9 +1862,9 @@ kable(anova(mod2$semer))
 
 |  | Sum Sq | Mean Sq | NumDF | DenDF | F value | Pr(\>F) |
 |:---|---:|---:|---:|---:|---:|---:|
-| construction.date | 448.0816 | 448.0816 | 1 | 2331.885 | 1.621460 | 0.2030152 |
-| district | 4444.3114 | 1481.4371 | 3 | 2832.228 | 5.360834 | 0.0011129 |
-| construction.date:district | 1582.3868 | 527.4623 | 3 | 1983.797 | 1.908713 | 0.1260932 |
+| construction.date | 448.0818 | 448.0818 | 1 | 2331.884 | 1.621460 | 0.2030152 |
+| district | 4444.3130 | 1481.4377 | 3 | 2832.228 | 5.360836 | 0.0011129 |
+| construction.date:district | 1582.3870 | 527.4623 | 3 | 1983.796 | 1.908713 | 0.1260932 |
 
 - **RANOVA**
 
@@ -2013,7 +2013,7 @@ mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
     ## Conditional model:
     ##  Groups   Name        Std.Dev. 
     ##  county   (Intercept) 5.816e+00
-    ##  grspan   (Intercept) 1.484e-03
+    ##  grspan   (Intercept) 1.458e-03
     ##  cal_grp  (Intercept) 2.096e-01
     ##  avg_grp  (Intercept) 2.704e+01
     ##  comp_grp (Intercept) 1.454e+02
@@ -2027,7 +2027,7 @@ mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
     ## 
     ## Conditional model:
     ## (Intercept)      calwpct   log.avginc      compstu  
-    ##     594.492       -0.491       24.694       18.011
+    ##     594.493       -0.491       24.694       18.010
 
 ``` r
 
@@ -2045,11 +2045,11 @@ residplot(mod$semer)
 kable(Anova(mod$semer))
 ```
 
-|            |    Chisq |  Df | Pr(\>Chisq) |
-|:-----------|---------:|----:|------------:|
-| calwpct    | 35.44021 |   1 |   0.0000000 |
-| log.avginc | 91.86791 |   1 |   0.0000000 |
-| compstu    |  1.85892 |   1 |   0.1727496 |
+|            |     Chisq |  Df | Pr(\>Chisq) |
+|:-----------|----------:|----:|------------:|
+| calwpct    | 35.440286 |   1 |   0.0000000 |
+| log.avginc | 91.867929 |   1 |   0.0000000 |
+| compstu    |  1.858846 |   1 |   0.1727581 |
 
 - **$`R^2`$**
 
@@ -2655,12 +2655,12 @@ kable(anova(mod$semer))
 
 |               |    Sum Sq |   Mean Sq | NumDF |        DenDF |    F value |   Pr(\>F) |
 |:--------------|----------:|----------:|------:|-------------:|-----------:|----------:|
-| xcoord        | 0.0156795 | 0.0156795 |     1 | 2.470304e+09 |  0.1872197 | 0.6652408 |
-| ycoord        | 0.0000031 | 0.0000031 |     1 | 1.562429e+09 |  0.0000373 | 0.9951299 |
+| xcoord        | 0.0156795 | 0.0156795 |     1 | 2.470299e+09 |  0.1872199 | 0.6652406 |
+| ycoord        | 0.0000031 | 0.0000031 |     1 | 1.562426e+09 |  0.0000373 | 0.9951299 |
 | zcoord        | 0.4661558 | 0.4661558 |     1 | 1.058437e+03 |  5.5661053 | 0.0184923 |
-| xcoord:ycoord | 0.0238179 | 0.0238179 |     1 | 1.185522e+06 |  0.2843956 | 0.5938346 |
-| xcoord:zcoord | 0.3288001 | 0.3288001 |     1 | 9.410342e+02 |  3.9260181 | 0.0478351 |
-| ycoord:zcoord | 2.1794257 | 2.1794257 |     1 | 8.707645e+02 | 26.0233011 | 0.0000004 |
+| xcoord:ycoord | 0.0238179 | 0.0238179 |     1 | 1.185519e+06 |  0.2843958 | 0.5938345 |
+| xcoord:zcoord | 0.3288001 | 0.3288001 |     1 | 9.410342e+02 |  3.9260174 | 0.0478351 |
+| ycoord:zcoord | 2.1794256 | 2.1794256 |     1 | 8.707645e+02 | 26.0232999 | 0.0000004 |
 
 - **RANOVA**
 

@@ -11,8 +11,8 @@ rows are tested together.
 
 ``` r
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
-         weights = c("equal", "proportional", "outer", "cells", "flat"))
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+         weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```
 
 ## Arguments
@@ -46,12 +46,20 @@ pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
 
 - df_method:
 
-  For `lmer` models: the denominator df (see Details).
+  For `lmer` models (`"between-within"` also for `lme` and `gls`): the
+  denominator df (see Details).
 
 - weights:
 
   How the means average over other factors, as in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+
+- vcov:
+
+  Optional covariance of the coefficients, as in
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+  the F statistic is then the Wald F with this covariance, and the
+  denominator df those of the model's own test.
 
 ## Value
 
@@ -71,6 +79,23 @@ The F statistic and its denominator degrees of freedom follow the model:
   and the ANOVA tables of this package; Satterthwaite (the default for
   ML fits): as `lmerTest::contest(joint = TRUE)`; containment: the Wald
   F with the containment df of `modelterm`.
+
+- KR-SAS:
+
+  (`lmer`) as Kenward-Roger, with the observed information of the
+  variance parameters (SAS `DDFM=KR`; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+
+- between-within:
+
+  (`lmer`, `lme`, `gls`) the Wald F with the between-within df of
+  `modelterm` (SAS `DDFM=BETWITHIN`; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+
+- `lme`, `gls` with `df_method = "Satterthwaite"`, `"Kenward-Roger"` or
+  `"KR-SAS"`:
+
+  as for `lmer` (Satterthwaite df of the F test, lmerTest's rule).
 
 - `lme`:
 

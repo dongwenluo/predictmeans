@@ -29,6 +29,7 @@ glmer and glmmTMB."></head><body>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -279,21 +280,21 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`Standard Error of Differences`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.SED  Min.SED Aveg.SED </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9.715030 7.682956 9.160828 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9.715028 7.682958 9.160827 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"For the Same Level of Factor")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            nitro  Variety</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.SED 9.71503 7.682956</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Min.SED  9.71503 7.682956</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Max.SED  9.71503 7.682956</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             nitro  Variety</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.SED 9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Min.SED  9.715028 7.682958</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Max.SED  9.715028 7.682958</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $`Approximated LSD`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Max.LSD  Min.LSD Aveg.LSD </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19.43006 15.36591 18.32166 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19.43006 15.36592 18.32165 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"For the Same Level of Factor")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             nitro  Variety</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.LSD 19.43006 15.36591</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Min.LSD  19.43006 15.36591</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Max.LSD  19.43006 15.36591</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Aveg.LSD 19.43006 15.36592</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Min.LSD  19.43006 15.36592</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Max.LSD  19.43006 15.36592</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -326,15 +327,15 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4527 132.8806         C</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0473         C</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 NA  68.4527 104.8806       A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9527 135.3806        BC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0473         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      Victory   0.2  89.6667 9.10696 NA  71.4527 107.8806        B </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0473         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Note</span>

@@ -63,6 +63,16 @@ or
 (argument `permlist`) for bootstrap p-values of pairwise comparisons or
 contrasts (`p.method` `"bootstrap"` in the `pairs` table).
 
+In a simulation study (500 data sets per case, 5% level;
+`dev/sim-boot.R` in the package sources) the bootstrap corrected the
+liberal Wald chi-square test of a whole-plot factor in a split plot with
+6 blocks (10% to 6-7%, as Kenward-Roger) and kept the level in Poisson
+and binomial GLMMs, also when other terms had effects. Like the
+likelihood-ratio test it relies on the model: with overdispersed counts
+fitted as Poisson it rejected 37% of true null hypotheses, where
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+(Freedman-Lane on the working scale) gave 7%.
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard

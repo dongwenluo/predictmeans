@@ -29,6 +29,7 @@
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -62,8 +63,8 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">Df</span>, <span class="va">permlist</span>,</span>
 <span>                vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
-<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
-<span>                level<span class="op">=</span><span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-SAS"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
+<span>                level<span class="op">=</span><span class="fl">0.05</span>, vcov<span class="op">=</span><span class="cn">NULL</span>, equivalence<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -123,8 +124,11 @@ over them (<code>"equal"</code>, the default, <code>"proportional"</code>, <code
 
 <dt id="arg-df-method">df_method<a class="anchor" aria-label="anchor" href="#arg-df-method"></a></dt>
 <dd><p>Denominator df for <code>lmer</code> models: <code>"auto"</code> (Kenward-Roger for REML fits, Satterthwaite for ML
-fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>; see
-<code><a href="predictmeans.html">predictmeans</a></code>).</p></dd>
+fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>), and
+for <code>lmer</code>, <code>lme</code> and <code>gls</code> models <code>"between-within"</code> (SAS <code>DDFM=BETWITHIN</code>), and
+<code>"KR-SAS"</code> (Kenward-Roger as SAS <code>DDFM=KR</code>); for <code>lme</code> and <code>gls</code> also <code>"Satterthwaite"</code>,
+<code>"Kenward-Roger"</code> and <code>"KR-SAS"</code>;
+see <code><a href="predictmeans.html">predictmeans</a></code>.</p></dd>
 
 
 <dt id="arg-joint">joint<a class="anchor" aria-label="anchor" href="#arg-joint"></a></dt>
@@ -141,6 +145,27 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 default 0.05 gives 95% limits. They are t limits, or with <code>permlist</code> permutation-t limits: estimate +- c SE,
 with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
 <code>adj</code> "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.</p></dd>
+
+
+<dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
+<dd><p>Optional covariance of the coefficients to use instead of the model's. For <code>lm</code>, <code>aov</code>
+and <code>glm</code> models: <code>"HC0"</code>, <code>"HC1"</code>, <code>"HC2"</code> or <code>"HC3"</code> (heteroscedasticity-consistent,
+as <code><a href="https://rdrr.io/pkg/sandwich/man/vcovHC.html" class="external-link">sandwich::vcovHC()</a></code>), or a one-sided formula naming a cluster variable of the data, e.g. <code>~ Block</code>
+(cluster-robust CR1, as <code><a href="https://rdrr.io/pkg/sandwich/man/vcovCL.html" class="external-link">sandwich::vcovCL()</a></code>). For any model: a covariance matrix of the coefficients, or
+a function that returns one from the model (for mixed models e.g. from the <span class="pkg">clubSandwich</span> package). The
+degrees of freedom stay those of the model (the residual df; for <code>lmer</code> Kenward-Roger or Satterthwaite df
+computed from the model), and <code>vcov_adjust</code> is not used. With a <code>permlist</code>, <code>vcov</code> is not used
+(for robust permutation tests see <code>permmodels(robust = TRUE)</code>). The default <code>NULL</code> uses the model's
+covariance.</p></dd>
+
+
+<dt id="arg-equivalence">equivalence<a class="anchor" aria-label="anchor" href="#arg-equivalence"></a></dt>
+<dd><p>Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+contrasts: a positive number \(d\) (equivalence region \(-d\) to \(d\)) or <code>c(lower, upper)</code>, on the
+scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+one-sided p-values; below <code>level</code>, the difference lies within the margins (as emmeans'
+<code>test(..., side = "equivalence")</code>). Not adjusted for multiplicity; with a <code>permlist</code> it is t-based
+(normal-based in <code>contrastmeans</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">

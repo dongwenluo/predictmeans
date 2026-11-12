@@ -27,6 +27,7 @@ each term is tested by permlmer comparing the model with and without it."></head
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
     <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
     <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
@@ -128,8 +129,8 @@ results.</p></dd>
 <span class="r-in"><span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span>, random<span class="op">=</span><span class="op">~</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm0</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               numDF denDF   F-value p-value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)       1    45 245.14299  &lt;.0001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro             3    45  37.68562  &lt;.0001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)       1    45 245.14333  &lt;.0001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> nitro             3    45  37.68561  &lt;.0001</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variety           2    10   1.48534  0.2724</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> nitro:Variety     6    45   0.30282  0.9322</span>
 </code></pre></div>

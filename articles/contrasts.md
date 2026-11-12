@@ -235,6 +235,68 @@ marginaleffects::hypotheses(pmv, hypothesis = sprintf("b%d - b%d = 0", i[1], i[2
 marginaleffects uses normal-based tests; the standard error is the same
 as above.
 
+## Equivalence tests
+
+To show that two treatments do not differ by more than a margin that
+matters in practice, give the margin with `equivalence` (a number `d`
+for the region `-d` to `d`, or `c(lower, upper)`). The `pairs` table
+then has `p.equiv`, the p-value of two one-sided t tests (TOST): below
+`level`, the difference lies within the margin.
+
+``` r
+
+pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE, prtnum = FALSE)
+pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
+#>   level1 level2   estimate std.error    p.equiv
+#> 1      0    0.2 -19.500000  4.435752 0.84211223
+#> 2      0    0.4 -34.833333  4.435752 0.99997388
+#> 3    0.2    0.4 -15.333333  4.435752 0.52978457
+#> 4      0    0.6 -44.000000  4.435752 0.99999998
+#> 5    0.2    0.6 -24.500000  4.435752 0.98116609
+#> 6    0.4    0.6  -9.166667  4.435752 0.09757395
+```
+
+`contrastmeans(..., equivalence = )` does the same for contrasts.
+
+## Robust and clustered standard errors
+
+When the error variance differs between groups and the model assumes it
+is constant, `vcov = "HC3"` (or `"HC0"` to `"HC2"`) gives
+heteroscedasticity-consistent standard errors for `lm`, `aov` and `glm`
+models, and `vcov = ~ Block` cluster-robust ones. They work in
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+[`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+and
+[`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md);
+the df stay the model’s:
+
+``` r
+
+fl <- lm(yield ~ Block + N + Variety, data = Oats)
+pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE, prtnum = FALSE)
+pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
+#>   level1 level2   estimate std.error      p.value
+#> 1      0    0.2 -19.500000  4.864548 1.688713e-04
+#> 2      0    0.4 -34.833333  5.500868 3.207893e-08
+#> 3    0.2    0.4 -15.333333  5.859926 1.117925e-02
+#> 4      0    0.6 -44.000000  5.212147 7.666905e-12
+#> 5    0.2    0.6 -24.500000  5.589782 4.694785e-05
+#> 6    0.4    0.6  -9.166667  6.151535 1.413395e-01
+pmh$settings$vcov
+#> [1] "HC3"
+contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)[[1]]
+#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
+#> [1,]  19.5000     4.3162  4.5179 61        0  10.8693  28.1307
+#> [2,]  15.3333     2.5716  5.9627 61        0  10.1912  20.4755
+#> attr(,"Note")
+#> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001. Standard errors from the covariance given by 'vcov' (CR1, clusters: Block)."
+```
+
+For any model, including mixed models, `vcov` also takes a covariance
+matrix of the coefficients or a function that returns one (e.g. from the
+clubSandwich package).
+
 ## More
 
 - [`vignette("predictmeans", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md):

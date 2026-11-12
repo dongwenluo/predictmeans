@@ -288,7 +288,6 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #>       (Intercept)  construction.date  
 #>         -19.28657            0.06521  
 
-#> Warning: failed to invert Hessian from numDeriv::jacobian(), falling back to internal vcov estimate
 #> Formula:          
 #> areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  
 #>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)
@@ -315,7 +314,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #>                           (Intercept)                      construction.date  
 #>                             -43.32116                                0.07831  
 #>                   districtSrodmiescie                           districtWola  
-#>                             485.88087                              776.89773  
+#>                             485.88087                              776.89772  
 #>                      districtZoliborz  construction.date:districtSrodmiescie  
 #>                             282.67890                               -0.25265  
 #>        construction.date:districtWola     construction.date:districtZoliborz  

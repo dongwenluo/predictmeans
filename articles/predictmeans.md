@@ -149,6 +149,15 @@ rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 #> containment   10.000000
 ```
 
+`df_method = "between-within"` gives SAS’s `DDFM=BETWITHIN` df, and
+`"KR-SAS"` Kenward–Roger as SAS computes it (with the observed
+information; `"Kenward-Roger"` matches pbkrtest and emmeans, and the two
+agree in balanced designs). For `lme` and `gls` models with correlation
+or variance structures, `"Satterthwaite"`, `"Kenward-Roger"` and
+`"KR-SAS"` are available too.
+[`vignette("sas", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/sas.md)
+shows how each matches SAS PROC MIXED.
+
 ## Averaging over other factors
 
 Means of a main effect average over the other factors in the model.
