@@ -251,7 +251,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   # permutation-t limits (simultaneous with a max-|t| adjustment)
   crit <- pm_perm_crit(fam$T, level, family = if (maxt) rep(1, nrow(rK)))
-  out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ses, cm + crit*ses)
+  ci_se <- if (!is.null(fam$se)) fam$se else ses   # robust permlist: HC3 SEs
+  out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ci_se, cm + crit*ci_se)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
   rownames(out.put) <- rownames(ctrmatrix)
   attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",

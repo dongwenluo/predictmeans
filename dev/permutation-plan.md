@@ -778,6 +778,14 @@ value for predictmeans:
     2 SED); `contrastmeans()` gains `lower.CL`/`upper.CL` and `level`.
 12. **Studentised (heteroscedasticity-robust) Freedman–Lane** for lm/glm
     (DiCiccio and Romano 2017), for unequal variances that are not modelled.
+    — **Done** as `permmodels(robust = TRUE)` (`R/perm-robust.R`): HC3 Wald
+    t and F for every test (each a hypothesis matrix L: type I Cholesky rows,
+    type II car's hypotheses, type III the term's columns; reduced model the
+    null space of L), batched over permutations with no refits; glm on the
+    working scale. Pairs and contrasts use robust t and robust-SE limits.
+    Checked: SEs and type III F by hand, type II F equal to
+    `car::Anova(white.adjust = "hc3")`, a coefficient's p-value by hand from
+    given permutations. Simulation: `dev/sim-perm-robust.R`.
 13. **When is `refit = FALSE` safe?** A small study with 30, 60 and 120
     groups; then possibly `refit = "auto"` by the number of groups.
 14. Later: nonparametric combination of dependent tests (several traits,

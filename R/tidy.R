@@ -150,9 +150,11 @@ pm_tidy_parts <- function(e) {
     } else if (perm) {
       rep(NA_real_, length(cm))
     } else stats::qt(1 - lsd_level/2, pdf)
-    pairs$conf.low <- cm - crit*dses
-    pairs$conf.high <- cm + crit*dses
-    pairs$lsd <- crit*dses
+    # a robust permlist (permmodels(robust = TRUE)) studentises with HC3 SEs
+    ci_se <- if (!is.null(pT$se)) pT$se else dses
+    pairs$conf.low <- cm - crit*ci_se
+    pairs$conf.high <- cm + crit*ci_se
+    pairs$lsd <- crit*ci_se
     pairs$p.method <- if (perm) {
       if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else "permutation"
     } else if (adj == "tukey") "tukey" else "t"
@@ -164,8 +166,8 @@ pm_tidy_parts <- function(e) {
       crit_p <- crit
       pre <- if (kind == "log") "ratio" else "odds.ratio"
       pairs[[pre]] <- exp(cm)
-      pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*dses)
-      pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*dses)
+      pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*ci_se)
+      pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*ci_se)
     }
   }
 

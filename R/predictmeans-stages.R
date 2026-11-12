@@ -508,7 +508,7 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
         # (the joint distribution also gives the permutation confidence intervals)
         fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore, joint = TRUE)
         t.p.values <- fam$p
-        perm_T <- fam[c("obs", "T")]
+        perm_T <- fam[intersect(c("obs", "T", "se"), names(fam))]   # se: robust SEs (robust permlist)
 
       } # end of if (is.null(permlist))
 

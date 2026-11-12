@@ -8,7 +8,7 @@
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
 #'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
 #'   fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-#'   refit=TRUE)
+#'   refit=TRUE, robust=FALSE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #'   \code{glmer} or \code{glmmTMB}.
 #' @param nperm The number of permutations. The default is 4999.
@@ -33,6 +33,12 @@
 #'   (the default), so the variance parameters are estimated again each time.
 #'   \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
 #'   often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).
+#' @param robust For \code{lm}, \code{aov} and \code{glm} models with \code{method = "freedman-lane"}: use
+#'   heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics, observed and permuted alike, which keeps
+#'   the Freedman-Lane test valid (in large samples) when the error variances are unequal and the model ignores
+#'   it (DiCiccio and Romano, 2017). The tables then show the robust statistics; pairs and contrasts from the
+#'   result use them too (robust t, and confidence limits from robust standard errors). Type II tests match
+#'   \code{car::Anova(model, type = "II", white.adjust = "hc3")}. The default is \code{FALSE}.
 #' @return
 #' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
 #' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
@@ -87,6 +93,9 @@
 #' result can be given to \code{\link{predictmeans}} and \code{\link{contrastmeans}} as for \code{lm}. For \code{glmer} and
 #' \code{glmmTMB} models only \code{method = "freedman-lane"} is available.
 #' @references
+#' DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for correlation and regression
+#' coefficients. \emph{Journal of the American Statistical Association}, 112, 1211-1220.
+#'
 #' Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial
 #' regression coefficients in a linear model. \emph{Journal of Statistical Computation and Simulation}, 62,
 #' 271-303.
@@ -127,6 +136,8 @@
 #' pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 #' ## ... and for the pairwise comparisons of the cyl means
 #' predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+#' ## Robust (HC3) statistics, for error variances that differ between the cyl groups
+#' permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #' @name permmodels
 NULL
 
@@ -150,7 +161,7 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL) {
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
 					   data=NULL, fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-					   refit=TRUE) {
+					   refit=TRUE, robust=FALSE) {
   
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -161,6 +172,10 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   if (method == "auto") method <- pm_perm_auto_method(model)
   seed <- if (missing(seed)) NULL else seed
   if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
+  if (isTRUE(robust)) {
+    if (method != "freedman-lane") stop("robust = TRUE needs method = \"freedman-lane\".", call. = FALSE)
+    return(invisible(pm_perm_fl_robust(model, nperm, type, exact, seed, prt, perms)))
+  }
   if (method == "freedman-lane") {
     if (class(model)[1] == "aovlist") stop("Plese use model 'lme' instead of 'aov'!")
     return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt, perms, refit, if (is.null(fo)) ncore else 1)))

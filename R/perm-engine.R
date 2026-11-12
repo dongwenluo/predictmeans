@@ -169,6 +169,13 @@ pm_perm_fl_object <- function(X, z, nperm, exact, start, coef_names, idx = NULL)
 ## p-value tests that comparison alone, whatever the other means are.
 pm_perm_fl_t <- function(perm, L, model = NULL, ncore = 1) {
   if (identical(perm$scheme, "freedman-lane-refit")) return(pm_perm_fl_refit_t(perm, L, model, ncore))
+  if (isTRUE(perm$robust)) {
+    L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
+    if (ncol(L) != ncol(perm$X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
+      stop("'permlist' was made for a different model.", call. = FALSE)
+    }
+    return(pm_perm_fl_t_robust(perm, L))
+  }
   X <- perm$X
   z <- perm$z
   L <- matrix(as.numeric(as.matrix(L)), ncol = ncol(as.matrix(L)))
@@ -336,6 +343,7 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
   if (ncol(L) != ncol(X) || (!is.null(model) && !identical(pm_perm_coef_names(model), perm$coef_names))) {
     stop("'permlist' was made for a different model.", call. = FALSE)
   }
+  if (isTRUE(perm$robust)) return(pm_perm_fl_T_robust(perm, L))
   n <- nrow(X)
   qrX <- qr(X)
   df_res <- n - qrX$rank
@@ -395,4 +403,15 @@ pm_perm_crit <- function(T, alpha, family = NULL) {
     }
   }
   out
+}
+
+## Printing a permutation object (the 'perm' component of permmodels()):
+## what it holds, not the random number state.
+print.pm_perm <- function(x, ...) {
+  scheme <- c("freedman-lane" = "Freedman-Lane", "freedman-lane-refit" = "Freedman-Lane with refits")[x$scheme]
+  if (is.na(scheme)) scheme <- x$scheme
+  cat("Permutation object: ", scheme, if (isTRUE(x$robust)) " (robust HC3 statistics)", ", ", x$nperm,
+      " permutations", if (!is.null(x$idx)) " (given)", ", ", length(x$coef_names), " coefficients.\n", sep = "")
+  cat("Give the whole result of permmodels() to predictmeans() or contrastmeans() as 'permlist'.\n")
+  invisible(x)
 }

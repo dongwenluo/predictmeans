@@ -204,6 +204,16 @@
   p-value of the joint Wald F from the same permutations. The result gains
   a third component, `Joint F test of the contrasts`.
 
+* `permmodels(robust = TRUE)` for `lm`, `aov` and `glm` models:
+  Freedman-Lane permutations of heteroscedasticity-robust statistics (HC3
+  sandwich t and Wald F, observed and permuted alike), which stay valid in
+  large samples when the error variances are unequal and the model ignores
+  it (DiCiccio and Romano 2017). Type II F values equal
+  `car::Anova(white.adjust = "hc3")`. Pairs and contrasts from the result
+  use the robust t, and their confidence limits use robust standard errors.
+  The `perm` component of `permmodels()` results now prints a one-line
+  summary instead of its contents.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

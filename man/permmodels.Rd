@@ -7,7 +7,7 @@
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
   fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-  refit=TRUE)
+  refit=TRUE, robust=FALSE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
@@ -46,6 +46,13 @@ permutations the design allows.}
 (the default), so the variance parameters are estimated again each time.
 \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
 often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).}
+
+\item{robust}{For \code{lm}, \code{aov} and \code{glm} models with \code{method = "freedman-lane"}: use
+heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics, observed and permuted alike, which keeps
+the Freedman-Lane test valid (in large samples) when the error variances are unequal and the model ignores
+it (DiCiccio and Romano, 2017). The tables then show the robust statistics; pairs and contrasts from the
+result use them too (robust t, and confidence limits from robust standard errors). Type II tests match
+\code{car::Anova(model, type = "II", white.adjust = "hc3")}. The default is \code{FALSE}.}
 }
 \value{
 The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
@@ -139,8 +146,13 @@ fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
 pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 ## ... and for the pairwise comparisons of the cyl means
 predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+## Robust (HC3) statistics, for error variances that differ between the cyl groups
+permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 }
 \references{
+DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests for correlation and regression
+coefficients. \emph{Journal of the American Statistical Association}, 112, 1211-1220.
+
 Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial
 regression coefficients in a linear model. \emph{Journal of Statistical Computation and Simulation}, 62,
 271-303.
