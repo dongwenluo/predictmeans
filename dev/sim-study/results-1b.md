@@ -7,10 +7,18 @@ Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-
 
 | cell | method | per pair (mean) | per pair (max) | FWER Holm | FWER max-t / Tukey | power (mean) |
 |---|---|---|---|---|---|---|
+| pr_gls_ar1 | joint | 0.039 | 0.046 | 0.032 | 0.043 |  |
+| pr_gls_ar1 | flpair | 0.061 | 0.064 | 0.054 |  |  |
+| pr_gls_ar1 | flterm | 0.062 | 0.067 | 0.053 | 0.072 |  |
+| pr_gls_ar1 | param | 0.059 | 0.062 | 0.060 | 0.067 |  |
 | pr_lev_global | joint | 0.057 | 0.061 | 0.061 | 0.067 |  |
 | pr_lev_global | flpair | 0.054 | 0.060 | 0.045 |  |  |
 | pr_lev_global | flterm | 0.053 | 0.058 | 0.044 | 0.056 |  |
 | pr_lev_global | param | 0.052 | 0.055 | 0.045 | 0.051 |  |
+| pr_lme_varident | joint | 0.059 | 0.067 | 0.034 | 0.065 |  |
+| pr_lme_varident | flpair | 0.069 | 0.075 | 0.053 |  |  |
+| pr_lme_varident | flterm | 0.069 | 0.078 | 0.054 | 0.086 |  |
+| pr_lme_varident | param | 0.065 | 0.073 | 0.067 | 0.079 |  |
 | pr_rcbd_global | joint | 0.054 | 0.068 | 0.028 | 0.058 |  |
 | pr_rcbd_global | flpair | 0.058 | 0.071 | 0.033 |  |  |
 | pr_rcbd_global | flterm | 0.057 | 0.072 | 0.037 | 0.065 |  |
