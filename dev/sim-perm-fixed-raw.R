@@ -8,7 +8,7 @@
 ## independent set of permutations).
 ## Run: Rscript dev/sim-perm-fixed-raw.R <cells> <cores>
 args <- commandArgs(TRUE)
-cells <- strsplit(args[1], ",")[[1]]
+fix_cells <- strsplit(args[1], ",")[[1]]
 cores <- as.integer(args[2])
 raw_only <- TRUE
 src <- readLines("dev/sim-perm-fixed.R")
@@ -16,7 +16,7 @@ src[grep("^cells <- ", src)] <- "cells <- character()"
 src <- src[!grepl("^run_cells\\(|^cat\\(\"SIM DONE", src)]
 commandArgs <- function(...) c("500", "199", "none", "1")
 eval(parse(text = src))
-for (cell in cells) {
+for (cell in fix_cells) {
   f <- file.path("dev/sim-perm-fixed", paste0(cell, ".rds"))
   x <- readRDS(f)
   if ("flr_all" %in% colnames(x$p)) { cat("CELL", cell, "already fixed\n"); next }
