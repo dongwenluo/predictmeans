@@ -59,8 +59,9 @@
 #'  \item{preddf}{The data of the predictor variables used in model fitting.}
 #'  \item{refgrid}{The reference grid used to build \code{K}: a list with the grid data (\code{grid}), the sparse
 #'  weight matrix \code{W} that averages grid rows into rows of \code{K}, and the rows of \code{fctnames}
-#'  (\code{target}). Any other basis evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged
-#'  in the same way as \code{W \%*\% basis}.}
+#'  (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
+#'  evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
+#'  \code{W \%*\% basis}.}
 #' @references
 #' Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 #' 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347.
@@ -358,5 +359,6 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   }
   rownames(fctnames) <- NULL
 
+  rg$basis <- basis              # the basis of the grid rows (for means averaged on the response scale)
   return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data))
 }

@@ -75,7 +75,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
-`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `nperm`, `covariates`,
+`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `bias_adjust` (the SD
+used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `nperm`, `covariates`,
 `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
@@ -167,6 +168,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
 - `vcov = "HC3"` (or `"HC0"`-`"HC2"`, `~ cluster`) gives robust SEs for lm/glm in `predictmeans()`,
   `contrastmeans()`, `pm_slopes()` and `pm_joint()`; a matrix or a function works for any model (e.g.
   clubSandwich for mixed models). The df stay the model's.
+- Back-transformed means (`response` columns) are those of a unit with random effects zero, averaged on
+  the link scale. `bias_adjust = TRUE` (with `sigma`) gives population means (emmeans' `bias.adjust`);
+  `average = "response"` averages the back-transformed cells (emmeans' `regrid()`).
 - `permstats()` gives standardised effect sizes and `param.size`, the rejection rate of the
   parametric test in the permuted data sets (near `level` when the parametric test suits
   the data). `permcombine()` combines tests of several responses made with the same

@@ -289,6 +289,16 @@
   `contrastmeans(equivalence =)` adds it to the contrast table. The margins
   are on the scale of the comparisons and are recorded in `settings`.
 
+* Back-transformed means for GLMMs and transformed responses:
+  `predictmeans(bias_adjust = TRUE)` gives h(eta) + sigma^2 h''(eta)/2,
+  the mean over the population of random effects (default sigma: the SD of
+  the random intercepts, plus the residual SD for a transformed response),
+  and `average = "response"` back-transforms the cells of the reference
+  grid before averaging them (the mean of the response, e.g. a mean count),
+  both with delta-method SEs; equal to emmeans' `bias.adjust` and
+  `regrid()`. They change only the `response` columns of `means`; the
+  settings record them (`bias_adjust`, `average`).
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

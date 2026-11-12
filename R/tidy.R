@@ -64,6 +64,39 @@ pm_tidy_parts <- function(e) {
     means$response.conf.low <- pmin(lo, hi)
     means$response.conf.high <- pmax(lo, hi)
   }
+  # bias adjustment and averaging on the response scale (R/response-scale.R)
+  ba <- isTRUE(g("bias_adjust"))
+  avg <- if (is.null(g("average"))) "link" else g("average")
+  ba_sigma <- NA_real_
+  if (ba || identical(avg, "response")) {
+    if (is.null(means$response)) {
+      warning("'bias_adjust' and 'average = \"response\"' apply to back-transformed means (a non-identity link ",
+              "or 'trans'); ignored.", call. = FALSE)
+      avg <- "link"
+    } else {
+      bf <- pm_back_funs(back, trans, model, isTRUE(g("link_scale")))
+      s2 <- if (!ba) 0 else if (!is.null(g("sigma"))) g("sigma")^2 else pm_bias_sigma2(model, isTRUE(g("link_scale")))
+      if (ba) ba_sigma <- sqrt(s2)
+      hb <- function(x) bf$h(x) + s2/2 * bf$d2(x)
+      db <- function(x) bf$d1(x) + s2/2 * bf$d3(x)
+      if (identical(avg, "response")) {
+        mp_ <- g("mp")
+        ra <- pm_response_average(g("ctr.matrix")$refgrid, match(rownames(K), rownames(KK)), mp_$coef, mp_$vcov,
+                                  hb, db)
+        means$response <- ra$mu
+        means$response.std.error <- ra$se
+        means$response.conf.low <- ra$mu - crit*ra$se
+        means$response.conf.high <- ra$mu + crit*ra$se
+      } else {
+        means$response <- hb(est)
+        means$response.std.error <- abs(db(est))*se
+        lo <- hb(means$conf.low)
+        hi <- hb(means$conf.high)
+        means$response.conf.low <- pmin(lo, hi)
+        means$response.conf.high <- pmax(lo, hi)
+      }
+    }
+  }
 
   key <- function(df) do.call(paste, c(lapply(df[vars], as.character), sep = "\r"))
   key_m <- key(means)
@@ -203,6 +236,8 @@ pm_tidy_parts <- function(e) {
     vcov_adjust = isTRUE(g("vcov_adjust")),
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),
+    bias_adjust = ba_sigma,
+    average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     model_class = class(model)[1],

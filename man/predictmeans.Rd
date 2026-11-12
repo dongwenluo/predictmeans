@@ -12,7 +12,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
-  equivalence=NULL)
+  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -178,6 +178,22 @@ scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-
 one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
 \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 (normal-based in \code{contrastmeans}).}
+
+\item{bias_adjust}{Logical: adjust the back-transformed means (non-identity link or \code{trans}) for the random
+effects (and, for a transformed response of a linear model, the residual error): \eqn{h(\eta) + \sigma^2 h''(\eta)/2}
+instead of \eqn{h(\eta)}, the second-order approximation of the mean over the population (as emmeans'
+\code{bias.adjust}); the response-scale SEs follow by the delta method. Without it (the default) the
+back-transformed mean is that of a unit with all random effects zero.}
+
+\item{sigma}{With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
+random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a
+transformed response of a linear (mixed) model; models with random slopes need it given.}
+
+\item{average}{How means average over the other factors when they are back-transformed: \code{"link"} (the default;
+average on the link scale, then back-transform) or \code{"response"} (back-transform each cell of the reference
+grid, then average with the same weights, as emmeans' \code{regrid()}: the mean of the response, e.g. a mean
+count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
+stay on the link scale.}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}
