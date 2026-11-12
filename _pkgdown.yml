@@ -61,6 +61,8 @@ reference:
   - permlmer
   - permanova.lmer
   - permindex
+  - permstats
+  - permcombine
   - bootmodels
 - title: Semiparametric regression
   contents:
