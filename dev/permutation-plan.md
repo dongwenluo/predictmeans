@@ -634,12 +634,25 @@ update; R CMD check at the end of each.
    working scale (not separable from the working residual; `bootmodels()`).
    Cluster-label permutation not added (restricted permutations via
    `perms` cover it).
-6. **Mixed-model fixed effects:** FL whitened (refit and V-fixed) for
-   lme/gls/lmer; `permanova.lmer()` on the engine; simulation; default.
-7. **GLM fixed effects:** sign-flip effective score (own code, no new
-   dependency), FL on the working scale, Potter; simulation; default.
-8. **GLMM fixed effects:** FL working scale (V fixed; weighted-LMM refits),
-   route B, design-based, per-term parametric bootstrap; simulation; default.
+6. **Mixed-model fixed effects** — **done** (`R/perm-fl.R`):
+   `permmodels(method = "freedman-lane")` for lmer, lme, gls with V fixed at
+   the fit (whitened by the symmetric root, then the batched `lm` code; no
+   refits; statistics = the model's Wald F and t, unadjusted covariance;
+   type II/III car-style, type I sequential in the GLS metric). The
+   refit variant (V re-estimated per permutation) was 4.6–5.3% in §3.3;
+   the V-fixed variant is checked by study 1b (pairs: `flpair`, `flterm`).
+   Found and fixed: raw `permmodels()` for lmer, type I, compared lmerTest's
+   type III observed F with lme4's sequential permuted F; now both are
+   lmerTest's type I (Wald with Doolittle/Cholesky hypotheses of X'X).
+   `permanova.lmer()` unchanged (it calls `permlmer()`, so it now also
+   accepts nothing new; GLMM terms via `permmodels()` or `permlmer()`).
+7–8. **GLM and GLMM fixed effects** — **done** in the same code: the
+   working-scale model of `pm_working()`, whitened with V = AA' +
+   diag(working variances), then batched Freedman–Lane; the dispersion is
+   estimated from the working residuals (robust to overdispersion: pilot
+   7.7–10% against LRT 35%). Sign-flip score tests not added (not needed
+   if study 1b part 2 confirms the level; then for a later version).
+   `permmodels()` raw is refused for glmer/glmmTMB (Freedman–Lane only).
 9. **`method = "auto"`**, documentation (help pages, the resampling
    vignette with a "which test for which model" table), NEWS, R CMD check, PR.
 

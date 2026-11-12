@@ -312,3 +312,26 @@ pm_anova_glm_III <- function(model, test = c("LR", "F")) {
                   c("Analysis of Deviance Table (Type III tests)\n", resp,
                     "Error estimate based on Pearson residuals \n"))
 }
+
+## Type I (sequential) hypotheses of lmerTest: for each term, the rows of the
+## Doolittle factor of X'X in the term's columns, i.e. the rows of the
+## Cholesky factor R of X'X (Doolittle's t(L) is R with rows scaled, which
+## does not change a Wald test). Returns a list of L matrices named by term.
+pm_type1_L <- function(X, labels) {
+  asgn <- attr(X, "assign")
+  R <- chol(crossprod(as.matrix(X)))
+  out <- lapply(seq_along(labels), function(j) R[asgn == j, , drop = FALSE])
+  names(out) <- labels
+  out[vapply(out, nrow, 1L) > 0]
+}
+
+## Wald F of each hypothesis L b = 0 (q = rows of L), with covariance V.
+## Returns a one-column matrix "F value" with a row per hypothesis.
+pm_type1_F <- function(Ls, b, V) {
+  V <- as.matrix(V)
+  Fv <- vapply(Ls, function(L) {
+    d <- L %*% b
+    as.numeric(crossprod(d, solve(L %*% V %*% t(L), d))) / nrow(L)
+  }, numeric(1))
+  matrix(Fv, ncol = 1, dimnames = list(names(Ls), "F value"))
+}

@@ -74,8 +74,8 @@ test_that("Freedman-Lane: large effects, aov, seeds and unsupported models", {
   expect_null(ra$COEFFICENTS)
   expect_equal(as.numeric(ra$ANOVA["x", "Perm_p_value"]), 1 / 50)
 
-  expect_error(permmodels(glm(y ~ A, data = d), nperm = 9, method = "freedman-lane"),
-               "lm and aov")
+  # glm models are permuted on the working scale (test-perm-fl-classes.R)
+  expect_s3_class(permmodels(glm(y ~ A, data = d), nperm = 9, prt = FALSE, method = "freedman-lane")$perm, "pm_perm")
   fl2 <- lm(cbind(y, x) ~ A, data = d)
   expect_error(permmodels(fl2, nperm = 9, method = "freedman-lane"), "single response")
 })

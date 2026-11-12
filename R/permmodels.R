@@ -18,8 +18,7 @@
 #' @param prt A logical variable to indicate whether or not to print output on the screen. The default is TRUE.
 #' @param ncore Number of core for parallel computing, the default value is 3.
 #' @param seed Specify a random number generator seed, for reproducible results.
-#' @param method How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"} (\code{lm} and
-#'   \code{aov} models only). See Details.
+#' @param method How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"}. See Details.
 #' @param perms Optional matrix of permutations to use instead of free ones, one row per observation used in the
 #'   model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
 #'   whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
@@ -49,7 +48,20 @@
 #' For mixed models with a covariate with extreme values related to the tested term, the same study found
 #' the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Satterthwaite F test kept the level
 #' (4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (e.g. \code{anova()} of an \pkg{lmerTest} fit, or
-#' \code{\link{pm_joint}}).
+#' \code{\link{pm_joint}}), or \code{method = "freedman-lane"} (4.6\%).
+#'
+#' Since predictmeans 2.0, \code{method = "freedman-lane"} also handles \code{lmer}, \code{lme} and \code{gls} models,
+#' and \code{glm}, \code{glmer} and \code{glmmTMB} models. For mixed models the covariance of the data, V, is fixed at
+#' the fitted model: the data and the design are decorrelated with the symmetric square root of V, so least squares
+#' on them gives the model's estimates and its Wald t and F statistics (unadjusted covariance), and Freedman-Lane
+#' permutations are done as for \code{lm}, without refits. GLMs and GLMMs are first linearised at the fit (working
+#' response and working variances on the link scale, as in \code{\link{permlmer}}); their t and F statistics are Wald
+#' statistics on the working scale with the dispersion estimated from the working residuals, so overdispersion
+#' affects them much less than likelihood-ratio tests (in a pilot study with overdispersed counts: 8-10\% against 35\%
+#' at the 5\% level). For these classes the tables show these statistics and the permutation
+#' p-values; type I tests are sequential in the GLS metric (as \code{anova()} of \pkg{lme4} and \pkg{nlme}). The
+#' result can be given to \code{\link{predictmeans}} and \code{\link{contrastmeans}} as for \code{lm}. For \code{glmer} and
+#' \code{glmmTMB} models only \code{method = "freedman-lane"} is available.
 #' @references
 #' Anderson, M. J. and Legendre, P. (1999). An empirical comparison of permutation methods for tests of partial
 #' regression coefficients in a linear model. \emph{Journal of Statistical Computation and Simulation}, 62,
@@ -80,6 +92,10 @@
 #' contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 #' }
 #'
+#' ## Freedman-Lane permutations for a mixed model (no refits: fast)
+#' fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
+#' permmodels(fm3, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#'
 #' ## Freedman-Lane permutations for a linear model with a covariate
 #' mtcars$cyl <- factor(mtcars$cyl)
 #' fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
@@ -93,9 +109,12 @@ NULL
 ## (for permlist), the ANOVA table and the t table. For lmer refits the t
 ## values are computed from that covariance (as summary() does) instead of
 ## calling summary(), which would compute it again.
-pm_perm_stats <- function(rfitmodel, type, test.statistic) {
+pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL) {
   mp <- mymodelparm(rfitmodel, df = 0)[1:2]
-  if (type %in% c("I", "1")) aT <- anova(rfitmodel) else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
+  if (type %in% c("I", "1")) {
+    # lmer: lmerTest's type I F (Wald tests of the hypotheses Ls), as in the observed table
+    aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else anova(rfitmodel)
+  } else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
   if (inherits(rfitmodel, "lmerMod")) {
     se <- sqrt(diag(mp$vcov))
     coefT <- cbind("Estimate" = mp$coef, "Std. Error" = se, "t value" = mp$coef/se)
@@ -116,16 +135,17 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   seed <- if (missing(seed)) NULL else seed
   if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
   if (method == "freedman-lane") {
-    if (!inherits(model, "lm") || inherits(model, "glm")) {
-      stop("method = \"freedman-lane\" is available for lm and aov models.", call. = FALSE)
-    }
+    if (class(model)[1] == "aovlist") stop("Plese use model 'lme' instead of 'aov'!")
     return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt, perms)))
   }
   if (inherits(model, "glm") && !(test.statistic %in% c("LR", "Wald", "F"))) test.statistic <- "LR"
   if (any(inherits(model, "gls"), inherits(model, "lme"))) test.statistic <- "Chisq"
   if (type %in% c("I", "1")) test.statistic <- "F"	  
   if (class(model)[1]=="aovlist") stop("Plese use model 'lme' instead of 'aov'!")
-  if (inherits(model, "glmerMod")) stop("This function is not applied to 'glmer' yet!")
+  if (inherits(model, c("glmerMod", "glmmTMB"))) {
+    stop("For glmer and glmmTMB models use method = \"freedman-lane\" (permutations on the working scale).",
+         call. = FALSE)
+  }
   # 'fo': the model formula is an object; refit in this session only
   if (!is.null(fo)) ncore <- 1
 
@@ -210,10 +230,11 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     errors <- getME(model, "y") - xbeta
     wterrors <- W$solve(errors)
     idx <- pm_perm_source(length(errors), seed, perms)(nperm)
+    Ls <- if (type %in% c("I", "1")) pm_type1_L(getME(model, "X"), attr(terms(model), "term.labels")) else NULL
     one <- function(k) {
       r <- idx[, k]
       rfitmodel <- refit(model, xbeta[r] + W$mult(wterrors[r]))
-      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test.statistic)
+      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test.statistic, Ls)
     }
     packages <- "lme4"
   }
@@ -239,7 +260,8 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   }else COEFFICENTS <- NULL
   
   if (type %in% c("I", "1")) {
-    key_anova <- anova(model)
+    # (lmerTest's anova() gives type III unless asked for type I)
+    key_anova <- if (inherits(model, "lmerModLmerTest")) anova(model, type = "I") else anova(model)
     stats_value <- colnames(key_anova)[grep("F.value",colnames(key_anova))]
     if (class(model)[1] %in% c("glm")) stats_value <- "Deviance"
   }else{
@@ -265,126 +287,3 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   if (failures > 0) attr(out, "failures") <- failures
   return(invisible(out))
 } 
-
-## Freedman-Lane permutation tests for lm/aov models (method = "freedman-lane").
-## For each test (a term of the ANOVA table, or one coefficient), fit the
-## reduced model without it (for type I and II tests also without the terms
-## that contain it), permute the reduced model's residuals, add them back to
-## its fitted values and recompute the statistic. Weighted fits are handled on
-## the sqrt(weights) scale. The statistics come from QR projections of whole
-## blocks of permuted responses, so no model is refitted. The same
-## permutations are used for every test. Returns the tables of permmodels()
-## with permlist = NULL, and 'perm', a permutation object with which
-## predictmeans() and contrastmeans() test pairs and contrasts by
-## Freedman-Lane permutations (pm_perm_fl_t()).
-pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL) {
-  mf <- stats::model.frame(model)
-  y <- stats::model.response(mf)
-  if (!is.null(dim(y))) stop("method = \"freedman-lane\" needs a single response.", call. = FALSE)
-  X <- stats::model.matrix(model)
-  asgn <- attr(X, "assign")
-  b <- stats::coef(model)
-  ok <- !is.na(b)
-  X <- X[, ok, drop = FALSE]
-  asgn <- asgn[ok]
-  off <- stats::model.offset(mf)
-  z <- if (is.null(off)) y else y - off
-  w <- stats::weights(model)
-  if (!is.null(w)) {
-    keep <- w > 0
-    X <- X[keep, , drop = FALSE] * sqrt(w[keep])
-    z <- z[keep] * sqrt(w[keep])
-  }
-  n <- nrow(X)
-  df_res <- n - ncol(X)
-  if (df_res < 1) stop("residual df = 0", call. = FALSE)
-
-  Terms <- stats::terms(model)
-  labs <- attr(Terms, "term.labels")
-  fac <- attr(Terms, "factors")
-  all_cols <- seq_len(ncol(X))
-  cols_of <- function(terms) which(asgn %in% terms)
-  qr_cache <- list()
-  get_qr <- function(cols) {
-    key <- paste(cols, collapse = ",")
-    if (is.null(qr_cache[[key]])) qr_cache[[key]] <<- qr(X[, cols, drop = FALSE])
-    qr_cache[[key]]
-  }
-  rss <- function(cols, Y) {
-    if (!length(cols)) return(colSums(Y^2))
-    colSums(qr.resid(get_qr(cols), Y)^2)
-  }
-  rank_of <- function(cols) if (length(cols)) get_qr(cols)$rank else 0L
-
-  ## one test: columns of the reduced model (red) and the two nested models
-  ## whose difference in RSS is the test's sum of squares (A within B)
-  tests <- list()
-  for (j in seq_along(labs)) {
-    if (!any(asgn == j)) next
-    rel <- pm_relatives(labs[j], labs, fac)
-    red <- setdiff(all_cols, cols_of(c(j, rel)))
-    AB <- switch(type,
-      I = , "1" = list(cols_of(0:(j - 1)), cols_of(0:j)),
-      II = , "2" = list(red, setdiff(all_cols, cols_of(rel))),
-      list(setdiff(all_cols, cols_of(j)), all_cols))
-    if (type %in% c("III", "3")) red <- AB[[1]]
-    tests[[labs[j]]] <- list(red = red, A = AB[[1]], B = AB[[2]])
-  }
-  for (k in all_cols) {
-    if (colnames(X)[k] == "(Intercept)") next
-    tests[[paste0("coef:", colnames(X)[k])]] <- list(red = setdiff(all_cols, k), A = setdiff(all_cols, k), B = all_cols)
-  }
-  stat <- function(tst, Y) {
-    dfk <- rank_of(tst$B) - rank_of(tst$A)
-    rB <- rss(tst$B, Y)
-    rF <- if (length(tst$B) == length(all_cols)) rB else rss(all_cols, Y)
-    ((rss(tst$A, Y) - rB) / dfk) / (rF / df_res)
-  }
-  for (k in names(tests)) {
-    r <- tests[[k]]$red
-    f0 <- if (length(r)) qr.fitted(get_qr(r), z) else rep(0, n)
-    tests[[k]]$f0 <- f0
-    tests[[k]]$e0 <- z - f0
-    tests[[k]]$obs <- round(stat(tests[[k]], matrix(z)), 6)
-    tests[[k]]$count <- 0
-  }
-
-  perms <- pm_perm_source(n, seed, perms)
-  chunk <- max(1L, min(nperm, floor(2e6 / n)))
-  done <- 0L
-  while (done < nperm) {
-    m <- min(chunk, nperm - done)
-    idx <- perms(m)
-    for (k in names(tests)) {
-      tk <- tests[[k]]
-      Y <- tk$f0 + matrix(tk$e0[idx], n)
-      tests[[k]]$count <- tk$count + sum(round(stat(tk, Y), 6) >= tk$obs)
-    }
-    done <- done + m
-  }
-  pval <- vapply(tests, function(tk) (tk$count + !exact) / (nperm + !exact), numeric(1))
-
-  COEF <- NULL
-  if (!inherits(model, "aov")) {        # as with method = "raw"
-    ctab <- stats::coef(summary(model))
-    COEF <- round(cbind(ctab, Perm_p_value = unname(pval[paste0("coef:", rownames(ctab))])), 4)
-  }
-  aT <- if (type %in% c("I", "1")) stats::anova(model) else pm_anova(model, type = type, test.statistic = "F")
-  ANOVA <- round(cbind(aT, Perm_p_value = unname(pval[rownames(aT)])), 4)
-  attr(ANOVA, "heading") <- attr(aT, "heading")
-  ANOVA[is.na(ANOVA)] <- ""
-  if (prt) {
-    if (!is.null(COEF)) {
-      cat("\nCoefficients of (fixed) effects:\n")
-      print(COEF)
-      cat("\nNote: Perm_p_value of t test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n")
-    }
-    cat("\nANOVA:\n")
-    if (!is.null(attr(ANOVA, "heading"))) cat(paste(attr(ANOVA, "heading"), "\n", sep = ""))
-    print(ANOVA)
-    cat("\nNote: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
-  }
-  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA,
-       perm = pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), pm_perm_coef_names(model),
-                                attr(perms, "matrix")))
-}

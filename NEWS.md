@@ -147,6 +147,18 @@
   the help page recommends the Kenward-Roger or Satterthwaite F test: the
   raw scheme was slightly liberal there (6.3%), the F test kept 5%.
 
+* **`permmodels(method = "freedman-lane")` for mixed models, GLMs and
+  GLMMs** (`lmer`, `lme`, `gls`, `glm`, `glmer`, `glmmTMB`). Mixed models:
+  the covariance of the data is fixed at the fit, the data and design are
+  decorrelated with its symmetric square root, and the Freedman-Lane
+  permutations are done as for `lm`, without refits (the statistics are
+  the model's Wald t and F, unadjusted covariance). GLMs and GLMMs: the same
+  on the working (link) scale, with the dispersion estimated from the
+  working residuals. Terms (types I, II, III), coefficients, and pairs and
+  contrasts in `predictmeans()`/`contrastmeans()` all use the same
+  permutations. `glmer` and `glmmTMB` models can now be given to
+  `permmodels()` (Freedman-Lane only).
+
 * **`permlmer()` tests GLMMs** (`glmer` or `glmmTMB` models; also as
   `permglmer()` and `permglmmTMB()`), random effects and fixed effects. By
   default counts and binomial data with several trials are permuted on the
@@ -255,6 +267,14 @@
   adjusted for a spatial smooth.
 
 ## Bug fixes
+
+* `permmodels()` for `lmer` models, type I: the observed table was
+  lmerTest's type III table (its `anova()` default) while the permuted
+  statistics were sequential F statistics from lme4, so in unbalanced data
+  the p-values compared different statistics (e.g. F 3.64 against 3.99 for
+  the same data). Now the table is lmerTest's type I table and the permuted
+  refits compute the same type I F (Wald tests of the same hypotheses).
+  Balanced data are unchanged.
 
 * `R2_glmm()` (and `R2_model()`) for `glmmTMB` models with families
   `nbinom1`, `nbinom2` and `beta` used the wrong observation-level variance

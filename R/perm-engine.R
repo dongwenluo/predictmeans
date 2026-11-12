@@ -208,9 +208,9 @@ pm_perm_fl_t <- function(perm, L, model = NULL) {
   p
 }
 
-## Names of the non-aliased coefficients of an lm/aov model.
+## Names of the non-aliased fixed-effect coefficients of a model.
 pm_perm_coef_names <- function(model) {
-  b <- stats::coef(model)
+  b <- pm_fixef(model)
   names(b)[!is.na(b)]
 }
 

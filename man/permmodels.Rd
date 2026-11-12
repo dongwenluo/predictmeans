@@ -30,8 +30,7 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 
 \item{seed}{Specify a random number generator seed, for reproducible results.}
 
-\item{method}{How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"} (\code{lm} and
-\code{aov} models only). See Details.}
+\item{method}{How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"}. See Details.}
 
 \item{perms}{Optional matrix of permutations to use instead of free ones, one row per observation used in the
 model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
@@ -68,7 +67,20 @@ the same). In other designs the two methods agreed.
 For mixed models with a covariate with extreme values related to the tested term, the same study found
 the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Satterthwaite F test kept the level
 (4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (e.g. \code{anova()} of an \pkg{lmerTest} fit, or
-\code{\link{pm_joint}}).
+\code{\link{pm_joint}}), or \code{method = "freedman-lane"} (4.6\%).
+
+Since predictmeans 2.0, \code{method = "freedman-lane"} also handles \code{lmer}, \code{lme} and \code{gls} models,
+and \code{glm}, \code{glmer} and \code{glmmTMB} models. For mixed models the covariance of the data, V, is fixed at
+the fitted model: the data and the design are decorrelated with the symmetric square root of V, so least squares
+on them gives the model's estimates and its Wald t and F statistics (unadjusted covariance), and Freedman-Lane
+permutations are done as for \code{lm}, without refits. GLMs and GLMMs are first linearised at the fit (working
+response and working variances on the link scale, as in \code{\link{permlmer}}); their t and F statistics are Wald
+statistics on the working scale with the dispersion estimated from the working residuals, so overdispersion
+affects them much less than likelihood-ratio tests (in a pilot study with overdispersed counts: 8-10\% against 35\%
+at the 5\% level). For these classes the tables show these statistics and the permutation
+p-values; type I tests are sequential in the GLS metric (as \code{anova()} of \pkg{lme4} and \pkg{nlme}). The
+result can be given to \code{\link{predictmeans}} and \code{\link{contrastmeans}} as for \code{lm}. For \code{glmer} and
+\code{glmmTMB} models only \code{method = "freedman-lane"} is available.
 }
 \examples{
 library(predictmeans)
@@ -90,6 +102,10 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 }
+
+## Freedman-Lane permutations for a mixed model (no refits: fast)
+fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
+permmodels(fm3, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 
 ## Freedman-Lane permutations for a linear model with a covariate
 mtcars$cyl <- factor(mtcars$cyl)
