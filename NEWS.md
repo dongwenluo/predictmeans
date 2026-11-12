@@ -257,6 +257,15 @@
   `vcov_adjust = TRUE`. `pm_slopes()` with containment df now also uses the
   unadjusted covariance by default, as `predictmeans()` does.
 
+* `df_method = "KR-SAS"`: Kenward-Roger as SAS PROC MIXED `DDFM=KR`
+  computes it, with the observed information of the variance parameters
+  (computed in closed form) where `"Kenward-Roger"` (pbkrtest, emmeans)
+  uses the expected information. Same results in balanced designs; with one
+  plot missing in the split plot of the SAS reference run, "KR-SAS"
+  reproduces SAS's df and SEs (e.g. 9.79 and 31.3, where "Kenward-Roger"
+  gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
+  `"Satterthwaite"`, every df of that SAS run now agrees with SAS.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

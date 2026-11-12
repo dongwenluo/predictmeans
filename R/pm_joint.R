@@ -11,6 +11,8 @@
 #' \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997), as
 #'   \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
 #'   \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
+#' \item{KR-SAS}{(\code{lmer}) as Kenward-Roger, with the observed information of the variance parameters (SAS
+#'   \code{DDFM=KR}; see \code{\link{predictmeans}}).}
 #' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 #' \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
@@ -21,7 +23,7 @@
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
 #'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
@@ -57,7 +59,7 @@
 NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
-                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
+                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -127,7 +129,8 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
-  attr(out, "df_method") <- if (inherits(model, "lmerMod") || identical(df_type, "between-within")) df_type else
+  attr(out, "df_method") <- if (identical(df_method, "KR-SAS") && identical(df_type, "Kenward-Roger")) "KR-SAS" else
+    if (inherits(model, "lmerMod") || identical(df_type, "between-within")) df_type else
     if (inherits(model, "lme")) "nlme" else "residual"
   if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
   out

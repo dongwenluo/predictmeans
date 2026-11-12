@@ -56,7 +56,7 @@ check <- function(run, table, what, r, s, keys) {
   }
 }
 ddfm_r <- c(CONTAIN = "containment", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite",
-            KR = "Kenward-Roger")
+            KR = "KR-SAS")       # "Kenward-Roger" (pbkrtest's expected information) differs by ~1% when unbalanced
 lab <- function(x) substr(sub("^\\s+|\\s+$", "", x), 1, 8)   # Variety: first 8 characters, as in the first run
 
 for (run in unique(sas$run)) {

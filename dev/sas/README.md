@@ -88,7 +88,8 @@ Agreement within one unit of SAS's last printed digit:
 | Type 3 F (KR: scaled F) | all | all | — |
 | BETWITHIN df | not in predictmeans | | |
 
-**KR:** SAS's DDFM=KR uses the observed information (the Hessian of the REML
+**KR** (now `df_method = "KR-SAS"`; with it, BETWITHIN, CONTAIN and
+SATTERTHWAITE every df of this run agrees with SAS): SAS's DDFM=KR uses the observed information (the Hessian of the REML
 log-likelihood) for the covariance of the variance parameters; pbkrtest, and
 so predictmeans and emmeans, use the expected information. In balanced data
 they coincide. With the observed information (by numerical derivatives) the

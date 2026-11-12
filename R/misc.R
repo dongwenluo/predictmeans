@@ -355,7 +355,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   using "Kenward-Roger" or "Satterthwaite" method.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov_adj=NULL)
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
 #' @param model Model object returned by \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
@@ -367,7 +367,8 @@ doolittle <- function(x, eps = 1e-6) {
 #'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 #'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 #'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
-#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}).
+#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}); "KR-SAS" is Kenward-Roger
+#'   with the observed information of the variance parameters, as SAS \code{DDFM=KR}.
 #' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 #'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
 #'   for the same model.
@@ -403,12 +404,17 @@ doolittle <- function(x, eps = 1e-6) {
 #' @name df_term
 NULL
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
   type <- as.character(type)
   type <- match.arg(type)
+  kr_info <- "expected"
+  if (type == "KR-SAS") {                 # Kenward-Roger with the observed information, as SAS DDFM=KR
+    type <- "Kenward-Roger"
+    kr_info <- "observed"
+  }
   if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
     # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
     warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
@@ -441,7 +447,7 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
 
   if (type=="Kenward-Roger") {
     # Adjusted vcov(beta); reuse it when the caller has already computed it.
-    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model), silent=TRUE) else vcov_adj
+    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model, kr_info), silent=TRUE) else vcov_adj
     # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
     ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
 
@@ -1253,7 +1259,7 @@ pm_df_method <- function(model, df_method) {
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   reml <- lme4::getME(model, "is_REML")
-  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite",
+  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-SAS" = "Kenward-Roger",
                     df_method)
   if (df_type == "Kenward-Roger" && !reml) {
     warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
@@ -1261,7 +1267,9 @@ pm_df_method <- function(model, df_method) {
   }
   if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
   vcov_adj <- switch(df_type,
-    "Kenward-Roger" = tryCatch(pm_vcov_kr(model), error = function(e) NULL),
+    # "KR-SAS": the observed information of the variance parameters, as SAS DDFM=KR
+    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, if (df_method == "KR-SAS") "observed" else "expected"),
+                               error = function(e) NULL),
     "Satterthwaite" = pm_satt_parts(model),
     NULL)
   list(df_type = df_type, vcov_adj = vcov_adj)

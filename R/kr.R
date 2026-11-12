@@ -14,6 +14,15 @@ pm_upper_sym <- function(A) {
 ## Kenward-Roger adjusted covariance of the fixed effects (pbkrtest::vcovAdj()),
 ## with attributes "P" and "W" used for the degrees of freedom.
 ##
+## W, the covariance of the variance parameters, is the inverse of their
+## expected information (pbkrtest, Kenward and Roger 1997), or with
+## information = "observed" of their observed information, as SAS PROC MIXED
+## DDFM=KR: for V linear in the parameters, -d2 l_R / ds_r ds_s =
+## y'P G_r P G_s P y - tr(P G_r P G_s)/2 (the trace term is IE2/2 below).
+## Both agree in balanced designs; with one plot missing in the split plot of
+## dev/sas the observed one reproduces SAS's df (9.79, 31.3) where the
+## expected one gives 9.87, 31.46.
+##
 ## pbkrtest inverts the n x n covariance of the data, Sigma (O(n^3) time,
 ## O(n^2) memory). Here Sigma = sigma^2 (I + U U'), U = Z Lambda (n x q), so by
 ## the Woodbury identity Sigma^-1 = (I - U M U') / sigma^2 with
@@ -22,7 +31,8 @@ pm_upper_sym <- function(A) {
 ## parameter k (G_k = Z E_k Z'), A = Z' Sigma^-1 Z and B = Z' Sigma^-2 Z,
 ##   tr(G_r Sigma^-1 G_s Sigma^-1) = tr(E_r A E_s A),
 ##   tr(G_r Sigma^-2) = tr(E_r B), and so on. Same results as pbkrtest.
-pm_vcov_kr <- function(model) {
+pm_vcov_kr <- function(model, information = c("expected", "observed")) {
+  information <- match.arg(information)
   if (!lme4::getME(model, "is_REML")) model <- pm_refit(model, REML = TRUE)
   Phi <- as.matrix(stats::vcov(model))
   X <- as.matrix(lme4::getME(model, "X"))
@@ -109,8 +119,25 @@ pm_vcov_kr <- function(model) {
         sum(PhiP * (PP[[jj]] %*% Phi))
     }
   }
-  condi <- min(abs(eigen(IE2, only.values = TRUE)$values))
-  WW <- pm_upper_sym(if (condi > 1e-10) 2 * solve(IE2) else 2 * MASS::ginv(IE2))
+  if (information == "observed") {
+    # observed information: y'P G_r P G_s P y - IE2/2, with P y = Sigma^-1 (y - X b)
+    Pv <- function(v) {                        # P %*% v
+      sv <- Sinv(v)
+      sv - SX %*% (Phi %*% crossprod(X, sv))
+    }
+    Py <- Sinv(lme4::getME(model, "y") - X %*% lme4::fixef(model))
+    ZPy <- as.matrix(Matrix::crossprod(Z, Py))
+    a <- c(lapply(E, function(Ek) as.matrix(Z %*% (Ek %*% ZPy))), list(Py))   # G_r P y
+    Pa <- lapply(a, Pv)
+    Yq <- matrix(NA, n_g, n_g)
+    for (r in seq_len(n_g)) for (s in r:n_g) Yq[r, s] <- Yq[s, r] <- sum(a[[r]] * Pa[[s]])
+    IO <- Yq - IE2/2
+    condi <- min(abs(eigen(IO, only.values = TRUE)$values))
+    WW <- pm_upper_sym(if (condi > 1e-10) solve(IO) else MASS::ginv(IO))
+  } else {
+    condi <- min(abs(eigen(IE2, only.values = TRUE)$values))
+    WW <- pm_upper_sym(if (condi > 1e-10) 2 * solve(IE2) else 2 * MASS::ginv(IE2))
+  }
   UU <- matrix(0, ncol(X), ncol(X))
   if (n_g > 1) {
     for (ii in 1:(n_g - 1)) for (jj in (ii + 1):n_g) {
@@ -125,6 +152,7 @@ pm_vcov_kr <- function(model) {
   attr(PhiA, "P") <- PP
   attr(PhiA, "W") <- WW
   attr(PhiA, "condi") <- condi
+  attr(PhiA, "information") <- information
   PhiA
 }
 
