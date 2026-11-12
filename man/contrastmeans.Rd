@@ -7,7 +7,7 @@
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
-                level=0.05, vcov=NULL)
+                level=0.05, vcov=NULL, equivalence=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -70,6 +70,13 @@ degrees of freedom stay those of the model (the residual df; for \code{lmer} Ken
 computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
 (for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
 covariance.}
+
+\item{equivalence}{Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+contrasts: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
+scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+\code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
+(normal-based in \code{contrastmeans}).}
 }
 \value{
 There are two components in the output which are

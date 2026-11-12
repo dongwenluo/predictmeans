@@ -8,7 +8,7 @@
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
-#'                 level=0.05, vcov=NULL)
+#'                 level=0.05, vcov=NULL, equivalence=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -57,6 +57,12 @@
 #'   computed from the model), and \code{vcov_adjust} is not used. With a \code{permlist}, \code{vcov} is not used
 #'   (for robust permutation tests see \code{permmodels(robust = TRUE)}). The default \code{NULL} uses the model's
 #'   covariance.
+#' @param equivalence Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
+#'   contrasts: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
+#'   scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
+#'   one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+#'   \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
+#'   (normal-based in \code{contrastmeans}).
 #' @return
 #' There are two components in the output which are
 #' \item{Table}{A table showing t-test results for the specified linear contrasts.}
@@ -107,8 +113,9 @@ NULL
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
-                          level=0.05, vcov=NULL) {
+                          level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
+  pm_equiv_margins(equivalence)                  # check early
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
@@ -238,6 +245,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     crit <- stats::qt(1 - level/2, Df)
     out.put <- cbind(cm, ses, t.v, Df, t.p.value, cm - crit*ses, cm + crit*ses)
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
+    eqm <- pm_equiv_margins(equivalence)
+    if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Df, eqm))
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     if (!is.null(parms$vcov_label)) {
@@ -265,6 +274,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   ci_se <- if (!is.null(fam$se)) fam$se else ses   # robust permlist: HC3 SEs
   out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ci_se, cm + crit*ci_se)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
+  eqm <- pm_equiv_margins(equivalence)
+  if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Inf, eqm))   # normal-based
   rownames(out.put) <- rownames(ctrmatrix)
   attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
                                  if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),

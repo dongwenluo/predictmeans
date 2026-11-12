@@ -121,3 +121,27 @@ pm_vcov_with_perm <- function(vcov, permlist) {
           "permmodels(..., robust = TRUE).", call. = FALSE)
   NULL
 }
+
+## Equivalence tests (two one-sided t tests, TOST) of differences or
+## contrasts: 'equivalence' is a margin d (equivalence region -d to d) or
+## c(lower, upper). The p-value is the larger of the two one-sided p-values
+## (H0: estimate <= lower; H0: estimate >= upper), as emmeans' test(...,
+## side = "equivalence") and marginaleffects' p_equiv.
+pm_equiv_margins <- function(equivalence) {
+  if (is.null(equivalence)) return(NULL)
+  e <- as.numeric(equivalence)
+  if (length(e) == 1 && is.finite(e) && e > 0) e <- c(-e, e)
+  if (length(e) != 2 || anyNA(e) || e[1] >= e[2]) {
+    stop("'equivalence' must be a positive margin d (equivalence between -d and d) or c(lower, upper) with ",
+         "lower < upper.", call. = FALSE)
+  }
+  e
+}
+
+pm_tost <- function(est, se, df, margins) {
+  df <- rep_len(as.numeric(df), length(est))
+  df[is.na(df)] <- Inf
+  p_lo <- stats::pt((est - margins[1]) / se, df, lower.tail = FALSE)
+  p_hi <- stats::pt((est - margins[2]) / se, df)
+  pmax(p_lo, p_hi)
+}

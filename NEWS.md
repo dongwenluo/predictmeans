@@ -277,6 +277,13 @@
   Satterthwaite with a warning (it is for `lmer` models). The default for
   `lme` and `gls` is unchanged.
 
+* Equivalence tests: `predictmeans(equivalence = d)` (or
+  `c(lower, upper)`) adds `p.equiv` to the `pairs` table, the TOST p-value
+  (two one-sided t tests; below `level`, the difference lies within the
+  margins), equal to emmeans' `test(..., side = "equivalence")`;
+  `contrastmeans(equivalence =)` adds it to the contrast table. The margins
+  are on the scale of the comparisons and are recorded in `settings`.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

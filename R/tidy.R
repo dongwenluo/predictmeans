@@ -140,6 +140,15 @@ pm_tidy_parts <- function(e) {
       }
     }
     pairs$p.adj <- p_adj
+    # equivalence tests (TOST); with a permlist they are t-based too
+    eqm <- pm_equiv_margins(g("equivalence"))
+    if (!is.null(eqm)) {
+      tdf <- if (perm) {
+        dd <- g("Df_diff")
+        if (length(dd)) rep_len(as.numeric(dd), length(cm)) else Inf
+      } else pdf
+      pairs$p.equiv <- pm_tost(cm, dses, tdf, eqm)
+    }
     lsd_level <- g("level")
     # critical values: t quantiles, or with a permlist those of the permutation
     # distribution of |t| (simultaneous within each family with a max-|t| adj)
@@ -193,6 +202,7 @@ pm_tidy_parts <- function(e) {
     df_method = df_method,
     vcov_adjust = isTRUE(g("vcov_adjust")),
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
+    equivalence = pm_equiv_margins(g("equivalence")),
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     model_class = class(model)[1],

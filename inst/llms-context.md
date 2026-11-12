@@ -66,6 +66,7 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | `estimate` | mean of `level1` minus mean of `level2` (link scale) |
 | `std.error`, `df`, `statistic`, `p.value` | t test of the difference |
 | `p.adj` | p-value adjusted by `adj` (within each `by` level with `atvar`) |
+| `p.equiv` | with `equivalence = d` or `c(lower, upper)`: TOST p-value (difference within the margins) |
 | `lsd` | least significant difference at `level` |
 | `p.method` | `"t"`, `"tukey"`, `"permutation"` or `"bootstrap"` |
 | `ratio`, `ratio.conf.low`, `ratio.conf.high` | log link or `trans = exp`: ratio of the means |
@@ -73,7 +74,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
-`"user matrix"`, `"user function"`), `nperm`, `covariates`, `model_class`, `version`.
+`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `nperm`, `covariates`,
+`model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
 `summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "pvalue", "response"))`,
