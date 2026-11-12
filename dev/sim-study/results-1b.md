@@ -44,3 +44,11 @@ Rejection rates at the 5% level. Monte Carlo range for a true rate of 5%: 0.036-
 | pr_sp_B_partial | flterm | 0.049 | 0.049 | 0.049 | 0.018 | 1.000 |
 | pr_sp_B_partial | param | 0.052 | 0.052 | 0.052 | 0.017 | 1.000 |
 
+## Tests of a fixed term
+
+| cell | n | method | reject 5% | reject 1% |
+|---|---|---|---|---|
+| fx2_lmm_sp | 500 | raw | 0.054 | 0.006 |
+| fx2_lmm_sp | 500 | fl | 0.086 | 0.020 |
+| fx2_lmm_sp | 500 | flr | 0.050 | 0.004 |
+| fx2_lmm_sp | 500 | kr | 0.046 | 0.004 |
