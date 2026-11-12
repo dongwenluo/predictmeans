@@ -247,7 +247,7 @@ data). 500 data sets per cell (range 0.031–0.069), 1000 for glm (0.036–0.064
 | GLMM binary, rare events | | 0.031 | 0.041 | 0.051 | LRT 0.071 |
 | glmmTMB nbinom2 (right family) | | 0.066 | 0.068 | 0.056 | LRT 0.070 |
 | power: LMM, extreme covariate | 0.626 | 0.634 | 0.626 | | KR 0.626 |
-| power: GLMM Poisson | | GPOW | | | |
+| power: GLMM Poisson (A effects 0, 0.2, 0.4) | | 0.433 | 0.429 | 0.453 | LRT 0.475 |
 
 Notes: in the first runs of the LMM and glm cells the "raw" column was
 Freedman–Lane (the script relied on the default, which had become
