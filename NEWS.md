@@ -6,12 +6,14 @@
   (`method = "auto"`, which chooses the more robust scheme for the model
   class; at present Freedman-Lane for every class). Each term, coefficient
   or pair is then tested with the model without it, so the other terms keep
-  their effects; permuting the response (1.x) tests the global null and
-  rejected true null hypotheses too often with covariates that have extreme
-  values. Freedman-Lane needs no refits, so it is also much faster. The
-  result has no `permlist` of refits but can still be given to
-  `predictmeans()` and `contrastmeans()` (`permlist = `). Use
-  `method = "raw"` for the 1.x scheme and results.
+  their effects; permuting the response (1.x) tests the global null. In a
+  simulation study (study 1b, `dev/sim-study/`), with a covariate in the
+  model, permuting a GLM's response rejected only 0.6-1.9% of true null
+  hypotheses at the 5% level (little power), Freedman-Lane 4.2-6.1%; for
+  linear mixed models Freedman-Lane with refits kept 3.6-5.4% in every
+  case, and pairs of means 5.2%. The result has no `permlist` of refits but
+  can still be given to `predictmeans()` and `contrastmeans()`
+  (`permlist = `). Use `method = "raw"` for the 1.x scheme and results.
 
 * **Permutation tests of mixed models decorrelate residuals with the
   symmetric square root of their covariance** instead of the Cholesky

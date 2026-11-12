@@ -223,6 +223,54 @@ Reading:
   refits.
 - Power was the same for all methods.
 
+### Study 1b, part 2: tests of a fixed term with the package code (`dev/sim-perm-fixed/`, 199 permutations)
+
+`raw` = `permmodels(method = "raw")` (1.x scheme); `FL fixed` = Freedman–Lane
+with V fixed (`refit = FALSE`); `FL refit` = Freedman–Lane with refits (the
+2.0 default for mixed models; for GLMMs the working linear mixed model);
+`permlmer` = `permlmer(H0, H1)` (working scale; quantile route for 0/1
+data). 500 data sets per cell (range 0.031–0.069), 1000 for glm (0.036–0.064).
+
+| cell | raw | FL fixed | FL refit | permlmer | usual test |
+|---|---|---|---|---|---|
+| LMM split plot, whole-plot factor (6 blocks) | 0.058 | **0.086** | **0.050** | | KR 0.046 |
+| LMM split plot, whole-plot pairs (null pairs; Holm) | | (pairs study 0.062) | 0.052 (Holm 0.042) | | KR 0.051 (0.040) |
+| LMM covariate with extreme values | 0.060 | 0.050 | 0.054 | | KR 0.048 |
+| LMM unbalanced (20% missing) | RAWUNBAL | 0.056 | 0.048 | | KR 0.054 |
+| lme, varIdent | 0.036 | 0.042 | 0.036 | | nlme F 0.042 |
+| glm Poisson, extreme covariate | **0.008** | 0.058 | | | LRT 0.055 |
+| glm binomial, extreme covariate | **0.006** | 0.042 | | | LRT 0.050 |
+| glm, negative binomial counts fitted as Poisson | 0.019 | 0.061 | | | LRT **0.329** |
+| GLMM Poisson, extreme covariate | | 0.048 | 0.058 | 0.060 | LRT 0.052 |
+| GLMM, negative binomial fitted as Poisson | | **0.100** | 0.074 | 0.086 | LRT **0.339** |
+| GLMM binomial, 3 blocks | | 0.066 | 0.062 | 0.062 | LRT 0.064 |
+| GLMM binary, rare events | | 0.031 | 0.041 | 0.051 | LRT 0.071 |
+| glmmTMB nbinom2 (right family) | | 0.066 | 0.068 | 0.056 | LRT 0.070 |
+| power: LMM, extreme covariate | 0.626 | 0.634 | 0.626 | | KR 0.626 |
+| power: GLMM Poisson | | GPOW | | | |
+
+Notes: in the first runs of the LMM and glm cells the "raw" column was
+Freedman–Lane (the script relied on the default, which had become
+`"auto"`); the glm cells were rerun and the LMM raw column recomputed on the
+same data sets (`dev/sim-perm-fixed-raw.R`; the old column is kept as
+`flr_all`, a second Freedman–Lane-with-refits run: 0.054, 0.052, 0.046).
+
+Reading:
+
+- Linear mixed models: Freedman–Lane with refits kept the level everywhere
+  (3.6–5.4%), with the same power as the others; with V fixed it was
+  liberal for the whole-plot factor (8.6%), because the permuted statistics
+  then treat V as known. Hence the 2.0 default (refits).
+- glm: permuting the response (1.x) was extremely conservative with a
+  covariate (0.6–1.9%: it scrambles the covariate's effect), Freedman–Lane on
+  the working scale kept the level (4.2–6.1%), and it was robust to
+  overdispersion where the LRT failed (6.1% vs 32.9%).
+- GLMMs: Freedman–Lane with refits of the working LMM 4.1–6.8% in
+  well-specified models (nbinom2 with 48 observations: every test 5.6–7.0%),
+  and much more robust to overdispersion than the LRT (7.4% vs 33.9%); V
+  fixed was liberal there (10.0%). `permlmer()` (quantile route) is the most
+  accurate for rare binary events (5.1%).
+
 ### Open questions
 
 - ~~Why the joint scheme is liberal under the LMM global null (0.071).~~
@@ -240,7 +288,7 @@ Reading:
   under the global null (the maintainer's `permlist`) good enough for each
   pair and for the family (max-|t|), or is a reduced model per pair
   (Freedman–Lane) needed?
-- Term tests with the package code after steps 6–8 (`dev/sim-perm-fixed.R`):
+- ~~Term tests with the package code~~ (`dev/sim-perm-fixed.R`), results above:
   Freedman–Lane with V fixed (no refits) for LMMs, on the working scale for
   glm and GLMMs, against raw permutation and KR F / LRT, including
   overdispersed counts and rare binary events.
