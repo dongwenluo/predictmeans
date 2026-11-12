@@ -1288,3 +1288,20 @@ pm_df_method <- function(model, df_method) {
 pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
 }
+
+## Singular fit of a mixed model (a variance component estimated as zero, or
+## a correlation as +-1), as lme4::isSingular(): TRUE or FALSE for lmer and
+## glmer fits, NA for other classes. SAS notes such fits as "Estimated G
+## matrix is not positive definite".
+pm_singular <- function(model) {
+  if (!inherits(model, "merMod")) return(NA)
+  isTRUE(tryCatch(lme4::isSingular(model), error = function(e) FALSE))
+}
+
+pm_note_singular <- function(model) {
+  if (isTRUE(pm_singular(model))) {
+    message("The model fit is singular (a variance component is estimated as zero, or a correlation as +-1); ",
+            "its standard errors and df treat that estimate as known (SAS: \"Estimated G matrix is not positive ",
+            "definite\"). Consider simplifying the random effects.")
+  }
+}

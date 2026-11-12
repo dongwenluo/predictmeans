@@ -21,7 +21,8 @@ shows which arguments correspond to which SAS options, and what has been checked
 | `METHOD=REML` | `lmer(..., REML = TRUE)`, `lme()`, `gls()` (the defaults) |
 | `LSMEANS / DIFF CL` | `predictmeans()`: `$means`, `$pairs` |
 | `LSMEANS / OM` | `weights = "proportional"` |
-| `LSMEANS / ADJUST=TUKEY`, `SIMULATE` | `adj = "tukey"`, `"mvt"` |
+| `LSMEANS / ADJUST=TUKEY ADJDFE=ROW`, `SIMULATE` | `adj = "tukey"`, `"mvt"` (each pair's own df; SAS's default `ADJDFE=SOURCE` uses the term's F-test df) |
+| NOTE: "Estimated G matrix is not positive definite" | a message about a singular fit; `settings$singular` |
 | `ESTIMATE`, `CONTRAST` | `contrastmeans()`, `pm_joint()` |
 | `DDFM=CONTAIN` | `df_method = "containment"` |
 | `DDFM=BETWITHIN` | `df_method = "between-within"` (`lmer`, `lme`, `gls`) |

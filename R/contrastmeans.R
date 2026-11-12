@@ -117,6 +117,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                           level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   pm_equiv_margins(equivalence)                  # check early
+  pm_note_singular(model)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 

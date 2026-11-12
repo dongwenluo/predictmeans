@@ -237,6 +237,7 @@ pm_tidy_parts <- function(e) {
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),
     bias_adjust = ba_sigma,
+    singular = pm_singular(model),
     average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,

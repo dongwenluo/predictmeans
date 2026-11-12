@@ -245,6 +245,12 @@
   table records it (`vcov`). With a `permlist` it is not used (see
   `permmodels(robust = TRUE)`).
 
+* Singular `lmer`/`glmer` fits (a variance component estimated as zero, or
+  a correlation as +-1) are noted by `predictmeans()` and `contrastmeans()`
+  (SAS's "G matrix not positive definite") and recorded in
+  `settings$singular`. Adjusted p-values use each pair's own df, as SAS
+  `ADJDFE=ROW` (now tested and documented).
+
 * `glance()` (generics/broom) of a `predictmeans()` result: one row with
   the term, numbers of means and pairs, df method, adjustment, covariance,
   SED range and mean LSD. `options(predictmeans.plot = FALSE)` turns the

@@ -36,7 +36,9 @@ variable trnasformation in the model.}
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe"
 and "mvt". "sidak", "scheffe" (rank of the family: number of means - 1) and "mvt" (single-step multivariate t, the exact
-counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With
+counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. Adjusted
+p-values use each pair's own df (as SAS \code{ADJDFE=ROW}; SAS's default \code{ADJDFE=SOURCE} uses the df of the
+term's F test instead, which differs when the pairs' df differ). With
 \code{permlist}, "tukey" and "mvt" give the single-step max-|t| adjustment of the permutation p-values (the
 permutation version of Tukey's test: each pair's |t| is compared with the largest |t| of the family in each
 permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
@@ -228,7 +230,8 @@ within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
- degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), number of permutations, covariate values, model class and
+ degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), \code{singular} (a
+ singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
  package version.}
  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
  the \code{means}, \code{pairs} and \code{settings} slots are not printed.

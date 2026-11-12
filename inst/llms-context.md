@@ -78,7 +78,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
 `"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `bias_adjust` (the SD
-used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `nperm`, `covariates`,
+used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `singular` (TRUE when
+the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`,
 `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,

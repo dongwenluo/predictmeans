@@ -252,10 +252,10 @@ Each reference goes in `tests/testthat/_data/sas/` with its provenance
 |---|---|
 | KR-adjusted SEs (measured above) | 1 |
 | Non-estimable means shown, not averaged silently | 1 |
-| Containment and between-within df for lmer; `ADJDFE=ROW` (per-row df in adjusted p-values) | 2 |
+| Containment and between-within df for lmer; `ADJDFE=ROW` (per-row df in adjusted p-values) | 2 — **done** (between-within also for lme/gls; adjusted p-values already used per-row df, now tested). `ADJDFE=SOURCE` (SAS's default) as an option waits for a SAS run with `ADJUST=TUKEY` |
 | Tukey–Kramer per-row df for lmer; Dunnett, Scheffé, Šidák, simulate/multivariate-t adjustments | 2 |
 | SAS definitions of LSD in unbalanced designs; documented differences from GenStat | 2 |
-| Singular fits (lme4 boundary vs SAS "G matrix not positive definite"): warn and record in results | 1 |
+| Singular fits (lme4 boundary vs SAS "G matrix not positive definite"): warn and record in results | 1 — **done** (message, `settings$singular`) |
 
 **Determinism and traceability:**
 
