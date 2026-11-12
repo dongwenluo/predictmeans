@@ -11,6 +11,18 @@ pm_refit <- function(model, data = NULL, ..., check = FALSE) {
   # Replace arguments in the original call (formulas are never changed here).
   cl <- stats::getCall(model)
   args <- list(...)
+  # a formula given as a variable (lmer(f, ...)): put the formula itself in
+  # the call, as the variable may not exist where the call is evaluated
+  fa <- intersect(c("formula", "fixed", "model"), names(cl))[1]
+  if (!is.na(fa) && is.name(cl[[fa]]) && !fa %in% names(args)) {
+    fo <- tryCatch(stats::formula(model), error = function(e) NULL)
+    if (inherits(fo, "formula")) cl[[fa]] <- fo
+  }
+  # the same for a family given as a variable (glm(y ~ x, family = fam))
+  if (is.name(cl$family) && !"family" %in% names(args)) {
+    fam <- tryCatch(stats::family(model), error = function(e) NULL)
+    if (inherits(fam, "family")) cl$family <- fam
+  }
   for (nm in names(args)) cl[[nm]] <- args[[nm]]
   if (!is.null(data)) cl$data <- data
   env <- pm_fit_env(model)

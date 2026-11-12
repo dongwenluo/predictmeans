@@ -268,6 +268,15 @@
 
 ## Bug fixes
 
+* Refits inside `permmodels()`, `permlmer()` and the other functions that
+  refit a model failed for models fitted inside a function with the formula
+  or family given as a variable (e.g. `fit <- function(f, d) lmer(f, data =
+  d)`): the variable was looked up where the model was fitted, and not
+  found (or, for `family`, the function `family()` was found). The refits
+  now use the model's formula and family objects. Also, raw permutations of
+  `lmer` models took the variable names from the call (`lmer(f, ...)` gave
+  a column `f`).
+
 * `permmodels()` for `lmer` models, type I: the observed table was
   lmerTest's type III table (its `anova()` default) while the permuted
   statistics were sequential F statistics from lme4, so in unbalanced data

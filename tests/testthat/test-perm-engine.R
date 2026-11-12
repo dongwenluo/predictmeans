@@ -92,3 +92,16 @@ test_that("permlmer() and bootmodels() keep the user's stream with a seed", {
   expect_identical(p1$`Perm-p`[2], permlmer(fm1, fm2, nperm = 9, ncore = 1, seed = 3)$`Perm-p`[2])
   expect_null(attr(p1, "failures"))
 })
+
+test_that("refits work for models fitted in a function with formula and family variables", {
+  Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
+  fit_lmer <- function(f, d) lme4::lmer(f, data = d)
+  m <- fit_lmer(yield ~ nitro + (1 | Block), Oats)
+  r <- permmodels(m, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  expect_identical(length(r$permlist), 9L)
+  data(Drug, package = "predictmeans", envir = environment())
+  fit_glm <- function(f, fam, d) glm(f, family = fam, data = d)
+  g <- fit_glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug)
+  rg <- permmodels(g, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  expect_identical(length(rg$permlist), 9L)
+})

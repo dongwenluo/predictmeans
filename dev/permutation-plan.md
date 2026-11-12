@@ -644,8 +644,10 @@ update; R CMD check at the end of each.
    Found and fixed: raw `permmodels()` for lmer, type I, compared lmerTest's
    type III observed F with lme4's sequential permuted F; now both are
    lmerTest's type I (Wald with Doolittle/Cholesky hypotheses of X'X).
-   `permanova.lmer()` unchanged (it calls `permlmer()`, so it now also
-   accepts nothing new; GLMM terms via `permmodels()` or `permlmer()`).
+   `permanova.lmer()` is unchanged (term by term with `permlmer()`); GLMM
+   terms are tested with `permmodels(method = "freedman-lane")` or
+   `permlmer()`. Also fixed: refits of models fitted inside a function with
+   the formula or family given as a variable (`pm_refit()`).
 7–8. **GLM and GLMM fixed effects** — **done** in the same code: the
    working-scale model of `pm_working()`, whitened with V = AA' +
    diag(working variances), then batched Freedman–Lane; the dispersion is
