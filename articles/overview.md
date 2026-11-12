@@ -522,30 +522,30 @@ system.time(
     ## nitro0.6:VarietyVictory      2.1667    10.8653 45.0000  0.1994   0.8428
     ##                            Perm_p_value
     ## (Intercept)                          NA
-    ## nitro0.2                          0.021
+    ## nitro0.2                          0.027
     ## nitro0.4                          0.001
     ## nitro0.6                          0.001
-    ## VarietyMarvellous                 0.505
-    ## VarietyVictory                    0.396
-    ## nitro0.2:VarietyMarvellous        0.768
-    ## nitro0.4:VarietyMarvellous        0.727
-    ## nitro0.6:VarietyMarvellous        0.689
-    ## nitro0.2:VarietyVictory           0.968
-    ## nitro0.4:VarietyVictory           0.674
-    ## nitro0.6:VarietyVictory           0.845
+    ## VarietyMarvellous                 0.503
+    ## VarietyVictory                    0.385
+    ## nitro0.2:VarietyMarvellous        0.747
+    ## nitro0.4:VarietyMarvellous        0.728
+    ## nitro0.6:VarietyMarvellous        0.683
+    ## nitro0.2:VarietyVictory           0.977
+    ## nitro0.4:VarietyVictory           0.667
+    ## nitro0.6:VarietyVictory           0.828
     ## 
     ## Note: Perm_p_value of t test is obtained using '999' permutations.
     ## 
     ## ANOVA:
     ##                   Sum Sq   Mean Sq NumDF DenDF F value Pr(>F) Perm_p_value
     ## nitro         20020.5001 6673.5000     3    45 37.6857 0.0000        0.001
-    ## Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.258
+    ## Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.270
     ## nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.931
     ## 
     ## Note: Perm_p_value of F test is obtained using '999' permutations.
 
     ##    user  system elapsed 
-    ##  14.992   0.850   5.907
+    ##  13.756   0.704   5.407
 
 ``` r
 
@@ -591,30 +591,30 @@ predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", pe
     ## $`Golden Rain`
     ##     0      0.2    0.4   0.6 Group
     ## 0   1                       A    
-    ## 0.2 0.0315 1                 B   
-    ## 0.4 0.002  0.0528 1          BC  
-    ## 0.6 0.002  0.002  0.194 1     C  
+    ## 0.2 0.0405 1                 B   
+    ## 0.4 0.003  0.0456 1           C  
+    ## 0.6 0.003  0.006  0.196 1     C  
     ## 
     ## $Marvellous
     ##     0     0.2   0.4   0.6 Group
     ## 0   1                     A    
-    ## 0.2 0.018 1                B   
-    ## 0.4 0.003 0.262 1          BC  
-    ## 0.6 0.003 0.03  0.262 1     C  
+    ## 0.2 0.02  1                B   
+    ## 0.4 0.006 0.265 1          BC  
+    ## 0.6 0.006 0.036 0.265 1     C  
     ## 
     ## $Victory
-    ##     0      0.2   0.4 0.6 Group
-    ## 0   1                    A    
-    ## 0.2 0.0264 1              B   
-    ## 0.4 0.002  0.009 1         C  
-    ## 0.6 0.002  0.002 0.3 1     C  
+    ##     0      0.2    0.4   0.6 Group
+    ## 0   1                       A    
+    ## 0.2 0.0288 1                 B   
+    ## 0.4 0.003  0.0075 1           C  
+    ## 0.6 0.003  0.004  0.295 1     C  
     ## 
     ## $mean_table
     ## $mean_table$Table
     ##        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
     ## 1  Golden Rain     0  80.0000 9.10701 NA  61.7860  98.2140       A  
     ## 4  Golden Rain   0.2  98.5000 9.10701 NA  80.2860 116.7140        B 
-    ## 7  Golden Rain   0.4 114.6667 9.10701 NA  96.4526 132.8807        BC
+    ## 7  Golden Rain   0.4 114.6667 9.10701 NA  96.4526 132.8807         C
     ## 10 Golden Rain   0.6 124.8333 9.10701 NA 106.6193 143.0474         C
     ## 2   Marvellous     0  86.6667 9.10701 NA  68.4526 104.8807       A  
     ## 5   Marvellous   0.2 108.5000 9.10701 NA  90.2860 126.7140        B 
@@ -638,7 +638,7 @@ contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=perml
 
     ## $`The t tests of the specified contrasts`
     ##      Estimate Std. Error t value Permuted Pr(>|t|)
-    ## [1,]  -8.5000      9.715 -0.8749             0.396
+    ## [1,]  -8.5000      9.715 -0.8749             0.385
     ## [2,] -45.6667      9.715 -4.7006             0.001
     ## attr(,"Note")
     ## [1] "The permuted p-value is obtained using '999' permutations."

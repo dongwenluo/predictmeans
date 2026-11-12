@@ -44,10 +44,11 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ## Permutation tests of terms and coefficients
 
 For linear models the response is permuted. For mixed models the
-residuals are first decorrelated with the Cholesky factor of their
+residuals are first decorrelated with the symmetric square root of their
 estimated covariance, permuted, and correlated again (Lee and Braun
 2012), so each permuted data set keeps the model’s correlation
-structure; the model is then refitted to each.
+structure; the model is then refitted to each. (predictmeans 1.x used
+the Cholesky factor, whose results depended on the order of the data.)
 
 ``` r
 
@@ -72,22 +73,22 @@ perm <- permmodels(fm, nperm = 199, ncore = 1, seed = 1)
 #> nitro0.2                          0.020
 #> nitro0.4                          0.005
 #> nitro0.6                          0.005
-#> VarietyMarvellous                 0.495
-#> VarietyVictory                    0.350
-#> nitro0.2:VarietyMarvellous        0.775
-#> nitro0.4:VarietyMarvellous        0.640
-#> nitro0.6:VarietyMarvellous        0.680
-#> nitro0.2:VarietyVictory           0.965
-#> nitro0.4:VarietyVictory           0.660
-#> nitro0.6:VarietyVictory           0.885
+#> VarietyMarvellous                 0.515
+#> VarietyVictory                    0.365
+#> nitro0.2:VarietyMarvellous        0.750
+#> nitro0.4:VarietyMarvellous        0.625
+#> nitro0.6:VarietyMarvellous        0.695
+#> nitro0.2:VarietyVictory           0.980
+#> nitro0.4:VarietyVictory           0.625
+#> nitro0.6:VarietyVictory           0.845
 #> 
 #> Note: Perm_p_value of t test is obtained using '199' permutations.
 #> 
 #> ANOVA:
 #>                   Sum Sq   Mean Sq NumDF DenDF F value Pr(>F) Perm_p_value
 #> nitro         20020.5001 6673.5000     3    45 37.6857 0.0000        0.005
-#> Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.200
-#> nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.930
+#> Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.240
+#> nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.915
 #> 
 #> Note: Perm_p_value of F test is obtained using '199' permutations.
 ```
@@ -141,10 +142,10 @@ pm$pairs[, c("level1", "level2", "estimate", "statistic", "p.value", "p.method")
 #>   level1 level2   estimate statistic p.value    p.method
 #> 1      0    0.2 -19.500000 -4.396098   0.005 permutation
 #> 2      0    0.4 -34.833333 -7.852859   0.005 permutation
-#> 3    0.2    0.4 -15.333333 -3.456761   0.005 permutation
+#> 3    0.2    0.4 -15.333333 -3.456761   0.010 permutation
 #> 4      0    0.6 -44.000000 -9.919400   0.005 permutation
 #> 5    0.2    0.6 -24.500000 -5.523302   0.005 permutation
-#> 6    0.4    0.6  -9.166667 -2.066542   0.050 permutation
+#> 6    0.4    0.6  -9.166667 -2.066542   0.045 permutation
 ```
 
 and for contrasts:

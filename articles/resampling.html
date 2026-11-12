@@ -112,10 +112,12 @@ the refits (<code>ncore = 1</code> here, as for CRAN checks);
 <h2 id="permutation-tests-of-terms-and-coefficients">Permutation tests of terms and coefficients<a class="anchor" aria-label="anchor" href="#permutation-tests-of-terms-and-coefficients"></a>
 </h2>
 <p>For linear models the response is permuted. For mixed models the
-residuals are first decorrelated with the Cholesky factor of their
+residuals are first decorrelated with the symmetric square root of their
 estimated covariance, permuted, and correlated again (Lee and Braun
 2012), so each permuted data set keeps the model’s correlation
-structure; the model is then refitted to each.</p>
+structure; the model is then refitted to each. (predictmeans 1.x used
+the Cholesky factor, whose results depended on the order of the
+data.)</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm</span>, nperm <span class="op">=</span> <span class="fl">199</span>, ncore <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -138,22 +140,22 @@ structure; the model is then refitted to each.</p>
 <span><span class="co">#&gt; nitro0.2                          0.020</span></span>
 <span><span class="co">#&gt; nitro0.4                          0.005</span></span>
 <span><span class="co">#&gt; nitro0.6                          0.005</span></span>
-<span><span class="co">#&gt; VarietyMarvellous                 0.495</span></span>
-<span><span class="co">#&gt; VarietyVictory                    0.350</span></span>
-<span><span class="co">#&gt; nitro0.2:VarietyMarvellous        0.775</span></span>
-<span><span class="co">#&gt; nitro0.4:VarietyMarvellous        0.640</span></span>
-<span><span class="co">#&gt; nitro0.6:VarietyMarvellous        0.680</span></span>
-<span><span class="co">#&gt; nitro0.2:VarietyVictory           0.965</span></span>
-<span><span class="co">#&gt; nitro0.4:VarietyVictory           0.660</span></span>
-<span><span class="co">#&gt; nitro0.6:VarietyVictory           0.885</span></span>
+<span><span class="co">#&gt; VarietyMarvellous                 0.515</span></span>
+<span><span class="co">#&gt; VarietyVictory                    0.365</span></span>
+<span><span class="co">#&gt; nitro0.2:VarietyMarvellous        0.750</span></span>
+<span><span class="co">#&gt; nitro0.4:VarietyMarvellous        0.625</span></span>
+<span><span class="co">#&gt; nitro0.6:VarietyMarvellous        0.695</span></span>
+<span><span class="co">#&gt; nitro0.2:VarietyVictory           0.980</span></span>
+<span><span class="co">#&gt; nitro0.4:VarietyVictory           0.625</span></span>
+<span><span class="co">#&gt; nitro0.6:VarietyVictory           0.845</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' permutations.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt;                   Sum Sq   Mean Sq NumDF DenDF F value Pr(&gt;F) Perm_p_value</span></span>
 <span><span class="co">#&gt; nitro         20020.5001 6673.5000     3    45 37.6857 0.0000        0.005</span></span>
-<span><span class="co">#&gt; Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.200</span></span>
-<span><span class="co">#&gt; nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.930</span></span>
+<span><span class="co">#&gt; Variety         526.0575  263.0288     2    10  1.4853 0.2724        0.240</span></span>
+<span><span class="co">#&gt; nitro:Variety   321.7500   53.6250     6    45  0.3028 0.9322        0.915</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' permutations.</span></span></code></pre></div>
 <p>The tables repeat the model’s tests with a <code>Perm_p_value</code>
@@ -202,10 +204,10 @@ in the <code>pairs</code> table and the legacy p-value matrix:</p>
 <span><span class="co">#&gt;   level1 level2   estimate statistic p.value    p.method</span></span>
 <span><span class="co">#&gt; 1      0    0.2 -19.500000 -4.396098   0.005 permutation</span></span>
 <span><span class="co">#&gt; 2      0    0.4 -34.833333 -7.852859   0.005 permutation</span></span>
-<span><span class="co">#&gt; 3    0.2    0.4 -15.333333 -3.456761   0.005 permutation</span></span>
+<span><span class="co">#&gt; 3    0.2    0.4 -15.333333 -3.456761   0.010 permutation</span></span>
 <span><span class="co">#&gt; 4      0    0.6 -44.000000 -9.919400   0.005 permutation</span></span>
 <span><span class="co">#&gt; 5    0.2    0.6 -24.500000 -5.523302   0.005 permutation</span></span>
-<span><span class="co">#&gt; 6    0.4    0.6  -9.166667 -2.066542   0.050 permutation</span></span></code></pre></div>
+<span><span class="co">#&gt; 6    0.4    0.6  -9.166667 -2.066542   0.045 permutation</span></span></code></pre></div>
 <p>and for contrasts:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span><span class="op">)</span>, <span class="st">"trt.vs.ctrl"</span><span class="op">)</span></span>

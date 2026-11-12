@@ -90,6 +90,14 @@
     <p>Permutation p-value.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The residuals of <code>lmer0</code> are decorrelated with the symmetric square root of their covariance under
+<code>lmer0</code>, permuted, correlated again and added to the fitted values of <code>lmer0</code> (Lee and Braun, 2012); both models
+are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
+observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
+is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Oliver E. Lee and Thomas M. Braun (2012),
     <em>Permutation Tests for Random Effects in Linear Mixed Models. Biometrics</em>, Journal 68(2).</p>
@@ -130,15 +138,13 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01</span>
 <span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm2</span>, <span class="va">fm1</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model failed to converge with max|grad| = 0.00228659 (tol = 0.002, component 1)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   See ?lme4::convergence and ?lme4::troubleshooting.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + (Days || Subject)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days | Subject)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    5 1753.7 1769.6 -871.83    1743.7                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.91</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Test fixed effects</span></span></span>
@@ -154,7 +160,7 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    9 616.04 636.53 -299.02    598.04                            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.91</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.96</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

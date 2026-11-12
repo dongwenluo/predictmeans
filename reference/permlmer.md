@@ -41,6 +41,17 @@ permlmer(lmer0, lmer1, nperm = 999, ncore=3, plot=FALSE, seed)
 
 Permutation p-value.
 
+## Details
+
+The residuals of `lmer0` are decorrelated with the symmetric square root
+of their covariance under `lmer0`, permuted, correlated again and added
+to the fitted values of `lmer0` (Lee and Braun, 2012); both models are
+refitted to each permuted data set. The likelihood-ratio statistics are
+compared after rounding to 4 decimals, so an observed statistic of 0
+(the tested variance estimated at 0) gives a p-value of 1. Since
+predictmeans 2.0 the square root is symmetric, so the results do not
+depend on the order of the data (1.x used the Cholesky factor).
+
 ## References
 
 Oliver E. Lee and Thomas M. Braun (2012), *Permutation Tests for Random
@@ -82,15 +93,13 @@ permlmer(fm3, fm2, nperm=99, ncore=1)
 #> lmer0    4 1794.5 1807.2 -893.23    1786.5                            
 #> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01
 permlmer(fm2, fm1, nperm=99, ncore=1)
-#> Warning: Model failed to converge with max|grad| = 0.00228659 (tol = 0.002, component 1)
-#>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Data: sleepstudy
 #> Models:
 #> lmer0: Reaction ~ Days + (Days || Subject)
 #> lmer1: Reaction ~ Days + (Days | Subject)
 #>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    5 1753.7 1769.6 -871.83    1743.7                           
-#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.81
+#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.91
 # }
 
 ## Test fixed effects
@@ -106,6 +115,6 @@ permlmer(fm0, fm, nperm=99, ncore=1)
 #> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)
 #>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    9 616.04 636.53 -299.02    598.04                            
-#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.91
+#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.96
 # }
 ```
