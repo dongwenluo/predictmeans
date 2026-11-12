@@ -123,3 +123,12 @@ test_that("R2_glmm() of glmmTMB models uses the right working variance", {
   expect_equal(W$resvar, (1 + W$mu / sigma(m)) / W$mu)
   expect_gt(pm_r2_piepho(m)[["Total"]], 20)
 })
+
+test_that("permanova.lmer() tests the terms of a glmer model", {
+  skip_on_cran()
+  data(Clinical, package = "predictmeans", envir = environment())
+  gm <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic), family = binomial, data = Clinical)
+  a <- permanova.lmer(gm, nperm = 19, ncore = 1, seed = 1)
+  g0 <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ 1 + (1 | Clinic), family = binomial, data = Clinical)
+  expect_equal(a$Perm.p, permlmer(g0, gm, nperm = 19, ncore = 1, seed = 1)$`Perm-p`[2])
+})

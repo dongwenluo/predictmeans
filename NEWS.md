@@ -176,6 +176,11 @@
   poisson, binomial, nbinom1, nbinom2, Gamma, gaussian, beta (no zero
   inflation or dispersion model).
 
+* `permanova.lmer()` also tests the terms of `glmer` models (each term by
+  `permlmer()` on the working scale), and builds the reduced models where
+  the model was fitted (it used `update()`, which looks for the data in the
+  wrong place when the model was fitted inside a function).
+
 * `permmodels()` and `permlmer()` (so `permanova.lmer()`) take a matrix of
   permutations, `perms`, e.g. from `permindex()`: permutations within
   blocks or of whole plots, for tests that permute only as the design

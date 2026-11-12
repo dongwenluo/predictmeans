@@ -1,11 +1,12 @@
 #' Permutation ANOVA for \code{lmer} Model
 #'
 #' @description
-#' This function provides permutation ANOVA for \code{lmer} model.
+#' This function provides permutation ANOVA for \code{lmer} model (and, since predictmeans 2.0, \code{glmer} model):
+#' each term is tested by \code{\link{permlmer}} comparing the model with and without it.
 #' @usage
 #' permanova.lmer(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"),
 #'  ...)
-#' @param model Model object returned by \code{lmer}.
+#' @param model Model object returned by \code{lmer} or \code{glmer}.
 #' @param nperm Number of permutation, the default value is 999.
 #' @param ncore Number of core for parallel computing, the default value is 3.
 #' @param type The type of ANOVA table requested (using SAS terminology) with Type I being the familiar 
@@ -35,10 +36,10 @@ NULL
 
 permanova.lmer <- function(model, nperm = 999, ncore=3, type = c("I", "II", "III",  "1", "2", "3"), ...)  { # perms
 
-  if (!inherits(model, "lmerMod")) {
-    stop("The model must be a lmer object!")
+  if (!inherits(model, c("lmerMod", "glmerMod"))) {
+    stop("The model must be a lmer or glmer object!")
   }
-  if (inherits(try(refit(model, getME(model, "y")), TRUE), "try-error")) {
+  if (inherits(try(suppressWarnings(refit(model, getME(model, "y"))), TRUE), "try-error")) {
     stop("Please remove missing values in your model!")
   }
   type <- type[1L]
@@ -50,13 +51,15 @@ permanova.lmer <- function(model, nperm = 999, ncore=3, type = c("I", "II", "III
     type <- as.character(as.integer(as.roman(type)))
   }
 
-  aTable <- anova(model, type=type)
+  aTable <- if (inherits(model, "lmerModLmerTest")) anova(model, type=type) else suppressWarnings(anova(model))
   Perm.p <- numeric(nrow(aTable))
   termlabel1 <- termlabel2 <- row.names(aTable)
   names(Perm.p) <- termlabel1
 
+  # update() with the data found where the model was fitted
+  pm_upd <- function(m, f) pm_refit(m, formula = stats::update(stats::formula(m), f))
   termlabel0 <- attr(terms(model), "term.labels")
-  model.0 <- update(model, as.formula(paste(".~. -", paste(termlabel0, collapse="-"))))
+  model.0 <- pm_upd(model, as.formula(paste(".~. -", paste(termlabel0, collapse="-"))))
 
   for (vars in termlabel1) {
     if (type=="3") {
@@ -64,16 +67,16 @@ permanova.lmer <- function(model, nperm = 999, ncore=3, type = c("I", "II", "III
       for (i in varsn)
         termlabel2 <- termlabel2[grep(i, termlabel2)]
       termlabel <- paste(termlabel2, collapse="-")
-      model.b <- update( model, as.formula(paste(".~. -", termlabel)))
+      model.b <- pm_upd(model, as.formula(paste(".~. -", termlabel)))
 	    Perm.p[vars] <- permlmer(model.b, model, nperm, ncore, plot=FALSE, ...)$`Perm-p`[2]
       termlabel2 <- termlabel1
 	  } else if (type=="2") {
 	    varsn <- unlist(strsplit(vars, "\\:"))
-	    model.1 <- update(model.0, as.formula(paste(".~.+", paste(termlabel0[attr(terms(model), "order")%in%(seq_along(varsn))], collapse="+"))))
-	    model.2 <- update(model.1, as.formula(paste(".~. -", vars)))
+	    model.1 <- pm_upd(model.0, as.formula(paste(".~.+", paste(termlabel0[attr(terms(model), "order")%in%(seq_along(varsn))], collapse="+"))))
+	    model.2 <- pm_upd(model.1, as.formula(paste(".~. -", vars)))
 	    Perm.p[vars] <- permlmer(model.2, model.1, nperm, ncore, plot=FALSE, ...)$`Perm-p`[2]
 	  } else if (type=="1") {
-	    model.1 <- update(model.0, as.formula(paste(".~. +", vars)))
+	    model.1 <- pm_upd(model.0, as.formula(paste(".~. +", vars)))
 	    Perm.p[vars] <- permlmer(model.0, model.1, nperm, ncore, plot=FALSE, ...)$`Perm-p`[2]
 	    model.0 <- model.1
 	  } else NULL
