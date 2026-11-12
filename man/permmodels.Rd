@@ -52,8 +52,10 @@ error variances that are unequal while the model assumes them equal. The statist
 heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics (DiCiccio and Romano, 2017), and the signs of
 the reduced model's residuals are flipped at random instead of permuted (a wild bootstrap; Davidson and
 Flachaire, 2008), so each residual stays with its own unit and keeps its variance. In a simulation with
-group SDs 3, 1, 1 the usual and permutation F tests rejected 19-21\% of true null hypotheses at the 5\%
-level, these tests 5-7\% (see Details). The tables show the robust statistics; pairs and contrasts from the
+group SDs 3, 1, 1 (2000 data sets per case) the usual and permutation F tests rejected 19-24\% of true null
+hypotheses at the 5\% level, these tests 5-7\% (normal errors) or about 9\% (strongly skewed errors, against
+11-14\% for the HC3 F test), and 5.4\% with equal variances. The tables show the robust statistics; pairs
+and contrasts from the
 result use them too (robust t, and confidence limits from robust standard errors). Type II tests match
 \code{car::Anova(model, type = "II", white.adjust = "hc3")}. Not with \code{perms}. The default is
 \code{FALSE}.}
