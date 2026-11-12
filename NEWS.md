@@ -174,9 +174,11 @@
   one set for their family); the statistics are the model's Wald t and F
   (unadjusted covariance). `refit = FALSE` fixes the covariance of the data
   at the fit instead (decorrelated least squares, no refits, much faster,
-  but slightly liberal when the variance parameters rest on few units:
-  8.6% for the whole-plot factor of a split plot with 6 blocks, against
-  5.0% with refits; 6.2% for whole-plot pairs). GLMs: the V-fixed version on
+  but liberal when the variance parameters rest on few units: for the
+  whole-plot factor of a split plot 8.6%, 7.2%, 6.0% and 5.6% with 6, 12,
+  24 and 48 blocks, against 5.0%, 6.2%, 5.4% and 4.6% with refits; 6.2% for
+  whole-plot pairs with 6 blocks). The help of `permmodels()` says when
+  `refit = FALSE` is enough (error df of the tested terms above about 100). GLMs: the V-fixed version on
   the working (link) scale, with the dispersion estimated from the working
   residuals; GLMMs: the working linear mixed model, refitted to each
   permuted working response (or V fixed with `refit = FALSE`). Terms (types I, II, III), coefficients, and pairs and

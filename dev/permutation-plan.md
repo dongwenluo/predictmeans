@@ -795,6 +795,19 @@ value for predictmeans:
     the sign matrix.
 13. **When is `refit = FALSE` safe?** A small study with 30, 60 and 120
     groups; then possibly `refit = "auto"` by the number of groups.
+    — **Done** (`dev/sim-perm-refit.R`, split plot, whole-plot factor null,
+    500 data sets per cell). With V fixed: 8.6%, 7.2%, 6.0%, 5.6% at 5% for
+    6, 12, 24, 48 blocks (whole-plot error df 15, 33, 69, 141); at 1%: 2.0%,
+    2.8%, 1.8%, 1.2%. With refits: 5.0%, 6.2%, 5.4%, 4.6% (1%: 0.4–1.6%);
+    KR 4.6–6.4%. The excess of V fixed fades slowly with the df and is gone
+    (within Monte Carlo error) at 141 df. Refits cost 8 s (6 blocks) to 25 s
+    (48 blocks) for 199 permutations of three terms on one core; V fixed
+    under 0.5 s. Decision: keep `refit = TRUE` as the default and no
+    `refit = "auto"`: error strata (and so the df that matter) are not
+    defined in general (crossed effects, AR(1), varIdent), and a wrong
+    automatic choice costs validity while refits only cost time. The help
+    says `refit = FALSE` suits a quick look, or a final test when the error
+    df of the tested terms exceed about 100.
 14. Later: nonparametric combination of dependent tests (several traits,
     time points; Pesarin and Salmaso 2010), max-statistic / cluster tests
     over time and curves (Maris and Oostenveld 2007), simultaneous bounds on

@@ -31,8 +31,13 @@
 #' @param refit For \code{method = "freedman-lane"} with mixed models (\code{lmer}, \code{lme}, \code{gls}, and
 #'   \code{glmer}, \code{glmmTMB} through their working linear mixed model): refit the model to each permuted data set
 #'   (the default), so the variance parameters are estimated again each time.
-#'   \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects slightly too
-#'   often when the variance parameters rest on few units (e.g. whole plots of a split plot with few blocks).
+#'   \code{FALSE} holds the covariance of the data at the fit (no refits, much faster), which rejects too often
+#'   when the variance parameters rest on few units. In a simulation (test of the whole-plot factor of a split plot,
+#'   true null, 5\% level) \code{refit = FALSE} rejected 8.6\%, 7.2\%, 6.0\% and 5.6\% with 6, 12, 24 and 48 blocks
+#'   (whole-plot error df 15, 33, 69 and 141), and refits 5.0\%, 6.2\%, 5.4\% and 4.6\% (Kenward-Roger 4.6\% to
+#'   6.4\%); at the 1\% level \code{refit = FALSE} rejected up to 2.8\%. So \code{refit = FALSE} suits a quick look,
+#'   or a final test when the error df of the tested terms exceed about 100; otherwise keep the refits (for 199
+#'   permutations of the split plot's three terms on one core: 8 s with 6 blocks, 25 s with 48).
 #' @param robust For \code{lm}, \code{aov} and \code{glm} models with \code{method = "freedman-lane"}: tests for
 #'   error variances that are unequal while the model assumes them equal. The statistics are
 #'   heteroscedasticity-robust (HC3 sandwich) t and Wald F statistics (DiCiccio and Romano, 2017), and the signs of

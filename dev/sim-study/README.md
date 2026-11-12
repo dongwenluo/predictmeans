@@ -273,6 +273,33 @@ Reading:
   fixed was liberal there (10.0%). `permlmer()` (quantile route) is the most
   accurate for rare binary events (5.1%).
 
+### Step 13: when is `refit = FALSE` safe? (`dev/sim-perm-refit/`, 199 permutations)
+
+Split plot, `lmer(y ~ A * B + (1 | block) + (1 | block:A))`, 4 whole plots
+(A) x 3 subplots (B) per block, A null, B effects (0, 1, 2); test of A (type
+II). `V fixed` = `refit = FALSE`; `refits` = Freedman–Lane with refits (the
+default); `KR` = Kenward–Roger F. 500 data sets per cell (range for a true
+5%: 3.1–6.9%; for 1%: 0.1–1.9%; for 10%: 7.3–12.7%). The 6-block row is
+`fx2_lmm_sp` of study 1b part 2.
+
+| blocks (whole-plot error df) | V fixed 1% / 5% / 10% | refits 1% / 5% / 10% | KR 1% / 5% / 10% |
+|---|---|---|---|
+| 6 (15) | 0.020 / **0.086** / 0.146 | 0.004 / 0.050 / 0.096 | 0.004 / 0.046 / 0.102 |
+| 12 (33) | 0.028 / **0.072** / 0.118 | 0.010 / 0.062 / 0.106 | 0.010 / 0.064 / 0.098 |
+| 24 (69) | 0.018 / 0.060 / 0.102 | 0.016 / 0.054 / 0.096 | 0.020 / 0.056 / 0.090 |
+| 48 (141) | 0.012 / 0.056 / 0.128 | 0.012 / 0.046 / 0.128 | 0.012 / 0.056 / 0.122 |
+
+Time for 199 permutations of the three terms on one core: V fixed 0.1–0.4 s,
+refits 7.6 s (6 blocks), 8.3 s (12), 10.7 s (24), 25.3 s (48).
+
+Reading: holding V at its fitted value treats it as known, so the test is
+liberal when V rests on few units, about twice the nominal rate at 1% with
+15–33 df; the excess fades slowly and is within Monte Carlo error at 141
+df. Refits are right at every size. (At 10% with 48 blocks all three
+methods gave 12.2–12.8%: the same data sets, so chance in those data.) So `refit = TRUE` stays the default,
+and `refit = FALSE` is enough when the tested terms' error df exceed about
+100.
+
 ### Step 12: unequal variances, `permmodels(robust = TRUE)` (`dev/sim-perm-robust/`, 199 resamples)
 
 `lm(y ~ x + A)` with error variances that the model ignores; true null.
