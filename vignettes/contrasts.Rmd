@@ -153,6 +153,20 @@ marginaleffects::hypotheses(pmv, hypothesis = sprintf("b%d - b%d = 0", i[1], i[2
 
 marginaleffects uses normal-based tests; the standard error is the same as above.
 
+## Equivalence tests
+
+To show that two treatments do not differ by more than a margin that matters in practice,
+give the margin with `equivalence` (a number `d` for the region `-d` to `d`, or
+`c(lower, upper)`). The `pairs` table then has `p.equiv`, the p-value of two one-sided t
+tests (TOST): below `level`, the difference lies within the margin.
+
+```{r}
+pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE, prtnum = FALSE)
+pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
+```
+
+`contrastmeans(..., equivalence = )` does the same for contrasts.
+
 ## Robust and clustered standard errors
 
 When the error variance differs between groups and the model assumes it is constant,

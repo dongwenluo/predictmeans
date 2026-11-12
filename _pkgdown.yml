@@ -22,6 +22,7 @@ articles:
   - smooth
   - missing-cells
   - R2_glmm
+  - sas
   - migrating
 - title: Worked examples
   navbar: Worked examples
