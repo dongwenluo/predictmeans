@@ -48,6 +48,9 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | `dev/sim-perm-ranef.R` | `dev/sim-perm-ranef/<cell>.rds` | main cases: split plot, random slope, GLMM pilots, GLMM fixed effects |
 | `dev/sim-perm-edge.R` (+ `dev/sim-perm-lib.R`) | `dev/sim-perm-edge/<cell>.rds` | edge cases (each cell's description is stored in its file and listed in the script) |
 | `dev/sim-study/summarise.R` | `dev/sim-study/results.csv`, `results.md` | all of the above, with Monte Carlo SE and flags |
+| `dev/sim-perm-pairs.R` | `dev/sim-perm-pairs/<cell>.rds` | study 1b part 1: pairwise comparisons (joint permlist, Freedman–Lane per pair and per term with V fixed, parametric t / Tukey), 199 permutations |
+| `dev/sim-perm-fixed.R` | `dev/sim-perm-fixed/<cell>.rds` | study 1b part 2: term tests with the package's own `permmodels()` raw and Freedman–Lane, `permlmer()` for GLMMs, against KR F / LRT, 199 permutations |
+| `dev/sim-study/summarise-pairs.R` | `dev/sim-study/results-1b.md` | study 1b: per-pair and familywise error, power; term tests |
 
 - Seeds: data set i of a cell uses `set.seed(sum(utf8ToInt(cell)) * 1000 + i)`,
   so results do not depend on cores or platform; any cell can be rerun.
@@ -67,6 +70,8 @@ is exact at the 5% and 1% levels when exchangeability holds.
 | 2026-11-11 09:26 | `sim-perm-ranef.R 1000 99` GLMM fixed-effect cells (4) | same | same |
 | 2026-11-11 10:00–13:00 | `sim-perm-edge.R 1000 99 all 4` (23 cells, about 7.5 min each) | same | same |
 | 2026-11-11 (later; the sandbox clock jumped) | `sim-perm-followup.R 99 … 4` (4 cells) and `sim-perm-followup2.R 99 all 4` (2 cells) | same | same |
+| 2026-11-12 00:07– | `sim-perm-pairs.R 1000 199 … 3` (8 cells; `pr_rcbd_power` 500 sets) | same | same, predictmeans 1.1.1.9000 after step 2 (engine) |
+| 2026-11-12 (after the pairs run) | `sim-perm-fixed.R 1000 199 … 3` (LMM and glm cells), `500 199 … 3` (GLMM, lme and power cells) | same | same, predictmeans after steps 6–8, glmmTMB 1.1.8 |
 
 ## 4. Results so far
 
@@ -189,7 +194,18 @@ crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
 - ~~Does the symmetric root also improve `permlmer()`?~~ Yes for the crossed
   design (0.064 → 0.054); unchanged for the split plot. Still open: the GLMM
   working scale, where the order-invariant root is not symmetric.
-- Pairwise comparisons by permutation: not yet studied.
+- Pairwise comparisons by permutation: study 1b part 1 (`dev/sim-perm-pairs.R`),
+  results in `results-1b.md`. Designs: RCBD (global null; partial null with
+  one mean 3 SD away; skewed errors), split plot (whole-plot and sub-plot
+  pairs, partial nulls), covariate with extreme values, `lme` with
+  `varIdent`, `gls` with AR(1), power. Question: is one set of refits
+  under the global null (the maintainer's `permlist`) good enough for each
+  pair and for the family (max-|t|), or is a reduced model per pair
+  (Freedman–Lane) needed?
+- Term tests with the package code after steps 6–8 (`dev/sim-perm-fixed.R`):
+  Freedman–Lane with V fixed (no refits) for LMMs, on the working scale for
+  glm and GLMMs, against raw permutation and KR F / LRT, including
+  overdispersed counts and rare binary events.
 - How a parametric bootstrap from the reduced (Poisson) model behaves under
   overdispersion (expected to fail like the LRT, since it trusts the model).
 

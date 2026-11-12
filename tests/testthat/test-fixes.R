@@ -22,7 +22,7 @@ test_that("trans = NULL means no back-transformation (B2)", {
 
 test_that("contrastmeans() and predictmeans() give the same permutation p-value (B3)", {
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats())
-  perm <- suppressWarnings(permmodels(fm, nperm = 49, prt = FALSE, ncore = 1, seed = 11))
+  perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 49, prt = FALSE, ncore = 1, seed = 11))
   pm <- predictmeans(fm, "nitro", permlist = perm, adj = "none", plot = FALSE, prtnum = FALSE, ncore = 1)
   cm <- contrastmeans(fm, "nitro", ctrmatrix = rbind(c(1, -1, 0, 0)), permlist = perm)
   # lower triangle of 'Pairwise p-value' holds the p-values; row 0.2, column 0
@@ -35,7 +35,7 @@ test_that("functions don't change options() for the rest of the session", {
   on.exit(options(op))
   invisible(predictmeans(fm, "nitro", plot = FALSE, prtnum = FALSE))
   invisible(contrastmeans(fm, "nitro", ctrmatrix = rbind(c(1, -1, 0, 0))))
-  invisible(permmodels(fm, nperm = 5, prt = FALSE, ncore = 1, seed = 1))
+  invisible(permmodels(fm, method = "raw", nperm = 5, prt = FALSE, ncore = 1, seed = 1))
   expect_equal(getOption("scipen"), 0)
 })
 
@@ -81,7 +81,7 @@ test_that("permmodels() and CookD() refit the model on its own data (B12)", {
   # A local data set whose name also exists on the search path (nlme::Oats)
   Oats <- oats()
   fm <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
-  p <- permmodels(fm, nperm = 9, prt = FALSE, ncore = 1, seed = 3)
+  p <- permmodels(fm, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 3)
   expect_equal(p$ANOVA$numDF, anova(fm)$numDF)
   expect_identical(rownames(p$COEFFICENTS), names(nlme::fixef(fm)))
   # A local data set with a name found nowhere else
@@ -89,7 +89,7 @@ test_that("permmodels() and CookD() refit the model on its own data (B12)", {
   fm2 <- lme(yield ~ nitro + Variety, random = ~1|Block, data = local_dat)
   expect_length(CookD(fm2, group = "Block", plot = FALSE), 6)
   fg <- gls(yield ~ nitro + Variety, data = local_dat)
-  expect_length(permmodels(fg, nperm = 5, prt = FALSE, ncore = 1, seed = 1)$permlist, 5)
+  expect_length(permmodels(fg, method = "raw", nperm = 5, prt = FALSE, ncore = 1, seed = 1)$permlist, 5)
 })
 
 test_that("predictmeans() works for lmer models with a missing cell (B15)", {
@@ -155,8 +155,8 @@ test_that("permmodels() gives the same tables for lme4 and lmerTest fits", {
   d <- oats()
   f1 <- lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
   f2 <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
-  p1 <- suppressWarnings(permmodels(f1, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
-  p2 <- suppressWarnings(permmodels(f2, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  p1 <- suppressWarnings(permmodels(f1, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  p2 <- suppressWarnings(permmodels(f2, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))
   expect_equal(p1$ANOVA, p2$ANOVA)
   expect_equal(p1$COEFFICENTS, p2$COEFFICENTS)
   expect_true("Pr(>F)" %in% names(p1$ANOVA))

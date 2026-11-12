@@ -2,12 +2,14 @@
 #'
 #' @description
 #' This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
-#' for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+#' for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+#' \code{glmer} and \code{glmmTMB}.
 #' @usage
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
 #'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-#'   fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL)
-#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+#'   fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL)
+#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+#'   \code{glmer} or \code{glmmTMB}.
 #' @param nperm The number of permutations. The default is 4999.
 #' @param type type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
 #' @param test.statistic For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
@@ -18,18 +20,24 @@
 #' @param prt A logical variable to indicate whether or not to print output on the screen. The default is TRUE.
 #' @param ncore Number of core for parallel computing, the default value is 3.
 #' @param seed Specify a random number generator seed, for reproducible results.
-#' @param method How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"}. See Details.
+#' @param method How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
+#'   chooses the more robust one for the model class, which is \code{"freedman-lane"} for every class at present.
+#'   \code{"raw"} is the scheme of predictmeans 1.x. See Details.
 #' @param perms Optional matrix of permutations to use instead of free ones, one row per observation used in the
 #'   model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
 #'   whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE} when its columns are all the
 #'   permutations the design allows.
 #' @return
-#' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+#' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
 #' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
 #' \code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
 #' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
 #' pairwise comparisons and contrasts. If refits fail, the number left out is in attribute \code{"failures"}.
 #' @details
+#' With \code{method = "auto"} (the default since predictmeans 2.0) the method is chosen by model class from a
+#' simulation study (\code{dev/permutation-plan.md} in the package sources): at present Freedman-Lane for every
+#' class. Use \code{method = "raw"} for the results of predictmeans 1.x.
+#'
 #' With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
 #' \code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
 #' permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}. The residuals are
@@ -124,7 +132,7 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL) {
 
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
                        test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
-					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL) {
+					   data=NULL, fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL) {
   
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -132,6 +140,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   type <- match.arg(type)
   test.statistic <- match.arg(test.statistic)	
   method <- match.arg(method)
+  if (method == "auto") method <- pm_perm_auto_method(model)
   seed <- if (missing(seed)) NULL else seed
   if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
   if (method == "freedman-lane") {

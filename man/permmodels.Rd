@@ -6,10 +6,11 @@
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=3, seed, method=c("raw", "freedman-lane"), perms=NULL)
+  fo=NULL, prt=TRUE, ncore=3, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
+\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+\code{glmer} or \code{glmmTMB}.}
 
 \item{nperm}{The number of permutations. The default is 4999.}
 
@@ -30,7 +31,9 @@ Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer}
 
 \item{seed}{Specify a random number generator seed, for reproducible results.}
 
-\item{method}{How the data are permuted: \code{"raw"} (the default) or \code{"freedman-lane"}. See Details.}
+\item{method}{How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
+chooses the more robust one for the model class, which is \code{"freedman-lane"} for every class at present.
+\code{"raw"} is the scheme of predictmeans 1.x. See Details.}
 
 \item{perms}{Optional matrix of permutations to use instead of free ones, one row per observation used in the
 model and one column per permutation (e.g. from \code{\link{permindex}}, for permutations within blocks or of
@@ -38,7 +41,7 @@ whole plots); \code{nperm} is then its number of columns. Use \code{exact = TRUE
 permutations the design allows.}
 }
 \value{
-The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
 With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
 \code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
 \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
@@ -46,9 +49,14 @@ pairwise comparisons and contrasts. If refits fail, the number left out is in at
 }
 \description{
 This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
-for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+\code{glmer} and \code{glmmTMB}.
 }
 \details{
+With \code{method = "auto"} (the default since predictmeans 2.0) the method is chosen by model class from a
+simulation study (\code{dev/permutation-plan.md} in the package sources): at present Freedman-Lane for every
+class. Use \code{method = "raw"} for the results of predictmeans 1.x.
+
 With \code{method = "raw"}, the response is permuted for \code{lm}, \code{aov} and \code{glm} models; for
 \code{gls}, \code{lme} and \code{lmer} models the fitted values and the decorrelated residuals of the model are
 permuted together. Each permutation refits the model, and the refits are kept in \code{permlist}. The residuals are

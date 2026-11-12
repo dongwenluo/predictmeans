@@ -74,7 +74,7 @@ test_that("back-transformed means are on the response scale", {
 
 test_that("permutation p-values in pairs equal the legacy p-value matrix", {
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_fac())
-  perm <- suppressWarnings(permmodels(fm, nperm = 19, prt = FALSE, ncore = 1, seed = 2))
+  perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 19, prt = FALSE, ncore = 1, seed = 2))
   pm <- predictmeans(fm, "nitro", permlist = perm, adj = "BH", plot = FALSE, prtnum = FALSE, ncore = 1)
   pr <- tidy.predictmeans(pm, "pairs")
   expect_true(all(pr$p.method == "permutation"))

@@ -63,22 +63,22 @@ test_that("permmodels(): seeds, response variables, failures", {
   m1 <- glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug)
   Drug$F <- Drug$N - Drug$R
   m2 <- glm(cbind(R, F) ~ Drug + log10Dose, binomial, Drug)
-  r1 <- permmodels(m1, nperm = 19, seed = 1, prt = FALSE, ncore = 1)
-  r2 <- permmodels(m2, nperm = 19, seed = 1, prt = FALSE, ncore = 1)
+  r1 <- permmodels(m1, method = "raw", nperm = 19, seed = 1, prt = FALSE, ncore = 1)
+  r2 <- permmodels(m2, method = "raw", nperm = 19, seed = 1, prt = FALSE, ncore = 1)
   # both columns of cbind(R, F) are permuted together (1.x permuted only F)
   expect_identical(r1$ANOVA$Perm_p_value, r2$ANOVA$Perm_p_value)
   expect_null(attr(r1, "failures"))
   # a transformed response is permuted on its variable, with 'data'
   Oats <- as.data.frame(nlme::Oats)
   m3 <- lm(log(yield) ~ nitro + Variety, Oats)
-  r3 <- permmodels(m3, nperm = 19, seed = 1, prt = FALSE, ncore = 1, data = Oats)
+  r3 <- permmodels(m3, method = "raw", nperm = 19, seed = 1, prt = FALSE, ncore = 1, data = Oats)
   expect_true(all(as.numeric(r3$ANOVA[1:2, "Perm_p_value"]) > 0))
-  expect_error(permmodels(m3, nperm = 9, prt = FALSE, ncore = 1), "response variable")
-  expect_error(permmodels(lm(cbind(yield, nitro) ~ Variety, Oats), nperm = 9, prt = FALSE, ncore = 1),
+  expect_error(permmodels(m3, method = "raw", nperm = 9, prt = FALSE, ncore = 1), "response variable")
+  expect_error(permmodels(lm(cbind(yield, nitro) ~ Variety, Oats), method = "raw", nperm = 9, prt = FALSE, ncore = 1),
                "one response")
   # a seed leaves the user's random number stream as it was
   set.seed(5); a <- runif(1)
-  set.seed(5); invisible(permmodels(m3, nperm = 9, seed = 2, prt = FALSE, ncore = 1, data = Oats)); b <- runif(1)
+  set.seed(5); invisible(permmodels(m3, method = "raw", nperm = 9, seed = 2, prt = FALSE, ncore = 1, data = Oats)); b <- runif(1)
   expect_identical(a, b)
 })
 
@@ -97,11 +97,11 @@ test_that("refits work for models fitted in a function with formula and family v
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fit_lmer <- function(f, d) lme4::lmer(f, data = d)
   m <- fit_lmer(yield ~ nitro + (1 | Block), Oats)
-  r <- permmodels(m, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  r <- permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
   expect_identical(length(r$permlist), 9L)
   data(Drug, package = "predictmeans", envir = environment())
   fit_glm <- function(f, fam, d) glm(f, family = fam, data = d)
   g <- fit_glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug)
-  rg <- permmodels(g, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  rg <- permmodels(g, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
   expect_identical(length(rg$permlist), 9L)
 })

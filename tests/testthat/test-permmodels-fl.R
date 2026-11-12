@@ -118,7 +118,7 @@ test_that("with a permlist, observed t statistics use the unadjusted covariance"
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   Om <- Oats[-c(1, 5, 9, 20, 33), ]
   m <- lme4::lmer(yield ~ nitro + Variety + (1 | Block/Variety), data = Om)
-  pl <- permmodels(m, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  pl <- permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
   a <- predictmeans(m, "nitro", permlist = pl, plot = FALSE, prtnum = FALSE, ncore = 1)
   b <- predictmeans(m, "nitro", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE, ncore = 1)
   expect_equal(a$pairs$std.error, b$pairs$std.error)

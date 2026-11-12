@@ -53,6 +53,6 @@ test_that("permlmer() and permmodels() run with the new square root", {
   p1 <- suppressMessages(permlmer(m0, m1, nperm = 19, ncore = 1, seed = 1))$`Perm-p`[2]
   expect_true(p1 > 0 && p1 <= 1)
   fm <- lmer(y ~ A + (1 | block), data = d)
-  pm <- permmodels(fm, nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  pm <- permmodels(fm, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
   expect_length(pm$permlist, 9)
 })

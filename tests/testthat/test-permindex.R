@@ -34,7 +34,7 @@ test_that("permmodels() and permlmer() use the permutations given in 'perms'", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro, data = Oats)
   idx <- permindex(Oats, block = "Block", nsim = 39, seed = 2)
-  r <- permmodels(fm, perms = idx, prt = FALSE, ncore = 1)
+  r <- permmodels(fm, method = "raw", perms = idx, prt = FALSE, ncore = 1)
   Fobs <- anova(fm)["nitro", "F value"]
   Fs <- apply(idx, 2, function(p) {
     dd <- Oats; dd$yield <- Oats$yield[p]
@@ -47,9 +47,9 @@ test_that("permmodels() and permlmer() use the permutations given in 'perms'", {
   expect_identical(rf$perm$nperm, ncol(idx))
   pm <- predictmeans(fm, "nitro", permlist = rf, plot = FALSE, prtnum = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value[1], unname(rf$COEFFICENTS["nitro0.2", "Perm_p_value"]), tolerance = 1e-4)
-  expect_error(permmodels(fm, perms = idx[-1, ], prt = FALSE, ncore = 1), "one row per observation")
+  expect_error(permmodels(fm, method = "raw", perms = idx[-1, ], prt = FALSE, ncore = 1), "one row per observation")
   bad <- idx; bad[1, 1] <- bad[2, 1]
-  expect_error(permmodels(fm, perms = bad, prt = FALSE, ncore = 1), "permutation of 1 to")
+  expect_error(permmodels(fm, method = "raw", perms = bad, prt = FALSE, ncore = 1), "permutation of 1 to")
 
   # lme: the rows are reordered inside; results do not depend on the order of the data
   skip_on_cran()
@@ -59,8 +59,8 @@ test_that("permmodels() and permlmer() use the permutations given in 'perms'", {
   m2 <- lme(yield ~ nitro, random = ~ 1 | Block, data = Os)
   i1 <- permindex(Oats, block = "Block", nsim = 19, seed = 4)
   i2 <- i1[o, ]; i2[] <- match(i1[o, ], o)        # the same permutations, for the shuffled rows
-  r1 <- permmodels(m1, perms = i1, prt = FALSE, ncore = 1)
-  r2 <- permmodels(m2, perms = i2, prt = FALSE, ncore = 1)
+  r1 <- permmodels(m1, method = "raw", perms = i1, prt = FALSE, ncore = 1)
+  r2 <- permmodels(m2, method = "raw", perms = i2, prt = FALSE, ncore = 1)
   expect_identical(r1$ANOVA$Perm_p_value, r2$ANOVA$Perm_p_value)
   # permlmer
   l0 <- lme4::lmer(yield ~ nitro + (1 | Block), data = Oats)

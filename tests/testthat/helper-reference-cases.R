@@ -101,12 +101,12 @@ reference_cases <- function() {
   cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", level = 0.1, prt = FALSE)$pred_df)
 
   ## Permutation tests, R2, variance components and contrasts
-  perm_lmer <- suppressWarnings(permmodels(fm_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1))
+  perm_lmer <- suppressWarnings(permmodels(fm_lmer, method = "raw", nperm = 19, prt = FALSE, ncore = 1, seed = 1))
   cap("perm_lmer", perm_lmer)
-  cap("perm_lmer_III", permmodels(fm_lmer, nperm = 9, type = "III", prt = FALSE, ncore = 1, seed = 2)[c("COEFFICENTS", "ANOVA")])
-  cap("perm_lme", permmodels(fm_lme, nperm = 9, prt = FALSE, ncore = 1, seed = 3)[c("COEFFICENTS", "ANOVA")])
-  cap("perm_lm", permmodels(fm_lm, nperm = 19, prt = FALSE, ncore = 1, seed = 4)[c("COEFFICENTS", "ANOVA")])
-  cap("perm_lm_II", permmodels(fm_lm, nperm = 9, type = "II", prt = FALSE, ncore = 1, seed = 5)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lmer_III", permmodels(fm_lmer, method = "raw", nperm = 9, type = "III", prt = FALSE, ncore = 1, seed = 2)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lme", permmodels(fm_lme, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 3)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lm", permmodels(fm_lm, method = "raw", nperm = 19, prt = FALSE, ncore = 1, seed = 4)[c("COEFFICENTS", "ANOVA")])
+  cap("perm_lm_II", permmodels(fm_lm, method = "raw", nperm = 9, type = "II", prt = FALSE, ncore = 1, seed = 5)[c("COEFFICENTS", "ANOVA")])
   cap("perm_pm_lmer", pmo(fm_lmer, "nitro", permlist = perm_lmer, adj = "BH", ncore = 1))
   fm_lmer0 <- lmerTest::lmer(yield ~ nitro + Variety + (1|Block/Whole_plot), data = Oats)
   cap("permlmer", permlmer(fm_lmer0, fm_lmer, nperm = 19, ncore = 1, seed = 6))

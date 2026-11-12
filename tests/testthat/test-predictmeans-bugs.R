@@ -8,7 +8,7 @@ oats_lmer <- function() {
 
 test_that("permlist works with atvar", {
   m <- oats_lmer()
-  perm <- suppressWarnings(permmodels(m, nperm = 9, prt = FALSE, ncore = 1, seed = 1))
+  perm <- suppressWarnings(permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))
   r <- predictmeans(m, "nitro:Variety", permlist = perm, atvar = "Variety", ncore = 1,
                     plot = FALSE, prtnum = FALSE)
   expect_equal(nrow(r$means), 12)

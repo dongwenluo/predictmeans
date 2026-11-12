@@ -23,7 +23,7 @@ m_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
 m_lmer0 <- lmer(yield ~ nitro + Variety + (1|Block/Variety), data = Oats)
 m_lmerB <- lmer(yield ~ nitro*Variety + (1|Block), data = Oats)
 m_glmer <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
-pm <- function(m, ...) suppressWarnings(permmodels(m, prt = FALSE, ncore = 1, ...))
+pm <- function(m, method = "raw", ...) suppressWarnings(permmodels(m, prt = FALSE, ncore = 1, method = method, ...))
 snap <- list()
 run <- function(name, expr) {
   out_txt <- utils::capture.output(val <- try(eval.parent(substitute(expr)), silent = TRUE))

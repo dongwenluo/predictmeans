@@ -226,3 +226,14 @@ pm_perm_vcov_adjust <- function(model, permlist, vcov_adjust, vcov_adjust_defaul
   }
   FALSE
 }
+
+## method = "auto" in permmodels(): the more robust scheme for the model
+## class, from the simulation studies (dev/permutation-plan.md, section 7;
+## dev/sim-study/). Freedman-Lane for every class: lm/aov (Freedman-Lane
+## study: raw permutation liberal with covariates with extreme values),
+## lmer/lme/gls (V fixed; study 1b), glm/glmer/glmmTMB (working scale; study
+## 1b; raw permutation of a GLM response tests only the global null, and is
+## not available for GLMMs).
+pm_perm_auto_method <- function(model) {
+  "freedman-lane"
+}
