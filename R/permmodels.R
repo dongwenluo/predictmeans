@@ -114,11 +114,12 @@
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 #'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 #' contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
-#' }
 #'
-#' ## Freedman-Lane permutations for a mixed model (no refits: fast)
+#' ## The same by lmer, type II tests; refit = FALSE is much faster (no refits)
 #' fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-#' permmodels(fm3, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
+#' permmodels(fm3, nperm = 99, type = "II", seed = 1, ncore = 1)
+#' permmodels(fm3, nperm = 999, type = "II", seed = 1, refit = FALSE)
+#' }
 #'
 #' ## Freedman-Lane permutations for a linear model with a covariate
 #' mtcars$cyl <- factor(mtcars$cyl)

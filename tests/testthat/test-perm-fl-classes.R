@@ -22,11 +22,11 @@ test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
   m3 <- nlme::lme(yield ~ nitro * Variety, random = ~ 1 | Block/Variety, data = Om[o, ])
   i1 <- permindex(Om, block = "Block", nsim = 29, seed = 2)
   i3 <- i1[o, ]; i3[] <- match(i1[o, ], o)
-  expect_identical(permmodels(m2, perms = i1, prt = FALSE, method = "freedman-lane")$ANOVA$Perm_p_value,
-                   permmodels(m3, perms = i3, prt = FALSE, method = "freedman-lane")$ANOVA$Perm_p_value)
+  expect_identical(permmodels(m2, perms = i1, prt = FALSE, ncore = 1, method = "freedman-lane")$ANOVA$Perm_p_value,
+                   permmodels(m3, perms = i3, prt = FALSE, ncore = 1, method = "freedman-lane")$ANOVA$Perm_p_value)
   # gls
   g <- nlme::gls(yield ~ nitro + Variety, correlation = nlme::corCompSymm(form = ~ 1 | Block), data = Om)
-  rg <- permmodels(g, nperm = 29, type = "III", seed = 1, prt = FALSE, method = "freedman-lane")
+  rg <- permmodels(g, nperm = 29, type = "III", seed = 1, prt = FALSE, ncore = 1, method = "freedman-lane")
   expect_equal(rg$ANOVA[, "F value"], round(unname(pm_anova(g, "III")[-1, "Chisq"] / pm_anova(g, "III")[-1, "Df"]), 4),
                tolerance = 1e-3)
 })
@@ -44,8 +44,8 @@ test_that("Freedman-Lane on the working scale for glm, glmer and glmmTMB", {
   gm <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic), family = binomial, data = Clinical)
   tm <- glmmTMB::glmmTMB(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic), family = binomial,
                          data = Clinical)
-  rg <- permmodels(gm, nperm = 49, seed = 1, prt = FALSE, method = "freedman-lane")
-  rt <- permmodels(tm, nperm = 49, seed = 1, prt = FALSE, method = "freedman-lane")
+  rg <- permmodels(gm, nperm = 49, seed = 1, prt = FALSE, ncore = 1, method = "freedman-lane")
+  rt <- permmodels(tm, nperm = 49, seed = 1, prt = FALSE, ncore = 1, method = "freedman-lane")
   expect_equal(rg$ANOVA$Perm_p_value, rt$ANOVA$Perm_p_value)
   expect_match(attr(rg$ANOVA, "heading"), "working")
   expect_error(permmodels(gm, method = "raw", nperm = 9, prt = FALSE), "freedman-lane")

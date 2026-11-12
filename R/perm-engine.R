@@ -78,6 +78,9 @@ pm_perm_check_index <- function(perms, n) {
 pm_perm_map <- function(X, FUN, ncore = 1, packages = character()) {
   safe <- function(x) tryCatch(FUN(x), error = function(e) NULL)
   ncore <- max(1L, as.integer(ncore))
+  # at most 2 cores where R CMD check limits them (CRAN policy)
+  lim <- tolower(Sys.getenv("_R_CHECK_LIMIT_CORES_", ""))
+  if (nzchar(lim) && lim != "false") ncore <- min(ncore, 2L)
   if (ncore == 1L || length(X) < 2L) return(lapply(X, safe))
   if (.Platform$OS.type == "windows") {
     cl <- parallel::makeCluster(ncore)

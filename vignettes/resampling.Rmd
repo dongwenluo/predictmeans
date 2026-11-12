@@ -117,7 +117,7 @@ GLMM):
 data(Clinical)
 fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
                  family = binomial, data = Clinical)
-perm_clin <- permmodels(fm_clin, nperm = 999, seed = 1)
+perm_clin <- permmodels(fm_clin, nperm = 199, seed = 1, ncore = 1)
 ```
 
 ## Testing random effects: `permlmer()`
