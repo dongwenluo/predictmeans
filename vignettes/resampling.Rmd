@@ -49,11 +49,15 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
   the two means equal) gives fitted values and residuals; the residuals are permuted
   and added back to those fitted values, and the statistic is computed again (Freedman
   and Lane 1983). The other terms keep their effects, so each test is of its own term.
-  For mixed models the covariance of the data, V, is fixed at the fit: the data and the
-  design are decorrelated with the symmetric square root of V, which turns the model
-  into a linear model with the model's own estimates, t and F statistics. GLMs and GLMMs
-  are first linearised at the fit (working response and working variances on the link
-  scale). No model is refitted, so this is fast.
+  For linear mixed models the residuals are decorrelated with the symmetric square root
+  of their covariance before they are permuted and correlated again after, and the model
+  is refitted to each permuted data set, so its variance parameters are estimated again
+  each time (one set of refits per term). `refit = FALSE` instead fixes the covariance
+  of the data at the fit, which turns the model into a linear model with no refits:
+  much faster, but slightly liberal when the variance parameters rest on few units
+  (whole plots with few blocks). GLMs and GLMMs are first linearised at the fit (working
+  response and working variances on the link scale) and use the fixed-covariance
+  version.
 - **Raw** (`method = "raw"`, the scheme of predictmeans 1.x). The response (`lm`, `glm`)
   or the fitted values together with the decorrelated residuals (mixed models) are
   permuted, and the model is refitted to each permuted data set. The refits are kept in
@@ -64,7 +68,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
   same for linear models).
 
 ```{r}
-perm <- permmodels(fm, nperm = 999, seed = 1)
+perm <- permmodels(fm, nperm = 199, seed = 1, ncore = 1)
 ```
 
 For `lm`, `aov`, `lme` and `gls` models the tables are the model's own tests with a
@@ -181,7 +185,7 @@ pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 |---|---|---|
 | `lm`, `aov` | `permmodels()` (Freedman–Lane) | — |
 | `glm` | `permmodels()` (Freedman–Lane on the working scale) | — |
-| `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane, V fixed); or the Kenward–Roger F test | `permlmer()` |
+| `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane with refits); or the Kenward–Roger F test | `permlmer()` |
 | `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test | |
 
