@@ -185,6 +185,44 @@ With the symmetric root in the package's own `permlmer()` and
 crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
 (Cholesky over 30 min and 2.9 GB, stopped).
 
+### Study 1b, part 1: pairwise comparisons (`dev/sim-perm-pairs/`, 199 permutations)
+
+1000 data sets per null cell (500 for power); per-pair rates are the mean
+over the true null pairs (largest in brackets); familywise error (FWER) is
+over the true null pairs.
+
+| cell | joint (permlist) | FL per pair, V fixed | FL per term, V fixed | t (KR / nlme) | FWER max-\|t\| joint / FL term / Tukey |
+|---|---|---|---|---|---|
+| RCBD, global null | 0.054 (0.068) | 0.058 (0.071) | 0.057 (0.072) | 0.056 (0.069) | 0.058 / 0.065 / 0.059 |
+| RCBD, one mean 3 SD away | 0.044 (0.047) | 0.052 (0.057) | 0.051 (0.052) | 0.048 (0.050) | 0.032 / 0.042 / 0.037 |
+| RCBD, skewed, partial null | 0.046 (0.052) | 0.051 (0.057) | 0.052 (0.058) | 0.048 (0.055) | 0.024 / 0.030 / 0.029 |
+| split plot, whole-plot pairs | 0.055 (0.059) | **0.062 (0.065)** | **0.062 (0.068)** | 0.050 (0.055) | 0.034 / 0.047 / 0.028 |
+| split plot, sub-plot pair | 0.048 | 0.054 | 0.049 | 0.052 | (one null pair) |
+| covariate with extreme values | 0.057 (0.061) | 0.054 (0.060) | 0.053 (0.058) | 0.052 (0.055) | **0.067** / 0.056 / 0.051 |
+| lme, varIdent (SD 1,1,2,3) | 0.059 (0.067) | **0.069 (0.075)** | **0.069 (0.078)** | 0.065 (0.073) | 0.065 / 0.086 / 0.079 |
+| gls, AR(1) | 0.039 (0.046) | 0.061 (0.064) | 0.062 (0.067) | 0.059 (0.062) | 0.043 / 0.072 / 0.067 |
+| power (means 0, 0.4, 0.8, 1.2) | 0.276 | 0.282 | 0.285 | 0.278 | |
+
+Reading:
+
+- One set of refits under the global null (the maintainer's `permlist`)
+  works for pairs: 3.9–5.9% per pair, never above the Monte Carlo range;
+  slightly conservative when other means differ (4.4–4.6%), and its max-|t|
+  familywise error is right except with a covariate with extreme values
+  (6.7%, the known weakness of permuting fitted values).
+- Freedman–Lane with V fixed (no refits) is right in block designs (5.1–5.8%)
+  but liberal where V rests on estimated variance parameters with little
+  information: whole-plot pairs with 6 blocks (6.2%), varIdent (6.9%), AR(1)
+  (6.1%) — the same as the parametric t, since both treat V as known. Hence
+  Freedman–Lane **with refits** for linear mixed models (V estimated again
+  for each permuted data set), checked in part 2 (`fx2_sp_pairs`,
+  `fx2_lme_varident`).
+- Freedman–Lane per term (one reduced model for all pairs of a factor) is as
+  good as per pair, and gives a max-|t| familywise adjustment that matches
+  Tukey's (a permutation Tukey test): this is the scheme used for pairs with
+  refits.
+- Power was the same for all methods.
+
 ### Open questions
 
 - ~~Why the joint scheme is liberal under the LMM global null (0.071).~~
@@ -194,8 +232,8 @@ crossed random effects: n = 3000 0.11 s (Cholesky 3.9 s); n = 20000 21 s
 - ~~Does the symmetric root also improve `permlmer()`?~~ Yes for the crossed
   design (0.064 → 0.054); unchanged for the split plot. Still open: the GLMM
   working scale, where the order-invariant root is not symmetric.
-- Pairwise comparisons by permutation: study 1b part 1 (`dev/sim-perm-pairs.R`),
-  results in `results-1b.md`. Designs: RCBD (global null; partial null with
+- ~~Pairwise comparisons by permutation~~: study 1b part 1 (`dev/sim-perm-pairs.R`),
+  results above and in `results-1b.md`. Designs: RCBD (global null; partial null with
   one mean 3 SD away; skewed errors), split plot (whole-plot and sub-plot
   pairs, partial nulls), covariate with extreme values, `lme` with
   `varIdent`, `gls` with AR(1), power. Question: is one set of refits
