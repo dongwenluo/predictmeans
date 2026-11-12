@@ -96,8 +96,9 @@ they coincide. With the observed information (by numerical derivatives) the
 9.79, 9.97, 31.3, 44.7 and 9.9495. Satterthwaite in predictmeans already uses
 the Hessian, which is why it matches SAS.
 
-**BETWITHIN:** SAS splits the within-subject df into subject-by-effect
-interactions: Variety 10 (Block × Variety), Nitro 15 (Block × Nitro),
+**BETWITHIN** (now `df_method = "between-within"`, `R/df-betwithin.R`; all
+BETWITHIN values above agree): SAS splits the within-subject df into
+subject-by-effect interactions: Variety 10 (Block × Variety), Nitro 15 (Block × Nitro),
 Variety × Nitro 30 (Block × Variety × Nitro; 29 with the missing plot); in the
 repeated measures Group 10, Time 10, Group × Time 10 (not Time 20 as guessed
 in the table above).

@@ -14,7 +14,7 @@
 #' of the terms with the covariate, otherwise the residual df.
 #' @usage
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
 #'           vcov_adjust = TRUE,
 #'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
@@ -42,11 +42,13 @@
 NULL
 
 pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
                       vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
                       vcov = NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
+  # as in predictmeans(): containment and between-within df with the unadjusted covariance
+  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
   weights <- match.arg(weights)
   adj <- pm_match_adj(adj)
   if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
@@ -106,6 +108,12 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
 
 ## Degrees of freedom of rows L (coefficient space) of slope contrasts.
 pm_slope_df <- function(model, L, modelterm, covariate, mp, parms) {
+  if (identical(parms$df_type, "between-within")) {
+    # the smallest between-within df of the terms with the covariate
+    bw <- pm_betwithin_df(model)
+    with_cov <- vapply(strsplit(names(bw), ":"), function(v) covariate %in% v, logical(1))
+    return(rep(min(bw[with_cov]), nrow(L)))
+  }
   if (inherits(model, "lmerMod")) {
     return(as.numeric(df_term(model, modelterm, ctrmatrix = L, type = parms$df_type, vcov_adj = parms$vcov_adj)))
   }

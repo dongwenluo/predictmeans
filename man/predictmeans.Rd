@@ -11,7 +11,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), vcov=NULL)
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -143,7 +143,14 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
 REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
-covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other model classes.}
+covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
+\code{gls} models: the subject is the coarsest random-effect grouping (\code{lmer}, \code{lme}) or the grouping of
+the correlation structure (\code{gls}); an effect constant within subjects gets the between-subject df, and the
+others the df of their subject-by-effect interaction (for example Block x Variety in a split plot); with an
+unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
+between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
+used unless \code{vcov_adjust = TRUE} is given.
+Other choices are ignored for other model classes.}
 
 \item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,

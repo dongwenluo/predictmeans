@@ -11,6 +11,8 @@
 #' \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997), as
 #'   \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
 #'   \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
+#' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
+#'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 #' \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
 #'   \code{\link{contrastmeans}}).}
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
@@ -19,7 +21,7 @@
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
 #'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
@@ -28,7 +30,8 @@
 #'   tested.
 #' @param ctrmatrix Optional contrast matrix over the means of \code{modelterm} (as for \code{\link{contrastmeans}},
 #'   e.g. from \code{\link{contrast_family}} or \code{\link{specify_contrast}}); its rows are tested together.
-#' @param df_method For \code{lmer} models: the denominator df (see Details).
+#' @param df_method For \code{lmer} models (\code{"between-within"} also for \code{lme} and \code{gls}): the
+#'   denominator df (see Details).
 #' @param weights How the means average over other factors, as in \code{\link{predictmeans}}.
 #' @param vcov Optional covariance of the coefficients, as in \code{\link{predictmeans}}: the F statistic is then
 #'   the Wald F with this covariance, and the denominator df those of the model's own test.
@@ -54,7 +57,7 @@
 NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
-                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -116,14 +119,16 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
     rd <- mymodelparm(model)$df
     other_df <- if (is.numeric(rd) && length(rd) == 1 && is.finite(rd) && rd > 0) rd else Inf
   }
-  cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else NULL
+  cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else
+    if (identical(df_type, "between-within")) pm_betwithin_df(model)[[modelterm]] else NULL
 
   res <- t(vapply(sets, function(C) {
     pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df, Vuser)
   }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
-  attr(out, "df_method") <- if (inherits(model, "lmerMod")) df_type else if (inherits(model, "lme")) "nlme" else "residual"
+  attr(out, "df_method") <- if (inherits(model, "lmerMod") || identical(df_type, "between-within")) df_type else
+    if (inherits(model, "lme")) "nlme" else "residual"
   if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
   out
 }

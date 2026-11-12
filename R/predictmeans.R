@@ -13,7 +13,7 @@
 #'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), vcov=NULL)
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
@@ -104,7 +104,14 @@
 #'   REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 #'   smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 #'   residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
-#'   covariance is used unless \code{vcov_adjust = TRUE} is given. Ignored for other model classes.
+#'   covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
+#'   \code{gls} models: the subject is the coarsest random-effect grouping (\code{lmer}, \code{lme}) or the grouping of
+#'   the correlation structure (\code{gls}); an effect constant within subjects gets the between-subject df, and the
+#'   others the df of their subject-by-effect interaction (for example Block x Variety in a split plot); with an
+#'   unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
+#'   between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
+#'   used unless \code{vcov_adjust = TRUE} is given.
+#'   Other choices are ignored for other model classes.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
 #'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
@@ -198,7 +205,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), vcov=NULL) {
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
 
   ## Bias output towards fixed notation. See ?options for more info
@@ -218,7 +225,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
   # SAS DDFM=CONTAIN uses the unadjusted covariance
-  if (df_method == "containment" && vcov_adjust_default) vcov_adjust <- FALSE
+  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
   vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
   vcov <- pm_vcov_with_perm(vcov, permlist)
   if (!is.null(vcov)) vcov_adjust <- FALSE     # the given covariance replaces the adjusted one

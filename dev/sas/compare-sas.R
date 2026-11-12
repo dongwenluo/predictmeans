@@ -55,7 +55,7 @@ check <- function(run, table, what, r, s, keys) {
                 formatC(r[bad], digits = 6, format = "g")), sep = "")
   }
 }
-ddfm_r <- c(CONTAIN = "containment", BETWITHIN = "containment", SATTERTHWAITE = "Satterthwaite",
+ddfm_r <- c(CONTAIN = "containment", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite",
             KR = "Kenward-Roger")
 lab <- function(x) substr(sub("^\\s+|\\s+$", "", x), 1, 8)   # Variety: first 8 characters, as in the first run
 
@@ -83,7 +83,7 @@ for (run in unique(sas$run)) {
       i <- match(key, mkey)
       check(run, "lsmeans", "est", mm$estimate[i], L$est, key)
       check(run, "lsmeans", "se", mm$std.error[i], L$se, key)
-      if (ddfm != "BETWITHIN") check(run, "lsmeans", "df", mm$df[i], L$df, key)
+      check(run, "lsmeans", "df", mm$df[i], L$df, key)
       D <- S[S$table == "diffs" & S$effect == term, ]
       k1 <- if (term == "Variety*Nitro") paste(lab(D$level1), lab(D$level2), sep = ":") else lab(D$level1)
       k2 <- if (term == "Variety*Nitro") paste(lab(D$level3), lab(D$level4), sep = ":") else lab(D$level2)
@@ -98,7 +98,7 @@ for (run in unique(sas$run)) {
       dk <- paste(k1, "-", k2)
       check(run, "diffs", "est", sgn * pr$estimate[j], D$est, dk)
       check(run, "diffs", "se", pr$std.error[j], D$se, dk)
-      if (ddfm != "BETWITHIN") check(run, "diffs", "df", pr$df[j], D$df, dk)
+      check(run, "diffs", "df", pr$df[j], D$df, dk)
     }
     # Type 3 tests: equality of the LS-means (main effects), interaction contrasts
     T3 <- S[S$table == "tests3", ]
@@ -110,7 +110,7 @@ for (run in unique(sas$run)) {
     rownames(jt) <- c("Variety", "Nitro", "Variety*Nitro")
     i <- match(T3$effect, rownames(jt))
     check(run, "tests3", "F", jt$F.ratio[i], T3$F, T3$effect)
-    if (ddfm != "BETWITHIN") check(run, "tests3", "dendf", jt$df2[i], T3$dendf, T3$effect)
+    check(run, "tests3", "dendf", jt$df2[i], T3$dendf, T3$effect)
   } else {
     g <- gls(Y ~ Group * Time, data = rep_long, method = "REML",
              correlation = corSymm(form = ~ as.integer(Time) | Subj), weights = varIdent(form = ~ 1 | Time))
@@ -121,7 +121,9 @@ for (run in unique(sas$run)) {
     check(run, "covparm", "est", r_cp, cp$est, cp$effect)
     for (term in c("Group", "Time", "Group*Time")) {
       mt <- sub("\\*", ":", term)
-      pm <- suppressMessages(suppressWarnings(predictmeans(g, mt, plot = FALSE, prtnum = FALSE, pairwise = TRUE)))
+      dfm <- if (ddfm == "BETWITHIN") "between-within" else "auto"
+      pm <- suppressMessages(suppressWarnings(predictmeans(g, mt, plot = FALSE, prtnum = FALSE, pairwise = TRUE,
+                                                           df_method = dfm)))
       L <- S[S$table == "lsmeans" & S$effect == term, ]
       key <- if (term == "Group*Time") paste(lab(L$level1), lab(L$level2), sep = ":") else lab(L$level1)
       mm <- pm$means
@@ -129,7 +131,7 @@ for (run in unique(sas$run)) {
       i <- match(key, mkey)
       check(run, "lsmeans", "est", mm$estimate[i], L$est, key)
       check(run, "lsmeans", "se", mm$std.error[i], L$se, key)
-      if (ddfm == "CONTAIN") check(run, "lsmeans", "df", mm$df[i], L$df, key)
+      if (ddfm %in% c("CONTAIN", "BETWITHIN")) check(run, "lsmeans", "df", mm$df[i], L$df, key)
       D <- S[S$table == "diffs" & S$effect == term, ]
       k1 <- if (term == "Group*Time") paste(lab(D$level1), lab(D$level2), sep = ":") else lab(D$level1)
       k2 <- if (term == "Group*Time") paste(lab(D$level3), lab(D$level4), sep = ":") else lab(D$level2)
@@ -140,7 +142,7 @@ for (run in unique(sas$run)) {
       dk <- paste(k1, "-", k2)
       check(run, "diffs", "est", sgn * pr$estimate[j], D$est, dk)
       check(run, "diffs", "se", pr$std.error[j], D$se, dk)
-      if (ddfm == "CONTAIN") check(run, "diffs", "df", pr$df[j], D$df, dk)
+      if (ddfm %in% c("CONTAIN", "BETWITHIN")) check(run, "diffs", "df", pr$df[j], D$df, dk)
     }
   }
 }

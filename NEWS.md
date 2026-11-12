@@ -245,6 +245,18 @@
   table records it (`vcov`). With a `permlist` it is not used (see
   `permmodels(robust = TRUE)`).
 
+* `df_method = "between-within"` (SAS `DDFM=BETWITHIN`) in
+  `predictmeans()`, `contrastmeans()`, `pm_joint()`, `pm_slopes()` and
+  `df_term()`, for `lmer`, `lme` and `gls` models: effects constant within
+  subjects get the between-subject df, the others the df of their
+  subject-by-effect interaction; with an unstructured covariance
+  (`gls` with `corSymm`) every effect gets the between-subject df. Equal to
+  SAS PROC MIXED on the split plot (Variety 10, Nitro 15, Variety x Nitro 30,
+  29 with a plot missing) and the unstructured repeated measures (10). As
+  for containment, the unadjusted covariance is used unless
+  `vcov_adjust = TRUE`. `pm_slopes()` with containment df now also uses the
+  unadjusted covariance by default, as `predictmeans()` does.
+
 * **Permutation Tukey and Westfall-Young adjustments.** With a `permlist`,
   `predictmeans()` and `contrastmeans()` take `adj = "tukey"` (or `"mvt"`):
   each comparison's |t| is compared with the largest |t| of its family in

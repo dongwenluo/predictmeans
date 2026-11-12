@@ -30,7 +30,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 - `plot = FALSE` in scripts (the default `TRUE` draws plots); `prtnum = FALSE` suppresses
   printing of the reference-grid note.
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, Satterthwaite for ML),
-  `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"`.
+  `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
+  (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`).
 - `vcov_adjust = TRUE` (default): Kenward-Roger adjusted covariance for REML `lmer`, as SAS
   `DDFM=KR` and emmeans; `FALSE` reproduces predictmeans 1.x standard errors.
 - `weights`: `"equal"` (default), `"proportional"` (= SAS `OM`), `"outer"`, `"cells"`,

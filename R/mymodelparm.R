@@ -47,6 +47,7 @@ mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NU
 		    df_type <- if (!is.null(extra$df_type)) extra$df_type else if (getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
 		    L_list <- get_contrasts_type1(model)
             df <- if (identical(df_type, "containment")) pm_containment_df(model)[names(L_list)] else
+              if (identical(df_type, "between-within")) pm_betwithin_df(model)[names(L_list)] else
               sapply(L_list, function(L) mean(df_term(model, ctrmatrix=L, type=df_type, vcov_adj=extra$vcov_adj)))
 		}
 		if (inherits(model, "glmerMod") || inherits(model, "glmmTMB")) {

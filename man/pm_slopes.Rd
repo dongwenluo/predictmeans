@@ -5,7 +5,7 @@
 \title{Slopes of a Covariate by Group}
 \usage{
 pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment"),
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"),
           vcov_adjust = TRUE,
           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }

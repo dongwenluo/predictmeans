@@ -6,7 +6,7 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), joint=FALSE,
                 level=0.05, vcov=NULL)
 }
 \arguments{
@@ -44,8 +44,9 @@ predictmeans 1.x. It has no effect for other models.}
 over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).}
 
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
-fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
-\code{\link{predictmeans}}).}
+fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}); see
+\code{\link{predictmeans}}.}
 
 \item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)

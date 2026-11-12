@@ -208,8 +208,9 @@ pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default, v
   dfm <- pm_df_method(model, df_method)
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
-  # containment df with the adjusted covariance only when asked for explicitly
-  if (identical(df_type, "containment") && vcov_adjust && lme4::getME(model, "is_REML"))
+  # containment and between-within df with the adjusted covariance only when asked for explicitly
+  if (any(df_type %in% c("containment", "between-within")) && vcov_adjust && inherits(model, "lmerMod") &&
+      lme4::getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
   mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   if (vcov_adjust) {
@@ -410,7 +411,14 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
 pm_compare_df <- function(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj) {
       if (length(Df) == 0) {
 
-        if (inherits(model, "lme")) {
+        if (identical(df_type, "between-within")) {
+          # SAS DDFM=BETWITHIN: one df for the term, its means and their pairs
+          Df <- unname(pm_betwithin_df(model)[modelterm])
+          pm_df_raw <- rep(Df, nrow(K))
+          mt$Df <- Df
+          Df_diff <- rep(Df, nrow(rK))
+          pairDf <- Df
+        } else if (inherits(model, "lme")) {
           Df <- terms(model$fixDF)[modelterm]
     		  names(Df) <- NULL
     		  mt$Df <- round(Df, 2)

@@ -7,7 +7,7 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), joint=FALSE,
 #'                 level=0.05, vcov=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
@@ -34,8 +34,9 @@
 #' @param weights Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
 #'   over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).
 #' @param df_method Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
-#'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}; see
-#'   \code{\link{predictmeans}}).
+#'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+#'   for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}); see
+#'   \code{\link{predictmeans}}.
 #' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 #'   test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
 #'   denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
@@ -104,7 +105,7 @@ NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment"), joint=FALSE,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within"), joint=FALSE,
                           level=0.05, vcov=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   op <- options(scipen = 6)
@@ -179,7 +180,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   KK[bad_row, ] <- 0
   df_method <- match.arg(df_method)
-  if (identical(df_method, "containment") && vcov_adjust_default) vcov_adjust <- FALSE
+  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
   if (!missing(permlist)) {
     vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
     vcov <- pm_vcov_with_perm(vcov, permlist)
@@ -193,7 +194,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
 
 
   if (all(missing(permlist), missing(Df))){
-    df_custom <- pm_df(model, rK)
+    df_custom <- if (identical(df_type, "between-within")) {
+      rep(unname(pm_betwithin_df(model)[modelterm]), nrow(rK))       # SAS DDFM=BETWITHIN
+    } else pm_df(model, rK)
 	  if (!is.null(df_custom)) {
 	    Df <- rep_len(as.numeric(df_custom), nrow(rK))
 	  } else if (length(mp$df)==1 && mp$df!=0) {

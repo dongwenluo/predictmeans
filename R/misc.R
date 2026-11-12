@@ -355,7 +355,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   using "Kenward-Roger" or "Satterthwaite" method.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-#'           type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL)
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov_adj=NULL)
 #' @param model Model object returned by \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
@@ -366,7 +366,8 @@ doolittle <- function(x, eps = 1e-6) {
 #' @param type Name (in "quote") for indicating a method for claculating degree of freedom. 
 #'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 #'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
-#'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row.
+#'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
+#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}).
 #' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 #'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
 #'   for the same model.
@@ -402,7 +403,7 @@ doolittle <- function(x, eps = 1e-6) {
 #' @name df_term
 NULL
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
@@ -414,10 +415,10 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     type <- "Satterthwaite"
   }
 
-  if (type == "containment") {
-    # one df per term (SAS DDFM=CONTAIN): every row gets the df of 'modelterm'
-    if (missing(modelterm)) stop("containment df need 'modelterm'")
-    cdf <- pm_containment_df(model)
+  if (type %in% c("containment", "between-within")) {
+    # one df per term (SAS DDFM=CONTAIN, DDFM=BETWITHIN): every row gets the df of 'modelterm'
+    if (missing(modelterm)) stop(type, " df need 'modelterm'")
+    cdf <- if (type == "containment") pm_containment_df(model) else pm_betwithin_df(model)
     if (!modelterm %in% names(cdf)) stop("'", modelterm, "' is not a term of the model")
     n_row <- if (is.null(ctrmatrix)) nrow(Kmatrix(model, modelterm, covariate)$K) else NROW(rbind(ctrmatrix))
     return(rep(unname(cdf[modelterm]), n_row))
@@ -1238,10 +1239,17 @@ aovlist_lmer <- function(object) {
 
 
 ## Resolve the df method for an lmer model: "auto" is Kenward-Roger for REML
-## fits and Satterthwaite for ML fits. Returns list(df_type, vcov_adj).
+## fits and Satterthwaite for ML fits. "between-within" (SAS DDFM=BETWITHIN,
+## R/df-betwithin.R) is also available for lme and gls. Returns
+## list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
+  if (identical(df_method, "between-within")) {
+    if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
+    warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
   if (!inherits(model, "lmerMod")) {
-    if (df_method != "auto") warning("'df_method' applies to lmer models only; ignored.")
+    if (df_method != "auto") warning("'df_method' applies to lmer models only (\"between-within\" also to lme and gls); ignored.")
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   reml <- lme4::getME(model, "is_REML")
