@@ -131,7 +131,7 @@ pm_model_rows <- function(model) {
     d <- eval(stats::getCall(model)$data, environment(stats::formula(model)))
     fr <- model$frame
   } else {
-    d <- nlme::getData(model)
+    d <- pm_mer_data(model)
     fr <- stats::model.frame(model)
   }
   if (!is.data.frame(d)) stop("Can't find the data used to fit the model; please refit it with a 'data' argument.",

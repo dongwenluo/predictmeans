@@ -217,7 +217,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     # fitted values and decorrelated residuals are permuted together
     lmer_var_names <- all.vars(stats::formula(model))   # (the call may hold a formula object)
 	lmer_var_names <- lmer_var_names[lmer_var_names!="pi"]
-	mod_df <- as.data.frame(nlme::getData(model))
+	mod_df <- as.data.frame(pm_mer_data(model))
 	mod_df <- na.omit(mod_df[, lmer_var_names])	
 	model <- pm_refit(model, data=mod_df, check=TRUE)
 	# lmerTest tables (Satterthwaite df and p-values) however the model was fitted

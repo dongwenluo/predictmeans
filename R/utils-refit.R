@@ -92,3 +92,14 @@ pm_fixef <- function(model) {
   if (inherits(model, "lme")) return(nlme::fixef(model))
   coef(model)
 }
+
+## The data of an lmer/glmer fit: the data frame of the call if it can be
+## found, else the model frame stored in the fit (enough when the formula's
+## variables are plain columns; transformed variables then need the data).
+pm_mer_data <- function(model) {
+  d <- tryCatch(nlme::getData(model), error = function(e) NULL)
+  if (is.data.frame(d)) return(d)
+  fr <- stats::model.frame(model)
+  fr <- fr[, !grepl("^\\(", names(fr)), drop = FALSE]
+  as.data.frame(lapply(fr, function(v) if (is.matrix(v)) as.vector(v) else v))
+}
