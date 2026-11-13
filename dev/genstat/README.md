@@ -56,3 +56,17 @@ With `MVINCLUDE=yvariate` the AR(1) model fits:
   turn) tests, not SAS's Type 3, so they are not compared.
 
 These are notes, not test references: a reference needs the output file.
+
+## The second program (`pm-reference-2.gen`, to be run)
+
+The oats split plot with four patterns of missing data, each testing a
+different rule of predictmeans. What predictmeans gives (lmer REML), to
+compare with Genstat's output once it is run (values from the output file
+only):
+
+| pattern | n | what it tests | predictmeans |
+|---|---|---|---|
+| A: whole plot I x GoldenRain + sub-plot II x Victory x 0.6 (= SAS run 3) | 67 | which Kenward-Roger information Genstat's df use | Variety F 1.21 on 8.30 (observed, = SAS), 9.14 (expected), 8.75 (average); unadjusted SEDs 7.813, 7.846, 7.364 |
+| B: empty cell Victory x 0.6 (all blocks) | 66 | means over an empty cell (Genstat `PRESENT`) | Nitro means 79.39, 98.89, 114.22, 125.83; Variety 104.50, 109.79, 90.67; 0.6 - 0 compared on GoldenRain and Marvellous: 42.5 (SED 5.474) |
+| C: sub-plot II x Victory x 0.6 | 71 | `aov(... Error())` by strata (predictmeans combines the strata) vs Genstat ANOVA (missing value estimated) and REML | REML: Variety F 1.38 on 9.91 / 9.99 / 9.95; aov strata: GoldenRain x 0 mean 79.94 |
+| D: five scattered sub-plots | 67 | REML df with an unbalanced sub-plot stratum | Variety F 1.24 on 9.96 / 9.95 / 9.96; Nitro F 36.86 on 40.55 / 40.52 / 40.53 |
