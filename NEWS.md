@@ -2,6 +2,22 @@
 
 ## Changes that affect results or scripts
 
+* **Kenward-Roger df and adjusted SEs are the default for `lme` and `gls`
+  models fitted by REML** (as for `lmer`), in `predictmeans()`,
+  `contrastmeans()`, `pm_joint()`, `pm_slopes()` and `covariatemeans()`.
+  They were nlme's df (`lme`) and the residual df (`gls`), which in
+  simulations rejected 16% of true hypotheses in F tests of unstructured
+  repeated measures and 24-27% with 10% of values missing; Kenward-Roger
+  4-6% (`dev/sim-df/README.md`). `df_method = "containment"` gives the
+  previous df (and, by default, the unadjusted covariance), so 1.x results.
+  ML fits keep nlme's or the residual df (with a message); a covariance
+  structure that cannot be rebuilt falls back to them with a message.
+* `covariatemeans()` gains `df_method` and `vcov_adjust` and follows the same
+  defaults: Kenward-Roger df for each point of the curves and adjusted SEs
+  for REML fits. It used the unadjusted covariance and, for `lmer`, one df
+  per term; `vcov_adjust = FALSE` (and `df_method = "containment"` for
+  `lme`, `gls`) give its previous results.
+
 * **Kenward-Roger uses the observed information of the variance parameters**
   (as SAS PROC MIXED `DDFM=KR`), for `lmer` (the default for REML fits),
   `lme` and `gls`. It stays valid with missing values, where the expected

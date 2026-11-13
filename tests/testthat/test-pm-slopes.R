@@ -33,10 +33,13 @@ test_that("pm_slopes() with poly(): the slope at 'at' (central difference, exact
   expect_equal(unique(s$slopes$df), df.residual(fp))
 })
 
-test_that("pm_slopes() for lme uses nlme's df of the covariate terms", {
+test_that("pm_slopes() for lme: containment uses nlme's df of the covariate terms; default Kenward-Roger as lmer", {
   d <- oats_slopes()
   fl <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = d)
-  s <- pm_slopes(fl, "nitro", "Variety")
+  fm <- lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
+  expect_equal(pm_slopes(fl, "nitro", "Variety")$slopes[, c("std.error", "df")],
+               pm_slopes(fm, "nitro", "Variety")$slopes[, c("std.error", "df")], tolerance = 1e-4)
+  s <- pm_slopes(fl, "nitro", "Variety", df_method = "containment")
   tdf <- terms(fl$fixDF)
   expect_equal(unique(s$slopes$df), min(tdf[c("nitro", "nitro:Variety")]))
   expect_equal(nrow(s$pairs), 3)

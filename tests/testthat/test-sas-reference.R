@@ -62,7 +62,7 @@ sas_run <- function(S) {
     d <- sas_rep()
     m <- nlme::gls(Y ~ Group * Time, data = d, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                    weights = nlme::varIdent(form = ~ 1 | Time))
-    dfm <- c(CONTAIN = "auto", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "Kenward-Roger")[[ddfm]]
+    dfm <- c(CONTAIN = "containment", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "Kenward-Roger")[[ddfm]]
     V <- nlme::getVarCov(m)
     cp <- S[S$table == "covparms", ]
     ij <- regmatches(cp$effect, regexpr("[0-9],[0-9]", cp$effect))

@@ -54,8 +54,9 @@ test_that("settings$vcov_adjust says whether the Kenward-Roger covariance was us
   expect_true(s(ms$lmer$m, df_method = "containment", vcov_adjust = TRUE))
   expect_false(s(ms$lmer$m, vcov_adjust = FALSE))
   expect_false(s(ms$lm$m))
-  expect_false(s(ms$lme$m))
-  expect_true(s(ms$lme$m, df_method = "Kenward-Roger"))
+  expect_true(s(ms$lme$m))                                   # Kenward-Roger by default for REML lme/gls
+  expect_false(s(ms$lme$m, df_method = "containment"))       # nlme's df, as 1.x
+  expect_true(suppressMessages(predictmeans(ms$gls$m, "Time", plot = FALSE, prtnum = FALSE))$settings$vcov_adjust)
 })
 
 test_that("the legacy p-value matrix uses each pair's df (gls with Kenward-Roger)", {
@@ -76,4 +77,20 @@ test_that("slopes: one df per term from the terms with the covariate, for every 
   expect_equal(unique(s$slopes$df), min(cdf[c("nitro", "Variety:nitro")]))
   b <- pm_slopes(m, "nitro", "Variety", df_method = "between-within")
   expect_equal(unique(b$slopes$df), min(pm_betwithin_df(m)[c("nitro", "Variety:nitro")]))
+})
+
+test_that("covariatemeans() follows the same defaults: Kenward-Roger df per point, adjusted SEs", {
+  oats <- as.data.frame(nlme::Oats)
+  oats$Variety <- factor(oats$Variety, ordered = FALSE)
+  oats$Block <- factor(oats$Block, ordered = FALSE)
+  oats <- oats[-c(3, 20, 41), ]
+  m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = oats)
+  a <- covariatemeans(m, "Variety", covariate = "nitro", covariateV = c(0, 0.3, 0.6))$pltdf
+  u <- covariatemeans(m, "Variety", covariate = "nitro", covariateV = c(0, 0.3, 0.6), vcov_adjust = FALSE)$pltdf
+  inf <- pm_inference(m)
+  K <- Kmatrix(m, "Variety", "nitro", covariateV = c(0, 0.3, 0.6))$K
+  expect_equal(a$ses, unname(sqrt(diag(K %*% inf$mp$vcov %*% t(K)))), tolerance = 1e-8)
+  expect_false(isTRUE(all.equal(a$ses, u$ses)))
+  crit <- (a$UL - a$Mean) / a$ses
+  expect_equal(crit, stats::qt(0.975, inf$df(K, "Variety")), tolerance = 1e-6)
 })

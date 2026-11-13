@@ -13,9 +13,16 @@ reference_cases <- function() {
     k <- Kmatrix(...)
     list(K = unclass(k$K)[, , drop = FALSE], fctnames = k$fctnames, response = k$response)
   }
+  # 1.1.1 used unadjusted SEs and nlme's df for lme/gls; newer versions need
+  # vcov_adjust = FALSE and df_method = "containment" (lme, gls) for that
+  old_df <- function(f, m) {
+    a <- names(formals(f))
+    c(if ("vcov_adjust" %in% a) list(vcov_adjust = FALSE),
+      if ("df_method" %in% a && inherits(m, c("lme", "gls"))) list(df_method = "containment"))
+  }
+  cvm <- function(...) do.call(covariatemeans, c(list(...), old_df(covariatemeans, list(...)[[1]])))
   pmo <- function(...) {
-    # 1.1.1 used unadjusted SEs; newer versions need vcov_adjust = FALSE for that
-    extra <- if ("vcov_adjust" %in% names(formals(predictmeans))) list(vcov_adjust = FALSE) else list()
+    extra <- old_df(predictmeans, list(...)[[1]])
     p <- do.call(predictmeans, c(list(...), plot = FALSE, prtnum = FALSE, extra))
     # legacy slots only (the stable means/pairs/settings slots are newer)
     p[!grepl("Plot|plot", names(p)) & !names(p) %in% c("means", "pairs", "settings")]
@@ -27,8 +34,8 @@ reference_cases <- function() {
   cap("ex_K2", km(fm_lme_num, "Variety", 0.5))
   cap("ex_K3", km(fm_lme_num, "Variety", "nitro", covariateV = seq(0, 0.6, 0.1)))
   cap("ex_K4", km(fm_lme_num, "Variety", "nitro"))
-  cap("ex_cov1", covariatemeans(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
-  cap("ex_cov2", covariatemeans(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
+  cap("ex_cov1", cvm(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
+  cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
 
   Oats$nitro <- factor(Oats$nitro); Oats$Whole_plot <- Oats$Variety
   fm_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)
@@ -65,7 +72,7 @@ reference_cases <- function() {
   fm_drug <- glm(cbind(R, N-R) ~ Drug + log10Dose, data = Drug, family = binomial)
   cap("drug_K", km(fm_drug, "Drug"))
   cap("drug_pm", pmo(fm_drug, "Drug", pairwise = TRUE))
-  cap("drug_cov", covariatemeans(fm_drug, "Drug", covariate = "log10Dose", trans = binomial()$linkinv)$pltdf)
+  cap("drug_cov", cvm(fm_drug, "Drug", covariate = "log10Dose", trans = binomial()$linkinv)$pltdf)
 
   data("Clinical", package = "predictmeans", envir = environment())
   fm_clin <- glmer(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
@@ -118,7 +125,7 @@ reference_cases <- function() {
   cap("varcomp_lme", varcomp(fm_lme))
   cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
   cap("contr_lmer", do.call(contrastmeans, c(list(fm_lmer, "nitro", ctrmatrix = cm), if ("vcov_adjust" %in% names(formals(contrastmeans))) list(vcov_adjust = FALSE))))
-  cap("contr_lme", contrastmeans(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"))
+  cap("contr_lme", do.call(contrastmeans, c(list(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"), old_df(contrastmeans, fm_lme))))
   R
 }
 

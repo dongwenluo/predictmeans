@@ -134,7 +134,7 @@ observed covariate values (e.g. means adjusted for a spatial smooth in a \code{g
 \item{exclude}{For \code{gam} models: smooth terms to leave out of the predictions. The default excludes random-effect
 smooths. See \code{\link{Kmatrix}}.}
 
-\item{vcov_adjust}{For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
+\item{vcov_adjust}{For models fitted by REML (\code{lmer}, \code{lme}, \code{gls}) with Kenward-Roger df: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
 predictmeans 1.x. It has no effect for other models.}
@@ -160,11 +160,13 @@ others the df of their subject-by-effect interaction (for example Block x Variet
 unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
 between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
 used unless \code{vcov_adjust = TRUE} is given.
-For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
-variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
-checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-expected"} give Kenward-Roger df and adjusted
-standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
-\pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
+For \code{lme} and \code{gls} models fitted by REML, \code{"auto"} is Kenward-Roger too (with adjusted standard
+errors), for any correlation and variance structure: in simulations the residual df (\code{gls}) rejected 16\% of
+true hypotheses in F tests of unstructured repeated measures (24\% with missing values), Kenward-Roger 4-6\%.
+\code{"Satterthwaite"} is also available (the covariance of the variance parameters from the Hessian of the REML
+log-likelihood, as SAS; its F tests are liberal when the covariance has several parameters), and
+\code{"containment"} gives \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}), as predictmeans 1.x.
+All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use \pkg{nlme}'s or the residual df.
 Other choices are ignored for other model classes.}
 
 \item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}

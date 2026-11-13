@@ -43,16 +43,17 @@ predictmeans 1.x. It has no effect for other models.}
 \item{weights}{Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
 over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).}
 
-\item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
-fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+\item{df_method}{Denominator df: \code{"auto"} (Kenward-Roger for REML fits of \code{lmer}, \code{lme} and \code{gls},
+Satterthwaite for ML \code{lmer} fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
 \code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
 the observed information, as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
-\code{"Kenward-Roger"} and \code{"KR-expected"}; see \code{\link{predictmeans}}.}
+\code{"Kenward-Roger"}, \code{"KR-expected"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
+predictmeans 1.x); see \code{\link{predictmeans}}.}
 
 \item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
-test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
-denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML \code{lmer} fits)
+denominator df, \pkg{nlme}'s df for ML \code{lme} fits, the residual df for other models (normal-based, i.e. chi-square /
 df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}

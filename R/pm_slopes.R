@@ -9,9 +9,10 @@
 #' the change in the K matrix between \code{at - h} and \code{at + h}, divided by \code{2h} with \code{h} = 0.0001 times
 #' the standard deviation of the covariate. This is exact when the covariate enters the model linearly (also through
 #' interactions) and a central difference for \code{poly()}, splines and smooths, whose slope depends on \code{at}.
-#' Standard errors and degrees of freedom follow \code{\link{predictmeans}}: for \code{lmer} models fitted by REML
-#' Kenward-Roger (with the adjusted covariance when \code{vcov_adjust = TRUE}), for \code{lme} the smallest \pkg{nlme} df
-#' of the terms with the covariate, otherwise the residual df.
+#' Standard errors and degrees of freedom follow \code{\link{predictmeans}}: for models fitted by REML (\code{lmer},
+#' \code{lme}, \code{gls}) Kenward-Roger (with the adjusted covariance when \code{vcov_adjust = TRUE}); with one df per
+#' term (containment, between-within, \pkg{nlme}'s df) the smallest df of the terms with the covariate; otherwise the
+#' residual df.
 #' @usage
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 #'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),

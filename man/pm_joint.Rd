@@ -50,8 +50,9 @@ The F statistic and its denominator degrees of freedom follow the model:
   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-expected"}}{as for \code{lmer} (Satterthwaite df of the
   F test, lmerTest's rule).}
-\item{\code{lme}}{the Wald F with \pkg{nlme}'s df of \code{modelterm} (as \code{predictmeans()} and
-  \code{anova()}; \code{"containment (nlme)"}).}
+\item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits (the default), as for \code{lmer}; with
+  \code{df_method = "containment"} (and for ML fits) the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
+  \code{anova()}; \code{"containment (nlme)"}) or the residual df (\code{gls}).}
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 }
 Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
