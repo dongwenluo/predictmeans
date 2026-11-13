@@ -46,6 +46,26 @@ test_that("contrastmeans(): sidak and scheffe (rank of ctrmatrix) match emmeans"
   }
 })
 
+test_that("contrastmeans(): adjusted limits match emmeans' confint() and agree with the p-values", {
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("mvtnorm")
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
+  cm <- rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0), c(0, 0, -1, 1), c(-1, 0, 0, 1))   # rank 3
+  for (a in c("bonferroni", "sidak", "scheffe", "mvt")) {
+    r <- suppressWarnings(contrastmeans(fm, "nitro", ctrmatrix = cm, adj = a, df_method = "KR-expected"))[[1]]
+    e <- as.data.frame(confint(emmeans::contrast(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"),
+                                                 method = list(a = cm[1, ], b = cm[2, ], c = cm[3, ], d = cm[4, ]),
+                                                 adjust = a)))
+    tol <- if (a == "mvt") 2e-3 else 1e-3      # the table is rounded to 4 decimals
+    expect_equal(unname(r[, "adj.lower.CL"]), e$lower.CL, tolerance = tol, label = a)
+    expect_equal(unname(r[, "adj.upper.CL"]), e$upper.CL, tolerance = tol, label = a)
+    if (a != "mvt") expect_identical(unname(r[, "adj.lower.CL"] > 0 | r[, "adj.upper.CL"] < 0),
+                                     unname(r[, "Pr(>|t|)"] < 0.05))
+  }
+  r <- contrastmeans(fm, "nitro", ctrmatrix = cm, adj = "holm")[[1]]
+  expect_false("adj.lower.CL" %in% colnames(r))
+})
+
 test_that("mvt repeats exactly and leaves the user's random numbers alone", {
   skip_if_not_installed("mvtnorm")
   d <- oats_unbal()   # (not in the call: predictmeans() re-evaluates the data argument)

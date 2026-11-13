@@ -59,9 +59,13 @@ of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joi
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}
 
 \item{level}{Significance level for the confidence limits of the contrasts (\code{lower.CL}, \code{upper.CL}); the
-default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
-with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
-\code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.}
+default 0.05 gives 95\% limits. They are t limits of each contrast, or with \code{permlist} permutation-t limits:
+estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
+k = floor(level (nperm + 1))). With \code{adj} "bonferroni", "sidak", "scheffe" or "mvt" (with \code{permlist}:
+"bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
+\code{adj.lower.CL} and \code{adj.upper.CL}: simultaneous limits that exclude 0 exactly when the adjusted
+p-value is below \code{level}, as \pkg{emmeans}' \code{confint()} and SAS \code{AdjLower}/\code{AdjUpper}. The
+step-down and false discovery rate methods have none.}
 
 \item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,

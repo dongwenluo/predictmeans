@@ -16,6 +16,11 @@
   own: with `adj = "bonferroni"` they were Bonferroni limits over all pairs
   (not per family), and with a `permlist` and a max-|t| adjustment they were
   the simultaneous limits now in `adj.conf.*`. The printed LSD is unchanged.
+  `contrastmeans()` gives the same limits as `adj.lower.CL` and
+  `adj.upper.CL` ("bonferroni", "sidak", "scheffe" with the rank of
+  `ctrmatrix`, "mvt"; with a `permlist` also "westfall"), equal to emmeans'
+  `confint()`; its `lower.CL` and `upper.CL` are per contrast, also with a
+  `permlist` and a max-|t| adjustment.
 * Fixed: `predictmeans()` with `level` given (and `letterCI = FALSE`)
   stopped with "object 'slevel' not found" when making pairwise comparisons,
   as in 1.1.1.

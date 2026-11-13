@@ -21,9 +21,11 @@ test_that("contrastmeans() limits: t limits, and permutation-t limits that agree
   pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, level = 0.1)[[1]]
   outside <- pt[, "lower.CL"] > 0 | pt[, "upper.CL"] < 0
   expect_identical(unname(outside), unname(pt[, "Permuted Pr(>|t|)"] <= 0.1))
-  # simultaneous limits (max-|t|) are wider
+  # simultaneous limits (max-|t|) are wider; lower.CL and upper.CL do not depend on adj
   ps <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, adj = "westfall", level = 0.1)[[1]]
-  expect_true(all(ps[, "upper.CL"] - ps[, "lower.CL"] >= pt[, "upper.CL"] - pt[, "lower.CL"] - 1e-8))
+  expect_true(all(ps[, "adj.upper.CL"] - ps[, "adj.lower.CL"] >= pt[, "upper.CL"] - pt[, "lower.CL"] - 1e-8))
+  expect_equal(ps[, c("lower.CL", "upper.CL")], pt[, c("lower.CL", "upper.CL")])
+  expect_false("adj.lower.CL" %in% colnames(pt))
 })
 
 test_that("predictmeans() pairs: conf.low, conf.high and lsd", {

@@ -55,6 +55,8 @@ The confidence limits that go with the adjusted p-values are in the columns
 exactly when `p.adj` is below the level. `conf.low` and `conf.high` are the limits of
 each comparison on its own. The step-down and false discovery rate methods (`"holm"`,
 `"BH"`, ...) have no simultaneous limits, so their pairs have no such columns.
+`contrastmeans()` gives the same limits as `adj.lower.CL` and `adj.upper.CL` (below, for
+the comparisons with a control).
 
 ```{r}
 pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE, prtnum = FALSE)$pairs

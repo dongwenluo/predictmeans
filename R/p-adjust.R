@@ -48,7 +48,8 @@ pm_p_mvt <- function(t, df, R) {
 ##   tukey       qtukey(1 - alpha, k, df)/sqrt(2), k means, each pair's df
 ##   bonferroni  qt(1 - alpha/(2m), df)
 ##   sidak       qt(1 - (1 - (1 - alpha)^(1/m))/2, df)
-##   scheffe     sqrt(r qf(1 - alpha, r, df)), r = k - 1
+##   scheffe     sqrt(r qf(1 - alpha, r, df)), r = k - 1 (or 'rank': the rank
+##               of a contrast matrix, as in contrastmeans())
 ##   mvt         the two-sided (1 - alpha) quantile of max |T| (mvtnorm::qmvt)
 ## With a permlist ('T': permuted |t|, one row per contrast): "tukey", "mvt"
 ## and "westfall" the (1 - alpha) quantile of the family's permuted max |t|
@@ -56,7 +57,7 @@ pm_p_mvt <- function(t, df, R) {
 ## "bonferroni" and "sidak" each contrast's permutation quantile at the
 ## per-contrast level. NULL for the methods with no simultaneous limits
 ## (holm, hochberg, hommel and the false discovery rate methods).
-pm_adjust_crit <- function(adj, alpha, df, fam, est, R = NULL, T = NULL) {
+pm_adjust_crit <- function(adj, alpha, df, fam, est, R = NULL, T = NULL, rank = NULL) {
   perm <- !is.null(T)
   have <- if (perm) c("tukey", "mvt", "westfall", "bonferroni", "sidak") else
     c("tukey", "bonferroni", "sidak", "scheffe", "mvt")
@@ -69,6 +70,7 @@ pm_adjust_crit <- function(adj, alpha, df, fam, est, R = NULL, T = NULL) {
     ok <- idx[est[idx]]
     if (!length(ok)) next
     k <- (1 + sqrt(1 + 8*length(idx)))/2        # means in the family, from its k(k-1)/2 pairs
+    r <- if (is.null(rank)) k - 1 else rank
     m <- length(ok)
     a1 <- switch(adj, bonferroni = alpha/m, sidak = 1 - (1 - alpha)^(1/m), alpha)
     out[ok] <- if (perm) {
@@ -77,7 +79,7 @@ pm_adjust_crit <- function(adj, alpha, df, fam, est, R = NULL, T = NULL) {
     } else switch(adj,
       tukey = stats::qtukey(1 - alpha, k, df[ok])/sqrt(2),
       bonferroni = , sidak = stats::qt(1 - a1/2, df[ok]),
-      scheffe = sqrt((k - 1)*stats::qf(1 - alpha, k - 1, df[ok])),
+      scheffe = sqrt(r*stats::qf(1 - alpha, r, df[ok])),
       mvt = pm_q_mvt(alpha, df[ok], R[ok, ok, drop = FALSE]))
   }
   out

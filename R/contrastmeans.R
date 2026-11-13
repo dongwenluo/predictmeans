@@ -47,9 +47,13 @@
 #'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 #'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
 #' @param level Significance level for the confidence limits of the contrasts (\code{lower.CL}, \code{upper.CL}); the
-#'   default 0.05 gives 95\% limits. They are t limits, or with \code{permlist} permutation-t limits: estimate +- c SE,
-#'   with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
-#'   \code{adj} "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.
+#'   default 0.05 gives 95\% limits. They are t limits of each contrast, or with \code{permlist} permutation-t limits:
+#'   estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
+#'   k = floor(level (nperm + 1))). With \code{adj} "bonferroni", "sidak", "scheffe" or "mvt" (with \code{permlist}:
+#'   "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
+#'   \code{adj.lower.CL} and \code{adj.upper.CL}: simultaneous limits that exclude 0 exactly when the adjusted
+#'   p-value is below \code{level}, as \pkg{emmeans}' \code{confint()} and SAS \code{AdjLower}/\code{AdjUpper}. The
+#'   step-down and false discovery rate methods have none.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
 #'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
@@ -228,6 +232,12 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     crit <- stats::qt(1 - level/2, Df)
     out.put <- cbind(cm, ses, t.v, Df, t.p.value, cm - crit*ses, cm + crit*ses)
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
+    # simultaneous limits that agree with the adjusted p-values (R/p-adjust.R)
+    crit_adj <- pm_adjust_crit(adj, level, Df, rep("all", nr), est = !is.na(cm), R = cor.contr,
+                               rank = qr(ctrmatrix)$rank)
+    if (!is.null(crit_adj)) {
+      out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ses, adj.upper.CL = as.vector(cm) + crit_adj*ses)
+    }
     eqm <- pm_equiv_margins(equivalence)
     if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Df, eqm))
     rownames(out.put) <- rownames(ctrmatrix)
@@ -252,11 +262,16 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
       pm_adjust_extra("sidak", as.vector(t.v), per.p, NA_real_)
     } else p.adjust(per.p, adj)
   }
-  # permutation-t limits (simultaneous with a max-|t| adjustment)
-  crit <- pm_perm_crit(fam$T, level, family = if (maxt) rep(1, nrow(rK)))
+  # permutation-t limits of each contrast, and simultaneous ones with the
+  # adjustments that have them (max-|t|, bonferroni, sidak; R/p-adjust.R)
+  crit <- pm_perm_crit(fam$T, level)
   ci_se <- if (!is.null(fam$se)) fam$se else ses   # robust permlist: HC3 SEs
   out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ci_se, cm + crit*ci_se)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
+  crit_adj <- if (nrow(rK) > 1) pm_adjust_crit(adj, level, NA_real_, rep("all", nr), est = !is.na(cm), T = fam$T)
+  if (!is.null(crit_adj)) {
+    out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ci_se, adj.upper.CL = as.vector(cm) + crit_adj*ci_se)
+  }
   eqm <- pm_equiv_margins(equivalence)
   if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Inf, eqm))   # normal-based
   rownames(out.put) <- rownames(ctrmatrix)
