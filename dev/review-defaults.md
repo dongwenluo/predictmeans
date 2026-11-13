@@ -92,7 +92,8 @@ themselves (`"A:B"`), where nothing is averaged.
    same either way. F tests of ML fits stay liberal with several covariance
    parameters: REML and Kenward–Roger are the remedy.
 4. `pm_anova()` tables: observed information by default (changes the KR F
-   tests of the `permmodels()` tables slightly where data are unbalanced).
+   tests of the `permmodels()` tables slightly where data are unbalanced) —
+   **done**.
 5. `glm` with fixed dispersion: simulate t (residual df) against z, then
    decide.
 

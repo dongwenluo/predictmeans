@@ -2,6 +2,11 @@
 
 ## Changes that affect results or scripts
 
+* The Kenward-Roger F tests in the `permmodels()` tables of `lmer` models
+  (`test.statistic = "F"`) use the observed information, as `pm_joint()` and
+  the rest of the package; they used the expected one, as `car::Anova()`.
+  The two agree for balanced data.
+
 * **ML fits of `lme` and `gls` get Satterthwaite df** (from the ML
   log-likelihood), as ML `lmer` fits; they used nlme's df or the residual df,
   which are still `df_method = "containment"`. In simulations of ML `gls`

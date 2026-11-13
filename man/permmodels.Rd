@@ -18,7 +18,10 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 \item{type}{type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.}
 
 \item{test.statistic}{For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
-Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.}
+Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.
+The F tests of an \code{lmer} model are Kenward-Roger F tests with the observed information of the variance
+parameters, as in the rest of predictmeans (\code{car::Anova()} uses the expected information; the two agree
+for balanced data).}
 
 \item{exact}{A logical variable to indicate whether or not exact no. of permutations will be used (applicable only to free the permutation case). The default is FALSE.}
 
