@@ -23,7 +23,13 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
 - Means over empty cells: NA by default (the maintainer's decision of
   2026-11-13); a new option, `empty = "average"`, restores the 1.x rule
-  (average of the observed cells, with a warning).
+  (average of the observed cells, with a warning). Combinations absent by
+  design (nested factors) are not empty cells.
+- emmeans (and SAS) are not the reference for nested treatment structures or
+  missing combinations (the EOD tree-improvement examples): there
+  predictmeans averages with equal weights over the combinations that exist
+  (`tests/testthat/test-nested.R`), where emmeans weights by the nesting
+  hierarchy or gives NA.
 - `R/inference.R` (`pm_inference()`) decides covariance, df and their labels
   for every front end; change a df or covariance rule there only.
 - The maintainer can run SAS and Genstat on request: scripts go in
