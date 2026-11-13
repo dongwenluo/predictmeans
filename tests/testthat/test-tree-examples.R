@@ -8,6 +8,24 @@
 
 tree_data <- function(f) read.csv(test_path("_data", "tree", f), stringsAsFactors = TRUE)
 
+## Agreement with values printed to 'digits' decimals: within half a unit of
+## the last printed digit (a tie such as 3.3425, printed 3.343, rounds either
+## way with the last bits of floating point, which differ by platform).
+expect_printed <- function(x, ref, digits, info = NULL) {
+  ref <- rep_len(ref, length(x))
+  ok <- abs(x - ref) <= 0.5 * 10^-digits + 1e-9
+  expect(length(x) > 0 && all(ok), paste0("not within half a unit of the last printed digit: ",
+                                          paste(format(x[!ok], digits = 10), "vs", ref[!ok], collapse = "; ")),
+         info = info)
+}
+## the same for a set of printed values: each value is one of them, and each of them occurs
+expect_printed_set <- function(x, refs, digits) {
+  near <- outer(x, refs, function(a, b) abs(a - b) <= 0.5 * 10^-digits + 1e-9)
+  expect(all(rowSums(near) > 0) && all(colSums(near) > 0),
+         paste0("values ", paste(format(sort(unique(x)), digits = 10), collapse = ", "), " do not match ",
+                paste(refs, collapse = ", ")))
+}
+
 test_that("Exam 4.3, treatments nested in control/treated: Genstat's means and SEDs (TABC4_1)", {
   d <- tree_data("ex4.3.csv")
   d$percent <- d$count * 100 / 25
@@ -19,19 +37,18 @@ test_that("Exam 4.3, treatments nested in control/treated: Genstat's means and S
   # Genstat: averages over the treatments that exist, equal weights (SAS and emmeans give the control half the
   # weight of a seedlot mean: 38.67 for seedlot 18211)
   s <- pm("seedlot")
-  expect_equal(round(s$means$estimate, 1), c(58.0, 52.3, 49.0, 40.7, 48.7, 59.7))
-  expect_equal(unique(round(s$pairs$std.error, 2)), 4.03)
+  expect_printed(s$means$estimate, c(58.0, 52.3, 49.0, 40.7, 48.7, 59.7), 1)
+  expect_printed(s$pairs$std.error, 4.03, 2)
   expect_equal(unique(s$pairs$df), 46)
   cc <- pm("contcomp")
-  expect_equal(round(cc$means$estimate, 1), c(2.0, 67.9))
-  expect_equal(round(cc$pairs$std.error, 2), 2.68)
+  expect_printed(cc$means$estimate, c(2.0, 67.9), 1)
+  expect_printed(cc$pairs$std.error, 2.68, 2)
   ct <- pm("contcomp:treat")
-  expect_equal(round(ct$means$estimate, 1), c(2.0, 56.9, 65.8, 80.9))
-  expect_equal(unique(round(ct$pairs$std.error, 2)), 3.29)
+  expect_printed(ct$means$estimate, c(2.0, 56.9, 65.8, 80.9), 1)
+  expect_printed(ct$pairs$std.error, 3.29, 2)
   cs <- pm("contcomp:seedlot")
-  expect_equal(round(cs$means$estimate, 1),
-               c(0.0, 1.3, 6.7, 2.7, 0.0, 1.3, 77.3, 69.3, 63.1, 53.3, 64.9, 79.1))
-  expect_equal(sort(unique(round(cs$pairs$std.error, 2))), c(4.65, 6.58, 8.05))   # max.rep, max-min, min.rep
+  expect_printed(cs$means$estimate, c(0.0, 1.3, 6.7, 2.7, 0.0, 1.3, 77.3, 69.3, 63.1, 53.3, 64.9, 79.1), 1)
+  expect_printed_set(cs$pairs$std.error, c(4.65, 6.58, 8.05), 2)   # max.rep, max-min, min.rep
 })
 
 test_that("Exam 4.4, split plot: Genstat's means, SEDs and df across strata (TABC4_3)", {
@@ -40,21 +57,21 @@ test_that("Exam 4.4, split plot: Genstat's means, SEDs and df across strata (TAB
   m <- lme4::lmer(ht ~ irrig * fert * seedlot + (1 | repl) + (1 | repl:mainpl), data = d)
   pm <- function(term) predictmeans(m, term, plot = FALSE, prtnum = FALSE)
   ir <- pm("irrig")
-  expect_equal(round(ir$means$estimate, 2), c(9.95, 10.06))
-  expect_equal(round(ir$pairs$std.error, 3), 0.296)
+  expect_printed(ir$means$estimate, c(9.95, 10.06), 2)
+  expect_printed(ir$pairs$std.error, 0.296, 3)
   expect_equal(ir$pairs$df, 3, tolerance = 1e-3)
   sl <- pm("seedlot")
-  expect_equal(round(sl$means$estimate, 2), c(8.29, 10.18, 11.40, 10.15))
-  expect_equal(unique(round(sl$pairs$std.error, 3)), 0.410)
-  expect_equal(unique(round(sl$pairs$df, 2)), 12)
+  expect_printed(sl$means$estimate, c(8.29, 10.18, 11.40, 10.15), 2)
+  expect_printed(sl$pairs$std.error, 0.410, 3)
+  expect_printed(sl$pairs$df, 12, 2)
   # comparisons across strata: Genstat 0.583 on 14.69 df (Satterthwaite); within an irrigation level 0.579 on 12
   is <- pm("irrig:seedlot")
-  expect_equal(round(is$means$estimate, 2), c(8.02, 10.06, 11.65, 10.06, 8.55, 10.30, 11.16, 10.24), tolerance = 0.006)
+  expect_printed(is$means$estimate, c(8.02, 10.06, 11.65, 10.06, 8.55, 10.30, 11.16, 10.24), 2)
   same <- substr(is$pairs$level1, 1, 4) == substr(is$pairs$level2, 1, 4)
-  expect_equal(unique(round(is$pairs$std.error[same], 3)), 0.579)
-  expect_equal(unique(round(is$pairs$std.error[!same], 3)), 0.583)
-  expect_equal(unique(round(is$pairs$df[same], 2)), 12)
-  expect_equal(unique(round(is$pairs$df[!same], 2)), 14.69)
+  expect_printed(is$pairs$std.error[same], 0.579, 3)
+  expect_printed(is$pairs$std.error[!same], 0.583, 3)
+  expect_printed(is$pairs$df[same], 12, 2)
+  expect_printed(is$pairs$df[!same], 14.69, 2)
 })
 
 test_that("Exam 5.2, incomplete site-by-seedlot table: SAS LS-means and SEs (TABD5_2)", {
@@ -105,9 +122,9 @@ test_that("Exam 3.1, trees within plots (multistratum aov): Genstat's means and 
     # variance at zero, gave SED 1.5 on 75 df)
     fm <- aov(stats::as.formula(paste(v, "~ seedlot + Error(repl/plot)")), data = d)
     p <- suppressWarnings(predictmeans(fm, "seedlot", plot = FALSE, prtnum = FALSE))
-    expect_equal(round(p$means$estimate, 2), ref[[v]]$m, info = v)
-    expect_equal(unique(round(p$pairs$std.error, 3)), ref[[v]]$sed, info = v)
-    expect_equal(unique(round(p$pairs$df, 2)), 4, info = v)            # the plot stratum
+    expect_printed(p$means$estimate, ref[[v]]$m, 2, info = v)
+    expect_printed(p$pairs$std.error, ref[[v]]$sed, 3, info = v)
+    expect_printed(p$pairs$df, 4, 2, info = v)            # the plot stratum
     expect_identical(p$settings$df_method, "multistratum")
   }
 })
@@ -118,18 +135,18 @@ test_that("Exam 4.4 as aov(... + Error(repl/mainpl)): Genstat's SEDs and df by s
   fa <- aov(ht ~ irrig * fert * seedlot + Error(repl/mainpl), data = d)
   pm <- function(term) predictmeans(fa, term, plot = FALSE, prtnum = FALSE)
   ir <- pm("irrig")
-  expect_equal(round(ir$means$estimate, 2), c(9.95, 10.06))
-  expect_equal(round(ir$pairs$std.error, 3), 0.296)
+  expect_printed(ir$means$estimate, c(9.95, 10.06), 2)
+  expect_printed(ir$pairs$std.error, 0.296, 3)
   expect_equal(ir$pairs$df, 3, tolerance = 1e-8)
   sl <- pm("seedlot")
-  expect_equal(unique(round(sl$pairs$std.error, 3)), 0.410)
+  expect_printed(sl$pairs$std.error, 0.410, 3)
   expect_equal(unique(round(sl$pairs$df, 8)), 12)
   is <- pm("irrig:seedlot")
   same <- substr(is$pairs$level1, 1, 4) == substr(is$pairs$level2, 1, 4)
-  expect_equal(unique(round(is$pairs$std.error[same], 3)), 0.579)
-  expect_equal(unique(round(is$pairs$std.error[!same], 3)), 0.583)
+  expect_printed(is$pairs$std.error[same], 0.579, 3)
+  expect_printed(is$pairs$std.error[!same], 0.583, 3)
   expect_equal(unique(round(is$pairs$df[same], 8)), 12)
-  expect_equal(unique(round(is$pairs$df[!same], 2)), 14.69)
+  expect_printed(is$pairs$df[!same], 14.69, 2)
   # the ANOVA F tests of the strata
   a <- summary(fa)
   wp <- a[["Error: repl:mainpl"]][[1]]
@@ -147,28 +164,28 @@ test_that("Exam 8.1, inoculation (on whole replicates) x provenances within coun
   fa <- aov(dbh ~ inoc * (country/prov) + Error(repl), data = d)
   pm <- function(term) expect_no_warning(predictmeans(fa, term, plot = FALSE, prtnum = FALSE))   # nesting: no warning
   i <- pm("inoc")
-  expect_equal(round(i$means$estimate, 3), c(3.183, 3.625))
-  expect_equal(round(i$pairs$std.error, 4), 0.1306)                         # replicate stratum, 2 df
+  expect_printed(i$means$estimate, c(3.183, 3.625), 3)
+  expect_printed(i$pairs$std.error, 0.1306, 4)                         # replicate stratum, 2 df
   expect_equal(i$pairs$df, 2, tolerance = 1e-8)
   cn <- pm("country")
-  expect_equal(round(cn$means$estimate[1:5], 3), c(2.631, 3.343, 3.686, 2.498, 2.612))
+  expect_printed(cn$means$estimate[1:5], c(2.631, 3.343, 3.686, 2.498, 2.612), 3)
   sed <- function(p, a, b) p$pairs$std.error[(p$pairs$level1 == a & p$pairs$level2 == b) | (p$pairs$level1 == b & p$pairs$level2 == a)]
-  expect_equal(round(sed(cn, "Benin", "Guam"), 4), 0.5503)                 # 4 and 4 trees: Genstat's min.rep
-  expect_equal(round(sed(cn, "Benin", "Malaysia"), 4), 0.4102)             # 4 and 36: max-min
+  expect_printed(sed(cn, "Benin", "Guam"), 0.5503, 4)                 # 4 and 4 trees: Genstat's min.rep
+  expect_printed(sed(cn, "Benin", "Malaysia"), 0.4102, 4)             # 4 and 36: max-min
   expect_equal(unique(round(cn$pairs$df, 8)), 116)
   ic <- pm("inoc:country")
   pdf <- function(a, b) ic$pairs$df[(ic$pairs$level1 == a & ic$pairs$level2 == b) | (ic$pairs$level1 == b & ic$pairs$level2 == a)]
-  expect_equal(round(sed(ic, "1 week:Benin", "7 weeks:Guam"), 4), 0.7826)  # across inoculation: both strata
-  expect_equal(round(pdf("1 week:Benin", "7 weeks:Guam"), 2), 117.16)
-  expect_equal(round(sed(ic, "1 week:Benin", "7 weeks:Malaysia"), 4), 0.5859)
-  expect_equal(round(pdf("1 week:Benin", "7 weeks:Malaysia"), 2), 110.85)
-  expect_equal(round(sed(ic, "1 week:Malaysia", "7 weeks:Malaysia"), 4), 0.2722)
-  expect_equal(round(pdf("1 week:Malaysia", "7 weeks:Malaysia"), 2), 31.61)
-  expect_equal(round(sed(ic, "1 week:Benin", "1 week:Guam"), 4), 0.7782)   # same inoculation: 116 df
-  expect_equal(round(pdf("1 week:Benin", "1 week:Guam"), 2), 116)
+  expect_printed(sed(ic, "1 week:Benin", "7 weeks:Guam"), 0.7826, 4)  # across inoculation: both strata
+  expect_printed(pdf("1 week:Benin", "7 weeks:Guam"), 117.16, 2)
+  expect_printed(sed(ic, "1 week:Benin", "7 weeks:Malaysia"), 0.5859, 4)
+  expect_printed(pdf("1 week:Benin", "7 weeks:Malaysia"), 110.85, 2)
+  expect_printed(sed(ic, "1 week:Malaysia", "7 weeks:Malaysia"), 0.2722, 4)
+  expect_printed(pdf("1 week:Malaysia", "7 weeks:Malaysia"), 31.61, 2)
+  expect_printed(sed(ic, "1 week:Benin", "1 week:Guam"), 0.7782, 4)   # same inoculation: 116 df
+  expect_printed(pdf("1 week:Benin", "1 week:Guam"), 116, 2)
   cp <- pm("country:prov")
   expect_equal(nrow(cp$means), 59)
-  expect_equal(unique(round(cp$pairs$std.error, 4)), 0.5503)
+  expect_printed(cp$pairs$std.error, 0.5503, 4)
 })
 
 test_that("Exam 8.2, clone trial with standards (REML; random rows, columns and clones): SAS DDFM=KR and Genstat (TABD8_5, TABC8_5)", {
