@@ -2,6 +2,21 @@
 
 ## Changes that affect results or scripts
 
+* **`aov()` with `Error()` and missing values: estimated as Genstat's ANOVA.**
+  In an orthogonal design with some plots missing (rows with an `NA`
+  response, or a few combinations of the design factors absent), the missing
+  values are estimated so that the residual sum of squares of the lowest
+  stratum is smallest (the next stratum up for what that leaves open, e.g. a
+  whole plot), the residual df are reduced, and the completed design is
+  analysed by strata. Means, stratum mean squares and the missing value equal
+  Genstat's (oats with one sub-plot missing: 113.0; Victory x 0.6 120.7; the
+  strata combined in 2.0-dev gave 121.8), Yates' formula for randomized
+  blocks is reproduced, and the SEDs are exact (Genstat's are those of the
+  complete design, "not adjusted for missing values"; they agree for the
+  comparisons the missing plot does not touch). A message recommends REML,
+  which uses the information in all strata. Designs that cannot be completed
+  to an orthogonal one keep the combination of the strata, with a message.
+
 * **`residplot()` is rewritten with ggplot2 and works for every model class
   predictmeans handles**: `lm`, `aov` (also with `Error()`), `glm`, `gls`,
   `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`, `semireg` fits and other classes with

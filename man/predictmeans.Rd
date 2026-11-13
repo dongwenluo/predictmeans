@@ -20,7 +20,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
-standard errors of single means include the block stratum. For a \code{semireg} fit the
+standard errors of single means include the block stratum. With missing values in an orthogonal design (rows
+whose response is \code{NA}, or a few combinations of the design factors absent) they are estimated as Genstat's
+ANOVA does (the residual sum of squares of the lowest stratum made smallest; the residual df reduced) and the
+completed design is analysed by strata, with exact standard errors (Genstat's are those of the complete design);
+a message says that REML (\code{lmer()} with the \code{Error()} terms as random effects) uses the information in
+all strata and is the better analysis when plots are missing. For a \code{semireg} fit the
 means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.}

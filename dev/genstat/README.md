@@ -118,4 +118,7 @@ What differs, and why:
   10 df, Nitro 4.46 on 44, Variety.Nitro 9.59 on 31.42, "not adjusted for
   missing values"). predictmeans' `aov(... Error())` combines the strata
   instead (Victory x 0.6 121.8; Variety SED about 6.63 on 9 df); Genstat's
-  REML gives 121.5. A decision for the maintainer (see the plan).
+  REML gives 121.5. The maintainer's decision (2026-11-14): estimate missing
+  values as Genstat's ANOVA, with exact SEDs and a message recommending REML
+  (`R/aovlist.R`, `test-aov-missing.R`): the means, stratum mean squares and
+  the missing value now equal Genstat's.

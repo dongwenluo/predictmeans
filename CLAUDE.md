@@ -27,6 +27,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   factors) are not empty cells. Truly non-estimable means are NA.
 - `aov` models with `Error()` (aovlist) are analysed by strata, as Genstat:
   standard errors from the stratum mean squares, never by refitting as lmer.
+  Missing values in an orthogonal design are estimated as Genstat's ANOVA
+  does (exact SEDs), with a message recommending REML (decision of
+  2026-11-14).
 - emmeans (and SAS) are not the reference for nested treatment structures or
   missing combinations (the EOD tree-improvement examples): there
   predictmeans averages with equal weights over the combinations that exist
