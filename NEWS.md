@@ -1,4 +1,45 @@
-# predictmeans 1.1.1.9000 (development version)
+# predictmeans 1.1.1.9000 (development version, to be released as 2.0.0)
+
+## In short
+
+predictmeans 2.0 keeps the 1.x functions and printed output, and changes
+defaults where simulations or the literature showed a more reliable method.
+Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
+
+* **Degrees of freedom** are chosen by the model in one place (`df_method =
+  "auto"`): Kenward-Roger with adjusted SEs for REML `lmer`, `lme` and `gls`
+  (observed information, as SAS `DDFM=KR`); Satterthwaite for ML fits; the df
+  of the grouping level for GLMMs; z tests for Poisson, binomial and negative
+  binomial `glm`. Options: `"Satterthwaite"`, `"containment"`,
+  `"between-within"`, `"KR-expected"` (pbkrtest, emmeans), `"KR-average"`
+  (Genstat), `"residual"` (1.x). `vcov_adjust = FALSE` gives 1.x SEs.
+* **Stable result tables**: `means`, `pairs` and `settings` with fixed column
+  names (`tidy()`, `as.data.frame()`, `autoplot()`), including adjusted
+  confidence limits that agree with the adjusted p-values.
+* **Empty cells**: means keep the 1.x average of the observed cells, with a
+  warning naming them; their comparisons use the cells both means have.
+* **`aov()` with `Error()`** is analysed by strata, as Genstat (missing
+  values estimated as Genstat's ANOVA does), not refitted as `lmer`.
+* **Type III tests** do not depend on the model's contrasts (as SAS Type 3).
+* **Permutation tests**: Freedman-Lane by default, also for mixed models,
+  GLMs and GLMMs; permutation confidence limits, Tukey and Westfall-Young
+  adjustments, robust (HC3) statistics.
+* **Model checking**: `pm_check()` and a ggplot2 `residplot()` for every
+  model class (`vignette("checking")`).
+* More adjustments (`"sidak"`, `"scheffe"`, `"mvt"`), contrast families,
+  joint tests, slopes, equivalence tests, robust covariances (`vcov =`),
+  response-scale means with bias adjustment, and an adapter for new model
+  classes (`?pm_coef`).
+
+## Planned for 2.1
+
+* **lmerTest will move from Depends to Suggests.** `library(predictmeans)`
+  will then no longer attach lmerTest, and `summary()` of an `lmer()` fit will
+  show no df or p-values unless you load lmerTest yourself. predictmeans'
+  own df do not depend on it.
+* **`plot = FALSE` will become the default** of `predictmeans()`. To get
+  that now, set `options(predictmeans.plot = FALSE)`; `autoplot()` draws the
+  plots from the result.
 
 ## Changes that affect results or scripts
 
@@ -1088,7 +1129,12 @@
 * James Curran is credited as a contributor (DESCRIPTION now uses `Authors@R`).
 * `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
   fields, and `NeedsCompilation` is "no".
-* GitHub Actions R CMD check on Linux, macOS and Windows.
+* GitHub Actions R CMD check on Linux, macOS and Windows, with `--as-cran`,
+  and one job that runs the tests as CRAN does (without `NOT_CRAN`: 140 s).
+  Release preparation (no release yet): `cran-comments.md` (draft), and a
+  reverse dependency check run by hand (`.github/workflows/revdep-check.yaml`,
+  `dev/revdep-check.R`: each CRAN package that uses predictmeans checked with
+  the CRAN version and with this one).
 
 ## Kmatrix() and semipred()
 
