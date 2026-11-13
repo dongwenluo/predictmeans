@@ -380,12 +380,12 @@ print(predm_out[1:4])
     ## 
     ## $LSD
     ##  Max.LSD  Min.LSD Aveg.LSD 
-    ## 19.56706 15.47425 18.45084 
+    ## 19.56705 15.47425 18.45083 
     ## attr(,"For the Same Level of Factor")
     ##             nitro  Variety
-    ## Aveg.LSD 19.56706 15.47425
-    ## Min.LSD  19.56706 15.47425
-    ## Max.LSD  19.56706 15.47425
+    ## Aveg.LSD 19.56705 15.47425
+    ## Min.LSD  19.56705 15.47425
+    ## Max.LSD  19.56705 15.47425
     ## attr(,"Significant level")
     ## [1] 0.05
     ## attr(,"Degree of freedom")
@@ -533,7 +533,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  28.001   0.113  28.035
+    ##  27.642   0.080  27.648
 
 ``` r
 
@@ -1862,9 +1862,9 @@ kable(anova(mod2$semer))
 
 |  | Sum Sq | Mean Sq | NumDF | DenDF | F value | Pr(\>F) |
 |:---|---:|---:|---:|---:|---:|---:|
-| construction.date | 448.0818 | 448.0818 | 1 | 2331.884 | 1.621460 | 0.2030152 |
-| district | 4444.3130 | 1481.4377 | 3 | 2832.228 | 5.360836 | 0.0011129 |
-| construction.date:district | 1582.3870 | 527.4623 | 3 | 1983.796 | 1.908713 | 0.1260932 |
+| construction.date | 448.0819 | 448.0819 | 1 | 2331.885 | 1.621461 | 0.2030151 |
+| district | 4444.3128 | 1481.4376 | 3 | 2832.228 | 5.360835 | 0.0011129 |
+| construction.date:district | 1582.3869 | 527.4623 | 3 | 1983.797 | 1.908713 | 0.1260932 |
 
 - **RANOVA**
 
@@ -2013,7 +2013,7 @@ mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
     ## Conditional model:
     ##  Groups   Name        Std.Dev. 
     ##  county   (Intercept) 5.816e+00
-    ##  grspan   (Intercept) 1.458e-03
+    ##  grspan   (Intercept) 1.426e-03
     ##  cal_grp  (Intercept) 2.096e-01
     ##  avg_grp  (Intercept) 2.704e+01
     ##  comp_grp (Intercept) 1.454e+02
@@ -2047,9 +2047,9 @@ kable(Anova(mod$semer))
 
 |            |     Chisq |  Df | Pr(\>Chisq) |
 |:-----------|----------:|----:|------------:|
-| calwpct    | 35.440286 |   1 |   0.0000000 |
-| log.avginc | 91.867929 |   1 |   0.0000000 |
-| compstu    |  1.858846 |   1 |   0.1727581 |
+| calwpct    | 35.440298 |   1 |   0.0000000 |
+| log.avginc | 91.867908 |   1 |   0.0000000 |
+| compstu    |  1.858845 |   1 |   0.1727581 |
 
 - **$`R^2`$**
 
@@ -2655,12 +2655,12 @@ kable(anova(mod$semer))
 
 |               |    Sum Sq |   Mean Sq | NumDF |        DenDF |    F value |   Pr(\>F) |
 |:--------------|----------:|----------:|------:|-------------:|-----------:|----------:|
-| xcoord        | 0.0156795 | 0.0156795 |     1 | 2.470299e+09 |  0.1872199 | 0.6652406 |
-| ycoord        | 0.0000031 | 0.0000031 |     1 | 1.562426e+09 |  0.0000373 | 0.9951299 |
-| zcoord        | 0.4661558 | 0.4661558 |     1 | 1.058437e+03 |  5.5661053 | 0.0184923 |
-| xcoord:ycoord | 0.0238179 | 0.0238179 |     1 | 1.185519e+06 |  0.2843958 | 0.5938345 |
-| xcoord:zcoord | 0.3288001 | 0.3288001 |     1 | 9.410342e+02 |  3.9260174 | 0.0478351 |
-| ycoord:zcoord | 2.1794256 | 2.1794256 |     1 | 8.707645e+02 | 26.0232999 | 0.0000004 |
+| xcoord        | 0.0156795 | 0.0156795 |     1 | 2.470303e+09 |  0.1872198 | 0.6652407 |
+| ycoord        | 0.0000031 | 0.0000031 |     1 | 1.562428e+09 |  0.0000373 | 0.9951299 |
+| zcoord        | 0.4661559 | 0.4661559 |     1 | 1.058437e+03 |  5.5661063 | 0.0184923 |
+| xcoord:ycoord | 0.0238179 | 0.0238179 |     1 | 1.185521e+06 |  0.2843957 | 0.5938346 |
+| xcoord:zcoord | 0.3288001 | 0.3288001 |     1 | 9.410343e+02 |  3.9260182 | 0.0478351 |
+| ycoord:zcoord | 2.1794256 | 2.1794256 |     1 | 8.707645e+02 | 26.0233012 | 0.0000004 |
 
 - **RANOVA**
 
@@ -2707,7 +2707,7 @@ mod <- semireg(log(grade) ~ 1,
     ## Random effects:
     ##  Groups   Name        Std.Dev. 
     ##  grp_geo  (Intercept) 0.0009664
-    ##  grp_z    (Intercept) 0.0159935
+    ##  grp_z    (Intercept) 0.0159936
     ##  Residual             0.3009139
     ## Number of obs: 439, groups:  grp_geo, 36; grp_z, 8
     ## Fixed Effects:

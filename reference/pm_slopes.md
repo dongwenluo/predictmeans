@@ -11,7 +11,7 @@ and SAS `ESTIMATE` statements on slope terms.
 
 ``` r
 pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
           vcov_adjust = TRUE,
           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```
@@ -82,9 +82,10 @@ interactions) and a central difference for
 whose slope depends on `at`. Standard errors and degrees of freedom
 follow
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
-for `lmer` models fitted by REML Kenward-Roger (with the adjusted
-covariance when `vcov_adjust = TRUE`), for `lme` the smallest nlme df of
-the terms with the covariate, otherwise the residual df.
+for models fitted by REML (`lmer`, `lme`, `gls`) Kenward-Roger (with the
+adjusted covariance when `vcov_adjust = TRUE`); with one df per term
+(containment, between-within, nlme's df) the smallest df of the terms
+with the covariate; otherwise the residual df.
 
 ## Author
 

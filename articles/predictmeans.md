@@ -63,12 +63,12 @@ or export.
 
 head(pm$means)
 #>   nitro     Variety  estimate std.error       df conf.low conf.high group n
-#> 1     0 Golden Rain  80.00000   9.10701 16.08186 60.70198  99.29802   A   6
-#> 2     0  Marvellous  86.66667   9.10701 16.08186 67.36865 105.96468    A  6
-#> 3     0     Victory  71.50000   9.10701 16.08186 52.20198  90.79802    A  6
-#> 4   0.2 Golden Rain  98.50000   9.10701 16.08186 79.20198 117.79802   AB  6
-#> 5   0.2  Marvellous 108.50000   9.10701 16.08186 89.20198 127.79802     B 6
-#> 6   0.2     Victory  89.66667   9.10701 16.08186 70.36865 108.96468    A  6
+#> 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806   A   6
+#> 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472    A  6
+#> 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806    A  6
+#> 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806   AB  6
+#> 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806     B 6
+#> 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472    A  6
 #>   estimable
 #> 1      TRUE
 #> 2      TRUE
@@ -78,19 +78,19 @@ head(pm$means)
 #> 6      TRUE
 head(pm$pairs)
 #>          level1          level2          by   estimate std.error       df
-#> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23076
-#> 2 0:Golden Rain       0:Victory        <NA>   8.500000  9.715020 30.23076
-#> 3  0:Marvellous       0:Victory        <NA>  15.166667  9.715020 30.23076
-#> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00000
-#> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23076
-#> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23076
+#> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23080
+#> 2 0:Golden Rain       0:Victory        <NA>   8.500000  9.715020 30.23080
+#> 3  0:Marvellous       0:Victory        <NA>  15.166667  9.715020 30.23080
+#> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014
+#> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23080
+#> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23080
 #>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
-#> 1 -0.6862226 0.497802553         NA -26.501036 13.167703 19.83437    tukey
-#> 2  0.8749338 0.388508430         NA -11.334370 28.334370 19.83437    tukey
-#> 3  1.5611564 0.128895708         NA  -4.667703 35.001036 19.83437    tukey
-#> 4 -2.4079299 0.020203579 0.09004252 -33.974251 -3.025749 15.47425    tukey
-#> 5 -1.2180451 0.232628352         NA -31.667703  8.001036 19.83437    tukey
-#> 6 -2.7792016 0.009281366         NA -46.834370 -7.165630 19.83437    tukey
+#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437    tukey
+#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437    tukey
+#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437    tukey
+#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    tukey
+#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437    tukey
+#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437    tukey
 ```
 
 The same tables come from
@@ -100,14 +100,14 @@ the generics package, `tidy()`:
 ``` r
 
 head(as.data.frame(pm, what = "pairs"), 3)
-#>          level1       level2   by  estimate std.error       df  statistic
-#> 1 0:Golden Rain 0:Marvellous <NA> -6.666667   9.71502 30.23076 -0.6862226
-#> 2 0:Golden Rain    0:Victory <NA>  8.500000   9.71502 30.23076  0.8749338
-#> 3  0:Marvellous    0:Victory <NA> 15.166667   9.71502 30.23076  1.5611564
+#>          level1       level2   by  estimate std.error      df  statistic
+#> 1 0:Golden Rain 0:Marvellous <NA> -6.666667   9.71502 30.2308 -0.6862226
+#> 2 0:Golden Rain    0:Victory <NA>  8.500000   9.71502 30.2308  0.8749338
+#> 3  0:Marvellous    0:Victory <NA> 15.166667   9.71502 30.2308  1.5611564
 #>     p.value p.adj   conf.low conf.high      lsd p.method
-#> 1 0.4978026    NA -26.501036  13.16770 19.83437    tukey
-#> 2 0.3885084    NA -11.334370  28.33437 19.83437    tukey
-#> 3 0.1288957    NA  -4.667703  35.00104 19.83437    tukey
+#> 1 0.4978025    NA -26.501035  13.16770 19.83437    tukey
+#> 2 0.3885084    NA -11.334369  28.33437 19.83437    tukey
+#> 3 0.1288957    NA  -4.667702  35.00104 19.83437    tukey
 ```
 
 ## Plots
@@ -149,12 +149,15 @@ rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 #> containment   10.000000
 ```
 
-`df_method = "between-within"` gives SAS’s `DDFM=BETWITHIN` df, and
-`"KR-SAS"` Kenward–Roger as SAS computes it (with the observed
-information; `"Kenward-Roger"` matches pbkrtest and emmeans, and the two
-agree in balanced designs). For `lme` and `gls` models with correlation
-or variance structures, `"Satterthwaite"`, `"Kenward-Roger"` and
-`"KR-SAS"` are available too.
+`df_method = "between-within"` gives SAS’s `DDFM=BETWITHIN` df.
+Kenward–Roger uses the observed information of the variance parameters,
+as SAS does; `"KR-expected"` uses the expected information, as pbkrtest
+and emmeans. The two agree in balanced designs; with missing values only
+the observed information is valid, and in simulations it kept the 5%
+level where the expected one rejected 8.5% of true hypotheses. For `lme`
+and `gls` models with correlation or variance structures,
+`"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` are available
+too.
 [`vignette("sas", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/sas.md)
 shows how each matches SAS PROC MIXED.
 
@@ -168,11 +171,11 @@ definitions as emmeans.
 ``` r
 
 predictmeans(fm, "nitro", weights = "proportional", plot = FALSE, prtnum = FALSE)$means
-#>   nitro  estimate std.error      df  conf.low conf.high  n estimable
-#> 1     0  79.38889  7.174754 6.79202  62.31741  96.46037 18      TRUE
-#> 2   0.2  98.88889  7.174754 6.79202  81.81741 115.96037 18      TRUE
-#> 3   0.4 114.22222  7.174754 6.79202  97.15074 131.29370 18      TRUE
-#> 4   0.6 123.38889  7.174754 6.79202 106.31741 140.46037 18      TRUE
+#>   nitro  estimate std.error       df  conf.low conf.high  n estimable
+#> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047 18      TRUE
+#> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047 18      TRUE
+#> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381 18      TRUE
+#> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047 18      TRUE
 ```
 
 ## Custom contrasts
@@ -190,12 +193,12 @@ cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
     ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`)) / 2)
 contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 #> $`The t tests of the specified contrasts`
-#>                            Estimate Std. Error t value df Pr(>|t|) lower.CL
-#> N_effect_Victory               47.0     7.6829  6.1174 45   0.0000  31.5257
-#> N_effect_Victory_vs_others      4.5     9.4097  0.4782 45   0.6348 -14.4520
-#>                            upper.CL
-#> N_effect_Victory            62.4743
-#> N_effect_Victory_vs_others  23.4520
+#>                            Estimate Std. Error t value      df Pr(>|t|)
+#> N_effect_Victory               47.0     7.6829  6.1174 45.0001   0.0000
+#> N_effect_Victory_vs_others      4.5     9.4097  0.4782 45.0001   0.6348
+#>                            lower.CL upper.CL
+#> N_effect_Victory            31.5257  62.4743
+#> N_effect_Victory_vs_others -14.4520  23.4520
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 #> 

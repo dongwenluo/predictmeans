@@ -63,7 +63,7 @@ permanova.lmer(fm, nperm=99, ncore=1)
 #>                Sum Sq Mean Sq NumDF DenDF F value  Pr(>F) Perm.p
 #> nitro         20020.5  6673.5     3    45 37.6857 0.00000   0.01
 #> Variety         526.1   263.0     2    10  1.4853 0.27239   0.29
-#> nitro:Variety   321.8    53.6     6    45  0.3028 0.93220   0.96
+#> nitro:Variety   321.7    53.6     6    45  0.3028 0.93220   0.96
 permanova.lmer(fm, nperm=99, ncore=1, type=2)
 #> refitting model(s) with ML (instead of REML)
 #> refitting model(s) with ML (instead of REML)

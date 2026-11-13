@@ -52,22 +52,22 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   predictmeans(fm, "nitro", adj="BH", plot=FALSE)$mean_table
 #> $Table
-#>   nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-#> 1     0  79.3889 7.17468 45  64.9383  93.8394      A   
-#> 2   0.2  98.8889 7.17468 45  84.4383 113.3394       B  
-#> 3   0.4 114.2222 7.17468 45  99.7717 128.6728        C 
-#> 4   0.6 123.3889 7.17468 45 108.9383 137.8394         D
+#>   nitro     Mean      SE   Df  LL(95%)  UL(95%) LetterGrp
+#> 1     0  79.3889 7.17468 6.79  62.3165  96.4613      A   
+#> 2   0.2  98.8889 7.17468 6.79  81.8165 115.9613       B  
+#> 3   0.4 114.2222 7.17468 6.79  97.1498 131.2946        C 
+#> 4   0.6 123.3889 7.17468 6.79 106.3165 140.4613         D
 #> 
 #> $Note
 #> [1] "Letter-based representation of pairwise comparisons at significant level '0.05'"
 #> 
   predictmeans(fm, "nitro", pair=TRUE, level=0.166, letterCI = TRUE, plot=FALSE)$mean_table
 #> $Table
-#>   nitro     Mean      SE Df LL(83.4%) UL(83.4%) LetterGrp
-#> 1     0  79.3889 7.17468 45   69.2869   89.4909       A  
-#> 2   0.2  98.8889 7.17468 45   88.7869  108.9909       AB 
-#> 3   0.4 114.2222 7.17468 45  104.1202  124.3242        BC
-#> 4   0.6 123.3889 7.17468 45  113.2869  133.4909         C
+#>   nitro     Mean      SE   Df LL(83.4%) UL(83.4%) LetterGrp
+#> 1     0  79.3889 7.17468 6.79   68.2563   90.5215       A  
+#> 2   0.2  98.8889 7.17468 6.79   87.7563  110.0215       AB 
+#> 3   0.4 114.2222 7.17468 6.79  103.0897  125.3548        BC
+#> 4   0.6 123.3889 7.17468 6.79  112.2563  134.5215         C
 #> 
 #> $Note
 #> [1] "Letter-based representation of pairwise comparisons by overlap of the 83.4% CIs (about significant level '0.05' for two uncorrelated means with equal SEs)"

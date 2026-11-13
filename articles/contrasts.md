@@ -76,10 +76,10 @@ dunnett
 ``` r
 
 contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
-#>         Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
-#> 0.2 - 0  19.5000     4.4358  4.3961 45    2e-04  10.5659  28.4341
-#> 0.4 - 0  34.8333     4.4358  7.8529 45    0e+00  25.8993  43.7674
-#> 0.6 - 0  44.0000     4.4358  9.9194 45    0e+00  35.0659  52.9341
+#>         Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
+#> 0.2 - 0  19.5000     4.4358  4.3961 45.0001    2e-04  10.5659  28.4341
+#> 0.4 - 0  34.8333     4.4358  7.8529 45.0001    0e+00  25.8993  43.7674
+#> 0.6 - 0  44.0000     4.4358  9.9194 45.0001    0e+00  35.0659  52.9341
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value < 0.0001."
 ```
@@ -93,13 +93,13 @@ equally spaced):
 K2 <- Kmatrix(fm, "N:Variety")
 trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
 contrastmeans(fm, "N:Variety", ctrmatrix = trends)[[1]]
-#>                        Estimate Std. Error t value df Pr(>|t|) lower.CL
-#> Golden Rain: linear    150.6667    24.2956  6.2014 45   0.0000 101.7328
-#> Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45   0.4471 -30.2172
-#> Marvellous: linear     129.1667    24.2956  5.3165 45   0.0000  80.2328
-#> Marvellous: quadratic  -12.1667    10.8653 -1.1198 45   0.2688 -34.0506
-#> Victory: linear        162.1667    24.2956  6.6747 45   0.0000 113.2328
-#> Victory: quadratic     -10.5000    10.8653 -0.9664 45   0.3390 -32.3839
+#>                        Estimate Std. Error t value      df Pr(>|t|) lower.CL
+#> Golden Rain: linear    150.6667    24.2956  6.2014 45.0001   0.0000 101.7328
+#> Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45.0001   0.4471 -30.2172
+#> Marvellous: linear     129.1667    24.2956  5.3165 45.0001   0.0000  80.2328
+#> Marvellous: quadratic  -12.1667    10.8653 -1.1198 45.0001   0.2688 -34.0506
+#> Victory: linear        162.1667    24.2956  6.6747 45.0001   0.0000 113.2328
+#> Victory: quadratic     -10.5000    10.8653 -0.9664 45.0001   0.3390 -32.3839
 #>                        upper.CL
 #> Golden Rain: linear    199.6005
 #> Golden Rain: quadratic  13.5506
@@ -125,16 +125,16 @@ the means of the term within each level of the `by` factor, which is SAS
 ``` r
 
 pm_joint(fm, "N:Variety", by = "Variety")
-#>       Variety df1 df2   F.ratio      p.value
-#> 1 Golden Rain   3  45 13.022765 2.969047e-06
-#> 2  Marvellous   3  45  9.952878 3.769265e-05
-#> 3     Victory   3  45 15.315709 5.256928e-07
+#>       Variety df1      df2   F.ratio      p.value
+#> 1 Golden Rain   3 45.00014 13.022765 2.969017e-06
+#> 2  Marvellous   3 45.00014  9.952878 3.769239e-05
+#> 3     Victory   3 45.00014 15.315709 5.256861e-07
 pm_joint(fm, "N:Variety", by = "N")
-#>     N df1      df2   F.ratio   p.value
-#> 1   0   2 30.23076 1.2245400 0.3080589
-#> 2 0.2   2 30.23076 1.8814476 0.1697812
-#> 3 0.4   2 30.23076 0.2156336 0.8072596
-#> 4 0.6   2 30.23076 0.4010511 0.6731259
+#>     N df1     df2   F.ratio   p.value
+#> 1   0   2 30.2308 1.2245400 0.3080589
+#> 2 0.2   2 30.2308 1.8814476 0.1697812
+#> 3 0.4   2 30.2308 0.2156336 0.8072596
+#> 4 0.6   2 30.2308 0.4010511 0.6731259
 ```
 
 The first table asks whether nitrogen matters within each variety, the
@@ -146,8 +146,8 @@ e.g. the departure from a straight line (quadratic and cubic terms):
 
 curv <- contrast_family(K, "poly")[c("quadratic", "cubic"), ]
 pm_joint(fm, "N", ctrmatrix = curv)
-#>   df1 df2  F.ratio   p.value
-#> 1   2  45 1.366873 0.2652819
+#>   df1      df2  F.ratio   p.value
+#> 1   2 45.00014 1.366873 0.2652818
 ```
 
 For REML `lmer` fits the test is the Kenward–Roger F test (as
@@ -162,8 +162,8 @@ p-value of the joint F):
 ``` r
 
 contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)[["Joint F test of the contrasts"]]
-#>               df1 df2 F.ratio p.value
-#> all contrasts   2  45  1.3669  0.2653
+#>               df1     df2 F.ratio p.value
+#> all contrasts   2 45.0001  1.3669  0.2653
 ```
 
 ## Slopes of a covariate
@@ -248,12 +248,12 @@ then has `p.equiv`, the p-value of two one-sided t tests (TOST): below
 pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE, prtnum = FALSE)
 pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
 #>   level1 level2   estimate std.error    p.equiv
-#> 1      0    0.2 -19.500000  4.435752 0.84211223
+#> 1      0    0.2 -19.500000  4.435752 0.84211224
 #> 2      0    0.4 -34.833333  4.435752 0.99997388
 #> 3    0.2    0.4 -15.333333  4.435752 0.52978457
 #> 4      0    0.6 -44.000000  4.435752 0.99999998
-#> 5    0.2    0.6 -24.500000  4.435752 0.98116609
-#> 6    0.4    0.6  -9.166667  4.435752 0.09757395
+#> 5    0.2    0.6 -24.500000  4.435752 0.98116610
+#> 6    0.4    0.6  -9.166667  4.435752 0.09757394
 ```
 
 `contrastmeans(..., equivalence = )` does the same for contrasts.

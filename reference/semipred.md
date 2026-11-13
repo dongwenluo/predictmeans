@@ -225,7 +225,7 @@ summary(fm$semer)
 #>  Groups     Name        Variance Std.Dev. Corr 
 #>  Subject    (Intercept)   6.670   2.583        
 #>             pressure      2.414   1.554   0.56 
-#>  qb_grp.200 (Intercept) 755.858  27.493        
+#>  qb_grp.200 (Intercept) 755.857  27.493        
 #>  qb_grp.300 (Intercept) 649.313  25.482        
 #>  Residual                 4.828   2.197        
 #> Number of obs: 140, groups:  Subject, 20; qb_grp.200, 6; qb_grp.300, 6
@@ -262,7 +262,7 @@ ranova(fm$semer)
 #>                                  npar  logLik     AIC    LRT Df Pr(>Chisq)    
 #> <none>                             10 -355.62  731.25                         
 #> pressure in (pressure | Subject)    8 -505.22 1026.45 299.20  2  < 2.2e-16 ***
-#> (1 | qb_grp.200)                    9 -476.38  970.77 241.52  1  < 2.2e-16 ***
+#> (1 | qb_grp.200)                    9 -476.39  970.78 241.53  1  < 2.2e-16 ***
 #> (1 | qb_grp.300)                    9 -468.27  954.54 225.29  1  < 2.2e-16 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
@@ -322,26 +322,26 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
 #>    Data: sleepstudy
 #> REML criterion at convergence: 1402.094
 #> Random effects:
-#>  Groups      Name        Std.Dev. 
-#>  sub_grp.308 (Intercept) 8.769e+01
-#>  sub_grp.309 (Intercept) 1.953e+00
-#>  sub_grp.310 (Intercept) 4.087e-07
-#>  sub_grp.330 (Intercept) 8.867e+00
-#>  sub_grp.331 (Intercept) 8.598e+00
-#>  sub_grp.332 (Intercept) 5.321e+01
-#>  sub_grp.333 (Intercept) 1.230e-06
-#>  sub_grp.334 (Intercept) 8.332e+00
-#>  sub_grp.335 (Intercept) 0.000e+00
-#>  sub_grp.337 (Intercept) 0.000e+00
-#>  sub_grp.349 (Intercept) 5.746e+00
-#>  sub_grp.350 (Intercept) 1.773e+01
-#>  sub_grp.351 (Intercept) 7.290e+00
-#>  sub_grp.352 (Intercept) 1.655e+01
-#>  sub_grp.369 (Intercept) 0.000e+00
-#>  sub_grp.370 (Intercept) 0.000e+00
-#>  sub_grp.371 (Intercept) 1.266e+01
-#>  sub_grp.372 (Intercept) 0.000e+00
-#>  Residual                1.708e+01
+#>  Groups      Name        Std.Dev.
+#>  sub_grp.308 (Intercept) 87.687  
+#>  sub_grp.309 (Intercept)  1.953  
+#>  sub_grp.310 (Intercept)  0.000  
+#>  sub_grp.330 (Intercept)  8.867  
+#>  sub_grp.331 (Intercept)  8.598  
+#>  sub_grp.332 (Intercept) 53.207  
+#>  sub_grp.333 (Intercept)  0.000  
+#>  sub_grp.334 (Intercept)  8.332  
+#>  sub_grp.335 (Intercept)  0.000  
+#>  sub_grp.337 (Intercept)  0.000  
+#>  sub_grp.349 (Intercept)  5.746  
+#>  sub_grp.350 (Intercept) 17.727  
+#>  sub_grp.351 (Intercept)  7.290  
+#>  sub_grp.352 (Intercept) 16.550  
+#>  sub_grp.369 (Intercept)  0.000  
+#>  sub_grp.370 (Intercept)  0.000  
+#>  sub_grp.371 (Intercept) 12.659  
+#>  sub_grp.372 (Intercept)  0.000  
+#>  Residual                17.081  
 #> Number of obs: 180, groups:  
 #> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8
 #> Fixed Effects:
@@ -384,67 +384,67 @@ summary(sleep.semi$semer)
 #> -2.5308 -0.3655  0.0058  0.4992  3.3329 
 #> 
 #> Random effects:
-#>  Groups      Name        Variance  Std.Dev. 
-#>  sub_grp.308 (Intercept) 7.689e+03 8.769e+01
-#>  sub_grp.309 (Intercept) 3.814e+00 1.953e+00
-#>  sub_grp.310 (Intercept) 1.670e-13 4.087e-07
-#>  sub_grp.330 (Intercept) 7.863e+01 8.867e+00
-#>  sub_grp.331 (Intercept) 7.393e+01 8.598e+00
-#>  sub_grp.332 (Intercept) 2.831e+03 5.321e+01
-#>  sub_grp.333 (Intercept) 1.514e-12 1.230e-06
-#>  sub_grp.334 (Intercept) 6.942e+01 8.332e+00
-#>  sub_grp.335 (Intercept) 0.000e+00 0.000e+00
-#>  sub_grp.337 (Intercept) 0.000e+00 0.000e+00
-#>  sub_grp.349 (Intercept) 3.302e+01 5.746e+00
-#>  sub_grp.350 (Intercept) 3.142e+02 1.773e+01
-#>  sub_grp.351 (Intercept) 5.314e+01 7.290e+00
-#>  sub_grp.352 (Intercept) 2.739e+02 1.655e+01
-#>  sub_grp.369 (Intercept) 0.000e+00 0.000e+00
-#>  sub_grp.370 (Intercept) 0.000e+00 0.000e+00
-#>  sub_grp.371 (Intercept) 1.602e+02 1.266e+01
-#>  sub_grp.372 (Intercept) 0.000e+00 0.000e+00
-#>  Residual                2.918e+02 1.708e+01
+#>  Groups      Name        Variance Std.Dev.
+#>  sub_grp.308 (Intercept) 7689.043 87.687  
+#>  sub_grp.309 (Intercept)    3.814  1.953  
+#>  sub_grp.310 (Intercept)    0.000  0.000  
+#>  sub_grp.330 (Intercept)   78.629  8.867  
+#>  sub_grp.331 (Intercept)   73.933  8.598  
+#>  sub_grp.332 (Intercept) 2830.981 53.207  
+#>  sub_grp.333 (Intercept)    0.000  0.000  
+#>  sub_grp.334 (Intercept)   69.422  8.332  
+#>  sub_grp.335 (Intercept)    0.000  0.000  
+#>  sub_grp.337 (Intercept)    0.000  0.000  
+#>  sub_grp.349 (Intercept)   33.017  5.746  
+#>  sub_grp.350 (Intercept)  314.229 17.727  
+#>  sub_grp.351 (Intercept)   53.139  7.290  
+#>  sub_grp.352 (Intercept)  273.919 16.550  
+#>  sub_grp.369 (Intercept)    0.000  0.000  
+#>  sub_grp.370 (Intercept)    0.000  0.000  
+#>  sub_grp.371 (Intercept)  160.240 12.659  
+#>  sub_grp.372 (Intercept)    0.000  0.000  
+#>  Residual                 291.754 17.081  
 #> Number of obs: 180, groups:  
 #> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8
 #> 
 #> Fixed effects:
 #>                  Estimate Std. Error        df t value Pr(>|t|)    
-#> (Intercept)      343.8165     5.6885    0.1911  60.440 0.346112    
-#> Days              22.7478     1.9581  457.2035  11.617  < 2e-16 ***
-#> Subject309      -128.2262     7.8715  440.5477 -16.290  < 2e-16 ***
-#> Subject310      -112.8152     7.8444  434.0057 -14.382  < 2e-16 ***
-#> Subject330       -36.7402     7.9577  460.0052  -4.617 5.06e-06 ***
-#> Subject331       -33.2308     7.9565  468.6450  -4.177 3.53e-05 ***
-#> Subject332       -47.4940     8.0120  472.8520  -5.928 5.92e-09 ***
-#> Subject333       -27.6582     7.8444  434.0057  -3.526 0.000467 ***
-#> Subject334       -45.0516     7.9552  459.4254  -5.663 2.62e-08 ***
-#> Subject335       -93.7464     7.8444  442.7850 -11.951  < 2e-16 ***
-#> Subject337        31.9045     7.8444  434.5141   4.067 5.65e-05 ***
-#> Subject349       -65.8362     7.9366  454.7674  -8.295 1.24e-15 ***
-#> Subject350       -28.6239     7.9774  464.5716  -3.588 0.000368 ***
-#> Subject351       -52.0672     7.9493  466.9362  -6.550 1.52e-10 ***
-#> Subject352       -10.4484     7.9759  464.3781  -1.310 0.190843    
-#> Subject369       -37.7818     7.8444  434.0057  -4.816 2.02e-06 ***
-#> Subject370       -52.1147     7.8444  434.3556  -6.644 9.19e-11 ***
-#> Subject371       -44.5647     7.9693  471.6561  -5.592 3.81e-08 ***
-#> Subject372       -25.9304     7.8444  434.5141  -3.306 0.001026 ** 
-#> Days:Subject309  -20.4897     2.7156  424.2917  -7.545 2.78e-13 ***
-#> Days:Subject310  -16.6329     2.7149  415.7126  -6.127 2.08e-09 ***
-#> Days:Subject330  -19.7413     2.7249  430.1181  -7.245 2.02e-12 ***
-#> Days:Subject331  -17.1810     2.7245  438.5647  -6.306 7.00e-10 ***
-#> Days:Subject332  -14.8812     2.7522  447.6082  -5.407 1.04e-07 ***
-#> Days:Subject333  -13.6057     2.7149  415.7126  -5.012 8.00e-07 ***
-#> Days:Subject334  -10.5976     2.7242  429.6364  -3.890 0.000116 ***
-#> Days:Subject335  -25.6288     2.7149  432.3665  -9.440  < 2e-16 ***
-#> Days:Subject337   -3.7218     2.7149  423.8086  -1.371 0.171134    
-#> Days:Subject349   -9.2473     2.7203  419.0531  -3.399 0.000740 ***
-#> Days:Subject350   -4.0931     2.7342  436.0366  -1.497 0.135123    
-#> Days:Subject351  -16.1188     2.7226  437.3315  -5.920 6.50e-09 ***
-#> Days:Subject352   -8.5054     2.7333  435.4524  -3.112 0.001982 ** 
-#> Days:Subject369  -11.3997     2.7149  415.7126  -4.199 3.28e-05 ***
-#> Days:Subject370   -4.6916     2.7149  423.8022  -1.728 0.084695 .  
-#> Days:Subject371  -13.1288     2.7297  441.8650  -4.810 2.08e-06 ***
-#> Days:Subject372  -11.4497     2.7149  423.8086  -4.217 3.02e-05 ***
+#> (Intercept)      343.8165     5.6885    0.1911  60.440 0.346110    
+#> Days              22.7478     1.9581  457.2032  11.617  < 2e-16 ***
+#> Subject309      -128.2262     7.8715  440.5474 -16.290  < 2e-16 ***
+#> Subject310      -112.8152     7.8444  434.0055 -14.382  < 2e-16 ***
+#> Subject330       -36.7402     7.9577  460.0049  -4.617 5.06e-06 ***
+#> Subject331       -33.2308     7.9565  468.6447  -4.177 3.53e-05 ***
+#> Subject332       -47.4940     8.0120  472.8517  -5.928 5.92e-09 ***
+#> Subject333       -27.6582     7.8444  434.0055  -3.526 0.000467 ***
+#> Subject334       -45.0516     7.9552  459.4251  -5.663 2.62e-08 ***
+#> Subject335       -93.7464     7.8444  442.7847 -11.951  < 2e-16 ***
+#> Subject337        31.9045     7.8444  434.5138   4.067 5.65e-05 ***
+#> Subject349       -65.8362     7.9366  454.7672  -8.295 1.24e-15 ***
+#> Subject350       -28.6239     7.9774  464.5713  -3.588 0.000368 ***
+#> Subject351       -52.0672     7.9493  466.9359  -6.550 1.52e-10 ***
+#> Subject352       -10.4484     7.9759  464.3778  -1.310 0.190843    
+#> Subject369       -37.7818     7.8444  434.0055  -4.816 2.02e-06 ***
+#> Subject370       -52.1147     7.8444  434.3553  -6.644 9.19e-11 ***
+#> Subject371       -44.5647     7.9693  471.6558  -5.592 3.81e-08 ***
+#> Subject372       -25.9304     7.8444  434.5138  -3.306 0.001026 ** 
+#> Days:Subject309  -20.4897     2.7156  424.2914  -7.545 2.78e-13 ***
+#> Days:Subject310  -16.6329     2.7149  415.7123  -6.127 2.08e-09 ***
+#> Days:Subject330  -19.7413     2.7249  430.1178  -7.245 2.02e-12 ***
+#> Days:Subject331  -17.1810     2.7245  438.5644  -6.306 7.00e-10 ***
+#> Days:Subject332  -14.8812     2.7522  447.6079  -5.407 1.04e-07 ***
+#> Days:Subject333  -13.6057     2.7149  415.7123  -5.012 8.00e-07 ***
+#> Days:Subject334  -10.5976     2.7242  429.6362  -3.890 0.000116 ***
+#> Days:Subject335  -25.6288     2.7149  432.3662  -9.440  < 2e-16 ***
+#> Days:Subject337   -3.7218     2.7149  423.8083  -1.371 0.171134    
+#> Days:Subject349   -9.2473     2.7203  419.0528  -3.399 0.000740 ***
+#> Days:Subject350   -4.0931     2.7343  436.0363  -1.497 0.135123    
+#> Days:Subject351  -16.1188     2.7226  437.3312  -5.920 6.50e-09 ***
+#> Days:Subject352   -8.5054     2.7333  435.4522  -3.112 0.001982 ** 
+#> Days:Subject369  -11.3997     2.7149  415.7123  -4.199 3.28e-05 ***
+#> Days:Subject370   -4.6916     2.7149  423.8020  -1.728 0.084695 .  
+#> Days:Subject371  -13.1288     2.7297  441.8648  -4.810 2.08e-06 ***
+#> Days:Subject372  -11.4497     2.7149  423.8083  -4.217 3.02e-05 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #> 
@@ -454,7 +454,7 @@ summary(sleep.semi$semer)
 anova(sleep.semi$semer)
 #> Type III Analysis of Variance Table with Satterthwaite's method
 #>              Sum Sq Mean Sq NumDF  DenDF F value    Pr(>F)    
-#> Days         160019  160019     1 385.67 548.473 < 2.2e-16 ***
+#> Days         160019  160019     1 385.67 548.472 < 2.2e-16 ***
 #> Subject      243328   14313    17 422.34  49.060 < 2.2e-16 ***
 #> Days:Subject  60104    3536    17 401.98  12.118 < 2.2e-16 ***
 #> ---

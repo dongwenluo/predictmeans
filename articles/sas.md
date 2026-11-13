@@ -11,22 +11,27 @@ and what has been checked.
 | `METHOD=REML` | `lmer(..., REML = TRUE)`, [`lme()`](https://rdrr.io/pkg/nlme/man/lme.html), [`gls()`](https://rdrr.io/pkg/nlme/man/gls.html) (the defaults) |
 | `LSMEANS / DIFF CL` | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md): `$means`, `$pairs` |
 | `LSMEANS / OM` | `weights = "proportional"` |
-| `LSMEANS / ADJUST=TUKEY`, `SIMULATE` | `adj = "tukey"`, `"mvt"` |
+| `LSMEANS / ADJUST=TUKEY ADJDFE=ROW`, `SIMULATE` | `adj = "tukey"`, `"mvt"` (each pair’s own df; SAS’s default `ADJDFE=SOURCE` uses the term’s F-test df) |
+| NOTE: “Estimated G matrix is not positive definite” | a message about a singular fit; `settings$singular` |
 | `ESTIMATE`, `CONTRAST` | [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md), [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md) |
 | `DDFM=CONTAIN` | `df_method = "containment"` |
 | `DDFM=BETWITHIN` | `df_method = "between-within"` (`lmer`, `lme`, `gls`) |
 | `DDFM=SATTERTHWAITE` | `df_method = "Satterthwaite"` (`lmer`, `lme`, `gls`) |
-| `DDFM=KR` | `df_method = "KR-SAS"` (`lmer`, `lme`, `gls`) |
+| `DDFM=KR` | `df_method = "Kenward-Roger"` (`lmer`, `lme`, `gls`; the default for REML `lmer`) |
 | `REPEATED / TYPE=UN SUBJECT=` | `gls(..., correlation = corSymm(), weights = varIdent())` |
 | `EMPIRICAL` | `vcov = "HC0"` (or `"HC3"`, `~ cluster`; `lm`/`glm`) |
 
 `df_method = "Kenward-Roger"` (the default for REML `lmer` fits) is
-Kenward–Roger as pbkrtest and emmeans compute it, with the *expected*
-information of the variance parameters; SAS uses the *observed*
-information. They agree in balanced designs. With missing data they can
-differ: for the split plot below with one whole plot missing, the
-Kenward–Roger df of a whole-plot comparison are 9.25 with
-`"Kenward-Roger"` and 8.35 with `"KR-SAS"` (and in SAS).
+Kenward–Roger as SAS computes it, with the *observed* information of the
+variance parameters; pbkrtest and emmeans use the *expected* information
+(`df_method = "KR-expected"`). They agree in balanced designs. With
+missing data they can differ: for the split plot below with one whole
+plot missing, the Kenward–Roger df of a whole-plot comparison are 8.35
+with `"Kenward-Roger"` (and in SAS) and 9.25 with `"KR-expected"`.
+predictmeans uses the observed information because it stays valid with
+missing values (Kenward and Molenberghs 1998); in simulations it kept
+the 5% level where the expected information rejected 8.5% of true
+hypotheses.
 
 ``` r
 
@@ -35,19 +40,19 @@ Oats <- as.data.frame(nlme::Oats)
 Oats$nitro <- factor(Oats$nitro)
 oats_wp <- droplevels(subset(Oats, !(Block == "I" & Variety == "Golden Rain")))
 fm <- lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = oats_wp)
-dfs <- sapply(c("containment", "between-within", "Satterthwaite", "Kenward-Roger", "KR-SAS"),
+dfs <- sapply(c("containment", "between-within", "Satterthwaite", "Kenward-Roger", "KR-expected"),
               function(m) predictmeans(fm, "Variety", df_method = m, plot = FALSE,
                                        prtnum = FALSE)$pairs$df)
 rownames(dfs) <- c("Golden Rain - Marvellous", "Golden Rain - Victory", "Marvellous - Victory")
 round(dfs, 2)
 #>                          containment between-within Satterthwaite Kenward-Roger
-#> Golden Rain - Marvellous           9              9          8.35          9.25
-#> Golden Rain - Victory              9              9          8.35          9.25
-#> Marvellous - Victory               9              9          8.10          9.01
-#>                          KR-SAS
-#> Golden Rain - Marvellous   8.35
-#> Golden Rain - Victory      8.35
-#> Marvellous - Victory       8.10
+#> Golden Rain - Marvellous           9              9          8.35          8.35
+#> Golden Rain - Victory              9              9          8.35          8.35
+#> Marvellous - Victory               9              9          8.10          8.10
+#>                          KR-expected
+#> Golden Rain - Marvellous        9.25
+#> Golden Rain - Victory           9.25
+#> Marvellous - Victory            9.01
 ```
 
 The SAS values for these pairs are, in the same order: containment 9, 9,

@@ -4,6 +4,155 @@
 
 ### Changes that affect results or scripts
 
+- **[`aov()`](https://rdrr.io/r/stats/aov.html) models with `Error()`
+  strata are analysed by strata**, as Genstat’s ANOVA does, in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  and
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  (new `R/aovlist.R`). They were refitted as `lmer` models, which
+  changed the analysis: when a stratum variance is negative by ANOVA,
+  REML fixes it at zero and the treatments were compared with the wrong
+  error (tree-improvement Exam 3.1, diameter: SED 1.5 on 75 df, where
+  the plot stratum gives 1.074 on 4 df, as Genstat). Now each comparison
+  uses the mean squares of the strata it draws on, with Satterthwaite’s
+  df across strata (Genstat’s rule: split plot, 0.583 on 14.69 df); the
+  F tests are the stratum F tests; `settings$df_method` is
+  `"multistratum"`. Standard errors of single means include the block
+  stratum (Genstat’s e.s.e., which leaves it out, is the SED divided by
+  sqrt(2)).
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
+  shows the residuals of the lowest stratum
+  ([`proj()`](https://rdrr.io/r/stats/proj.html)). To get the 1.x
+  numbers fit the mixed model yourself, e.g.
+  `lmer(y ~ trt + (1 | block/plot))`.
+
+- New tests from the examples of *Experimental Design and Analysis for
+  Tree Improvement*, against Genstat and SAS runs: nested treatments
+  (Genstat’s means, which average over the treatments that exist; SAS
+  and emmeans weight by the nesting), a split plot (Genstat’s SEDs, and
+  its 14.69 df for comparisons across strata, equal to predictmeans’
+  Kenward-Roger df), an incomplete site-by-seedlot table (SAS LS-means),
+  families as random effects (SAS PROC MIXED), trees within plots
+  (Genstat, by strata), inoculation on whole replicates crossed with
+  provenances within countries (Genstat, by strata: 2, 116 and
+  31.61-117.16 df) and a clone trial with standards and random rows,
+  columns and clones (SAS `DDFM=KR`: means, SEs, df and F tests).
+
+- The warning “Missing treatments’ combination appeared” is no longer
+  given for combinations absent by design (a factor nested in another,
+  such as provenances within countries); the means are the same. It is
+  still given for combinations missing from the data.
+
+- **GLMMs (`glmer`, `glmmTMB`) get the df of the grouping level at which
+  each effect varies** (`df_method = "inner-outer"`, the new default),
+  in place of the residual df (n minus parameters). This is nlme’s rule
+  (Pinheiro and Bates 2000), computed from the design
+  (`R/df-innerouter.R`; equal to nlme’s `fixDF` for nested random
+  effects) and extended to crossed random effects: a treatment applied
+  to whole clusters gets the number of clusters minus the treatments, an
+  effect within clusters the residual stratum’s df. A contrast gets the
+  smallest df of the coefficients it uses; the means of a term share the
+  term’s df. In simulations (`dev/sim-df/README.md`) the residual df
+  rejected 8-15% of true hypotheses for between-cluster effects,
+  inner-outer 6-8% (nested and crossed); the rest is the Wald standard
+  error with few clusters, for which
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  is the check. `df_method = "residual"` gives the previous df.
+  `"containment"` and `"between-within"` now work for `glmer` too, and
+  `"inner-outer"` for `lmer` and `lme`.
+
+- **Kenward-Roger df and adjusted SEs are the default for `lme` and
+  `gls` models fitted by REML** (as for `lmer`), in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md).
+  They were nlme’s df (`lme`) and the residual df (`gls`), which in
+  simulations rejected 16% of true hypotheses in F tests of unstructured
+  repeated measures and 24-27% with 10% of values missing; Kenward-Roger
+  4-6% (`dev/sim-df/README.md`). `df_method = "containment"` gives the
+  previous df (and, by default, the unadjusted covariance), so 1.x
+  results. ML fits keep nlme’s or the residual df (with a message); a
+  covariance structure that cannot be rebuilt falls back to them with a
+  message.
+
+- [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  gains `df_method` and `vcov_adjust` and follows the same defaults:
+  Kenward-Roger df for each point of the curves and adjusted SEs for
+  REML fits. It used the unadjusted covariance and, for `lmer`, one df
+  per term; `vcov_adjust = FALSE` (and `df_method = "containment"` for
+  `lme`, `gls`) give its previous results.
+
+- **Kenward-Roger uses the observed information of the variance
+  parameters** (as SAS PROC MIXED `DDFM=KR`), for `lmer` (the default
+  for REML fits), `lme` and `gls`. It stays valid with missing values,
+  where the expected information (pbkrtest, emmeans) is not (Kenward and
+  Molenberghs 1998). In simulations (`dev/sim-df/README.md`) it was
+  never worse, and with unstructured repeated measures and 10% of values
+  missing its F tests rejected 6% of true hypotheses at the 5% level
+  where the expected information rejected 8.5%. Balanced designs give
+  the same results as before; with missing values the df and SEs change
+  a little (split plot with a whole plot missing: 8.35 df, was 9.25).
+  `df_method = "KR-expected"` gives the previous results (and
+  pbkrtest’s, emmeans’). The option `"KR-SAS"` of the development
+  version is gone: it is now `"Kenward-Roger"`. The tables of
+  [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  keep pbkrtest’s version, as
+  [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html).
+
+- **One set of inference rules for
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)**
+  (new internal `pm_inference()`, `R/inference.R`): which covariance of
+  the coefficients is used, which denominator df, and how they are
+  reported, decided in one place. The 39-call
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  snapshot and the 33 permutation calls are unchanged apart from
+  `settings$vcov_adjust`. Where the functions used to disagree they now
+  follow the rule
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  used:
+
+  - `lme` models with nlme’s df:
+    [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+    and
+    [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+    used the smallest df of the term and its marginal terms (and printed
+    a note); they now use the term’s df, as
+    [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+    and nlme’s [`anova()`](https://rdrr.io/r/stats/anova.html) do. One
+    df per term is liberal for some comparisons (e.g. varieties within a
+    nitrogen level of a split plot) and conservative for others;
+    Satterthwaite or Kenward-Roger df (`df_method =`) give each contrast
+    its own df.
+  - [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+    on an `lmer` model with a single fixed term gave every contrast the
+    term’s average df; each contrast now has its own Kenward-Roger or
+    Satterthwaite df.
+  - [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+    with `df_method = "containment"`: the df of the terms with the
+    covariate (the smallest), as with `"between-within"`; it used the
+    factor’s df.
+  - The legacy p-value matrix of
+    [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+    (`pairwise = TRUE`) used the mean df of the pairs for `lme`/`gls`
+    with Satterthwaite or Kenward-Roger df; it now uses each pair’s df,
+    as the `pairs` table (and the letters) do.
+  - `settings$vcov_adjust` is `TRUE` only when the Kenward-Roger
+    adjusted covariance was used (it was `TRUE` for `lm`, `glm` and ML
+    fits too).
+  - [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+    reports nlme’s df as `"containment (nlme)"` (was `"nlme"`), as
+    `settings$df_method` does; its result has plain row names.
+
 - **`ncore = 1` by default** in
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
@@ -330,14 +479,38 @@
   and limits. For `lm`, `aov` and `glm`, `vcov = "HC0"` to `"HC3"`
   (heteroscedasticity-consistent; equal to
   [`car::hccm()`](https://rdrr.io/pkg/car/man/hccm.html) and to
-  [`sandwich::vcovHC()`](https://rdrr.io/pkg/sandwich/man/vcovHC.html))
+  [`sandwich::vcovHC()`](https://zeileis.codeberg.page/sandwich/reference/vcovHC.html))
   or `vcov = ~ cluster` (cluster-robust CR1, as
-  [`sandwich::vcovCL()`](https://rdrr.io/pkg/sandwich/man/vcovCL.html)),
+  [`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)),
   with no new dependency; for any model a covariance matrix or a
   function of the model (for mixed models e.g. from clubSandwich). The
   df stay the model’s. Means, pairs and slopes equal emmeans with the
   same covariance (`vcov. =`). The `settings` table records it (`vcov`).
   With a `permlist` it is not used (see `permmodels(robust = TRUE)`).
+
+- Singular `lmer`/`glmer` fits (a variance component estimated as zero,
+  or a correlation as +-1) are noted by
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  (SAS’s “G matrix not positive definite”) and recorded in
+  `settings$singular`. Adjusted p-values use each pair’s own df, as SAS
+  `ADJDFE=ROW` (now tested and documented).
+
+- `glance()` (generics/broom) of a
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  result: one row with the term, numbers of means and pairs, df method,
+  adjustment, covariance, SED range and mean LSD.
+  `options(predictmeans.plot = FALSE)` turns the plots off by default
+  (scripts, reports, pipelines). The examples of
+  [`?predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  start from the `means`, `pairs` and `settings` tables.
+
+- SAS validation: the tests compare every variance component, LS-mean,
+  difference and Type 3 test of 16 SAS PROC MIXED runs (split plot,
+  sub-plot or whole plot missing, unstructured repeated measures;
+  containment, between-within, Satterthwaite and Kenward-Roger df) with
+  predictmeans (`tests/testthat/test-sas-reference.R`).
 
 - `df_method = "between-within"` (SAS `DDFM=BETWITHIN`) in
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
@@ -360,12 +533,13 @@
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   does.
 
-- `df_method = "KR-SAS"`: Kenward-Roger as SAS PROC MIXED `DDFM=KR`
-  computes it, with the observed information of the variance parameters
-  (computed in closed form) where `"Kenward-Roger"` (pbkrtest, emmeans)
-  uses the expected information. Same results in balanced designs; with
-  one plot missing in the split plot of the SAS reference run, “KR-SAS”
-  reproduces SAS’s df and SEs (e.g. 9.79 and 31.3, where “Kenward-Roger”
+- Kenward-Roger with the observed information of the variance
+  parameters, as SAS PROC MIXED `DDFM=KR` (computed in closed form);
+  since 2026-11-13 this is `df_method = "Kenward-Roger"` and the
+  expected information (pbkrtest, emmeans) is `"KR-expected"` (see the
+  first entry). Same results in balanced designs; with one plot missing
+  in the split plot of the SAS reference run the observed information
+  reproduces SAS’s df and SEs (e.g. 9.79 and 31.3, where the expected
   gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
   `"Satterthwaite"`, every df of that SAS run now agrees with SAS.
 
@@ -381,7 +555,7 @@
   df use the Hessian of the REML log-likelihood, as SAS does. For the
   unstructured repeated measures of the SAS reference run, the df are 10
   to 10.2 as SAS gives, where the residual df (the default for `gls`)
-  are 30. `"Kenward-Roger"` and `"KR-SAS"` give Kenward-Roger df, F
+  are 30. `"Kenward-Roger"` and `"KR-expected"` give Kenward-Roger df, F
   tests and adjusted standard errors for these models too (numerical
   derivatives of the data covariance; the second-derivative term is left
   out, so the result does not depend on nlme’s parameterisation and
@@ -847,6 +1021,14 @@
   undo the centring for it in the grid too.
 
 ### Speed
+
+- Satterthwaite and Kenward-Roger df for `lme` and `gls` models build
+  the covariance of the data as a sparse matrix, block diagonal by
+  subject, so the time grows about linearly with the data: an
+  unstructured `gls` with 2000 observations takes 3 s (was about 70 s),
+  an `lme` random-intercept model with 8000 observations under 1 s.
+  Results are unchanged (to 1e-9, the accuracy of the numerical
+  derivatives).
 
 - Satterthwaite df (used for `lmer` models fitted by ML, and by
   `df_term(type = "Satterthwaite")`) are computed for all contrasts at

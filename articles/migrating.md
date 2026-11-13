@@ -32,9 +32,9 @@ new <- predictmeans(fm_u, "Variety", plot = FALSE, prtnum = FALSE)
 old <- predictmeans(fm_u, "Variety", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)
 cbind(SE_2.0 = new$means$std.error, SE_1.x = old$means$std.error)
 #>        SE_2.0   SE_1.x
-#> [1,] 8.086277 8.085432
+#> [1,] 8.086340 8.085432
 #> [2,] 8.057580 8.057580
-#> [3,] 8.137792 8.132226
+#> [3,] 8.138192 8.132226
 ```
 
 ### Means that cannot be estimated are NA
@@ -143,9 +143,9 @@ pm$`Predicted Means`
 #>        0      0.2      0.4      0.6 
 #>  79.3889  98.8889 114.2222 123.3889
 pm$means
-#>   nitro  estimate std.error      df  conf.low conf.high group  n estimable
-#> 1     0  79.38889  7.174754 6.79202  62.31741  96.46037  A    18      TRUE
-#> 2   0.2  98.88889  7.174754 6.79202  81.81741 115.96037   B   18      TRUE
-#> 3   0.4 114.22222  7.174754 6.79202  97.15074 131.29370    C  18      TRUE
-#> 4   0.6 123.38889  7.174754 6.79202 106.31741 140.46037     D 18      TRUE
+#>   nitro  estimate std.error       df  conf.low conf.high group  n estimable
+#> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047  A    18      TRUE
+#> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047   B   18      TRUE
+#> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381    C  18      TRUE
+#> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047     D 18      TRUE
 ```

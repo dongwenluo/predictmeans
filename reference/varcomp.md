@@ -62,13 +62,13 @@ if (FALSE) varcomp(mod) # \dontrun{}
 mod1 <- lme(distance ~ age, random=~age|Subject, data=Orthodont)
 varcomp(mod1)
 #>                                             vcov        SE       lower
-#> Subject.Subject.var((Intercept))      5.41508791 4.9583411  0.89986361
-#> Subject.Subject.cov(age,(Intercept)) -0.32106066 0.4243794 -0.49433350
-#> Subject.Subject.var(age)              0.05126955 0.0414508  0.01051371
-#> sigma_sq                              1.71620400 0.3302836  1.17675496
+#> Subject.Subject.var((Intercept))      5.41508810 4.9583411  0.89503496
+#> Subject.Subject.cov(age,(Intercept)) -0.32106067 0.4243794 -0.49456729
+#> Subject.Subject.var(age)              0.05126955 0.0414508  0.01046586
+#> sigma_sq                              1.71620399 0.3302836  1.17658678
 #>                                           upper
-#> Subject.Subject.var((Intercept))     32.5862463
-#> Subject.Subject.cov(age,(Intercept))  0.1568360
-#> Subject.Subject.var(age)              0.2500132
-#> sigma_sq                              2.5029477
+#> Subject.Subject.var((Intercept))     32.7620490
+#> Subject.Subject.cov(age,(Intercept))  0.1586185
+#> Subject.Subject.var(age)              0.2511563
+#> sigma_sq                              2.5033055
 ```

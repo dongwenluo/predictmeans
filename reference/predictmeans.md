@@ -12,10 +12,11 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+  jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 ```
 
@@ -26,7 +27,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`,
   `glmer`, `glmmTMB` and `gam` (package mgcv), or a
   [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
-  fit. For a `semireg` fit the means include the smooth terms (as
+  fit. An `aov` model with `Error()` strata is analysed by strata, as
+  Genstat's ANOVA: each comparison uses the mean squares of the strata
+  it draws on, with Satterthwaite's df across strata
+  (`settings$df_method` `"multistratum"`); standard errors of single
+  means include the block stratum. For a `semireg` fit the means include
+  the smooth terms (as
   [`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
   at the covariates' means or at the values of `covariate` (a named
   vector, e.g. `c(construction.date = 1980)`); the result holds only the
@@ -64,16 +70,18 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   "scheffe" and "mvt". "sidak", "scheffe" (rank of the family: number of
   means - 1) and "mvt" (single-step multivariate t, the exact
   counterpart of SAS `ADJUST=SIMULATE`; needs package mvtnorm) are as in
-  emmeans. With `permlist`, "tukey" and "mvt" give the single-step
-  max-\|t\| adjustment of the permutation p-values (the permutation
-  version of Tukey's test: each pair's \|t\| is compared with the
-  largest \|t\| of the family in each permuted data set), and "westfall"
-  the step-down max-\|t\| of Westfall and Young (1993), which is
-  uniformly more powerful; both use the correlation between the
-  comparisons. "westfall" needs `permlist`; "scheffe" is not available
-  with it. The default method is "none"; letter case does not matter
-  ("Tukey" works). Note that LSD can't be adjusted except for
-  "bonferroni" method.
+  emmeans. Adjusted p-values use each pair's own df (as SAS
+  `ADJDFE=ROW`; SAS's default `ADJDFE=SOURCE` uses the df of the term's
+  F test instead, which differs when the pairs' df differ). With
+  `permlist`, "tukey" and "mvt" give the single-step max-\|t\|
+  adjustment of the permutation p-values (the permutation version of
+  Tukey's test: each pair's \|t\| is compared with the largest \|t\| of
+  the family in each permuted data set), and "westfall" the step-down
+  max-\|t\| of Westfall and Young (1993), which is uniformly more
+  powerful; both use the correlation between the comparisons. "westfall"
+  needs `permlist`; "scheffe" is not available with it. The default
+  method is "none"; letter case does not matter ("Tukey" works). Note
+  that LSD can't be adjusted except for "bonferroni" method.
 
 - Df:
 
@@ -194,7 +202,9 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - plot:
 
-  An option for drawing plots, or not. The default is TRUE.
+  An option for drawing plots, or not. The default is TRUE, unless
+  `options(predictmeans.plot = FALSE)` is set (e.g. for scripts, reports
+  and pipelines that use the `means` and `pairs` tables only).
 
 - jitterv:
 
@@ -257,12 +267,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - vcov_adjust:
 
-  For `lmer` models fitted by REML: if `TRUE` (the default), standard
-  errors use the Kenward-Roger adjusted covariance matrix of the fixed
-  effects, as SAS `DDFM=KR` and emmeans do, to go with the Kenward-Roger
-  degrees of freedom. `FALSE` uses the unadjusted covariance and
-  reproduces results of predictmeans 1.x. It has no effect for other
-  models.
+  For models fitted by REML (`lmer`, `lme`, `gls`) with Kenward-Roger
+  df: if `TRUE` (the default), standard errors use the Kenward-Roger
+  adjusted covariance matrix of the fixed effects, as SAS `DDFM=KR` and
+  emmeans do, to go with the Kenward-Roger degrees of freedom. `FALSE`
+  uses the unadjusted covariance and reproduces results of predictmeans
+  1.x. It has no effect for other models.
 
 - weights:
 
@@ -281,8 +291,15 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   Denominator degrees of freedom for `lmer` models. `"auto"` (the
   default) uses Kenward-Roger for REML fits and Satterthwaite for ML
-  fits. `"containment"` gives the SAS `DDFM=CONTAIN` df: the smallest
-  rank contribution to \\\[X Z\]\\ of the random effects that contain
+  fits. Kenward-Roger uses the observed information of the variance
+  parameters, as SAS PROC MIXED `DDFM=KR`; it stays valid with missing
+  values, where the expected information (`"KR-expected"`, as pbkrtest
+  and emmeans) is not: in simulations (`dev/sim-df/` in the package
+  sources) F tests of repeated measures with missing values rejected 6%
+  of true hypotheses at the 5% level with the observed information and
+  8.5% with the expected. The two agree in balanced designs.
+  `"containment"` gives the SAS `DDFM=CONTAIN` df: the smallest rank
+  contribution to \\\[X Z\]\\ of the random effects that contain
   `modelterm`, or the residual df when none does; all means and
   comparisons of the term then share that df, and the unadjusted
   covariance is used unless `vcov_adjust = TRUE` is given.
@@ -295,30 +312,39 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   covariance (`gls` with `corSymm`) and no random effects every effect
   gets the between-subject df, as in SAS. Checked against SAS PROC
   MIXED. As for containment, the unadjusted covariance is used unless
-  `vcov_adjust = TRUE` is given. `"KR-SAS"` is Kenward-Roger as SAS PROC
-  MIXED `DDFM=KR` computes it: with the observed information of the
-  variance parameters where `"Kenward-Roger"` (as pbkrtest and emmeans)
-  uses the expected information; the two agree in balanced designs and
-  differ slightly otherwise (about 1% in the df of a split plot with one
-  plot missing). For `lme` and `gls` models, `"Satterthwaite"` gives
-  Satterthwaite df with any correlation and variance structure (the
+  `vcov_adjust = TRUE` is given. For `lme` and `gls` models fitted by
+  REML, `"auto"` is Kenward-Roger too (with adjusted standard errors),
+  for any correlation and variance structure: in simulations the
+  residual df (`gls`) rejected 16% of true hypotheses in F tests of
+  unstructured repeated measures (24% with missing values),
+  Kenward-Roger 4-6%. `"Satterthwaite"` is also available (the
   covariance of the variance parameters from the Hessian of the REML
-  log-likelihood, as SAS; checked against SAS PROC MIXED), and
-  `"Kenward-Roger"` and `"KR-SAS"` give Kenward-Roger df and adjusted
-  standard errors (equal to SAS `DDFM=KR` for variance components and
-  unstructured covariances); their default stays nlme's df (`lme`) or
-  the residual df (`gls`). Other choices are ignored for other model
-  classes.
+  log-likelihood, as SAS; its F tests are liberal when the covariance
+  has several parameters), and `"containment"` gives nlme's df (`lme`)
+  or the residual df (`gls`), as predictmeans 1.x. All are checked
+  against SAS PROC MIXED. ML fits of `lme` and `gls` use nlme's or the
+  residual df. For GLMMs (`glmer`, `glmmTMB`) `"auto"` is
+  `"inner-outer"`: the df of the level of the random effects at which
+  each effect varies, nlme's rule (Pinheiro and Bates 2000), computed
+  from the design and extended to crossed random effects; a contrast
+  gets the smallest df of the coefficients it uses, and the means of a
+  term the df of the term. In simulations it rejected 6-8% of true
+  hypotheses for effects that vary between clusters, where the residual
+  df (`"residual"`, predictmeans 1.x) rejected 8-15%;
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  is the check with few clusters. `"containment"` and `"between-within"`
+  are also available for `glmer`, and `"inner-outer"` for `lmer` and
+  `lme`. Other choices are ignored for other model classes.
 
 - vcov:
 
   Optional covariance of the coefficients to use instead of the model's.
   For `lm`, `aov` and `glm` models: `"HC0"`, `"HC1"`, `"HC2"` or `"HC3"`
   (heteroscedasticity-consistent, as
-  [`sandwich::vcovHC()`](https://rdrr.io/pkg/sandwich/man/vcovHC.html)),
+  [`sandwich::vcovHC()`](https://zeileis.codeberg.page/sandwich/reference/vcovHC.html)),
   or a one-sided formula naming a cluster variable of the data, e.g.
   `~ Block` (cluster-robust CR1, as
-  [`sandwich::vcovCL()`](https://rdrr.io/pkg/sandwich/man/vcovCL.html)).
+  [`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)).
   For any model: a covariance matrix of the coefficients, or a function
   that returns one from the model (for mixed models e.g. from the
   clubSandwich package). The degrees of freedom stay those of the model
@@ -445,8 +471,9 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   A list with the options used: model term, significance level,
   adjustment method, `atvar`, degrees-of-freedom method, `vcov_adjust`,
-  `vcov` (`"model"`, `"HC3"`, ...), number of permutations, covariate
-  values, model class and package version.
+  `vcov` (`"model"`, `"HC3"`, ...), `singular` (a singular lmer/glmer
+  fit; a message says so too), number of permutations, covariate values,
+  model class and package version.
 
 The result has class `c("predictmeans", "pdmlist")`. Printing shows the
 same output as earlier versions; the `means`, `pairs` and `settings`
@@ -496,183 +523,114 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 ``` r
   library(predictmeans)
-  ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
-#>                   nitro   0 0.2 0.4 0.6
-#> Block Variety                          
-#> VI    Golden Rain        89  82  86 104
-#>       Marvellous         97  99 119 121
-#>       Victory            53  74 118 113
-#> V     Golden Rain        80  82  94 126
-#>       Marvellous         63  70 109  99
-#>       Victory            62  90 100 116
-#> III   Golden Rain        60 102  89  96
-#>       Marvellous         89 129 132 124
-#>       Victory            68  64 112  86
-#> IV    Golden Rain        64 103 132 133
-#>       Marvellous         70  89 104 117
-#>       Victory            74  89  81 122
-#> II    Golden Rain        70 108 126 149
-#>       Marvellous         96 124 121 144
-#>       Victory            61  91  97 100
-#> I     Golden Rain       117 114 161 141
-#>       Marvellous        105 140 118 156
-#>       Victory           111 130 157 174
   Oats$nitro <- factor(Oats$nitro)
-  fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-  predictmeans(fm, "nitro", adj="BH")
-
-
-
-#> $`Predicted Means`
-#> nitro
-#>        0      0.2      0.4      0.6 
-#>  79.3889  98.8889 114.2222 123.3889 
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data=Oats)
+  ## The results as tables (columns described under Value)
+  pm <- predictmeans(fm, "nitro", plot=FALSE)
+  pm$means
+#>   nitro  estimate std.error       df  conf.low conf.high  n estimable
+#> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047 18      TRUE
+#> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047 18      TRUE
+#> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381 18      TRUE
+#> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047 18      TRUE
+  pm$pairs
+#>   level1 level2   estimate std.error       df statistic      p.value
+#> 1      0    0.2 -19.500000  4.435752 45.00014 -4.396098 6.656699e-05
+#> 2      0    0.4 -34.833333  4.435752 45.00014 -7.852859 5.648849e-10
+#> 3    0.2    0.4 -15.333333  4.435752 45.00014 -3.456761 1.205045e-03
+#> 4      0    0.6 -44.000000  4.435752 45.00014 -9.919400 6.696622e-13
+#> 5    0.2    0.6 -24.500000  4.435752 45.00014 -5.523302 1.583303e-06
+#> 6    0.4    0.6  -9.166667  4.435752 45.00014 -2.066542 4.456070e-02
+#>          p.adj  conf.low   conf.high      lsd p.method
+#> 1 6.656699e-05 -28.43406 -10.5659375 8.934062        t
+#> 2 5.648849e-10 -43.76740 -25.8992708 8.934062        t
+#> 3 1.205045e-03 -24.26740  -6.3992708 8.934062        t
+#> 4 6.696622e-13 -52.93406 -35.0659375 8.934062        t
+#> 5 1.583303e-06 -33.43406 -15.5659375 8.934062        t
+#> 6 4.456070e-02 -18.10073  -0.2326042 8.934062        t
+  pm$settings
+#> $modelterm
+#> [1] "nitro"
 #> 
-#> $`Standard Error of Means`
-#> All means have the same SE 
-#>                    7.17468 
-#> 
-#> $`Standard Error of Differences`
-#>  Max.SED  Min.SED Aveg.SED 
-#> 4.435758 4.435758 4.435758 
-#> 
-#> $LSD
-#>  Max.LSD  Min.LSD Aveg.LSD 
-#>  8.93407  8.93407  8.93407 
-#> attr(,"Significant level")
+#> $level
 #> [1] 0.05
-#> attr(,"Degree of freedom")
-#> [1] 45
 #> 
-#> $`Pairwise p-value`
-#>          0     0.2     0.4     0.6
-#> 0   1.0000 -4.3961 -7.8528 -9.9194
-#> 0.2 0.0001  1.0000 -3.4568 -5.5233
-#> 0.4 0.0000  0.0014  1.0000 -2.0665
-#> 0.6 0.0000  0.0000  0.0446  1.0000
-#> attr(,"Degree of freedom")
-#> [1] 45
-#> attr(,"Note")
-#> [1] "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal"
+#> $adjust
+#> [1] "none"
 #> 
-#> $mean_table
-#> $mean_table$Table
-#>   nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-#> 1     0  79.3889 7.17468 45  64.9383  93.8394      A   
-#> 2   0.2  98.8889 7.17468 45  84.4383 113.3394       B  
-#> 3   0.4 114.2222 7.17468 45  99.7717 128.6728        C 
-#> 4   0.6 123.3889 7.17468 45 108.9383 137.8394         D
+#> $atvar
+#> NULL
 #> 
-#> $mean_table$Note
-#> [1] "Letter-based representation of pairwise comparisons at significant level '0.05'"
+#> $df_method
+#> [1] "Kenward-Roger"
 #> 
+#> $vcov_adjust
+#> [1] TRUE
 #> 
-  predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", line=FALSE)
-
-
-
-#> $`Predicted Means`
-#>       Variety Golden Rain Marvellous  Victory
-#> nitro                                        
-#> 0                 80.0000    86.6667  71.5000
-#> 0.2               98.5000   108.5000  89.6667
-#> 0.4              114.6667   117.1667 110.8333
-#> 0.6              124.8333   126.8333 118.5000
+#> $vcov
+#> [1] "model"
 #> 
-#> $`Standard Error of Means`
-#> All means have the same SE 
-#>                    9.10696 
+#> $equivalence
+#> NULL
 #> 
-#> $`Standard Error of Differences`
-#>  Max.SED  Min.SED Aveg.SED 
-#> 9.715028 7.682958 9.160827 
-#> attr(,"For the Same Level of Factor")
-#>             nitro  Variety
-#> Aveg.SED 9.715028 7.682958
-#> Min.SED  9.715028 7.682958
-#> Max.SED  9.715028 7.682958
+#> $bias_adjust
+#> [1] NA
 #> 
-#> $LSD
-#>  Max.LSD  Min.LSD Aveg.LSD 
-#> 19.56707 15.47427 18.45085 
-#> attr(,"For the Same Level of Factor")
-#>             nitro  Variety
-#> Aveg.LSD 19.56707 15.47427
-#> Min.LSD  19.56707 15.47427
-#> Max.LSD  19.56707 15.47427
-#> attr(,"Significant level")
-#> [1] 0.05
-#> attr(,"Degree of freedom")
-#> [1] 45
+#> $singular
+#> [1] FALSE
 #> 
-#> $`Pairwise comparison p-value (adjusted by 'BH' method)`
-#> [1] "For variable 'nitro' at each level of 'Variety'"
+#> $average
+#> [1] "link"
 #> 
-#> $`Golden Rain`
-#>     0      0.2    0.4    0.6 Group
-#> 0   1                        A    
-#> 0.2 0.0303 1                  B   
-#> 0.4 0.0001 0.0492 1            C  
-#> 0.6 0.0001 0.0026 0.1924 1     C  
+#> $nperm
+#> [1] NA
 #> 
-#> $Marvellous
-#>     0      0.2    0.4    0.6 Group
-#> 0   1                        A    
-#> 0.2 0.0134 1                  B   
-#> 0.4 0.0008 0.2653 1           BC  
-#> 0.6 0.0001 0.0319 0.2578 1     C  
+#> $covariates
+#> NULL
 #> 
-#> $Victory
-#>     0      0.2    0.4    0.6 Group
-#> 0   1                        A    
-#> 0.2 0.0269 1                  B   
-#> 0.4 0.0001 0.0127 1            C  
-#> 0.6 0.0001 0.001  0.3237 1     C  
+#> $model_class
+#> [1] "lmerModLmerTest"
 #> 
-#> $mean_table
-#> $mean_table$Table
-#>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-#> 1  Golden Rain     0  80.0000 9.10696 45  61.6577  98.3423       A  
-#> 4  Golden Rain   0.2  98.5000 9.10696 45  80.1577 116.8423        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 45  96.3243 133.0090         C
-#> 10 Golden Rain   0.6 124.8333 9.10696 45 106.4910 143.1757         C
-#> 2   Marvellous     0  86.6667 9.10696 45  68.3243 105.0090       A  
-#> 5   Marvellous   0.2 108.5000 9.10696 45  90.1577 126.8423        B 
-#> 8   Marvellous   0.4 117.1667 9.10696 45  98.8243 135.5090        BC
-#> 11  Marvellous   0.6 126.8333 9.10696 45 108.4910 145.1757         C
-#> 3      Victory     0  71.5000 9.10696 45  53.1577  89.8423       A  
-#> 6      Victory   0.2  89.6667 9.10696 45  71.3243 108.0090        B 
-#> 9      Victory   0.4 110.8333 9.10696 45  92.4910 129.1757         C
-#> 12     Victory   0.6 118.5000 9.10696 45 100.1577 136.8423         C
+#> $version
+#> [1] "1.1.1.9000"
 #> 
-#> $mean_table$Note
-#> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"
+  summary(pm)
+#> Predicted means for 'nitro' (lmerModLmerTest model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
+#> Confidence limits: 95%
 #> 
+#>  nitro estimate std.error    df conf.low conf.high
+#>      0    79.39     7.175 6.792    62.32     96.46
+#>    0.2    98.89     7.175 6.792    81.82    115.96
+#>    0.4   114.22     7.175 6.792    97.15    131.29
+#>    0.6   123.39     7.175 6.792   106.32    140.46
 #> 
-  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", 
-    barplot=TRUE, line=FALSE)
-#> Warning: barplot is deprecated: use which.plots = c("mean", "bar", "pval", "back") instead.
+#> 6 pairwise comparisons.
+#> SED: min 4.436, mean 4.436, max 4.436
+#> LSD (5%): min 8.934, mean 8.934, max 8.934
+#> p-values: t tests, adjusted by 'none'.
+  ## Means within each variety, Tukey-adjusted pairs, plots
+  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
+    which.plots=c("mean", "bar", "pval", "back"), line=FALSE)
 
 
 
 
   names(predictout)
-#>  [1] "Predicted Means"                                      
-#>  [2] "Standard Error of Means"                              
-#>  [3] "Standard Error of Differences"                        
-#>  [4] "LSD"                                                  
-#>  [5] "Pairwise comparison p-value (adjusted by 'BH' method)"
-#>  [6] "Golden Rain"                                          
-#>  [7] "Marvellous"                                           
-#>  [8] "Victory"                                              
-#>  [9] "mean_table"                                           
-#> [10] "predictmeansPlot"                                     
-#> [11] "predictmeansBarPlot"                                  
-#> [12] "p_valueMatrix"                                        
-#> [13] "means"                                                
-#> [14] "pairs"                                                
-#> [15] "settings"                                             
+#>  [1] "Predicted Means"                                         
+#>  [2] "Standard Error of Means"                                 
+#>  [3] "Standard Error of Differences"                           
+#>  [4] "LSD"                                                     
+#>  [5] "Pairwise comparison p-value (adjusted by 'tukey' method)"
+#>  [6] "Golden Rain"                                             
+#>  [7] "Marvellous"                                              
+#>  [8] "Victory"                                                 
+#>  [9] "mean_table"                                              
+#> [10] "predictmeansPlot"                                        
+#> [11] "predictmeansBarPlot"                                     
+#> [12] "p_valueMatrix"                                           
+#> [13] "means"                                                   
+#> [14] "pairs"                                                   
+#> [15] "settings"                                                
   print(predictout$predictmeansPlot)
 #> $meanPlot
 
@@ -681,4 +639,22 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 #> 
   print(predictout$predictmeansBarPlot)
+
+  ## lme fits work the same way
+  fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+  predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
+#>   level1 level2   estimate std.error       df statistic      p.value
+#> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656859e-05
+#> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852848 5.649197e-10
+#> 3    0.2    0.4 -15.333333  4.435758 44.99995 -3.456756 1.205064e-03
+#> 4      0    0.6 -44.000000  4.435758 44.99995 -9.919388 6.697195e-13
+#> 5    0.2    0.6 -24.500000  4.435758 44.99995 -5.523295 1.583360e-06
+#> 6    0.4    0.6  -9.166667  4.435758 44.99995 -2.066539 4.456099e-02
+#>          p.adj  conf.low   conf.high      lsd p.method
+#> 1 9.985289e-05 -28.43407 -10.5659250 8.934075        t
+#> 2 1.694759e-09 -43.76741 -25.8992584 8.934075        t
+#> 3 1.446077e-03 -24.26741  -6.3992584 8.934075        t
+#> 4 4.018317e-12 -52.93407 -35.0659250 8.934075        t
+#> 5 3.166719e-06 -33.43407 -15.5659250 8.934075        t
+#> 6 4.456099e-02 -18.10074  -0.2325917 8.934075        t
 ```

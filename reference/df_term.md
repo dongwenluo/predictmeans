@@ -7,7 +7,7 @@ model using "Kenward-Roger" or "Satterthwaite" method.
 
 ``` r
 df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
+          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
 ```
 
 ## Arguments
@@ -45,9 +45,10 @@ df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
   a warning. "containment" gives the SAS `DDFM=CONTAIN` df of
   `modelterm` (needed then) for every row, and "between-within" the SAS
   `DDFM=BETWITHIN` df (see
-  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md));
-  "KR-SAS" is Kenward-Roger with the observed information of the
-  variance parameters, as SAS `DDFM=KR`.
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+  "Kenward-Roger" uses the observed information of the variance
+  parameters, as SAS `DDFM=KR`; "KR-expected" the expected information,
+  as pbkrtest and emmeans.
 
 - vcov_adj:
 
@@ -68,11 +69,11 @@ Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 df_term(fm, "nitro:Variety")
 #>   0:Golden Rain    0:Marvellous       0:Victory 0.2:Golden Rain  0.2:Marvellous 
-#>        16.08186        16.08186        16.08186        16.08186        16.08186 
+#>        16.08144        16.08144        16.08144        16.08144        16.08144 
 #>     0.2:Victory 0.4:Golden Rain  0.4:Marvellous     0.4:Victory 0.6:Golden Rain 
-#>        16.08186        16.08186        16.08186        16.08186        16.08186 
+#>        16.08144        16.08144        16.08144        16.08144        16.08144 
 #>  0.6:Marvellous     0.6:Victory 
-#>        16.08186        16.08186 
+#>        16.08144        16.08144 
 ## The contrast has a contrast matrix as follows:
 #     0:Golden Rain 0:Marvellous 0:Victory 
 #[1,]            -1            0         1 

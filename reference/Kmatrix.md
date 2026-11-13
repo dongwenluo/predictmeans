@@ -867,10 +867,10 @@ This function heavily depends on the codes from package "lsmeans".
   # Covariates entering through transformations or only through interactions
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
   Kmatrix(fm2, "Variety")$K
-#>             (Intercept)       Block.L       Block.Q       Block.C      Block^4
-#> Golden Rain           1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17
-#> Marvellous            1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17
-#> Victory               1 -6.938894e-17 -2.775558e-17 -4.163336e-17 2.775558e-17
+#>             (Intercept)       Block.L       Block.Q       Block.C       Block^4
+#> Golden Rain           1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
+#> Marvellous            1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
+#> Victory               1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
 #>                   Block^5 VarietyMarvellous VarietyVictory poly(nitro, 2)1
 #> Golden Rain -1.387779e-17                 0              0               0
 #> Marvellous  -1.387779e-17                 1              0               0
@@ -926,9 +926,9 @@ This function heavily depends on the codes from package "lsmeans".
     Kmatrix(fm4, "Variety", cov_reduce = "average")$K
   }
 #>             (Intercept) VarietyMarvellous VarietyVictory    s(nitro).1
-#> Golden Rain           1                 0              0 -8.326673e-17
-#> Marvellous            1                 1              0 -8.326673e-17
-#> Victory               1                 0              1 -8.326673e-17
+#> Golden Rain           1                 0              0 -6.938894e-17
+#> Marvellous            1                 1              0 -6.938894e-17
+#> Victory               1                 0              1 -6.938894e-17
 #>               s(nitro).2   s(nitro).3 s(Block).1 s(Block).2 s(Block).3
 #> Golden Rain 2.428613e-17 5.551115e-17          0          0          0
 #> Marvellous  2.428613e-17 5.551115e-17          0          0          0

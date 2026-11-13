@@ -2,7 +2,8 @@
 
 Return the `means` or `pairs` table of a
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
-result. The tables have fixed column names (see the Value section of
+result (`glance()`: one row describing it). The tables have fixed column
+names (see the Value section of
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md))
 and unrounded values, which makes them easy to use in further analysis,
 reports, Shiny apps or AI tools. `tidy()` is the generic from package
@@ -24,6 +25,9 @@ versions of marginaleffects need the class listed first:
 ``` r
 # S3 method for class 'predictmeans'
 tidy(x, what = c("means", "pairs"), ...)
+
+# S3 method for class 'predictmeans'
+glance(x, ...)
 
 # S3 method for class 'predictmeans'
 as.data.frame(x, row.names = NULL, optional = FALSE,
@@ -68,6 +72,10 @@ vcov(object, ...)
 
 A data frame; for [`coef()`](https://rdrr.io/r/stats/coef.html) a named
 vector and for [`vcov()`](https://rdrr.io/r/stats/vcov.html) a matrix.
+`glance()` gives one row: `modelterm`, `n.means`, `n.pairs`, `nobs`
+(observations in the cells), `df.method`, `adjust`, `level`, `vcov`,
+`vcov.adjust`, `sed.min`, `sed.mean`, `sed.max` (standard errors of the
+differences), `lsd.mean`, `nperm` and `model.class`.
 
 ## Author
 
@@ -83,18 +91,18 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
   as.data.frame(pm)
 #>    nitro     Variety  estimate std.error       df  conf.low conf.high group n
-#> 1      0 Golden Rain  80.00000   9.10701 16.08186  60.70198  99.29802   A   6
-#> 2      0  Marvellous  86.66667   9.10701 16.08186  67.36865 105.96468    A  6
-#> 3      0     Victory  71.50000   9.10701 16.08186  52.20198  90.79802    A  6
-#> 4    0.2 Golden Rain  98.50000   9.10701 16.08186  79.20198 117.79802   AB  6
-#> 5    0.2  Marvellous 108.50000   9.10701 16.08186  89.20198 127.79802     B 6
-#> 6    0.2     Victory  89.66667   9.10701 16.08186  70.36865 108.96468    A  6
-#> 7    0.4 Golden Rain 114.66667   9.10701 16.08186  95.36865 133.96468    BC 6
-#> 8    0.4  Marvellous 117.16667   9.10701 16.08186  97.86865 136.46468     B 6
-#> 9    0.4     Victory 110.83333   9.10701 16.08186  91.53532 130.13135     B 6
-#> 10   0.6 Golden Rain 124.83333   9.10701 16.08186 105.53532 144.13135     C 6
-#> 11   0.6  Marvellous 126.83333   9.10701 16.08186 107.53532 146.13135     B 6
-#> 12   0.6     Victory 118.50000   9.10701 16.08186  99.20198 137.79802     B 6
+#> 1      0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806   A   6
+#> 2      0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472    A  6
+#> 3      0     Victory  71.50000   9.10701 16.08144  52.20194  90.79806    A  6
+#> 4    0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806   AB  6
+#> 5    0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806     B 6
+#> 6    0.2     Victory  89.66667   9.10701 16.08144  70.36861 108.96472    A  6
+#> 7    0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472    BC 6
+#> 8    0.4  Marvellous 117.16667   9.10701 16.08144  97.86861 136.46472     B 6
+#> 9    0.4     Victory 110.83333   9.10701 16.08144  91.53528 130.13139     B 6
+#> 10   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139     C 6
+#> 11   0.6  Marvellous 126.83333   9.10701 16.08144 107.53528 146.13139     B 6
+#> 12   0.6     Victory 118.50000   9.10701 16.08144  99.20194 137.79806     B 6
 #>    estimable
 #> 1       TRUE
 #> 2       TRUE
@@ -110,19 +118,24 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 12      TRUE
   head(as.data.frame(pm, what = "pairs"))
 #>          level1          level2          by   estimate std.error       df
-#> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23076
-#> 2 0:Golden Rain       0:Victory        <NA>   8.500000  9.715020 30.23076
-#> 3  0:Marvellous       0:Victory        <NA>  15.166667  9.715020 30.23076
-#> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00000
-#> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23076
-#> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23076
+#> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23080
+#> 2 0:Golden Rain       0:Victory        <NA>   8.500000  9.715020 30.23080
+#> 3  0:Marvellous       0:Victory        <NA>  15.166667  9.715020 30.23080
+#> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014
+#> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23080
+#> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23080
 #>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
-#> 1 -0.6862226 0.497802553         NA -26.501036 13.167703 19.83437    tukey
-#> 2  0.8749338 0.388508430         NA -11.334370 28.334370 19.83437    tukey
-#> 3  1.5611564 0.128895708         NA  -4.667703 35.001036 19.83437    tukey
-#> 4 -2.4079299 0.020203579 0.09004252 -33.974251 -3.025749 15.47425    tukey
-#> 5 -1.2180451 0.232628352         NA -31.667703  8.001036 19.83437    tukey
-#> 6 -2.7792016 0.009281366         NA -46.834370 -7.165630 19.83437    tukey
+#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437    tukey
+#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437    tukey
+#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437    tukey
+#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    tukey
+#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437    tukey
+#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437    tukey
+  if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
+#>       modelterm n.means n.pairs nobs     df.method adjust level  vcov
+#> 1 nitro:Variety      12      66   72 Kenward-Roger  tukey  0.05 model
+#>   vcov.adjust  sed.min sed.mean sed.max lsd.mean nperm     model.class
+#> 1        TRUE 7.682948 9.160819 9.71502 18.64525    NA lmerModLmerTest
 
   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
   b <- coef(pm)

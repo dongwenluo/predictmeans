@@ -22,6 +22,7 @@
 ## Results
 
 - [`tidy(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
+  [`glance(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   [`as.data.frame(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   [`coef(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   [`vcov(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)

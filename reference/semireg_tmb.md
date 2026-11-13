@@ -288,12 +288,13 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #>       (Intercept)  construction.date  
 #>         -19.28657            0.06521  
 
+#> Warning: Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
 #> Formula:          
 #> areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  
 #>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)
 #> Data: WarsawApts
 #>       AIC       BIC    logLik -2*log(L)  df.resid 
-#>  3554.224  3606.402 -1764.112  3528.224       396 
+#>        NA        NA        NA        NA       396 
 #> Random-effects (co)variances:
 #> 
 #> Conditional model:

@@ -10,7 +10,9 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
   plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
   cov_reduce=mean, exclude=NULL,
-  weights=c("equal", "proportional", "outer", "cells", "flat"))
+  weights=c("equal", "proportional", "outer", "cells", "flat"),
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+  vcov_adjust=TRUE)
 ```
 
 ## Arguments
@@ -135,6 +137,16 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   weights over the non-empty cells). The definitions are those of
   emmeans.
 
+- df_method, vcov_adjust:
+
+  As in
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+  by default Kenward-Roger df (each point of the curves has its own) and
+  adjusted standard errors for models fitted by REML (`lmer`, `lme`,
+  `gls`). predictmeans 1.x used the unadjusted covariance and, for
+  `lmer`, one df per term; `vcov_adjust = FALSE` and, for `lme` and
+  `gls`, `df_method = "containment"` give its results.
+
 ## Value
 
 - Predicted Means:
@@ -158,25 +170,25 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
 
 #>        Variety xvar      ses      Mean        LL        UL     factors
-#> 1  Golden Rain  0.0 8.570716  81.90000  62.80325 100.99675 Golden Rain
-#> 2  Golden Rain  0.1 8.150210  89.43333  71.27353 107.59313 Golden Rain
-#> 3  Golden Rain  0.2 7.887152  96.96667  79.39300 114.54034 Golden Rain
-#> 4  Golden Rain  0.3 7.797494 104.50000  87.12610 121.87390 Golden Rain
-#> 5  Golden Rain  0.4 7.887152 112.03333  94.45966 129.60700 Golden Rain
-#> 6  Golden Rain  0.5 8.150210 119.56667 101.40687 137.72647 Golden Rain
-#> 7  Golden Rain  0.6 8.570716 127.10000 108.00325 146.19675 Golden Rain
-#> 8   Marvellous  0.0 8.570716  90.41667  71.31992 109.51341  Marvellous
-#> 9   Marvellous  0.1 8.150210  96.87500  78.71520 115.03480  Marvellous
-#> 10  Marvellous  0.2 7.887152 103.33333  85.75966 120.90700  Marvellous
-#> 11  Marvellous  0.3 7.797494 109.79167  92.41777 127.16557  Marvellous
-#> 12  Marvellous  0.4 7.887152 116.25000  98.67633 133.82367  Marvellous
-#> 13  Marvellous  0.5 8.150210 122.70833 104.54853 140.86813  Marvellous
-#> 14  Marvellous  0.6 8.570716 129.16667 110.06992 148.26341  Marvellous
-#> 15     Victory  0.0 8.570716  73.30000  54.20325  92.39675     Victory
-#> 16     Victory  0.1 8.150210  81.40833  63.24853  99.56813     Victory
-#> 17     Victory  0.2 7.887152  89.51667  71.94300 107.09034     Victory
-#> 18     Victory  0.3 7.797494  97.62500  80.25110 114.99890     Victory
-#> 19     Victory  0.4 7.887152 105.73333  88.15966 123.30700     Victory
-#> 20     Victory  0.5 8.150210 113.84167  95.68187 132.00147     Victory
-#> 21     Victory  0.6 8.570716 121.95000 102.85325 141.04675     Victory
+#> 1  Golden Rain  0.0 8.570716  81.90000  63.36196 100.43804 Golden Rain
+#> 2  Golden Rain  0.1 8.150210  89.43333  71.40550 107.46117 Golden Rain
+#> 3  Golden Rain  0.2 7.887152  96.96667  79.20735 114.72598 Golden Rain
+#> 4  Golden Rain  0.3 7.797494 104.50000  86.82110 122.17890 Golden Rain
+#> 5  Golden Rain  0.4 7.887152 112.03333  94.27402 129.79265 Golden Rain
+#> 6  Golden Rain  0.5 8.150210 119.56667 101.53883 137.59450 Golden Rain
+#> 7  Golden Rain  0.6 8.570716 127.10000 108.56196 145.63804 Golden Rain
+#> 8   Marvellous  0.0 8.570716  90.41667  71.87862 108.95471  Marvellous
+#> 9   Marvellous  0.1 8.150210  96.87500  78.84716 114.90284  Marvellous
+#> 10  Marvellous  0.2 7.887152 103.33333  85.57402 121.09265  Marvellous
+#> 11  Marvellous  0.3 7.797494 109.79167  92.11277 127.47056  Marvellous
+#> 12  Marvellous  0.4 7.887152 116.25000  98.49069 134.00931  Marvellous
+#> 13  Marvellous  0.5 8.150210 122.70833 104.68050 140.73617  Marvellous
+#> 14  Marvellous  0.6 8.570716 129.16667 110.62862 147.70471  Marvellous
+#> 15     Victory  0.0 8.570716  73.30000  54.76196  91.83804     Victory
+#> 16     Victory  0.1 8.150210  81.40833  63.38050  99.43617     Victory
+#> 17     Victory  0.2 7.887152  89.51667  71.75735 107.27598     Victory
+#> 18     Victory  0.3 7.797494  97.62500  79.94610 115.30390     Victory
+#> 19     Victory  0.4 7.887152 105.73333  87.97402 123.49265     Victory
+#> 20     Victory  0.5 8.150210 113.84167  95.81383 131.86950     Victory
+#> 21     Victory  0.6 8.570716 121.95000 103.41196 140.48804     Victory
 ```

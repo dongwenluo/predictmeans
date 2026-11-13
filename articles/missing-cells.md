@@ -86,12 +86,12 @@ pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = F
 within <- subset(pm_v$pairs, !is.na(by))
 head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
 #>             level1          level2          by  estimate        p.adj
-#> 4    0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000 0.0954637136
-#> 8     0:Marvellous  0.2:Marvellous  Marvellous -21.83333 0.0358850523
-#> 13       0:Victory     0.2:Victory     Victory -18.16667 0.0607840836
-#> 16   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667 0.0003460119
-#> 19 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667 0.1743878815
-#> 23    0:Marvellous  0.4:Marvellous  Marvellous -30.50000 0.0017447497
+#> 4    0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000 0.0954457441
+#> 8     0:Marvellous  0.2:Marvellous  Marvellous -21.83333 0.0358722237
+#> 13       0:Victory     0.2:Victory     Victory -18.16667 0.0607716581
+#> 16   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667 0.0003454196
+#> 19 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667 0.1743690902
+#> 23    0:Marvellous  0.4:Marvellous  Marvellous -30.50000 0.0017427519
 ```
 
 or contrasts written with
@@ -104,9 +104,9 @@ cm <- specify_contrast(Kmatrix(fm, "N:Variety"),
   N_effect_GR_and_M = (`0.6:Golden Rain` + `0.6:Marvellous`)/2 - (`0:Golden Rain` + `0:Marvellous`)/2)
 contrastmeans(fm, "N:Variety", ctrmatrix = cm)[[1]]
 #>                   Estimate Std. Error t value      df Pr(>|t|) lower.CL
-#> N_effect_GR_and_M     42.5     5.4742  7.7637 40.0194        0  31.4365
+#> N_effect_GR_and_M     42.5     5.4742  7.7637 40.0636        0  31.4368
 #>                   upper.CL
-#> N_effect_GR_and_M  53.5635
+#> N_effect_GR_and_M  53.5632
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 ```
@@ -180,8 +180,6 @@ after detecting the nesting):
 
 fs2 <- lm(y ~ conc + droplet/vol, data = spray)
 pn <- predictmeans(fs2, "droplet:vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
-#> Warning in Kmatrix(model, modelterm, covariate, data = data, prtnum = prtnum, :
-#> Missing treatments' combination appeared, predicted means maybe misleading!
 pn$means[, c("droplet", "vol", "estimate", "std.error", "n", "group")]
 #>   droplet vol estimate  std.error  n group
 #> 1  medium 130 5.030309 0.06844537 20    A 

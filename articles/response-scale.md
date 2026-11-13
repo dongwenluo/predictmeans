@@ -92,14 +92,14 @@ pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE, plot = FALSE, prtnu
 pm_egg$means[, c("Treatment", "estimate", "response", "response.std.error",
                  "response.conf.low", "response.conf.high")]
 #>   Treatment estimate response response.std.error response.conf.low
-#> 1       Exp 1.790814 5.994327          0.9835001          4.342350
-#> 2      Cont 1.282368 3.605166          0.5965024          2.604515
+#> 1       Exp 1.790814 5.994327          0.9834990          4.341871
+#> 2      Cont 1.282368 3.605166          0.5965019          2.604225
 #>   response.conf.high
-#> 1           8.274774
-#> 2           4.990265
+#> 1           8.275686
+#> 2           4.990820
 pm_egg$pairs[, c("level1", "level2", "p.value", "ratio", "ratio.conf.low", "ratio.conf.high")]
-#>   level1 level2      p.value    ratio ratio.conf.low ratio.conf.high
-#> 1    Exp   Cont 9.068907e-22 1.662705       1.505762        1.836007
+#>   level1 level2     p.value    ratio ratio.conf.low ratio.conf.high
+#> 1    Exp   Cont 1.59407e-21 1.662705        1.50571        1.836069
 ```
 
 The `ratio` is the expected count under `Exp` divided by that under
@@ -124,8 +124,8 @@ pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "respo
                        plot = FALSE, prtnum = FALSE)
 pm_pop$means[, c("Treatment", "response", "response.std.error")]
 #>   Treatment response response.std.error
-#> 1       Exp 7.282088          1.1947770
-#> 2      Cont 4.379663          0.7246393
+#> 1       Exp 7.282088          1.1947757
+#> 2      Cont 4.379663          0.7246387
 pm_pop$settings[c("bias_adjust", "average")]
 #> $bias_adjust
 #> [1] 0.6532427
@@ -154,7 +154,7 @@ pm_len$means[, c("Treatment", "estimate", "response", "response.std.error")]
 #> 2       Exp 2.644563 14.07730          0.3741359
 pm_len$pairs[, c("level1", "level2", "p.value", "ratio", "ratio.conf.low", "ratio.conf.high")]
 #>   level1 level2      p.value    ratio ratio.conf.low ratio.conf.high
-#> 1   Cont    Exp 9.949755e-06 0.977024      0.9670482       0.9871028
+#> 1   Cont    Exp 9.949753e-06 0.977024      0.9670482       0.9871028
 ```
 
 ## Binomial GLMM: odds ratio and R²
@@ -170,12 +170,12 @@ fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
 pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
 pm_clin$means[, c("Treatment", "response", "response.conf.low", "response.conf.high")]
 #>   Treatment  response response.conf.low response.conf.high
-#> 1   control 0.2321034        0.08386964          0.4994877
-#> 2      drug 0.3873968        0.16239637          0.6734804
+#> 1   control 0.2321034        0.07559056          0.5276915
+#> 2      drug 0.3873968        0.14775968          0.6975684
 pm_clin$pairs[, c("level1", "level2", "p.value", "odds.ratio",
                   "odds.ratio.conf.low", "odds.ratio.conf.high")]
 #>    level1 level2    p.value odds.ratio odds.ratio.conf.low odds.ratio.conf.high
-#> 1 control   drug 0.02880182  0.4779715            0.249788            0.9146026
+#> 1 control   drug 0.04362228  0.4779715            0.234923            0.9724753
 ```
 
 [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)

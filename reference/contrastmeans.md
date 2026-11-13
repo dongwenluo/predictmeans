@@ -9,7 +9,7 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
                 level=0.05, vcov=NULL, equivalence=NULL)
 ```
 
@@ -85,26 +85,30 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
 - df_method:
 
-  Denominator df for `lmer` models: `"auto"` (Kenward-Roger for REML
-  fits, Satterthwaite for ML fits), `"Kenward-Roger"`, `"Satterthwaite"`
-  or `"containment"` (SAS `DDFM=CONTAIN`), and for `lmer`, `lme` and
-  `gls` models `"between-within"` (SAS `DDFM=BETWITHIN`), and `"KR-SAS"`
-  (Kenward-Roger as SAS `DDFM=KR`); for `lme` and `gls` also
-  `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-SAS"`; see
+  Denominator df: `"auto"` (Kenward-Roger for REML fits of `lmer`, `lme`
+  and `gls`, Satterthwaite for ML `lmer` fits), `"Kenward-Roger"`,
+  `"Satterthwaite"` or `"containment"` (SAS `DDFM=CONTAIN`), and for
+  `lmer`, `lme` and `gls` models `"between-within"` (SAS
+  `DDFM=BETWITHIN`), and `"KR-expected"` (Kenward-Roger with the
+  expected information, as pbkrtest; `"Kenward-Roger"` uses the observed
+  information, as SAS `DDFM=KR`); for `lme` and `gls` also
+  `"Satterthwaite"`, `"Kenward-Roger"`, `"KR-expected"` and
+  `"containment"` (nlme's or the residual df, as predictmeans 1.x); see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
 - joint:
 
   Logical: also test all the contrasts together (all of them zero), as
   [`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
-  does: an F test with Kenward-Roger (REML `lmer` fits, the scaled F of
-  Kenward and Roger, 1997) or Satterthwaite (ML fits) denominator df,
-  nlme's df for `lme`, the residual df for other models (normal-based,
-  i.e. chi-square / df1, when there is none). Contrasts that are linear
-  combinations of others are dropped, so `df1` is the rank of
-  `ctrmatrix`. With `permlist`, also a permutation p-value of the joint
-  Wald F statistic, from the same permutations (for Freedman-Lane, the
-  model with all the contrasts zero). The default is `FALSE`.
+  does: an F test with Kenward-Roger (REML fits, the scaled F of Kenward
+  and Roger, 1997) or Satterthwaite (ML `lmer` fits) denominator df,
+  nlme's df for ML `lme` fits, the residual df for other models
+  (normal-based, i.e. chi-square / df1, when there is none). Contrasts
+  that are linear combinations of others are dropped, so `df1` is the
+  rank of `ctrmatrix`. With `permlist`, also a permutation p-value of
+  the joint Wald F statistic, from the same permutations (for
+  Freedman-Lane, the model with all the contrasts zero). The default is
+  `FALSE`.
 
 - level:
 
@@ -121,10 +125,10 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   Optional covariance of the coefficients to use instead of the model's.
   For `lm`, `aov` and `glm` models: `"HC0"`, `"HC1"`, `"HC2"` or `"HC3"`
   (heteroscedasticity-consistent, as
-  [`sandwich::vcovHC()`](https://rdrr.io/pkg/sandwich/man/vcovHC.html)),
+  [`sandwich::vcovHC()`](https://zeileis.codeberg.page/sandwich/reference/vcovHC.html)),
   or a one-sided formula naming a cluster variable of the data, e.g.
   `~ Block` (cluster-robust CR1, as
-  [`sandwich::vcovCL()`](https://rdrr.io/pkg/sandwich/man/vcovCL.html)).
+  [`sandwich::vcovCL()`](https://zeileis.codeberg.page/sandwich/reference/vcovCL.html)).
   For any model: a covariance matrix of the coefficients, or a function
   that returns one from the model (for mixed models e.g. from the
   clubSandwich package). The degrees of freedom stay those of the model
@@ -205,13 +209,10 @@ if (interactive()) contrastmeans(fm, "nitro:Variety")
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
-#> 
-#>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .
-#>  Probabilities will be calculated using ‘10’ Df. 
 #> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464
-#> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202
+#>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
+#> [1,]  -8.5000      9.715 -0.8749 30.2308   0.3885 -28.3344  11.3344
+#> [2,] -45.6667      9.715 -4.7006 30.2308   0.0001 -65.5011 -25.8323
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
@@ -229,13 +230,10 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 
 # 3. ... and both contrasts tested together (an F test with 2 numerator df)
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
-#> 
-#>  Denominator degree of freedom for ‘nitro:Variety’ and its marginal terms vary between ‘10’ and ‘45’ .
-#>  Probabilities will be calculated using ‘10’ Df. 
 #> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 10   0.4021 -30.1464  13.1464
-#> [2,] -45.6667      9.715 -4.7006 10   0.0008 -67.3131 -24.0202
+#>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
+#> [1,]  -8.5000      9.715 -0.8749 30.2308   0.3885 -28.3344  11.3344
+#> [2,] -45.6667      9.715 -4.7006 30.2308   0.0001 -65.5011 -25.8323
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
@@ -251,7 +249,7 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #> [2,]              0           0
 #> 
 #> $`Joint F test of the contrasts`
-#>               df1 df2 F.ratio p.value
-#> all contrasts   2  10 12.4991  0.0019
+#>               df1     df2 F.ratio p.value
+#> all contrasts   2 30.2308 12.4991   1e-04
 #> 
 ```
