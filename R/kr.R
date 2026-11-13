@@ -18,8 +18,12 @@ pm_upper_sym <- function(A) {
 ## observed information (the default, as SAS PROC MIXED DDFM=KR; valid also
 ## with missing values, see dev/sim-df/README.md), or with information =
 ## "expected" of their expected information (pbkrtest, Kenward and Roger
-## 1997). Observed: for V linear in the parameters, -d2 l_R / ds_r ds_s =
-## y'P G_r P G_s P y - tr(P G_r P G_s)/2 (the trace term is IE2/2 below).
+## 1997), or with information = "average" of the average information
+## y'P G_r P G_s P y / 2 (Gilmour, Thompson and Cullis 1995: the matrix of
+## Genstat's and ASReml's REML iterations, which gives Genstat's df). Observed:
+## for V linear in the parameters, -d2 l_R / ds_r ds_s =
+## y'P G_r P G_s P y - tr(P G_r P G_s)/2 (the trace term is IE2/2 below), so
+## the average information is the mean of the observed and expected ones.
 ## Both agree in balanced designs; with one plot missing in the split plot of
 ## dev/sas the observed one reproduces SAS's df (9.79, 31.3) where the
 ## expected one gives 9.87, 31.46.
@@ -32,7 +36,7 @@ pm_upper_sym <- function(A) {
 ## parameter k (G_k = Z E_k Z'), A = Z' Sigma^-1 Z and B = Z' Sigma^-2 Z,
 ##   tr(G_r Sigma^-1 G_s Sigma^-1) = tr(E_r A E_s A),
 ##   tr(G_r Sigma^-2) = tr(E_r B), and so on. Same results as pbkrtest.
-pm_vcov_kr <- function(model, information = c("observed", "expected")) {
+pm_vcov_kr <- function(model, information = c("observed", "expected", "average")) {
   information <- match.arg(information)
   if (!lme4::getME(model, "is_REML")) model <- pm_refit(model, REML = TRUE)
   Phi <- as.matrix(stats::vcov(model))
@@ -120,8 +124,9 @@ pm_vcov_kr <- function(model, information = c("observed", "expected")) {
         sum(PhiP * (PP[[jj]] %*% Phi))
     }
   }
-  if (information == "observed") {
-    # observed information: y'P G_r P G_s P y - IE2/2, with P y = Sigma^-1 (y - X b)
+  if (information != "expected") {
+    # observed information: y'P G_r P G_s P y - IE2/2, with P y = Sigma^-1 (y - X b);
+    # average information: y'P G_r P G_s P y / 2
     Pv <- function(v) {                        # P %*% v
       sv <- Sinv(v)
       sv - SX %*% (Phi %*% crossprod(X, sv))
@@ -132,7 +137,7 @@ pm_vcov_kr <- function(model, information = c("observed", "expected")) {
     Pa <- lapply(a, Pv)
     Yq <- matrix(NA, n_g, n_g)
     for (r in seq_len(n_g)) for (s in r:n_g) Yq[r, s] <- Yq[s, r] <- sum(a[[r]] * Pa[[s]])
-    IO <- Yq - IE2/2
+    IO <- if (information == "observed") Yq - IE2/2 else Yq/2
     condi <- min(abs(eigen(IO, only.values = TRUE)$values))
     WW <- pm_upper_sym(if (condi > 1e-10) solve(IO) else MASS::ginv(IO))
   } else {

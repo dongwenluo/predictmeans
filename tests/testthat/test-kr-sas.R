@@ -59,3 +59,50 @@ test_that("predictmeans(), contrastmeans() and pm_joint() with df_method = \"Ken
   expect_equal(df_term(m, ctrmatrix = L, type = "Kenward-Roger"),
                df_term(m, ctrmatrix = L, vcov_adj = pm_vcov_kr(m, "observed")))
 })
+
+## "KR-average": Kenward-Roger with the average information of the REML
+## iterations of Genstat and ASReml, A_ij = y'P G_i P G_j P y / 2 (Gilmour,
+## Thompson and Cullis 1995). The Genstat runs of dev/genstat/README.md gave
+## 8.7 df for Variety (oats, a whole plot missing) and 25.8 for Group x Time
+## (AR(1), dev/sas/ar1.txt), where this gives 8.75 and 25.76 (notes only:
+## that output was pasted, not uploaded).
+
+test_that("KR-average: the average information is the mean of the observed and expected ones for variance components", {
+  d <- oats71()
+  m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block) + (1 | Block:Variety), data = d)
+  Wo <- attr(pm_vcov_kr(m, "observed"), "W")
+  We <- attr(pm_vcov_kr(m, "expected"), "W")
+  Wa <- pm_vcov_kr(m, "average")
+  expect_identical(attr(Wa, "information"), "average")
+  expect_equal(solve(attr(Wa, "W")), (solve(Wo) + solve(We)) / 2, tolerance = 1e-8)
+  e <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = d)
+  expect_equal(pm_joint(e, "Variety", df_method = "KR-average")$df2,
+               pm_joint(m, "Variety", df_method = "KR-average")$df2, tolerance = 1e-5)
+})
+
+test_that("KR-average for gls with AR(1): the average information y'P G_i P G_j P y / 2, computed densely", {
+  d <- read.table(test_path("_data", "sas", "ar1.txt"), header = TRUE)
+  d$Subj <- factor(d$Subj); d$Group <- factor(d$Group); d$t <- d$Time; d$Time <- factor(d$Time)
+  g <- nlme::gls(Y ~ Group * Time, data = d, correlation = nlme::corAR1(form = ~ t | Subj))
+  R <- pm_nlme_reml(g)
+  S0 <- as.matrix(R$Sig(R$th0))
+  G <- lapply(seq_len(R$k), function(i) {
+    if (i == R$k) return(2 * S0)
+    h <- 1e-4 * max(1, abs(R$th0[i]))
+    e <- replace(numeric(R$k), i, h)
+    as.matrix(R$Sig(R$th0 + e) - R$Sig(R$th0 - e)) / (2 * h)
+  })
+  Si <- solve(S0)
+  P <- Si - Si %*% R$X %*% solve(crossprod(R$X, Si %*% R$X), crossprod(R$X, Si))
+  Py <- P %*% R$y
+  AI <- outer(seq_len(R$k), seq_len(R$k), Vectorize(function(i, j) 0.5 * drop(crossprod(Py, G[[i]] %*% P %*% G[[j]] %*% Py))))
+  expect_equal(attr(pm_vcov_kr_nlme(g, "average"), "W"), solve(AI), tolerance = 1e-6)
+  last <- rbind(c(1, 0, 0, -1), c(0, 1, 0, -1), c(0, 0, 1, -1))
+  C <- kronecker(rbind(c(1, -1)), last)
+  ddf <- vapply(c("KR-expected", "KR-average", "Kenward-Roger"), function(dm)
+    pm_joint(g, "Group:Time", df_method = dm, ctrmatrix = C)$df2, numeric(1))
+  expect_true(ddf[1] < ddf[2] && ddf[2] < ddf[3])
+  p <- predictmeans(g, "Group", df_method = "KR-average", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)
+  expect_identical(p$settings$df_method, "KR-average")
+  expect_false(p$settings$vcov_adjust)
+})

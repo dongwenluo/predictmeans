@@ -2,6 +2,16 @@
 
 ## Changes that affect results or scripts
 
+* New `df_method = "KR-average"` (in `predictmeans()`, `contrastmeans()`,
+  `pm_joint()`, `pm_slopes()`, `covariatemeans()` and `df_term()`, for
+  `lmer`, `lme` and `gls`): Kenward-Roger with the average information of
+  the variance parameters, y'P G_i P G_j P y / 2 (Gilmour, Thompson and
+  Cullis 1995), the matrix of Genstat's REML iterations. It gives Genstat's
+  REML df (oats with a whole plot missing: Variety 8.75, Genstat 8.7; AR(1)
+  with missing values: Group x Time 25.76, Genstat 25.8). Genstat's SEDs
+  are the unadjusted ones (`vcov_adjust = FALSE`). The default stays
+  Kenward-Roger with the observed information.
+
 * `pm_joint()` without `ctrmatrix` writes each set of contrasts as each
   level against the last (SAS's Type 3 basis). Wald and Kenward-Roger F
   tests are unchanged; the Satterthwaite df of a test with several df depend

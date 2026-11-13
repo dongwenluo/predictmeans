@@ -12,7 +12,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 }
 \arguments{
@@ -153,7 +153,10 @@ REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed informa
 parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
 (\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
 package sources) F tests of repeated measures with missing values rejected 6\% of true hypotheses at the 5\%
-level with the observed information and 8.5\% with the expected. The two agree in balanced designs. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+level with the observed information and 8.5\% with the expected. The two agree in balanced designs.
+\code{"KR-average"} uses the average information of the REML iterations of Genstat and ASReml (Gilmour, Thompson
+and Cullis 1995) and gives Genstat's REML df; Genstat's SEDs are the unadjusted ones (\code{vcov_adjust = FALSE}).
+\code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
@@ -290,6 +293,9 @@ The \code{predictmeans} function becomes confused if a factor or covariate is ch
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
   
+	Gilmour, A. R., Thompson, R. and Cullis, B. R. (1995), \emph{Average information REML: an efficient algorithm for
+	variance parameter estimation in linear mixed models}, Biometrics, 51(4), 1440-1450.
+
 	Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347. 
 	

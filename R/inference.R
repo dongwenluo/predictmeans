@@ -16,7 +16,7 @@
 ##    than the expected information (pbkrtest, emmeans; "KR-expected") and
 ##    held 5% where that gave 8.5% with missing values (Kenward and
 ##    Molenberghs 1998: with missing data only the observed information is
-##    valid).
+##    valid). "KR-average" uses the average information, as Genstat.
 ##  * covariance: the Kenward-Roger adjusted covariance when the df are
 ##    Kenward-Roger and vcov_adjust is TRUE; not with "containment" or
 ##    "between-within" unless vcov_adjust = TRUE is given (as SAS); not with a
@@ -167,8 +167,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 
   label <- if (aovl) {
     "multistratum"                                  # stratum mean squares, Satterthwaite across strata
-  } else if (identical(df_method, "KR-expected") && identical(df_type, "Kenward-Roger")) {
-    "KR-expected"                                   # Kenward-Roger with the expected information
+  } else if (df_method %in% c("KR-expected", "KR-average") && identical(df_type, "Kenward-Roger")) {
+    df_method                                       # Kenward-Roger with the expected or average information
   } else if (!is.null(df_type)) {
     df_type
   } else if (inherits(model, "lme")) {
@@ -187,12 +187,13 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 ## gls), Satterthwaite for ML lmer fits and nlme's df for ML lme/gls fits;
 ## lme and gls also take "Satterthwaite", "KR-expected", "between-within" and
 ## "containment" (nlme's df); other models keep their own df. Kenward-Roger uses the observed
-## information, "KR-expected" the expected one. Returns list(df_type, vcov_adj).
+## information, "KR-expected" the expected one, "KR-average" the average one
+## (Genstat). Returns list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
-  kr_info <- if (identical(df_method, "KR-expected")) "expected" else "observed"
+  kr_info <- switch(df_method, "KR-expected" = "expected", "KR-average" = "average", "observed")
   glmm <- inherits(model, c("glmerMod", "glmmTMB"))
   if (identical(df_method, "inner-outer") || (glmm && df_method %in% c("auto", "Kenward-Roger", "KR-expected",
-                                                                         "Satterthwaite"))) {
+                                                                         "KR-average", "Satterthwaite"))) {
     # df by grouping level (R/df-innerouter.R): the default for GLMMs, which have
     # no Kenward-Roger or Satterthwaite df here
     if (glmm && !df_method %in% c("auto", "inner-outer")) {
@@ -246,7 +247,7 @@ pm_df_method <- function(model, df_method) {
       return(list(df_type = NULL, vcov_adj = NULL))
     }
     if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
-    if (df_method %in% c("Kenward-Roger", "KR-expected")) {
+    if (df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
       return(list(df_type = "Kenward-Roger", vcov_adj = pm_vcov_kr_nlme(model, kr_info)))
     }
   }
@@ -258,7 +259,7 @@ pm_df_method <- function(model, df_method) {
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   reml <- lme4::getME(model, "is_REML")
-  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-expected" = "Kenward-Roger",
+  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-expected" = , "KR-average" = "Kenward-Roger",
                     df_method)
   if (df_type == "Kenward-Roger" && !reml) {
     warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")

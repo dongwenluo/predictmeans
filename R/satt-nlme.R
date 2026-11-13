@@ -148,10 +148,11 @@ pm_satt_parts_nlme <- function(model) {
 ## is parameterised, and in the natural parameters of variance components
 ## and unstructured covariances (where SAS works) that term is zero, so this
 ## equals SAS DDFM=KR for those (and DDFM=KR(FIRSTORDER) for structures such
-## as AR(1)). W: expected information, or observed (SAS; information =
-## "observed"). Checked: lme = lmer's KR (pbkrtest); unstructured repeated
+## as AR(1)). W: expected information, observed (SAS; information =
+## "observed"), or average (Genstat; y'P G_i P G_j P y / 2, which transforms
+## with the parameterisation as the expected information does). Checked: lme = lmer's KR (pbkrtest); unstructured repeated
 ## measures (gls) = SAS's KR F tests.
-pm_vcov_kr_nlme <- function(model, information = c("observed", "expected")) {
+pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "average")) {
   information <- match.arg(information)
   R <- pm_nlme_reml(model)
   X <- R$X
@@ -173,7 +174,19 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected")) {
   PP <- lapply(A, function(a) -a)
   Q <- lapply(seq_len(k), function(i) lapply(seq_len(k), function(j)
     as.matrix(crossprod(SX, G[[i]] %*% (SG[[j]] %*% SX)))))
-  W <- if (information == "observed") pm_nlme_W_observed(R) else {
+  W <- if (information == "observed") pm_nlme_W_observed(R) else if (information == "average") {
+    # average information: 1/2 (G_i P y)' P (G_j P y), with P v = S^-1 v - S^-1 X Phi X' S^-1 v
+    Pv <- function(v) {
+      sv <- as.matrix(Matrix::solve(C, v, system = "A"))
+      sv - SX %*% (Phi %*% crossprod(SX, v))
+    }
+    Py <- Pv(R$y)
+    a <- lapply(G, function(Gi) as.matrix(Gi %*% Py))
+    Pa <- lapply(a, Pv)
+    AI <- matrix(0, k, k)
+    for (i in seq_len(k)) for (j in i:k) AI[i, j] <- AI[j, i] <- 0.5 * sum(a[[i]] * Pa[[j]])
+    solve(AI)
+  } else {
     # expected information: 1/2 tr(P G_i P G_j), P = S^-1 - S^-1 X Phi X' S^-1, in pieces
     IE <- matrix(0, k, k)
     for (i in seq_len(k)) for (j in i:k) {

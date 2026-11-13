@@ -5,7 +5,7 @@
 \title{Joint F Tests of Contrasts among Means (Slices)}
 \usage{
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }
 \arguments{
@@ -46,9 +46,11 @@ The F statistic and its denominator degrees of freedom follow the model:
   as \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
 \item{KR-expected}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the expected information, as
   \code{pbkrtest::KRmodcomp()} (see \code{\link{predictmeans}}).}
+\item{KR-average}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the average information: Genstat's REML
+  df (Genstat's F statistic is the unscaled Wald F).}
 \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
-\item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-expected"}}{as for \code{lmer} (Satterthwaite df of the
+\item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"}, \code{"KR-expected"} or \code{"KR-average"}}{as for \code{lmer} (Satterthwaite df of the
   F test, lmerTest's rule).}
 \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits (the default), as for \code{lmer}; with
   \code{df_method = "containment"} (and for ML fits) the Wald F with \pkg{nlme}'s df of \code{modelterm} (as

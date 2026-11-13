@@ -50,6 +50,8 @@ With `MVINCLUDE=yvariate` the AR(1) model fits:
   matrix its REML iterations use), gives **25.76**, and **8.75** for the
   oats Variety test (Genstat 8.7). So Genstat's df are Kenward–Roger with
   the average information, while its SEDs and F statistics are not adjusted.
+  `df_method = "KR-average"` gives these df (with `vcov_adjust = FALSE`
+  also Genstat's SEDs).
 - Time (3.71 on 25.6 df) and Group (5.62 on 11.7) are sequential (added in
   turn) tests, not SAS's Type 3, so they are not compared.
 

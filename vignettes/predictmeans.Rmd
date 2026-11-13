@@ -83,9 +83,10 @@ rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 observed information of the variance parameters, as SAS does; `"KR-expected"` uses the
 expected information, as pbkrtest and emmeans. The two agree in balanced designs; with
 missing values only the observed information is valid, and in simulations it kept the
-5% level where the expected one rejected 8.5% of true hypotheses. For `lme` and `gls` models with
-correlation or variance structures, `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` are
-available too. `vignette("sas", package = "predictmeans")` shows how each matches SAS PROC
+5% level where the expected one rejected 8.5% of true hypotheses. `"KR-average"` uses the average
+information of Genstat's REML and gives Genstat's df (with `vcov_adjust = FALSE`, also its SEDs). For
+`lme` and `gls` models with correlation or variance structures, `"Satterthwaite"`, `"Kenward-Roger"`,
+`"KR-expected"` and `"KR-average"` are available too. `vignette("sas", package = "predictmeans")` shows how each matches SAS PROC
 MIXED.
 
 ## Averaging over other factors

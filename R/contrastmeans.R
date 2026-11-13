@@ -7,7 +7,7 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
 #'                 level=0.05, vcov=NULL, equivalence=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
@@ -37,8 +37,8 @@
 #'   Satterthwaite for ML \code{lmer} fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 #'   for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
 #'   \code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
-#'   the observed information, as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
-#'   \code{"Kenward-Roger"}, \code{"KR-expected"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
+#'   the observed information, as SAS \code{DDFM=KR}), \code{"KR-average"} (the average information, as Genstat); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
+#'   \code{"Kenward-Roger"}, \code{"KR-expected"}, \code{"KR-average"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
 #'   predictmeans 1.x); see \code{\link{predictmeans}}.
 #' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 #'   test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML \code{lmer} fits)
@@ -114,7 +114,7 @@ NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
                           level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   pm_equiv_margins(equivalence)                  # check early
