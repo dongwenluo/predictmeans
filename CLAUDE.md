@@ -23,8 +23,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
 - Means over empty cells keep the 1.x rule (average of observed cells, with a
   warning); truly non-estimable means are NA.
-- SAS reference values come only from real SAS runs (`dev/sas/`, parsed
-  results pages or CSVs). Do not use SAS tables typed into chat as references
+- The maintainer can run SAS and Genstat on request: scripts go in
+  `dev/sas/` and `dev/genstat/`. Reference values come only from real runs
+  (uploaded results pages, output or CSV files). Do not use SAS tables typed into chat as references
   (see `dev/sas/README.md`).
 
 ## Layout
