@@ -2,6 +2,64 @@
 
 ## Changes that affect results or scripts
 
+* **`glm` models with a known dispersion (Poisson, binomial, negative
+  binomial) use z tests** (normal; chi-square for joint tests), as emmeans and
+  SAS GLIMMIX; they used t with the residual df, as for `lm`, which is
+  conservative: in simulations (`dev/sim-df-glm/`) it rejected 0.3–4.5% of
+  true null hypotheses at the 5% level (F tests 0.3–3.0%), z tests 3.6–5.7%.
+  `df_method = "residual"` gives the 1.x t tests; `settings$df_method` is
+  `"asymptotic (z)"`. Quasi families and Gaussian/Gamma `glm` keep the
+  residual df (their dispersion is estimated).
+
+* The Kenward-Roger F tests in the `permmodels()` tables of `lmer` models
+  (`test.statistic = "F"`) use the observed information, as `pm_joint()` and
+  the rest of the package; they used the expected one, as `car::Anova()`.
+  The two agree for balanced data.
+
+* **ML fits of `lme` and `gls` get Satterthwaite df** (from the ML
+  log-likelihood), as ML `lmer` fits; they used nlme's df or the residual df,
+  which are still `df_method = "containment"`. In simulations of ML `gls`
+  fits (`dev/sim-df-ml/`), unstructured covariance: t tests 5.5% (residual df
+  6.9%), F tests 6.3–8.8% (9.3–11.7%); AR(1) the same either way. Kenward-Roger
+  asked for an ML fit gives Satterthwaite with a warning, as for `lmer`. An ML
+  `lme` fit now gives the same df as the ML `lmer` fit (lmerTest).
+
+* **Means over empty cells are compared on the cells both means have.** With
+  `weights = "equal"`, a mean that averages over cells without data keeps the
+  1.x rule (the average of its observed cells), but two such means average
+  over different cells, so their difference also carried the effects of the
+  other factors: in simulations (`dev/review-defaults.md`,
+  `dev/sim-empty-cells.R`) it rejected 8–78% of true null hypotheses when the
+  other factor had an effect. Now a pair with such a mean is compared on the
+  cells both means have (4–6% in the same simulations), and the new column
+  `over` of `pairs` says which (`"none"`: no cell in common, the pair is NA).
+  Example: oats with Victory lost at N = 0.6: 0.6 − 0 is 42.5 (Golden Rain and
+  Marvellous) instead of 46.4, and 0.6 vs 0.4 has p = 0.08 instead of 0.03.
+  `contrastmeans()` and `pm_joint()` (column `over`) do the same; means,
+  and pairs of means without empty cells, are unchanged. The warning now
+  names the empty cells and the means concerned, and is no longer given
+  where no mean averages over an empty cell (e.g. for the cell means
+  themselves).
+
+* New `df_method = "KR-average"` (in `predictmeans()`, `contrastmeans()`,
+  `pm_joint()`, `pm_slopes()`, `covariatemeans()` and `df_term()`, for
+  `lmer`, `lme` and `gls`): Kenward-Roger with the average information of
+  the variance parameters, y'P G_i P G_j P y / 2 (Gilmour, Thompson and
+  Cullis 1995), the matrix of Genstat's REML iterations. It gives Genstat's
+  REML df (oats with a whole plot missing: Variety 8.75, Genstat 8.7; AR(1)
+  with missing values: Group x Time 25.76, Genstat 25.8). Genstat's SEDs
+  are the unadjusted ones (`vcov_adjust = FALSE`). The default stays
+  Kenward-Roger with the observed information.
+
+* `pm_joint()` without `ctrmatrix` writes each set of contrasts as each
+  level against the last (SAS's Type 3 basis). Wald and Kenward-Roger F
+  tests are unchanged; the Satterthwaite df of a test with several df depend
+  on the basis (Fai and Cornelius 1996) and now equal SAS's (AR(1) repeated
+  measures: 26.1 df for Time, was 25.5). New tests against a SAS run with
+  AR(1) and missing values: predictmeans' Kenward-Roger equals SAS
+  `DDFM=KR(FIRSTORDER)` everywhere and has the df of `KR` and `KR2`;
+  Satterthwaite and between-within agree everywhere.
+
 * **`aov()` models with `Error()` strata are analysed by strata**, as
   Genstat's ANOVA does, in `predictmeans()`, `contrastmeans()`, `pm_joint()`
   and `pm_slopes()` (new `R/aovlist.R`). They were refitted as `lmer`

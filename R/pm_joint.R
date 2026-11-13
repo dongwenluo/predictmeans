@@ -13,20 +13,27 @@
 #'   as \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
 #' \item{KR-expected}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the expected information, as
 #'   \code{pbkrtest::KRmodcomp()} (see \code{\link{predictmeans}}).}
+#' \item{KR-average}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the average information: Genstat's REML
+#'   df (Genstat's F statistic is the unscaled Wald F).}
 #' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
-#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-expected"}}{as for \code{lmer} (Satterthwaite df of the
+#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"}, \code{"KR-expected"} or \code{"KR-average"}}{as for \code{lmer} (Satterthwaite df of the
 #'   F test, lmerTest's rule).}
-#' \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits (the default), as for \code{lmer}; with
-#'   \code{df_method = "containment"} (and for ML fits) the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
+#' \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits and Satterthwaite for ML fits (the defaults), as for
+#'   \code{lmer}; with \code{df_method = "containment"} the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
 #'   \code{anova()}; \code{"containment (nlme)"}) or the residual df (\code{gls}).}
+#' \item{\code{glm} with a known dispersion}{(Poisson, binomial, negative binomial) the Wald chi-square / df
+#'   (denominator df \code{Inf}); \code{df_method = "residual"}: the residual df, as predictmeans 1.x.}
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 #' }
 #' Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
+#' Without \code{ctrmatrix}, each set is written as each level against the last (SAS's Type 3 basis): Wald and
+#' Kenward-Roger F tests do not depend on the basis, but the Satterthwaite df of a test with several df do (Fai and
+#' Cornelius 1996), and with this basis they equal SAS's.
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
@@ -62,7 +69,7 @@
 NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
-                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -107,16 +114,45 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
       by_tab <- unique(fac[match(gname, gkey), by, drop = FALSE])
       rownames(by_tab) <- NULL
     }
+    # the same hypotheses, written as each level against the last (SAS's Type 3
+    # basis): Wald and Kenward-Roger F do not depend on the basis, but the
+    # Satterthwaite df of a several-df test do (Fai and Cornelius 1996)
+    sets <- lapply(sets, pm_vs_last)
   }
 
   ## Model parameters, covariance and df (R/inference.R)
   inf <- pm_inference(model, df_method, vcov_adjust = FALSE, vcov = vcov)
   K <- KK[, inf$mp$estimable, drop = FALSE]
   K[!est_flag, ] <- 0
-  res <- t(vapply(sets, function(C) inf$ftest(C %*% K, modelterm), numeric(4)))
+  # a set with a mean over empty cells: tested on the cells all its means have (R/empty-cells.R)
+  over <- rep(NA_character_, length(sets))
+  res <- t(vapply(seq_along(sets), function(s) {
+    C <- sets[[s]]
+    cr <- pm_common_rows(km$empty_cells, C, C %*% K, colnames(K), together = TRUE)
+    if (any(cr$sub)) over[s] <<- if (any(cr$na)) "none" else cr$over[which(cr$sub)[1]]
+    if (any(cr$na)) return(c(qr(t(C))$rank, NA, NA, NA))
+    inf$ftest(cr$L, modelterm)
+  }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
+  if (any(!is.na(over))) {
+    out$over <- over          # tested on the cells common to the means (empty cells)
+    message("Means over empty cells: tested on the cells all the compared means have (column 'over'; ",
+            "\"none\": no cell in common, NA).")
+  }
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
   attr(out, "df_method") <- inf$label
   if (!is.null(inf$vcov_label)) attr(out, "vcov") <- inf$vcov_label
   out
+}
+
+## Contrasts over means spanning the same space as C, as each level used by C
+## against the last of them.
+pm_vs_last <- function(C) {
+  used <- which(colSums(abs(C)) > 1e-12)
+  if (length(used) < 2) return(C)
+  k <- length(used)
+  M <- matrix(0, k - 1, ncol(C), dimnames = list(colnames(C)[used[-k]], colnames(C)))
+  M[cbind(seq_len(k - 1), used[-k])] <- 1
+  M[, used[k]] <- -1
+  M
 }

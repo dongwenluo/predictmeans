@@ -7,7 +7,7 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
 #'                 level=0.05, vcov=NULL, equivalence=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
@@ -34,15 +34,15 @@
 #' @param weights Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
 #'   over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).
 #' @param df_method Denominator df: \code{"auto"} (Kenward-Roger for REML fits of \code{lmer}, \code{lme} and \code{gls},
-#'   Satterthwaite for ML \code{lmer} fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+#'   Satterthwaite for ML fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 #'   for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
 #'   \code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
-#'   the observed information, as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
-#'   \code{"Kenward-Roger"}, \code{"KR-expected"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
+#'   the observed information, as SAS \code{DDFM=KR}), \code{"KR-average"} (the average information, as Genstat); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
+#'   \code{"Kenward-Roger"}, \code{"KR-expected"}, \code{"KR-average"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
 #'   predictmeans 1.x); see \code{\link{predictmeans}}.
 #' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
-#'   test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML \code{lmer} fits)
-#'   denominator df, \pkg{nlme}'s df for ML \code{lme} fits, the residual df for other models (normal-based, i.e. chi-square /
+#'   test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+#'   denominator df, the residual df for other models (normal-based, i.e. chi-square /
 #'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 #'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 #'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
@@ -114,7 +114,7 @@ NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
                           level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   pm_equiv_margins(equivalence)                  # check early
@@ -135,7 +135,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
          "\"mvt\" (single step) or \"holm\".", call. = FALSE)
   }
-  KK <- Kmatrix(model, modelterm, weights=weights)$K
+  km <- Kmatrix(model, modelterm, weights=weights)
+  KK <- km$K
   termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {
     if (!interactive()) {
@@ -196,6 +197,14 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   mp <- inf$mp
   K <- KK[, mp$estimable, drop=FALSE]
   rK <- ctrmatrix%*%K
+  # contrasts with a mean over empty cells: on the cells all their means have (R/empty-cells.R)
+  cr <- pm_common_rows(km$empty_cells, ctrmatrix, rK, colnames(K))
+  rK <- cr$L
+  if (any(cr$sub)) {
+    cn <- if (is.null(rownames(ctrmatrix))) paste("contrast", seq_len(nrow(ctrmatrix))) else rownames(ctrmatrix)
+    message("Contrasts with means over empty cells use only the cells their means all have: ",
+            paste0(cn[cr$sub], ": ", ifelse(cr$na[cr$sub], "none (NA)", cr$over[cr$sub]), collapse = "; "))
+  }
 
   if (all(missing(permlist), missing(Df))) Df <- inf$df(rK, modelterm)
 
@@ -203,6 +212,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   vcovm <- mp$vcov
   vcov.contr <- rK %*% tcrossprod(vcovm, rK)
   ses <- sqrt(diag(vcov.contr))
+  cm[cr$na] <- NA                 # no cells in common
+  ses[cr$na] <- NA
   t.v <- cm/ses
   nr <- nrow(rK)
   dv <- t(1/ses)

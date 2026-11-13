@@ -283,8 +283,8 @@ pm_code_compare <- quote({
     LSD <- NA
   }else {
     perm <- pm_perm_given(permlist)
-    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar),
-             envir = environment())
+    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar,
+                            cells = ctr.matrix$empty_cells), envir = environment())
     if (!perm) {
       list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
       bkmt <- mt  # update bkmt
@@ -314,8 +314,10 @@ pm_existing <- function(nms, env) mget(intersect(nms, ls(env, all.names = TRUE))
 
 ## Pairwise contrasts and their SEDs (overall and within levels of each
 ## factor). 'atvar' becomes NULL when a factor has no pairs within its levels
-## (nested factors).
-pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level, atvar) {
+## (nested factors). 'cells' (Kmatrix()$empty_cells): pairs with a mean over
+## empty cells are compared on the cells both means have (R/empty-cells.R);
+## pair_over says which.
+pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level, atvar, cells = NULL) {
   nK <- nrow(K)
   rnK <- rownames(K)
   # pairs (i, j), i > j, in column order; level labels come from the label
@@ -331,20 +333,31 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
   KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
 
   rK <- CM%*%K                    # calculate stats
-  cm <- rK%*%coef
-  vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-  dses <- sqrt(diag(vcov.contr))
   # differences that cannot be estimated (their components along the
   # non-estimable directions do not cancel) are NA, not computed with the
   # dropped coefficients taken as zero
+  non_est_pair <- rep(FALSE, nrow(rK))
   null_proj <- attr(KK, "null_proj")
   if (!is.null(null_proj) && all(rnK %in% rownames(null_proj))) {
     pd <- CM %*% null_proj[rnK, , drop = FALSE]
     scale_r <- pmax(1, apply(abs(rK), 1, max))
     non_est_pair <- apply(abs(pd), 1, max) > 1e-6 * scale_r
-    cm[non_est_pair] <- NA
-    dses[non_est_pair] <- NA
   }
+  # pairs with a mean over empty cells: on the cells both means have
+  pair_over <- rep(NA_character_, nrow(rK))
+  if (!is.null(cells)) {
+    Cf <- matrix(0, nrow(CM), nrow(KK))
+    Cf[, match(rnK, rownames(KK))] <- CM
+    cr <- pm_common_rows(cells, Cf, rK, colnames(K))
+    rK <- cr$L
+    non_est_pair[cr$sub] <- cr$na[cr$sub]
+    pair_over <- cr$over
+  }
+  cm <- rK%*%coef
+  vcov.contr <- rK %*% tcrossprod(vcovm, rK)
+  dses <- sqrt(diag(vcov.contr))
+  cm[non_est_pair] <- NA
+  dses[non_est_pair] <- NA
 
   if (adj == "bonferroni"){
     level <- level/length(dses)
@@ -372,7 +385,7 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
     attr(SED.out, "For the Same Level of Factor") <- dses.m
   }
   list(rK = rK, cm = cm, dses = dses, level = level, SED.out = SED.out, dses.df = dses.df,
-       dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar)
+       dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar, pair_over = pair_over)
 }
 
 ## Degrees of freedom of the means and of the pairs (no permutation tests):

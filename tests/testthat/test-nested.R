@@ -46,8 +46,17 @@ test_that("an empty cell (a combination missing from the data): the 1.x average 
   d$dbh <- 10 + as.integer(d$country) + rnorm(10)[as.integer(d$prov)] + 0.5 * (d$inoc == "yes") + rnorm(nrow(d), 0, 0.5)
   d <- d[!(d$prov == "p3" & d$inoc == "yes"), ]                      # p3 never received inoculation
   fm <- lm(dbh ~ repl + inoc * (country/prov), data = d)
-  expect_warning(p <- predictmeans(fm, "inoc", plot = FALSE, prtnum = FALSE), "Missing treatments' combination")
+  expect_warning(p <- predictmeans(fm, "inoc", plot = FALSE, prtnum = FALSE), "No data for .*yes:B:p3")
   cells <- tapply(d$dbh, list(d$inoc, d$prov), mean)                  # repl is balanced within each cell
   expect_equal(p$means$estimate, unname(rowMeans(cells, na.rm = TRUE)), tolerance = 1e-8)
   expect_true(all(p$means$estimable))
+  # the comparison uses the nine provenances with both treatments
+  expect_equal(p$pairs$estimate, mean(cells["no", ] - cells["yes", ], na.rm = TRUE), tolerance = 1e-8)
+  expect_match(p$pairs$over, "country:prov")
+  # provenances (nested in countries) compared over the treatments both have,
+  # across countries too
+  pp <- suppressWarnings(predictmeans(fm, "country:prov", plot = FALSE, prtnum = FALSE))$pairs
+  r <- pp[pp$level1 == "B:p3" & pp$level2 == "C:p6" | pp$level1 == "C:p6" & pp$level2 == "B:p3", ]
+  expect_equal(abs(r$estimate), abs(cells["no", "p3"] - cells["no", "p6"]), tolerance = 1e-8)
+  expect_identical(r$over, "inoc no")
 })

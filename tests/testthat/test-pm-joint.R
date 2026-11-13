@@ -11,6 +11,11 @@ test_that("pm_joint() slices: Kenward-Roger equals pbkrtest, Satterthwaite equal
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
   km <- Kmatrix(fm, "nitro:Variety")
   C <- contrast_family(km, "consec", by = "Variety")
+  # pm_joint() writes each set as each level against the last (SAS's Type 3 basis); the Satterthwaite df
+  # of a several-df test depend on the basis, so the reference uses the same one
+  grp <- sub(": .*$", "", rownames(C))
+  C <- do.call(rbind, lapply(unique(grp), function(g) predictmeans:::pm_vs_last(C[grp == g, , drop = FALSE])))
+  rownames(C) <- paste(rep(unique(grp), each = nrow(C) / length(unique(grp))), rownames(C), sep = ": ")
   j <- pm_joint(fm, "nitro:Variety", by = "Variety", df_method = "KR-expected")
   js <- pm_joint(fm, "nitro:Variety", by = "Variety", df_method = "Satterthwaite")
   expect_equal(as.character(j$Variety), levels(d$Variety))

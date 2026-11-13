@@ -148,9 +148,25 @@ the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.
 
 - `pm-reference-adjust.sas`: Tukey–Kramer with `ADJDFE=ROW` and `SOURCE`
   on the 68-observation oats data.
-- `pm-reference-ar1.sas` (2026-11-13): AR(1) repeated measures with 5 of 48
-  values missing (`ar1.txt`, simulated), with `DDFM=KR`, `KR(FIRSTORDER)`,
-  `KR2`, `SATTERTHWAITE` and `BETWITHIN`. AR(1) is not linear in its
-  parameter, so SAS's default KR adds second-derivative terms that depend on
-  the parameterisation; predictmeans leaves them out, so `"Kenward-Roger"` should
-  match `KR(FIRSTORDER)`. The same data are in `dev/genstat/pm-reference.gen`.
+
+## The AR(1) run (SAS OnDemand, 2026-11-13)
+
+`pm-reference-ar1.sas`: AR(1) repeated measures with 5 of 48 values missing
+(`ar1.txt`, simulated), with `DDFM=KR`, `KR(FIRSTORDER)`, `KR2`,
+`SATTERTHWAITE` and `BETWITHIN`. Results page as text in
+`sas-results-2026-11-13-ar1.txt`, parsed into `sas-results-ar1.csv`
+(`parse-sas-results.py` now also tells runs apart by their titles), and
+tested in `tests/testthat/test-sas-ar1.R`.
+
+- `"Kenward-Roger"` equals `KR(FIRSTORDER)` in every LS-mean, difference,
+  SE, df and Type 3 F test (Group 5.00 on 12.6 df; Time 3.65 on 26.6). Its
+  df also equal those of SAS's default `KR` and of `KR2`; their SEs are
+  smaller (Group A 0.3474 and 0.3500 against 0.3538) because they add terms
+  in the second derivatives of the AR(1) covariance, which depend on how it
+  is parameterised.
+- Satterthwaite and between-within agree everywhere. The Satterthwaite df
+  of a test with several df (Fai and Cornelius 1996) depend on the basis of
+  the contrasts: with successive differences Time had 25.48 df, with SAS's
+  Type 3 basis (each level against the last) 26.11, as SAS. `pm_joint()`
+  now uses SAS's basis when no `ctrmatrix` is given. Kenward-Roger does not
+  depend on the basis (26.62 either way).

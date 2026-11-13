@@ -1,0 +1,792 @@
+11/13/26, 7:40 PM                                                                Results: Program 1
+
+                                                               AR1 data, DDFM=kr
+                                                                  The Mixed Procedure
+
+                                                                   Model Information
+                                                 Data Set                               WORK.AR1
+                                                 Dependent Variable                     Y
+                                                 Covariance Structure                   Autoregressive
+                                                 Subject Effect                         Subj
+
+                                                 Estimation Method                      REML
+                                                 Residual Variance Method               Profile
+                                                 Fixed Effects SE Method                Kenward-Roger
+                                                 Degrees of Freedom Method              Kenward-Roger
+
+
+                                                               Class Level Information
+                                                   Class       Levels     Values
+
+                                                   Subj             12    1 2 3 4 5 6 7 8 9 10 11 12
+                                                   Group             2    AB
+                                                   Time              4    1234
+
+
+                                                                      Dimensions
+                                                            Covariance Parameters              2
+                                                            Columns in X                     15
+                                                            Columns in Z                       0
+                                                            Subjects                         12
+                                                            Max Obs per Subject                4
+
+
+                                                               Number of Observations
+
+                                                     Number of Observations Read                     43
+                                                     Number of Observations Used                     43
+                                                     Number of Observations Not Used                  0
+
+
+                                                                    Iteration History
+                                             Iteration    Evaluations      -2 Res Log Like             Criterion
+                                                    0                 1      122.33893215
+                                                    1                 2      107.79150179            0.00566230
+
+                                                    2                 1      107.66254324            0.00003272
+                                                    3                 1      107.66183166            0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+
+                                                          Covariance Parameter Estimates
+                                                          Cov Parm        Subject     Estimate
+                                                          AR(1)           Subj              0.6157
+                                                          Residual                          1.1943
+
+
+
+                                                                     Fit Statistics
+                                                          -2 Res Log Likelihood             107.7
+                                                          AIC (Smaller is Better)           111.7
+
+                                                          AICC (Smaller is Better)          112.0
+                                                          BIC (Smaller is Better)           112.6
+
+
+                                                          Null Model Likelihood Ratio Test
+                                                          DF       Chi-Square       Pr > ChiSq
+
+
+11/13/26, 7:40 PM                                                                       Results: Program 1
+                                                               Null Model Likelihood Ratio Test
+                                                               DF       Chi-Square           Pr > ChiSq
+
+                                                                 1              14.68           0.0001
+
+
+                                                                 Type 3 Tests of Fixed Effects
+                                                    Effect            Num DF      Den DF        F Value      Pr > F
+                                                    Group                   1           12.6       5.19     0.0408
+
+                                                    Time                    3           26.6       3.44     0.0311
+                                                    Group*Time              3           26.6       0.72     0.5480
+
+
+                                                                      Least Squares Means
+
+                                                                      Standard
+                     Effect         Group       Time    Estimate          Error         DF     t Value    Pr > |t|    Alpha       Lower      Upper
+                     Group          A                      11.0735       0.3474     12.9        31.87     <.0001       0.05      10.3224    11.8245
+
+                     Group          B                      12.1854       0.3426     12.3        35.56     <.0001       0.05      11.4409   12.9299
+                     Time                       1          11.0976       0.3261         25      34.04     <.0001       0.05      10.4260    11.7691
+                     Time                       2          11.1884       0.3231     25.1        34.63     <.0001       0.05      10.5231    11.8537
+                     Time                       3          11.9754       0.3231     25.1        37.06     <.0001       0.05      11.3101   12.6407
+                     Time                       4          12.2564       0.3362     26.2        36.46     <.0001       0.05      11.5656   12.9473
+                     Group*Time     A           1          10.6868       0.4756     26.2        22.47     <.0001       0.05       9.7094    11.6641
+                     Group*Time     A           2          10.8684       0.4675     26.4        23.25     <.0001       0.05       9.9083    11.8286
+
+                     Group*Time     A           3          11.3707       0.4675     26.4        24.32     <.0001       0.05      10.4106   12.3309
+                     Group*Time     A           4          11.3680       0.4756     26.2        23.90     <.0001       0.05      10.3906   12.3453
+                     Group*Time     B           1          11.5083       0.4461     23.7        25.80     <.0001       0.05      10.5869   12.4298
+
+                     Group*Time     B           2          11.5083       0.4461     23.7        25.80     <.0001       0.05      10.5869   12.4298
+                     Group*Time     B           3          12.5800       0.4461     23.7        28.20     <.0001       0.05      11.6586   13.5014
+                     Group*Time     B           4          13.1449       0.4753     26.2        27.66     <.0001       0.05      12.1682   14.1215
+
+
+                                                             Differences of Least Squares Means
+
+                                                                                  Standard
+            Effect          Group   Time    _Group      _Time        Estimate         Error        DF     t Value     Pr > |t|   Alpha     Lower        Upper
+            Group           A               B                         -1.1119       0.4880       12.6       -2.28     0.0408       0.05    -2.1694    -0.05441
+
+            Time                    1                   2            -0.09081       0.3056       25.8       -0.30     0.7688       0.05    -0.7193     0.5377
+            Time                    1                   3             -0.8778       0.3781       31.6       -2.32     0.0269       0.05    -1.6483     -0.1073
+            Time                    1                   4             -1.1589       0.4276       34.7       -2.71     0.0104       0.05    -2.0271     -0.2906
+
+            Time                    2                   3             -0.7870       0.3019         25       -2.61     0.0152       0.05    -1.4088     -0.1652
+            Time                    2                   4             -1.0681       0.3869       31.7       -2.76     0.0095       0.05    -1.8564     -0.2797
+            Time                    3                   4             -0.2811       0.3164       26.2       -0.89     0.3825       0.05    -0.9313     0.3691
+            Group*Time      A       1       A           2             -0.1816       0.4612       26.2       -0.39     0.6969       0.05    -1.1293     0.7660
+
+            Group*Time      A       1       A           3             -0.6839       0.5559       31.4       -1.23     0.2277       0.05    -1.8172     0.4493
+            Group*Time      A       1       A           4             -0.6812       0.6160       34.7       -1.11     0.2764       0.05    -1.9321     0.5698
+            Group*Time      A       1       B           1             -0.8216       0.6521         25       -1.26     0.2194       0.05    -2.1646     0.5215
+
+            Group*Time      A       1       B           2             -0.8216       0.6521         25       -1.26     0.2194       0.05    -2.1646     0.5215
+            Group*Time      A       1       B           3             -1.8932       0.6521         25       -2.90     0.0076       0.05    -3.2363     -0.5501
+            Group*Time      A       1       B           4             -2.4581       0.6724       26.2       -3.66     0.0011       0.05    -3.8398     -1.0764
+            Group*Time      A       2       A           3             -0.5023       0.4512       24.8       -1.11     0.2763       0.05    -1.4320     0.4274
+
+            Group*Time      A       2       A           4             -0.4996       0.5559       31.4       -0.90     0.3757       0.05    -1.6328     0.6336
+            Group*Time      A       2       B           1             -0.6399       0.6462       25.1       -0.99     0.3315       0.05    -1.9705     0.6907
+            Group*Time      A       2       B           2             -0.6399       0.6462       25.1       -0.99     0.3315       0.05    -1.9705     0.6907
+            Group*Time      A       2       B           3             -1.7116       0.6462       25.1       -2.65     0.0138       0.05    -3.0422     -0.3810
+            Group*Time      A       2       B           4             -2.2765       0.6666       26.3       -3.41     0.0021       0.05    -3.6461     -0.9069
+            Group*Time      A       3       A           4            0.002761       0.4612       26.2        0.01     0.9953       0.05    -0.9449     0.9504
+
+            Group*Time      A       3       B           1             -0.1376       0.6462       25.1       -0.21     0.8331       0.05    -1.4682     1.1930
+            Group*Time      A       3       B           2             -0.1376       0.6462       25.1       -0.21     0.8331       0.05    -1.4682     1.1930
+
+
+11/13/26, 7:40 PM                                                                Results: Program 1
+                                                         Differences of Least Squares Means
+                                                                           Standard
+            Effect        Group   Time   _Group     _Time     Estimate         Error      DF     t Value     Pr > |t|   Alpha   Lower       Upper
+            Group*Time    A       3      B          3           -1.2093         0.6462   25.1      -1.87     0.0730      0.05   -2.5399    0.1213
+            Group*Time    A       3      B          4           -1.7742         0.6666   26.3      -2.66     0.0131      0.05   -3.1437    -0.4046
+            Group*Time    A       4      B          1           -0.1404         0.6521    25       -0.22     0.8313      0.05   -1.4834    1.2027
+
+            Group*Time    A       4      B          2           -0.1404         0.6521    25       -0.22     0.8313      0.05   -1.4834    1.2027
+            Group*Time    A       4      B          3           -1.2120         0.6521    25       -1.86     0.0749      0.05   -2.5551    0.1310
+            Group*Time    A       4      B          4           -1.7769         0.6724   26.2      -2.64     0.0137      0.05   -3.1586    -0.3952
+
+            Group*Time    B       1      B          2            2E-15          0.4012   25.2         0.00   1.0000      0.05   -0.8259    0.8259
+            Group*Time    B       1      B          3           -1.0717         0.5126   31.9      -2.09     0.0446      0.05   -2.1160   -0.02738
+            Group*Time    B       1      B          4           -1.6366         0.5931   34.8      -2.76     0.0092      0.05   -2.8409    -0.4322
+
+            Group*Time    B       2      B          3           -1.0717         0.4012   25.2      -2.67     0.0130      0.05   -1.8976    -0.2458
+            Group*Time    B       2      B          4           -1.6366         0.5382   31.9      -3.04     0.0047      0.05   -2.7329    -0.5402
+            Group*Time    B       3      B          4           -0.5649         0.4334   26.2      -1.30     0.2037      0.05   -1.4554    0.3256
+
+
+
+
+                                                        AR1 data, DDFM=kr(firstorder)
+                                                                The Mixed Procedure
+
+                                                                 Model Information
+                                         Data Set                           WORK.AR1
+                                         Dependent Variable                 Y
+
+                                         Covariance Structure               Autoregressive
+                                         Subject Effect                     Subj
+                                         Estimation Method                  REML
+
+                                         Residual Variance Method           Profile
+                                         Fixed Effects SE Method            Prasad-Rao-Jeske-Kackar-Harville
+                                         Degrees of Freedom Method          Kenward-Roger
+
+
+                                                               Class Level Information
+
+                                                    Class      Levels     Values
+                                                    Subj           12     1 2 3 4 5 6 7 8 9 10 11 12
+                                                    Group           2     AB
+
+                                                    Time            4     1234
+
+
+                                                                    Dimensions
+                                                             Covariance Parameters         2
+
+                                                             Columns in X                 15
+                                                             Columns in Z                  0
+                                                             Subjects                     12
+                                                             Max Obs per Subject           4
+
+
+
+                                                              Number of Observations
+                                                        Number of Observations Read             43
+                                                        Number of Observations Used             43
+
+                                                        Number of Observations Not Used           0
+
+
+                                                                  Iteration History
+                                             Iteration     Evaluations    -2 Res Log Like         Criterion
+                                                    0                1       122.33893215
+
+                                                    1                2       107.79150179       0.00566230
+                                                    2                1       107.66254324       0.00003272
+
+
+
+11/13/26, 7:40 PM                                                                           Results: Program 1
+                                                                           Iteration History
+                                                    Iteration    Evaluations          -2 Res Log Like           Criterion
+
+                                                            3                 1         107.66183166          0.00000000
+
+
+                                                                       Convergence criteria met.
+
+
+                                                                 Covariance Parameter Estimates
+                                                                 Cov Parm          Subject        Estimate
+
+                                                                 AR(1)             Subj              0.6157
+                                                                 Residual                            1.1943
+
+
+                                                                             Fit Statistics
+
+                                                                  -2 Res Log Likelihood              107.7
+                                                                  AIC (Smaller is Better)             111.7
+                                                                  AICC (Smaller is Better)           112.0
+                                                                  BIC (Smaller is Better)            112.6
+
+
+                                                                 Null Model Likelihood Ratio Test
+                                                                  DF      Chi-Square             Pr > ChiSq
+                                                                   1               14.68            0.0001
+
+
+                                                                   Type 3 Tests of Fixed Effects
+                                                     Effect             Num DF         Den DF       F Value       Pr > F
+                                                     Group                        1        12.6        5.00      0.0441
+
+                                                     Time                         3        26.6        3.65      0.0251
+                                                     Group*Time                   3        26.6        0.77      0.5236
+
+
+                                                                         Least Squares Means
+
+                                                                         Standard
+                     Effect         Group       Time     Estimate            Error         DF      t Value     Pr > |t|    Alpha       Lower      Upper
+                     Group          A                       11.0735        0.3538         12.9      31.30      <.0001       0.05      10.3086    11.8383
+                     Group          B                       12.1854        0.3493         12.3      34.89      <.0001       0.05      11.4264   12.9444
+                     Time                       1           11.0976        0.3257          25       34.07      <.0001       0.05      10.4268    11.7683
+                     Time                       2           11.1884        0.3228         25.1      34.66      <.0001       0.05      10.5237    11.8530
+                     Time                       3           11.9754        0.3228         25.1      37.10      <.0001       0.05      11.3107   12.6400
+
+                     Time                       4           12.2564        0.3355         26.2      36.54      <.0001       0.05      11.5671   12.9458
+                     Group*Time     A           1           10.6868        0.4746         26.2      22.52      <.0001       0.05       9.7116    11.6620
+                     Group*Time     A           2           10.8684        0.4666         26.4      23.29      <.0001       0.05       9.9100    11.8268
+                     Group*Time     A           3           11.3707        0.4666         26.4      24.37      <.0001       0.05      10.4124   12.3291
+                     Group*Time     A           4           11.3680        0.4746         26.2      23.95      <.0001       0.05      10.3928   12.3432
+                     Group*Time     B           1           11.5083        0.4461         23.7      25.80      <.0001       0.05      10.5869   12.4298
+                     Group*Time     B           2           11.5083        0.4461         23.7      25.80      <.0001       0.05      10.5869   12.4298
+                     Group*Time     B           3           12.5800        0.4461         23.7      28.20      <.0001       0.05      11.6586   13.5014
+                     Group*Time     B           4           13.1449        0.4743         26.2      27.72      <.0001       0.05      12.1704    14.1194
+
+
+                                                                Differences of Least Squares Means
+                                                                                      Standard
+            Effect          Group   Time    _Group        _Time        Estimate           Error        DF      t Value     Pr > |t|   Alpha     Lower        Upper
+            Group           A               B                            -1.1119          0.4972     12.6        -2.24     0.0441       0.05    -2.1894    -0.03445
+            Time                    1                     2            -0.09081           0.2983     25.8        -0.30     0.7632       0.05    -0.7041     0.5225
+
+            Time                    1                     3             -0.8778           0.3671     31.6        -2.39     0.0229       0.05    -1.6258     -0.1298
+            Time                    1                     4             -1.1589           0.4150     34.7        -2.79     0.0084       0.05    -2.0016     -0.3161
+            Time                    2                     3             -0.7870           0.2945       25        -2.67     0.0131       0.05    -1.3935     -0.1805
+            Time                    2                     4             -1.0681           0.3758     31.7        -2.84     0.0078       0.05    -1.8338     -0.3023
+
+
+11/13/26, 7:40 PM                                                                Results: Program 1
+                                                        Differences of Least Squares Means
+                                                                            Standard
+            Effect        Group   Time   _Group     _Time    Estimate           Error        DF   t Value   Pr > |t|   Alpha   Lower       Upper
+            Time                  3                 4         -0.2811           0.3089    26.2      -0.91   0.3712      0.05   -0.9158    0.3537
+            Group*Time    A       1      A          2         -0.1816           0.4504    26.2      -0.40   0.6900      0.05   -1.1069    0.7437
+            Group*Time    A       1      A          3         -0.6839           0.5402    31.4      -1.27   0.2148      0.05   -1.7850    0.4171
+            Group*Time    A       1      A          4         -0.6812           0.5982    34.7      -1.14   0.2626      0.05   -1.8960    0.5336
+            Group*Time    A       1      B          1         -0.8216           0.6514       25     -1.26   0.2189      0.05   -2.1631    0.5200
+            Group*Time    A       1      B          2         -0.8216           0.6514       25     -1.26   0.2189      0.05   -2.1631    0.5200
+
+            Group*Time    A       1      B          3         -1.8932           0.6514       25     -2.91   0.0075      0.05   -3.2347    -0.5517
+            Group*Time    A       1      B          4         -2.4581           0.6709    26.2      -3.66   0.0011      0.05   -3.8368    -1.0794
+            Group*Time    A       2      A          3         -0.5023           0.4402    24.8      -1.14   0.2648      0.05   -1.4094    0.4048
+
+            Group*Time    A       2      A          4         -0.4996           0.5402    31.4      -0.92   0.3621      0.05   -1.6007    0.6015
+            Group*Time    A       2      B          1         -0.6399           0.6456    25.1      -0.99   0.3310      0.05   -1.9692    0.6894
+            Group*Time    A       2      B          2         -0.6399           0.6456    25.1      -0.99   0.3310      0.05   -1.9692    0.6894
+            Group*Time    A       2      B          3         -1.7116           0.6456    25.1      -2.65   0.0137      0.05   -3.0409    -0.3823
+            Group*Time    A       2      B          4         -2.2765           0.6653    26.3      -3.42   0.0020      0.05   -3.6433    -0.9097
+            Group*Time    A       3      A          4        0.002761           0.4504    26.2      0.01    0.9952      0.05   -0.9226    0.9281
+            Group*Time    A       3      B          1         -0.1376           0.6456    25.1      -0.21   0.8329      0.05   -1.4669    1.1917
+
+            Group*Time    A       3      B          2         -0.1376           0.6456    25.1      -0.21   0.8329      0.05   -1.4669    1.1917
+            Group*Time    A       3      B          3         -1.2093           0.6456    25.1      -1.87   0.0727      0.05   -2.5386    0.1200
+            Group*Time    A       3      B          4         -1.7742           0.6653    26.3      -2.67   0.0129      0.05   -3.1410    -0.4074
+            Group*Time    A       4      B          1         -0.1404           0.6514       25     -0.22   0.8311      0.05   -1.4819    1.2011
+            Group*Time    A       4      B          2         -0.1404           0.6514       25     -0.22   0.8311      0.05   -1.4819    1.2011
+            Group*Time    A       4      B          3         -1.2120           0.6514       25     -1.86   0.0746      0.05   -2.5536    0.1295
+            Group*Time    A       4      B          4         -1.7769           0.6709    26.2      -2.65   0.0135      0.05   -3.1556    -0.3983
+            Group*Time    B       1      B          2              2E-15        0.3911    25.2      0.00    1.0000      0.05   -0.8053    0.8053
+            Group*Time    B       1      B          3         -1.0717           0.4972    31.9      -2.16   0.0388      0.05   -2.0845   -0.05882
+            Group*Time    B       1      B          4         -1.6366           0.5754    34.8      -2.84   0.0074      0.05   -2.8049    -0.4682
+
+            Group*Time    B       2      B          3         -1.0717           0.3911    25.2      -2.74   0.0111      0.05   -1.8769    -0.2664
+            Group*Time    B       2      B          4         -1.6366           0.5226    31.9      -3.13   0.0037      0.05   -2.7011    -0.5720
+            Group*Time    B       3      B          4         -0.5649           0.4229    26.2      -1.34   0.1932      0.05   -1.4340    0.3042
+
+
+
+
+                                                             AR1 data, DDFM=kr2
+                                                               The Mixed Procedure
+
+                                                                   Model Information
+                                                  Data Set                            WORK.AR1
+                                                  Dependent Variable                  Y
+
+                                                  Covariance Structure                Autoregressive
+                                                  Subject Effect                      Subj
+                                                  Estimation Method                   REML
+                                                  Residual Variance Method            Profile
+                                                  Fixed Effects SE Method             Kenward-Roger2
+                                                  Degrees of Freedom Method           Kenward-Roger2
+
+
+                                                              Class Level Information
+
+                                                    Class    Levels        Values
+                                                    Subj            12     1 2 3 4 5 6 7 8 9 10 11 12
+                                                    Group            2     AB
+                                                    Time             4     1234
+
+
+                                                                      Dimensions
+
+
+11/13/26, 7:40 PM                                                                    Results: Program 1
+                                                                        Dimensions
+                                                             Covariance Parameters               2
+                                                             Columns in X                       15
+                                                             Columns in Z                        0
+                                                             Subjects                           12
+                                                             Max Obs per Subject                 4
+
+
+
+                                                                  Number of Observations
+                                                         Number of Observations Read                    43
+                                                         Number of Observations Used                    43
+                                                         Number of Observations Not Used                 0
+
+
+                                                                      Iteration History
+                                               Iteration   Evaluations          -2 Res Log Like          Criterion
+
+                                                       0                1         122.33893215
+                                                       1                2         107.79150179         0.00566230
+                                                       2                1         107.66254324         0.00003272
+                                                       3                1         107.66183166         0.00000000
+
+
+                                                                  Convergence criteria met.
+
+
+                                                            Covariance Parameter Estimates
+                                                            Cov Parm        Subject        Estimate
+                                                            AR(1)           Subj              0.6157
+                                                            Residual                          1.1943
+
+
+                                                                        Fit Statistics
+                                                            -2 Res Log Likelihood             107.7
+                                                            AIC (Smaller is Better)            111.7
+                                                            AICC (Smaller is Better)          112.0
+                                                            BIC (Smaller is Better)           112.6
+
+
+                                                            Null Model Likelihood Ratio Test
+                                                            DF       Chi-Square           Pr > ChiSq
+                                                              1             14.68            0.0001
+
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                                Effect            Num DF         Den DF      F Value         Pr > F
+                                                Group                       1       12.6         5.11     0.0421
+                                                Time                        3       26.6        3.55      0.0277
+                                                Group*Time                  3       26.6        0.75      0.5332
+
+
+                                                                    Least Squares Means
+                                                                    Standard
+                     Effect        Group   Time     Estimate            Error       DF      t Value     Pr > |t|      Alpha    Lower     Upper
+                     Group         A                   11.0735        0.3500       12.9      31.64      <.0001         0.05   10.3168   11.8301
+                     Group         B                   12.1854        0.3455       12.3      35.27      <.0001         0.05   11.4347   12.9361
+
+                     Time                  1           11.0976        0.3248        25       34.16      <.0001         0.05   10.4285   11.7666
+                     Time                  2           11.1884        0.3219       25.1      34.76      <.0001         0.05   10.5256   11.8511
+                     Time                  3           11.9754        0.3219       25.1      37.21      <.0001         0.05   11.3126   12.6381
+                     Time                  4           12.2564        0.3347       26.2      36.62      <.0001         0.05   11.5687   12.9441
+                     Group*Time    A       1           10.6868        0.4735       26.2      22.57      <.0001         0.05    9.7139   11.6597
+                     Group*Time    A       2           10.8684        0.4652       26.4      23.36      <.0001         0.05    9.9128   11.8240
+                     Group*Time    A       3           11.3707        0.4652       26.4      24.44      <.0001         0.05   10.4151   12.3263
+
+11/13/26, 7:40 PM                                                                  Results: Program 1
+                                                                  Least Squares Means
+                                                                   Standard
+                     Effect        Group       Time   Estimate         Error      DF       t Value   Pr > |t|   Alpha       Lower      Upper
+                     Group*Time    A           4       11.3680       0.4735      26.2       24.01    <.0001      0.05      10.3951   12.3409
+                     Group*Time    B           1       11.5083       0.4449      23.7       25.87    <.0001      0.05      10.5895   12.4272
+                     Group*Time    B           2       11.5083       0.4449      23.7       25.87    <.0001      0.05      10.5895   12.4272
+                     Group*Time    B           3       12.5800       0.4449      23.7       28.28    <.0001      0.05      11.6612   13.4988
+                     Group*Time    B           4       13.1449       0.4731      26.2       27.78    <.0001      0.05      12.1727    14.1171
+
+
+                                                            Differences of Least Squares Means
+                                                                               Standard
+            Effect        Group   Time     _Group      _Time     Estimate          Error      DF     t Value    Pr > |t|   Alpha     Lower        Upper
+            Group         A                B                      -1.1119        0.4918      12.6      -2.26    0.0421       0.05    -2.1777    -0.04612
+            Time                  1                    2         -0.09081        0.2987      25.8      -0.30    0.7636       0.05    -0.7051     0.5235
+            Time                  1                    3          -0.8778        0.3712      31.6      -2.36    0.0243       0.05    -1.6342     -0.1214
+            Time                  1                    4          -1.1589        0.4214      34.7      -2.75    0.0094       0.05    -2.0145     -0.3032
+            Time                  2                    3          -0.7870        0.2949        25      -2.67    0.0132       0.05    -1.3943     -0.1797
+            Time                  2                    4          -1.0681        0.3798      31.7      -2.81    0.0084       0.05    -1.8421     -0.2941
+            Time                  3                    4          -0.2811        0.3094      26.2      -0.91    0.3719       0.05    -0.9167     0.3546
+            Group*Time    A       1        A           2          -0.1816        0.4509      26.2      -0.40    0.6904       0.05    -1.1082     0.7449
+
+            Group*Time    A       1        A           3          -0.6839        0.5457      31.4      -1.25    0.2193       0.05    -1.7963     0.4284
+            Group*Time    A       1        A           4          -0.6812        0.6070      34.7      -1.12    0.2695       0.05    -1.9139     0.5515
+            Group*Time    A       1        B           1          -0.8216        0.6497        25      -1.26    0.2177       0.05    -2.1596     0.5165
+
+            Group*Time    A       1        B           2          -0.8216        0.6497        25      -1.26    0.2177       0.05    -2.1596     0.5165
+            Group*Time    A       1        B           3          -1.8932        0.6497        25      -2.91    0.0074       0.05    -3.2313     -0.5552
+            Group*Time    A       1        B           4          -2.4581        0.6693      26.2      -3.67    0.0011       0.05    -3.8335     -1.0827
+            Group*Time    A       2        A           3          -0.5023        0.4407      24.8      -1.14    0.2652       0.05    -1.4103     0.4056
+            Group*Time    A       2        A           4          -0.4996        0.5457      31.4      -0.92    0.3669       0.05    -1.6119     0.6128
+            Group*Time    A       2        B           1          -0.6399        0.6437      25.1      -0.99    0.3297       0.05    -1.9654     0.6856
+            Group*Time    A       2        B           2          -0.6399        0.6437      25.1      -0.99    0.3297       0.05    -1.9654     0.6856
+            Group*Time    A       2        B           3          -1.7116        0.6437      25.1      -2.66    0.0135       0.05    -3.0371     -0.3861
+            Group*Time    A       2        B           4          -2.2765        0.6635      26.3      -3.43    0.0020       0.05    -3.6397     -0.9133
+            Group*Time    A       3        A           4         0.002761        0.4509      26.2       0.01    0.9952       0.05    -0.9238     0.9293
+            Group*Time    A       3        B           1          -0.1376        0.6437      25.1      -0.21    0.8325       0.05    -1.4631     1.1879
+            Group*Time    A       3        B           2          -0.1376        0.6437      25.1      -0.21    0.8325       0.05    -1.4631     1.1879
+            Group*Time    A       3        B           3          -1.2093        0.6437      25.1      -1.88    0.0720       0.05    -2.5348     0.1162
+            Group*Time    A       3        B           4          -1.7742        0.6635      26.3      -2.67    0.0127       0.05    -3.1374     -0.4110
+            Group*Time    A       4        B           1          -0.1404        0.6497        25      -0.22    0.8307       0.05    -1.4784     1.1977
+            Group*Time    A       4        B           2          -0.1404        0.6497        25      -0.22    0.8307       0.05    -1.4784     1.1977
+            Group*Time    A       4        B           3          -1.2120        0.6497        25      -1.87    0.0739       0.05    -2.5501     0.1260
+
+            Group*Time    A       4        B           4          -1.7769        0.6693      26.2      -2.65    0.0133       0.05    -3.1523     -0.4016
+            Group*Time    B       1        B           2            2E-15        0.3919      25.2       0.00    1.0000       0.05    -0.8068     0.8068
+            Group*Time    B       1        B           3          -1.0717        0.5034      31.9      -2.13    0.0411       0.05    -2.0971    -0.04624
+            Group*Time    B       1        B           4          -1.6366        0.5846      34.8      -2.80    0.0083       0.05    -2.8236     -0.4495
+            Group*Time    B       2        B           3          -1.0717        0.3919      25.2      -2.73    0.0113       0.05    -1.8784     -0.2649
+            Group*Time    B       2        B           4          -1.6366        0.5285      31.9      -3.10    0.0041       0.05    -2.7132     -0.5600
+            Group*Time    B       3        B           4          -0.5649        0.4237      26.2      -1.33    0.1939       0.05    -1.4354     0.3057
+
+
+
+
+                                                           AR1 data, DDFM=satterthwaite
+                                                                  The Mixed Procedure
+
+                                                                    Model Information
+                                                      Data Set                             WORK.AR1
+
+
+11/13/26, 7:40 PM                                                                 Results: Program 1
+                                                                   Model Information
+                                                  Dependent Variable                    Y
+                                                  Covariance Structure                  Autoregressive
+                                                  Subject Effect                        Subj
+                                                  Estimation Method                     REML
+                                                  Residual Variance Method              Profile
+
+                                                  Fixed Effects SE Method               Model-Based
+                                                  Degrees of Freedom Method             Satterthwaite
+
+
+                                                                Class Level Information
+                                                   Class        Levels    Values
+                                                   Subj             12    1 2 3 4 5 6 7 8 9 10 11 12
+                                                   Group             2    AB
+                                                   Time              4    1234
+
+
+                                                                      Dimensions
+                                                            Covariance Parameters              2
+                                                            Columns in X                     15
+
+                                                            Columns in Z                       0
+                                                            Subjects                         12
+                                                            Max Obs per Subject                4
+
+
+                                                                Number of Observations
+                                                       Number of Observations Read                  43
+                                                       Number of Observations Used                  43
+                                                       Number of Observations Not Used               0
+
+
+                                                                    Iteration History
+                                             Iteration    Evaluations      -2 Res Log Like            Criterion
+                                                    0                 1      122.33893215
+
+                                                    1                 2      107.79150179           0.00566230
+                                                    2                 1      107.66254324           0.00003272
+                                                    3                 1      107.66183166           0.00000000
+
+
+                                                                Convergence criteria met.
+
+
+                                                          Covariance Parameter Estimates
+                                                          Cov Parm        Subject      Estimate
+
+                                                          AR(1)           Subj           0.6157
+                                                          Residual                       1.1943
+
+
+                                                                      Fit Statistics
+                                                          -2 Res Log Likelihood             107.7
+                                                          AIC (Smaller is Better)           111.7
+                                                          AICC (Smaller is Better)          112.0
+                                                          BIC (Smaller is Better)           112.6
+
+
+                                                          Null Model Likelihood Ratio Test
+                                                          DF      Chi-Square        Pr > ChiSq
+                                                            1             14.68          0.0001
+
+
+                                                           Type 3 Tests of Fixed Effects
+
+                                              Effect            Num DF      Den DF       F Value         Pr > F
+
+
+11/13/26, 7:40 PM                                                                     Results: Program 1
+                                                                 Type 3 Tests of Fixed Effects
+                                                    Effect            Num DF      Den DF       F Value      Pr > F
+                                                    Group                   1        12.6         5.01     0.0440
+                                                    Time                    3        26.1         3.68     0.0248
+                                                    Group*Time              3        26.1         0.77     0.5203
+
+
+                                                                      Least Squares Means
+                                                                      Standard
+                     Effect         Group       Time    Estimate          Error      DF       t Value    Pr > |t|    Alpha       Lower      Upper
+                     Group          A                      11.0735       0.3537     12.9       31.31     <.0001       0.05      10.3089    11.8380
+
+                     Group          B                      12.1854       0.3492     12.3       34.90     <.0001       0.05      11.4266   12.9442
+                     Time                       1          11.0976       0.3252       25       34.12     <.0001       0.05      10.4277    11.7674
+                     Time                       2          11.1884       0.3226     25.1       34.68     <.0001       0.05      10.5240    11.8527
+                     Time                       3          11.9754       0.3226     25.1       37.12     <.0001       0.05      11.3110   12.6397
+                     Time                       4          12.2564       0.3346     26.2       36.63     <.0001       0.05      11.5689   12.9440
+                     Group*Time     A           1          10.6868       0.4733     26.2       22.58     <.0001       0.05       9.7142    11.6594
+                     Group*Time     A           2          10.8684       0.4662     26.4       23.31     <.0001       0.05       9.9109    11.8259
+                     Group*Time     A           3          11.3707       0.4662     26.4       24.39     <.0001       0.05      10.4132   12.3282
+                     Group*Time     A           4          11.3680       0.4733     26.2       24.02     <.0001       0.05      10.3953   12.3406
+                     Group*Time     B           1          11.5083       0.4461     23.7       25.80     <.0001       0.05      10.5869   12.4298
+                     Group*Time     B           2          11.5083       0.4461     23.7       25.80     <.0001       0.05      10.5869   12.4298
+                     Group*Time     B           3          12.5800       0.4461     23.7       28.20     <.0001       0.05      11.6586   13.5014
+                     Group*Time     B           4          13.1449       0.4730     26.2       27.79     <.0001       0.05      12.1729    14.1169
+
+
+
+                                                             Differences of Least Squares Means
+                                                                                  Standard
+            Effect          Group   Time    _Group      _Time        Estimate         Error      DF      t Value     Pr > |t|   Alpha     Lower        Upper
+            Group           A               B                         -1.1119       0.4970      12.6       -2.24     0.0440       0.05    -2.1890    -0.03481
+            Time                    1                   2            -0.09081       0.2974      25.8       -0.31     0.7625       0.05    -0.7024     0.5207
+            Time                    1                   3             -0.8778       0.3665      31.6       -2.40     0.0227       0.05    -1.6246     -0.1310
+            Time                    1                   4             -1.1589       0.4139      34.7       -2.80     0.0083       0.05    -1.9993     -0.3185
+            Time                    2                   3             -0.7870       0.2940        25       -2.68     0.0130       0.05    -1.3926     -0.1814
+            Time                    2                   4             -1.0681       0.3748      31.7       -2.85     0.0076       0.05    -1.8319     -0.3042
+            Time                    3                   4             -0.2811       0.3076      26.2       -0.91     0.3692       0.05    -0.9131     0.3510
+            Group*Time      A       1       A           2             -0.1816       0.4481      26.2       -0.41     0.6885       0.05    -1.1023     0.7390
+            Group*Time      A       1       A           3             -0.6839       0.5386      31.4       -1.27     0.2134       0.05    -1.7818     0.4139
+            Group*Time      A       1       A           4             -0.6812       0.5960      34.7       -1.14     0.2609       0.05    -1.8915     0.5292
+            Group*Time      A       1       B           1             -0.8216       0.6505        25       -1.26     0.2182       0.05    -2.1612     0.5181
+            Group*Time      A       1       B           2             -0.8216       0.6505        25       -1.26     0.2182       0.05    -2.1612     0.5181
+            Group*Time      A       1       B           3             -1.8932       0.6505        25       -2.91     0.0075       0.05    -3.2329     -0.5536
+            Group*Time      A       1       B           4             -2.4581       0.6692      26.2       -3.67     0.0011       0.05    -3.8332     -1.0830
+
+            Group*Time      A       2       A           3             -0.5023       0.4391      24.8       -1.14     0.2636       0.05    -1.4071     0.4025
+            Group*Time      A       2       A           4             -0.4996       0.5386      31.4       -0.93     0.3607       0.05    -1.5974     0.5983
+            Group*Time      A       2       B           1             -0.6399       0.6453      25.1       -0.99     0.3308       0.05    -1.9686     0.6887
+            Group*Time      A       2       B           2             -0.6399       0.6453      25.1       -0.99     0.3308       0.05    -1.9686     0.6887
+            Group*Time      A       2       B           3             -1.7116       0.6453      25.1       -2.65     0.0137       0.05    -3.0403     -0.3829
+            Group*Time      A       2       B           4             -2.2765       0.6641      26.3       -3.43     0.0020       0.05    -3.6409     -0.9121
+            Group*Time      A       3       A           4            0.002761       0.4481      26.2        0.01     0.9951       0.05    -0.9179     0.9234
+            Group*Time      A       3       B           1             -0.1376       0.6453      25.1       -0.21     0.8328       0.05    -1.4663     1.1911
+            Group*Time      A       3       B           2             -0.1376       0.6453      25.1       -0.21     0.8328       0.05    -1.4663     1.1911
+            Group*Time      A       3       B           3             -1.2093       0.6453      25.1       -1.87     0.0726       0.05    -2.5379     0.1194
+            Group*Time      A       3       B           4             -1.7742       0.6641      26.3       -2.67     0.0128       0.05    -3.1386     -0.4098
+            Group*Time      A       4       B           1             -0.1404       0.6505        25       -0.22     0.8309       0.05    -1.4800     1.1993
+            Group*Time      A       4       B           2             -0.1404       0.6505        25       -0.22     0.8309       0.05    -1.4800     1.1993
+
+
+11/13/26, 7:40 PM                                                              Results: Program 1
+                                                         Differences of Least Squares Means
+                                                                          Standard
+            Effect        Group   Time   _Group    _Time      Estimate        Error         DF      t Value     Pr > |t|   Alpha   Lower       Upper
+            Group*Time    A       4      B         3           -1.2120        0.6505          25      -1.86     0.0742      0.05   -2.5517    0.1276
+            Group*Time    A       4      B         4           -1.7769        0.6692       26.2       -2.66     0.0133      0.05   -3.1520    -0.4019
+            Group*Time    B       1      B         2             2E-15        0.3911       25.2          0.00   1.0000      0.05   -0.8053    0.8053
+
+            Group*Time    B       1      B         3           -1.0717        0.4972       31.9       -2.16     0.0388      0.05   -2.0845   -0.05882
+            Group*Time    B       1      B         4           -1.6366        0.5744       34.8       -2.85     0.0073      0.05   -2.8029    -0.4703
+            Group*Time    B       2      B         3           -1.0717        0.3911       25.2       -2.74     0.0111      0.05   -1.8769    -0.2664
+            Group*Time    B       2      B         4           -1.6366        0.5215       31.9       -3.14     0.0036      0.05   -2.6988    -0.5743
+            Group*Time    B       3      B         4           -0.5649        0.4216       26.2       -1.34     0.1918      0.05   -1.4311    0.3014
+
+
+
+
+                                                         AR1 data, DDFM=betwithin
+                                                                The Mixed Procedure
+
+                                                                 Model Information
+                                                  Data Set                             WORK.AR1
+                                                  Dependent Variable                   Y
+                                                  Covariance Structure                 Autoregressive
+                                                  Subject Effect                       Subj
+                                                  Estimation Method                    REML
+                                                  Residual Variance Method             Profile
+                                                  Fixed Effects SE Method              Model-Based
+                                                  Degrees of Freedom Method            Between-Within
+
+
+                                                               Class Level Information
+                                                   Class       Levels    Values
+                                                   Subj            12    1 2 3 4 5 6 7 8 9 10 11 12
+                                                   Group            2    AB
+                                                   Time             4    1234
+
+
+
+                                                                     Dimensions
+                                                             Covariance Parameters            2
+                                                             Columns in X                   15
+                                                             Columns in Z                     0
+                                                             Subjects                       12
+                                                             Max Obs per Subject              4
+
+
+                                                              Number of Observations
+                                                       Number of Observations Read                 43
+                                                       Number of Observations Used                 43
+                                                       Number of Observations Not Used               0
+
+
+
+                                                                   Iteration History
+                                             Iteration    Evaluations    -2 Res Log Like             Criterion
+                                                    0                1      122.33893215
+                                                    1                2      107.79150179           0.00566230
+                                                    2                1      107.66254324           0.00003272
+                                                    3                1      107.66183166           0.00000000
+
+
+                                                              Convergence criteria met.
+
+
+
+
+11/13/26, 7:40 PM                                                                        Results: Program 1
+                                                                 Covariance Parameter Estimates
+                                                                 Cov Parm       Subject        Estimate
+
+                                                                 AR(1)          Subj             0.6157
+                                                                 Residual                        1.1943
+
+
+                                                                             Fit Statistics
+                                                                  -2 Res Log Likelihood           107.7
+                                                                  AIC (Smaller is Better)         111.7
+                                                                  AICC (Smaller is Better)        112.0
+                                                                  BIC (Smaller is Better)         112.6
+
+
+
+                                                                 Null Model Likelihood Ratio Test
+                                                                  DF      Chi-Square         Pr > ChiSq
+                                                                    1           14.68            0.0001
+
+
+
+                                                                    Type 3 Tests of Fixed Effects
+                                                     Effect             Num DF       Den DF      F Value      Pr > F
+                                                     Group                     1          10        5.01      0.0492
+                                                     Time                      3          25        3.68      0.0254
+                                                     Group*Time                3          25        0.77      0.5207
+
+
+                                                                         Least Squares Means
+                                                                         Standard
+                      Effect         Group       Time    Estimate            Error      DF     t Value     Pr > |t|    Alpha       Lower      Upper
+                      Group          A                        11.0735       0.3537      10       31.31     <.0001       0.05      10.2855    11.8615
+                      Group          B                        12.1854       0.3492      10       34.90     <.0001       0.05      11.4074   12.9634
+
+                      Time                       1            11.0976       0.3252      25       34.12     <.0001       0.05      10.4277    11.7674
+                      Time                       2            11.1884       0.3226      25       34.68     <.0001       0.05      10.5239    11.8528
+                      Time                       3            11.9754       0.3226      25       37.12     <.0001       0.05      11.3109   12.6398
+                      Time                       4            12.2564       0.3346      25       36.63     <.0001       0.05      11.5673   12.9455
+
+                      Group*Time     A           1            10.6868       0.4733      25       22.58     <.0001       0.05       9.7119    11.6616
+                      Group*Time     A           2            10.8684       0.4662      25       23.31     <.0001       0.05       9.9083    11.8285
+                      Group*Time     A           3            11.3707       0.4662      25       24.39     <.0001       0.05      10.4106   12.3308
+
+                      Group*Time     A           4            11.3680       0.4733      25       24.02     <.0001       0.05      10.3931   12.3428
+                      Group*Time     B           1            11.5083       0.4461      25       25.80     <.0001       0.05      10.5895   12.4272
+                      Group*Time     B           2            11.5083       0.4461      25       25.80     <.0001       0.05      10.5895   12.4272
+                      Group*Time     B           3            12.5800       0.4461      25       28.20     <.0001       0.05      11.6611   13.4989
+                      Group*Time     B           4            13.1449       0.4730      25       27.79     <.0001       0.05      12.1706    14.1191
+
+
+                                                                Differences of Least Squares Means
+                                                                                     Standard
+             Effect          Group   Time    _Group         _Time       Estimate         Error     DF     t Value      Pr > |t|   Alpha     Lower        Upper
+             Group           A               B                           -1.1119        0.4970     10        -2.24     0.0492       0.05    -2.2193    -0.00455
+             Time                    1                      2           -0.09081        0.2974     25        -0.31     0.7626       0.05    -0.7033     0.5217
+
+             Time                    1                      3            -0.8778        0.3665     25        -2.40     0.0244       0.05    -1.6326     -0.1230
+             Time                    1                      4            -1.1589        0.4139     25        -2.80     0.0097       0.05    -2.0112     -0.3065
+             Time                    2                      3            -0.7870        0.2940     25        -2.68     0.0129       0.05    -1.3926     -0.1814
+             Time                    2                      4            -1.0681        0.3748     25        -2.85     0.0086       0.05    -1.8400     -0.2961
+
+             Time                    3                      4            -0.2811        0.3076     25        -0.91     0.3696       0.05    -0.9146     0.3525
+             Group*Time      A       1       A              2            -0.1816        0.4481     25        -0.41     0.6887       0.05    -1.1044     0.7412
+             Group*Time      A       1       A              3            -0.6839        0.5386     25        -1.27     0.2158       0.05    -1.7932     0.4253
+             Group*Time      A       1       A              4            -0.6812        0.5960     25        -1.14     0.2639       0.05    -1.9087     0.5463
+             Group*Time      A       1       B              1            -0.8216        0.6505     25        -1.26     0.2182       0.05    -2.1612     0.5181
+             Group*Time      A       1       B              2            -0.8216        0.6505     25        -1.26     0.2182       0.05    -2.1612     0.5181
+
+
+11/13/26, 7:40 PM                                                          Results: Program 1
+                                                       Differences of Least Squares Means
+                                                                        Standard
+             Effect       Group    Time   _Group   _Time    Estimate        Error   DF   t Value    Pr > |t|   Alpha   Lower       Upper
+             Group*Time   A        1      B        3          -1.8932     0.6505    25      -2.91   0.0075      0.05   -3.2329    -0.5536
+             Group*Time   A        1      B        4          -2.4581     0.6692    25      -3.67   0.0011      0.05   -3.8363    -1.0799
+             Group*Time   A        2      A        3          -0.5023     0.4391    25      -1.14   0.2635      0.05   -1.4067    0.4021
+             Group*Time   A        2      A        4          -0.4996     0.5386    25      -0.93   0.3625      0.05   -1.6088    0.6096
+             Group*Time   A        2      B        1          -0.6399     0.6453    25      -0.99   0.3308      0.05   -1.9689    0.6890
+             Group*Time   A        2      B        2          -0.6399     0.6453    25      -0.99   0.3308      0.05   -1.9689    0.6890
+
+             Group*Time   A        2      B        3          -1.7116     0.6453    25      -2.65   0.0137      0.05   -3.0405    -0.3827
+             Group*Time   A        2      B        4          -2.2765     0.6641    25      -3.43   0.0021      0.05   -3.6443    -0.9087
+             Group*Time   A        3      A        4        0.002761      0.4481    25      0.01    0.9951      0.05   -0.9201    0.9256
+             Group*Time   A        3      B        1          -0.1376     0.6453    25      -0.21   0.8329      0.05   -1.4666    1.1913
+             Group*Time   A        3      B        2          -0.1376     0.6453    25      -0.21   0.8329      0.05   -1.4666    1.1913
+             Group*Time   A        3      B        3          -1.2093     0.6453    25      -1.87   0.0727      0.05   -2.5382    0.1197
+             Group*Time   A        3      B        4          -1.7742     0.6641    25      -2.67   0.0131      0.05   -3.1420    -0.4063
+             Group*Time   A        4      B        1          -0.1404     0.6505    25      -0.22   0.8309      0.05   -1.4800    1.1993
+             Group*Time   A        4      B        2          -0.1404     0.6505    25      -0.22   0.8309      0.05   -1.4800    1.1993
+             Group*Time   A        4      B        3          -1.2120     0.6505    25      -1.86   0.0742      0.05   -2.5517    0.1276
+
+             Group*Time   A        4      B        4          -1.7769     0.6692    25      -2.66   0.0136      0.05   -3.1551    -0.3987
+             Group*Time   B        1      B        2           2E-15      0.3911    25      0.00    1.0000      0.05   -0.8056    0.8056
+             Group*Time   B        1      B        3          -1.0717     0.4972    25      -2.16   0.0409      0.05   -2.0956   -0.04769
+
+             Group*Time   B        1      B        4          -1.6366     0.5744    25      -2.85   0.0086      0.05   -2.8195    -0.4536
+             Group*Time   B        2      B        3          -1.0717     0.3911    25      -2.74   0.0112      0.05   -1.8773    -0.2661
+             Group*Time   B        2      B        4          -1.6366     0.5215    25      -3.14   0.0043      0.05   -2.7105    -0.5626
+             Group*Time   B        3      B        4          -0.5649     0.4216    25      -1.34   0.1923      0.05   -1.4331    0.3033
+
+
+
+
+

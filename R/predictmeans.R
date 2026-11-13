@@ -14,7 +14,7 @@
 #'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
@@ -109,12 +109,23 @@
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#'   Empty cells (combinations of interacting factors without data, not those absent by design, as for nested
+#'   factors): with \code{"equal"}, a mean that averages over them is the average of its observed cells (as
+#'   predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means
+#'   average over different cells, so their difference would also carry the effects of the other factors; a pair
+#'   with such a mean is therefore compared on the cells both means have (column \code{over} of \code{pairs}; NA,
+#'   \code{over = "none"}, when they have none). In simulations comparing the averages rejected 8-78\% of true
+#'   null hypotheses at the 5\% level when the other factor had an effect, the common cells 4-6\%
+#'   (\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.
 #' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
 #'   REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
 #'   parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
 #'   (\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
 #'   package sources) F tests of repeated measures with missing values rejected 6\% of true hypotheses at the 5\%
-#'   level with the observed information and 8.5\% with the expected. The two agree in balanced designs. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+#'   level with the observed information and 8.5\% with the expected. The two agree in balanced designs.
+#'   \code{"KR-average"} uses the average information of the REML iterations of Genstat and ASReml (Gilmour, Thompson
+#'   and Cullis 1995) and gives Genstat's REML df; Genstat's SEDs are the unadjusted ones (\code{vcov_adjust = FALSE}).
+#'   \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 #'   smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 #'   residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 #'   covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
@@ -130,7 +141,11 @@
 #'   \code{"Satterthwaite"} is also available (the covariance of the variance parameters from the Hessian of the REML
 #'   log-likelihood, as SAS; its F tests are liberal when the covariance has several parameters), and
 #'   \code{"containment"} gives \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}), as predictmeans 1.x.
-#'   All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use \pkg{nlme}'s or the residual df.
+#'   All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use Satterthwaite from the ML
+#'   log-likelihood, as ML \code{lmer} fits (\pkg{lmerTest}); before 2.0 they used \pkg{nlme}'s or the residual df
+#'   (\code{df_method = "containment"}). In simulations of ML \code{gls} fits with an unstructured covariance the
+#'   residual df rejected 6.9\% (t) and 9.3-11.7\% (F) of true null hypotheses, Satterthwaite 5.5\% and 6.3-8.8\%; fit
+#'   by REML for Kenward-Roger, which held 5\%.
 #'   For GLMMs (\code{glmer}, \code{glmmTMB}) \code{"auto"} is \code{"inner-outer"}: the df of the level of the random
 #'   effects at which each effect varies, \pkg{nlme}'s rule (Pinheiro and Bates 2000), computed from the design and
 #'   extended to crossed random effects; a contrast gets the smallest df of the coefficients it uses, and the means of a
@@ -138,7 +153,10 @@
 #'   clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
 #'   the check with few clusters. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
 #'   and \code{"inner-outer"} for \code{lmer} and \code{lme}.
-#'   Other choices are ignored for other model classes.
+#'   \code{glm} models with a known dispersion (Poisson, binomial, negative binomial) get z tests
+#'   (\code{"asymptotic (z)"}), as \pkg{emmeans} and SAS GLIMMIX; \code{"residual"} gives the t tests with the
+#'   residual df of predictmeans 1.x, which were conservative in simulations (0.3-4.5\% of true null hypotheses
+#'   rejected at the 5\% level, z tests 3.6-5.7\%). Other choices are ignored for other model classes.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
 #'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}
@@ -217,6 +235,9 @@
 #' Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 #'     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
 #'   
+#' 	Gilmour, A. R., Thompson, R. and Cullis, B. R. (1995), \emph{Average information REML: an efficient algorithm for
+#' 	variance parameter estimation in linear mixed models}, Biometrics, 51(4), 1440-1450.
+#'
 #' 	Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 #' 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347. 
 #' 	
@@ -259,7 +280,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
   vcov_adjust_default <- missing(vcov_adjust)
   average <- match.arg(average)

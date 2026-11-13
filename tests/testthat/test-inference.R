@@ -26,7 +26,7 @@ test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() 
   for (nm in names(ms)) {
     m <- ms[[nm]]$m
     term <- ms[[nm]]$term
-    dfms <- if (nm == "lm") "auto" else c("auto", "Kenward-Roger", "Satterthwaite", "between-within", "KR-expected",
+    dfms <- if (nm == "lm") "auto" else c("auto", "Kenward-Roger", "Satterthwaite", "between-within", "KR-expected", "KR-average",
                                          if (nm == "lmer") "containment")
     for (d in dfms) {
       pm <- suppressWarnings(suppressMessages(predictmeans(m, term, df_method = d, plot = FALSE, prtnum = FALSE)))
@@ -93,4 +93,22 @@ test_that("covariatemeans() follows the same defaults: Kenward-Roger df per poin
   expect_false(isTRUE(all.equal(a$ses, u$ses)))
   crit <- (a$UL - a$Mean) / a$ses
   expect_equal(crit, stats::qt(0.975, inf$df(K, "Variety")), tolerance = 1e-6)
+})
+
+test_that("glm with a known dispersion: z tests; df_method = \"residual\" keeps the t tests of 1.x", {
+  data(Drug, envir = environment())
+  g <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
+  p <- predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+  expect_identical(p$settings$df_method, "asymptotic (z)")
+  expect_true(all(is.infinite(p$pairs$df)))
+  expect_equal(p$pairs$p.value, 2 * pnorm(-abs(p$pairs$estimate / p$pairs$std.error)), tolerance = 1e-10)
+  pr <- predictmeans(g, "Drug", df_method = "residual", plot = FALSE, prtnum = FALSE)
+  expect_equal(unique(pr$pairs$df), df.residual(g))
+  jt <- pm_joint(g, "Drug")
+  expect_true(is.infinite(jt$df2))
+  b <- coef(g)[2:4]
+  expect_equal(jt$F.ratio, drop(t(b) %*% solve(vcov(g)[2:4, 2:4], b)) / 3, tolerance = 1e-8)
+  # a quasi family estimates the dispersion: t with the residual df
+  q <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = quasibinomial, data = Drug)
+  expect_equal(unique(predictmeans(q, "Drug", plot = FALSE, prtnum = FALSE)$pairs$df), df.residual(q))
 })

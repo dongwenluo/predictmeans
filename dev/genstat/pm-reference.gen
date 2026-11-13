@@ -60,6 +60,8 @@ READ Subj, Group, Time, Y
 :
 VCOMPONENTS [FIXED=Group*Time] RANDOM=Subj.Time
 VSTRUCTURE [TERMS=Subj.Time] FACTOR=Time; MODEL=AR; ORDER=1
+\ MVINCLUDE=yvariate keeps the units with a missing Y, so Subj.Time is the residual
+\ term (with the AR(1) structure) instead of a random term next to a new residual
 REML [PRINT=model, components, waldtests, means; PTERMS=Group + Time + Group.Time; \
-      PSE=differences; METHOD=AI] Y
+      PSE=differences; METHOD=AI; MVINCLUDE=yvariate] Y
 STOP

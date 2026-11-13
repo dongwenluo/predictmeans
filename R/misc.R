@@ -355,7 +355,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   using "Kenward-Roger" or "Satterthwaite" method.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), vcov_adj=NULL)
 #' @param model Model object returned by \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
@@ -369,7 +369,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
 #'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
 #'   observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
-#'   information, as \pkg{pbkrtest} and \pkg{emmeans}.
+#'   information, as \pkg{pbkrtest} and \pkg{emmeans}; "KR-average" the average information, as Genstat.
 #' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 #'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
 #'   for the same model.
@@ -405,21 +405,24 @@ doolittle <- function(x, eps = 1e-6) {
 #' @name df_term
 NULL
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
   type <- as.character(type)
   type <- match.arg(type)
-  kr_info <- "observed"                  # Kenward-Roger with the observed information, as SAS DDFM=KR
-  if (type == "KR-expected") {           # the expected information, as pbkrtest
-    type <- "Kenward-Roger"
-    kr_info <- "expected"
-  }
-  if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
-    # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
-    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
-    type <- "Satterthwaite"
+  # the df method and its ingredients, decided as for every other function
+  # (pm_df_method(), R/inference.R); a caller's 'vcov_adj' was made for 'type'
+  if (is.null(vcov_adj)) {
+    dfm <- pm_df_method(model, type)
+    type <- dfm$df_type
+    vcov_adj <- dfm$vcov_adj
+  } else {
+    if (type %in% c("KR-expected", "KR-average")) type <- "Kenward-Roger"
+    if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
+      warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+      type <- "Satterthwaite"
+    }
   }
 
   if (type %in% c("containment", "between-within")) {
@@ -447,12 +450,11 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
   }
 
   if (type=="Kenward-Roger") {
-    # Adjusted vcov(beta); reuse it when the caller has already computed it.
-    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model, kr_info), silent=TRUE) else vcov_adj
     # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
-    ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
+    ddf <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) NULL else
+      try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_adj), silent=TRUE)
 
-    if (any(inherits(vcov_beta_adj, "try-error"),
+    if (any(is.null(ddf),
 	        inherits(ddf, "try-error"),
 			ddf >= nrow(model.frame(model)),
 			ddf <= 0)) {

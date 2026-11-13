@@ -20,7 +20,7 @@ reference_cases <- function() {
     a <- names(formals(f))
     c(if ("vcov_adjust" %in% a) list(vcov_adjust = FALSE),
       if ("df_method" %in% a && inherits(m, c("lme", "gls"))) list(df_method = "containment"),
-      if ("df_method" %in% a && inherits(m, c("glmerMod", "glmmTMB"))) list(df_method = "residual"))
+      if ("df_method" %in% a && inherits(m, c("glmerMod", "glmmTMB", "glm"))) list(df_method = "residual"))
   }
   cvm <- function(...) do.call(covariatemeans, c(list(...), old_df(covariatemeans, list(...)[[1]])))
   pmo <- function(...) {

@@ -3,6 +3,10 @@ PDF, then `pdftotext -layout`) into one CSV with a row per table row.
 
 Usage: python3 -I dev/sas/parse-sas-results.py results.txt out.csv
 
+Runs are told apart by "Data Set" lines, or, when the program prints titles
+such as "AR1 data, DDFM=kr(firstorder)" (pm-reference-ar1.sas), by those
+titles, which also give the DDFM option exactly.
+
 Columns: run (1-16), data, ddfm, table, effect, level1, level2, level3, level4
 (the class levels; for differences the first and the second mean), and the
 numbers of the row (est, se, df, t, p, lower, upper for LSMEANS and
@@ -41,14 +45,24 @@ def is_num(x):
 rows = []
 run = 0
 data = ddfm = table = None
+titled = False          # the run was started by a title such as "AR1 data, DDFM=kr(firstorder)"
 for line in lines:
     s = line.strip()
     if not s or s.startswith("https://") or "Results: Program 1" in s:
         continue
-    m = re.match(r"Data Set\s+WORK\.(\S+)", s)
+    m = re.match(r"^(\S+) data, DDFM=(\S+)$", s)
     if m:
         run += 1
-        data = m.group(1)
+        data = m.group(1).upper()
+        ddfm = m.group(2).upper()
+        table = None
+        titled = True
+        continue
+    m = re.match(r"Data Set\s+WORK\.(\S+)", s)
+    if m:
+        if not titled:
+            run += 1
+            data = m.group(1)
         table = None
         continue
     m = re.match(r"Number of Observations Used\s+(\d+)", s)
@@ -57,7 +71,8 @@ for line in lines:
         continue
     m = re.match(r"Degrees of Freedom Method\s+(.+)$", s)
     if m:
-        ddfm = DDFM[m.group(1).strip()]
+        if not titled:
+            ddfm = DDFM[m.group(1).strip()]
         continue
     hit = [t for t in TITLES if s.startswith(t)]
     if hit:

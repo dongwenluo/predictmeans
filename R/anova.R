@@ -5,9 +5,12 @@
 ## car is not needed. The results equal car::Anova() (see the tests). Classes
 ## other than lm, glm, lme, gls and merMod get Wald chi-square tests from
 ## pm_coef() and pm_vcov(), so this also works through the model adapter.
+## Kenward-Roger F tests (lmer, test.statistic = "F") use the observed
+## information, as everywhere in predictmeans (R/inference.R);
+## kr_information = "expected" gives car's (pbkrtest's) values.
 
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
-                     test.statistic = c("Chisq", "F", "LR", "Wald")) {
+                     test.statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed") {
   type <- as.character(type)
   type <- match.arg(type)
   type <- c("2" = "II", "3" = "III", II = "II", III = "III")[[type]]
@@ -24,7 +27,7 @@ pm_anova <- function(model, type = c("II", "III", "2", "3"),
   if (inherits(model, "lme")) return(pm_anova_wald(model, type, layout = "lme"))
   if (inherits(model, "merMod")) {
     test <- if (test.statistic == "F") "F" else "Chisq"
-    return(pm_anova_wald(model, type, layout = "mer", test = test))
+    return(pm_anova_wald(model, type, layout = "mer", test = test, kr_information = kr_information))
   }
   pm_anova_wald(model, type, layout = "default")
 }
@@ -72,7 +75,8 @@ pm_anova_result <- function(df, row_names, col_names, heading) {
 }
 
 ## Wald tests: lme (Chisq, Df, Pr), mer (Chisq or KR F), others (Df, Chisq, Pr).
-pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test = "Chisq") {
+pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test = "Chisq",
+                          kr_information = "observed") {
   layout <- match.arg(layout)
   tt <- stats::terms(model)
   fac <- attr(tt, "factors")
@@ -88,7 +92,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   }
   PhiA <- NULL
   if (layout == "mer" && test == "F") {
-    PhiA <- pm_vcov_kr(model, "expected")      # as car::Anova() (pbkrtest), for the permmodels() tables
+    PhiA <- pm_vcov_kr(model, kr_information)   # "expected": as car::Anova() (pbkrtest)
     V <- as.matrix(PhiA)
     attributes(V) <- attributes(V)[c("dim", "dimnames")]
   }

@@ -140,6 +140,8 @@ pm_tidy_parts <- function(e) {
       by[same] <- do.call(paste, c(lapply(A[same, , drop = FALSE], as.character), sep = " : "))
       pairs$by <- by
     }
+    po <- g("pair_over")
+    if (length(po) == nrow(pairs) && any(!is.na(po))) pairs$over <- po   # compared on common cells
     pairs$estimate <- cm
     pairs$std.error <- dses
     pairs$df <- pdf
