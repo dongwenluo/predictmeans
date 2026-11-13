@@ -1,0 +1,242 @@
+Genstat 64-bit Release 23.1 ( PC/Windows 11) 14 November 2026 07:44:12
+Copyright 2023, VSN International Ltd.
+ 	________________________________________
+
+ 	Genstat Twenty-third Edition
+ 	Genstat Procedure Library Release PL30.1
+ 	________________________________________
+
+   2  \ Reference output for predictmeans from Genstat REML (written for Genstat 21+;
+   3  \ the first run may need small syntax fixes - please send the output window
+   4  \ or the .out file, not values typed by hand).
+   5  \ Questions: (1) which Kenward-Roger df Genstat gives when a whole plot is
+   6  \ missing (pbkrtest 9.25, SAS 8.35 for the Variety differences);
+   7  \ (2) its F tests and df for an AR(1) repeated-measures model with missing
+   8  \ values (SAS: dev/sas/pm-reference-ar1.sas, same data).
+   9
+  10  \ ---- 1. Oats split plot, the whole plot (Block I, GoldenRain) missing ----
+  11  \ Variety 1 GoldenRain, 2 Marvellous, 3 Victory (alphabetical, as SAS)
+  12  UNITS [NVALUES=72]
+  13  FACTOR [LEVELS=6] Block
+  14  FACTOR [LABELS=!t(GoldenRain, Marvellous, Victory)] Variety
+  15  FACTOR [LEVELS=!(0, 0.2, 0.4, 0.6)] Nitro
+  16  VARIATE Yield
+  17  READ Block, Variety, Nitro, Yield
+Message: You have input sufficient data, READ terminated.
+ Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing
+	Yield	 53.00	 102.3	 174.0	 72	 4
+
+ Identifier	 Values	 Missing	 Levels
+	Block	 72	 0	 6
+	Variety	 72	 0	 3
+	Nitro	 72	 0	 4
+
+  36  :
+  37  VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block/Variety
+  38  REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
+  39        PSE=differences; METHOD=AI] Yield
+
+REML variance components analysis
+Response variate:	Yield
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	68 (4 units excluded due to zero weights or missing values)
+
+Residual term has been added to model
+
+Sparse algorithm with AI optimisation
+
+Estimated variance components
+Random term	component	s.e.
+Block	 179.2	 164.4
+Block.Variety	 131.3	 84.3
+
+Residual variance model
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	169.4	 37.0
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety	2.56	2	1.28	8.7	 0.325
+Nitro	113.98	3	37.99	42.0	 <0.001
+Variety.Nitro	2.48	6	0.41	42.0	 0.866
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety.Nitro	2.48	6	0.41	42.0	 0.866
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Variety
+
+Variety	GoldenRain	Marvellous	Victory
+		103.2	109.8	97.6
+
+Standard errors of differences
+
+Average:	 7.937
+Maximum:	 8.101
+Minimum:	 7.609
+
+Average variance of differences: 63.05
+
+Table of predicted means for Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+		78.4	99.3	112.6	123.8
+
+Standard error of differences: 4.481
+
+Table of predicted means for Variety.Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+	Variety
+	GoldenRain	77.0	99.8	109.8	126.0
+	Marvellous	86.7	108.5	117.2	126.8
+	Victory	71.5	89.7	110.8	118.5
+
+Standard errors of differences
+
+Average:	 9.678
+Maximum:	 10.59
+Minimum:	 7.515
+
+Average variance of differences: 95.14
+
+Standard error of differences for same level of factor:
+
+Variety	Nitro
+
+Average:	 7.754	 10.40
+
+Maximum:	 8.232	 10.59
+
+Minimum:	 7.515	 10.01
+
+Average variance of differences:
+		 60.24	 108.2
+
+  40
+  41  \ ---- 2. AR(1) repeated measures, 5 of 48 values missing ----
+  42  \ Group 1 = A, 2 = B
+  43  UNITS [NVALUES=48]
+  44  FACTOR [LEVELS=12] Subj
+  45  FACTOR [LEVELS=2] Group
+  46  FACTOR [LEVELS=4] Time
+  47  VARIATE Y
+  48  READ Subj, Group, Time, Y
+Message: You have input sufficient data, READ terminated.
+ Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing
+	Y	 9.200	 11.66	 14.72	 48	 5
+
+ Identifier	 Values	 Missing	 Levels
+	Subj	 48	 0	 12
+	Group	 48	 0	 2
+	Time	 48	 0	 4
+
+  61  :
+  62  VCOMPONENTS [FIXED=Group*Time] RANDOM=Subj.Time
+  63  VSTRUCTURE [TERMS=Subj.Time] FACTOR=Time; MODEL=AR; ORDER=1
+  64  \ MVINCLUDE=yvariate keeps the units with a missing Y, so Subj.Time is the residual
+  65  \ term (with the AR(1) structure) instead of a random term next to a new residual
+  66  REML [PRINT=model, components, waldtests, means; PTERMS=Group + Time + Group.Time; \
+  67        PSE=differences; METHOD=AI; MVINCLUDE=yvariate] Y
+
+REML variance components analysis
+Response variate:	Y
+Fixed model:	Constant + Time + Group + Time.Group
+Random model:	Subj.Time
+Number of units:	48
+
+Subj.Time used as residual term with covariance structure as below
+
+Sparse algorithm with AI optimisation
+Units with missing data values included
+
+Covariance structures defined for random model
+Covariance structures defined within terms:
+
+Term	Factor	Model	Order	No. rows
+Subj.Time	Subj	Identity	1	12
+	Time	Auto-regressive	1	4
+
+Residual variance model
+Term	Factor	Model(order)	Parameter	Estimate	s.e.
+Subj.Time	 		Sigma2	1.194	 0.355
+	Subj	Identity	-        	-	-
+	Time	AR(1)	phi_1	 0.6157	 0.1289
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Time	11.18	3	3.71	25.6	 0.024
+Group	5.62	1	5.62	11.7	 0.036
+Time.Group	2.32	3	0.77	25.8	 0.522
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Time.Group	2.32	3	0.77	25.8	 0.522
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Group
+
+Group	1	2
+		11.07	12.19
+
+Standard error of differences: 0.4970
+
+Table of predicted means for Time
+
+Time	1	2	3	4
+		11.10	11.19	11.98	12.26
+
+Standard errors of differences
+
+Average:	 0.3424
+Maximum:	 0.4139
+Minimum:	 0.2940
+
+Average variance of differences: 0.1193
+
+Table of predicted means for Time.Group
+
+Group	1	2
+	Time
+	1	10.69	11.51
+	2	10.87	11.51
+	3	11.37	12.58
+	4	11.37	13.14
+
+Standard errors of differences
+
+Average:	 0.5802
+Maximum:	 0.6692
+Minimum:	 0.3912
+
+Average variance of differences: 0.3456
+
+Standard error of differences for same level of factor:
+
+Time	Group
+
+Average:	 0.6525	 0.4838
+
+Maximum:	 0.6692	 0.5960
+
+Minimum:	 0.6453	 0.3912
+
+Average variance of differences:
+		 0.4259	 0.2385
+
+  68  STOP
+
+End of job.
+Genstat 64-bit Release 23.1 ( PC/Windows 11) 14 November 2026 07:44:51
+Copyright 2023, VSN International Ltd.
+\

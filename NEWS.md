@@ -279,6 +279,15 @@
 
 ## New features
 
+* New tests against Genstat 23.1 REML (`test-genstat-reference.R`; runs by
+  the maintainer, output files in `dev/genstat/`): six analyses of the oats
+  split plot with missing plots, an empty cell and scattered missing sub-plots,
+  and AR(1) repeated measures with missing values. Variance components,
+  predicted means, SEDs (`vcov_adjust = FALSE`), Wald statistics and 17 of 18
+  denominator df (`df_method = "KR-average"`) agree; Genstat's F is
+  Kenward-Roger's scaling factor times Wald / df. Genstat's means over the
+  combinations present equal predictmeans' means over empty cells.
+
 * `pm_check(model)`: a table of checks of a fitted model with a plain note on
   each, for any model predictmeans handles: the fit (singular, convergence),
   outliers (beyond 3, flagged when improbable for normal residuals),
