@@ -8,8 +8,10 @@
 ##  * df method (pm_df_method()): "auto" is Kenward-Roger for REML lmer, lme
 ##    and gls fits, Satterthwaite for ML fits (from the ML log-likelihood); "containment" for lme and gls is nlme's df (one df per term for
 ##    lme, the residual df for gls), as predictmeans 1.x; GLMMs (glmer,
-##    glmmTMB) inner-outer df ("residual": the residual df, as 1.x); other
-##    models use the residual df (or a pm_df() method, else normal-based).
+##    glmmTMB) inner-outer df ("residual": the residual df, as 1.x); glm
+##    with a known dispersion (Poisson, binomial, negative binomial) z tests
+##    ("residual": t with the residual df, as 1.x); other models use the
+##    residual df (or a pm_df() method, else normal-based).
 ##  * Kenward-Roger uses the observed information of the variance parameters
 ##    (as SAS DDFM=KR): in the simulations of dev/sim-df/ it was never worse
 ##    than the expected information (pbkrtest, emmeans; "KR-expected") and
@@ -97,11 +99,11 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
   }
   io <- dfm$io                                         # inner-outer df of each coefficient
   per_row_kr_satt <- any(df_type %in% c("Kenward-Roger", "Satterthwaite")) && (lmer || nlme || aovl)
-  resid_df <- if (is.null(one_df) && !per_row_kr_satt && is.null(io)) {
+  resid_df <- if (identical(df_type, "asymptotic")) Inf else if (is.null(one_df) && !per_row_kr_satt && is.null(io)) {
     d <- mp$df
     if (is.numeric(d) && length(d) == 1 && is.finite(d) && d > 0) d else Inf    # normal-based when unknown
   }
-  custom <- is.null(one_df) && !per_row_kr_satt && is.null(io) &&
+  custom <- is.null(one_df) && !per_row_kr_satt && is.null(io) && !identical(df_type, "asymptotic") &&
     !is.null(tryCatch(pm_df(model, matrix(0, 1, length(mp$coef))), error = function(e) NULL))
 
   df <- function(L, terms) {
@@ -166,6 +168,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 
   label <- if (aovl) {
     "multistratum"                                  # stratum mean squares, Satterthwaite across strata
+  } else if (identical(df_type, "asymptotic")) {
+    "asymptotic (z)"                                # glm with a known dispersion
   } else if (df_method %in% c("KR-expected", "KR-average") && identical(df_type, "Kenward-Roger")) {
     df_method                                       # Kenward-Roger with the expected or average information
   } else if (!is.null(df_type)) {
@@ -216,6 +220,16 @@ pm_df_method <- function(model, df_method) {
               "Ignored.", call. = FALSE)
       df_method <- "auto"
     } else return(list(df_type = NULL, vcov_adj = NULL))       # GLMMs as predictmeans 1.x; gls, lm, glm
+  }
+  if (inherits(model, "glm") && pm_fixed_dispersion(model)) {
+    # Poisson, binomial, negative binomial: the dispersion is known, so the
+    # Wald tests are z (chi-square) tests, as emmeans and SAS GLIMMIX. In
+    # dev/sim-df-glm/ t with the residual df rejected 0.3-4.5% of true nulls
+    # at 5%, z 3.6-5.7%. "residual" (above) keeps the t tests of 1.x.
+    if (df_method != "auto") {
+      warning("'df_method = \"", df_method, "\"' does not apply to glm models; ignored.", call. = FALSE)
+    }
+    return(list(df_type = "asymptotic", vcov_adj = NULL))
   }
   if (glmm && df_method %in% c("containment", "between-within")) {
     if (inherits(model, "glmerMod")) return(list(df_type = df_method, vcov_adj = NULL))
@@ -286,4 +300,11 @@ pm_terms_with <- function(model, v) {
   tl <- tryCatch(attr(stats::terms(model), "term.labels"), error = function(e) NULL)
   if (is.null(tl)) tl <- tryCatch(attr(stats::terms(stats::formula(model)), "term.labels"), error = function(e) NULL)
   tl[vapply(strsplit(tl, ":"), function(x) v %in% x, logical(1))]
+}
+
+## TRUE for a glm whose dispersion is known (fixed at 1), not estimated:
+## Poisson, binomial and negative binomial (MASS::glm.nb) families.
+pm_fixed_dispersion <- function(model) {
+  fam <- tryCatch(stats::family(model)$family, error = function(e) "")
+  fam %in% c("poisson", "binomial") || grepl("^Negative Binomial", fam)
 }

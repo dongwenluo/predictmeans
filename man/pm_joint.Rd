@@ -55,6 +55,8 @@ The F statistic and its denominator degrees of freedom follow the model:
 \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits and Satterthwaite for ML fits (the defaults), as for
   \code{lmer}; with \code{df_method = "containment"} the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
   \code{anova()}; \code{"containment (nlme)"}) or the residual df (\code{gls}).}
+\item{\code{glm} with a known dispersion}{(Poisson, binomial, negative binomial) the Wald chi-square / df
+  (denominator df \code{Inf}); \code{df_method = "residual"}: the residual df, as predictmeans 1.x.}
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 }
 Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.

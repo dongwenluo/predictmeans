@@ -2,6 +2,15 @@
 
 ## Changes that affect results or scripts
 
+* **`glm` models with a known dispersion (Poisson, binomial, negative
+  binomial) use z tests** (normal; chi-square for joint tests), as emmeans and
+  SAS GLIMMIX; they used t with the residual df, as for `lm`, which is
+  conservative: in simulations (`dev/sim-df-glm/`) it rejected 0.3–4.5% of
+  true null hypotheses at the 5% level (F tests 0.3–3.0%), z tests 3.6–5.7%.
+  `df_method = "residual"` gives the 1.x t tests; `settings$df_method` is
+  `"asymptotic (z)"`. Quasi families and Gaussian/Gamma `glm` keep the
+  residual df (their dispersion is estimated).
+
 * The Kenward-Roger F tests in the `permmodels()` tables of `lmer` models
   (`test.statistic = "F"`) use the observed information, as `pm_joint()` and
   the rest of the package; they used the expected one, as `car::Anova()`.

@@ -153,7 +153,10 @@
 #'   clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
 #'   the check with few clusters. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
 #'   and \code{"inner-outer"} for \code{lmer} and \code{lme}.
-#'   Other choices are ignored for other model classes.
+#'   \code{glm} models with a known dispersion (Poisson, binomial, negative binomial) get z tests
+#'   (\code{"asymptotic (z)"}), as \pkg{emmeans} and SAS GLIMMIX; \code{"residual"} gives the t tests with the
+#'   residual df of predictmeans 1.x, which were conservative in simulations (0.3-4.5\% of true null hypotheses
+#'   rejected at the 5\% level, z tests 3.6-5.7\%). Other choices are ignored for other model classes.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
 #'   as \code{sandwich::vcovHC()}), or a one-sided formula naming a cluster variable of the data, e.g. \code{~ Block}

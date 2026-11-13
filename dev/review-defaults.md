@@ -17,7 +17,7 @@ literature) and lists what to change.
 | df, GLMMs | inner-outer (by grouping level) | `dev/sim-df-glmm/`: 3.6–8.1% against 8.4–15.2% (residual) and 7.3–12.7% (containment). Li and Redden (2015, binary cluster trials): between-within holds the level with 10 clusters, residual and containment inflated; inner-outer equals between-within for between-cluster effects and is less conservative within. The 6–8% left with 4 clusters per group is the Wald SE of the Laplace fit: `bootmodels()`. | keep |
 | df, `aov` with `Error()` | strata (Genstat) | Genstat runs (Exams 3.1, 4.4, 8.1) | keep |
 | df, `lm` | residual | exact | keep |
-| df, `glm` with fixed dispersion (Poisson, binomial) | residual df (t) | no evidence either way; emmeans and SAS GLIMMIX use z | open (step 5: simulate first) |
+| df, `glm` with fixed dispersion (Poisson, binomial) | z (was t, residual df) | `dev/sim-df-glm/`: t with the residual df 0.3–4.5% (conservative), z 3.6–5.7%; emmeans and SAS GLIMMIX use z | changed (step 5) |
 | weights over other factors | equal (population marginal means) | Searle, Speed and Milliken (1980); SAS, emmeans, Genstat | keep |
 | nested factors | equal over the combinations that exist | Genstat (Exam 4.3) | keep |
 | **means over an empty cell** | average of the observed cells, with a warning (1.x; maintainer's decision) | an estimable function (ASReml/Genstat `!PRESENT`: "averaging only the estimable cells"); SAS and emmeans give `Non-est`/NA | keep the means |
@@ -95,7 +95,11 @@ themselves (`"A:B"`), where nothing is averaged.
    tests of the `permmodels()` tables slightly where data are unbalanced) —
    **done**.
 5. `glm` with fixed dispersion: simulate t (residual df) against z, then
-   decide.
+   decide — **done**: `dev/sim-df-glm/results.md` (eight designs, 4000 data
+   sets each): t with the residual df rejected 0.3–4.5% of true nulls (F
+   0.3–3.0%), z 3.6–5.7% (chi-square 2.5–5.6%). z is now the default for
+   Poisson, binomial and negative binomial `glm`; `df_method = "residual"`
+   keeps the t tests of 1.x.
 
 ## References
 
