@@ -32,7 +32,7 @@ conservative for sub-plot effects (tB 3.1–4.0%, interaction F 2.6–2.9%). The
 normal approximation is liberal (up to 13.3%). The current `lmer` default is
 right.
 
-**Repeated measures, unstructured covariance (`gls`), 12 subjects.** The
+**Repeated measures, unstructured covariance (`gls`), 12 or 24 subjects.** The
 current `gls` default, the residual df (30), is liberal: t tests 6.2–7.3%,
 F tests 15.5–15.9%; with 10% of the values missing 7.6–10.0% and
 24.1–26.5%. Satterthwaite is right for t tests but its F tests (lmerTest's
@@ -45,10 +45,15 @@ unstructured repeated measures and 10% missing, the expected information
 contrast; the observed information (SAS) 5.5–6.6%. Kenward and Molenberghs
 (1998) show that with missing data the expected information is not valid
 (it treats the pattern of missing values as fixed); the observed information
-is. In `lmer` models the two differ little (split plot with 30% missing:
-3.2–5.3% against 3.4–5.3%; random slopes with 20% missing: F tests 5.4–5.6%
-against 4.5–5.0%). AR(1) repeated measures and compound symmetry: all
-methods hold 5%.
+is. The follow-up (`dev/sim-df-kr.R`) confirms it: unstructured, 24 subjects,
+20% missing: F tests 6.2–6.9% (expected) against 5.6–5.7% (observed);
+AR(1) with unequal variances, 20% missing: 4.5–5.7% against 4.4–5.3%. In
+`lmer` models the two differ little (split plot with 30% missing: 3.2–5.3%
+against 3.4–5.3%; random slopes with 20% missing: F tests 5.4–5.6% against
+4.5–5.0%; random intercept with 20% missing: the same). Nowhere was the
+observed information worse. Satterthwaite F tests are liberal whenever the
+covariance has several parameters (AR(1) with unequal variances 6.6–8.4%,
+unstructured 9.7–11.9%); between-within is liberal there too (up to 12.8%).
 
 **GLMMs (`glmer`).** The current df, the residual df (n − parameters), are
 liberal for effects that vary between clusters: whole-plot factor of a
@@ -68,9 +73,9 @@ clusters; `bootmodels()` or `permmodels()` are the checks there.
 
 1. `lme` and `gls` fitted by REML: Kenward–Roger by default (as `lmer`), with
    adjusted SEs; nlme's df and the residual df stay available as
-   `df_method = "containment"`. Before that, the nlme Kenward–Roger code needs
-   to work subject by subject: it builds the n x n covariance (an
-   unstructured `gls` with 800 observations takes about 80 s).
+   `df_method = "containment"`. The nlme Kenward–Roger code now works subject
+   by subject (sparse block-diagonal covariance): an unstructured `gls` with
+   2000 observations takes 3 s (was about 70 s).
 2. One Kenward–Roger: the observed information (as SAS) for every model,
    because it stays valid with missing values; the expected information
    (pbkrtest, emmeans) as an option.
