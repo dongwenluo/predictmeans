@@ -2,6 +2,34 @@
 
 ## Changes that affect results or scripts
 
+* **One set of inference rules for `predictmeans()`, `contrastmeans()`,
+  `pm_joint()`, `pm_slopes()` and `covariatemeans()`** (new internal
+  `pm_inference()`, `R/inference.R`): which covariance of the coefficients is
+  used, which denominator df, and how they are reported, decided in one
+  place. The 39-call `predictmeans()` snapshot and the 33 permutation calls
+  are unchanged apart from `settings$vcov_adjust`. Where the functions used
+  to disagree they now follow the rule `predictmeans()` used:
+  * `lme` models with nlme's df: `contrastmeans()` and `pm_joint()` used the
+    smallest df of the term and its marginal terms (and printed a note); they
+    now use the term's df, as `predictmeans()` and nlme's `anova()` do. One df
+    per term is liberal for some comparisons (e.g. varieties within a nitrogen
+    level of a split plot) and conservative for others; Satterthwaite or
+    Kenward-Roger df (`df_method =`) give each contrast its own df.
+  * `contrastmeans()` on an `lmer` model with a single fixed term gave every
+    contrast the term's average df; each contrast now has its own
+    Kenward-Roger or Satterthwaite df.
+  * `pm_slopes()` with `df_method = "containment"`: the df of the terms with
+    the covariate (the smallest), as with `"between-within"`; it used the
+    factor's df.
+  * The legacy p-value matrix of `predictmeans()` (`pairwise = TRUE`) used
+    the mean df of the pairs for `lme`/`gls` with Satterthwaite or
+    Kenward-Roger df; it now uses each pair's df, as the `pairs` table (and
+    the letters) do.
+  * `settings$vcov_adjust` is `TRUE` only when the Kenward-Roger adjusted
+    covariance was used (it was `TRUE` for `lm`, `glm` and ML fits too).
+  * `pm_joint()` reports nlme's df as `"containment (nlme)"` (was `"nlme"`),
+    as `settings$df_method` does; its result has plain row names.
+
 * **`ncore = 1` by default** in `permmodels()`, `permlmer()` (and
   `permglmer()`, `permglmmTMB()`), `permanova.lmer()` and `predictmeans()`
   (it was 3; `bootmodels()` already used 1). Results are the same; scripts

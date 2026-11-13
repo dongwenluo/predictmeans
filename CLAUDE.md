@@ -21,8 +21,11 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `vcov_adjust = FALSE` reproduces 1.x numbers.
 - glmmTMB in Imports; car and pbkrtest in Suggests (own code in `R/anova.R`,
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
-- Means over empty cells keep the 1.x rule (average of observed cells, with a
-  warning); truly non-estimable means are NA.
+- Means over empty cells: NA by default (the maintainer's decision of
+  2026-11-13); a new option, `empty = "average"`, restores the 1.x rule
+  (average of the observed cells, with a warning).
+- `R/inference.R` (`pm_inference()`) decides covariance, df and their labels
+  for every front end; change a df or covariance rule there only.
 - The maintainer can run SAS and Genstat on request: scripts go in
   `dev/sas/` and `dev/genstat/`. Reference values come only from real runs
   (uploaded results pages, output or CSV files). Do not use SAS tables typed into chat as references

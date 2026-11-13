@@ -218,13 +218,8 @@ pm_tidy_parts <- function(e) {
     "permutation"
   } else if (length(g("Df")) && isTRUE(g("df_user"))) {
     "user"
-  } else if (!is.null(g("df_type"))) {
-    # "KR-SAS" is Kenward-Roger with the observed information
-    if (identical(g("df_method"), "KR-SAS") && identical(g("df_type"), "Kenward-Roger")) "KR-SAS" else g("df_type")
-  } else if (inherits(model, "lme")) {
-    "containment (nlme)"
   } else {
-    "residual"
+    g("inf")$label              # R/inference.R
   }
   cov_cols <- setdiff(names(label), vars)
   settings <- list(

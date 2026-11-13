@@ -17,8 +17,8 @@
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 #' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-SAS"}}{as for \code{lmer} (Satterthwaite df of the
 #'   F test, lmerTest's rule).}
-#' \item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
-#'   \code{\link{contrastmeans}}).}
+#' \item{\code{lme}}{the Wald F with \pkg{nlme}'s df of \code{modelterm} (as \code{predictmeans()} and
+#'   \code{anova()}; \code{"containment (nlme)"}).}
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 #' }
 #' Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
@@ -108,77 +108,14 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
     }
   }
 
-  ## Model parameters and the df machinery
-  dfm <- pm_df_method(model, df_method)
-  df_type <- dfm$df_type
-  mp <- mymodelparm(model, df = 0)
-  Vuser <- pm_vcov_resolve(model, vcov, names(mp$coef))
-  K <- KK[, mp$estimable, drop = FALSE]
+  ## Model parameters, covariance and df (R/inference.R)
+  inf <- pm_inference(model, df_method, vcov_adjust = FALSE, vcov = vcov)
+  K <- KK[, inf$mp$estimable, drop = FALSE]
   K[!est_flag, ] <- 0
-  other_df <- NULL
-  if (inherits(model, "lme")) {
-    vars <- c(unlist(strsplit(modelterm, "\\:")), modelterm)
-    other_df <- min(stats::terms(model$fixDF)[vars], na.rm = TRUE)
-  } else if (!inherits(model, "lmerMod")) {
-    rd <- mymodelparm(model)$df
-    other_df <- if (is.numeric(rd) && length(rd) == 1 && is.finite(rd) && rd > 0) rd else Inf
-  }
-  cont_df <- if (identical(df_type, "containment")) pm_containment_df(model)[[modelterm]] else
-    if (identical(df_type, "between-within")) pm_betwithin_df(model)[[modelterm]] else NULL
-
-  res <- t(vapply(sets, function(C) {
-    pm_joint_ftest(model, C %*% K, mp, df_type, dfm$vcov_adj, other_df, cont_df, Vuser)
-  }, numeric(4)))
+  res <- t(vapply(sets, function(C) inf$ftest(C %*% K, modelterm), numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
-  attr(out, "df_method") <- if (identical(df_method, "KR-SAS") && identical(df_type, "Kenward-Roger")) "KR-SAS" else
-    if (inherits(model, "lmerMod") || any(df_type %in% c("between-within", "Satterthwaite", "Kenward-Roger"))) df_type else
-    if (inherits(model, "lme")) "nlme" else "residual"
-  if (!is.null(Vuser)) attr(out, "vcov") <- attr(Vuser, "label")
+  attr(out, "df_method") <- inf$label
+  if (!is.null(inf$vcov_label)) attr(out, "vcov") <- inf$vcov_label
   out
-}
-
-## F test of L beta = 0: c(df1, df2, F, p). Rows of L that are linear
-## combinations of others are dropped first.
-pm_joint_ftest <- function(model, L, mp, df_type, vcov_adj, other_df, cont_df, Vuser = NULL) {
-  beta <- mp$coef
-  V <- as.matrix(mp$vcov)
-  r <- qr(t(L))
-  q <- r$rank
-  if (q == 0) return(c(0, NA, NA, NA))
-  L <- L[r$pivot[seq_len(q)], , drop = FALSE]
-  if (!is.null(Vuser)) {
-    # a given covariance ('vcov'): its Wald F, with the denominator df of the
-    # model's own test
-    out <- pm_joint_ftest(model, L, mp, df_type, vcov_adj, other_df, cont_df)
-    b <- L %*% beta
-    Fv <- as.numeric(t(b) %*% solve(L %*% Vuser %*% t(L), b)) / q
-    return(c(q, out[2], Fv, stats::pf(Fv, q, out[2], lower.tail = FALSE)))
-  }
-  wald <- function(Vb) {
-    b <- L %*% beta
-    as.numeric(t(b) %*% solve(L %*% Vb %*% t(L), b))
-  }
-  if (identical(df_type, "Kenward-Roger") && !is.null(attr(vcov_adj, "P"))) {   # lmer, lme, gls
-    kr <- pm_kr_ftest(model, L, PhiA = vcov_adj)
-    return(unname(c(q, kr["ddf"], kr["stat"], kr["p.value"])))
-  }
-  if (identical(df_type, "Satterthwaite") && inherits(vcov_adj, "pm_satt")) {   # lmer, and lme/gls (R/satt-nlme.R)
-    # lmerTest's rule for several contrasts (contestMD): split L V L' into
-    # its eigen-directions, each with a Satterthwaite df nu_m, and combine
-    # E = sum(nu_m / (nu_m - 2)), df2 = 2E / (E - q)
-    parts <- vcov_adj
-    VL <- L %*% parts$vcov_beta %*% t(L)
-    eg <- eigen(VL, symmetric = TRUE)
-    PtL <- crossprod(eg$vectors, L)
-    Fv <- sum(drop(PtL %*% beta)^2/eg$values)/q
-    nu <- pm_satt_ddf(PtL, parts)
-    E <- sum((nu/(nu - 2))[nu > 2])
-    ddf <- if (E > q) 2*E/(E - q) else NA_real_
-    return(c(q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE)))
-  }
-  Fv <- wald(V)/q
-  ddf <- if (!is.null(cont_df)) cont_df else other_df
-  if (is.null(ddf)) ddf <- Inf
-  c(q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE))
 }

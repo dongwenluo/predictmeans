@@ -1,6 +1,6 @@
 ## The stages of predictmeans(), in this order:
 ##   setup          check arguments and options; link function; plot choices
-##   estimate       pm_model_parms(), pm_estimate_means(): K matrix,
+##   estimate       pm_inference(), pm_estimate_means(): K matrix,
 ##                  predicted means, SEs, legacy tables
 ##   compare        pm_compare_sed(), pm_compare_df(), pm_compare_lsd(),
 ##                  pm_pair_pvalues(), pm_pairs_overall() / pm_pairs_atvar()
@@ -179,11 +179,10 @@ pm_code_estimate <- quote({
     mdf <- ctr.matrix$data
   }
   response <- ctr.matrix$response
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
-  mp <- parms$mp
-  df_type <- parms$df_type
-  vcov_adj <- parms$vcov_adj
-  vcov_label <- parms$vcov_label
+  inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov, permlist, term_df = TRUE)
+  mp <- inf$mp
+  vcov_adjust <- inf$vcov_adjust
+  vcov_label <- inf$vcov_label
   est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, vars, mp, ndecimal)
   K <- est$K
   label <- est$label
@@ -196,35 +195,6 @@ pm_code_estimate <- quote({
   se.table <- est$se.table
   LL <- UL <- NULL
 })
-
-## Coefficients, covariance and df method of the model (pure function).
-## lmer: Kenward-Roger df for REML fits (Satterthwaite for ML fits) unless
-## 'df_method' says otherwise; the adjusted covariance is computed once and
-## shared by all df calculations. 'vcov' (see R/vcov.R) replaces the
-## covariance of the coefficients (the df stay the model's). Returns
-## list(mp, df_type, vcov_adj, vcov_label).
-pm_model_parms <- function(model, df_method, vcov_adjust, vcov_adjust_default, vcov = NULL) {
-  if (!is.null(vcov)) vcov_adjust <- FALSE          # the user's covariance replaces the adjusted one
-  dfm <- pm_df_method(model, df_method)
-  df_type <- dfm$df_type
-  vcov_adj <- dfm$vcov_adj
-  # containment and between-within df with the adjusted covariance only when asked for explicitly
-  if (any(df_type %in% c("containment", "between-within")) && vcov_adjust && inherits(model, "lmerMod") &&
-      lme4::getME(model, "is_REML"))
-    vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
-  mp <- mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
-  if (vcov_adjust) {
-    if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
-      # the default applies to REML lmer fits only; say so only when asked for
-      if (!vcov_adjust_default) warning("'vcov_adjust = TRUE' needs an lmer model fitted by REML; ignored.")
-    } else {
-      mp$vcov <- as.matrix(vcov_adj)
-    }
-  }
-  V <- pm_vcov_resolve(model, vcov, names(mp$coef))
-  if (!is.null(V)) mp$vcov <- V
-  list(mp = mp, df_type = df_type, vcov_adj = vcov_adj, vcov_label = attr(V, "label"))
-}
 
 ## Predicted means, their SEs and the legacy mean/SE tables (pure function).
 ## KK: K matrix of all cells; fctnames: their labels; cells with no data are
@@ -317,7 +287,7 @@ pm_code_compare <- quote({
     list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar),
              envir = environment())
     if (!perm) {
-      list2env(pm_compare_df(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj), envir = environment())
+      list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
       bkmt <- mt  # update bkmt
     }
     LSD <- pm_compare_lsd(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm)
@@ -407,69 +377,27 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
 }
 
 ## Degrees of freedom of the means and of the pairs (no permutation tests):
-## the user's Df, else by model class.
-pm_compare_df <- function(model, modelterm, K, rK, mp, mt, Df, df_type, vcov_adj) {
-      if (length(Df) == 0) {
-
-        if (inherits(model, c("lme", "gls")) && any(df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
-          # Satterthwaite or Kenward-Roger df of each mean and each pair (R/satt-nlme.R)
-          pm_df_raw <- pm_nlme_df(K, model, df_type, vcov_adj)
-          mt$Df <- round(pm_df_raw, 2)
-          Df_diff <- pm_nlme_df(rK, model, df_type, vcov_adj)
-          Df <- mean(Df_diff)
-          pairDf <- round(Df, 2)
-        } else if (identical(df_type, "between-within")) {
-          # SAS DDFM=BETWITHIN: one df for the term, its means and their pairs
-          Df <- unname(pm_betwithin_df(model)[modelterm])
-          pm_df_raw <- rep(Df, nrow(K))
-          mt$Df <- Df
-          Df_diff <- rep(Df, nrow(rK))
-          pairDf <- Df
-        } else if (inherits(model, "lme")) {
-          Df <- terms(model$fixDF)[modelterm]
-    		  names(Df) <- NULL
-    		  mt$Df <- round(Df, 2)
-    		  pairDf <- Df
-    		  Df_diff <- Df
-        } else if (inherits(model, "lmerMod")) {
-        #  Df <- median(df_term(model, modelterm), na.rm=TRUE)
-    		  Df <- mp$df[modelterm]
-    		  names(Df) <- NULL
-    		  pm_df_raw <- df_term(model, modelterm, ctrmatrix=K, type=df_type, vcov_adj=vcov_adj)
-    		  mt$Df <- round(pm_df_raw, 2)
-    		 # if (any(mt$Df <= 0)) mt$Df <- Df
-    		  Df_diff <- df_term(model, modelterm, ctrmatrix=rK, type=df_type, vcov_adj=vcov_adj)
-    		  pairDf <- round(mean(Df_diff), 2)
-    		 # Df_diff[Df_diff <= 0] <- 1
-        } else {
-          # a pm_df() method can give the df of each contrast (see ?pm_coef)
-          df_means <- pm_df(model, K)
-          if (!is.null(df_means)) {
-            pm_df_raw <- rep_len(as.numeric(df_means), nrow(K))
-            mt$Df <- round(pm_df_raw, 2)
-            Df_diff <- rep_len(as.numeric(pm_df(model, rK)), nrow(rK))
-            Df <- mean(Df_diff)
-            pairDf <- round(Df, 2)
-            df_type <- "model (pm_df)"
-          } else {
-            Df <- mp$df
-            mt$Df <- round(Df, 2)
-            pairDf <- Df
-            Df_diff <- Df
-          }
-        }
-
-        if (Df==0){
-          stop("You need provide Df for this model!")
-        }
-      }else {
-  	    df_user <- TRUE
-  	    mt$Df <- Df
-  		  Df_diff <- rep_len(Df, nrow(rK))   # one df per pair, as for lmer
-  		  pairDf <- Df
-		  }
-
-  pm_existing(c("Df", "mt", "pm_df_raw", "Df_diff", "pairDf", "df_type", "df_user"), environment())
+## the user's Df, else from the call's inference choices (R/inference.R).
+## Df: one df for the LSD tables (lmer: the term's df; df varying by row:
+## their mean); pairDf: the df printed with the legacy p-value matrix.
+pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
+  if (length(Df)) {
+    mt$Df <- Df
+    return(list(Df = Df, mt = mt, Df_diff = rep_len(Df, nrow(rK)), pairDf = Df, df_user = TRUE))
+  }
+  pm_df_raw <- inf$df(K, modelterm)
+  Df_diff <- inf$df(rK, modelterm)
+  if (inf$per_row) {
+    Df <- if (!is.null(names(inf$mp$df)) && modelterm %in% names(inf$mp$df)) unname(inf$mp$df[modelterm]) else
+      mean(Df_diff)
+    pairDf <- round(mean(Df_diff), 2)
+  } else {
+    Df <- Df_diff[1]
+    pairDf <- Df
+  }
+  if (Df == 0) stop("You need provide Df for this model!")
+  mt$Df <- round(pm_df_raw, 2)
+  list(Df = Df, mt = mt, pm_df_raw = pm_df_raw, Df_diff = Df_diff, pairDf = pairDf)
 }
 
 ## LSDs from the SEDs: t quantile with the df, or 2 x SED with permutation tests.
@@ -508,20 +436,11 @@ pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, per
       # correlation of the pairwise contrasts, for adj = "mvt"
       if (!perm && adj == "mvt") pair_cor <- stats::cov2cor(as.matrix(rK %*% tcrossprod(vcovm, rK)))
 
-      if (!perm && adj=="tukey") {
-	      if (inherits(model, "lmerMod")) {
-		      p.tukey <- sapply(seq_along(t.v), function(m) ptukey(sqrt(2)*abs(t.v[m]), nK, Df_diff[m], lower.tail=FALSE))
-		    }else{
-	        p.tukey <- ptukey(sqrt(2)*abs(t.v), nK, Df, lower.tail=FALSE)
-		    }
-      }
-
       if (!perm) {
-	  	  if (inherits(model, "lmerMod")) {
-		      t.p.values <- sapply(seq_along(t.v), function(m) 2 * pt(-abs(t.v[m]), Df_diff[m]))
-		    }else{
-	        t.p.values <- 2 * pt(-abs(t.v), Df)
-		    }
+        # each pair with its own df (they vary with Kenward-Roger and Satterthwaite)
+        pdf <- rep_len(as.numeric(Df_diff), length(t.v))
+        if (adj == "tukey") p.tukey <- ptukey(sqrt(2)*abs(as.vector(t.v)), nK, pdf, lower.tail=FALSE)
+        t.p.values <- 2 * pt(-abs(as.vector(t.v)), pdf)
       }else{
         nsim <- pm_perm_n(permlist)
         # permutation p-values; with a max-|t| adjustment also the joint

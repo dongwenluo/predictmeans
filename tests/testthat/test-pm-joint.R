@@ -37,12 +37,15 @@ test_that("pm_joint() for lm equals the F test of dropping the term; dependent r
   expect_equal(j2$F.ratio, j$F.ratio, tolerance = 1e-10)
 })
 
-test_that("pm_joint() for lme uses nlme's df", {
+test_that("pm_joint() for lme uses nlme's df of the term, as predictmeans() and anova()", {
   d <- oats_joint()
   fm <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = d)
   j <- pm_joint(fm, "nitro:Variety", by = "nitro")
-  vars <- c("nitro", "Variety", "nitro:Variety")
-  expect_equal(unique(j$df2), min(terms(fm$fixDF)[vars]))
+  expect_equal(unique(j$df2), unname(terms(fm$fixDF)["nitro:Variety"]))
   expect_equal(nrow(j), 4)
-  expect_identical(attr(j, "df_method"), "nlme")
+  expect_identical(attr(j, "df_method"), "containment (nlme)")
+  expect_equal(pm_joint(fm, "Variety")$df2, unname(terms(fm$fixDF)["Variety"]))
+  pm <- predictmeans(fm, "nitro:Variety", plot = FALSE, prtnum = FALSE)
+  expect_equal(unique(pm$means$df), unique(j$df2))
+  expect_identical(pm$settings$df_method, attr(j, "df_method"))
 })

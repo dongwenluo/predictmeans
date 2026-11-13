@@ -45,13 +45,13 @@ The F statistic and its denominator degrees of freedom follow the model:
   \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
   \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
 \item{KR-SAS}{(\code{lmer}) as Kenward-Roger, with the observed information of the variance parameters (SAS
-\code{DDFM=KR}; see \code{\link{predictmeans}}).}
+  \code{DDFM=KR}; see \code{\link{predictmeans}}).}
 \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
-\code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
+  \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-SAS"}}{as for \code{lmer} (Satterthwaite df of the
-F test, lmerTest's rule).}
-\item{\code{lme}}{the Wald F with the smallest \pkg{nlme} df of \code{modelterm} and its factors (as
-  \code{\link{contrastmeans}}).}
+  F test, lmerTest's rule).}
+\item{\code{lme}}{the Wald F with \pkg{nlme}'s df of \code{modelterm} (as \code{predictmeans()} and
+  \code{anova()}; \code{"containment (nlme)"}).}
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 }
 Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.

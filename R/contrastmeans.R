@@ -190,44 +190,13 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   KK[bad_row, ] <- 0
   df_method <- match.arg(df_method)
-  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
-  if (!missing(permlist)) {
-    vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
-    vcov <- pm_vcov_with_perm(vcov, permlist)
-  }
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
-  mp <- parms$mp
-  df_type <- parms$df_type
-  vcov_adj <- parms$vcov_adj
+  inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov,
+                      permlist = if (!missing(permlist)) permlist)          # R/inference.R
+  mp <- inf$mp
   K <- KK[, mp$estimable, drop=FALSE]
   rK <- ctrmatrix%*%K
 
-
-  if (all(missing(permlist), missing(Df))){
-    df_custom <- if (identical(df_type, "between-within")) {
-      rep(unname(pm_betwithin_df(model)[modelterm]), nrow(rK))       # SAS DDFM=BETWITHIN
-    } else if (inherits(model, c("lme", "gls")) && any(df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
-      pm_nlme_df(rK, model, df_type, vcov_adj)                       # R/satt-nlme.R
-    } else pm_df(model, rK)
-	  if (!is.null(df_custom)) {
-	    Df <- rep_len(as.numeric(df_custom), nrow(rK))
-	  } else if (length(mp$df)==1 && mp$df!=0) {
-		  Df <- mp$df
-	  } else {
-		  if (inherits(model, "lme")) {
-			vars <- c(unlist(strsplit(modelterm, "\\:")), modelterm)
-			Df <- min(terms(model$fixDF)[vars], na.rm=TRUE)
-			mDf <- max(terms(model$fixDF)[vars], na.rm=TRUE)
-			if (length(vars) > 2) cat("\n", "Denominator degree of freedom for",
-			  sQuote(modelterm), "and its marginal terms vary between", sQuote(Df), "and",
-			  sQuote(mDf), ".\n","Probabilities will be calculated using", sQuote(Df), "Df.",  "\n")
-		  } else if (inherits(model, "lmerMod")) {
-			  Df <- df_term(model, modelterm, ctrmatrix = rK, type = df_type, vcov_adj = vcov_adj)
-      } else {
-        stop("You need provide Df for the model!")
-      }
-	  }
-  }
+  if (all(missing(permlist), missing(Df))) Df <- inf$df(rK, modelterm)
 
   cm <- rK%*%mp$coef
   vcovm <- mp$vcov
@@ -251,9 +220,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Df, eqm))
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
-    if (!is.null(parms$vcov_label)) {
+    if (!is.null(inf$vcov_label)) {
       attr(out.put, "Note") <- paste0(attr(out.put, "Note"), " Standard errors from the covariance given by 'vcov' (",
-                                      parms$vcov_label, ").")
+                                      inf$vcov_label, ").")
     }
     }else{
   	nsim <- pm_perm_n(permlist)

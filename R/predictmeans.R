@@ -270,11 +270,6 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
-  # SAS DDFM=CONTAIN uses the unadjusted covariance
-  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
-  vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
-  vcov <- pm_vcov_with_perm(vcov, permlist)
-  if (!is.null(vcov)) vcov_adjust <- FALSE     # the given covariance replaces the adjusted one
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

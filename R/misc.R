@@ -1244,46 +1244,6 @@ aovlist_lmer <- function(object) {
 
 
 
-## Resolve the df method for an lmer model: "auto" is Kenward-Roger for REML
-## fits and Satterthwaite for ML fits. "between-within" (SAS DDFM=BETWITHIN,
-## R/df-betwithin.R) is also available for lme and gls. Returns
-## list(df_type, vcov_adj).
-pm_df_method <- function(model, df_method) {
-  if (identical(df_method, "between-within")) {
-    if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
-    warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
-    return(list(df_type = NULL, vcov_adj = NULL))
-  }
-  if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-SAS")) {
-    # nlme models (R/satt-nlme.R): Satterthwaite, or Kenward-Roger (expected or, "KR-SAS", observed information)
-    if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
-    return(list(df_type = "Kenward-Roger",
-                vcov_adj = pm_vcov_kr_nlme(model, if (df_method == "KR-SAS") "observed" else "expected")))
-  }
-  if (!inherits(model, "lmerMod")) {
-    if (df_method != "auto") {
-      warning("'df_method' applies to lmer models only (\"between-within\" and \"Satterthwaite\" also to lme and ",
-              "gls); ignored.")
-    }
-    return(list(df_type = NULL, vcov_adj = NULL))
-  }
-  reml <- lme4::getME(model, "is_REML")
-  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-SAS" = "Kenward-Roger",
-                    df_method)
-  if (df_type == "Kenward-Roger" && !reml) {
-    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
-    df_type <- "Satterthwaite"
-  }
-  if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
-  vcov_adj <- switch(df_type,
-    # "KR-SAS": the observed information of the variance parameters, as SAS DDFM=KR
-    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, if (df_method == "KR-SAS") "observed" else "expected"),
-                               error = function(e) NULL),
-    "Satterthwaite" = pm_satt_parts(model),
-    NULL)
-  list(df_type = df_type, vcov_adj = vcov_adj)
-}
-
 ## findbars() moved from lme4 to reformulas; use reformulas when installed.
 pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)

@@ -89,7 +89,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   pltdf <- ctr.matrix$fctnames
   response <- ctr.matrix$response
   preddf <- ctr.matrix$preddf
-  mp <- mymodelparm(model)
+  inf <- pm_inference(model, vcov_adjust = FALSE, term_df = TRUE)     # R/inference.R
+  mp <- inf$mp
   bhat <- mp$coef
 
   if (!setequal(modelterm, covariate) & as.is) {
@@ -109,18 +110,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   pltdf$ses <- sqrt(base::diag(KK %*% tcrossprod(mp$vcov, KK)))
 
   if (is.null(Df) || all(Df%in%c("NULL", ""))) {
-    if (inherits(model, "lme")) {
-      Df <- terms(model$fixDF)[modelterm]
-    } else if (inherits(model, "lmerMod")) {
-      # Df <- try(median(df_term(model, modelterm, covariate), na.rm=TRUE))
-	    Df <- mp$df[modelterm]
-      if(inherits(Df, "try-error")) {
-        stop("You need provide Df for this model!")
-      }
-    } else {
-      df_custom <- pm_df(model, KK)
-      Df <- if (!is.null(df_custom)) rep_len(as.numeric(df_custom), nrow(KK)) else mp$df
-    }
+    # lmer: the term's df (the mean over its contrasts); else the model's rule
+    Df <- if (inherits(model, "lmerMod")) mp$df[modelterm] else inf$df(KK, modelterm)
     if (any(Df==0)) {
       stop("You need provide Df for this model!")
     }
