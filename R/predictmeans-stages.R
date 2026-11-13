@@ -139,6 +139,9 @@ pm_code_setup <- quote({
   if (is.null(level)){
     slevel <- level <- 0.05
   }
+  # the user's level: 'level' becomes level/m with adj = "bonferroni" (the
+  # legacy LSD) and 'slevel' 0.05 with a permlist (the legacy mean table)
+  slevel <- user_level <- level
 
   if (!is.null(plotord) && !unique(plotord%in%c("NULL", ""))) {
     plot <- mplot <- TRUE

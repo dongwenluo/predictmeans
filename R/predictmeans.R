@@ -47,8 +47,9 @@
 #'   permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
 #'   powerful; both use the correlation between the comparisons. "westfall" needs \code{permlist}; "scheffe" is not
 #'   available with it. 
-#'   The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
-#'   except for "bonferroni" method.
+#'   The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
+#'   the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}. The
+#'   printed LSD is adjusted only by "bonferroni".
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
 #' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
@@ -216,9 +217,14 @@
 #'  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
 #'  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
 #'  \code{equivalence}: the TOST p-value), \code{conf.low} and \code{conf.high} (limits of
-#'  the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
-#'  the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
-#'  within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
+#'  each difference at \code{level}, not adjusted), \code{lsd} (the half-width of those limits),
+#'  \code{adj.conf.low} and \code{adj.conf.high} (simultaneous limits within each family, which exclude 0 exactly
+#'  when \code{p.adj} is below \code{level}, as SAS \code{AdjLower} and \code{AdjUpper} and \pkg{emmeans}; for
+#'  \code{adj} "tukey" (each pair's own df, as SAS \code{ADJDFE=ROW}), "bonferroni", "sidak", "scheffe" and "mvt";
+#'  the step-down and false discovery rate methods have none) and \code{p.method}; with \code{permlist}
+#'  the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test), and the
+#'  adjusted limits use the permutation distribution of the family's largest |t| ("tukey", "mvt", "westfall") or
+#'  each pair's at level/m ("bonferroni", "sidak"); for a log
 #'  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
 #'  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
 #'  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},

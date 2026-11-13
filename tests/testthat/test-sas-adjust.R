@@ -22,16 +22,16 @@ adj_agree <- function(r, s) {
   ifelse(grepl("^<", s), r < v, abs(r - v) <= 10^(-dec) * (1 + 1e-6) + 1e-9)
 }
 
-test_that("adj = \"tukey\" equals SAS Tukey-Kramer with ADJDFE=ROW: estimates, SEs, df, p-values, limits", {
+test_that("adj = \"tukey\" equals SAS Tukey-Kramer with ADJDFE=ROW: estimates, SEs, df, p-values, limits, adjusted limits", {
   skip_on_cran()
   S <- read.csv(test_path("_data", "sas", "proc-mixed-adjust.csv.gz"), colClasses = "character")
   fm <- adj_fit()
   pp <- function(term) suppressWarnings(predictmeans(fm, term, pairwise = TRUE, adj = "tukey", plot = FALSE,
                                                      prtnum = FALSE))$pairs
-  P <- rbind(cbind(effect = "Variety", pp("Variety")[, c("level1", "level2", "estimate", "std.error", "df", "p.value",
-                                                        "p.adj", "conf.low", "conf.high")]),
-             cbind(effect = "Variety*Nitro", pp("Variety:Nitro")[, c("level1", "level2", "estimate", "std.error", "df",
-                                                                     "p.value", "p.adj", "conf.low", "conf.high")]))
+  cols <- c("level1", "level2", "estimate", "std.error", "df", "p.value", "p.adj", "conf.low", "conf.high",
+            "adj.conf.low", "adj.conf.high")
+  P <- rbind(cbind(effect = "Variety", pp("Variety")[, cols]),
+             cbind(effect = "Variety*Nitro", pp("Variety:Nitro")[, cols]))
   for (run in c("row", "source")) {
     R <- S[S$adjdfe == run, ]
     l1 <- ifelse(R$effect == "Variety", R$variety, paste(R$variety, R$nitro, sep = ":"))
@@ -49,6 +49,9 @@ test_that("adj = \"tukey\" equals SAS Tukey-Kramer with ADJDFE=ROW: estimates, S
     k <- ifelse(R$effect == "Variety", 3, 12)
     if (run == "row") {
       expect_true(all(adj_agree(Q$p.adj, R$adj_p)), label = "Tukey-Kramer p, ADJDFE=ROW")
+      # the adjusted limits (SAS AdjLower, AdjUpper)
+      expect_equal(Q$adj.conf.low, as.numeric(R$adj_lower), tolerance = 1e-4)
+      expect_equal(Q$adj.conf.high, as.numeric(R$adj_upper), tolerance = 1e-4)
       dfa <- Q$df
     } else {
       # ADJDFE=SOURCE: the same formula with the F test's denominator df

@@ -75,7 +75,9 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | `std.error`, `df`, `statistic`, `p.value` | t test of the difference |
 | `p.adj` | p-value adjusted by `adj` (within each `by` level with `atvar`) |
 | `p.equiv` | with `equivalence = d` or `c(lower, upper)`: TOST p-value (difference within the margins) |
-| `lsd` | least significant difference at `level` |
+| `conf.low`, `conf.high` | limits of each difference at `level` (not adjusted) |
+| `lsd` | least significant difference at `level` (half-width of those limits) |
+| `adj.conf.low`, `adj.conf.high` | with `adj` "tukey", "bonferroni", "sidak", "scheffe", "mvt" (with a `permlist` also "westfall"): simultaneous limits within each family; exclude 0 exactly when `p.adj` < `level` (SAS AdjLower/AdjUpper) |
 | `p.method` | `"t"`, `"tukey"`, `"permutation"` or `"bootstrap"` |
 | `ratio`, `ratio.conf.low`, `ratio.conf.high` | log link or `trans = exp`: ratio of the means |
 | `odds.ratio`, `odds.ratio.conf.low`, `odds.ratio.conf.high` | logit link: odds ratio |
@@ -166,7 +168,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   factors) are NA, with their estimable differences kept. Check `estimable` and `n`.
 - `pm_check(model)`: a table of model checks (outliers, normality, equal variances, overdispersion,
   interactions, straight line for numeric-level factors); `residplot(model)`: ggplot2 diagnostic plots
-  (`interactive = TRUE`: plotly).
+  (`interactive = TRUE`: plotly); see `vignette("checking")`.
 - `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
   the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).
 - `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use

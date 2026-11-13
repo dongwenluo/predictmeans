@@ -37,9 +37,13 @@ test_that("predictmeans() pairs: conf.low, conf.high and lsd", {
   pp <- predictmeans(fm, "nitro", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)$pairs
   expect_true(all(is.finite(pp$lsd)))
   expect_equal(pp$conf.high - pp$estimate, pp$lsd)
-  # with permutation Tukey: one critical value for the family
+  # with permutation Tukey: simultaneous limits with one critical value for
+  # the family (adj.conf.*); conf.low, conf.high and lsd do not depend on adj
   pk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, prtnum = FALSE, ncore = 1)$pairs
-  crit <- pk$lsd / pk$std.error
+  crit <- (pk$adj.conf.high - pk$estimate) / pk$std.error
   expect_equal(max(crit) - min(crit), 0, tolerance = 1e-8)
-  expect_true(all(pk$lsd >= pp$lsd - 1e-8))
+  expect_equal(pk$estimate - pk$adj.conf.low, pk$adj.conf.high - pk$estimate)
+  expect_true(all(pk$adj.conf.high - pk$estimate >= pp$lsd - 1e-8))
+  expect_equal(pk[c("conf.low", "conf.high", "lsd")], pp[c("conf.low", "conf.high", "lsd")])
+  expect_null(pp$adj.conf.low)
 })
