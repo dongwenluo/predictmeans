@@ -140,3 +140,60 @@ test_that("Exam 4.4 as aov(... + Error(repl/mainpl)): Genstat's SEDs and df by s
   expect_identical(attr(pm_joint(fa, "seedlot"), "df_method"), "multistratum")
   expect_identical(attr(contrastmeans(fa, "seedlot", ctrmatrix = rbind(c(1, -1, 0, 0)))[[1]], "Note") != "", TRUE)
 })
+
+test_that("Exam 8.1, inoculation (on whole replicates) x provenances within countries: Genstat by strata (TABC8_1)", {
+  d <- tree_data("ex8.1a.csv")
+  d$repl <- factor(d$repl); d$prov <- factor(d$prov)
+  fa <- aov(dbh ~ inoc * (country/prov) + Error(repl), data = d)
+  pm <- function(term) expect_no_warning(predictmeans(fa, term, plot = FALSE, prtnum = FALSE))   # nesting: no warning
+  i <- pm("inoc")
+  expect_equal(round(i$means$estimate, 3), c(3.183, 3.625))
+  expect_equal(round(i$pairs$std.error, 4), 0.1306)                         # replicate stratum, 2 df
+  expect_equal(i$pairs$df, 2, tolerance = 1e-8)
+  cn <- pm("country")
+  expect_equal(round(cn$means$estimate[1:5], 3), c(2.631, 3.343, 3.686, 2.498, 2.612))
+  sed <- function(p, a, b) p$pairs$std.error[(p$pairs$level1 == a & p$pairs$level2 == b) | (p$pairs$level1 == b & p$pairs$level2 == a)]
+  expect_equal(round(sed(cn, "Benin", "Guam"), 4), 0.5503)                 # 4 and 4 trees: Genstat's min.rep
+  expect_equal(round(sed(cn, "Benin", "Malaysia"), 4), 0.4102)             # 4 and 36: max-min
+  expect_equal(unique(round(cn$pairs$df, 8)), 116)
+  ic <- pm("inoc:country")
+  pdf <- function(a, b) ic$pairs$df[(ic$pairs$level1 == a & ic$pairs$level2 == b) | (ic$pairs$level1 == b & ic$pairs$level2 == a)]
+  expect_equal(round(sed(ic, "1 week:Benin", "7 weeks:Guam"), 4), 0.7826)  # across inoculation: both strata
+  expect_equal(round(pdf("1 week:Benin", "7 weeks:Guam"), 2), 117.16)
+  expect_equal(round(sed(ic, "1 week:Benin", "7 weeks:Malaysia"), 4), 0.5859)
+  expect_equal(round(pdf("1 week:Benin", "7 weeks:Malaysia"), 2), 110.85)
+  expect_equal(round(sed(ic, "1 week:Malaysia", "7 weeks:Malaysia"), 4), 0.2722)
+  expect_equal(round(pdf("1 week:Malaysia", "7 weeks:Malaysia"), 2), 31.61)
+  expect_equal(round(sed(ic, "1 week:Benin", "1 week:Guam"), 4), 0.7782)   # same inoculation: 116 df
+  expect_equal(round(pdf("1 week:Benin", "1 week:Guam"), 2), 116)
+  cp <- pm("country:prov")
+  expect_equal(nrow(cp$means), 59)
+  expect_equal(unique(round(cp$pairs$std.error, 4)), 0.5503)
+})
+
+test_that("Exam 8.2, clone trial with standards (REML; random rows, columns and clones): SAS DDFM=KR and Genstat (TABD8_5, TABC8_5)", {
+  d <- tree_data("ex8.2.csv")
+  for (v in c("repl", "row", "column", "standard", "clone")) d[[v]] <- factor(d[[v]])
+  d$contcompv <- d$contcompf                                   # clone effects for clones only (Genstat contcompv.clone)
+  d$contcompf <- factor(d$contcompf)
+  m <- suppressMessages(lme4::lmer(dbhmean ~ repl + column + contcompf + contcompf:standard + (1 | repl:row) +
+                                     (1 | repl:column) + (0 + contcompv | clone), data = d))
+  vc <- as.data.frame(lme4::VarCorr(m))
+  vv <- setNames(vc$vcov, vc$grp)
+  expect_equal(unname(vv[c("repl:row", "repl:column", "clone", "Residual")]), c(0.08023, 0.05284, 0.4950, 0.3992),
+               tolerance = 2e-3)
+  p <- expect_no_warning(predictmeans(m, "contcompf:standard", plot = FALSE, prtnum = FALSE))
+  expect_equal(p$means$estimate, c(7.7027, 6.0842, 6.5544, 8.9710, 8.9076), tolerance = 2e-5)   # 4 standards, clones
+  expect_equal(p$means$std.error, c(0.3146, 0.3125, 0.3134, 0.3137, 0.1168), tolerance = 5e-4)
+  expect_equal(p$means$df, c(221, 224, 224, 223, 63.6), tolerance = 4e-3)
+  cf <- predictmeans(m, "contcompf", plot = FALSE, prtnum = FALSE)
+  expect_equal(cf$means$estimate, c(7.3281, 8.9076), tolerance = 2e-5)       # standards averaged with equal weights
+  expect_equal(cf$means$std.error, c(0.1648, 0.1168), tolerance = 5e-4)
+  expect_equal(cf$means$df, c(215, 63.6), tolerance = 4e-3)
+  # Kenward-Roger F tests (SAS Type 1; replicates first, standards within the standard group last)
+  expect_equal(unlist(pm_joint(m, "repl")[c("F.ratio", "df2")]), c(F.ratio = 2.05, df2 = 26.5), tolerance = 5e-3)
+  st <- rbind(c(1, -1, 0, 0, 0), c(1, 0, -1, 0, 0), c(1, 0, 0, -1, 0))
+  colnames(st) <- paste(p$means$contcompf, p$means$standard, sep = ":")    # the five existing means
+  js <- pm_joint(m, "contcompf:standard", ctrmatrix = st)
+  expect_equal(c(js$F.ratio, js$df2), c(16.86, 207), tolerance = 5e-3)
+})

@@ -13,7 +13,7 @@ test_that("treatments nested in a control/treated factor: means over the treatme
   d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"))
   d$y <- 50 + 20 * (d$treat != "control") + as.integer(d$seedlot) + rnorm(nrow(d), 0, 3)
   fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
-  pm <- function(term) suppressWarnings(predictmeans(fm, term, plot = FALSE, prtnum = FALSE))$means
+  pm <- function(term) expect_no_warning(predictmeans(fm, term, plot = FALSE, prtnum = FALSE))$means   # nesting: no warning
   s <- pm("seedlot")
   expect_true(all(s$estimable))
   expect_equal(s$estimate, as.vector(tapply(d$y, d$seedlot, mean)), tolerance = 1e-8)   # each treatment weight 1/4

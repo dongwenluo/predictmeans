@@ -23,8 +23,16 @@
   means, which average over the treatments that exist; SAS and emmeans
   weight by the nesting), a split plot (Genstat's SEDs, and its 14.69 df for
   comparisons across strata, equal to predictmeans' Kenward-Roger df), an
-  incomplete site-by-seedlot table (SAS LS-means) and families as random
-  effects (SAS PROC MIXED).
+  incomplete site-by-seedlot table (SAS LS-means), families as random
+  effects (SAS PROC MIXED), trees within plots (Genstat, by strata),
+  inoculation on whole replicates crossed with provenances within countries
+  (Genstat, by strata: 2, 116 and 31.61-117.16 df) and a clone trial with
+  standards and random rows, columns and clones (SAS `DDFM=KR`: means, SEs,
+  df and F tests).
+* The warning "Missing treatments' combination appeared" is no longer given
+  for combinations absent by design (a factor nested in another, such as
+  provenances within countries); the means are the same. It is still given
+  for combinations missing from the data.
 
 * **GLMMs (`glmer`, `glmmTMB`) get the df of the grouping level at which
   each effect varies** (`df_method = "inner-outer"`, the new default), in

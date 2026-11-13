@@ -282,7 +282,11 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     if ((!cov_given || !setequal(covariate, modelterm)) && max_ord > 1 &&
         length(inter_vars) > 1 && any(ndf$Freq == 0) &&
         !setequal(unique(ndf$Freq), c(0, 1))) {
-      warning("Missing treatments' combination appeared, predicted means maybe misleading!")
+      # combinations absent by design (a factor nested in another: each of its
+      # levels occurs with one level of the other) are not missing cells
+      if (any(ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars))) {
+        warning("Missing treatments' combination appeared, predicted means maybe misleading!")
+      }
       seen <- unique(cell_key(preddf, inter_vars))
       present <- function(grid) cell_key(grid, inter_vars) %in% seen
     }
@@ -361,4 +365,23 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
 
   rg$basis <- basis              # the basis of the grid rows (for means averaged on the response scale)
   return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data))
+}
+
+
+## TRUE for the rows of 'grid' (combinations of the factors 'vars') that are
+## absent by design: for some pair of factors where b is nested in a (each
+## level of b occurs with one level of a in the data), the row's (a, b)
+## combination does not occur.
+pm_nested_absent <- function(grid, data, vars) {
+  out <- rep(FALSE, nrow(grid))
+  for (a in vars) for (b in vars) {
+    if (a == b) next
+    fa <- as.character(data[[a]]); fb <- as.character(data[[b]])
+    if (length(unique(fa)) < 2) next
+    nested <- all(tapply(fa, fb, function(v) length(unique(v)) == 1L))
+    if (!nested) next
+    seen <- unique(paste(fa, fb, sep = "\r"))
+    out <- out | !(paste(as.character(grid[[a]]), as.character(grid[[b]]), sep = "\r") %in% seen)
+  }
+  out
 }
