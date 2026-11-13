@@ -71,10 +71,10 @@ REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variet
 REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
       PSE=differences; METHOD=AI] YB
 \ means averaging only over the combinations present in the data (as predictmeans);
-\ CLASSIFY is a parameter of VPREDICT; if PRESENTCOMBINATIONS=yes is not accepted,
-\ the fault message lists the values it takes
-VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=yes] CLASSIFY=Nitro
-VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=yes] CLASSIFY=Variety
+\ CLASSIFY is a parameter of VPREDICT; PRESENTCOMBINATIONS lists the factors whose
+\ combinations missing from the data are left out of the averaging
+VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=Variety, Nitro] CLASSIFY=Nitro
+VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=Variety, Nitro] CLASSIFY=Variety
 
 \ ---- C. one sub-plot missing (71): ANOVA by strata, then REML ----
 BLOCKSTRUCTURE Block/Variety
