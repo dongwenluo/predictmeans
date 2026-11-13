@@ -13,12 +13,14 @@ reference_cases <- function() {
     k <- Kmatrix(...)
     list(K = unclass(k$K)[, , drop = FALSE], fctnames = k$fctnames, response = k$response)
   }
-  # 1.1.1 used unadjusted SEs and nlme's df for lme/gls; newer versions need
-  # vcov_adjust = FALSE and df_method = "containment" (lme, gls) for that
+  # 1.1.1 used unadjusted SEs, nlme's df for lme/gls and the residual df for
+  # GLMMs; newer versions need vcov_adjust = FALSE and df_method =
+  # "containment" (lme, gls) or "residual" (GLMMs) for that
   old_df <- function(f, m) {
     a <- names(formals(f))
     c(if ("vcov_adjust" %in% a) list(vcov_adjust = FALSE),
-      if ("df_method" %in% a && inherits(m, c("lme", "gls"))) list(df_method = "containment"))
+      if ("df_method" %in% a && inherits(m, c("lme", "gls"))) list(df_method = "containment"),
+      if ("df_method" %in% a && inherits(m, c("glmerMod", "glmmTMB"))) list(df_method = "residual"))
   }
   cvm <- function(...) do.call(covariatemeans, c(list(...), old_df(covariatemeans, list(...)[[1]])))
   pmo <- function(...) {

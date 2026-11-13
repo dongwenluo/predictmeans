@@ -31,7 +31,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   once; `prtnum = FALSE` suppresses printing of the reference-grid note.
 - `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
   method, adjustment, SED range, mean LSD).
-- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML `lmer`),
+- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML `lmer`;
+  `"inner-outer"` for GLMMs: df of the grouping level at which each effect varies; `"residual"` = 1.x),
   `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
   (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-expected"` (Kenward-Roger with the expected
   information, as pbkrtest/emmeans; `"Kenward-Roger"` uses the observed information, as SAS `DDFM=KR`).

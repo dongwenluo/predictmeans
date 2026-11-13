@@ -48,6 +48,38 @@ as gl_binom_clus with 8 clusters per treatment
 
 Mean df: resid_tTrt 91.0, resid_tW 91.0, cont_tTrt 78.0, cont_tW 78.0, BW_tTrt 14.0, BW_tW 14.0, nlme_tTrt 14.0, nlme_tW 78.0, nlmeC_tTrt 14.0, nlmeC_tW 78.0, z_tTrt Inf, z_tW Inf
 
+## gl_binom_crossed
+
+binomial (10 trials), 6 rows x 8 columns crossed, T (2 levels) on columns, W within cells; logit -0.5; SD row 0.5, column 0.5
+
+1000 data sets (0 failed); a true 5% lies in 3.2-6.8%.
+
+| | io | resid | cont | z |
+|---|---|---|---|---|
+| tT | **7.2** | **12.0** | **12.0** | **12.3** |
+| tW | 3.7 | 3.7 | 3.7 | 4.2 |
+| tTinW | 5.4 | **9.1** | **9.1** | **9.5** |
+| tWinT | 4.3 | 4.4 | 4.3 | 4.9 |
+| FT | **7.2** | **12.0** | **12.0** | **12.3** |
+
+Mean df: io_tT 6.0, io_tW 81.0
+
+## gl_pois_crossed
+
+Poisson, 4 rows x 12 columns crossed (random), treatment T (3 levels) on columns, W (2 levels) within each row x column; log mean 1.5; SD row 0.3, column 0.3; df methods of the package (inner-outer extended to crossed factors)
+
+1000 data sets (0 failed); a true 5% lies in 3.2-6.8%.
+
+| | io | resid | cont | z |
+|---|---|---|---|---|
+| tT | **7.0** | **9.8** | **9.8** | **10.1** |
+| tW | 4.8 | 4.8 | 4.8 | 5.1 |
+| tTinW | 5.2 | **8.0** | **8.0** | **8.5** |
+| tWinT | 3.9 | 3.9 | 3.9 | 4.6 |
+| FT | **7.1** | **13.0** | **12.9** | **13.9** |
+
+Mean df: io_tT 9.0, io_tW 78.0
+
 ## gl_pois_sp
 
 Poisson split plot, 6 blocks x 4 A (whole plots) x 3 B; log mean 2; SD block 0.3, whole plot 0.3

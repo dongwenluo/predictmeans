@@ -15,7 +15,7 @@
 #' residual df.
 #' @usage
 #' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),
+#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
 #'           vcov_adjust = TRUE,
 #'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
@@ -43,7 +43,7 @@
 NULL
 
 pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),
+                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
                       vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
                       vcov = NULL) {
   vcov_adjust_default <- missing(vcov_adjust)

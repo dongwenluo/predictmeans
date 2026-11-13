@@ -8,8 +8,9 @@
 ##  * df method (pm_df_method()): "auto" is Kenward-Roger for REML lmer, lme
 ##    and gls fits, Satterthwaite for ML lmer fits, nlme's df for ML lme/gls
 ##    fits; "containment" for lme and gls is nlme's df (one df per term for
-##    lme, the residual df for gls), as predictmeans 1.x; other models use
-##    the residual df (or a pm_df() method, else normal-based).
+##    lme, the residual df for gls), as predictmeans 1.x; GLMMs (glmer,
+##    glmmTMB) inner-outer df ("residual": the residual df, as 1.x); other
+##    models use the residual df (or a pm_df() method, else normal-based).
 ##  * Kenward-Roger uses the observed information of the variance parameters
 ##    (as SAS DDFM=KR): in the simulations of dev/sim-df/ it was never worse
 ##    than the expected information (pbkrtest, emmeans; "KR-expected") and
@@ -22,7 +23,8 @@
 ##    permlist (the refits use the unadjusted covariance); the user's 'vcov'
 ##    (R/vcov.R) replaces the model's covariance.
 ##  * df of a row of L: per row with Kenward-Roger and Satterthwaite (and a
-##    pm_df() method); with one df per term (containment, between-within,
+##    pm_df() method); with inner-outer df (GLMMs) the smallest df of the
+##    coefficients the row uses (R/df-innerouter.R); with one df per term (containment, between-within,
 ##    nlme's lme rule) the df of the term the rows belong to ('terms'; the
 ##    smallest if several, e.g. the terms with the covariate for slopes); else
 ##    the residual df.
@@ -83,12 +85,13 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
   } else if (is.null(df_type) && inherits(model, "lme")) {
     stats::terms(model$fixDF)                          # nlme's df of each term
   }
+  io <- dfm$io                                         # inner-outer df of each coefficient
   per_row_kr_satt <- any(df_type %in% c("Kenward-Roger", "Satterthwaite")) && (lmer || nlme)
-  resid_df <- if (is.null(one_df) && !per_row_kr_satt) {
+  resid_df <- if (is.null(one_df) && !per_row_kr_satt && is.null(io)) {
     d <- mp$df
     if (is.numeric(d) && length(d) == 1 && is.finite(d) && d > 0) d else Inf    # normal-based when unknown
   }
-  custom <- is.null(one_df) && !per_row_kr_satt &&
+  custom <- is.null(one_df) && !per_row_kr_satt && is.null(io) &&
     !is.null(tryCatch(pm_df(model, matrix(0, 1, length(mp$coef))), error = function(e) NULL))
 
   df <- function(L, terms) {
@@ -98,6 +101,20 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
       d <- one_df[intersect(terms, names(one_df))]
       if (!length(d)) stop("'", paste(terms, collapse = "', '"), "' is not a term of the model")
       return(rep(min(unname(d)), n))
+    }
+    if (!is.null(io)) {
+      # contrasts: the smallest df of the coefficients a row uses; means (rows
+      # with the intercept): the df of their term (R/df-innerouter.R)
+      d <- io[names(mp$coef)]
+      int <- attr(io, "intercept")[match(names(mp$coef), names(io))]
+      tdf <- attr(io, "terms")
+      tdf <- tdf[intersect(terms, names(tdf))]
+      return(apply(L, 1, function(l) {
+        nz <- abs(l) > 1e-10
+        if (!any(nz)) return(NA_real_)
+        if (any(nz & int) && length(tdf) && all(is.finite(tdf))) return(min(tdf))
+        min(d[nz])
+      }))
     }
     if (per_row_kr_satt) {
       if (nlme) return(as.numeric(pm_nlme_df(L, model, df_type, vcov_adj)))
@@ -149,7 +166,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     "residual"
   }
   structure(list(mp = mp, df_type = df_type, vcov_adj = vcov_adj, vcov_adjust = adjusted,
-                 vcov_label = attr(V, "label"), per_row = per_row_kr_satt || custom, label = label,
+                 vcov_label = attr(V, "label"), per_row = per_row_kr_satt || custom || !is.null(io), label = label,
                  df = df, ftest = ftest), class = "pm_inference")
 }
 
@@ -160,6 +177,38 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 ## information, "KR-expected" the expected one. Returns list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
   kr_info <- if (identical(df_method, "KR-expected")) "expected" else "observed"
+  glmm <- inherits(model, c("glmerMod", "glmmTMB"))
+  if (identical(df_method, "inner-outer") || (glmm && df_method %in% c("auto", "Kenward-Roger", "KR-expected",
+                                                                         "Satterthwaite"))) {
+    # df by grouping level (R/df-innerouter.R): the default for GLMMs, which have
+    # no Kenward-Roger or Satterthwaite df here
+    if (glmm && !df_method %in% c("auto", "inner-outer")) {
+      warning("'df_method = \"", df_method, "\"' is not available for GLMMs; using \"inner-outer\".", call. = FALSE)
+    }
+    if (inherits(model, c("merMod", "glmmTMB", "lme"))) {
+      io <- tryCatch(pm_inner_outer_df(model), error = function(e) e)
+      if (!inherits(io, "error")) return(list(df_type = "inner-outer", vcov_adj = NULL, io = io))
+      if (df_method == "inner-outer") warning("inner-outer df not available (", conditionMessage(io), "); ignored.",
+                                              call. = FALSE)
+      else message("inner-outer df not available (", conditionMessage(io), "); using the residual df.")
+      if (glmm) return(list(df_type = NULL, vcov_adj = NULL))
+    } else {
+      warning("'df_method = \"inner-outer\"' needs random effects (lmer, glmer, glmmTMB, lme); ignored.", call. = FALSE)
+      return(list(df_type = NULL, vcov_adj = NULL))
+    }
+  }
+  if (identical(df_method, "residual")) {
+    if (inherits(model, c("lmerMod", "lme"))) {
+      warning("'df_method = \"residual\"' is for models without random effects and GLMMs; use \"containment\". ",
+              "Ignored.", call. = FALSE)
+      df_method <- "auto"
+    } else return(list(df_type = NULL, vcov_adj = NULL))       # GLMMs as predictmeans 1.x; gls, lm, glm
+  }
+  if (glmm && df_method %in% c("containment", "between-within")) {
+    if (inherits(model, "glmerMod")) return(list(df_type = df_method, vcov_adj = NULL))
+    warning("'df_method = \"", df_method, "\"' is not available for glmmTMB; using the residual df.", call. = FALSE)
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
   if (identical(df_method, "between-within")) {
     if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
     warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")

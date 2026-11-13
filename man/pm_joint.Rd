@@ -5,7 +5,7 @@
 \title{Joint F Tests of Contrasts among Means (Slices)}
 \usage{
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }
 \arguments{

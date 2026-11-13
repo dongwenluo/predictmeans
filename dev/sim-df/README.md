@@ -80,8 +80,16 @@ clusters; `bootmodels()` or `permmodels()` are the checks there.
    because it stays valid with missing values; the expected information
    (pbkrtest, emmeans) as an option.
 3. GLMMs: the df of the level at which each contrast varies (nlme's rule by
-   coefficient), computed from the design, instead of the residual df;
-   needs code for `glmer` and `glmmTMB` (nested random effects; a rule for
-   crossed ones).
+   coefficient), computed from the design, instead of the residual df —
+   **done** (`df_method = "inner-outer"`, `R/df-innerouter.R`). The rule is
+   computed from ranks, which equals nlme for nested random effects and
+   extends it to crossed ones; checked by simulation
+   (`dev/sim-df-glmm/results.md`, `gl_pois_crossed`, `gl_binom_crossed`): a
+   treatment on the columns of a rows x columns design 7.0-7.2% against
+   9.8-13.0% with the residual df or containment; effects within cells
+   3.7-5.4% (both).
+
+Decisions 1 and 2 were also made (2026-11-13): Kenward–Roger with the
+observed information is the default for REML `lmer`, `lme` and `gls`.
 4. Satterthwaite F tests of several df are liberal with unstructured
    covariances; say so in the help and prefer Kenward–Roger for F tests.

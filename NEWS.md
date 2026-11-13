@@ -2,6 +2,22 @@
 
 ## Changes that affect results or scripts
 
+* **GLMMs (`glmer`, `glmmTMB`) get the df of the grouping level at which
+  each effect varies** (`df_method = "inner-outer"`, the new default), in
+  place of the residual df (n minus parameters). This is nlme's rule
+  (Pinheiro and Bates 2000), computed from the design (`R/df-innerouter.R`;
+  equal to nlme's `fixDF` for nested random effects) and extended to
+  crossed random effects: a treatment applied to whole clusters gets the
+  number of clusters minus the treatments, an effect within clusters the
+  residual stratum's df. A contrast gets the smallest df of the coefficients
+  it uses; the means of a term share the term's df. In simulations
+  (`dev/sim-df/README.md`) the residual df rejected 8-15% of true hypotheses
+  for between-cluster effects, inner-outer 6-8% (nested and crossed); the
+  rest is the Wald standard error with few clusters, for which
+  `bootmodels()` is the check. `df_method = "residual"` gives the previous
+  df. `"containment"` and `"between-within"` now work for `glmer` too, and
+  `"inner-outer"` for `lmer` and `lme`.
+
 * **Kenward-Roger df and adjusted SEs are the default for `lme` and `gls`
   models fitted by REML** (as for `lmer`), in `predictmeans()`,
   `contrastmeans()`, `pm_joint()`, `pm_slopes()` and `covariatemeans()`.

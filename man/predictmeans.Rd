@@ -12,7 +12,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 }
 \arguments{
@@ -167,6 +167,13 @@ true hypotheses in F tests of unstructured repeated measures (24\% with missing 
 log-likelihood, as SAS; its F tests are liberal when the covariance has several parameters), and
 \code{"containment"} gives \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}), as predictmeans 1.x.
 All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use \pkg{nlme}'s or the residual df.
+For GLMMs (\code{glmer}, \code{glmmTMB}) \code{"auto"} is \code{"inner-outer"}: the df of the level of the random
+effects at which each effect varies, \pkg{nlme}'s rule (Pinheiro and Bates 2000), computed from the design and
+extended to crossed random effects; a contrast gets the smallest df of the coefficients it uses, and the means of a
+term the df of the term. In simulations it rejected 6-8\% of true hypotheses for effects that vary between
+clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
+the check with few clusters. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
+and \code{"inner-outer"} for \code{lmer} and \code{lme}.
 Other choices are ignored for other model classes.}
 
 \item{vcov}{Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}

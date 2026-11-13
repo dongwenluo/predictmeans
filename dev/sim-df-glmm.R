@@ -23,9 +23,44 @@ description <- list(
   gl_pois_sp_4blk = "as gl_pois_sp with 4 blocks",
   gl_binom_clus = "binomial (10 trials), 2 treatments x 4 clusters x 6 units, within-cluster factor W (2 levels); logit -0.5; cluster SD 0.5",
   gl_binom_clus_8 = "as gl_binom_clus with 8 clusters per treatment",
-  gl_bern_rcbd = "binary, 8 blocks x 3 treatments x 4 units; logit 0; block SD 0.5")
+  gl_bern_rcbd = "binary, 8 blocks x 3 treatments x 4 units; logit 0; block SD 0.5",
+  gl_pois_crossed = "Poisson, 4 rows x 12 columns crossed (random), treatment T (3 levels) on columns, W (2 levels) within each row x column; log mean 1.5; SD row 0.3, column 0.3; df methods of the package (inner-outer extended to crossed factors)",
+  gl_binom_crossed = "binomial (10 trials), 6 rows x 8 columns crossed, T (2 levels) on columns, W within cells; logit -0.5; SD row 0.5, column 0.5")
+
+## crossed grouping factors: the package's own df methods (pm_inference())
+inference <- utils::getFromNamespace("pm_inference", "predictmeans")
+one_set_crossed <- function(cell) {
+  pois <- cell == "gl_pois_crossed"
+  nr <- if (pois) 4 else 6; nc <- if (pois) 12 else 8; nT <- if (pois) 3 else 2
+  d <- expand.grid(W = factor(1:2), Row = factor(seq_len(nr)), Col = factor(seq_len(nc)))
+  d$T <- factor((as.integer(d$Col) - 1) %% nT + 1)
+  if (pois) {
+    d$y <- rpois(nrow(d), exp(1.5 + 0.3 * rnorm(nr)[d$Row] + 0.3 * rnorm(nc)[d$Col]))
+    m <- glmer(y ~ T * W + (1 | Row) + (1 | Col), family = poisson, data = d, control = gctl)
+  } else {
+    d$r <- rbinom(nrow(d), 10, plogis(-0.5 + 0.5 * rnorm(nr)[d$Row] + 0.5 * rnorm(nc)[d$Col]))
+    m <- glmer(cbind(r, 10 - r) ~ T * W + (1 | Row) + (1 | Col), family = binomial, data = d, control = gctl)
+  }
+  KT <- Kmatrix(m, "T")$K; KW <- Kmatrix(m, "W")$K; KTW <- Kmatrix(m, "T:W")$K
+  Lt <- rbind(KT[1, ] - KT[2, ], KW[1, ] - KW[2, ], KTW["1:1", ] - KTW["2:1", ], KTW["1:1", ] - KTW["1:2", ])
+  LF <- list(contrast_family(Kmatrix(m, "T"), "consec") %*% KT)
+  tt <- c("T", "W", "T:W", "T:W"); labs <- c("tT", "tW", "tTinW", "tWinT", "FT")
+  b <- lme4::fixef(m); V <- as.matrix(stats::vcov(m))
+  est <- drop(Lt %*% b); se <- sqrt(rowSums((Lt %*% V) * Lt))
+  out <- unlist(lapply(c("inner-outer", "residual", "containment", "z"), function(k) {
+    inf <- inference(m, if (k == "z") "residual" else k)
+    df <- vapply(seq_len(nrow(Lt)), function(i) inf$df(Lt[i, , drop = FALSE], tt[i]), numeric(1))
+    f <- inf$ftest(LF[[1]], "T")
+    if (k == "z") { df[] <- Inf; f[4] <- stats::pchisq(f[3] * f[1], f[1], lower.tail = FALSE) }
+    p <- c(2 * stats::pt(-abs(est/se), df), f[4])
+    stats::setNames(p, paste(labs, c("inner-outer" = "io", residual = "resid", containment = "cont", z = "z")[[k]], sep = "."))
+  }))
+  inf <- inference(m, "inner-outer")
+  c(out, df_io_tT = inf$df(Lt[1, , drop = FALSE], "T"), df_io_tW = inf$df(Lt[2, , drop = FALSE], "W"))
+}
 
 one_set <- function(cell) {
+  if (cell %in% c("gl_pois_crossed", "gl_binom_crossed")) return(one_set_crossed(cell))
   if (startsWith(cell, "gl_pois_sp")) {
     nb <- if (cell == "gl_pois_sp_4blk") 4 else 6
     d <- sp_design(nsub = 3, nblock = nb)
