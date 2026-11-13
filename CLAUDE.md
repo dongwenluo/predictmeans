@@ -6,9 +6,15 @@ semiparametric models. Development is toward 2.0; read
 table; the row marked "Next" is the current task) and `NEWS.md`.
 
 ## Aims (from the maintainer)
-- Match SAS PROC MIXED numbers and run fast; add emmeans/marginaleffects-style
-  features; keep dependencies few; easy to extend to new model classes
-  (adapter generics in `R/adapter.R`, see `?pm_coef`).
+- Statistically right first. Each default is the most reliable method on the
+  evidence (simulation, literature); matching SAS or Genstat is an option the
+  user can choose, not the goal. SAS/Genstat runs check that a formula is
+  computed as documented.
+- Clear logic, not chaos: each statistical decision (df method, covariance,
+  estimability, ...) is made in one place and used by every function.
+- Run fast; add emmeans/marginaleffects-style features; keep dependencies few;
+  easy to extend to new model classes (adapter generics in `R/adapter.R`, see
+  `?pm_coef`).
 
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
@@ -17,9 +23,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
 - Means over empty cells keep the 1.x rule (average of observed cells, with a
   warning); truly non-estimable means are NA.
-- Between-within df and SAS-matched non-integer values wait for CSVs from a
-  real SAS run of `dev/sas/pm-reference.sas`. Do not use SAS tables typed into
-  chat as references (see `dev/sas/README.md`).
+- SAS reference values come only from real SAS runs (`dev/sas/`, parsed
+  results pages or CSVs). Do not use SAS tables typed into chat as references
+  (see `dev/sas/README.md`).
 
 ## Layout
 - `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`; the work is

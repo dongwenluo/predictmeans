@@ -152,8 +152,11 @@ structures.
 
 1. **Numbers don't change by accident.** Results are frozen as tests before
    refactoring. Every change in a number is a documented fix or an opt-in.
-2. **SAS-verifiable.** Every statistic has a documented formula and a test
-   against an external reference (SAS output, emmeans, mgcv, pbkrtest).
+2. **Statistically right first, then SAS-verifiable.** Defaults are the most
+   reliable method on the evidence (simulation studies in `dev/sim-study/`,
+   literature); SAS- and Genstat-matching methods stay available as options.
+   Every statistic has a documented formula and a test against an external
+   reference (SAS output, emmeans, mgcv, pbkrtest).
 3. **Fast by construction.** Compute once and reuse: means covariance,
    df ingredients, factorisations. Never form n×n or (pairs × p) matrices
    that aren't needed. Skip work that full-rank or balanced cases don't need.
@@ -171,6 +174,11 @@ structures.
    only, never editing `predictmeans()`, `Kmatrix()` or `contrastmeans()`.
    Each built-in class is just a set of these methods, and a test fits
    made-up classes to keep the contract honest.
+9. **One decision, one place.** Each statistical choice (df method, which
+   covariance, estimability, back-transformation) is made by one function
+   and used by every front end (`predictmeans()`, `contrastmeans()`,
+   `pm_joint()`, `pm_slopes()`), so the logic stays clear and a default can
+   be changed in one line.
 
 ---
 
