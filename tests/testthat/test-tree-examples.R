@@ -93,3 +93,23 @@ test_that("Exam 6.2, families within a provenance (random): SAS PROC MIXED (TABD
   expect_equal(drop(K %*% lme4::fixef(mi)), 14.2100, tolerance = 5e-5)
   expect_equal(sqrt(drop(K %*% as.matrix(vcov(mi)) %*% t(K))), 0.1158, tolerance = 5e-4)
 })
+
+test_that("Exam 3.1, trees within plots (multistratum aov): Genstat's means and SEDs on the plot stratum (TABC3_1)", {
+  d <- tree_data("ex3.1a.csv")
+  d$repl <- factor(d$repl); d$plot <- factor(d$plot)
+  ref <- list(ht = list(m = c(10.29, 7.10, 5.51, 4.94, 2.73), sed = 0.861),
+              dgl = list(m = c(18.87, 13.99, 11.43, 17.59, 5.95), sed = 1.074))
+  for (v in names(ref)) {
+    if (v == "dgl") {
+      # Known issue: the plot-stratum mean square (9.23) is below the tree-stratum one (19.47), so the plot
+      # variance is negative by ANOVA; predictmeans refits the aov as lmer, where REML sets it to zero, and
+      # gets SED 1.5 on 75 df instead of the stratum test's 1.074 on 4 df (exact for this balanced design).
+      skip("aovlist with a negative stratum variance: stratum-based SEs not implemented yet (plan, step 3c)")
+    }
+    fm <- aov(stats::as.formula(paste(v, "~ seedlot + Error(repl/plot)")), data = d)
+    p <- suppressWarnings(predictmeans(fm, "seedlot", plot = FALSE, prtnum = FALSE))
+    expect_equal(round(p$means$estimate, 2), ref[[v]]$m, info = v)
+    expect_equal(unique(round(p$pairs$std.error, 3)), ref[[v]]$sed, info = v)
+    expect_equal(unique(round(p$pairs$df, 2)), 4, info = v)            # the plot stratum
+  }
+})
