@@ -85,7 +85,7 @@ themselves (`"A:B"`), where nothing is averaged.
    averages over an empty cell (changes `pairs` for such means) — **done**
    (maintainer's yes, 2026-11-13; `R/empty-cells.R`).
 2. `df_term()` through `pm_df_method()`; empty-cell rule in one function (no
-   change in output; snapshot check).
+   change in output; snapshot check) — **done**.
 3. ML `lme`/`gls`: Satterthwaite from the ML Hessian, as ML `lmer` (changes
    df of ML nlme fits).
 4. `pm_anova()` tables: observed information by default (changes the KR F

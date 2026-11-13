@@ -411,15 +411,18 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
 
   type <- as.character(type)
   type <- match.arg(type)
-  kr_info <- "observed"                  # Kenward-Roger with the observed information, as SAS DDFM=KR
-  if (type %in% c("KR-expected", "KR-average")) {   # the expected (pbkrtest) or average (Genstat) information
-    kr_info <- if (type == "KR-expected") "expected" else "average"
-    type <- "Kenward-Roger"
-  }
-  if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
-    # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
-    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
-    type <- "Satterthwaite"
+  # the df method and its ingredients, decided as for every other function
+  # (pm_df_method(), R/inference.R); a caller's 'vcov_adj' was made for 'type'
+  if (is.null(vcov_adj)) {
+    dfm <- pm_df_method(model, type)
+    type <- dfm$df_type
+    vcov_adj <- dfm$vcov_adj
+  } else {
+    if (type %in% c("KR-expected", "KR-average")) type <- "Kenward-Roger"
+    if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
+      warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+      type <- "Satterthwaite"
+    }
   }
 
   if (type %in% c("containment", "between-within")) {
@@ -447,12 +450,11 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
   }
 
   if (type=="Kenward-Roger") {
-    # Adjusted vcov(beta); reuse it when the caller has already computed it.
-    vcov_beta_adj <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) try(pm_vcov_kr(model, kr_info), silent=TRUE) else vcov_adj
     # All rows at once; same values as pbkrtest::Lb_ddf() row by row.
-    ddf <- try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_beta_adj), silent=TRUE)
+    ddf <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) NULL else
+      try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_adj), silent=TRUE)
 
-    if (any(inherits(vcov_beta_adj, "try-error"),
+    if (any(is.null(ddf),
 	        inherits(ddf, "try-error"),
 			ddf >= nrow(model.frame(model)),
 			ddf <= 0)) {

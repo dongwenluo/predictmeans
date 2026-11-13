@@ -269,39 +269,13 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
       flat = function(grid) as.numeric(count_of(factor_names)(grid) > 0))
   }
 
-  # Missing factor combinations: only average over the observed cells.
-  # Only the factors that interact matter: blocks or other main-effect-only
-  # factors would make every cell look single (one observation per cell),
-  # hiding structurally empty combinations such as nested treatments.
+  # Empty cells of the interacting factors (R/empty-cells.R): with equal
+  # weights, means average over the observed cells only
   empty_rule <- NULL
   if (weights == "equal" && length(factor_names) != 0) {
-    fac_mat <- attr(Terms, "factors")
-    ord <- attr(Terms, "order")
-    inter_rows <- if (length(fac_mat) && any(ord > 1))
-      rownames(fac_mat)[rowSums(fac_mat[, ord > 1, drop = FALSE] > 0) > 0] else character(0)
-    inter_vars <- factor_names[factor_names %in% inter_rows |
-                                 vapply(factor_names, function(v) any(grepl(paste0("\\b", v, "\\b"), inter_rows)), logical(1))]
-    if (length(inter_vars) < 2) inter_vars <- factor_names
-    ndf <- data.frame(table(preddf[, inter_vars, drop = FALSE]))
-    max_ord <- max(c(0, ord))
-    if ((!cov_given || !setequal(covariate, modelterm)) && max_ord > 1 &&
-        length(inter_vars) > 1 && any(ndf$Freq == 0) &&
-        !setequal(unique(ndf$Freq), c(0, 1))) {
-      # combinations absent by design (a factor nested in another: each of its
-      # levels occurs with one level of the other) are not missing cells;
-      # means over the others are the averages of their observed cells, and
-      # comparisons of such means use common cells (R/empty-cells.R)
-      seen <- unique(cell_key(preddf, inter_vars))
-      present <- function(grid) cell_key(grid, inter_vars) %in% seen
-      missing_cells <- ndf[ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars),
-                           inter_vars, drop = FALSE]
-      if (nrow(missing_cells)) {
-        empty_rule <- list(
-          design = function(grid) !pm_nested_absent(grid[, inter_vars, drop = FALSE], preddf, inter_vars),
-          unmatched = pm_unmatched_factors(preddf, setdiff(inter_vars, facs), intersect(facs, factor_names)),
-          missing = do.call(paste, c(lapply(missing_cells, as.character), sep = ":")))
-      }
-    }
+    empty_rule <- pm_empty_rule(Terms, factor_names, preddf, facs,
+                                apply_rule = !cov_given || !setequal(covariate, modelterm))
+    if (!is.null(empty_rule)) present <- empty_rule$present
   }
 
   rg <- pm_make_refgrid(facs, baselevs, matdat, joint, profiles, prof_w, present)
@@ -361,23 +335,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
 
   # means that average over empty cells: say which, and prepare their
   # comparisons on common cells (R/empty-cells.R)
-  empty_cells <- NULL
-  if (!is.null(empty_rule)) {
-    empty_cells <- pm_empty_cells(rg, observed = present(rg$grid), design = empty_rule$design(rg$grid),
-                                  unmatched = empty_rule$unmatched, inter_vars = inter_vars, basis = basis,
-                                  coef_names = info$coef_names, N = null_space, labels = rnK)
-    if (!is.null(empty_cells)) {
-      short <- function(x) paste(if (length(x) > 6) c(x[1:6], "...") else x, collapse = ", ")
-      empty_cells$missing <- empty_rule$missing
-      one <- sum(empty_cells$affected) == 1
-      warning("No data for ", paste(inter_vars, collapse = ":"), " ", short(empty_rule$missing), ". ",
-              if (one) "The mean of " else "The means of ", modelterm, " = ", short(rnK[empty_cells$affected]),
-              if (one) " averages only its observed cells; comparisons with it" else
-                " average only their observed cells; comparisons with them",
-              " use only the cells that the compared means all have (column 'over' of the pairs).",
-              call. = FALSE)
-    }
-  }
+  empty_cells <- if (!is.null(empty_rule)) pm_empty_cells(rg, empty_rule, basis, info$coef_names, null_space, rnK,
+                                                          modelterm)
 
   K <- K[, info$coef_names, drop = FALSE]
   attr(K, "estimable") <- estimable
