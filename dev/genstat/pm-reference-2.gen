@@ -56,7 +56,9 @@ CALCULATE YD = MVINSERT(Yield; ((Block.EQ.1).AND.(Variety.EQ.2).AND.(Nitro.EQ.0.
                                ((Block.EQ.4).AND.(Variety.EQ.3).AND.(Nitro.EQ.0))   .OR. \
                                ((Block.EQ.5).AND.(Variety.EQ.2).AND.(Nitro.EQ.0.4)) .OR. \
                                ((Block.EQ.6).AND.(Variety.EQ.1).AND.(Nitro.EQ.0.2)))
-PRINT [ORIENTATION=across] NOBSERVATIONS(YA), NOBSERVATIONS(YB), NOBSERVATIONS(YC), NOBSERVATIONS(YD)
+SCALAR nA, nB, nC, nD
+CALCULATE nA, nB, nC, nD = NOBSERVATIONS(YA, YB, YC, YD)
+PRINT nA, nB, nC, nD
 \ (expected: 67, 66, 71, 67)
 
 VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block/Variety
@@ -69,9 +71,10 @@ REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variet
 REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
       PSE=differences; METHOD=AI] YB
 \ means averaging only over the combinations present in the data (as predictmeans);
-\ if PRESENT is not accepted, try COMBINATIONS=present instead
-VPREDICT [PRINT=description, predictions, se, sed; CLASSIFY=Nitro; PRESENT=Variety, Nitro]
-VPREDICT [PRINT=description, predictions, se, sed; CLASSIFY=Variety; PRESENT=Variety, Nitro]
+\ CLASSIFY is a parameter of VPREDICT; if PRESENTCOMBINATIONS=yes is not accepted,
+\ the fault message lists the values it takes
+VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=yes] CLASSIFY=Nitro
+VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=yes] CLASSIFY=Variety
 
 \ ---- C. one sub-plot missing (71): ANOVA by strata, then REML ----
 BLOCKSTRUCTURE Block/Variety
