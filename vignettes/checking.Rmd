@@ -1,0 +1,147 @@
+---
+title: "Checking the model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Checking the model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 6)
+```
+
+Predicted means, their standard errors and the tests are only as good as the model behind
+them. Before reading them, two functions help check the model:
+
+- `pm_check()`: a table of checks (outliers, influence, normality, equal variances,
+  overdispersion, interactions, straight lines, estimability) with a plain note on each;
+- `residplot()`: four diagnostic plots, drawn with ggplot2.
+
+Both work for every model class that `predictmeans()` handles: `lm`, `aov` (also with
+`Error()`), `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and `gam`.
+
+## A split plot
+
+Yates' oats: varieties on whole plots within blocks, nitrogen rates on sub-plots.
+
+```{r}
+library(predictmeans)
+Oats <- as.data.frame(nlme::Oats)
+Oats$nitro <- factor(Oats$nitro)
+fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
+pm_check(fm)
+```
+
+Rows marked `!` are worth a look. Here none are. The notes say what each row means for the
+analysis:
+
+- the normality test of the block effects gives p = 0.03, but six values say little about
+  the shape of a distribution, and in this balanced design the block effects cancel from
+  every comparison of treatments;
+- there is no evidence of an interaction, but the design calls for the term, so it stays
+  in the model;
+- the nitrogen means are close to a straight line (the test of curvature uses the actual
+  spacing of the rates 0, 0.2, 0.4 and 0.6), so nitrogen could also enter the model as a
+  number.
+
+```{r, fig.alt = "Four diagnostic plots of the split-plot model"}
+residplot(fm)
+```
+
+The four panels:
+
+1. **Residuals against fitted values**, with a smooth: a trend points to a missing term
+   or a wrong link, and a funnel to a variance that changes with the mean.
+2. **Normal Q–Q plot of the residuals**: the points should lie near the line.
+3. **Q–Q plot of the random effects** of one term (`level` chooses which: here 1, the
+   whole plots `Variety:Block`; `level = 2` gives the blocks).
+4. **Fitted against observed values.**
+
+The three most extreme points are labelled with their row names (`id` changes how many).
+
+For other classes, panels 3 and 4 differ:
+
+| Model | Panel 3 | Panel 4 |
+|---|---|---|
+| `lmer`, `lme`, `glmer`, `glmmTMB` | Q–Q plot of the random effects | fitted against observed |
+| `gls` | autocorrelation of the normalized residuals | fitted against observed |
+| `lm`, `aov`, `glm` | scale-location (√\|residual\| against fitted) | Cook's distances |
+| 0/1 responses | as above | calibration: observed proportions against fitted probabilities |
+
+The residuals are those that should look normal when the model is right: standardized
+for `lm`, normalized (the correlation removed) for `gls` and `lme`, and **randomized
+quantile residuals** (Dunn and Smyth 1996) for Poisson, binomial and negative binomial
+models. Raw or Pearson residuals of counts are not normal even for a correct model,
+while quantile residuals are exactly normal, so the plots read the same way as for a
+normal model.
+
+## Counts: overdispersion
+
+The number of warp breaks per loom, for two wools and three tensions, as a Poisson
+model:
+
+```{r}
+gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)
+pm_check(gm)
+```
+
+Two rows are flagged. Six residuals are beyond 3 where 0.1 are expected, and the Pearson
+chi-square is 3.8 times its df: the counts vary more than a Poisson distribution allows,
+so its standard errors are too small and its tests too liberal. The plots show the same:
+
+```{r, fig.alt = "Diagnostic plots of the Poisson model"}
+residplot(gm)
+```
+
+A negative binomial model lets the variance grow faster than the mean:
+
+```{r}
+nb <- MASS::glm.nb(breaks ~ wool * tension, data = warpbreaks)
+pm_check(nb)
+```
+
+No outliers remain. The interaction is still there, so compare the wools within each
+tension:
+
+```{r}
+pm_nb <- predictmeans(nb, "wool:tension", atvar = "tension", pairwise = TRUE,
+                      plot = FALSE, prtnum = FALSE)
+pm_nb$pairs[!is.na(pm_nb$pairs$by), c("level1", "level2", "ratio", "ratio.conf.low",
+                                      "ratio.conf.high", "p.value")]
+```
+
+For a Poisson, binomial or negative binomial model, the tests are z tests: the
+dispersion is known, so the residual df do not apply (`settings$df_method` is
+`"asymptotic (z)"`).
+
+## Interactive plots
+
+With `interactive = TRUE` the plots are drawn with plotly, if it is installed. Hovering
+over a point shows its row of the data, which helps find an outlier in a large data set:
+
+```{r, eval = FALSE}
+residplot(fm, interactive = TRUE)
+```
+
+`group` colours the points by a variable, for example `residplot(fm, group = "Block")`.
+`pm_check(fm, plot = TRUE)` draws the plots as well as giving the table.
+
+## What the checks do not do
+
+The checks inform; they do not decide.
+
+- **Keep the terms the design calls for.** Blocks, whole plots and the treatment
+  structure stay in the model whether or not their tests are significant. Dropping a
+  term after looking at its test makes the later tests and intervals too optimistic.
+- **Tests and sample size.** Tests of normality and of equal variances reject small
+  departures in large data sets and miss large ones in small data sets. The plots show
+  how large a departure is; the SD ratios in `pm_check()` say it in numbers.
+- **Influence.** Cook's distances are given for `lm`, `aov` and `glm`. For mixed models,
+  `CookD()` finds the observations or groups that change the estimates most.
+
+When a check fails, the usual remedies are a transformation (`trans` in `predictmeans()`
+then back-transforms the means), a variance structure (`gls` or `lme` with `weights`), a
+different distribution (negative binomial, `glmmTMB`), or a robust or permutation analysis
+(`vignette("resampling", package = "predictmeans")`).

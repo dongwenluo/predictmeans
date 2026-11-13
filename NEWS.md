@@ -2,6 +2,28 @@
 
 ## Changes that affect results or scripts
 
+* **Adjusted confidence limits of the pairs.** With `adj` "tukey",
+  "bonferroni", "sidak", "scheffe" or "mvt", `pairs` has the columns
+  `adj.conf.low` and `adj.conf.high`: simultaneous limits within each family
+  (each level of `atvar`) that exclude 0 exactly when `p.adj` is below
+  `level`, as SAS `AdjLower`/`AdjUpper` and emmeans' `confint()` (Tukey with
+  each pair's own df, as SAS `ADJDFE=ROW`; equal to SAS's Tukey-Kramer limits
+  in `test-sas-adjust.R`). The step-down and false discovery rate methods
+  (holm, hochberg, hommel, BH, BY) have no simultaneous limits and no such
+  columns. With a `permlist`, "tukey", "mvt" and "westfall" use the
+  permutation distribution of the family's largest |t|. `conf.low`,
+  `conf.high` and `lsd` are now always the limits of each comparison on its
+  own: with `adj = "bonferroni"` they were Bonferroni limits over all pairs
+  (not per family), and with a `permlist` and a max-|t| adjustment they were
+  the simultaneous limits now in `adj.conf.*`. The printed LSD is unchanged.
+* Fixed: `predictmeans()` with `level` given (and `letterCI = FALSE`)
+  stopped with "object 'slevel' not found" when making pairwise comparisons,
+  as in 1.1.1.
+* `permmodels(type = "III")` computes the map from the model's coefficients
+  to the sum-to-zero hypotheses once instead of in every refit: `lm` with 999
+  raw permutations 1.9 s (3.3 s before, 2.3 s before the contrast-free Type
+  III tests); results identical.
+
 * **`aov()` with `Error()` and missing values: estimated as Genstat's ANOVA.**
   In an orthogonal design with some plots missing (rows with an `NA`
   response, or a few combinations of the design factors absent), the missing
@@ -293,6 +315,16 @@
 
 
 ## New features
+
+* New vignette "Checking the model" (`vignette("checking")`): `pm_check()`
+  and `residplot()` on a split plot and on overdispersed counts (Poisson, then
+  negative binomial), with what the checks do and do not decide. The main
+  vignette has a table of the default df by model class (Kenward-Roger for
+  REML fits, Satterthwaite for ML fits, inner-outer for GLMMs, z tests for
+  Poisson/binomial/negative binomial `glm`, residual df otherwise, strata for
+  `aov` with `Error()`), with `"KR-expected"` and `"KR-average"` among the
+  options. `dev/benchmarks.R` also times permutation tests and means over
+  empty cells.
 
 * New tests against Genstat 23.1 REML (`test-genstat-reference.R`; runs by
   the maintainer, output files in `dev/genstat/`): six analyses of the oats

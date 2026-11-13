@@ -16,6 +16,7 @@ articles:
   navbar: ~
   contents:
   - predictmeans
+  - checking
   - contrasts
   - response-scale
   - resampling
