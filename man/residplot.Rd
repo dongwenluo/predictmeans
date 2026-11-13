@@ -2,40 +2,88 @@
 % Please edit documentation in R/residplot.R
 \name{residplot}
 \alias{residplot}
-\title{Diagnostic Plots for a Linear (Mixed) Model}
+\title{Diagnostic Plots for a Fitted Model}
 \usage{
-residplot(model, group = "none", level = 1, slope = FALSE, id = FALSE, newwd=FALSE,
-    ask=FALSE)
+residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE,
+    ask = FALSE, interactive = FALSE, plot = TRUE)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
+\item{model}{A fitted model (see Description).}
 
-\item{group}{Name (in "quotes") for indicating the variable used to show grouping in the residual vs predicted plot. If variable is a term in the model, then group will be a name of the variable such as \code{group="A"}, otherwise group will be the actual variable such as \code{group=data$A}.}
+\item{group}{Optional variable that colours the points: the name (in "quotes") of a variable in the data of the
+model, or a vector with one value per observation. The default \code{"none"} uses one colour.}
 
-\item{level}{An integer 1, 2, etc. used to specify a level of the random effect for plotting. The default value is 1.}
+\item{level}{For mixed models: which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
+\code{ranef()}: for \code{lme} the outermost grouping first, for \code{lmer} the innermost first).}
 
-\item{slope}{A logical variable. If set to TRUE, a Q-Q plot of random slope will be drawn.}
+\item{slope}{For mixed models: \code{TRUE} plots the random slopes (the second column of the random effects) instead
+of the random intercepts.}
 
-\item{id}{A logical variable. If set to TRUE, outliers in the residual vs fitted plot can be identified interactively.}
+\item{id}{Number of the most extreme points labelled with their row names (largest absolute residuals; for the
+Cook's distance plot the largest distances); \code{FALSE} or 0 labels none. In 1.x \code{id = TRUE} let you
+click on points; now \code{TRUE} labels 3 points, and \code{interactive = TRUE} shows every point's row name.}
 
-\item{newwd}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
+\item{newwd}{Open a new graphics device first.}
 
-\item{ask}{logical. If TRUE (and the R session is interactive) the user is asked for input, before a new figure is drawn.}
+\item{ask}{\code{TRUE}: draw the plots one per page, asking before each new page (interactive sessions).}
+
+\item{interactive}{\code{TRUE}: show the plots with \pkg{plotly} (\code{plotly::ggplotly()}), which must be
+installed.}
+
+\item{plot}{\code{FALSE}: do not draw; only return the plots.}
+}
+\value{
+Invisibly, a list of the four \code{ggplot} objects (class \code{"pm_residplot"}), with attribute \code{"data"}:
+the data frame of the points (row label, fitted, residual, observed values, group). With \code{interactive = TRUE},
+the \pkg{plotly} widget.
 }
 \description{
-This function produces diagnostic plots for linear models including 'aov', 'lm', 'glm', 'gls', 'lme' and 'lmer'.
+Four diagnostic plots, drawn with \pkg{ggplot2}, for any model that \code{\link{predictmeans}} handles: \code{lm},
+\code{aov} (also with \code{Error()} strata), \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+\code{glmmTMB}, \code{mgcv::gam}, \code{\link{semireg}} fits, and other classes with \code{fitted()} and
+\code{residuals()} methods. With \code{interactive = TRUE} they are shown with \pkg{plotly}: hovering a point gives
+its row of the data.
+}
+\details{
+The plots:
+\enumerate{
+\item Residuals against fitted values, with a loess smooth: look for trends (a missing term, a wrong link) and
+  for spread that changes with the fitted values.
+\item Normal Q-Q plot of the residuals: the points should lie near the line.
+\item Mixed models: normal Q-Q plot of the random effects of term \code{level}. \code{gls}: autocorrelation of the
+  normalized residuals (with approximate 95\% limits). Other models: square root of the absolute residuals
+  against fitted values (scale-location), for spread that changes with the fitted values.
+\item \code{lm}, \code{aov} and \code{glm}: Cook's distances. Other models: fitted against observed values; for a
+  0/1 response, the observed proportion against the mean fitted probability in tenths of the fitted values
+  (calibration).
+}
+Residuals: standardized for \code{lm} (\code{rstandard()}), normalized for \code{gls} and \code{lme} (the
+correlation structure removed), scaled by the residual standard deviation for \code{lmer}. For Poisson, binomial and
+negative binomial models (\code{glm}, \code{glmer}, \code{glmmTMB}, \code{gam}) randomized quantile residuals
+(Dunn and Smyth, 1996): exactly normal when the model is right, so plots 1 and 2 are read as for a normal model
+(they use a fixed random seed, so the plots do not change between calls); fitted values are then on the link
+scale. Other families: standardized deviance residuals. \code{aov} with \code{Error()}: the residuals of the lowest
+stratum. The plots inform; they do not test. For a summary of checks, see also \code{\link{CookD}}.
 }
 \examples{
-## Note that the order of levels of nested random effects is oposite 
-## between lme and lmer objects.
-
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-residplot(fm, level=2)    #lme: level=2 for random effect "Block:Variety"
+residplot(fm, level=2)    # lme: level=2 for random effect "Block:Variety"
 
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-residplot(fm) # lmer: By default level=1 for random effect "Block:Variety"
+residplot(fm, group = "Variety") # lmer: level=1 for random effect "Block:Variety"
+
+# a Poisson GLM: randomized quantile residuals
+gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)
+p <- residplot(gm, plot = FALSE)
+p[[2]]                               # one of the plots
+# interactive plots (hover for each point's row)
+if (interactive() && requireNamespace("plotly", quietly = TRUE)) residplot(fm, interactive = TRUE)
+}
+\references{
+Dunn, P. K. and Smyth, G. K. (1996), Randomized quantile residuals, \emph{Journal of Computational and Graphical
+Statistics}, 5, 236-244.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

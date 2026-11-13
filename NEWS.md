@@ -2,6 +2,22 @@
 
 ## Changes that affect results or scripts
 
+* **`residplot()` is rewritten with ggplot2 and works for every model class
+  predictmeans handles**: `lm`, `aov` (also with `Error()`), `glm`, `gls`,
+  `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`, `semireg` fits and other classes with
+  `fitted()` and `residuals()` methods. Four plots: residuals vs fitted (with
+  a loess smooth), normal Q-Q of the residuals, then by model the random
+  effects' Q-Q plot, the autocorrelation of the normalized residuals (`gls`)
+  or scale-location, and Cook's distances (`lm`, `aov`, `glm`) or fitted vs
+  observed (a calibration plot for a 0/1 response). Poisson, binomial and
+  negative binomial models use randomized quantile residuals (Dunn and Smyth
+  1996), normal when the model is right. The axis labels of the 1.x plots of
+  mixed models were wrong (swapped in the Q-Q plot; raw residuals called
+  standardized). `interactive = TRUE` shows the plots with plotly (hover for
+  each point's row); `plot = FALSE` returns the ggplot objects to change or
+  combine. `id` now labels the most extreme points (3 by default) instead of
+  asking for clicks.
+
 * **Type III tests no longer depend on the model's contrasts** (`permmodels(type
   = "III")` and its tables). They are the tests of sum-to-zero contrasts, as SAS
   Type 3, computed from the model's own coefficients without refitting. Before,
