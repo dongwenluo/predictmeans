@@ -399,15 +399,16 @@ pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
   }
   pm_df_raw <- inf$df(K, modelterm)
   Df_diff <- inf$df(rK, modelterm)
+  # pairs that cannot be estimated (confounded factors) have NA df: leave them out
   if (inf$per_row) {
     Df <- if (!is.null(names(inf$mp$df)) && modelterm %in% names(inf$mp$df)) unname(inf$mp$df[modelterm]) else
-      mean(Df_diff)
-    pairDf <- round(mean(Df_diff), 2)
+      mean(Df_diff, na.rm = TRUE)
+    pairDf <- round(mean(Df_diff, na.rm = TRUE), 2)
   } else {
-    Df <- Df_diff[1]
+    Df <- Df_diff[!is.na(Df_diff)][1]
     pairDf <- Df
   }
-  if (Df == 0) stop("You need provide Df for this model!")
+  if (isTRUE(Df == 0)) stop("You need provide Df for this model!")
   mt$Df <- round(pm_df_raw, 2)
   list(Df = Df, mt = mt, pm_df_raw = pm_df_raw, Df_diff = Df_diff, pairDf = pairDf)
 }

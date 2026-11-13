@@ -194,3 +194,19 @@ test_that("ci_mcp() accepts LL = UL; model.matrix() of an lme model takes 'data'
   rows <- c(1:4, 65:68)   # both sexes
   expect_equal(predictmeans:::model.matrix.lme(fm, data = nlme::Orthodont[rows, ]), X[rows, ], ignore_attr = TRUE)
 })
+
+test_that("pairs that cannot be estimated do not stop predictmeans with per-pair df (confounded factors)", {
+  # volume 400 only with fine droplets: its pairs cannot be estimated; the
+  # mean df of the pairs used to be NA and stopped predictmeans()
+  set.seed(3)
+  sp <- data.frame(blk = factor(rep(1:10, each = 5)),
+                   droplet = factor(rep(c("medium", "medium", "medium", "medium", "fine"), 10), levels = c("medium", "fine")),
+                   vol = factor(rep(c("130", "200", "130", "200", "400"), 10)))
+  sp$y <- 5 + 0.3 * (sp$vol == "200") + rnorm(10)[sp$blk] + rnorm(50, sd = 0.3)
+  fm <- lme4::lmer(y ~ droplet + vol + (1 | blk), data = sp)
+  p <- suppressMessages(predictmeans(fm, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  ok <- p$pairs$level1 == "130" & p$pairs$level2 == "200"
+  expect_true(is.finite(p$pairs$estimate[ok]) && is.finite(p$pairs$df[ok]))
+  expect_true(all(is.na(p$pairs$estimate[!ok]) & is.na(p$pairs$df[!ok])))
+  expect_true(is.finite(attr(p$LSD, "Degree of freedom")))
+})

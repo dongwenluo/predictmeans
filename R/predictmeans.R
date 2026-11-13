@@ -114,7 +114,9 @@
 #'   predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means
 #'   average over different cells, so their difference would also carry the effects of the other factors; a pair
 #'   with such a mean is therefore compared on the cells both means have (column \code{over} of \code{pairs}; NA,
-#'   \code{over = "none"}, when they have none). In simulations comparing the averages rejected 8-78\% of true
+#'   \code{over = "none"}, when they have none). Only factors whose effects the two means share are matched: with
+#'   \code{Sample_date/Farm} in the model, two dates are not matched on farms (each date has its own farm effects),
+#'   but two treatments at one date are. In simulations comparing the averages rejected 8-78\% of true
 #'   null hypotheses at the 5\% level when the other factor had an effect, the common cells 4-6\%
 #'   (\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.
 #' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for

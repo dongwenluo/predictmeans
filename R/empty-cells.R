@@ -44,8 +44,10 @@ pm_empty_rule <- function(Terms, factor_names, preddf, facs, apply_rule = TRUE) 
   # levels occurs with one level of the other) are not missing cells
   missing_cells <- ndf[ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars),
                        inter_vars, drop = FALSE]
+  if (length(fac_mat)) rownames(fac_mat) <- pm_term_vars(rownames(fac_mat))
   list(present = function(grid) cell_key(grid) %in% seen,
        inter_vars = inter_vars,
+       factors = if (length(fac_mat)) fac_mat,
        design = function(grid) !pm_nested_absent(grid[, inter_vars, drop = FALSE], preddf, inter_vars),
        unmatched = pm_unmatched_factors(preddf, setdiff(inter_vars, facs), intersect(facs, factor_names)),
        missing = do.call(paste, c(lapply(missing_cells, as.character), sep = ":")))
@@ -76,18 +78,38 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   names(affected) <- labels
   if (!any(affected)) return(NULL)
 
-  # the matching key: every dimension of the grid except the term's and the
-  # unmatched (nesting) factors
+  # The matching key of a comparison: the dimensions of the grid other than
+  # the term's, less the factors that cannot be matched: those nested in (or
+  # nesting) the term's factors, and those whose every model term also
+  # contains a factor in which the compared means differ (e.g. Farm in
+  # Sample_date/Farm when dates are compared: a farm's effect is a different
+  # parameter at each date, so matching farms would remove nothing). The
+  # factors left are those with effects shared by the compared means.
   dn <- names(rg$idx)
-  nested_dims <- dn[vapply(rg$dim_vars[dn], function(v) any(v %in% unmatched), logical(1))]
-  mdims <- setdiff(dn, c(rg$tdims, nested_dims))
-  mk <- if (length(mdims)) do.call(paste, c(rg$idx[mdims], sep = "\r")) else rep("", length(key))
-  mkey <- match(mk, unique(mk))
+  base_dims <- setdiff(dn, rg$tdims)
+  dim_unmatched <- vapply(rg$dim_vars[base_dims], function(v) any(v %in% unmatched), logical(1))
+  base_dims <- base_dims[!dim_unmatched]
+  tvars <- names(rg$target)
+  fac <- rule$factors                                  # variables x terms (0/1)
+  shared_with <- function(v, D) {                      # some term with v and no factor of D
+    if (is.null(fac) || !v %in% rownames(fac)) return(TRUE)
+    tv <- fac[v, ] > 0
+    !length(D) || any(colSums(fac[intersect(D, rownames(fac)), tv, drop = FALSE] > 0) == 0)
+  }
+  matching_dims <- function(S) {
+    D <- tvars[vapply(tvars, function(v) length(unique(as.character(rg$target[S, v]))) > 1, logical(1))]
+    base_dims[vapply(rg$dim_vars[base_dims], function(vs) all(vapply(vs, shared_with, logical(1), D = D)),
+                     logical(1))]
+  }
+  mkey_of <- function(mdims) {
+    mk <- if (length(mdims)) do.call(paste, c(rg$idx[mdims], sep = "\r")) else rep("", length(key))
+    match(mk, unique(mk))
+  }
   w0 <- rg$w0
-  # the factors whose levels describe the common cells
-  desc_vars <- intersect(setdiff(inter_vars, unmatched), unlist(rg$dim_vars[mdims]))
 
-  describe <- function(rows) {
+  describe <- function(rows, mdims) {
+    # the factors whose levels describe the common cells
+    desc_vars <- intersect(setdiff(inter_vars, unmatched), unlist(rg$dim_vars[mdims]))
     if (!length(desc_vars)) return(NA_character_)
     g <- unique(rg$grid[rows, desc_vars, drop = FALSE])
     short <- function(x) if (length(x) > 6) c(x[1:6], "...") else x
@@ -116,6 +138,8 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
       S <- if (together) S_all else which(abs(cr) > 0)
       if (!length(S) || !any(affected[S]) || abs(sum(cr)) > 1e-8 * max(abs(cr))) next
       sub[r] <- TRUE
+      mdims <- matching_dims(S)
+      mkey <- mkey_of(mdims)
       sets <- lapply(S, function(k) unique(mkey[observed & key == k]))
       M <- Reduce(intersect, sets)
       if (!length(M)) {
@@ -134,7 +158,7 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
       ii <- c(ii, rep(r, length(rows)))
       jj <- c(jj, rows)
       xx <- c(xx, v)
-      over[r] <- describe(rows[cr[key[rows]] != 0 | together])
+      over[r] <- describe(rows[cr[key[rows]] != 0 | together], mdims)
     }
     L <- matrix(NA_real_, nr, length(coef_names), dimnames = list(rownames(C), coef_names))
     estimable <- rep(TRUE, nr)

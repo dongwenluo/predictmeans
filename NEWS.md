@@ -2,6 +2,17 @@
 
 ## Changes that affect results or scripts
 
+* Comparisons of means over empty cells match only the factors whose effects
+  the two means share: with `Sample_date/Farm` in the model, two dates are no
+  longer matched on farms (each date has its own farm effects), which gave NA
+  for pairs that are estimable; two treatments at one date still are. Found
+  on the maintainer's pasture data (Sample_date:ExForest: 0 NA pairs, was 11).
+* Fixed: `predictmeans()` stopped ("missing value where TRUE/FALSE needed")
+  when some pairs cannot be estimated (confounded factors, e.g. a spray volume
+  used only with fine droplets) and the df vary by pair (Kenward-Roger,
+  Satterthwaite, inner-outer). Those pairs are NA, with NA df; the others are
+  given. The same error stopped predictmeans 1.1.1.
+
 * **`glm` models with a known dispersion (Poisson, binomial, negative
   binomial) use z tests** (normal; chi-square for joint tests), as emmeans and
   SAS GLIMMIX; they used t with the residual df, as for `lm`, which is

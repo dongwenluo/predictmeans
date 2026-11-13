@@ -127,6 +127,7 @@ pm_tidy_parts <- function(e) {
     cm <- as.vector(g("cm"))
     dses <- as.vector(g("dses"))
     pdf <- if (perm) rep(NA_real_, nrow(ij)) else rep_len(as.numeric(g("Df_diff")), nrow(ij))
+    pdf[is.na(cm)] <- NA                      # pairs that cannot be estimated
     stat <- cm/dses
     p <- if (perm) as.vector(g("t.p.values")) else 2*stats::pt(-abs(stat), pdf)
 
