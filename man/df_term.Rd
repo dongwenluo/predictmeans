@@ -5,7 +5,7 @@
 \title{Calculate degree of freedom of a modelterm (contrast) for a lmer model}
 \usage{
 df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
+          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{lmer}.}
@@ -24,8 +24,9 @@ and calculate degree of freedom for the \code{ctrmatrix}.}
 The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
-"between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}); "KR-SAS" is Kenward-Roger
-with the observed information of the variance parameters, as SAS \code{DDFM=KR}.}
+"between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
+observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
+information, as \pkg{pbkrtest} and \pkg{emmeans}.}
 
 \item{vcov_adj}{Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times

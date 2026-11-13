@@ -117,13 +117,13 @@ test_that("vcov_adjust = TRUE gives Kenward-Roger adjusted SEs, as emmeans", {
   Ou <- Ou[-sample(nrow(Ou), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
   em <- summary(emmeans::emmeans(fm, ~Variety, lmer.df = "kenward-roger"))
-  adj <- predictmeans(fm, "Variety", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)$mean_table
-  unadj <- predictmeans(fm, "Variety", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)$mean_table
+  adj <- predictmeans(fm, "Variety", vcov_adjust = TRUE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)$mean_table
+  unadj <- predictmeans(fm, "Variety", vcov_adjust = FALSE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)$mean_table
   expect_equal(adj$SE, round(em$SE, 5))
   expect_equal(adj$Df, round(em$df, 2))
   expect_equal(adj$Mean, unadj$Mean)
   expect_true(all(adj$SE > unadj$SE))
-  cm <- contrastmeans(fm, "Variety", ctrmatrix = rbind(c(1, -1, 0)), vcov_adjust = TRUE)
+  cm <- contrastmeans(fm, "Variety", ctrmatrix = rbind(c(1, -1, 0)), vcov_adjust = TRUE, df_method = "KR-expected")
   ec <- summary(emmeans::contrast(emmeans::emmeans(fm, ~Variety, lmer.df = "kenward-roger"),
                                   list(c(1, -1, 0))))
   expect_equal(unname(cm[[1]][1, "Std. Error"]), round(ec$SE, 4))

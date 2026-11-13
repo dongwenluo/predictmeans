@@ -28,7 +28,7 @@ test_that("contrastmeans() with specify_contrast() matches emmeans", {
   cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
                          N_Victory = `0.6:Victory` - `0:Victory`,
                          N_interaction = (`0.6:Victory` - `0:Victory`) - (`0.6:Marvellous` - `0:Marvellous`))
-  res <- contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)[[1]]
+  res <- contrastmeans(fm, "nitro:Variety", ctrmatrix = cm, df_method = "KR-expected")[[1]]
   expect_identical(rownames(res), c("N_Victory", "N_interaction"))
   em <- emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger")
   lev <- paste(em@grid$nitro, em@grid$Variety, sep = ":")

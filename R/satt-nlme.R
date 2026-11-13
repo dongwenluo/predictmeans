@@ -151,7 +151,7 @@ pm_satt_parts_nlme <- function(model) {
 ## as AR(1)). W: expected information, or observed (SAS; information =
 ## "observed"). Checked: lme = lmer's KR (pbkrtest); unstructured repeated
 ## measures (gls) = SAS's KR F tests.
-pm_vcov_kr_nlme <- function(model, information = c("expected", "observed")) {
+pm_vcov_kr_nlme <- function(model, information = c("observed", "expected")) {
   information <- match.arg(information)
   R <- pm_nlme_reml(model)
   X <- R$X

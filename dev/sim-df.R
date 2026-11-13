@@ -41,7 +41,7 @@ cells_K <- function(m, term) Kmatrix(m, term)$K
 
 ## p-values of the t tests (rows of L) and F tests (list of L) for one method
 p_method <- function(m, method, Lt, LF, terms_t, terms_F) {
-  dm <- switch(method, KR = "Kenward-Roger", KRSAS = "KR-SAS", Satt = "Satterthwaite", cont = "containment",
+  dm <- switch(method, KR = "KR-expected", KRSAS = "Kenward-Roger", Satt = "Satterthwaite", cont = "containment",
                BW = "between-within", "auto")
   inf <- inference(m, dm)
   b <- inf$mp$coef

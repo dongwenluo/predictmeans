@@ -88,7 +88,7 @@ Agreement within one unit of SAS's last printed digit:
 | Type 3 F (KR: scaled F) | all | all | — |
 | BETWITHIN df | not in predictmeans | | |
 
-**KR** (now `df_method = "KR-SAS"`; with it, BETWITHIN, CONTAIN and
+**KR** (now `df_method = "Kenward-Roger"`, the default; with it, BETWITHIN, CONTAIN and
 SATTERTHWAITE every df of this run agrees with SAS): SAS's DDFM=KR uses the observed information (the Hessian of the REML
 log-likelihood) for the covariance of the variance parameters; pbkrtest, and
 so predictmeans and emmeans, use the expected information. In balanced data
@@ -132,7 +132,7 @@ observation counts and builds each data set as that run did:
 `Rscript dev/sas/compare-sas.R <lib> dev/sas/sas-results-run2.csv`.
 
 With `df_method` = "containment", "between-within", "Satterthwaite" and
-"KR-SAS" (and `gls` for the repeated measures), every value agrees within one
+"Kenward-Roger" (observed information; then called "KR-SAS") (and `gls` for the repeated measures), every value agrees within one
 unit of SAS's last printed digit: all 60 variance components, 272 LS-means
 and 976 differences (estimates, SEs, df) and 48 F tests with their df — except
 65 LS-mean SEs off by about 2e-5 (relative), where the REML iterations
@@ -141,7 +141,7 @@ stopped. SAS confirms the R values of the tables above for 2a and 2b
 Variety LS-means 103.15, 109.79, 97.625). With a whole plot missing the
 expected and observed information differ much more than with one subplot
 missing: Kenward-Roger df for Golden Rain − Victory 9.25 (pbkrtest,
-`"Kenward-Roger"`) against SAS's 8.35 (`"KR-SAS"`), and 9.16 against 8.26 for
+`"KR-expected"`) against SAS's 8.35 (`"Kenward-Roger"`), and 9.16 against 8.26 for
 the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.
 
 ## Next runs (scripts ready, not yet run)
@@ -152,5 +152,5 @@ the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.
   values missing (`ar1.txt`, simulated), with `DDFM=KR`, `KR(FIRSTORDER)`,
   `KR2`, `SATTERTHWAITE` and `BETWITHIN`. AR(1) is not linear in its
   parameter, so SAS's default KR adds second-derivative terms that depend on
-  the parameterisation; predictmeans leaves them out, so `"KR-SAS"` should
+  the parameterisation; predictmeans leaves them out, so `"Kenward-Roger"` should
   match `KR(FIRSTORDER)`. The same data are in `dev/genstat/pm-reference.gen`.

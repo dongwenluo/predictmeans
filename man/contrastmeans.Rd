@@ -6,7 +6,7 @@
 \usage{
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), joint=FALSE,
                 level=0.05, vcov=NULL, equivalence=NULL)
 }
 \arguments{
@@ -31,7 +31,7 @@ The default method is "none".}
 the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).}
 
 \item{permlist}{A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
-option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+  option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
 \code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
 0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).}
 
@@ -46,9 +46,9 @@ over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \
 \item{df_method}{Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
 fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
-\code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
-\code{"Kenward-Roger"} and \code{"KR-SAS"};
-see \code{\link{predictmeans}}.}
+\code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
+the observed information, as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
+\code{"Kenward-Roger"} and \code{"KR-expected"}; see \code{\link{predictmeans}}.}
 
 \item{joint}{Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
 test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
@@ -85,7 +85,7 @@ There are two components in the output which are
 \item{K}{A contrast matrix.}
 and, with \code{joint = TRUE}, a third,
 \item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
-(and \code{Perm_p_value} with \code{permlist}).}
+  (and \code{Perm_p_value} with \code{permlist}).}
 }
 \description{
 Performs t-tests (or permuted t-tests) of specified contrasts for linear models 

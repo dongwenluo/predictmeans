@@ -2,7 +2,7 @@
 ## Every variance component, LS-mean, difference and Type 3 test of the 16
 ## runs must agree with what SAS printed: within one unit of its last digit
 ## or 0.1% (REML iterations stop at slightly different places; the 1% to 10%
-## between "Kenward-Roger" and SAS's KR is still caught).
+## between "KR-expected" and SAS's KR is still caught).
 
 sas_ref <- function() read.csv(test_path("_data", "sas", "proc-mixed-reference.csv.gz"), colClasses = "character")
 
@@ -48,7 +48,7 @@ sas_run <- function(S) {
     expect_equal(nrow(d), as.integer(S$est[S$table == "nobs"][1]))
     m <- lme4::lmer(Yield ~ Variety * Nitro + (1 | Block) + (1 | Block:Variety), data = d)
     dfm <- c(CONTAIN = "containment", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite",
-             KR = "KR-SAS")[[ddfm]]
+             KR = "Kenward-Roger")[[ddfm]]
     vc <- as.data.frame(lme4::VarCorr(m))
     cp <- S[S$table == "covparms", ]
     rcp <- c(Intercept = vc$vcov[vc$grp == "Block"], Variety = vc$vcov[vc$grp == "Block:Variety"],
@@ -62,7 +62,7 @@ sas_run <- function(S) {
     d <- sas_rep()
     m <- nlme::gls(Y ~ Group * Time, data = d, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                    weights = nlme::varIdent(form = ~ 1 | Time))
-    dfm <- c(CONTAIN = "auto", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "KR-SAS")[[ddfm]]
+    dfm <- c(CONTAIN = "auto", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "Kenward-Roger")[[ddfm]]
     V <- nlme::getVarCov(m)
     cp <- S[S$table == "covparms", ]
     ij <- regmatches(cp$effect, regexpr("[0-9],[0-9]", cp$effect))
@@ -106,7 +106,7 @@ sas_run <- function(S) {
   out
 }
 
-test_that("all 16 PROC MIXED runs agree with SAS (containment, between-within, Satterthwaite, KR-SAS)", {
+test_that("all 16 PROC MIXED runs agree with SAS (containment, between-within, Satterthwaite, Kenward-Roger)", {
   skip_on_cran()
   ref <- sas_ref()
   all <- do.call(rbind, lapply(split(ref, as.integer(ref$run)), function(S) suppressMessages(suppressWarnings(sas_run(S)))))
@@ -125,14 +125,14 @@ test_that("all 16 PROC MIXED runs agree with SAS (containment, between-within, S
   expect_length(unique(all$run), 16)
 })
 
-test_that("pbkrtest's Kenward-Roger differs from SAS's when a whole plot is missing; KR-SAS does not", {
+test_that("pbkrtest's Kenward-Roger (KR-expected) differs from SAS's when a whole plot is missing; Kenward-Roger does not", {
   skip_on_cran()
   ref <- sas_ref()
   d <- droplevels(sas_oats()[!(sas_oats()$Block == "I" & sas_oats()$Variety == "GoldenRain"), ])
   m <- lme4::lmer(Yield ~ Variety * Nitro + (1 | Block) + (1 | Block:Variety), data = d)
   D <- ref[ref$ddfm == "KR" & ref$data == "OATS_MISSWP" & ref$table == "diffs" & ref$effect == "Variety", ]
-  s <- predictmeans(m, "Variety", df_method = "KR-SAS", plot = FALSE, prtnum = FALSE)$pairs$df
-  k <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)$pairs$df
+  s <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)$pairs$df
+  k <- predictmeans(m, "Variety", df_method = "KR-expected", plot = FALSE, prtnum = FALSE)$pairs$df
   expect_equal(s, as.numeric(D$df), tolerance = 2e-3)                      # 8.35, 8.35, 8.1
   expect_true(all(k / as.numeric(D$df) > 1.08))                            # 9.25, 9.25, 9.01
 })

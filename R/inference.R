@@ -8,8 +8,14 @@
 ##  * df method (pm_df_method()): "auto" is Kenward-Roger for REML lmer fits,
 ##    Satterthwaite for ML lmer fits; lme and gls keep nlme's df (one df per
 ##    term for lme, the residual df for gls) unless "Satterthwaite",
-##    "Kenward-Roger" or "KR-SAS" is asked for; other models use the residual
-##    df (or a pm_df() method, else normal-based).
+##    "Kenward-Roger" or "KR-expected" is asked for; other models use the
+##    residual df (or a pm_df() method, else normal-based).
+##  * Kenward-Roger uses the observed information of the variance parameters
+##    (as SAS DDFM=KR): in the simulations of dev/sim-df/ it was never worse
+##    than the expected information (pbkrtest, emmeans; "KR-expected") and
+##    held 5% where that gave 8.5% with missing values (Kenward and
+##    Molenberghs 1998: with missing data only the observed information is
+##    valid).
 ##  * covariance: the Kenward-Roger adjusted covariance when the df are
 ##    Kenward-Roger and vcov_adjust is TRUE; not with "containment" or
 ##    "between-within" unless vcov_adjust = TRUE is given (as SAS); not with a
@@ -131,8 +137,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     c(q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE))
   }
 
-  label <- if (identical(df_method, "KR-SAS") && identical(df_type, "Kenward-Roger")) {
-    "KR-SAS"                                        # Kenward-Roger with the observed information
+  label <- if (identical(df_method, "KR-expected") && identical(df_type, "Kenward-Roger")) {
+    "KR-expected"                                   # Kenward-Roger with the expected information
   } else if (!is.null(df_type)) {
     df_type
   } else if (inherits(model, "lme")) {
@@ -149,19 +155,20 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 
 ## Resolve the df method: "auto" is Kenward-Roger for REML lmer fits,
 ## Satterthwaite for ML fits; lme and gls take "Satterthwaite",
-## "Kenward-Roger", "KR-SAS" and "between-within", else keep nlme's df;
-## other models keep their own df. Returns list(df_type, vcov_adj).
+## "Kenward-Roger", "KR-expected" and "between-within", else keep nlme's df;
+## other models keep their own df. Kenward-Roger uses the observed
+## information, "KR-expected" the expected one. Returns list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
+  kr_info <- if (identical(df_method, "KR-expected")) "expected" else "observed"
   if (identical(df_method, "between-within")) {
     if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
     warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
     return(list(df_type = NULL, vcov_adj = NULL))
   }
-  if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-SAS")) {
-    # nlme models (R/satt-nlme.R): Satterthwaite, or Kenward-Roger (expected or, "KR-SAS", observed information)
+  if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-expected")) {
+    # nlme models (R/satt-nlme.R)
     if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
-    return(list(df_type = "Kenward-Roger",
-                vcov_adj = pm_vcov_kr_nlme(model, if (df_method == "KR-SAS") "observed" else "expected")))
+    return(list(df_type = "Kenward-Roger", vcov_adj = pm_vcov_kr_nlme(model, kr_info)))
   }
   if (!inherits(model, "lmerMod")) {
     if (df_method != "auto") {
@@ -171,7 +178,7 @@ pm_df_method <- function(model, df_method) {
     return(list(df_type = NULL, vcov_adj = NULL))
   }
   reml <- lme4::getME(model, "is_REML")
-  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-SAS" = "Kenward-Roger",
+  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-expected" = "Kenward-Roger",
                     df_method)
   if (df_type == "Kenward-Roger" && !reml) {
     warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
@@ -179,9 +186,7 @@ pm_df_method <- function(model, df_method) {
   }
   if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
   vcov_adj <- switch(df_type,
-    # "KR-SAS": the observed information of the variance parameters, as SAS DDFM=KR
-    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, if (df_method == "KR-SAS") "observed" else "expected"),
-                               error = function(e) NULL),
+    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, kr_info), error = function(e) NULL),
     "Satterthwaite" = pm_satt_parts(model),
     NULL)
   list(df_type = df_type, vcov_adj = vcov_adj)

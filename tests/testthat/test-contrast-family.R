@@ -18,15 +18,16 @@ test_that("Dunnett and trends within 'by' groups through contrastmeans() match e
   set.seed(7)
   d <- d[-sample(nrow(d), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
-  r <- contrastmeans(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl"), adj = "mvt")[[1]]
+  r <- contrastmeans(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl"), adj = "mvt",
+                     df_method = "KR-expected")[[1]]
   em <- summary(emmeans::contrast(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"), "trt.vs.ctrl", adjust = "mvt"))
   expect_equal(unname(r[, "Estimate"]), round(em$estimate, 4))
   expect_equal(unname(r[, "Pr(>|t|)"]), round(em$p.value, 4), tolerance = 1e-3)
 
-  pm <- predictmeans(fm, "nitro:Variety", plot = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", df_method = "KR-expected", plot = FALSE)
   cf <- contrast_family(pm, "poly", by = "Variety", max.degree = 2)
   expect_equal(rownames(cf)[1:2], c("Golden Rain: linear", "Golden Rain: quadratic"))
-  r2 <- contrastmeans(fm, "nitro:Variety", ctrmatrix = cf)[[1]]
+  r2 <- contrastmeans(fm, "nitro:Variety", ctrmatrix = cf, df_method = "KR-expected")[[1]]
   e2 <- summary(emmeans::contrast(emmeans::emmeans(fm, ~nitro | Variety, lmer.df = "kenward-roger"),
                                   "poly", max.degree = 2))
   expect_equal(unname(r2[, "Estimate"]), round(e2$estimate, 4))

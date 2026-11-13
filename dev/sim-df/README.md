@@ -15,9 +15,9 @@ writes `results.md`):
 | `dev/sim-df-kr.R` | follow-up: Kenward–Roger with the expected or the observed information when values are missing (`lmer` random slopes, `gls`) | `dev/sim-df-kr/results.md` |
 | `dev/sim-df-glmm.R` | GLMMs (`glmer`): Poisson split plots, binomial clusters, binary RCBD | `dev/sim-df-glmm/results.md` |
 
-Methods: `KR` Kenward–Roger with the expected information (pbkrtest;
-`df_method = "Kenward-Roger"`, the `lmer` default); `KRSAS` with the observed
-information (SAS `DDFM=KR`; `"KR-SAS"`); `Satt` Satterthwaite; `cont`
+Methods: `KR` Kenward–Roger with the expected information (pbkrtest; at the
+time the `lmer` default, now `df_method = "KR-expected"`); `KRSAS` with the
+observed information (SAS `DDFM=KR`; then `"KR-SAS"`, now `"Kenward-Roger"`); `Satt` Satterthwaite; `cont`
 containment (SAS `DDFM=CONTAIN`); `BW` between-within; `nlme` nlme's df of the
 term (the `lme` default); `nlmeC` the smallest nlme df of the coefficients a
 contrast uses; `resid` the residual df (the `gls` and GLMM default); `z` no

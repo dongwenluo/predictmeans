@@ -57,7 +57,7 @@ check <- function(run, table, what, r, s, keys) {
   }
 }
 ddfm_r <- c(CONTAIN = "containment", BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite",
-            KR = "KR-SAS")       # "Kenward-Roger" (pbkrtest's expected information) differs by ~1% when unbalanced
+            KR = "Kenward-Roger")  # observed information, as SAS; "KR-expected" (pbkrtest) differs by ~1% when unbalanced
 lab <- function(x) substr(sub("^\\s+|\\s+$", "", x), 1, 8)   # Variety: first 8 characters, as in the first run
 
 for (run in unique(sas$run)) {
@@ -123,7 +123,7 @@ for (run in unique(sas$run)) {
     for (term in c("Group", "Time", "Group*Time")) {
       mt <- sub("\\*", ":", term)
       # gls: CONTAIN = the residual df ("auto")
-      dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "KR-SAS", "auto")
+      dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "Kenward-Roger", "auto")
       pm <- suppressMessages(suppressWarnings(predictmeans(g, mt, plot = FALSE, prtnum = FALSE, pairwise = TRUE,
                                                            df_method = dfm)))
       L <- S[S$table == "lsmeans" & S$effect == term, ]
@@ -147,7 +147,7 @@ for (run in unique(sas$run)) {
       check(run, "diffs", "df", pr$df[j], D$df, dk)
     }
     T3 <- S[S$table == "tests3", ]
-    dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "KR-SAS", "auto")
+    dfm <- switch(ddfm, BETWITHIN = "between-within", SATTERTHWAITE = "Satterthwaite", KR = "Kenward-Roger", "auto")
     cT <- contr.helmert(3)
     jt <- suppressWarnings(rbind(pm_joint(g, "Group", df_method = dfm), pm_joint(g, "Time", df_method = dfm),
                                  pm_joint(g, "Group:Time", ctrmatrix = t(kronecker(contr.helmert(2), cT)),

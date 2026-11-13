@@ -14,7 +14,7 @@
 #'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
@@ -107,7 +107,11 @@
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
 #' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
-#'   REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+#'   REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
+#'   parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
+#'   (\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
+#'   package sources) F tests of repeated measures with missing values rejected 6\% of true hypotheses at the 5\%
+#'   level with the observed information and 8.5\% with the expected. The two agree in balanced designs. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 #'   smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 #'   residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 #'   covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
@@ -117,13 +121,9 @@
 #'   unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
 #'   between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
 #'   used unless \code{vcov_adjust = TRUE} is given.
-#'   \code{"KR-SAS"} is Kenward-Roger as SAS PROC MIXED \code{DDFM=KR} computes it: with the observed
-#'   information of the variance parameters where \code{"Kenward-Roger"} (as \pkg{pbkrtest} and \pkg{emmeans}) uses
-#'   the expected information; the two agree in balanced designs and differ slightly otherwise (about 1\% in the df
-#'   of a split plot with one plot missing).
 #'   For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
 #'   variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
-#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-SAS"} give Kenward-Roger df and adjusted
+#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-expected"} give Kenward-Roger df and adjusted
 #'   standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
 #'   \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
 #'   Other choices are ignored for other model classes.
@@ -247,7 +247,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
   vcov_adjust_default <- missing(vcov_adjust)
   average <- match.arg(average)

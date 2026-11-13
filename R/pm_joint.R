@@ -8,14 +8,14 @@
 #' @details
 #' The F statistic and its denominator degrees of freedom follow the model:
 #' \describe{
-#' \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997), as
-#'   \code{pbkrtest::KRmodcomp()} and the ANOVA tables of this package; Satterthwaite (the default for ML fits): as
-#'   \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
-#' \item{KR-SAS}{(\code{lmer}) as Kenward-Roger, with the observed information of the variance parameters (SAS
-#'   \code{DDFM=KR}; see \code{\link{predictmeans}}).}
+#' \item{\code{lmer}}{Kenward-Roger (the default for REML fits): the scaled F test of Kenward and Roger (1997) with the
+#'   observed information of the variance parameters, as SAS \code{DDFM=KR}; Satterthwaite (the default for ML fits):
+#'   as \code{lmerTest::contest(joint = TRUE)}; containment: the Wald F with the containment df of \code{modelterm}.}
+#' \item{KR-expected}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the expected information, as
+#'   \code{pbkrtest::KRmodcomp()} (see \code{\link{predictmeans}}).}
 #' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
-#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-SAS"}}{as for \code{lmer} (Satterthwaite df of the
+#' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"} or \code{"KR-expected"}}{as for \code{lmer} (Satterthwaite df of the
 #'   F test, lmerTest's rule).}
 #' \item{\code{lme}}{the Wald F with \pkg{nlme}'s df of \code{modelterm} (as \code{predictmeans()} and
 #'   \code{anova()}; \code{"containment (nlme)"}).}
@@ -25,7 +25,7 @@
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),
 #'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
@@ -61,7 +61,7 @@
 NULL
 
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
-                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"),
+                     df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"),
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)

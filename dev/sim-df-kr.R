@@ -1,6 +1,6 @@
 ## Follow-up of dev/sim-df.R: Kenward-Roger with the expected information
-## (pbkrtest; df_method = "Kenward-Roger") or the observed information (SAS
-## DDFM=KR; "KR-SAS") when values are missing. With unstructured repeated
+## (pbkrtest; df_method = "KR-expected") or the observed information (SAS
+## DDFM=KR; "Kenward-Roger" since 2026-11-13) when values are missing. With unstructured repeated
 ## measures and 10% missing the expected information gave 8.5% for F tests,
 ## the observed 6% (dev/sim-df/results.md, rm_un_miss). Kenward and
 ## Molenberghs (1998) show the expected information is not valid when data
@@ -23,7 +23,7 @@ description <- list(
   rm_ar1_miss20 = "2 groups x 6 subjects x 6 times; AR(1) rho 0.6, SDs 1 to 2; 20% missing; gls corAR1 + varIdent")
 
 p_method <- function(m, method, Lt, LF, terms_t, terms_F) {
-  dm <- switch(method, KR = "Kenward-Roger", KRSAS = "KR-SAS", Satt = "Satterthwaite", cont = "containment",
+  dm <- switch(method, KR = "KR-expected", KRSAS = "Kenward-Roger", Satt = "Satterthwaite", cont = "containment",
                BW = "between-within", "auto")
   inf <- inference(m, dm)
   b <- inf$mp$coef

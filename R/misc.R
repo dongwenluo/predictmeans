@@ -355,7 +355,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   using "Kenward-Roger" or "Satterthwaite" method.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
 #' @param model Model object returned by \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
@@ -367,8 +367,9 @@ doolittle <- function(x, eps = 1e-6) {
 #'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 #'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 #'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
-#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}); "KR-SAS" is Kenward-Roger
-#'   with the observed information of the variance parameters, as SAS \code{DDFM=KR}.
+#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
+#'   observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
+#'   information, as \pkg{pbkrtest} and \pkg{emmeans}.
 #' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 #'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
 #'   for the same model.
@@ -404,16 +405,16 @@ doolittle <- function(x, eps = 1e-6) {
 #' @name df_term
 NULL
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
   type <- as.character(type)
   type <- match.arg(type)
-  kr_info <- "expected"
-  if (type == "KR-SAS") {                 # Kenward-Roger with the observed information, as SAS DDFM=KR
+  kr_info <- "observed"                  # Kenward-Roger with the observed information, as SAS DDFM=KR
+  if (type == "KR-expected") {           # the expected information, as pbkrtest
     type <- "Kenward-Roger"
-    kr_info <- "observed"
+    kr_info <- "expected"
   }
   if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
     # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.

@@ -12,7 +12,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 }
 \arguments{
@@ -146,7 +146,11 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
 \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
 
 \item{df_method}{Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
-REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
+parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
+(\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
+package sources) F tests of repeated measures with missing values rejected 6\% of true hypotheses at the 5\%
+level with the observed information and 8.5\% with the expected. The two agree in balanced designs. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
@@ -156,13 +160,9 @@ others the df of their subject-by-effect interaction (for example Block x Variet
 unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
 between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
 used unless \code{vcov_adjust = TRUE} is given.
-\code{"KR-SAS"} is Kenward-Roger as SAS PROC MIXED \code{DDFM=KR} computes it: with the observed
-information of the variance parameters where \code{"Kenward-Roger"} (as \pkg{pbkrtest} and \pkg{emmeans}) uses
-the expected information; the two agree in balanced designs and differ slightly otherwise (about 1\% in the df
-of a split plot with one plot missing).
 For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
 variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
-checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-SAS"} give Kenward-Roger df and adjusted
+checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-expected"} give Kenward-Roger df and adjusted
 standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
 \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
 Other choices are ignored for other model classes.}
@@ -224,9 +224,9 @@ stay on the link scale.}
  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
  \code{equivalence}: the TOST p-value), \code{conf.low} and \code{conf.high} (limits of
-the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
-the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
-within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
+ the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
+ the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
+ within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},

@@ -8,7 +8,7 @@ test_that("pm_slopes() equals emmeans::emtrends() for lmer (Kenward-Roger), with
   skip_if_not_installed("emmeans")
   d <- oats_slopes()
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
-  s <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
+  s <- pm_slopes(fm, "nitro", "Variety", adj = "tukey", df_method = "KR-expected")
   et <- emmeans::emtrends(fm, ~Variety, var = "nitro", lmer.df = "kenward-roger")
   e <- summary(et)
   i <- match(as.character(s$slopes$Variety), as.character(e$Variety))

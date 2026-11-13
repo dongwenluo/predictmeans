@@ -88,7 +88,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   }
   PhiA <- NULL
   if (layout == "mer" && test == "F") {
-    PhiA <- pm_vcov_kr(model)
+    PhiA <- pm_vcov_kr(model, "expected")      # as car::Anova() (pbkrtest), for the permmodels() tables
     V <- as.matrix(PhiA)
     attributes(V) <- attributes(V)[c("dim", "dimnames")]
   }

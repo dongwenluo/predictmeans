@@ -14,7 +14,7 @@ test_that("sidak, scheffe and mvt pairs match emmeans (overall and within atvar)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
   for (a in c("sidak", "scheffe", "mvt")) {
     tol <- if (a == "mvt") 1e-3 else 1e-8
-    pm <- predictmeans(fm, "nitro", adj = a, plot = FALSE)
+    pm <- predictmeans(fm, "nitro", adj = a, df_method = "KR-expected", plot = FALSE)
     em <- summary(pairs(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"), adjust = a))
     lv <- do.call(rbind, strsplit(as.character(em$contrast), " - "))
     i <- match(pair_key(pm$pairs$level1, pm$pairs$level2), pair_key(lv[, 1], lv[, 2]))
@@ -23,7 +23,7 @@ test_that("sidak, scheffe and mvt pairs match emmeans (overall and within atvar)
     P <- pm$`Pairwise p-value`
     expect_equal(sort(P[lower.tri(P)]), sort(round(pm$pairs$p.adj, 4)))
 
-    pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = a, plot = FALSE)
+    pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = a, df_method = "KR-expected", plot = FALSE)
     ea <- summary(pairs(emmeans::emmeans(fm, ~nitro | Variety, lmer.df = "kenward-roger"), adjust = a))
     lv <- do.call(rbind, strsplit(as.character(ea$contrast), " - "))
     s <- pa$pairs[!is.na(pa$pairs$by), ]
@@ -38,7 +38,7 @@ test_that("contrastmeans(): sidak and scheffe (rank of ctrmatrix) match emmeans"
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
   cm <- rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0), c(0, 0, -1, 1))
   for (a in c("sidak", "scheffe")) {
-    r <- contrastmeans(fm, "nitro", ctrmatrix = cm, adj = a)[[1]]
+    r <- contrastmeans(fm, "nitro", ctrmatrix = cm, adj = a, df_method = "KR-expected")[[1]]
     e <- summary(emmeans::contrast(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"),
                                    method = list(a = cm[1, ], b = cm[2, ], c = cm[3, ]), adjust = a))
     expect_equal(unname(r[, "Pr(>|t|)"]), round(e$p.value, 4))

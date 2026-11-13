@@ -26,7 +26,7 @@ test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() 
   for (nm in names(ms)) {
     m <- ms[[nm]]$m
     term <- ms[[nm]]$term
-    dfms <- if (nm == "lm") "auto" else c("auto", "Kenward-Roger", "Satterthwaite", "between-within", "KR-SAS",
+    dfms <- if (nm == "lm") "auto" else c("auto", "Kenward-Roger", "Satterthwaite", "between-within", "KR-expected",
                                          if (nm == "lmer") "containment")
     for (d in dfms) {
       pm <- suppressWarnings(suppressMessages(predictmeans(m, term, df_method = d, plot = FALSE, prtnum = FALSE)))

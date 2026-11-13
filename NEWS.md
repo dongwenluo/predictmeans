@@ -2,6 +2,20 @@
 
 ## Changes that affect results or scripts
 
+* **Kenward-Roger uses the observed information of the variance parameters**
+  (as SAS PROC MIXED `DDFM=KR`), for `lmer` (the default for REML fits),
+  `lme` and `gls`. It stays valid with missing values, where the expected
+  information (pbkrtest, emmeans) is not (Kenward and Molenberghs 1998). In
+  simulations (`dev/sim-df/README.md`) it was never worse, and with
+  unstructured repeated measures and 10% of values missing its F tests
+  rejected 6% of true hypotheses at the 5% level where the expected
+  information rejected 8.5%. Balanced designs give the same results as
+  before; with missing values the df and SEs change a little (split plot with
+  a whole plot missing: 8.35 df, was 9.25). `df_method = "KR-expected"` gives
+  the previous results (and pbkrtest's, emmeans'). The option `"KR-SAS"` of
+  the development version is gone: it is now `"Kenward-Roger"`. The tables of
+  `permmodels()` keep pbkrtest's version, as `car::Anova()`.
+
 * **One set of inference rules for `predictmeans()`, `contrastmeans()`,
   `pm_joint()`, `pm_slopes()` and `covariatemeans()`** (new internal
   `pm_inference()`, `R/inference.R`): which covariance of the coefficients is
@@ -303,13 +317,13 @@
   `vcov_adjust = TRUE`. `pm_slopes()` with containment df now also uses the
   unadjusted covariance by default, as `predictmeans()` does.
 
-* `df_method = "KR-SAS"`: Kenward-Roger as SAS PROC MIXED `DDFM=KR`
-  computes it, with the observed information of the variance parameters
-  (computed in closed form) where `"Kenward-Roger"` (pbkrtest, emmeans)
-  uses the expected information. Same results in balanced designs; with one
-  plot missing in the split plot of the SAS reference run, "KR-SAS"
-  reproduces SAS's df and SEs (e.g. 9.79 and 31.3, where "Kenward-Roger"
-  gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
+* Kenward-Roger with the observed information of the variance parameters,
+  as SAS PROC MIXED `DDFM=KR` (computed in closed form); since 2026-11-13
+  this is `df_method = "Kenward-Roger"` and the expected information
+  (pbkrtest, emmeans) is `"KR-expected"` (see the first entry). Same results
+  in balanced designs; with one plot missing in the split plot of the SAS
+  reference run the observed information reproduces SAS's df and SEs (e.g.
+  9.79 and 31.3, where the expected gives 9.87 and 31.46). With `"between-within"`, `"containment"` and
   `"Satterthwaite"`, every df of that SAS run now agrees with SAS.
 
 * `df_method = "Satterthwaite"` for `lme` and `gls` models, with any
@@ -319,7 +333,7 @@
   Satterthwaite df use the Hessian of the REML log-likelihood, as SAS does.
   For the unstructured repeated measures of the SAS reference run, the df
   are 10 to 10.2 as SAS gives, where the residual df (the default for
-  `gls`) are 30. `"Kenward-Roger"` and `"KR-SAS"` give Kenward-Roger df,
+  `gls`) are 30. `"Kenward-Roger"` and `"KR-expected"` give Kenward-Roger df,
   F tests and adjusted standard errors for these models too (numerical
   derivatives of the data covariance; the second-derivative term is left
   out, so the result does not depend on nlme's parameterisation and equals
