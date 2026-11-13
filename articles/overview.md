@@ -533,7 +533,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  38.914   0.131  38.928
+    ##  28.439   0.096  28.456
 
 ``` r
 
@@ -1607,7 +1607,7 @@ summary(mod)
 residplot(mod) 
 ```
 
-![](overview_files/figure-html/unnamed-chunk-41-1.png)![](overview_files/figure-html/unnamed-chunk-41-2.png)
+![](overview_files/figure-html/unnamed-chunk-41-1.png)
 
 ### ANOVA
 

@@ -50,6 +50,38 @@ the mvtnorm computation (about 1e-4, which shows only for very small
 p-values); `"mvt"` also covers other families, as below. Scheffé
 protects every possible contrast and is the most conservative.
 
+The confidence limits that go with the adjusted p-values are in the
+columns `adj.conf.low` and `adj.conf.high` (SAS `AdjLower` and
+`AdjUpper`): 0 lies outside them exactly when `p.adj` is below the
+level. `conf.low` and `conf.high` are the limits of each comparison on
+its own. The step-down and false discovery rate methods (`"holm"`,
+`"BH"`, …) have no simultaneous limits, so their pairs have no such
+columns.
+[`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+gives the same limits as `adj.lower.CL` and `adj.upper.CL` (below, for
+the comparisons with a control).
+
+``` r
+
+pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE, prtnum = FALSE)$pairs
+pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
+     "adj.conf.high", "p.adj")]
+#>   level1 level2   estimate  conf.low   conf.high adj.conf.low adj.conf.high
+#> 1      0    0.2 -19.500000 -28.43406 -10.5659375    -31.33325     -7.666748
+#> 2      0    0.4 -34.833333 -43.76740 -25.8992708    -46.66659    -23.000081
+#> 3    0.2    0.4 -15.333333 -24.26740  -6.3992708    -27.16659     -3.500081
+#> 4      0    0.6 -44.000000 -52.93406 -35.0659375    -55.83325    -32.166748
+#> 5    0.2    0.6 -24.500000 -33.43406 -15.5659375    -36.33325    -12.666748
+#> 6    0.4    0.6  -9.166667 -18.10073  -0.2326042    -20.99992      2.666585
+#>          p.adj
+#> 1 3.764251e-04
+#> 2 3.362210e-09
+#> 3 6.390152e-03
+#> 4 4.263701e-12
+#> 5 9.244650e-06
+#> 6 1.797189e-01
+```
+
 ## Families of contrasts
 
 [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md)
@@ -80,6 +112,10 @@ contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
 #> 0.2 - 0  19.5000     4.4358  4.3961 45.0001    2e-04  10.5659  28.4341
 #> 0.4 - 0  34.8333     4.4358  7.8529 45.0001    0e+00  25.8993  43.7674
 #> 0.6 - 0  44.0000     4.4358  9.9194 45.0001    0e+00  35.0659  52.9341
+#>         adj.lower.CL adj.upper.CL
+#> 0.2 - 0       8.7182      30.2818
+#> 0.4 - 0      24.0516      45.6151
+#> 0.6 - 0      33.2182      54.7818
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value < 0.0001."
 ```

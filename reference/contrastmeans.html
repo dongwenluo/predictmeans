@@ -23,7 +23,8 @@
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
@@ -143,9 +144,13 @@ permutations (for Freedman-Lane, the model with all the contrasts zero). The def
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
 <dd><p>Significance level for the confidence limits of the contrasts (<code>lower.CL</code>, <code>upper.CL</code>); the
-default 0.05 gives 95% limits. They are t limits, or with <code>permlist</code> permutation-t limits: estimate +- c SE,
-with c the critical value of the permutation test (the k-th largest permuted |t|, k = floor(level (nperm + 1))); with
-<code>adj</code> "mvt" or "westfall" c comes from the largest |t| of the contrasts, so the limits are simultaneous.</p></dd>
+default 0.05 gives 95% limits. They are t limits of each contrast, or with <code>permlist</code> permutation-t limits:
+estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
+k = floor(level (nperm + 1))). With <code>adj</code> "bonferroni", "sidak", "scheffe" or "mvt" (with <code>permlist</code>:
+"bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
+<code>adj.lower.CL</code> and <code>adj.upper.CL</code>: simultaneous limits that exclude 0 exactly when the adjusted
+p-value is below <code>level</code>, as <span class="pkg">emmeans</span>' <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> and SAS <code>AdjLower</code>/<code>AdjUpper</code>. The
+step-down and false discovery rate methods have none.</p></dd>
 
 
 <dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>

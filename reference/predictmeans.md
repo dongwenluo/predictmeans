@@ -31,8 +31,17 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   Genstat's ANOVA: each comparison uses the mean squares of the strata
   it draws on, with Satterthwaite's df across strata
   (`settings$df_method` `"multistratum"`); standard errors of single
-  means include the block stratum. For a `semireg` fit the means include
-  the smooth terms (as
+  means include the block stratum. With missing values in an orthogonal
+  design (rows whose response is `NA`, or a few combinations of the
+  design factors absent) they are estimated as Genstat's ANOVA does (the
+  residual sum of squares of the lowest stratum made smallest; the
+  residual df reduced) and the completed design is analysed by strata,
+  with exact standard errors (Genstat's are those of the complete
+  design); a message says that REML
+  ([`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) with the `Error()`
+  terms as random effects) uses the information in all strata and is the
+  better analysis when plots are missing. For a `semireg` fit the means
+  include the smooth terms (as
   [`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
   at the covariates' means or at the values of `covariate` (a named
   vector, e.g. `c(construction.date = 1980)`); the result holds only the
@@ -80,8 +89,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   max-\|t\| of Westfall and Young (1993), which is uniformly more
   powerful; both use the correlation between the comparisons. "westfall"
   needs `permlist`; "scheffe" is not available with it. The default
-  method is "none"; letter case does not matter ("Tukey" works). Note
-  that LSD can't be adjusted except for "bonferroni" method.
+  method is "none"; letter case does not matter ("Tukey" works).
+  Confidence limits that agree with the adjusted p-values are in the
+  columns `adj.conf.low` and `adj.conf.high` of `pairs`. The printed LSD
+  is adjusted only by "bonferroni".
 
 - Df:
 
@@ -293,7 +304,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   over different cells, so their difference would also carry the effects
   of the other factors; a pair with such a mean is therefore compared on
   the cells both means have (column `over` of `pairs`; NA,
-  `over = "none"`, when they have none). In simulations comparing the
+  `over = "none"`, when they have none). Only factors whose effects the
+  two means share are matched: with `Sample_date/Farm` in the model, two
+  dates are not matched on farms (each date has its own farm effects),
+  but two treatments at one date are. In simulations comparing the
   averages rejected 8-78% of true null hypotheses at the 5% level when
   the other factor had an effect, the common cells 4-6%
   (`dev/review-defaults.md` in the package sources).
@@ -486,14 +500,20 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `estimate` (mean of `level1` minus mean of `level2`), `std.error`,
   `df`, `statistic` (t), `p.value`, `p.adj` (adjusted by `adj`, within
   each level of `atvar` when given), `p.equiv` (with `equivalence`: the
-  TOST p-value), `conf.low` and `conf.high` (limits of the difference at
-  `level`), `lsd` (the half-width of those limits) and `p.method`; with
-  `permlist` the limits are permutation-t limits (estimate +- c SE, c
-  the critical value of the permutation test; simultaneous within each
-  family with `adj` "tukey", "mvt" or "westfall"); for a log link or
-  `trans = exp` also `ratio` (of the back-transformed means,
-  `exp(estimate)`), `ratio.conf.low` and `ratio.conf.high`, and for a
-  logit link `odds.ratio` with its limits.
+  TOST p-value), `conf.low` and `conf.high` (limits of each difference
+  at `level`, not adjusted), `lsd` (the half-width of those limits),
+  `adj.conf.low` and `adj.conf.high` (simultaneous limits within each
+  family, which exclude 0 exactly when `p.adj` is below `level`, as SAS
+  `AdjLower` and `AdjUpper` and emmeans; for `adj` "tukey" (each pair's
+  own df, as SAS `ADJDFE=ROW`), "bonferroni", "sidak", "scheffe" and
+  "mvt"; the step-down and false discovery rate methods have none) and
+  `p.method`; with `permlist` the limits are permutation-t limits
+  (estimate +- c SE, c the critical value of the permutation test), and
+  the adjusted limits use the permutation distribution of the family's
+  largest \|t\| ("tukey", "mvt", "westfall") or each pair's at level/m
+  ("bonferroni", "sidak"); for a log link or `trans = exp` also `ratio`
+  (of the back-transformed means, `exp(estimate)`), `ratio.conf.low` and
+  `ratio.conf.high`, and for a logit link `odds.ratio` with its limits.
 
 - settings:
 

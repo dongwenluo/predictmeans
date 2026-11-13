@@ -62,7 +62,10 @@
   : Calculates and plots Cook's distances for a Linear (Mixed) Model
 
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
-  : Diagnostic Plots for a Linear (Mixed) Model
+  : Diagnostic Plots for a Fitted Model
+
+- [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  : Checks of a Fitted Model
 
 ## Permutation tests
 

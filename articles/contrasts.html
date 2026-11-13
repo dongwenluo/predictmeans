@@ -33,7 +33,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
@@ -119,6 +120,35 @@ accuracy of the mvtnorm computation (about 1e-4, which shows only for
 very small p-values); <code>"mvt"</code> also covers other families, as
 below. Scheffé protects every possible contrast and is the most
 conservative.</p>
+<p>The confidence limits that go with the adjusted p-values are in the
+columns <code>adj.conf.low</code> and <code>adj.conf.high</code> (SAS
+<code>AdjLower</code> and <code>AdjUpper</code>): 0 lies outside them
+exactly when <code>p.adj</code> is below the level.
+<code>conf.low</code> and <code>conf.high</code> are the limits of each
+comparison on its own. The step-down and false discovery rate methods
+(<code>"holm"</code>, <code>"BH"</code>, …) have no simultaneous limits,
+so their pairs have no such columns. <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code> gives
+the same limits as <code>adj.lower.CL</code> and
+<code>adj.upper.CL</code> (below, for the comparisons with a
+control).</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span>
+<span><span class="va">pt</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"adj.conf.low"</span>,</span>
+<span>     <span class="st">"adj.conf.high"</span>, <span class="st">"p.adj"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2   estimate  conf.low   conf.high adj.conf.low adj.conf.high</span></span>
+<span><span class="co">#&gt; 1      0    0.2 -19.500000 -28.43406 -10.5659375    -31.33325     -7.666748</span></span>
+<span><span class="co">#&gt; 2      0    0.4 -34.833333 -43.76740 -25.8992708    -46.66659    -23.000081</span></span>
+<span><span class="co">#&gt; 3    0.2    0.4 -15.333333 -24.26740  -6.3992708    -27.16659     -3.500081</span></span>
+<span><span class="co">#&gt; 4      0    0.6 -44.000000 -52.93406 -35.0659375    -55.83325    -32.166748</span></span>
+<span><span class="co">#&gt; 5    0.2    0.6 -24.500000 -33.43406 -15.5659375    -36.33325    -12.666748</span></span>
+<span><span class="co">#&gt; 6    0.4    0.6  -9.166667 -18.10073  -0.2326042    -20.99992      2.666585</span></span>
+<span><span class="co">#&gt;          p.adj</span></span>
+<span><span class="co">#&gt; 1 3.764251e-04</span></span>
+<span><span class="co">#&gt; 2 3.362210e-09</span></span>
+<span><span class="co">#&gt; 3 6.390152e-03</span></span>
+<span><span class="co">#&gt; 4 4.263701e-12</span></span>
+<span><span class="co">#&gt; 5 9.244650e-06</span></span>
+<span><span class="co">#&gt; 6 1.797189e-01</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="families-of-contrasts">Families of contrasts<a class="anchor" aria-label="anchor" href="#families-of-contrasts"></a>
@@ -131,7 +161,7 @@ emmeans: <code>"pairwise"</code>, <code>"revpairwise"</code>,
 <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>.</p>
 <p>Each nitrogen level against no nitrogen (Dunnett’s comparisons), with
 the exact Dunnett adjustment:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">K</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span><span class="op">)</span></span>
 <span><span class="va">dunnett</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K</span>, <span class="st">"trt.vs.ctrl"</span><span class="op">)</span></span>
 <span><span class="va">dunnett</span></span>
@@ -139,18 +169,22 @@ the exact Dunnett adjustment:</p>
 <span><span class="co">#&gt; 0.2 - 0 -1   1   0   0</span></span>
 <span><span class="co">#&gt; 0.4 - 0 -1   0   1   0</span></span>
 <span><span class="co">#&gt; 0.6 - 0 -1   0   0   1</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="va">dunnett</span>, adj <span class="op">=</span> <span class="st">"mvt"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         Estimate Std. Error t value      df Pr(&gt;|t|) lower.CL upper.CL</span></span>
 <span><span class="co">#&gt; 0.2 - 0  19.5000     4.4358  4.3961 45.0001    2e-04  10.5659  28.4341</span></span>
 <span><span class="co">#&gt; 0.4 - 0  34.8333     4.4358  7.8529 45.0001    0e+00  25.8993  43.7674</span></span>
 <span><span class="co">#&gt; 0.6 - 0  44.0000     4.4358  9.9194 45.0001    0e+00  35.0659  52.9341</span></span>
+<span><span class="co">#&gt;         adj.lower.CL adj.upper.CL</span></span>
+<span><span class="co">#&gt; 0.2 - 0       8.7182      30.2818</span></span>
+<span><span class="co">#&gt; 0.4 - 0      24.0516      45.6151</span></span>
+<span><span class="co">#&gt; 0.6 - 0      33.2182      54.7818</span></span>
 <span><span class="co">#&gt; attr(,"Note")</span></span>
 <span><span class="co">#&gt; [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value &lt; 0.0001."</span></span></code></pre></div>
 <p>Linear and quadratic trends in nitrogen within each variety
 (<code>by</code>), with integer orthogonal polynomial coefficients (the
 nitrogen levels are equally spaced):</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">K2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span></span>
 <span><span class="va">trends</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K2</span>, <span class="st">"poly"</span>, by <span class="op">=</span> <span class="st">"Variety"</span>, max.degree <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">trends</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
@@ -180,7 +214,7 @@ writes any other contrast by the names of the means.</p>
 test. With <code>by</code>, it compares the means of the term within
 each level of the <code>by</code> factor, which is SAS
 <code>LSMEANS N*Variety / SLICE=Variety</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pm_joint.html">pm_joint</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, by <span class="op">=</span> <span class="st">"Variety"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Variety df1      df2   F.ratio      p.value</span></span>
 <span><span class="co">#&gt; 1 Golden Rain   3 45.00014 13.022765 2.969017e-06</span></span>
@@ -197,7 +231,7 @@ the second whether the varieties differ at each nitrogen level. With
 <code>ctrmatrix</code>, the rows of any contrast matrix are tested
 together, e.g. the departure from a straight line (quadratic and cubic
 terms):</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">curv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K</span>, <span class="st">"poly"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"quadratic"</span>, <span class="st">"cubic"</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="../reference/pm_joint.html">pm_joint</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="va">curv</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   df1      df2  F.ratio   p.value</span></span>
@@ -209,7 +243,7 @@ terms):</p>
 <p><code>contrastmeans(..., joint = TRUE)</code> adds the same joint
 test to the t tests of the individual contrasts (and, with a
 <code>permlist</code>, a permutation p-value of the joint F):</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, ctrmatrix <span class="op">=</span> <span class="va">curv</span>, joint <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[[</span><span class="st">"Joint F test of the contrasts"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co">#&gt;               df1     df2 F.ratio p.value</span></span>
 <span><span class="co">#&gt; all contrasts   2 45.0001  1.3669  0.2653</span></span></code></pre></div>
@@ -221,7 +255,7 @@ test to the t tests of the individual contrasts (and, with a
 rises with it in each variety. <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> gives the slopes
 with standard errors, df, confidence limits and tests, and compares them
 (as <code><a href="https://rvlenth.github.io/emmeans/reference/emtrends.html" class="external-link">emmeans::emtrends()</a></code>):</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pm_slopes.html">pm_slopes</a></span><span class="op">(</span><span class="va">fm2</span>, <span class="st">"nitro"</span>, <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Slopes of 'nitro' at 0.3 </span></span>
@@ -249,7 +283,7 @@ covariate’s mean).</p>
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code> result and their covariance matrix
 (Kenward–Roger adjusted for REML <code>lmer</code> fits), named by the
 levels. Any contrast can be computed from them:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pmv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">pmv</span><span class="op">)</span></span>
 <span><span class="va">L</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Victory"</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Golden Rain"</span><span class="op">)</span></span>
@@ -260,7 +294,7 @@ levels. Any contrast can be computed from them:</p>
 marginaleffects needs the class listed first; <code>b1</code>,
 <code>b2</code>, … are the means in the order of
 <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>marginaleffects_model_classes <span class="op">=</span> <span class="st">"predictmeans"</span><span class="op">)</span></span>
 <span><span class="va">i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0.6:Victory"</span>, <span class="st">"0.6:Golden Rain"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">marginaleffects</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">pmv</span>, hypothesis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"b%d - b%d = 0"</span>, <span class="va">i</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">i</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -279,7 +313,7 @@ number <code>d</code> for the region <code>-d</code> to <code>d</code>,
 or <code>c(lower, upper)</code>). The <code>pairs</code> table then has
 <code>p.equiv</code>, the p-value of two one-sided t tests (TOST): below
 <code>level</code>, the difference lies within the margin.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, equivalence <span class="op">=</span> <span class="fl">15</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pe</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.equiv"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate std.error    p.equiv</span></span>
@@ -303,7 +337,7 @@ for <code>lm</code>, <code>aov</code> and <code>glm</code> models, and
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
 <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> and <code><a href="../reference/pm_joint.html">pm_joint()</a></code>; the df stay the
 model’s:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">N</span> <span class="op">+</span> <span class="va">Variety</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="va">pmh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fl</span>, <span class="st">"N"</span>, vcov <span class="op">=</span> <span class="st">"HC3"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pmh</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>

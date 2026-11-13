@@ -114,11 +114,17 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
   Significance level for the confidence limits of the contrasts
   (`lower.CL`, `upper.CL`); the default 0.05 gives 95% limits. They are
-  t limits, or with `permlist` permutation-t limits: estimate +- c SE,
-  with c the critical value of the permutation test (the k-th largest
-  permuted \|t\|, k = floor(level (nperm + 1))); with `adj` "mvt" or
-  "westfall" c comes from the largest \|t\| of the contrasts, so the
-  limits are simultaneous.
+  t limits of each contrast, or with `permlist` permutation-t limits:
+  estimate +- c SE, with c the critical value of the permutation test
+  (the k-th largest permuted \|t\|, k = floor(level (nperm + 1))). With
+  `adj` "bonferroni", "sidak", "scheffe" or "mvt" (with `permlist`:
+  "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted
+  \|t\| of the contrasts) the table also has `adj.lower.CL` and
+  `adj.upper.CL`: simultaneous limits that exclude 0 exactly when the
+  adjusted p-value is below `level`, as emmeans'
+  [`confint()`](https://rdrr.io/r/stats/confint.html) and SAS
+  `AdjLower`/`AdjUpper`. The step-down and false discovery rate methods
+  have none.
 
 - vcov:
 

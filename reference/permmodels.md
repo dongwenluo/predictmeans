@@ -27,7 +27,13 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 - type:
 
   type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are
-  equivalent to the corresponding Arabic numerals.
+  equivalent to the corresponding Arabic numerals. Type III tests are
+  those of sum-to-zero contrasts whatever contrasts the model was fitted
+  with (as SAS Type 3);
+  [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html) gives them
+  only for models fitted with such contrasts (with R's default treatment
+  contrasts it tests each main effect at the first level of the other
+  factors).
 
 - test.statistic:
 

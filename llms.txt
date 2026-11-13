@@ -48,7 +48,7 @@ with fixed column names;
 | Joint tests (slices) and slopes | [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md), [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md) |
 | Resampling tests | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) |
 | Semiparametric models | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md), [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) |
-| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
+| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
 | Reference grid / K matrix | [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md) |
 
 ## Documentation
@@ -128,7 +128,10 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   : Calculates and plots Cook's distances for a Linear (Mixed) Model
 
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
-  : Diagnostic Plots for a Linear (Mixed) Model
+  : Diagnostic Plots for a Fitted Model
+
+- [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  : Checks of a Fitted Model
 
 ## Permutation tests
 
@@ -224,6 +227,8 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
 
 - [Getting started with
   predictmeans](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md):
+- [Checking the
+  model](https://dongwenluo.github.io/predictmeans/articles/checking.md):
 - [Contrasts, joint tests and
   slopes](https://dongwenluo.github.io/predictmeans/articles/contrasts.md):
 - [Link and response

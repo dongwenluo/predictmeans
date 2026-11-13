@@ -124,13 +124,20 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014
 #> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23080
 #> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23080
-#>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
-#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437    tukey
-#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437    tukey
-#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437    tukey
-#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    tukey
-#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437    tukey
-#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437    tukey
+#>    statistic     p.value      p.adj   conf.low conf.high      lsd adj.conf.low
+#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437           NA
+#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437           NA
+#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437           NA
+#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    -38.99579
+#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437           NA
+#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437           NA
+#>   adj.conf.high p.method
+#> 1            NA    tukey
+#> 2            NA    tukey
+#> 3            NA    tukey
+#> 4      1.995794    tukey
+#> 5            NA    tukey
+#> 6            NA    tukey
   if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
 #>       modelterm n.means n.pairs nobs     df.method adjust level  vcov
 #> 1 nitro:Variety      12      66   72 Kenward-Roger  tukey  0.05 model

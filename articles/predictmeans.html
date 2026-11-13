@@ -33,7 +33,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
@@ -155,13 +156,20 @@ frames, so they are easy to filter, join or export.</p>
 <span><span class="co">#&gt; 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014</span></span>
 <span><span class="co">#&gt; 5  0:Marvellous 0.2:Golden Rain        &lt;NA&gt; -11.833333  9.715020 30.23080</span></span>
 <span><span class="co">#&gt; 6     0:Victory 0.2:Golden Rain        &lt;NA&gt; -27.000000  9.715020 30.23080</span></span>
-<span><span class="co">#&gt;    statistic     p.value      p.adj   conf.low conf.high      lsd p.method</span></span>
-<span><span class="co">#&gt; 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    tukey</span></span>
-<span><span class="co">#&gt; 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;    statistic     p.value      p.adj   conf.low conf.high      lsd adj.conf.low</span></span>
+<span><span class="co">#&gt; 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437           NA</span></span>
+<span><span class="co">#&gt; 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437           NA</span></span>
+<span><span class="co">#&gt; 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437           NA</span></span>
+<span><span class="co">#&gt; 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    -38.99579</span></span>
+<span><span class="co">#&gt; 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437           NA</span></span>
+<span><span class="co">#&gt; 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437           NA</span></span>
+<span><span class="co">#&gt;   adj.conf.high p.method</span></span>
+<span><span class="co">#&gt; 1            NA    tukey</span></span>
+<span><span class="co">#&gt; 2            NA    tukey</span></span>
+<span><span class="co">#&gt; 3            NA    tukey</span></span>
+<span><span class="co">#&gt; 4      1.995794    tukey</span></span>
+<span><span class="co">#&gt; 5            NA    tukey</span></span>
+<span><span class="co">#&gt; 6            NA    tukey</span></span></code></pre></div>
 <p>The same tables come from <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or, with the
 generics package, <code>tidy()</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -170,10 +178,14 @@ generics package, <code>tidy()</code>:</p>
 <span><span class="co">#&gt; 1 0:Golden Rain 0:Marvellous &lt;NA&gt; -6.666667   9.71502 30.2308 -0.6862226</span></span>
 <span><span class="co">#&gt; 2 0:Golden Rain    0:Victory &lt;NA&gt;  8.500000   9.71502 30.2308  0.8749338</span></span>
 <span><span class="co">#&gt; 3  0:Marvellous    0:Victory &lt;NA&gt; 15.166667   9.71502 30.2308  1.5611564</span></span>
-<span><span class="co">#&gt;     p.value p.adj   conf.low conf.high      lsd p.method</span></span>
-<span><span class="co">#&gt; 1 0.4978025    NA -26.501035  13.16770 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 2 0.3885084    NA -11.334369  28.33437 19.83437    tukey</span></span>
-<span><span class="co">#&gt; 3 0.1288957    NA  -4.667702  35.00104 19.83437    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;     p.value p.adj   conf.low conf.high      lsd adj.conf.low adj.conf.high</span></span>
+<span><span class="co">#&gt; 1 0.4978025    NA -26.501035  13.16770 19.83437           NA            NA</span></span>
+<span><span class="co">#&gt; 2 0.3885084    NA -11.334369  28.33437 19.83437           NA            NA</span></span>
+<span><span class="co">#&gt; 3 0.1288957    NA  -4.667702  35.00104 19.83437           NA            NA</span></span>
+<span><span class="co">#&gt;   p.method</span></span>
+<span><span class="co">#&gt; 1    tukey</span></span>
+<span><span class="co">#&gt; 2    tukey</span></span>
+<span><span class="co">#&gt; 3    tukey</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="plots">Plots<a class="anchor" aria-label="anchor" href="#plots"></a>
@@ -191,9 +203,79 @@ among the means, bar, p-value and back-transformed plots.</p>
 <div class="section level2">
 <h2 id="degrees-of-freedom-and-standard-errors">Degrees of freedom and standard errors<a class="anchor" aria-label="anchor" href="#degrees-of-freedom-and-standard-errors"></a>
 </h2>
-<p>For REML <code>lmer</code> fits the default is Kenward–Roger:
-adjusted standard errors and Kenward–Roger df, as SAS
-<code>DDFM=KR</code> and emmeans give. Other choices:</p>
+<p><code>df_method = "auto"</code> (the default) chooses the df by the
+model:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Model</th>
+<th>Default df</th>
+<th>Other choices of <code>df_method</code>
+</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>REML <code>lmer</code>, <code>lme</code>, <code>gls</code>
+</td>
+<td>Kenward–Roger, with adjusted SEs (as SAS <code>DDFM=KR</code>)</td>
+<td>
+<code>"Satterthwaite"</code>, <code>"containment"</code>,
+<code>"between-within"</code>, <code>"KR-expected"</code>,
+<code>"KR-average"</code>
+</td>
+</tr>
+<tr class="even">
+<td>ML <code>lmer</code>, <code>lme</code>, <code>gls</code>
+</td>
+<td>Satterthwaite, from the ML likelihood</td>
+<td>
+<code>"containment"</code>, <code>"between-within"</code>
+</td>
+</tr>
+<tr class="odd">
+<td>
+<code>glmer</code>, <code>glmmTMB</code>
+</td>
+<td>
+<code>"inner-outer"</code>: the df of the grouping level at which
+each effect varies</td>
+<td>
+<code>"containment"</code>, <code>"between-within"</code>
+(<code>glmer</code>), <code>"residual"</code>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code>glm</code>, <code>gam</code>: Poisson, binomial, negative
+binomial</td>
+<td>none: z tests (<code>"asymptotic (z)"</code>), as emmeans and SAS
+GLIMMIX</td>
+<td>
+<code>"residual"</code> (t tests, as 1.x)</td>
+</tr>
+<tr class="odd">
+<td>
+<code>lm</code>; <code>glm</code>, <code>gam</code> with an
+estimated dispersion (Gaussian, Gamma, quasi-)</td>
+<td>residual df</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>
+<code>aov</code> with <code>Error()</code>
+</td>
+<td>by strata, Satterthwaite’s df across strata</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>settings$df_method</code> of the result says which was used.
+For the split plot (a REML <code>lmer</code> fit) the default gives
+Kenward–Roger SEs and df. Other choices:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Satterthwaite df</span></span>
 <span><span class="va">pm_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="st">"Satterthwaite"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -218,6 +300,14 @@ or variance structures, <code>"Satterthwaite"</code>,
 <code>"KR-average"</code> are available too.
 <code><a href="../articles/sas.html">vignette("sas", package = "predictmeans")</a></code> shows how each
 matches SAS PROC MIXED.</p>
+<p>ML fits get Satterthwaite df because Kenward–Roger’s adjustment is
+derived for REML. For Poisson, binomial and negative binomial
+<code>glm</code> fits the dispersion is known, so there are no residual
+df to use: in simulations, t tests on the residual df rejected 0.3–4.5%
+of true hypotheses at the 5% level, and z tests 3.6–5.7%.</p>
+<p>Before reading the means, check the model: <code><a href="../reference/pm_check.html">pm_check()</a></code>
+and <code><a href="../reference/residplot.html">residplot()</a></code>, in
+<code><a href="../articles/checking.html">vignette("checking", package = "predictmeans")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="averaging-over-other-factors">Averaging over other factors<a class="anchor" aria-label="anchor" href="#averaging-over-other-factors"></a>
@@ -304,6 +394,10 @@ probabilities); see <code><a href="../articles/response-scale.html">vignette("re
 <h2 id="more">More<a class="anchor" aria-label="anchor" href="#more"></a>
 </h2>
 <ul>
+<li>
+<code><a href="../articles/checking.html">vignette("checking", package = "predictmeans")</a></code>:
+checking the model with <code><a href="../reference/pm_check.html">pm_check()</a></code> and
+<code><a href="../reference/residplot.html">residplot()</a></code>.</li>
 <li>
 <code><a href="../articles/contrasts.html">vignette("contrasts", package = "predictmeans")</a></code>: other
 adjustments for multiple testing, comparisons with a control, trends,

@@ -25,7 +25,8 @@
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
@@ -85,7 +86,12 @@
 <code>glmmTMB</code> and <code>gam</code> (package <span class="pkg">mgcv</span>), or a <code><a href="semireg.html">semireg</a></code> fit. An <code>aov</code> model with
 <code>Error()</code> strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (<code>settings$df_method</code> <code>"multistratum"</code>);
-standard errors of single means include the block stratum. For a <code>semireg</code> fit the
+standard errors of single means include the block stratum. With missing values in an orthogonal design (rows
+whose response is <code>NA</code>, or a few combinations of the design factors absent) they are estimated as Genstat's
+ANOVA does (the residual sum of squares of the lowest stratum made smallest; the residual df reduced) and the
+completed design is analysed by strata, with exact standard errors (Genstat's are those of the complete design);
+a message says that REML (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer()</a></code> with the <code>Error()</code> terms as random effects) uses the information in
+all strata and is the better analysis when plots are missing. For a <code>semireg</code> fit the
 means include the smooth terms (as <code><a href="semipred.html">semipred</a></code>), at the covariates' means or at the values of
 <code>covariate</code> (a named vector, e.g. <code>c(construction.date = 1980)</code>); the result holds only the
 <code>means</code>, <code>pairs</code> and <code>settings</code> tables, with normal-based tests and any <code>adj</code>.</p></dd>
@@ -122,8 +128,9 @@ permutation version of Tukey's test: each pair's |t| is compared with the larges
 permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
 powerful; both use the correlation between the comparisons. "westfall" needs <code>permlist</code>; "scheffe" is not
 available with it.
-The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
-except for "bonferroni" method.</p></dd>
+The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
+the adjusted p-values are in the columns <code>adj.conf.low</code> and <code>adj.conf.high</code> of <code>pairs</code>. The
+printed LSD is adjusted only by "bonferroni".</p></dd>
 
 
 <dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
@@ -293,7 +300,9 @@ factors): with <code>"equal"</code>, a mean that averages over them is the avera
 predictmeans 1.x, and ASReml and Genstat with <code>PRESENT</code>), with a warning naming those means. Two such means
 average over different cells, so their difference would also carry the effects of the other factors; a pair
 with such a mean is therefore compared on the cells both means have (column <code>over</code> of <code>pairs</code>; NA,
-<code>over = "none"</code>, when they have none). In simulations comparing the averages rejected 8-78% of true
+<code>over = "none"</code>, when they have none). Only factors whose effects the two means share are matched: with
+<code>Sample_date/Farm</code> in the model, two dates are not matched on farms (each date has its own farm effects),
+but two treatments at one date are. In simulations comparing the averages rejected 8-78% of true
 null hypotheses at the 5% level when the other factor had an effect, the common cells 4-6%
 (<code>dev/review-defaults.md</code> in the package sources). <code><a href="contrastmeans.html">contrastmeans()</a></code> and <code><a href="pm_joint.html">pm_joint()</a></code> do the same.</p></dd>
 
@@ -434,9 +443,14 @@ stay on the link scale.</p></dd>
  minus mean of <code>level2</code>), <code>std.error</code>, <code>df</code>, <code>statistic</code> (t), <code>p.value</code>, <code>p.adj</code>
  (adjusted by <code>adj</code>, within each level of <code>atvar</code> when given), <code>p.equiv</code> (with
  <code>equivalence</code>: the TOST p-value), <code>conf.low</code> and <code>conf.high</code> (limits of
- the difference at <code>level</code>), <code>lsd</code> (the half-width of those limits) and <code>p.method</code>; with <code>permlist</code>
- the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
- within each family with <code>adj</code> "tukey", "mvt" or "westfall"); for a log
+ each difference at <code>level</code>, not adjusted), <code>lsd</code> (the half-width of those limits),
+ <code>adj.conf.low</code> and <code>adj.conf.high</code> (simultaneous limits within each family, which exclude 0 exactly
+ when <code>p.adj</code> is below <code>level</code>, as SAS <code>AdjLower</code> and <code>AdjUpper</code> and <span class="pkg">emmeans</span>; for
+ <code>adj</code> "tukey" (each pair's own df, as SAS <code>ADJDFE=ROW</code>), "bonferroni", "sidak", "scheffe" and "mvt";
+ the step-down and false discovery rate methods have none) and <code>p.method</code>; with <code>permlist</code>
+ the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test), and the
+ adjusted limits use the permutation distribution of the family's largest |t| ("tukey", "mvt", "westfall") or
+ each pair's at level/m ("bonferroni", "sidak"); for a log
  link or <code>trans = exp</code> also <code>ratio</code> (of the back-transformed means, <code>exp(estimate)</code>),
  <code>ratio.conf.low</code> and <code>ratio.conf.high</code>, and for a logit link <code>odds.ratio</code> with its limits.</p></dd>
 

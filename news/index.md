@@ -1,8 +1,163 @@
 # Changelog
 
-## predictmeans 1.1.1.9000 (development version)
+## predictmeans 1.1.1.9000 (development version, to be released as 2.0.0)
+
+### In short
+
+predictmeans 2.0 keeps the 1.x functions and printed output, and changes
+defaults where simulations or the literature showed a more reliable
+method. Results checked against SAS PROC MIXED, Genstat and emmeans are
+in the tests.
+
+- **Degrees of freedom** are chosen by the model in one place
+  (`df_method = "auto"`): Kenward-Roger with adjusted SEs for REML
+  `lmer`, `lme` and `gls` (observed information, as SAS `DDFM=KR`);
+  Satterthwaite for ML fits; the df of the grouping level for GLMMs; z
+  tests for Poisson, binomial and negative binomial `glm`. Options:
+  `"Satterthwaite"`, `"containment"`, `"between-within"`,
+  `"KR-expected"` (pbkrtest, emmeans), `"KR-average"` (Genstat),
+  `"residual"` (1.x). `vcov_adjust = FALSE` gives 1.x SEs.
+- **Stable result tables**: `means`, `pairs` and `settings` with fixed
+  column names (`tidy()`,
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html),
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)),
+  including adjusted confidence limits that agree with the adjusted
+  p-values.
+- **Empty cells**: means keep the 1.x average of the observed cells,
+  with a warning naming them; their comparisons use the cells both means
+  have.
+- **[`aov()`](https://rdrr.io/r/stats/aov.html) with `Error()`** is
+  analysed by strata, as Genstat (missing values estimated as Genstat’s
+  ANOVA does), not refitted as `lmer`.
+- **Type III tests** do not depend on the model’s contrasts (as SAS Type
+  3).
+- **Permutation tests**: Freedman-Lane by default, also for mixed
+  models, GLMs and GLMMs; permutation confidence limits, Tukey and
+  Westfall-Young adjustments, robust (HC3) statistics.
+- **Model checking**:
+  [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  and a ggplot2
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
+  for every model class
+  ([`vignette("checking")`](https://dongwenluo.github.io/predictmeans/articles/checking.md)).
+- More adjustments (`"sidak"`, `"scheffe"`, `"mvt"`), contrast families,
+  joint tests, slopes, equivalence tests, robust covariances (`vcov =`),
+  response-scale means with bias adjustment, and an adapter for new
+  model classes
+  ([`?pm_coef`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)).
+
+### Planned for 2.1
+
+- **lmerTest will move from Depends to Suggests.**
+  [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/)
+  will then no longer attach lmerTest, and
+  [`summary()`](https://rdrr.io/r/base/summary.html) of an
+  [`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) fit will show no df
+  or p-values unless you load lmerTest yourself. predictmeans’ own df do
+  not depend on it.
+- **`plot = FALSE` will become the default** of
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+  To get that now, set `options(predictmeans.plot = FALSE)`;
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  draws the plots from the result.
 
 ### Changes that affect results or scripts
+
+- **Adjusted confidence limits of the pairs.** With `adj` “tukey”,
+  “bonferroni”, “sidak”, “scheffe” or “mvt”, `pairs` has the columns
+  `adj.conf.low` and `adj.conf.high`: simultaneous limits within each
+  family (each level of `atvar`) that exclude 0 exactly when `p.adj` is
+  below `level`, as SAS `AdjLower`/`AdjUpper` and emmeans’
+  [`confint()`](https://rdrr.io/r/stats/confint.html) (Tukey with each
+  pair’s own df, as SAS `ADJDFE=ROW`; equal to SAS’s Tukey-Kramer limits
+  in `test-sas-adjust.R`). The step-down and false discovery rate
+  methods (holm, hochberg, hommel, BH, BY) have no simultaneous limits
+  and no such columns. With a `permlist`, “tukey”, “mvt” and “westfall”
+  use the permutation distribution of the family’s largest \|t\|.
+  `conf.low`, `conf.high` and `lsd` are now always the limits of each
+  comparison on its own: with `adj = "bonferroni"` they were Bonferroni
+  limits over all pairs (not per family), and with a `permlist` and a
+  max-\|t\| adjustment they were the simultaneous limits now in
+  `adj.conf.*`. The printed LSD is unchanged.
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  gives the same limits as `adj.lower.CL` and `adj.upper.CL`
+  (“bonferroni”, “sidak”, “scheffe” with the rank of `ctrmatrix`, “mvt”;
+  with a `permlist` also “westfall”), equal to emmeans’
+  [`confint()`](https://rdrr.io/r/stats/confint.html); its `lower.CL`
+  and `upper.CL` are per contrast, also with a `permlist` and a
+  max-\|t\| adjustment.
+
+- Fixed:
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  with `level` given (and `letterCI = FALSE`) stopped with “object
+  ‘slevel’ not found” when making pairwise comparisons, as in 1.1.1.
+
+- `permmodels(type = "III")` computes the map from the model’s
+  coefficients to the sum-to-zero hypotheses once instead of in every
+  refit: `lm` with 999 raw permutations 1.9 s (3.3 s before, 2.3 s
+  before the contrast-free Type III tests); results identical.
+
+- **[`aov()`](https://rdrr.io/r/stats/aov.html) with `Error()` and
+  missing values: estimated as Genstat’s ANOVA.** In an orthogonal
+  design with some plots missing (rows with an `NA` response, or a few
+  combinations of the design factors absent), the missing values are
+  estimated so that the residual sum of squares of the lowest stratum is
+  smallest (the next stratum up for what that leaves open, e.g. a whole
+  plot), the residual df are reduced, and the completed design is
+  analysed by strata. Means, stratum mean squares and the missing value
+  equal Genstat’s (oats with one sub-plot missing: 113.0; Victory x 0.6
+  120.7; the strata combined in 2.0-dev gave 121.8), Yates’ formula for
+  randomized blocks is reproduced, and the SEDs are exact (Genstat’s are
+  those of the complete design, “not adjusted for missing values”; they
+  agree for the comparisons the missing plot does not touch). A message
+  recommends REML, which uses the information in all strata. Designs
+  that cannot be completed to an orthogonal one keep the combination of
+  the strata, with a message.
+
+- **[`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
+  is rewritten with ggplot2 and works for every model class predictmeans
+  handles**: `lm`, `aov` (also with `Error()`), `glm`, `gls`, `lme`,
+  `lmer`, `glmer`, `glmmTMB`, `gam`, `semireg` fits and other classes
+  with [`fitted()`](https://rdrr.io/r/stats/fitted.values.html) and
+  [`residuals()`](https://rdrr.io/r/stats/residuals.html) methods. Four
+  plots: residuals vs fitted (with a loess smooth), normal Q-Q of the
+  residuals, then by model the random effects’ Q-Q plot, the
+  autocorrelation of the normalized residuals (`gls`) or scale-location,
+  and Cook’s distances (`lm`, `aov`, `glm`) or fitted vs observed (a
+  calibration plot for a 0/1 response). Poisson, binomial and negative
+  binomial models use randomized quantile residuals (Dunn and Smyth
+  1996), normal when the model is right. The axis labels of the 1.x
+  plots of mixed models were wrong (swapped in the Q-Q plot; raw
+  residuals called standardized). `interactive = TRUE` shows the plots
+  with plotly (hover for each point’s row); `plot = FALSE` returns the
+  ggplot objects to change or combine. `id` now labels the most extreme
+  points (3 by default) instead of asking for clicks.
+
+- **Type III tests no longer depend on the model’s contrasts**
+  (`permmodels(type = "III")` and its tables). They are the tests of
+  sum-to-zero contrasts, as SAS Type 3, computed from the model’s own
+  coefficients without refitting. Before, as
+  [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html), a model
+  fitted with R’s default treatment contrasts had each main effect
+  tested at the first level of the other factors. Oats with a whole plot
+  missing: Variety F 1.28 on 8.26 df and Nitro 37.92, as SAS (were 1.17
+  on 22.1 and 12.41). Interactions, and models fitted with sum-to-zero
+  contrasts, are unchanged.
+
+- Comparisons of means over empty cells match only the factors whose
+  effects the two means share: with `Sample_date/Farm` in the model, two
+  dates are no longer matched on farms (each date has its own farm
+  effects), which gave NA for pairs that are estimable; two treatments
+  at one date still are. Found on the maintainer’s pasture data
+  (Sample_date:ExForest: 0 NA pairs, was 11).
+
+- Fixed:
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  stopped (“missing value where TRUE/FALSE needed”) when some pairs
+  cannot be estimated (confounded factors, e.g. a spray volume used only
+  with fine droplets) and the df vary by pair (Kenward-Roger,
+  Satterthwaite, inner-outer). Those pairs are NA, with NA df; the
+  others are given. The same error stopped predictmeans 1.1.1.
 
 - **`glm` models with a known dispersion (Poisson, binomial, negative
   binomial) use z tests** (normal; chi-square for joint tests), as
@@ -341,6 +496,46 @@
   test level (about 0.05), instead of “significant level ‘0.166’”.
   `level` keeps its meaning (it sets the CIs). With two `atvar` factors
   the note is one line (“at each level of A:B”) instead of two.
+
+### New features
+
+- New vignette “Checking the model”
+  ([`vignette("checking")`](https://dongwenluo.github.io/predictmeans/articles/checking.md)):
+  [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  and
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
+  on a split plot and on overdispersed counts (Poisson, then negative
+  binomial), with what the checks do and do not decide. The main
+  vignette has a table of the default df by model class (Kenward-Roger
+  for REML fits, Satterthwaite for ML fits, inner-outer for GLMMs, z
+  tests for Poisson/binomial/negative binomial `glm`, residual df
+  otherwise, strata for `aov` with `Error()`), with `"KR-expected"` and
+  `"KR-average"` among the options. `dev/benchmarks.R` also times
+  permutation tests and means over empty cells.
+
+- New tests against Genstat 23.1 REML (`test-genstat-reference.R`; runs
+  by the maintainer, output files in `dev/genstat/`): six analyses of
+  the oats split plot with missing plots, an empty cell and scattered
+  missing sub-plots, and AR(1) repeated measures with missing values.
+  Variance components, predicted means, SEDs (`vcov_adjust = FALSE`),
+  Wald statistics and 17 of 18 denominator df
+  (`df_method = "KR-average"`) agree; Genstat’s F is Kenward-Roger’s
+  scaling factor times Wald / df. Genstat’s means over the combinations
+  present equal predictmeans’ means over empty cells.
+
+- `pm_check(model)`: a table of checks of a fitted model with a plain
+  note on each, for any model predictmeans handles: the fit (singular,
+  convergence), outliers (beyond 3, flagged when improbable for normal
+  residuals), influence (Cook’s distance), normality of the residuals
+  and of each random-effect term, equal variances across the levels of
+  each factor (Brown-Forsythe), overdispersion of Poisson and binomial
+  models, interactions (Type III tests), whether a factor with numeric
+  levels follows a straight line (curvature contrasts with the actual
+  spacing, by
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)),
+  and aliased coefficients. The checks inform; they do not simplify the
+  model. `plot = TRUE` also draws
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md).
 
 ### Stable result tables
 
@@ -1401,7 +1596,13 @@
   `Authors@R`).
 - `which.plots` is documented. DESCRIPTION no longer carries
   CRAN-generated fields, and `NeedsCompilation` is “no”.
-- GitHub Actions R CMD check on Linux, macOS and Windows.
+- GitHub Actions R CMD check on Linux, macOS and Windows, with
+  `--as-cran`, and one job that runs the tests as CRAN does (without
+  `NOT_CRAN`: 140 s). Release preparation (no release yet):
+  `cran-comments.md` (draft), and a reverse dependency check run by hand
+  (`.github/workflows/revdep-check.yaml`, `dev/revdep-check.R`: each
+  CRAN package that uses predictmeans checked with the CRAN version and
+  with this one).
 
 ### Kmatrix() and semipred()
 

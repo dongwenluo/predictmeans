@@ -4,6 +4,8 @@
 
 - [Getting started with
   predictmeans](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md):
+- [Checking the
+  model](https://dongwenluo.github.io/predictmeans/articles/checking.md):
 - [Contrasts, joint tests and
   slopes](https://dongwenluo.github.io/predictmeans/articles/contrasts.md):
 - [Link and response

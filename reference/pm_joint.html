@@ -25,7 +25,8 @@ ctrmatrix, all its rows are tested together."></head><body>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
@@ -124,7 +125,7 @@ the Wald F with this covariance, and the denominator df those of the model's own
 
 <dt>KR-average</dt>
 <dd><p>(<code>lmer</code>, <code>lme</code>, <code>gls</code>) Kenward-Roger with the average information: Genstat's REML
-  df (Genstat's F statistic is the unscaled Wald F).</p></dd>
+  df (Genstat's F statistic is Kenward-Roger's scaling factor times the Wald F of the unadjusted covariance).</p></dd>
 
 <dt>between-within</dt>
 <dd><p>(<code>lmer</code>, <code>lme</code>, <code>gls</code>) the Wald F with the between-within df of

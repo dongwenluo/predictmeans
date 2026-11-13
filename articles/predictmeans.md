@@ -84,13 +84,20 @@ head(pm$pairs)
 #> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014
 #> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23080
 #> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23080
-#>    statistic     p.value      p.adj   conf.low conf.high      lsd p.method
-#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437    tukey
-#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437    tukey
-#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437    tukey
-#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    tukey
-#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437    tukey
-#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437    tukey
+#>    statistic     p.value      p.adj   conf.low conf.high      lsd adj.conf.low
+#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437           NA
+#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437           NA
+#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437           NA
+#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    -38.99579
+#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437           NA
+#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437           NA
+#>   adj.conf.high p.method
+#> 1            NA    tukey
+#> 2            NA    tukey
+#> 3            NA    tukey
+#> 4      1.995794    tukey
+#> 5            NA    tukey
+#> 6            NA    tukey
 ```
 
 The same tables come from
@@ -104,10 +111,14 @@ head(as.data.frame(pm, what = "pairs"), 3)
 #> 1 0:Golden Rain 0:Marvellous <NA> -6.666667   9.71502 30.2308 -0.6862226
 #> 2 0:Golden Rain    0:Victory <NA>  8.500000   9.71502 30.2308  0.8749338
 #> 3  0:Marvellous    0:Victory <NA> 15.166667   9.71502 30.2308  1.5611564
-#>     p.value p.adj   conf.low conf.high      lsd p.method
-#> 1 0.4978025    NA -26.501035  13.16770 19.83437    tukey
-#> 2 0.3885084    NA -11.334369  28.33437 19.83437    tukey
-#> 3 0.1288957    NA  -4.667702  35.00104 19.83437    tukey
+#>     p.value p.adj   conf.low conf.high      lsd adj.conf.low adj.conf.high
+#> 1 0.4978025    NA -26.501035  13.16770 19.83437           NA            NA
+#> 2 0.3885084    NA -11.334369  28.33437 19.83437           NA            NA
+#> 3 0.1288957    NA  -4.667702  35.00104 19.83437           NA            NA
+#>   p.method
+#> 1    tukey
+#> 2    tukey
+#> 3    tukey
 ```
 
 ## Plots
@@ -133,9 +144,20 @@ plots.
 
 ## Degrees of freedom and standard errors
 
-For REML `lmer` fits the default is Kenward–Roger: adjusted standard
-errors and Kenward–Roger df, as SAS `DDFM=KR` and emmeans give. Other
-choices:
+`df_method = "auto"` (the default) chooses the df by the model:
+
+| Model | Default df | Other choices of `df_method` |
+|----|----|----|
+| REML `lmer`, `lme`, `gls` | Kenward–Roger, with adjusted SEs (as SAS `DDFM=KR`) | `"Satterthwaite"`, `"containment"`, `"between-within"`, `"KR-expected"`, `"KR-average"` |
+| ML `lmer`, `lme`, `gls` | Satterthwaite, from the ML likelihood | `"containment"`, `"between-within"` |
+| `glmer`, `glmmTMB` | `"inner-outer"`: the df of the grouping level at which each effect varies | `"containment"`, `"between-within"` (`glmer`), `"residual"` |
+| `glm`, `gam`: Poisson, binomial, negative binomial | none: z tests (`"asymptotic (z)"`), as emmeans and SAS GLIMMIX | `"residual"` (t tests, as 1.x) |
+| `lm`; `glm`, `gam` with an estimated dispersion (Gaussian, Gamma, quasi-) | residual df |  |
+| `aov` with `Error()` | by strata, Satterthwaite’s df across strata |  |
+
+`settings$df_method` of the result says which was used. For the split
+plot (a REML `lmer` fit) the default gives Kenward–Roger SEs and df.
+Other choices:
 
 ``` r
 
@@ -161,6 +183,19 @@ Genstat’s df (with `vcov_adjust = FALSE`, also its SEDs). For `lme` and
 `"Kenward-Roger"`, `"KR-expected"` and `"KR-average"` are available too.
 [`vignette("sas", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/sas.md)
 shows how each matches SAS PROC MIXED.
+
+ML fits get Satterthwaite df because Kenward–Roger’s adjustment is
+derived for REML. For Poisson, binomial and negative binomial `glm` fits
+the dispersion is known, so there are no residual df to use: in
+simulations, t tests on the residual df rejected 0.3–4.5% of true
+hypotheses at the 5% level, and z tests 3.6–5.7%.
+
+Before reading the means, check the model:
+[`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+and
+[`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
+in
+[`vignette("checking", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/checking.md).
 
 ## Averaging over other factors
 
@@ -255,6 +290,11 @@ probabilities); see
 
 ## More
 
+- [`vignette("checking", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/checking.md):
+  checking the model with
+  [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  and
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md).
 - [`vignette("contrasts", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/contrasts.md):
   other adjustments for multiple testing, comparisons with a control,
   trends, joint tests (slices) and slopes.

@@ -89,7 +89,8 @@ The F statistic and its denominator degrees of freedom follow the model:
 - KR-average:
 
   (`lmer`, `lme`, `gls`) Kenward-Roger with the average information:
-  Genstat's REML df (Genstat's F statistic is the unscaled Wald F).
+  Genstat's REML df (Genstat's F statistic is Kenward-Roger's scaling
+  factor times the Wald F of the unadjusted covariance).
 
 - between-within:
 
