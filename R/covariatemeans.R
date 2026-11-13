@@ -7,7 +7,9 @@
 #'   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
 #'   plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
 #'   cov_reduce=mean, exclude=NULL,
-#'   weights=c("equal", "proportional", "outer", "cells", "flat"))
+#'   weights=c("equal", "proportional", "outer", "cells", "flat"),
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+#'   vcov_adjust=TRUE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -41,6 +43,10 @@
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#' @param df_method,vcov_adjust As in \code{\link{predictmeans}}: by default Kenward-Roger df (each point of the curves
+#'   has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
+#'   predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
+#'   and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.
 #' @return
 #' \item{Predicted Means}{A table of predicted means.}
 #' @author
@@ -57,7 +63,11 @@
 NULL
 
 covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL,
-                            weights=c("equal", "proportional", "outer", "cells", "flat")) {
+                            weights=c("equal", "proportional", "outer", "cells", "flat"),
+                            df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+                            vcov_adjust=TRUE) {
+  vcov_adjust_default <- missing(vcov_adjust)
+  df_method <- match.arg(df_method)
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -89,7 +99,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   pltdf <- ctr.matrix$fctnames
   response <- ctr.matrix$response
   preddf <- ctr.matrix$preddf
-  mp <- mymodelparm(model)
+  inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default)     # R/inference.R
+  mp <- inf$mp
   bhat <- mp$coef
 
   if (!setequal(modelterm, covariate) & as.is) {
@@ -109,18 +120,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   pltdf$ses <- sqrt(base::diag(KK %*% tcrossprod(mp$vcov, KK)))
 
   if (is.null(Df) || all(Df%in%c("NULL", ""))) {
-    if (inherits(model, "lme")) {
-      Df <- terms(model$fixDF)[modelterm]
-    } else if (inherits(model, "lmerMod")) {
-      # Df <- try(median(df_term(model, modelterm, covariate), na.rm=TRUE))
-	    Df <- mp$df[modelterm]
-      if(inherits(Df, "try-error")) {
-        stop("You need provide Df for this model!")
-      }
-    } else {
-      df_custom <- pm_df(model, KK)
-      Df <- if (!is.null(df_custom)) rep_len(as.numeric(df_custom), nrow(KK)) else mp$df
-    }
+    Df <- inf$df(KK, modelterm)          # each point its own df (Kenward-Roger, Satterthwaite)
     if (any(Df==0)) {
       stop("You need provide Df for this model!")
     }

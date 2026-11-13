@@ -218,13 +218,8 @@ pm_tidy_parts <- function(e) {
     "permutation"
   } else if (length(g("Df")) && isTRUE(g("df_user"))) {
     "user"
-  } else if (!is.null(g("df_type"))) {
-    # "KR-SAS" is Kenward-Roger with the observed information
-    if (identical(g("df_method"), "KR-SAS") && identical(g("df_type"), "Kenward-Roger")) "KR-SAS" else g("df_type")
-  } else if (inherits(model, "lme")) {
-    "containment (nlme)"
   } else {
-    "residual"
+    g("inf")$label              # R/inference.R
   }
   cov_cols <- setdiff(names(label), vars)
   settings <- list(
@@ -237,6 +232,7 @@ pm_tidy_parts <- function(e) {
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),
     bias_adjust = ba_sigma,
+    singular = pm_singular(model),
     average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
@@ -323,7 +319,7 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #' Predicted Means and Pairwise Comparisons as Data Frames
 #'
 #' @description
-#' Return the \code{means} or \code{pairs} table of a \code{\link{predictmeans}} result. The tables have fixed column
+#' Return the \code{means} or \code{pairs} table of a \code{\link{predictmeans}} result (\code{glance()}: one row describing it). The tables have fixed column
 #' names (see the Value section of \code{\link{predictmeans}}) and unrounded values, which makes them easy to use in
 #' further analysis, reports, Shiny apps or AI tools. \code{tidy()} is the generic from package \pkg{generics} (also
 #' used by \pkg{broom}); \code{as.data.frame()} needs no other package.
@@ -334,6 +330,8 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #' the class listed first: \code{options(marginaleffects_model_classes = "predictmeans")}.
 #' @usage
 #' \method{tidy}{predictmeans}(x, what = c("means", "pairs"), ...)
+#'
+#' \method{glance}{predictmeans}(x, ...)
 #'
 #' \method{as.data.frame}{predictmeans}(x, row.names = NULL, optional = FALSE,
 #'               what = c("means", "pairs"), ...)
@@ -348,7 +346,10 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #' @param optional Not used.
 #' @param \dots Not used.
 #' @return
-#' A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix.
+#' A data frame; for \code{coef()} a named vector and for \code{vcov()} a matrix. \code{glance()} gives one row:
+#' \code{modelterm}, \code{n.means}, \code{n.pairs}, \code{nobs} (observations in the cells), \code{df.method},
+#' \code{adjust}, \code{level}, \code{vcov}, \code{vcov.adjust}, \code{sed.min}, \code{sed.mean}, \code{sed.max}
+#' (standard errors of the differences), \code{lsd.mean}, \code{nperm} and \code{model.class}.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -359,13 +360,14 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 #'   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
 #'   as.data.frame(pm)
 #'   head(as.data.frame(pm, what = "pairs"))
+#'   if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
 #'
 #'   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
 #'   b <- coef(pm)
 #'   L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
 #'   c(estimate = sum(L*b), SE = sqrt(drop(L %*% vcov(pm) %*% L)))
 #' @name tidy.predictmeans
-#' @aliases as.data.frame.predictmeans coef.predictmeans vcov.predictmeans
+#' @aliases as.data.frame.predictmeans coef.predictmeans vcov.predictmeans glance.predictmeans
 NULL
 
 tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {
@@ -373,4 +375,22 @@ tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {
   out <- x[[what]]
   if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
   out
+}
+
+## One row describing a result (the generics/broom glance()).
+glance.predictmeans <- function(x, ...) {
+  s <- x$settings
+  m <- x$means
+  p <- x$pairs
+  rng <- function(v) if (length(v) && any(is.finite(v))) range(v[is.finite(v)]) else c(NA_real_, NA_real_)
+  sed <- rng(if (is.null(p)) NULL else p$std.error)
+  lsd <- if (is.null(p) || is.null(p$lsd)) NA_real_ else mean(p$lsd[is.finite(p$lsd)])
+  num <- function(v) if (is.null(v) || !length(v)) NA_real_ else as.numeric(v)[1]
+  chr <- function(v) if (is.null(v) || !length(v)) NA_character_ else paste(v, collapse = ", ")
+  data.frame(modelterm = chr(s$modelterm), n.means = nrow(m), n.pairs = if (is.null(p)) 0L else nrow(p),
+             nobs = if (is.null(m$n)) NA_real_ else sum(m$n, na.rm = TRUE), df.method = chr(s$df_method),
+             adjust = chr(s$adjust), level = num(s$level), vcov = chr(s$vcov), vcov.adjust = isTRUE(s$vcov_adjust),
+             sed.min = sed[1], sed.mean = if (is.null(p)) NA_real_ else mean(p$std.error[is.finite(p$std.error)]),
+             sed.max = sed[2], lsd.mean = lsd, nperm = num(s$nperm), model.class = chr(s$model_class),
+             stringsAsFactors = FALSE)
 }

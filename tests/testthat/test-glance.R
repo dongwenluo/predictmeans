@@ -1,0 +1,27 @@
+## glance() of a predictmeans result and options(predictmeans.plot = FALSE)
+
+test_that("glance() describes a result in one row", {
+  skip_if_not_installed("generics")
+  Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
+  fm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
+  pm <- predictmeans(fm, "nitro", plot = FALSE, prtnum = FALSE)
+  g <- generics::glance(pm)
+  expect_equal(nrow(g), 1)
+  expect_identical(c(g$modelterm, g$df.method, g$model.class), c("nitro", "Kenward-Roger", "lmerMod"))
+  expect_equal(c(g$n.means, g$n.pairs, g$nobs), c(4, 6, 72))
+  expect_equal(g$sed.mean, mean(pm$pairs$std.error))
+  expect_equal(g$lsd.mean, mean(pm$pairs$lsd))
+  g1 <- generics::glance(predictmeans(lm(yield ~ Variety, data = Oats), "Variety", plot = FALSE, prtnum = FALSE))
+  expect_identical(g1$df.method, "residual")
+})
+
+test_that("options(predictmeans.plot = FALSE) turns the plots off", {
+  Oats <- as.data.frame(nlme::Oats)
+  fm <- lm(yield ~ Variety, data = Oats)
+  op <- options(predictmeans.plot = FALSE)
+  on.exit(options(op), add = TRUE)
+  grDevices::graphics.off()
+  pm <- predictmeans(fm, "Variety", prtnum = FALSE)
+  expect_null(grDevices::dev.list())
+  expect_equal(pm$means, predictmeans(fm, "Variety", plot = FALSE, prtnum = FALSE)$means)
+})

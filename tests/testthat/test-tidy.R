@@ -14,7 +14,7 @@ test_that("means match emmeans: estimates, SEs, KR df and confidence limits", {
   Ou <- oats_fac()
   Ou <- Ou[-sample(nrow(Ou), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
-  pm <- predictmeans(fm, "nitro:Variety", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", vcov_adjust = TRUE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
   em <- summary(emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger"))
   m <- tidy.predictmeans(pm)
   idx <- match(key_em(m, c("nitro", "Variety")), key_em(em, c("nitro", "Variety")))
@@ -104,7 +104,7 @@ test_that("coef() and vcov() of the means match emmeans and give the pairs' SEs"
   Ou <- oats_fac()
   Ou <- Ou[-sample(nrow(Ou), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
-  pm <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
   em <- emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger")
   b <- coef(pm)
   V <- vcov(pm)

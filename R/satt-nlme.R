@@ -15,11 +15,14 @@
 ## covariance is checked against vcov() of the fit. Checked against SAS
 ## PROC MIXED DDFM=SATTERTHWAITE (dev/sas): unstructured repeated measures
 ## (gls; 10, 10.1, 10.2) and the split plot with a plot missing (lme; as lmer).
-## The data covariance is dense (n x n), so this suits up to a few thousand
-## observations.
+## The data covariance is a sparse matrix, block diagonal by the outermost
+## groups (subjects), so the work grows about linearly with the number of
+## groups.
 
 ## Covariance of the data relative to sigma^2, as a function of the
-## unconstrained modelStruct parameters, rows in the order of the data used.
+## unconstrained modelStruct parameters, rows in the order of the data used:
+## a sparse symmetric matrix (random effects Z (I x D) Z' by level, plus the
+## correlation blocks scaled by the variance weights).
 pm_nlme_sigma <- function(model) {
   dat <- pm_get_data(model)
   ms <- model$modelStruct
@@ -34,41 +37,59 @@ pm_nlme_sigma <- function(model) {
       names(grps) <- names(re_f)[1]
     }
     ord <- do.call(order, grps)
+    # one sparse design per level: the columns of group g are (g - 1) q + 1:q
     Zs <- lapply(names(re_f), function(lv) {
       # the groups of a nested level: its factor within those of the levels above it
       gq <- interaction(grps[seq_len(match(lv, names(grps)))], drop = TRUE)
       Zq <- stats::model.matrix(re_f[[lv]], dat)
-      lapply(levels(gq), function(l) Zq * (gq == l))
+      q <- ncol(Zq)
+      gi <- as.integer(gq)
+      list(Z = Matrix::sparseMatrix(i = rep(seq_len(n), q), j = (rep(gi, q) - 1L) * q + rep(seq_len(q), each = n),
+                                    x = as.vector(Zq), dims = c(n, nlevels(gq) * q)),
+           I = Matrix::Diagonal(nlevels(gq)))
     })
     names(Zs) <- names(re_f)
   } else {
     grps <- if (is.null(gf)) NULL else nlme::getGroups(dat, gf)
     ord <- if (is.null(grps)) seq_len(n) else order(grps)
   }
-  back <- order(ord)                           # nlme's internal (sorted) order -> data order
+  # residual part: the correlation blocks (nlme's sorted order) scaled by the
+  # variance weights, put straight into data order: sorted position a is data
+  # row ord[a]; the indices of the block entries are found once
+  blk <- if (is.null(ms$corStruct)) NULL else {
+    cm0 <- nlme::corMatrix(ms$corStruct)
+    if (!is.list(cm0)) cm0 <- list(cm0)
+    sz <- vapply(cm0, nrow, integer(1))
+    off <- cumsum(c(0L, sz[-length(sz)]))
+    ia <- unlist(lapply(seq_along(sz), function(b) rep(seq_len(sz[b]), sz[b]) + off[b]))
+    jb <- unlist(lapply(seq_along(sz), function(b) rep(seq_len(sz[b]), each = sz[b]) + off[b]))
+    list(ia = ia, jb = jb, up = ord[ia] <= ord[jb])
+  }
   function(theta) {
     if (length(theta)) ms <- nlme::`coef<-`(ms, value = theta)
-    S <- matrix(0, n, n)
+    w <- if (is.null(ms$varStruct)) rep(1, n) else 1 / nlme::varWeights(ms$varStruct)
+    S <- if (is.null(blk)) {
+      Matrix::sparseMatrix(i = ord, j = ord, x = w^2, dims = c(n, n), symmetric = TRUE)
+    } else {
+      cm <- nlme::corMatrix(ms$corStruct)
+      x <- (if (is.list(cm)) unlist(cm, use.names = FALSE) else as.vector(cm)) * w[blk$ia] * w[blk$jb]
+      u <- blk$up
+      Matrix::sparseMatrix(i = ord[blk$ia][u], j = ord[blk$jb][u], x = x[u], dims = c(n, n), symmetric = TRUE)
+    }
     if (!is.null(Zs)) {
       D <- nlme::pdMatrix(ms$reStruct)
-      for (lv in names(Zs)) for (Z in Zs[[lv]]) S <- S + Z %*% D[[lv]] %*% t(Z)
+      for (lv in names(Zs)) {
+        Z <- Zs[[lv]]$Z
+        S <- S + Z %*% Matrix::kronecker(Zs[[lv]]$I, Matrix::Matrix(D[[lv]])) %*% Matrix::t(Z)
+      }
     }
-    R <- diag(n)
-    if (!is.null(ms$corStruct)) {
-      cm <- nlme::corMatrix(ms$corStruct)
-      R <- if (is.list(cm)) as.matrix(Matrix::bdiag(cm)) else cm
-    }
-    if (!is.null(ms$varStruct)) {
-      w <- nlme::varWeights(ms$varStruct)
-      R <- R / outer(w, w)
-    }
-    S + R[back, back]
+    Matrix::forceSymmetric(methods::as(S, "CsparseMatrix"), uplo = "U")
   }
 }
 
 ## The REML pieces of a gls or lme fit as functions of theta = (unconstrained
-## modelStruct coefficients, log sigma): the covariance of the data (vb: of
-## the coefficients), -2 REML log-likelihood, checked against vcov().
+## modelStruct coefficients, log sigma): the covariance of the data (sparse;
+## vb: of the coefficients), -2 REML log-likelihood, checked against vcov().
 pm_nlme_reml <- function(model) {
   if (!identical(model$method, "REML")) {
     stop("Satterthwaite and Kenward-Roger df for gls and lme models need a REML fit.", call. = FALSE)
@@ -81,13 +102,17 @@ pm_nlme_reml <- function(model) {
   th0 <- c(stats::coef(model$modelStruct), lSigma = log(model$sigma))
   k <- length(th0)
   Sig <- function(p) exp(2 * p[k]) * Srel(p[-k])
-  vb <- function(p) solve(crossprod(X, solve(Sig(p), X)))
+  vb <- function(p) solve(crossprod(X, as.matrix(Matrix::solve(Sig(p), X))))
   reml2 <- function(p) {                       # -2 REML log-likelihood (up to a constant)
-    R <- chol(Sig(p))
-    Si <- chol2inv(R)
-    XSX <- crossprod(X, Si %*% X)
-    r <- y - X %*% solve(XSX, crossprod(X, Si %*% y))
-    2 * sum(log(diag(R))) + as.numeric(determinant(XSX)$modulus) + sum(r * (Si %*% r))
+    S <- Sig(p)
+    C <- Matrix::Cholesky(S, LDL = FALSE)
+    SiX <- as.matrix(Matrix::solve(C, X, system = "A"))
+    Siy <- as.vector(Matrix::solve(C, y, system = "A"))
+    XSX <- crossprod(X, SiX)
+    bh <- solve(XSX, crossprod(X, Siy))
+    r <- y - X %*% bh
+    as.numeric(Matrix::determinant(C, sqrt = FALSE)$modulus) + as.numeric(determinant(XSX)$modulus) +
+      sum(r * (Siy - SiX %*% bh))
   }
   Vm <- as.matrix(stats::vcov(model))
   if (max(abs(vb(th0) - Vm)) > 1e-6 * max(abs(Vm))) {
@@ -126,7 +151,7 @@ pm_satt_parts_nlme <- function(model) {
 ## as AR(1)). W: expected information, or observed (SAS; information =
 ## "observed"). Checked: lme = lmer's KR (pbkrtest); unstructured repeated
 ## measures (gls) = SAS's KR F tests.
-pm_vcov_kr_nlme <- function(model, information = c("expected", "observed")) {
+pm_vcov_kr_nlme <- function(model, information = c("observed", "expected")) {
   information <- match.arg(information)
   R <- pm_nlme_reml(model)
   X <- R$X
@@ -139,22 +164,27 @@ pm_vcov_kr_nlme <- function(model, information = c("expected", "observed")) {
     e <- replace(numeric(k), i, h)
     (R$Sig(th + e) - R$Sig(th - e)) / (2 * h)
   })
-  Si <- solve(S0)
-  SX <- Si %*% X
+  # all n x n products stay sparse (block diagonal); the rest is p x p
+  C <- Matrix::Cholesky(S0, LDL = FALSE)
+  SX <- as.matrix(Matrix::solve(C, X, system = "A"))
+  SG <- lapply(G, function(Gi) Matrix::solve(C, methods::as(Gi, "CsparseMatrix"), system = "A"))   # Sigma^-1 G_i
   Phi <- R$Vm
-  PP <- lapply(G, function(Gi) -crossprod(SX, Gi %*% SX))
+  A <- lapply(G, function(Gi) as.matrix(crossprod(SX, Gi %*% SX)))          # X' S^-1 G_i S^-1 X
+  PP <- lapply(A, function(a) -a)
+  Q <- lapply(seq_len(k), function(i) lapply(seq_len(k), function(j)
+    as.matrix(crossprod(SX, G[[i]] %*% (SG[[j]] %*% SX)))))
   W <- if (information == "observed") pm_nlme_W_observed(R) else {
-    Pm <- Si - SX %*% Phi %*% t(SX)
-    PG <- lapply(G, function(Gi) Pm %*% Gi)
+    # expected information: 1/2 tr(P G_i P G_j), P = S^-1 - S^-1 X Phi X' S^-1, in pieces
     IE <- matrix(0, k, k)
-    for (i in seq_len(k)) for (j in i:k) IE[i, j] <- IE[j, i] <- 0.5 * sum(PG[[i]] * t(PG[[j]]))
+    for (i in seq_len(k)) for (j in i:k) {
+      IE[i, j] <- IE[j, i] <- 0.5 * (sum(SG[[i]] * Matrix::t(SG[[j]])) - 2 * sum(Phi * t(Q[[i]][[j]])) +
+                                       sum((Phi %*% A[[i]]) * t(Phi %*% A[[j]])))
+    }
     solve(IE)
   }
-  SG <- lapply(G, function(Gi) Si %*% Gi)
   U <- matrix(0, ncol(X), ncol(X))
   for (i in seq_len(k)) for (j in seq_len(k)) {
-    Qij <- crossprod(SX, G[[i]] %*% (SG[[j]] %*% SX))
-    U <- U + W[i, j] * (Qij - PP[[i]] %*% Phi %*% PP[[j]])
+    U <- U + W[i, j] * (Q[[i]][[j]] - PP[[i]] %*% Phi %*% PP[[j]])
   }
   PhiA <- Phi + 2 * Phi %*% U %*% Phi
   PhiA <- (PhiA + t(PhiA)) / 2

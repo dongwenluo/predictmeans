@@ -7,7 +7,7 @@
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
 #'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
 #'                 level=0.05, vcov=NULL, equivalence=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
@@ -33,15 +33,16 @@
 #'   predictmeans 1.x. It has no effect for other models.
 #' @param weights Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
 #'   over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).
-#' @param df_method Denominator df for \code{lmer} models: \code{"auto"} (Kenward-Roger for REML fits, Satterthwaite for ML
-#'   fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
+#' @param df_method Denominator df: \code{"auto"} (Kenward-Roger for REML fits of \code{lmer}, \code{lme} and \code{gls},
+#'   Satterthwaite for ML \code{lmer} fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 #'   for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
-#'   \code{"KR-SAS"} (Kenward-Roger as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
-#'   \code{"Kenward-Roger"} and \code{"KR-SAS"};
-#'   see \code{\link{predictmeans}}.
+#'   \code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
+#'   the observed information, as SAS \code{DDFM=KR}); for \code{lme} and \code{gls} also \code{"Satterthwaite"},
+#'   \code{"Kenward-Roger"}, \code{"KR-expected"} and \code{"containment"} (\pkg{nlme}'s or the residual df, as
+#'   predictmeans 1.x); see \code{\link{predictmeans}}.
 #' @param joint Logical: also test all the contrasts together (all of them zero), as \code{\link{pm_joint}} does: an F
-#'   test with Kenward-Roger (REML \code{lmer} fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
-#'   denominator df, \pkg{nlme}'s df for \code{lme}, the residual df for other models (normal-based, i.e. chi-square /
+#'   test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML \code{lmer} fits)
+#'   denominator df, \pkg{nlme}'s df for ML \code{lme} fits, the residual df for other models (normal-based, i.e. chi-square /
 #'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 #'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 #'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
@@ -113,15 +114,16 @@ NULL
 
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), joint=FALSE,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
                           level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   pm_equiv_margins(equivalence)                  # check early
+  pm_note_singular(model)
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
   if (inherits(model, "aovlist")) {
-    model <- aovlist_lmer(model)
+    model <- pm_aov_carrier(model)
   }
 
   if (is.null(ctrnames) || all(ctrnames%in%c("NULL", ""))) {
@@ -189,44 +191,13 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   }
   KK[bad_row, ] <- 0
   df_method <- match.arg(df_method)
-  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
-  if (!missing(permlist)) {
-    vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
-    vcov <- pm_vcov_with_perm(vcov, permlist)
-  }
-  parms <- pm_model_parms(model, df_method, vcov_adjust, vcov_adjust_default, vcov)
-  mp <- parms$mp
-  df_type <- parms$df_type
-  vcov_adj <- parms$vcov_adj
+  inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov,
+                      permlist = if (!missing(permlist)) permlist)          # R/inference.R
+  mp <- inf$mp
   K <- KK[, mp$estimable, drop=FALSE]
   rK <- ctrmatrix%*%K
 
-
-  if (all(missing(permlist), missing(Df))){
-    df_custom <- if (identical(df_type, "between-within")) {
-      rep(unname(pm_betwithin_df(model)[modelterm]), nrow(rK))       # SAS DDFM=BETWITHIN
-    } else if (inherits(model, c("lme", "gls")) && any(df_type %in% c("Satterthwaite", "Kenward-Roger"))) {
-      pm_nlme_df(rK, model, df_type, vcov_adj)                       # R/satt-nlme.R
-    } else pm_df(model, rK)
-	  if (!is.null(df_custom)) {
-	    Df <- rep_len(as.numeric(df_custom), nrow(rK))
-	  } else if (length(mp$df)==1 && mp$df!=0) {
-		  Df <- mp$df
-	  } else {
-		  if (inherits(model, "lme")) {
-			vars <- c(unlist(strsplit(modelterm, "\\:")), modelterm)
-			Df <- min(terms(model$fixDF)[vars], na.rm=TRUE)
-			mDf <- max(terms(model$fixDF)[vars], na.rm=TRUE)
-			if (length(vars) > 2) cat("\n", "Denominator degree of freedom for",
-			  sQuote(modelterm), "and its marginal terms vary between", sQuote(Df), "and",
-			  sQuote(mDf), ".\n","Probabilities will be calculated using", sQuote(Df), "Df.",  "\n")
-		  } else if (inherits(model, "lmerMod")) {
-			  Df <- df_term(model, modelterm, ctrmatrix = rK, type = df_type, vcov_adj = vcov_adj)
-      } else {
-        stop("You need provide Df for the model!")
-      }
-	  }
-  }
+  if (all(missing(permlist), missing(Df))) Df <- inf$df(rK, modelterm)
 
   cm <- rK%*%mp$coef
   vcovm <- mp$vcov
@@ -250,9 +221,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Df, eqm))
     rownames(out.put) <- rownames(ctrmatrix)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
-    if (!is.null(parms$vcov_label)) {
+    if (!is.null(inf$vcov_label)) {
       attr(out.put, "Note") <- paste0(attr(out.put, "Note"), " Standard errors from the covariance given by 'vcov' (",
-                                      parms$vcov_label, ").")
+                                      inf$vcov_label, ").")
     }
     }else{
   	nsim <- pm_perm_n(permlist)

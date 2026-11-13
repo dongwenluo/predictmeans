@@ -1,0 +1,237 @@
+"repl","row","column","inoc","prov","country","dbh"
+1,1,1,"7 weeks",20,"India",3.03
+1,1,2,"7 weeks",51,"Vietnam",4.26
+1,1,3,"7 weeks",8,"Egypt",3.32
+1,1,4,"7 weeks",27,"Kenya",4.43
+1,1,5,"7 weeks",13,"Fiji",3.15
+1,1,6,"7 weeks",56,"Fiji",3.1
+1,1,7,"7 weeks",16,"India",4.06
+1,1,8,"7 weeks",25,"Kenya",3.59
+1,1,9,"7 weeks",54,"Vietnam",3.21
+1,1,10,"7 weeks",45,"Thailand",2.87
+1,2,1,"7 weeks",36,"Malaysia",4.61
+1,2,2,"7 weeks",11,"Egypt",3.01
+1,2,3,"7 weeks",32,"Malaysia",5.73
+1,2,4,"7 weeks",38,"Philippines",4.33
+1,2,5,"7 weeks",2,"Australia",4.37
+1,2,6,"7 weeks",37,"PNG",4.9
+1,2,7,"7 weeks",29,"Malaysia",5.05
+1,2,8,"7 weeks",48,"Thailand",5.22
+1,2,9,"7 weeks",17,"India",3.6
+1,2,10,"7 weeks",23,"Kenya",2.25
+1,3,1,"7 weeks",21,"Kenya",3.76
+1,3,2,"7 weeks",41,"Solomon Is.",5.3
+1,3,3,"7 weeks",58,"Mauritius",3.78
+1,3,4,"7 weeks",52,"Vietnam",4.13
+1,3,5,"7 weeks",15,"India",4.57
+1,3,6,"7 weeks",60,"Sri Lanka",3.85
+1,3,7,"7 weeks",26,"Kenya",4.83
+1,3,8,"7 weeks",4,"Australia",3.51
+1,3,9,"7 weeks",30,"Malaysia",4.27
+1,3,10,"7 weeks",14,"Guam",1.48
+1,4,1,"7 weeks",24,"Kenya",3.75
+1,4,3,"7 weeks",35,"Malaysia",4.82
+1,4,4,"7 weeks",53,"Vietnam",4.62
+1,4,5,"7 weeks",22,"Kenya",4.38
+1,4,6,"7 weeks",61,"Sri Lanka",3.51
+1,4,7,"7 weeks",10,"Egypt",1.74
+1,4,8,"7 weeks",6,"China",4.11
+1,4,9,"7 weeks",42,"Solomon Is.",3.87
+1,4,10,"7 weeks",12,"Fiji",1.65
+1,5,1,"7 weeks",59,"Puerto Rico",4.25
+1,5,2,"7 weeks",55,"Vietnam",2.88
+1,5,3,"7 weeks",18,"India",3.68
+1,5,4,"7 weeks",28,"Kenya",3.41
+1,5,5,"7 weeks",31,"Malaysia",5.14
+1,5,6,"7 weeks",33,"Malaysia",4.2
+1,5,7,"7 weeks",40,"Philippines",4.65
+1,5,8,"7 weeks",62,"Sri Lanka",3.5
+1,5,9,"7 weeks",63,"China",2.67
+1,5,10,"7 weeks",46,"Thailand",1.39
+1,6,1,"7 weeks",34,"Malaysia",3.77
+1,6,2,"7 weeks",3,"Australia",2.39
+1,6,3,"7 weeks",50,"Vanuatu",3.3
+1,6,4,"7 weeks",19,"India",3.91
+1,6,5,"7 weeks",7,"China",4.87
+1,6,6,"7 weeks",57,"Malaysia",4.55
+1,6,7,"7 weeks",47,"Thailand",4.57
+1,6,8,"7 weeks",39,"Philippines",3.62
+1,6,9,"7 weeks",5,"Benin",3.33
+1,6,10,"7 weeks",1,"Australia",1.35
+2,1,1,"1 week",4,"Australia",2.19
+2,1,2,"1 week",63,"China",3.41
+2,1,3,"1 week",31,"Malaysia",4.14
+2,1,4,"1 week",40,"Philippines",4
+2,1,5,"1 week",36,"Malaysia",3.95
+2,1,6,"1 week",20,"India",4.48
+2,1,7,"1 week",14,"Guam",2.54
+2,1,8,"1 week",47,"Thailand",3.82
+2,1,9,"1 week",25,"Kenya",3.5
+2,1,10,"1 week",6,"China",1.28
+2,2,1,"1 week",19,"India",4.5
+2,2,2,"1 week",15,"India",3.86
+2,2,3,"1 week",24,"Kenya",4.62
+2,2,4,"1 week",54,"Vietnam",4.31
+2,2,5,"1 week",28,"Kenya",2.79
+2,2,6,"1 week",30,"Malaysia",4.16
+2,2,7,"1 week",55,"Vietnam",2.64
+2,2,8,"1 week",3,"Australia",2.35
+2,2,9,"1 week",41,"Solomon Is.",3.28
+2,2,10,"1 week",61,"Sri Lanka",1.46
+2,3,1,"1 week",29,"Malaysia",3.86
+2,3,2,"1 week",57,"Malaysia",4.29
+2,3,3,"1 week",42,"Solomon Is.",4.48
+2,3,4,"1 week",18,"India",3.59
+2,3,5,"1 week",32,"Malaysia",3.62
+2,3,6,"1 week",26,"Kenya",3.24
+2,3,7,"1 week",17,"India",3.5
+2,3,8,"1 week",59,"Puerto Rico",2.9
+2,3,9,"1 week",58,"Mauritius",3.1
+2,3,10,"1 week",34,"Malaysia",1.89
+2,4,1,"1 week",45,"Thailand",4.76
+2,4,2,"1 week",53,"Vietnam",3.47
+2,4,3,"1 week",16,"India",4.16
+2,4,4,"1 week",23,"Kenya",2.95
+2,4,5,"1 week",56,"Fiji",2.24
+2,4,6,"1 week",2,"Australia",3.84
+2,4,7,"1 week",22,"Kenya",3.08
+2,4,8,"1 week",60,"Sri Lanka",2.29
+2,4,9,"1 week",7,"China",3.23
+2,4,10,"1 week",13,"Fiji",1.17
+2,5,1,"1 week",5,"Benin",3.83
+2,5,2,"1 week",21,"Kenya",2.96
+2,5,3,"1 week",46,"Thailand",3.41
+2,5,4,"1 week",51,"Vietnam",3.49
+2,5,5,"1 week",1,"Australia",1.71
+2,5,6,"1 week",38,"Philippines",3.65
+2,5,7,"1 week",48,"Thailand",3.59
+2,5,8,"1 week",52,"Vietnam",2.29
+2,5,9,"1 week",12,"Fiji",2.06
+2,5,10,"1 week",10,"Egypt",1.2
+2,6,1,"1 week",50,"Vanuatu",2.43
+2,6,2,"1 week",39,"Philippines",2.83
+2,6,3,"1 week",11,"Egypt",1.5
+2,6,4,"1 week",37,"PNG",3.26
+2,6,5,"1 week",62,"Sri Lanka",2.7
+2,6,6,"1 week",35,"Malaysia",4.2
+2,6,7,"1 week",27,"Kenya",2.87
+2,6,8,"1 week",8,"Egypt",2.38
+2,6,9,"1 week",33,"Malaysia",2.99
+3,1,1,"1 week",31,"Malaysia",4.07
+3,1,2,"1 week",13,"Fiji",2.79
+3,1,3,"1 week",20,"India",3.03
+3,1,4,"1 week",7,"China",3.69
+3,1,5,"1 week",37,"PNG",3.64
+3,1,6,"1 week",51,"Vietnam",2.83
+3,1,7,"1 week",8,"Egypt",2.37
+3,1,8,"1 week",56,"Fiji",2.79
+3,1,9,"1 week",26,"Kenya",3.16
+3,1,10,"1 week",16,"India",1.91
+3,2,1,"1 week",38,"Philippines",2.78
+3,2,2,"1 week",17,"India",2.98
+3,2,3,"1 week",28,"Kenya",3.48
+3,2,4,"1 week",48,"Thailand",3.92
+3,2,5,"1 week",29,"Malaysia",4.4
+3,2,6,"1 week",59,"Puerto Rico",3.4
+3,2,7,"1 week",1,"Australia",2.17
+3,2,9,"1 week",3,"Australia",3.22
+3,2,10,"1 week",5,"Benin",1.8
+3,3,1,"1 week",58,"Mauritius",2.61
+3,3,2,"1 week",35,"Malaysia",3.4
+3,3,3,"1 week",33,"Malaysia",3.79
+3,3,4,"1 week",21,"Kenya",3.18
+3,3,5,"1 week",12,"Fiji",2.56
+3,3,6,"1 week",27,"Kenya",2.86
+3,3,7,"1 week",42,"Solomon Is.",2.59
+3,3,8,"1 week",54,"Vietnam",3.63
+3,3,9,"1 week",14,"Guam",2.34
+3,3,10,"1 week",32,"Malaysia",2.08
+3,4,1,"1 week",62,"Sri Lanka",3.42
+3,4,2,"1 week",23,"Kenya",3.2
+3,4,3,"1 week",63,"China",4.11
+3,4,4,"1 week",50,"Vanuatu",3.18
+3,4,5,"1 week",30,"Malaysia",3.4
+3,4,6,"1 week",15,"India",2.9
+3,4,7,"1 week",57,"Malaysia",3.14
+3,4,8,"1 week",22,"Kenya",3.54
+3,4,9,"1 week",36,"Malaysia",2.93
+3,4,10,"1 week",2,"Australia",1.09
+3,5,1,"1 week",55,"Vietnam",2.93
+3,5,2,"1 week",47,"Thailand",4.65
+3,5,3,"1 week",40,"Philippines",4.26
+3,5,4,"1 week",10,"Egypt",3.3
+3,5,5,"1 week",11,"Egypt",2.75
+3,5,6,"1 week",46,"Thailand",4.21
+3,5,7,"1 week",19,"India",3.71
+3,5,8,"1 week",45,"Thailand",4.21
+3,5,9,"1 week",18,"India",3.11
+3,5,10,"1 week",41,"Solomon Is.",2.44
+3,6,1,"1 week",61,"Sri Lanka",3.21
+3,6,2,"1 week",4,"Australia",1.86
+3,6,3,"1 week",6,"China",4.33
+3,6,4,"1 week",60,"Sri Lanka",3.67
+3,6,5,"1 week",39,"Philippines",4.47
+3,6,6,"1 week",25,"Kenya",4.6
+3,6,7,"1 week",34,"Malaysia",3.76
+3,6,8,"1 week",24,"Kenya",3.94
+3,6,9,"1 week",53,"Vietnam",3.31
+3,6,10,"1 week",52,"Vietnam",2.2
+4,1,1,"7 weeks",48,"Thailand",3.44
+4,1,2,"7 weeks",56,"Fiji",3.35
+4,1,3,"7 weeks",2,"Australia",3.66
+4,1,4,"7 weeks",42,"Solomon Is.",4.69
+4,1,5,"7 weeks",26,"Kenya",3.71
+4,1,6,"7 weeks",23,"Kenya",4.27
+4,1,7,"7 weeks",20,"India",3.67
+4,1,8,"7 weeks",12,"Fiji",3.28
+4,1,9,"7 weeks",32,"Malaysia",4.74
+4,1,10,"7 weeks",55,"Vietnam",2
+4,2,1,"7 weeks",40,"Philippines",3.16
+4,2,2,"7 weeks",16,"India",4.27
+4,2,3,"7 weeks",29,"Malaysia",4.03
+4,2,4,"7 weeks",62,"Sri Lanka",3.76
+4,2,5,"7 weeks",58,"Mauritius",3
+4,2,6,"7 weeks",63,"China",4.61
+4,2,7,"7 weeks",61,"Sri Lanka",3.89
+4,2,8,"7 weeks",5,"Benin",4.41
+4,2,9,"7 weeks",13,"Fiji",3.2
+4,2,10,"7 weeks",47,"Thailand",3.64
+4,3,1,"7 weeks",15,"India",3.73
+4,3,2,"7 weeks",8,"Egypt",2.47
+4,3,3,"7 weeks",34,"Malaysia",4.92
+4,3,4,"7 weeks",22,"Kenya",3.19
+4,3,5,"7 weeks",6,"China",3.78
+4,3,6,"7 weeks",36,"Malaysia",4.52
+4,3,7,"7 weeks",4,"Australia",2.43
+4,3,8,"7 weeks",10,"Egypt",3.62
+4,3,9,"7 weeks",19,"India",3.2
+4,3,10,"7 weeks",39,"Philippines",2.51
+4,4,1,"7 weeks",52,"Vietnam",3.81
+4,4,2,"7 weeks",30,"Malaysia",3.46
+4,4,3,"7 weeks",25,"Kenya",4.33
+4,4,4,"7 weeks",33,"Malaysia",4.24
+4,4,5,"7 weeks",17,"India",3.7
+4,4,7,"7 weeks",41,"Solomon Is.",2.94
+4,4,8,"7 weeks",38,"Philippines",3.08
+4,4,9,"7 weeks",46,"Thailand",3.78
+4,4,10,"7 weeks",24,"Kenya",2.26
+4,5,1,"7 weeks",11,"Egypt",2.32
+4,5,2,"7 weeks",27,"Kenya",3.91
+4,5,3,"7 weeks",14,"Guam",3.01
+4,5,4,"7 weeks",3,"Australia",3.79
+4,5,5,"7 weeks",45,"Thailand",3.98
+4,5,6,"7 weeks",31,"Malaysia",4.2
+4,5,7,"7 weeks",54,"Vietnam",2.76
+4,5,8,"7 weeks",57,"Malaysia",4.16
+4,5,9,"7 weeks",21,"Kenya",3.39
+4,5,10,"7 weeks",18,"India",2.64
+4,6,1,"7 weeks",1,"Australia",2.17
+4,6,2,"7 weeks",7,"China",4.14
+4,6,3,"7 weeks",60,"Sri Lanka",3.66
+4,6,4,"7 weeks",35,"Malaysia",4.63
+4,6,5,"7 weeks",59,"Puerto Rico",2.83
+4,6,6,"7 weeks",50,"Vanuatu",2.14
+4,6,7,"7 weeks",53,"Vietnam",3.11
+4,6,8,"7 weeks",51,"Vietnam",3.65
+4,6,9,"7 weeks",37,"PNG",2.8
+4,6,10,"7 weeks",28,"Kenya",2.29

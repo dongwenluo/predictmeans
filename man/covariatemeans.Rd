@@ -8,7 +8,9 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
   plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
   cov_reduce=mean, exclude=NULL,
-  weights=c("equal", "proportional", "outer", "cells", "flat"))
+  weights=c("equal", "proportional", "outer", "cells", "flat"),
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+  vcov_adjust=TRUE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -64,6 +66,11 @@ smooths. See \code{\link{Kmatrix}}.}
 those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
+
+\item{df_method, vcov_adjust}{As in \code{\link{predictmeans}}: by default Kenward-Roger df (each point of the curves
+has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
+predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
+and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}

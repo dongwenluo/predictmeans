@@ -10,13 +10,17 @@
 #'   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
 #'   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
 #'   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+#'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+#'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
-#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
+#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
+#'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
+#'   strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
+#'   standard errors of single means include the block stratum. For a \code{semireg} fit the
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 #'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.
@@ -30,7 +34,9 @@
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 #'   The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe"
 #'   and "mvt". "sidak", "scheffe" (rank of the family: number of means - 1) and "mvt" (single-step multivariate t, the exact
-#'   counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. With
+#'   counterpart of SAS \code{ADJUST=SIMULATE}; needs package \pkg{mvtnorm}) are as in \pkg{emmeans}. Adjusted
+#'   p-values use each pair's own df (as SAS \code{ADJDFE=ROW}; SAS's default \code{ADJDFE=SOURCE} uses the df of the
+#'   term's F test instead, which differs when the pairs' df differ). With
 #'   \code{permlist}, "tukey" and "mvt" give the single-step max-|t| adjustment of the permutation p-values (the
 #'   permutation version of Tukey's test: each pair's |t| is compared with the largest |t| of the family in each
 #'   permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
@@ -73,7 +79,9 @@
 #' @param barplot Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.
 #' @param pplot Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.
 #' @param bkplot Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.
-#' @param plot An option for drawing plots, or not. The default is TRUE.
+#' @param plot An option for drawing plots, or not. The default is TRUE, unless
+#'   \code{options(predictmeans.plot = FALSE)} is set (e.g. for scripts, reports and pipelines that use the
+#'   \code{means} and \code{pairs} tables only).
 #' @param jitterv A degree of jitter in x and y direction in the back transformed means graph. The default is zero.
 #' @param basesz The base font size. The default is 12.
 #' @param prtnum An option for printing covariate information on the screen, or not. The default is TRUE.
@@ -92,7 +100,7 @@
 #'   observed covariate values (e.g. means adjusted for a spatial smooth in a \code{gam}). See \code{\link{Kmatrix}}.
 #' @param exclude For \code{gam} models: smooth terms to leave out of the predictions. The default excludes random-effect
 #'   smooths. See \code{\link{Kmatrix}}.
-#' @param vcov_adjust For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
+#' @param vcov_adjust For models fitted by REML (\code{lmer}, \code{lme}, \code{gls}) with Kenward-Roger df: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 #'   adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 #'   Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
 #'   predictmeans 1.x. It has no effect for other models.
@@ -102,7 +110,11 @@
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
 #' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
-#'   REML fits and Satterthwaite for ML fits. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
+#'   REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
+#'   parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
+#'   (\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
+#'   package sources) F tests of repeated measures with missing values rejected 6\% of true hypotheses at the 5\%
+#'   level with the observed information and 8.5\% with the expected. The two agree in balanced designs. \code{"containment"} gives the SAS \code{DDFM=CONTAIN} df: the
 #'   smallest rank contribution to \eqn{[X Z]} of the random effects that contain \code{modelterm}, or the
 #'   residual df when none does; all means and comparisons of the term then share that df, and the unadjusted
 #'   covariance is used unless \code{vcov_adjust = TRUE} is given. \code{"between-within"} gives the SAS \code{DDFM=BETWITHIN} df, for \code{lmer}, \code{lme} and
@@ -112,15 +124,20 @@
 #'   unstructured covariance (\code{gls} with \code{corSymm}) and no random effects every effect gets the
 #'   between-subject df, as in SAS. Checked against SAS PROC MIXED. As for containment, the unadjusted covariance is
 #'   used unless \code{vcov_adjust = TRUE} is given.
-#'   \code{"KR-SAS"} is Kenward-Roger as SAS PROC MIXED \code{DDFM=KR} computes it: with the observed
-#'   information of the variance parameters where \code{"Kenward-Roger"} (as \pkg{pbkrtest} and \pkg{emmeans}) uses
-#'   the expected information; the two agree in balanced designs and differ slightly otherwise (about 1\% in the df
-#'   of a split plot with one plot missing).
-#'   For \code{lme} and \code{gls} models, \code{"Satterthwaite"} gives Satterthwaite df with any correlation and
-#'   variance structure (the covariance of the variance parameters from the Hessian of the REML log-likelihood, as SAS;
-#'   checked against SAS PROC MIXED), and \code{"Kenward-Roger"} and \code{"KR-SAS"} give Kenward-Roger df and adjusted
-#'   standard errors (equal to SAS \code{DDFM=KR} for variance components and unstructured covariances); their default stays
-#'   \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}).
+#'   For \code{lme} and \code{gls} models fitted by REML, \code{"auto"} is Kenward-Roger too (with adjusted standard
+#'   errors), for any correlation and variance structure: in simulations the residual df (\code{gls}) rejected 16\% of
+#'   true hypotheses in F tests of unstructured repeated measures (24\% with missing values), Kenward-Roger 4-6\%.
+#'   \code{"Satterthwaite"} is also available (the covariance of the variance parameters from the Hessian of the REML
+#'   log-likelihood, as SAS; its F tests are liberal when the covariance has several parameters), and
+#'   \code{"containment"} gives \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}), as predictmeans 1.x.
+#'   All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use \pkg{nlme}'s or the residual df.
+#'   For GLMMs (\code{glmer}, \code{glmmTMB}) \code{"auto"} is \code{"inner-outer"}: the df of the level of the random
+#'   effects at which each effect varies, \pkg{nlme}'s rule (Pinheiro and Bates 2000), computed from the design and
+#'   extended to crossed random effects; a contrast gets the smallest df of the coefficients it uses, and the means of a
+#'   term the df of the term. In simulations it rejected 6-8\% of true hypotheses for effects that vary between
+#'   clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
+#'   the check with few clusters. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
+#'   and \code{"inner-outer"} for \code{lmer} and \code{lme}.
 #'   Other choices are ignored for other model classes.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
@@ -180,7 +197,8 @@
 #'  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
 #'  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
 #'  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
-#'  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), number of permutations, covariate values, model class and
+#'  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), \code{singular} (a
+#'  singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
 #'  package version.}
 #'  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
 #'  the \code{means}, \code{pairs} and \code{settings} slots are not printed.
@@ -212,17 +230,23 @@
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #'   library(predictmeans)
-#'   ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
 #'   Oats$nitro <- factor(Oats$nitro)
-#'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-#'   predictmeans(fm, "nitro", adj="BH")
-#'   predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", line=FALSE)
-#'   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH", 
-#'     barplot=TRUE, line=FALSE)
+#'   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data=Oats)
+#'   ## The results as tables (columns described under Value)
+#'   pm <- predictmeans(fm, "nitro", plot=FALSE)
+#'   pm$means
+#'   pm$pairs
+#'   pm$settings
+#'   summary(pm)
+#'   ## Means within each variety, Tukey-adjusted pairs, plots
+#'   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
+#'     which.plots=c("mean", "bar", "pval", "back"), line=FALSE)
 #'   names(predictout)
 #'   print(predictout$predictmeansPlot)
 #'   print(predictout$predictmeansBarPlot)
+#'   ## lme fits work the same way
+#'   fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
+#'   predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
 #' @name predictmeans
 NULL
 
@@ -231,15 +255,16 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, plotxlab=NULL,
 						  plotylab=NULL,
 						  which.plots = c("mean", "pval", "back"),
-						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=TRUE, jitterv=0.2,
+						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE), jitterv=0.2,
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
-                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov=NULL,
+                          df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
   vcov_adjust_default <- missing(vcov_adjust)
   average <- match.arg(average)
   pm_equiv_margins(equivalence)                  # check early
+  pm_note_singular(model)
 
   ## Bias output towards fixed notation. See ?options for more info
   op <- options(scipen = 6)
@@ -257,11 +282,6 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
-  # SAS DDFM=CONTAIN uses the unadjusted covariance
-  if (df_method %in% c("containment", "between-within") && vcov_adjust_default) vcov_adjust <- FALSE
-  vcov_adjust <- pm_perm_vcov_adjust(model, permlist, vcov_adjust, vcov_adjust_default)
-  vcov <- pm_vcov_with_perm(vcov, permlist)
-  if (!is.null(vcov)) vcov_adjust <- FALSE     # the given covariance replaces the adjusted one
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

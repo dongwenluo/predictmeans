@@ -25,6 +25,7 @@ S3method(marginaleffects::get_coef, predictmeans)
 S3method(marginaleffects::set_coef, predictmeans)
 S3method(marginaleffects::get_vcov, predictmeans)
 S3method(generics::tidy, predictmeans)
+S3method(generics::glance, predictmeans)
 S3method(ggplot2::autoplot, predictmeans)
 S3method(summary, predictmeans)
 S3method(print, summary.predictmeans)
@@ -50,7 +51,7 @@ importMethodsFrom("Matrix",
   importFrom("nlme", "getData", "intervals", "getResponse")
   importFrom("grDevices", "dev.new")
   importFrom("Matrix", ".bdiag", "Diagonal", "forceSymmetric", "Matrix", "nearPD")
-  importFrom("graphics", "abline", "axis", "box", "identify", "image",
+  importFrom("graphics", "abline", "axis", "box", "hist", "identify", "image",
              "legend", "lines", "par", "plot", "points", "text", "title")
   importFrom("methods", "is", "slot", "as")
   importFrom("stats", "anova", "as.formula", "aov", "coef", "complete.cases", "confint", "delete.response",

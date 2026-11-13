@@ -355,7 +355,7 @@ doolittle <- function(x, eps = 1e-6) {
 #'   using "Kenward-Roger" or "Satterthwaite" method.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL)
+#'           type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
 #' @param model Model object returned by \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
@@ -367,8 +367,9 @@ doolittle <- function(x, eps = 1e-6) {
 #'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 #'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 #'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
-#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}); "KR-SAS" is Kenward-Roger
-#'   with the observed information of the variance parameters, as SAS \code{DDFM=KR}.
+#'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
+#'   observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
+#'   information, as \pkg{pbkrtest} and \pkg{emmeans}.
 #' @param vcov_adj Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
 #'   \code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
 #'   for the same model.
@@ -404,16 +405,16 @@ doolittle <- function(x, eps = 1e-6) {
 #' @name df_term
 NULL
 
-df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-SAS"), vcov_adj=NULL) {
+df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL) {
 
   stopifnot(inherits(model, "lmerMod"))
 
   type <- as.character(type)
   type <- match.arg(type)
-  kr_info <- "expected"
-  if (type == "KR-SAS") {                 # Kenward-Roger with the observed information, as SAS DDFM=KR
+  kr_info <- "observed"                  # Kenward-Roger with the observed information, as SAS DDFM=KR
+  if (type == "KR-expected") {           # the expected information, as pbkrtest
     type <- "Kenward-Roger"
-    kr_info <- "observed"
+    kr_info <- "expected"
   }
   if (type == "Kenward-Roger" && !getME(model, "is_REML")) {
     # Kenward-Roger is defined for REML fits; Satterthwaite also works for ML.
@@ -1212,79 +1213,24 @@ ci_mcp <- function(LL, UL, trt_n=NULL) {
   return(ci_mcp_letters)
 }
 
-########################################################
-# To handle aovlist object refit by lmer function
-aovlist_lmer <- function(object) {
-  stopifnot(inherits(object, "aovlist"))
-  mod_df <- model.frame(object)
-  lmer_call = match.call(aov, attr(object, "call"))
-
-  trms = terms(object)
-  response <- as.character(attr(trms, "variables"))[[2]]
-
-  # Find the Error terms
-  trms_label = attr(trms, "term.labels")
-  err.idx = grep("^Error\\(", trms_label)
-
-  # Original Error term
-  error_term <- trms_label[err.idx]
-  error_term <- gsub("Error\\(|\\)", "", error_term)
-  error_terms <- strsplit(error_term, "\\+\\s+")[[1]]
-
-  # Reformat into lmer format
-  lmer_random_parts <- paste0("(1|", error_terms, ")", collapse = " + ")
-  lmer_fix_parts <- paste0(trms_label[-err.idx], collapse = " + ")
-
-  lmer_call$formula <- as.formula(paste(response, " ~ ", lmer_fix_parts, "+", lmer_random_parts, sep=""))
-  lmer_call[[1]] <- as.name("lmer")
-  assign(as.character(lmer_call$data), mod_df)
-  lmer_object <- eval(lmer_call)
-  return(lmer_object)
-}
-
-
-
-## Resolve the df method for an lmer model: "auto" is Kenward-Roger for REML
-## fits and Satterthwaite for ML fits. "between-within" (SAS DDFM=BETWITHIN,
-## R/df-betwithin.R) is also available for lme and gls. Returns
-## list(df_type, vcov_adj).
-pm_df_method <- function(model, df_method) {
-  if (identical(df_method, "between-within")) {
-    if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
-    warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
-    return(list(df_type = NULL, vcov_adj = NULL))
-  }
-  if (inherits(model, c("lme", "gls")) && df_method %in% c("Satterthwaite", "Kenward-Roger", "KR-SAS")) {
-    # nlme models (R/satt-nlme.R): Satterthwaite, or Kenward-Roger (expected or, "KR-SAS", observed information)
-    if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
-    return(list(df_type = "Kenward-Roger",
-                vcov_adj = pm_vcov_kr_nlme(model, if (df_method == "KR-SAS") "observed" else "expected")))
-  }
-  if (!inherits(model, "lmerMod")) {
-    if (df_method != "auto") {
-      warning("'df_method' applies to lmer models only (\"between-within\" and \"Satterthwaite\" also to lme and ",
-              "gls); ignored.")
-    }
-    return(list(df_type = NULL, vcov_adj = NULL))
-  }
-  reml <- lme4::getME(model, "is_REML")
-  df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-SAS" = "Kenward-Roger",
-                    df_method)
-  if (df_type == "Kenward-Roger" && !reml) {
-    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
-    df_type <- "Satterthwaite"
-  }
-  if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
-  vcov_adj <- switch(df_type,
-    # "KR-SAS": the observed information of the variance parameters, as SAS DDFM=KR
-    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, if (df_method == "KR-SAS") "observed" else "expected"),
-                               error = function(e) NULL),
-    "Satterthwaite" = pm_satt_parts(model),
-    NULL)
-  list(df_type = df_type, vcov_adj = vcov_adj)
-}
-
 ## findbars() moved from lme4 to reformulas; use reformulas when installed.
 pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
+}
+
+## Singular fit of a mixed model (a variance component estimated as zero, or
+## a correlation as +-1), as lme4::isSingular(): TRUE or FALSE for lmer and
+## glmer fits, NA for other classes. SAS notes such fits as "Estimated G
+## matrix is not positive definite".
+pm_singular <- function(model) {
+  if (!inherits(model, "merMod")) return(NA)
+  isTRUE(tryCatch(lme4::isSingular(model), error = function(e) FALSE))
+}
+
+pm_note_singular <- function(model) {
+  if (isTRUE(pm_singular(model))) {
+    message("The model fit is singular (a variance component is estimated as zero, or a correlation as +-1); ",
+            "its standard errors and df treat that estimate as known (SAS: \"Estimated G matrix is not positive ",
+            "definite\"). Consider simplifying the random effects.")
+  }
 }

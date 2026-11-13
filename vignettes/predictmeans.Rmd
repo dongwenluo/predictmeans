@@ -79,10 +79,12 @@ pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE, prt
 rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 ```
 
-`df_method = "between-within"` gives SAS's `DDFM=BETWITHIN` df, and `"KR-SAS"` Kenward–Roger
-as SAS computes it (with the observed information; `"Kenward-Roger"` matches pbkrtest and
-emmeans, and the two agree in balanced designs). For `lme` and `gls` models with
-correlation or variance structures, `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-SAS"` are
+`df_method = "between-within"` gives SAS's `DDFM=BETWITHIN` df. Kenward–Roger uses the
+observed information of the variance parameters, as SAS does; `"KR-expected"` uses the
+expected information, as pbkrtest and emmeans. The two agree in balanced designs; with
+missing values only the observed information is valid, and in simulations it kept the
+5% level where the expected one rejected 8.5% of true hypotheses. For `lme` and `gls` models with
+correlation or variance structures, `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` are
 available too. `vignette("sas", package = "predictmeans")` shows how each matches SAS PROC
 MIXED.
 

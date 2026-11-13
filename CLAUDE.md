@@ -6,20 +6,38 @@ semiparametric models. Development is toward 2.0; read
 table; the row marked "Next" is the current task) and `NEWS.md`.
 
 ## Aims (from the maintainer)
-- Match SAS PROC MIXED numbers and run fast; add emmeans/marginaleffects-style
-  features; keep dependencies few; easy to extend to new model classes
-  (adapter generics in `R/adapter.R`, see `?pm_coef`).
+- Statistically right first. Each default is the most reliable method on the
+  evidence (simulation, literature); matching SAS or Genstat is an option the
+  user can choose, not the goal. SAS/Genstat runs check that a formula is
+  computed as documented.
+- Clear logic, not chaos: each statistical decision (df method, covariance,
+  estimability, ...) is made in one place and used by every function.
+- Run fast; add emmeans/marginaleffects-style features; keep dependencies few;
+  easy to extend to new model classes (adapter generics in `R/adapter.R`, see
+  `?pm_coef`).
 
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
 - glmmTMB in Imports; car and pbkrtest in Suggests (own code in `R/anova.R`,
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
-- Means over empty cells keep the 1.x rule (average of observed cells, with a
-  warning); truly non-estimable means are NA.
-- Between-within df and SAS-matched non-integer values wait for CSVs from a
-  real SAS run of `dev/sas/pm-reference.sas`. Do not use SAS tables typed into
-  chat as references (see `dev/sas/README.md`).
+- Means over empty cells keep the 1.x rule: the average of the observed
+  cells, with a warning (the maintainer's decision of 2026-11-13, replacing
+  an earlier "NA by default"). Combinations absent by design (nested
+  factors) are not empty cells. Truly non-estimable means are NA.
+- `aov` models with `Error()` (aovlist) are analysed by strata, as Genstat:
+  standard errors from the stratum mean squares, never by refitting as lmer.
+- emmeans (and SAS) are not the reference for nested treatment structures or
+  missing combinations (the EOD tree-improvement examples): there
+  predictmeans averages with equal weights over the combinations that exist
+  (`tests/testthat/test-nested.R`), where emmeans weights by the nesting
+  hierarchy or gives NA.
+- `R/inference.R` (`pm_inference()`) decides covariance, df and their labels
+  for every front end; change a df or covariance rule there only.
+- The maintainer can run SAS and Genstat on request: scripts go in
+  `dev/sas/` and `dev/genstat/`. Reference values come only from real runs
+  (uploaded results pages, output or CSV files). Do not use SAS tables typed into chat as references
+  (see `dev/sas/README.md`).
 
 ## Layout
 - `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`; the work is

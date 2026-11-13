@@ -27,14 +27,17 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. Giving `adj` or `atvar` turns on
   pairwise comparisons.
 - `level`: significance level for confidence limits and LSDs, default 0.05.
-- `plot = FALSE` in scripts (the default `TRUE` draws plots); `prtnum = FALSE` suppresses
-  printing of the reference-grid note.
-- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, Satterthwaite for ML),
+- `plot = FALSE` in scripts (the default `TRUE` draws plots), or `options(predictmeans.plot = FALSE)`
+  once; `prtnum = FALSE` suppresses printing of the reference-grid note.
+- `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
+  method, adjustment, SED range, mean LSD).
+- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML `lmer`;
+  `"inner-outer"` for GLMMs: df of the grouping level at which each effect varies; `"residual"` = 1.x),
   `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
-  (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-SAS"` (Kenward-Roger with the observed
-  information, as SAS `DDFM=KR`; `"Kenward-Roger"` matches pbkrtest/emmeans). For `lme` and `gls`,
-  `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-SAS"` work with any correlation/variance structure
-  (default: nlme or residual df).
+  (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-expected"` (Kenward-Roger with the expected
+  information, as pbkrtest/emmeans; `"Kenward-Roger"` uses the observed information, as SAS `DDFM=KR`).
+  For `lme` and `gls`, `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` work with any correlation/variance structure
+  (default for REML fits: Kenward-Roger; `"containment"`: nlme's or the residual df, as 1.x).
 - `vcov_adjust = TRUE` (default): Kenward-Roger adjusted covariance for REML `lmer`, as SAS
   `DDFM=KR` and emmeans; `FALSE` reproduces predictmeans 1.x standard errors.
 - `weights`: `"equal"` (default), `"proportional"` (= SAS `OM`), `"outer"`, `"cells"`,
@@ -76,7 +79,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
 `"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `bias_adjust` (the SD
-used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `nperm`, `covariates`,
+used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `singular` (TRUE when
+the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`,
 `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,

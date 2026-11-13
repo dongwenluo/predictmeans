@@ -15,9 +15,10 @@ pm_upper_sym <- function(A) {
 ## with attributes "P" and "W" used for the degrees of freedom.
 ##
 ## W, the covariance of the variance parameters, is the inverse of their
-## expected information (pbkrtest, Kenward and Roger 1997), or with
-## information = "observed" of their observed information, as SAS PROC MIXED
-## DDFM=KR: for V linear in the parameters, -d2 l_R / ds_r ds_s =
+## observed information (the default, as SAS PROC MIXED DDFM=KR; valid also
+## with missing values, see dev/sim-df/README.md), or with information =
+## "expected" of their expected information (pbkrtest, Kenward and Roger
+## 1997). Observed: for V linear in the parameters, -d2 l_R / ds_r ds_s =
 ## y'P G_r P G_s P y - tr(P G_r P G_s)/2 (the trace term is IE2/2 below).
 ## Both agree in balanced designs; with one plot missing in the split plot of
 ## dev/sas the observed one reproduces SAS's df (9.79, 31.3) where the
@@ -31,7 +32,7 @@ pm_upper_sym <- function(A) {
 ## parameter k (G_k = Z E_k Z'), A = Z' Sigma^-1 Z and B = Z' Sigma^-2 Z,
 ##   tr(G_r Sigma^-1 G_s Sigma^-1) = tr(E_r A E_s A),
 ##   tr(G_r Sigma^-2) = tr(E_r B), and so on. Same results as pbkrtest.
-pm_vcov_kr <- function(model, information = c("expected", "observed")) {
+pm_vcov_kr <- function(model, information = c("observed", "expected")) {
   information <- match.arg(information)
   if (!lme4::getME(model, "is_REML")) model <- pm_refit(model, REML = TRUE)
   Phi <- as.matrix(stats::vcov(model))

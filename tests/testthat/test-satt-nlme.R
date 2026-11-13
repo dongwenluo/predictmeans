@@ -32,7 +32,7 @@ test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lm
   r <- rep_data()
   g <- nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
-  for (dm in c("Kenward-Roger", "KR-SAS")) {
+  for (dm in c("KR-expected", "Kenward-Roger")) {
     pk <- predictmeans(g, "Group:Time", df_method = dm, plot = FALSE, prtnum = FALSE)
     expect_equal(pk$means$df, rep(10, 6), tolerance = 1e-3)
     expect_equal(sort(round(pk$pairs$df, 1)), sort(c(rep(10, 9), 10.1, 10.1, rep(10.2, 4))))
@@ -41,15 +41,15 @@ test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lm
     expect_equal(jt$F.ratio, c(5.55, 1616.03, 395.30), tolerance = 1e-3)     # SAS DDFM=KR
     expect_equal(jt$df2, c(10, 9, 9), tolerance = 1e-3)
   }
-  expect_equal(pk$settings$df_method, "KR-SAS")
-  # lme with random effects only: the same as lmer's Kenward-Roger (pbkrtest)
+  expect_equal(pk$settings$df_method, "Kenward-Roger")
+  # lme with random effects only: the same as lmer's Kenward-Roger
   d <- as.data.frame(nlme::Oats); d$nitro <- factor(d$nitro)
   d <- droplevels(subset(d, !(Block == "II" & Variety == "Victory" & nitro == "0.6")))
   l <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = d)
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = d)
   expect_equal(unclass(pm_vcov_kr_nlme(l))[, ], unclass(pm_vcov_kr(m))[, ], tolerance = 1e-5, ignore_attr = TRUE)
-  pl <- predictmeans(l, "Variety", df_method = "KR-SAS", plot = FALSE, prtnum = FALSE)
-  pr <- predictmeans(m, "Variety", df_method = "KR-SAS", plot = FALSE, prtnum = FALSE)
+  pl <- predictmeans(l, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)
+  pr <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)
   expect_equal(pl$pairs[, c("std.error", "df")], pr$pairs[, c("std.error", "df")], tolerance = 1e-5)
   expect_equal(pl$pairs$df, c(9.79, 9.97, 9.97), tolerance = 2e-3)                 # SAS DDFM=KR
 })
