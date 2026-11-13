@@ -141,7 +141,11 @@
 #'   \code{"Satterthwaite"} is also available (the covariance of the variance parameters from the Hessian of the REML
 #'   log-likelihood, as SAS; its F tests are liberal when the covariance has several parameters), and
 #'   \code{"containment"} gives \pkg{nlme}'s df (\code{lme}) or the residual df (\code{gls}), as predictmeans 1.x.
-#'   All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use \pkg{nlme}'s or the residual df.
+#'   All are checked against SAS PROC MIXED. ML fits of \code{lme} and \code{gls} use Satterthwaite from the ML
+#'   log-likelihood, as ML \code{lmer} fits (\pkg{lmerTest}); before 2.0 they used \pkg{nlme}'s or the residual df
+#'   (\code{df_method = "containment"}). In simulations of ML \code{gls} fits with an unstructured covariance the
+#'   residual df rejected 6.9\% (t) and 9.3-11.7\% (F) of true null hypotheses, Satterthwaite 5.5\% and 6.3-8.8\%; fit
+#'   by REML for Kenward-Roger, which held 5\%.
 #'   For GLMMs (\code{glmer}, \code{glmmTMB}) \code{"auto"} is \code{"inner-outer"}: the df of the level of the random
 #'   effects at which each effect varies, \pkg{nlme}'s rule (Pinheiro and Bates 2000), computed from the design and
 #'   extended to crossed random effects; a contrast gets the smallest df of the coefficients it uses, and the means of a

@@ -87,12 +87,15 @@ pm_nlme_sigma <- function(model) {
   }
 }
 
-## The REML pieces of a gls or lme fit as functions of theta = (unconstrained
-## modelStruct coefficients, log sigma): the covariance of the data (sparse;
-## vb: of the coefficients), -2 REML log-likelihood, checked against vcov().
-pm_nlme_reml <- function(model) {
-  if (!identical(model$method, "REML")) {
-    stop("Satterthwaite and Kenward-Roger df for gls and lme models need a REML fit.", call. = FALSE)
+## The likelihood pieces of a gls or lme fit as functions of theta =
+## (unconstrained modelStruct coefficients, log sigma): the covariance of the
+## data (sparse; vb: of the coefficients), -2 log-likelihood (reml2: REML for
+## REML fits; ML for ML fits, as lmerTest's Satterthwaite for ML lmer fits),
+## checked against vcov(). Kenward-Roger needs REML (reml = TRUE).
+pm_nlme_reml <- function(model, reml = FALSE) {
+  ml <- identical(model$method, "ML")
+  if (reml && ml) {
+    stop("Kenward-Roger df for gls and lme models need a REML fit.", call. = FALSE)
   }
   dat <- pm_get_data(model)
   b <- if (inherits(model, "lme")) nlme::fixef(model) else stats::coef(model)
@@ -102,7 +105,10 @@ pm_nlme_reml <- function(model) {
   th0 <- c(stats::coef(model$modelStruct), lSigma = log(model$sigma))
   k <- length(th0)
   Sig <- function(p) exp(2 * p[k]) * Srel(p[-k])
-  vb <- function(p) solve(crossprod(X, as.matrix(Matrix::solve(Sig(p), X))))
+  # nlme's vcov() of an ML gls fit is scaled by N / (N - p) (a constant, which
+  # does not change Satterthwaite's df)
+  vscale <- if (ml && inherits(model, "gls")) model$dims$N / (model$dims$N - model$dims$p) else 1
+  vb <- function(p) vscale * solve(crossprod(X, as.matrix(Matrix::solve(Sig(p), X))))
   reml2 <- function(p) {                       # -2 REML log-likelihood (up to a constant)
     S <- Sig(p)
     C <- Matrix::Cholesky(S, LDL = FALSE)
@@ -111,7 +117,7 @@ pm_nlme_reml <- function(model) {
     XSX <- crossprod(X, SiX)
     bh <- solve(XSX, crossprod(X, Siy))
     r <- y - X %*% bh
-    as.numeric(Matrix::determinant(C, sqrt = FALSE)$modulus) + as.numeric(determinant(XSX)$modulus) +
+    as.numeric(Matrix::determinant(C, sqrt = FALSE)$modulus) + (if (ml) 0 else as.numeric(determinant(XSX)$modulus)) +
       sum(r * (Siy - SiX %*% bh))
   }
   Vm <- as.matrix(stats::vcov(model))
@@ -154,7 +160,7 @@ pm_satt_parts_nlme <- function(model) {
 ## measures (gls) = SAS's KR F tests.
 pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "average")) {
   information <- match.arg(information)
-  R <- pm_nlme_reml(model)
+  R <- pm_nlme_reml(model, reml = TRUE)
   X <- R$X
   th <- R$th0
   k <- R$k

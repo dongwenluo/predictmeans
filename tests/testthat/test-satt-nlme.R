@@ -25,7 +25,31 @@ test_that("gls with an unstructured covariance: Satterthwaite df equal SAS", {
   expect_identical(attr(jt, "df_method"), "Satterthwaite")
   ct <- contrastmeans(g, "Time", ctrmatrix = rbind(c(-1, 1, 0)), df_method = "Satterthwaite")[[1]]
   expect_equal(unname(ct[, "df"]), 10, tolerance = 1e-3)
-  expect_error(pm_satt_parts_nlme(update(g, method = "ML")), "REML")
+  expect_error(pm_vcov_kr_nlme(update(g, method = "ML")), "REML")
+})
+
+test_that("ML fits of lme and gls: Satterthwaite from the ML log-likelihood, as ML lmer (lmerTest)", {
+  o <- as.data.frame(nlme::Oats)
+  o$nitro <- factor(o$nitro)
+  o$Variety <- factor(o$Variety, ordered = FALSE)
+  od <- droplevels(o[!(o$Block == "I" & o$Variety == "Golden Rain"), ])[-c(5, 17, 30), ]
+  e <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = od, method = "ML")
+  f <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = od, REML = FALSE)
+  expect_message(pe <- predictmeans(e, "Variety", plot = FALSE, prtnum = FALSE), "ML: using Satterthwaite")
+  pf <- suppressMessages(predictmeans(f, "Variety", plot = FALSE, prtnum = FALSE))
+  expect_identical(pe$settings$df_method, "Satterthwaite")
+  expect_equal(pe$pairs$df, pf$pairs$df, tolerance = 1e-4)          # the two optimisers differ slightly
+  expect_equal(suppressMessages(pm_joint(e, "Variety"))$df2, suppressMessages(pm_joint(f, "Variety"))$df2,
+               tolerance = 1e-4)
+  # Kenward-Roger needs REML: Satterthwaite, with a warning (as for lmer)
+  r <- rep_data()
+  g <- nlme::gls(Y ~ Group * Time, data = r, method = "ML", correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
+                 weights = nlme::varIdent(form = ~ 1 | Time))
+  expect_warning(pk <- predictmeans(g, "Time", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE), "REML")
+  expect_identical(pk$settings$df_method, "Satterthwaite")
+  # nlme's or the residual df stay available
+  pc <- predictmeans(g, "Time", df_method = "containment", plot = FALSE, prtnum = FALSE)
+  expect_equal(unique(pc$pairs$df), 30)
 })
 
 test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lmer", {

@@ -19,8 +19,8 @@
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 #' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"}, \code{"KR-expected"} or \code{"KR-average"}}{as for \code{lmer} (Satterthwaite df of the
 #'   F test, lmerTest's rule).}
-#' \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits (the default), as for \code{lmer}; with
-#'   \code{df_method = "containment"} (and for ML fits) the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
+#' \item{\code{lme}, \code{gls}}{Kenward-Roger for REML fits and Satterthwaite for ML fits (the defaults), as for
+#'   \code{lmer}; with \code{df_method = "containment"} the Wald F with \pkg{nlme}'s df of \code{modelterm} (as
 #'   \code{anova()}; \code{"containment (nlme)"}) or the residual df (\code{gls}).}
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 #' }

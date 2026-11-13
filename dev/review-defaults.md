@@ -12,7 +12,7 @@ literature) and lists what to change.
 | df, REML `lmer`, `lme`, `gls` | Kenward–Roger, observed information | `dev/sim-df/`: 4.2–6.6% everywhere (split plots, AR(1), UN, missing values); the expected information 6.2–8.7% with missing values. Kenward and Molenberghs (1998): with missing data only the observed information is valid. SAS `DDFM=KR` = ours in every value (16 + 5 runs). Luke (2017): KR and Satterthwaite hold the level for `lmer`. | keep |
 | covariance with KR df | KR-adjusted (`vcov_adjust = TRUE`) | Kenward and Roger (1997); the t tests of the simulations used it (4.2–5.7%). SAS's `KR` adds second-derivative terms for AR(1); ours (`KR(FIRSTORDER)`) does not depend on the parameterisation (Kenward and Roger 2009). | keep |
 | df, ML `lmer` | Satterthwaite | lmerTest; KR needs REML. | keep |
-| df, ML `lme`/`gls` | nlme's df / residual df | the residual df of `gls` reach 16–27% in F tests (REML fits; ML only makes the SEs smaller). Inconsistent with ML `lmer`. | **change**: Satterthwaite, as `lmer` (step 3) |
+| df, ML `lme`/`gls` | Satterthwaite, ML (was nlme's df / residual df) | `dev/sim-df-ml/`: unstructured, residual df t 6.9%, F 9.3–11.7%; Satterthwaite 5.5%, 6.3–8.8%. Now as ML `lmer`. | changed (step 3) |
 | Satterthwaite F tests | Fai–Cornelius, SAS's basis | liberal with several covariance parameters (UN 9.7–11.9%) | keep as an option; KR is the default |
 | df, GLMMs | inner-outer (by grouping level) | `dev/sim-df-glmm/`: 3.6–8.1% against 8.4–15.2% (residual) and 7.3–12.7% (containment). Li and Redden (2015, binary cluster trials): between-within holds the level with 10 clusters, residual and containment inflated; inner-outer equals between-within for between-cluster effects and is less conservative within. The 6–8% left with 4 clusters per group is the Wald SE of the Laplace fit: `bootmodels()`. | keep |
 | df, `aov` with `Error()` | strata (Genstat) | Genstat runs (Exams 3.1, 4.4, 8.1) | keep |
@@ -87,7 +87,10 @@ themselves (`"A:B"`), where nothing is averaged.
 2. `df_term()` through `pm_df_method()`; empty-cell rule in one function (no
    change in output; snapshot check) — **done**.
 3. ML `lme`/`gls`: Satterthwaite from the ML Hessian, as ML `lmer` (changes
-   df of ML nlme fits).
+   df of ML nlme fits) — **done**. `dev/sim-df-ml/results.md`: unstructured
+   covariance, t 5.5% (residual df 6.9%), F 6.3–8.8% (9.3–11.7%); AR(1) the
+   same either way. F tests of ML fits stay liberal with several covariance
+   parameters: REML and Kenward–Roger are the remedy.
 4. `pm_anova()` tables: observed information by default (changes the KR F
    tests of the `permmodels()` tables slightly where data are unbalanced).
 5. `glm` with fixed dispersion: simulate t (residual df) against z, then

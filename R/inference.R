@@ -6,8 +6,7 @@
 ##
 ## The rules:
 ##  * df method (pm_df_method()): "auto" is Kenward-Roger for REML lmer, lme
-##    and gls fits, Satterthwaite for ML lmer fits, nlme's df for ML lme/gls
-##    fits; "containment" for lme and gls is nlme's df (one df per term for
+##    and gls fits, Satterthwaite for ML fits (from the ML log-likelihood); "containment" for lme and gls is nlme's df (one df per term for
 ##    lme, the residual df for gls), as predictmeans 1.x; GLMMs (glmer,
 ##    glmmTMB) inner-outer df ("residual": the residual df, as 1.x); other
 ##    models use the residual df (or a pm_df() method, else normal-based).
@@ -184,7 +183,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 }
 
 ## Resolve the df method: "auto" is Kenward-Roger for REML fits (lmer, lme,
-## gls), Satterthwaite for ML lmer fits and nlme's df for ML lme/gls fits;
+## gls), Satterthwaite for ML fits;
 ## lme and gls also take "Satterthwaite", "KR-expected", "between-within" and
 ## "containment" (nlme's df); other models keep their own df. Kenward-Roger uses the observed
 ## information, "KR-expected" the expected one, "KR-average" the average one
@@ -234,12 +233,21 @@ pm_df_method <- function(model, df_method) {
     # F tests of unstructured repeated measures); "containment": nlme's df
     # (lme) or the residual df (gls), as predictmeans 1.x
     if (df_method == "containment") return(list(df_type = NULL, vcov_adj = NULL))
+    ml <- !identical(model$method, "REML")
+    if (ml && df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
+      warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+      df_method <- "Satterthwaite"
+    }
+    if (df_method == "auto" && ml) {
+      # as for ML lmer fits: Satterthwaite from the ML log-likelihood
+      message("The model was fitted by ML: using Satterthwaite df.")
+      sp <- tryCatch(pm_satt_parts_nlme(model), error = function(e) e)
+      if (!inherits(sp, "error")) return(list(df_type = "Satterthwaite", vcov_adj = sp))
+      message("Satterthwaite df are not available for this model (", conditionMessage(sp), "); using ",
+              if (inherits(model, "lme")) "nlme's df." else "the residual df.")
+      return(list(df_type = NULL, vcov_adj = NULL))
+    }
     if (df_method == "auto") {
-      if (!identical(model$method, "REML")) {
-        message("The model was fitted by ML: Kenward-Roger and Satterthwaite df need REML; using ",
-                if (inherits(model, "lme")) "nlme's df." else "the residual df.")
-        return(list(df_type = NULL, vcov_adj = NULL))
-      }
       kr <- tryCatch(pm_vcov_kr_nlme(model, "observed"), error = function(e) e)
       if (!inherits(kr, "error")) return(list(df_type = "Kenward-Roger", vcov_adj = kr))
       message("Kenward-Roger df are not available for this model (", conditionMessage(kr), "); using ",

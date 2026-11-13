@@ -31,13 +31,15 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   once; `prtnum = FALSE` suppresses printing of the reference-grid note.
 - `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
   method, adjustment, SED range, mean LSD).
-- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML `lmer`;
+- `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML fits;
   `"inner-outer"` for GLMMs: df of the grouping level at which each effect varies; `"residual"` = 1.x),
   `"Kenward-Roger"`, `"Satterthwaite"`, `"containment"` (SAS `DDFM=CONTAIN`), `"between-within"`
   (SAS `DDFM=BETWITHIN`; also for `lme` and `gls`), `"KR-expected"` (Kenward-Roger with the expected
-  information, as pbkrtest/emmeans; `"Kenward-Roger"` uses the observed information, as SAS `DDFM=KR`).
-  For `lme` and `gls`, `"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` work with any correlation/variance structure
-  (default for REML fits: Kenward-Roger; `"containment"`: nlme's or the residual df, as 1.x).
+  information, as pbkrtest/emmeans; `"Kenward-Roger"` uses the observed information, as SAS `DDFM=KR`),
+  `"KR-average"` (the average information: Genstat's df).
+  For `lme` and `gls`, `"Satterthwaite"`, `"Kenward-Roger"`, `"KR-expected"` and `"KR-average"` work with any
+  correlation/variance structure (defaults: Kenward-Roger for REML fits, Satterthwaite for ML fits;
+  `"containment"`: nlme's or the residual df, as 1.x).
 - `vcov_adjust = TRUE` (default): Kenward-Roger adjusted covariance for REML `lmer`, as SAS
   `DDFM=KR` and emmeans; `FALSE` reproduces predictmeans 1.x standard errors.
 - `weights`: `"equal"` (default), `"proportional"` (= SAS `OM`), `"outer"`, `"cells"`,

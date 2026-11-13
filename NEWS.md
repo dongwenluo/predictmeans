@@ -2,6 +2,14 @@
 
 ## Changes that affect results or scripts
 
+* **ML fits of `lme` and `gls` get Satterthwaite df** (from the ML
+  log-likelihood), as ML `lmer` fits; they used nlme's df or the residual df,
+  which are still `df_method = "containment"`. In simulations of ML `gls`
+  fits (`dev/sim-df-ml/`), unstructured covariance: t tests 5.5% (residual df
+  6.9%), F tests 6.3–8.8% (9.3–11.7%); AR(1) the same either way. Kenward-Roger
+  asked for an ML fit gives Satterthwaite with a warning, as for `lmer`. An ML
+  `lme` fit now gives the same df as the ML `lmer` fit (lmerTest).
+
 * **Means over empty cells are compared on the cells both means have.** With
   `weights = "equal"`, a mean that averages over cells without data keeps the
   1.x rule (the average of its observed cells), but two such means average
