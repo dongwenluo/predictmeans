@@ -2,6 +2,15 @@
 
 ## Changes that affect results or scripts
 
+* `pm_joint()` without `ctrmatrix` writes each set of contrasts as each
+  level against the last (SAS's Type 3 basis). Wald and Kenward-Roger F
+  tests are unchanged; the Satterthwaite df of a test with several df depend
+  on the basis (Fai and Cornelius 1996) and now equal SAS's (AR(1) repeated
+  measures: 26.1 df for Time, was 25.5). New tests against a SAS run with
+  AR(1) and missing values: predictmeans' Kenward-Roger equals SAS
+  `DDFM=KR(FIRSTORDER)` everywhere and has the df of `KR` and `KR2`;
+  Satterthwaite and between-within agree everywhere.
+
 * **`aov()` models with `Error()` strata are analysed by strata**, as
   Genstat's ANOVA does, in `predictmeans()`, `contrastmeans()`, `pm_joint()`
   and `pm_slopes()` (new `R/aovlist.R`). They were refitted as `lmer`

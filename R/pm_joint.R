@@ -23,6 +23,9 @@
 #' \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 #' }
 #' Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
+#' Without \code{ctrmatrix}, each set is written as each level against the last (SAS's Type 3 basis): Wald and
+#' Kenward-Roger F tests do not depend on the basis, but the Satterthwaite df of a test with several df do (Fai and
+#' Cornelius 1996), and with this basis they equal SAS's.
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
@@ -107,6 +110,10 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
       by_tab <- unique(fac[match(gname, gkey), by, drop = FALSE])
       rownames(by_tab) <- NULL
     }
+    # the same hypotheses, written as each level against the last (SAS's Type 3
+    # basis): Wald and Kenward-Roger F do not depend on the basis, but the
+    # Satterthwaite df of a several-df test do (Fai and Cornelius 1996)
+    sets <- lapply(sets, pm_vs_last)
   }
 
   ## Model parameters, covariance and df (R/inference.R)
@@ -119,4 +126,16 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   attr(out, "df_method") <- inf$label
   if (!is.null(inf$vcov_label)) attr(out, "vcov") <- inf$vcov_label
   out
+}
+
+## Contrasts over means spanning the same space as C, as each level used by C
+## against the last of them.
+pm_vs_last <- function(C) {
+  used <- which(colSums(abs(C)) > 1e-12)
+  if (length(used) < 2) return(C)
+  k <- length(used)
+  M <- matrix(0, k - 1, ncol(C), dimnames = list(colnames(C)[used[-k]], colnames(C)))
+  M[cbind(seq_len(k - 1), used[-k])] <- 1
+  M[, used[k]] <- -1
+  M
 }

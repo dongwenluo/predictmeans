@@ -56,6 +56,9 @@ The F statistic and its denominator degrees of freedom follow the model:
 \item{other models}{the Wald F with the residual df (normal-based when there is none).}
 }
 Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank of the set.
+Without \code{ctrmatrix}, each set is written as each level against the last (SAS's Type 3 basis): Wald and
+Kenward-Roger F tests do not depend on the basis, but the Satterthwaite df of a test with several df do (Fai and
+Cornelius 1996), and with this basis they equal SAS's.
 \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 }
 \examples{
