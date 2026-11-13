@@ -16,6 +16,7 @@ articles:
   navbar: ~
   contents:
   - predictmeans
+  - checking
   - contrasts
   - response-scale
   - resampling
@@ -56,6 +57,7 @@ reference:
   - se_ranef
   - CookD
   - residplot
+  - pm_check
 - title: Permutation tests
   contents:
   - permmodels

@@ -5,3 +5,4 @@
 tests/testthat/testthat-problems.rds
 docs/
 inst/doc
+tests/testthat/Rplots.pdf

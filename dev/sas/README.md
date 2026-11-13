@@ -144,10 +144,27 @@ missing: Kenward-Roger df for Golden Rain − Victory 9.25 (pbkrtest,
 `"KR-expected"`) against SAS's 8.35 (`"Kenward-Roger"`), and 9.16 against 8.26 for
 the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.
 
-## Next runs (scripts ready, not yet run)
+## The Tukey–Kramer run (SAS OnDemand, 2026-11-13)
 
-- `pm-reference-adjust.sas`: Tukey–Kramer with `ADJDFE=ROW` and `SOURCE`
-  on the 68-observation oats data.
+`pm-reference-adjust.sas`: Tukey–Kramer adjusted differences of the LS-means
+of Variety and Variety × Nitro on the 68-observation oats data, `DDFM=KR`,
+with `ADJDFE=ROW` and `ADJDFE=SOURCE` (SAS's default). Results page as text
+in `sas-results-2026-11-13-adjust.txt` (session URLs removed), parsed by
+`parse-sas-adjust.py` into `sas-results-adjust.csv`, tested in
+`tests/testthat/test-sas-adjust.R`.
+
+- `adj = "tukey"` equals `ADJDFE=ROW` in all 69 differences: estimates, SEs,
+  Kenward–Roger df, p-values and adjusted p-values (within SAS's last printed
+  digit). Each pair is adjusted with its own df.
+- `ADJDFE=SOURCE` uses the denominator df of the term's F test for every pair
+  (Variety 8.26; Variety × Nitro 42, also for the pairs across whole plots
+  whose own df are 22.2, so those are adjusted too liberally); its values are
+  the same formula with that df. predictmeans keeps the row df.
+- Confidence limits: SAS's `Lower`/`Upper` are `conf.low`/`conf.high` of
+  `pairs`; its Tukey-adjusted limits (`AdjLower`/`AdjUpper`) are estimate ±
+  `qtukey(0.95, k, df) / sqrt(2)` × SE, which predictmeans does not report.
+  Both agree within 4e-5 (relative): the REML estimates of SAS and lme4
+  differ by about 1e-5 where their iterations stop.
 
 ## The AR(1) run (SAS OnDemand, 2026-11-13)
 

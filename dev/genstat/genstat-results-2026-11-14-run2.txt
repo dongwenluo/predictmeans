@@ -1,0 +1,553 @@
+   1  \ Second Genstat reference program for predictmeans (Genstat 21+). Please save the
+   2  \ whole Output window as a file (File > Save, .out or .txt) and send that file;
+   3  \ values typed by hand cannot be used as references. The first run may need
+   4  \ small syntax fixes.
+   5  \
+   6  \ Yates' oats split plot (nlme::Oats): Block 1-6 (I-VI), whole plots Variety
+   7  \ (1 GoldenRain, 2 Marvellous, 3 Victory), sub-plots Nitro (0, 0.2, 0.4, 0.6).
+   8  \ Four patterns of missing data, each testing a different rule:
+   9  \   A. a whole plot (Block I x GoldenRain) and one sub-plot (Block II x Victory
+  10  \      x 0.6) missing, 67 observations: the data of SAS run 3 (dev/sas). The three
+  11  \      Kenward-Roger versions differ most here (Variety df 8.30 observed, 9.14
+  12  \      expected, 8.75 average information): which one Genstat's df are.
+  13  \   B. an empty cell: Victory x 0.6 missing in every block, 66 observations.
+  14  \      Nitro and Variety means over all cells cannot be estimated; predictmeans
+  15  \      averages the observed cells (as Genstat's PRESENT): do the means agree?
+  16  \   C. one sub-plot missing (Block II x Victory x 0.6), 71 observations:
+  17  \      ANOVA by strata (Genstat estimates the missing value) and REML. predictmeans
+  18  \      analyses aov(... Error()) by strata too, but combines the strata's
+  19  \      information instead of estimating the missing value: how far apart?
+  20  \   D. five scattered sub-plots missing, 67 observations: REML df when the
+  21  \      sub-plot stratum is unbalanced.
+  22
+  23  UNITS [NVALUES=72]
+  24  FACTOR [LEVELS=6] Block
+  25  FACTOR [LABELS=!t(GoldenRain, Marvellous, Victory)] Variety
+  26  FACTOR [LEVELS=!(0, 0.2, 0.4, 0.6)] Nitro
+  27  VARIATE Yield
+  28  READ Block, Variety, Nitro, Yield
+Message: You have input sufficient data, READ terminated.
+ Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing
+	Yield	 53.00	 104.0	 174.0	 72	 0
+
+ Identifier	 Values	 Missing	 Levels
+	Block	 72	 0	 6
+	Variety	 72	 0	 3
+	Nitro	 72	 0	 4
+
+  47  :
+  48  \ The four patterns: MVINSERT(x; test) sets x missing where test is true
+  49  \ (factors take their level values: Variety 1-3, Nitro 0-0.6).
+  50  CALCULATE YA = MVINSERT(Yield; ((Block.EQ.1).AND.(Variety.EQ.1)) .OR. \
+  51                                 ((Block.EQ.2).AND.(Variety.EQ.3).AND.(Nitro.EQ.0.6)))
+  52  CALCULATE YB = MVINSERT(Yield; (Variety.EQ.3).AND.(Nitro.EQ.0.6))
+  53  CALCULATE YC = MVINSERT(Yield; (Block.EQ.2).AND.(Variety.EQ.3).AND.(Nitro.EQ.0.6))
+  54  CALCULATE YD = MVINSERT(Yield; ((Block.EQ.1).AND.(Variety.EQ.2).AND.(Nitro.EQ.0.2)) .OR. \
+  55                                 ((Block.EQ.3).AND.(Variety.EQ.1).AND.(Nitro.EQ.0.6)) .OR. \
+  56                                 ((Block.EQ.4).AND.(Variety.EQ.3).AND.(Nitro.EQ.0))   .OR. \
+  57                                 ((Block.EQ.5).AND.(Variety.EQ.2).AND.(Nitro.EQ.0.4)) .OR. \
+  58                                 ((Block.EQ.6).AND.(Variety.EQ.1).AND.(Nitro.EQ.0.2)))
+  59  SCALAR nA, nB, nC, nD
+  60  CALCULATE nA, nB, nC, nD = NOBSERVATIONS(YA, YB, YC, YD)
+  61  PRINT nA, nB, nC, nD
+
+nA	 nB	 nC	 nD
+	67.00	 66.00	 71.00	 67.00
+
+  62  \ (expected: 67, 66, 71, 67)
+  63
+  64  VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block/Variety
+  65
+  66  \ ---- A. whole plot + one sub-plot missing (67) ----
+  67  REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
+  68        PSE=differences; METHOD=AI] YA
+
+REML variance components analysis
+Response variate:	YA
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	67 (5 units excluded due to zero weights or missing values)
+
+Residual term has been added to model
+
+Sparse algorithm with AI optimisation
+
+Estimated variance components
+Random term	component	s.e.
+Block	 188.7	 166.3
+Block.Variety	 118.6	 78.8
+
+Residual variance model
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	171.0	 37.8
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety	2.96	2	1.48	8.7	 0.280
+Nitro	113.20	3	37.73	41.1	 <0.001
+Variety.Nitro	2.72	6	0.45	41.1	 0.838
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety.Nitro	2.72	6	0.45	41.1	 0.838
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Variety
+
+Variety	GoldenRain	Marvellous	Victory
+		103.3	109.8	98.4
+
+Standard errors of differences
+
+Average:	 7.674
+Maximum:	 7.846
+Minimum:	 7.364
+
+Average variance of differences: 58.94
+
+Table of predicted means for Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+		78.4	99.4	112.6	124.8
+
+Standard errors of differences
+
+Average:	 4.546
+Maximum:	 4.589
+Minimum:	 4.502
+
+Average variance of differences: 20.67
+
+Table of predicted means for Variety.Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+	Variety
+	GoldenRain	77.1	99.9	109.9	126.1
+	Marvellous	86.7	108.5	117.2	126.8
+	Victory	71.5	89.7	110.8	121.4
+
+Standard errors of differences
+
+Average:	 9.611
+Maximum:	 10.75
+Minimum:	 7.550
+
+Average variance of differences: 93.59
+
+Standard error of differences for same level of factor:
+
+Variety	Nitro
+
+Average:	 7.867	 10.26
+
+Maximum:	 8.271	 10.75
+
+Minimum:	 7.550	 9.825
+
+Average variance of differences:
+		 62.00	 105.4
+
+  69
+  70  \ ---- B. empty cell Victory x 0.6 (66) ----
+  71  REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
+  72        PSE=differences; METHOD=AI] YB
+
+REML variance components analysis
+Response variate:	YB
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	66 (6 units excluded due to zero weights or missing values)
+
+Residual term has been added to model
+
+Sparse algorithm with AI optimisation
+
+Estimated variance components
+Random term	component	s.e.
+Block	 205.2	 158.1
+Block.Variety	 79.8	 58.6
+
+Residual variance model
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	179.8	 40.2
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety	8.73	2	4.37	10.4	 0.042
+Nitro	92.10	3	30.70	40.0	 <0.001
+Variety.Nitro	1.65	5	0.33	40.0	 0.892
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety.Nitro	1.65	5	0.33	40.0	 0.892
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Variety
+
+Variety	GoldenRain	Marvellous	Victory
+		104.5	109.8	*
+
+Standard error of differences: 6.449
+
+Table of predicted means for Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+		79.39	98.89	114.22	*
+
+Standard error of differences: 4.470
+
+Table of predicted means for Variety.Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+	Variety
+	GoldenRain	80.0	98.5	114.7	124.8
+	Marvellous	86.7	108.5	117.2	126.8
+	Victory	71.5	89.7	110.8	*
+
+Standard errors of differences
+
+Average:	 8.877
+Maximum:	 9.303
+Minimum:	 7.742
+
+Average variance of differences: 79.28
+
+Standard error of differences for same level of factor:
+
+Variety	Nitro
+
+Average:	 7.742	 9.303
+
+Maximum:	 7.742	 9.303
+
+Minimum:	 7.742	 9.303
+
+  73  \ means averaging only over the combinations present in the data (as predictmeans);
+  74  \ CLASSIFY is a parameter of VPREDICT; if PRESENTCOMBINATIONS=yes is not accepted,
+  75  \ the fault message lists the values it takes
+  76  VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=Variety, Nitro] CLASSIFY=Nitro
+Predictions from REML analysis
+Model terms included for prediction: Constant + Variety + Nitro + Variety.Nitro
+Model terms excluded for prediction: Block + Block.Variety
+
+Status of model variables in prediction:
+
+Variable	Type	Status
+Nitro	factor	Classifies predictions
+Variety	factor	Averaged over combinations present Variety.Nitro
+Constant	factor	Included in prediction
+Block	factor	Ignored
+
+Response variate: YB
+
+Predictions
+
+Nitro	0.0	0.2	0.4	0.6
+		79.4	98.9	114.2	125.8
+
+Standard errors
+
+	Nitro	0.0	0.2	0.4	0.6
+		6.973	6.973	6.973	7.472
+
+Standard error of differences
+
+	Nitro 0.0	1	  *
+	Nitro 0.2	2	 4.470	  *
+	Nitro 0.4	3	 4.470	 4.470	  *
+	Nitro 0.6	4	 5.214	 5.214	 5.214	  *
+		 	 1	 2	 3	 4
+
+  77  VPREDICT [PRINT=description, predictions, se, sed; PRESENTCOMBINATIONS=Variety, Nitro] CLASSIFY=Variety
+Predictions from REML analysis
+Model terms included for prediction: Constant + Variety + Nitro + Variety.Nitro + Block.Variety
+Model terms excluded for prediction: Block
+
+Status of model variables in prediction:
+
+Variable	Type	Status
+Nitro	factor	Averaged over combinations present Variety.Nitro
+Variety	factor	Classifies predictions
+Constant	factor	Included in prediction
+Block	factor	Averaged over - equal weights
+
+Response variate: YB
+
+Predictions
+
+Variety	GoldenRain	Marvellous	Victory
+		104.5	109.8	90.7
+
+Standard errors
+
+	Variety	GoldenRain	Marvellous	Victory
+		6.457	6.457	6.647
+
+Standard error of differences
+
+	Variety GoldenRain	1	  *
+	Variety Marvellous	2	 3.871	  *
+	Variety Victory	3	 4.181	 4.181	  *
+		 	 1	 2	 3
+
+  78
+  79  \ ---- C. one sub-plot missing (71): ANOVA by strata, then REML ----
+  80  BLOCKSTRUCTURE Block/Variety
+  81  TREATMENTSTRUCTURE Variety*Nitro
+  82  ANOVA [PRINT=aovtable, information, means, missingvalues; FPROBABILITY=yes; PSE=differences] YC
+Analysis of variance
+Variate: YC
+
+Source of variation	d.f.	(m.v.)	s.s.	m.s.	v.r.	F pr.
+
+Block stratum	5	 	 15972.2	 3194.4	 5.62
+
+Block.Variety stratum
+Variety	2	 	 1626.0	 813.0	 1.43	 0.284
+Residual	10	 	 5681.8	 568.2	 3.18
+
+Block.Variety.*Units* stratum
+Nitro	3	 	 20532.4	 6844.1	 38.30	<.001
+Variety.Nitro	6	 	 373.8	 62.3	 0.35	 0.907
+Residual	44	(1)	 7863.1	 178.7
+
+Total	70	(1)	 51969.9
+
+Message: the following units have large residuals.
+Block 1	   31.2	   s.e. 14.9
+
+Tables of means
+Variate: YC
+
+Grand mean  104.2
+
+Variety	 GoldenRain	 Marvellous	 Victory
+		 104.5	 109.8	 98.2
+
+Nitro	 0.0	 0.2	 0.4	 0.6
+		 79.4	 98.9	 114.2	 124.1
+
+Variety	Nitro	 0.0	 0.2	 0.4	 0.6
+	 GoldenRain		 80.0	 98.5	 114.7	 124.8
+	 Marvellous		 86.7	 108.5	 117.2	 126.8
+	 Victory		 71.5	 89.7	 110.8	 120.7
+
+Standard errors of differences of means
+Table	Variety	Nitro	Variety
+			Nitro
+rep.	 24	 18	 6
+s.e.d.	 6.88	 4.46	 9.59
+d.f.	 10	 44	 31.42
+Except when comparing means with the same level(s) of
+Variety			 7.72
+d.f.			 44
+
+(Not adjusted for missing values)
+
+Missing values
+Variate: YC
+
+ Unit	  estimate
+24	 113.0
+
+Max. no. iterations 2
+  83  REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
+  84        PSE=differences; METHOD=AI] YC
+
+REML variance components analysis
+Response variate:	YC
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	71 (1 units excluded due to zero weights or missing values)
+
+Residual term has been added to model
+
+Sparse algorithm with AI optimisation
+
+Estimated variance components
+Random term	component	s.e.
+Block	 220.6	 170.5
+Block.Variety	 95.2	 63.9
+
+Residual variance model
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	178.8	 38.1
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety	3.41	2	1.70	9.9	 0.231
+Nitro	112.32	3	37.44	44.1	 <0.001
+Variety.Nitro	2.19	6	0.36	44.1	 0.897
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety.Nitro	2.19	6	0.36	44.1	 0.897
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Variety
+
+Variety	GoldenRain	Marvellous	Victory
+		104.5	109.8	98.4
+
+Standard errors of differences
+
+Average:	 6.852
+Maximum:	 6.863
+Minimum:	 6.830
+
+Average variance of differences: 46.95
+
+Table of predicted means for Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+		79.4	98.9	114.2	124.4
+
+Standard errors of differences
+
+Average:	 4.503
+Maximum:	 4.548
+Minimum:	 4.457
+
+Average variance of differences: 20.28
+
+Table of predicted means for Variety.Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+	Variety
+	GoldenRain	80.0	98.5	114.7	124.8
+	Marvellous	86.7	108.5	117.2	126.8
+	Victory	71.5	89.7	110.8	121.5
+
+Standard errors of differences
+
+Average:	 9.124
+Maximum:	 9.936
+Minimum:	 7.720
+
+Average variance of differences: 83.92
+
+Standard error of differences for same level of factor:
+
+Variety	Nitro
+
+Average:	 7.798	 9.621
+
+Maximum:	 8.184	 9.936
+
+Minimum:	 7.720	 9.558
+
+Average variance of differences:
+		 60.83	 92.58
+
+  85
+  86  \ ---- D. five scattered sub-plots missing (67) ----
+  87  REML [PRINT=model, components, waldtests, means; PTERMS=Variety + Nitro + Variety.Nitro; \
+  88        PSE=differences; METHOD=AI] YD
+
+REML variance components analysis
+Response variate:	YD
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	67 (5 units excluded due to zero weights or missing values)
+
+Residual term has been added to model
+
+Sparse algorithm with AI optimisation
+
+Estimated variance components
+Random term	component	s.e.
+Block	 200.6	 164.7
+Block.Variety	 120.8	 76.5
+
+Residual variance model
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	176.0	 39.3
+
+Tests for fixed effects
+Sequentially adding terms to fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety	1.71	2	0.86	9.9	 0.454
+Nitro	111.01	3	37.00	40.4	 <0.001
+Variety.Nitro	2.27	6	0.38	40.5	 0.889
+
+Dropping individual terms from full fixed model
+
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+Variety.Nitro	2.27	6	0.38	40.5	 0.889
+
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+
+Table of predicted means for Variety
+
+Variety	GoldenRain	Marvellous	Victory
+		105.6	108.4	97.1
+
+Standard errors of differences
+
+Average:	 7.510
+Maximum:	 7.529
+Minimum:	 7.501
+
+Average variance of differences: 56.41
+
+Table of predicted means for Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+		78.7	98.4	113.2	124.6
+
+Standard errors of differences
+
+Average:	 4.651
+Maximum:	 4.701
+Minimum:	 4.604
+
+Average variance of differences: 21.64
+
+Table of predicted means for Variety.Nitro
+
+Nitro	0.0	0.2	0.4	0.6
+	Variety
+	GoldenRain	80.0	99.5	114.7	128.4
+	Marvellous	86.7	106.1	114.1	126.8
+	Victory	69.5	89.7	110.8	118.5
+
+Standard errors of differences
+
+Average:	 9.648
+Maximum:	 10.66
+Minimum:	 7.660
+
+Average variance of differences: 94.12
+
+Standard error of differences for same level of factor:
+
+Variety	Nitro
+
+Average:	 8.051	 10.25
+
+Maximum:	 8.610	 10.66
+
+Minimum:	 7.660	 9.947
+
+Average variance of differences:
+		 64.89	 105.1
+
+  89  STOP
+
+End of job.
+Genstat 64-bit Release 23.1 ( PC/Windows 11) 14 November 2026 08:05:40
+Copyright 2023, VSN International Ltd.
+\

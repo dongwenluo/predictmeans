@@ -40,9 +40,18 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
     }
     x
   }
+  # Since 2.0 Type III tests do not depend on the contrasts (sum-to-zero
+  # coding, as SAS Type 3); 1.1.1 tested each main effect at the first level
+  # of the other factors under treatment contrasts (test-anova.R). The
+  # interaction is the same either way.
+  type3 <- "perm_lmer_III"
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
     a <- strip_ci(new[[nm]]); b <- ref[[nm]]
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
+    if (nm %in% type3) {
+      a$ANOVA <- a$ANOVA[grepl(":", rownames(a$ANOVA)), , drop = FALSE]
+      b$ANOVA <- b$ANOVA[grepl(":", rownames(b$ANOVA)), , drop = FALSE]
+    }
     expect_equal(clean_reference(a), clean_reference(b),
                  tolerance = if (mixed[[nm]]) 2e-2 else 1e-6, label = nm)
   }

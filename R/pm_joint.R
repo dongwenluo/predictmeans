@@ -14,7 +14,7 @@
 #' \item{KR-expected}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the expected information, as
 #'   \code{pbkrtest::KRmodcomp()} (see \code{\link{predictmeans}}).}
 #' \item{KR-average}{(\code{lmer}, \code{lme}, \code{gls}) Kenward-Roger with the average information: Genstat's REML
-#'   df (Genstat's F statistic is the unscaled Wald F).}
+#'   df (Genstat's F statistic is Kenward-Roger's scaling factor times the Wald F of the unadjusted covariance).}
 #' \item{between-within}{(\code{lmer}, \code{lme}, \code{gls}) the Wald F with the between-within df of
 #'   \code{modelterm} (SAS \code{DDFM=BETWITHIN}; see \code{\link{predictmeans}}).}
 #' \item{\code{lme}, \code{gls} with \code{df_method = "Satterthwaite"}, \code{"Kenward-Roger"}, \code{"KR-expected"} or \code{"KR-average"}}{as for \code{lmer} (Satterthwaite df of the

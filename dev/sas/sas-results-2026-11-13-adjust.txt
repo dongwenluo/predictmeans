@@ -1,0 +1,531 @@
+11/13/26, 11:31 PM                                                                                   Results: Program 1
+
+                                                                               The Mixed Procedure
+
+                                                                                   Model Information
+                                                          Data Set                                   WORK.OATS
+                                                          Dependent Variable                         Yield
+                                                          Covariance Structure                       Variance Components
+                                                          Subject Effect                             Block
+
+                                                          Estimation Method                          REML
+                                                          Residual Variance Method                   Profile
+                                                          Fixed Effects SE Method                    Kenward-Roger
+
+                                                          Degrees of Freedom Method                  Kenward-Roger
+
+
+                                                                              Class Level Information
+                                                               Class       Levels       Values
+
+                                                               Block               6    I II III IV V VI
+                                                               Variety             3    GoldenRain Marvellous Victory
+                                                               Nitro               4    0.0 0.2 0.4 0.6
+
+
+                                                                                       Dimensions
+
+                                                                          Covariance Parameters                  3
+                                                                          Columns in X                         20
+                                                                          Columns in Z per Subject               4
+
+                                                                          Subjects                               6
+                                                                          Max Obs per Subject                  12
+
+
+                                                                             Number of Observations
+
+                                                                   Number of Observations Read                         68
+                                                                   Number of Observations Used                         68
+                                                                   Number of Observations Not Used                      0
+
+
+                                                                                   Iteration History
+
+                                                         Iteration       Evaluations           -2 Res Log Like          Criterion
+                                                                   0                   1         521.44621607
+                                                                   1                   3         493.82000502         0.00084055
+
+                                                                   2                   1         493.63194260         0.00005861
+                                                                   3                   1         493.61992578         0.00000037
+                                                                   4                   1         493.61985335         0.00000000
+
+
+                                                                             Convergence criteria met.
+
+
+                                                                         Covariance Parameter Estimates
+                                                                         Cov Parm          Subject         Estimate
+                                                                         Intercept         Block             179.22
+
+                                                                         Variety           Block             131.32
+                                                                         Residual                            169.41
+
+
+                                                                                       Fit Statistics
+
+                                                                          -2 Res Log Likelihood              493.6
+                                                                          AIC (Smaller is Better)            499.6
+                                                                          AICC (Smaller is Better)           500.1
+                                                                          BIC (Smaller is Better)            499.0
+
+
+
+                                                                           Type 3 Tests of Fixed Effects
+                                                          Effect              Num DF            Den DF       F Value        Pr > F
+                                                          Variety                          2       8.26         1.28        0.3276
+                                                          Nitro                            3         42        37.92        <.0001
+                                                          Variety*Nitro                    6         42         0.41        0.8656
+
+
+                                                                               Least Squares Means
+
+                                                                                    Standard
+                            Effect          Variety      Nitro      Estimate            Error        DF      t Value        Pr > |t|   Alpha    Lower     Upper
+                            Variety         GoldenRain                   103.15         8.2361        10       12.52        <.0001      0.05   84.8099    121.49
+                            Variety         Marvellous                   109.79         7.6691      8.64       14.32        <.0001      0.05   92.3316    127.25
+
+                            Variety         Victory                    97.6250          7.6691      8.64       12.73        <.0001      0.05   80.1649    115.09
+                            Variety*Nitro   GoldenRain   0.0           77.0009          9.6564      18.5        7.97        <.0001      0.05   56.7549   97.2469
+                            Variety*Nitro   GoldenRain   0.2           99.8009          9.6564      18.5       10.34        <.0001      0.05   79.5549    120.05
+
+                            Variety*Nitro   GoldenRain   0.4             109.80         9.6564      18.5       11.37        <.0001      0.05   89.5549    130.05
+
+
+
+11/13/26, 11:31 PM                                                                                        Results: Program 1
+                                                                                       Least Squares Means
+                                                                                            Standard
+                                       Effect          Variety        Nitro    Estimate         Error     DF     t Value   Pr > |t|   Alpha     Lower      Upper
+                                       Variety*Nitro   GoldenRain     0.6        126.00       9.6564     18.5     13.05    <.0001       0.05    105.75     146.25
+                                       Variety*Nitro   Marvellous     0.0       86.6667       8.9438     15.6       9.69   <.0001       0.05   67.6633     105.67
+                                       Variety*Nitro   Marvellous     0.2        108.50       8.9438     15.6     12.13    <.0001       0.05   89.4966     127.50
+
+                                       Variety*Nitro   Marvellous     0.4        117.17       8.9438     15.6     13.10    <.0001       0.05   98.1633     136.17
+                                       Variety*Nitro   Marvellous     0.6        126.83       8.9438     15.6     14.18    <.0001       0.05    107.83     145.84
+                                       Variety*Nitro   Victory        0.0       71.5000       8.9438     15.6       7.99   <.0001       0.05   52.4966   90.5034
+
+                                       Variety*Nitro   Victory        0.2       89.6667       8.9438     15.6     10.03    <.0001       0.05   70.6633     108.67
+                                       Variety*Nitro   Victory        0.4        110.83       8.9438     15.6     12.39    <.0001       0.05   91.8300     129.84
+                                       Variety*Nitro   Victory        0.6        118.50       8.9438     15.6     13.25    <.0001       0.05   99.4966     137.50
+
+
+
+                                                                                 Differences of Least Squares Means
+                                                                                Standard                                                                                              Adj        Adj
+    Effect          Variety      Nitro    _Variety       _Nitro     Estimate        Error     DF    t Value     Pr > |t|   Adjustment      Adj P   Alpha      Lower      Upper      Lower      Upper
+    Variety         GoldenRain            Marvellous                 -6.6408      8.1799     8.35       -0.81   0.4394     Tukey-         0.7062    0.05    -25.3654   12.0838    -29.8074   16.5259
+                                                                                                                           Kramer
+    Variety         GoldenRain            Victory                     5.5259      8.1799     8.35       0.68    0.5176     Tukey-         0.7834    0.05    -13.1987   24.2505    -17.6407   28.6925
+                                                                                                                           Kramer
+
+    Variety         Marvellous            Victory                    12.1667      7.6087      8.1       1.60    0.1480     Tukey-         0.2998    0.05     -5.3413   29.6746     -9.5179   33.8513
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.2        -22.8000      8.2320       42       -2.77   0.0083     Tukey-         0.2298    0.05    -39.4129    -6.1871   -51.2655    5.6655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.4        -32.8000      8.2320       42       -3.98   0.0003     Tukey-         0.0123    0.05    -49.4129   -16.1871   -61.2655    -4.3345
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.6        -49.0000      8.2320       42       -5.95   <.0001     Tukey-         <.0001    0.05    -65.6129   -32.3871   -77.4655   -20.5345
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.0         -9.6658     10.6536     22.2       -0.91   0.3740     Tukey-         0.9983    0.05    -31.7485   12.4170    -48.3825   29.0509
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.2        -31.4991     10.6536     22.2       -2.96   0.0072     Tukey-         0.1872    0.05    -53.5819    -9.4163   -70.2158    7.2176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.4        -40.1658     10.6536     22.2       -3.77   0.0010     Tukey-         0.0375    0.05    -62.2485   -18.0830   -78.8825    -1.4491
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.6        -49.8324     10.6536     22.2       -4.68   0.0001     Tukey-         0.0049    0.05    -71.9152   -27.7497   -88.5491   -11.1157
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.0          5.5009     10.6536     22.2       0.52    0.6107     Tukey-         1.0000    0.05    -16.5819   27.5837    -33.2158   44.2176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.2        -12.6658     10.6536     22.2       -1.19   0.2471     Tukey-         0.9845    0.05    -34.7485    9.4170    -51.3825   26.0509
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.0      Victory        0.4        -33.8324     10.6536     22.2       -3.18   0.0043     Tukey-         0.1253    0.05    -55.9152   -11.7497   -72.5491    4.8843
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.6        -41.4991     10.6536     22.2       -3.90   0.0008     Tukey-         0.0286    0.05    -63.5819   -19.4163   -80.2158    -2.7824
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      GoldenRain     0.4        -10.0000      8.2320       42       -1.21   0.2312     Tukey-         0.9847    0.05    -26.6129    6.6129    -38.4655   18.4655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      GoldenRain     0.6        -26.2000      8.2320       42       -3.18   0.0027     Tukey-         0.0966    0.05    -42.8129    -9.5871   -54.6655    2.2655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.0         13.1342     10.6536     22.2       1.23    0.2305     Tukey-         0.9798    0.05     -8.9485   35.2170    -25.5825   51.8509
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.2         -8.6991     10.6536     22.2       -0.82   0.4229     Tukey-         0.9993    0.05    -30.7819   13.3837    -47.4158   30.0176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.4        -17.3658     10.6536     22.2       -1.63   0.1172     Tukey-         0.8801    0.05    -39.4485    4.7170    -56.0825   21.3509
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.6        -27.0324     10.6536     22.2       -2.54   0.0187     Tukey-         0.3678    0.05    -49.1152    -4.9497   -65.7491   11.6843
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.0         28.3009     10.6536     22.2       2.66    0.0144     Tukey-         0.3080    0.05      6.2181   50.3837    -10.4158   67.0176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.2         10.1342     10.6536     22.2       0.95    0.3517     Tukey-         0.9974    0.05    -11.9485   32.2170    -28.5825   48.8509
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.4        -11.0324     10.6536     22.2       -1.04   0.3116     Tukey-         0.9947    0.05    -33.1152   11.0503    -49.7491   27.6843
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.6        -18.6991     10.6536     22.2       -1.76   0.0930     Tukey-         0.8245    0.05    -40.7819    3.3837    -57.4158   20.0176
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.4      GoldenRain     0.6        -16.2000      8.2320       42       -1.97   0.0557     Tukey-         0.7111    0.05    -32.8129    0.4129    -44.6655   12.2655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.0         23.1342     10.6536     22.2       2.17    0.0409     Tukey-         0.5833    0.05      1.0515   45.2170    -15.5825   61.8509
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.2          1.3009     10.6536     22.2       0.12    0.9039     Tukey-         1.0000    0.05    -20.7819   23.3837    -37.4158   40.0176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.4         -7.3658     10.6536     22.2       -0.69   0.4965     Tukey-         0.9999    0.05    -29.4485   14.7170    -46.0825   31.3509
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.6        -17.0324     10.6536     22.2       -1.60   0.1240     Tukey-         0.8922    0.05    -39.1152    5.0503    -55.7491   21.6843
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.4      Victory        0.0         38.3009     10.6536     22.2       3.60    0.0016     Tukey-         0.0542    0.05     16.2181   60.3837     -0.4158   77.0176
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Victory        0.2         20.1342     10.6536     22.2       1.89    0.0719     Tukey-         0.7534    0.05     -1.9485   42.2170    -18.5825   58.8509
+                                                                                                                           Kramer
+
+
+
+
+11/13/26, 11:31 PM                                                                               Results: Program 1
+                                                                           Differences of Least Squares Means
+                                                                          Standard                                                                                        Adj        Adj
+    Effect          Variety      Nitro   _Variety     _Nitro   Estimate       Error    DF    t Value   Pr > |t|   Adjustment    Adj P   Alpha     Lower      Upper      Lower      Upper
+    Variety*Nitro   GoldenRain   0.4     Victory      0.4       -1.0324    10.6536    22.2     -0.10   0.9237     Tukey-       1.0000    0.05   -23.1152   21.0503    -39.7491   37.6843
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.4     Victory      0.6       -8.6991    10.6536    22.2     -0.82   0.4229     Tukey-       0.9993    0.05   -30.7819   13.3837    -47.4158   30.0176
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.0       39.3342    10.6536    22.2     3.69    0.0013     Tukey-       0.0443    0.05   17.2515    61.4170     0.6175    78.0509
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.2       17.5009    10.6536    22.2     1.64    0.1145     Tukey-       0.8749    0.05    -4.5819   39.5837    -21.2158   56.2176
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.4        8.8342    10.6536    22.2     0.83    0.4158     Tukey-       0.9992    0.05   -13.2485   30.9170    -29.8825   47.5509
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.6       -0.8324    10.6536    22.2     -0.08   0.9384     Tukey-       1.0000    0.05   -22.9152   21.2503    -39.5491   37.8843
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.0       54.5009    10.6536    22.2     5.12    <.0001     Tukey-       0.0018    0.05   32.4181    76.5837    15.7842    93.2176
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.2       36.3342    10.6536    22.2     3.41    0.0025     Tukey-       0.0792    0.05   14.2515    58.4170     -2.3825   75.0509
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.4       15.1676    10.6536    22.2     1.42    0.1684     Tukey-       0.9460    0.05    -6.9152   37.2503    -23.5491   53.8843
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.6        7.5009    10.6536    22.2     0.70    0.4887     Tukey-       0.9998    0.05   -14.5819   29.5837    -31.2158   46.2176
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.2      -21.8333     7.5148     42      -2.91   0.0058     Tukey-       0.1760    0.05   -36.9987    -6.6679   -47.8186    4.1520
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.4      -30.5000     7.5148     42      -4.06   0.0002     Tukey-       0.0100    0.05   -45.6654   -15.3346   -56.4853    -4.5147
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.6      -40.1667     7.5148     42      -5.35   <.0001     Tukey-       0.0002    0.05   -55.3321   -25.0013   -66.1520   -14.1814
+                                                                                                                  Kramer
+
+    Variety*Nitro   Marvellous   0.0     Victory      0.0       15.1667    10.0123     22      1.51    0.1440     Tukey-       0.9208    0.05    -5.5967   35.9300    -21.2511   51.5845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.2       -3.0000    10.0123     22      -0.30   0.7673     Tukey-       1.0000    0.05   -23.7634   17.7634    -39.4178   33.4178
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.4      -24.1667    10.0123     22      -2.41   0.0246     Tukey-       0.4366    0.05   -44.9300    -3.4033   -60.5845   12.2511
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.6      -31.8333    10.0123     22      -3.18   0.0043     Tukey-       0.1249    0.05   -52.5967   -11.0700   -68.2511    4.5845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Marvellous   0.4       -8.6667     7.5148     42      -1.15   0.2553     Tukey-       0.9898    0.05   -23.8321    6.4987    -34.6520   17.3186
+                                                                                                                  Kramer
+
+    Variety*Nitro   Marvellous   0.2     Marvellous   0.6      -18.3333     7.5148     42      -2.44   0.0190     Tukey-       0.4037    0.05   -33.4987    -3.1679   -44.3186    7.6520
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.0       37.0000    10.0123     22      3.70    0.0013     Tukey-       0.0443    0.05   16.2366    57.7634     0.5822    73.4178
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.2       18.8333    10.0123     22      1.88    0.0733     Tukey-       0.7583    0.05    -1.9300   39.5967    -17.5845   55.2511
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.4       -2.3333    10.0123     22      -0.23   0.8179     Tukey-       1.0000    0.05   -23.0967   18.4300    -38.7511   34.0845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.6      -10.0000    10.0123     22      -1.00   0.3288     Tukey-       0.9961    0.05   -30.7634   10.7634    -46.4178   26.4178
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Marvellous   0.6       -9.6667     7.5148     42      -1.29   0.2054     Tukey-       0.9765    0.05   -24.8321    5.4987    -35.6520   16.3186
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.0       45.6667    10.0123     22      4.56    0.0002     Tukey-       0.0065    0.05   24.9033    66.4300     9.2489    82.0845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.2       27.5000    10.0123     22      2.75    0.0118     Tukey-       0.2676    0.05    6.7366    48.2634     -8.9178   63.9178
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.4        6.3333    10.0123     22      0.63    0.5335     Tukey-       0.9999    0.05   -14.4300   27.0967    -30.0845   42.7511
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.6       -1.3333    10.0123     22      -0.13   0.8953     Tukey-       1.0000    0.05   -22.0967   19.4300    -37.7511   35.0845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.0       55.3333    10.0123     22      5.53    <.0001     Tukey-       0.0007    0.05   34.5700    76.0967    18.9155    91.7511
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.2       37.1667    10.0123     22      3.71    0.0012     Tukey-       0.0427    0.05   16.4033    57.9300     0.7489    73.5845
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.4       16.0000    10.0123     22      1.60    0.1243     Tukey-       0.8923    0.05    -4.7634   36.7634    -20.4178   52.4178
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.6        8.3333    10.0123     22      0.83    0.4142     Tukey-       0.9992    0.05   -12.4300   29.0967    -28.0845   44.7511
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.2      -18.1667     7.5148     42      -2.42   0.0200     Tukey-       0.4173    0.05   -33.3321    -3.0013   -44.1520    7.8186
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.4      -39.3333     7.5148     42      -5.23   <.0001     Tukey-       0.0003    0.05   -54.4987   -24.1679   -65.3186   -13.3480
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.6      -47.0000     7.5148     42      -6.25   <.0001     Tukey-       <.0001    0.05   -62.1654   -31.8346   -72.9853   -21.0147
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.2     Victory      0.4      -21.1667     7.5148     42      -2.82   0.0074     Tukey-       0.2100    0.05   -36.3321    -6.0013   -47.1520    4.8186
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.2     Victory      0.6      -28.8333     7.5148     42      -3.84   0.0004     Tukey-       0.0185    0.05   -43.9987   -13.6679   -54.8186    -2.8480
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.4     Victory      0.6       -7.6667     7.5148     42      -1.02   0.3135     Tukey-       0.9963    0.05   -22.8321    7.4987    -33.6520   18.3186
+                                                                                                                  Kramer
+
+
+
+
+11/13/26, 11:31 PM                                                                                   Results: Program 1
+                                                                               The Mixed Procedure
+
+                                                                                   Model Information
+                                                          Data Set                                   WORK.OATS
+                                                          Dependent Variable                         Yield
+                                                          Covariance Structure                       Variance Components
+                                                          Subject Effect                             Block
+                                                          Estimation Method                          REML
+                                                          Residual Variance Method                   Profile
+                                                          Fixed Effects SE Method                    Kenward-Roger
+
+                                                          Degrees of Freedom Method                  Kenward-Roger
+
+
+                                                                              Class Level Information
+                                                               Class       Levels       Values
+
+                                                               Block               6    I II III IV V VI
+                                                               Variety             3    GoldenRain Marvellous Victory
+                                                               Nitro               4    0.0 0.2 0.4 0.6
+
+
+                                                                                       Dimensions
+                                                                          Covariance Parameters                  3
+                                                                          Columns in X                         20
+                                                                          Columns in Z per Subject               4
+                                                                          Subjects                               6
+                                                                          Max Obs per Subject                  12
+
+
+                                                                             Number of Observations
+                                                                   Number of Observations Read                         68
+                                                                   Number of Observations Used                         68
+                                                                   Number of Observations Not Used                      0
+
+
+                                                                                   Iteration History
+                                                         Iteration       Evaluations           -2 Res Log Like          Criterion
+                                                                   0                   1         521.44621607
+                                                                   1                   3         493.82000502         0.00084055
+                                                                   2                   1         493.63194260         0.00005861
+                                                                   3                   1         493.61992578         0.00000037
+                                                                   4                   1         493.61985335         0.00000000
+
+
+                                                                             Convergence criteria met.
+
+
+                                                                         Covariance Parameter Estimates
+                                                                         Cov Parm          Subject         Estimate
+                                                                         Intercept         Block             179.22
+                                                                         Variety           Block             131.32
+                                                                         Residual                            169.41
+
+
+                                                                                       Fit Statistics
+
+                                                                          -2 Res Log Likelihood              493.6
+                                                                          AIC (Smaller is Better)            499.6
+                                                                          AICC (Smaller is Better)           500.1
+                                                                          BIC (Smaller is Better)            499.0
+
+
+                                                                           Type 3 Tests of Fixed Effects
+                                                          Effect              Num DF            Den DF       F Value        Pr > F
+                                                          Variety                          2       8.26         1.28        0.3276
+                                                          Nitro                            3         42        37.92        <.0001
+                                                          Variety*Nitro                    6         42         0.41        0.8656
+
+
+                                                                               Least Squares Means
+                                                                                    Standard
+                            Effect          Variety      Nitro      Estimate            Error        DF      t Value        Pr > |t|   Alpha    Lower     Upper
+                            Variety         GoldenRain                   103.15         8.2361        10       12.52        <.0001      0.05   84.8099    121.49
+                            Variety         Marvellous                   109.79         7.6691      8.64       14.32        <.0001      0.05   92.3316    127.25
+                            Variety         Victory                    97.6250          7.6691      8.64       12.73        <.0001      0.05   80.1649    115.09
+                            Variety*Nitro   GoldenRain   0.0           77.0009          9.6564      18.5        7.97        <.0001      0.05   56.7549   97.2469
+                            Variety*Nitro   GoldenRain   0.2           99.8009          9.6564      18.5       10.34        <.0001      0.05   79.5549    120.05
+
+                            Variety*Nitro   GoldenRain   0.4             109.80         9.6564      18.5       11.37        <.0001      0.05   89.5549    130.05
+                            Variety*Nitro   GoldenRain   0.6             126.00         9.6564      18.5       13.05        <.0001      0.05    105.75    146.25
+
+
+11/13/26, 11:31 PM                                                                                        Results: Program 1
+                                                                                       Least Squares Means
+                                                                                            Standard
+                                       Effect          Variety        Nitro    Estimate         Error     DF     t Value   Pr > |t|   Alpha     Lower      Upper
+                                       Variety*Nitro   Marvellous     0.0       86.6667       8.9438     15.6       9.69   <.0001       0.05   67.6633     105.67
+                                       Variety*Nitro   Marvellous     0.2        108.50       8.9438     15.6     12.13    <.0001       0.05   89.4966     127.50
+                                       Variety*Nitro   Marvellous     0.4        117.17       8.9438     15.6     13.10    <.0001       0.05   98.1633     136.17
+                                       Variety*Nitro   Marvellous     0.6        126.83       8.9438     15.6     14.18    <.0001       0.05    107.83     145.84
+                                       Variety*Nitro   Victory        0.0       71.5000       8.9438     15.6       7.99   <.0001       0.05   52.4966   90.5034
+                                       Variety*Nitro   Victory        0.2       89.6667       8.9438     15.6     10.03    <.0001       0.05   70.6633     108.67
+
+                                       Variety*Nitro   Victory        0.4        110.83       8.9438     15.6     12.39    <.0001       0.05   91.8300     129.84
+                                       Variety*Nitro   Victory        0.6        118.50       8.9438     15.6     13.25    <.0001       0.05   99.4966     137.50
+
+
+                                                                                 Differences of Least Squares Means
+                                                                                Standard                                                                                              Adj        Adj
+    Effect          Variety      Nitro    _Variety       _Nitro     Estimate        Error     DF    t Value     Pr > |t|   Adjustment      Adj P   Alpha      Lower      Upper      Lower      Upper
+    Variety         GoldenRain            Marvellous                 -6.6408      8.1799     8.35       -0.81   0.4394     Tukey-         0.7063    0.05    -25.3654   12.0838    -29.8596   16.5781
+                                                                                                                           Kramer
+
+    Variety         GoldenRain            Victory                     5.5259      8.1799     8.35       0.68    0.5176     Tukey-         0.7835    0.05    -13.1987   24.2505    -17.6930   28.7448
+                                                                                                                           Kramer
+    Variety         Marvellous            Victory                    12.1667      7.6087      8.1       1.60    0.1480     Tukey-         0.2989    0.05     -5.3413   29.6746     -9.4308   33.7642
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.2        -22.8000      8.2320       42       -2.77   0.0083     Tukey-         0.2298    0.05    -39.4129    -6.1871   -51.2655    5.6655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.4        -32.8000      8.2320       42       -3.98   0.0003     Tukey-         0.0123    0.05    -49.4129   -16.1871   -61.2655    -4.3345
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      GoldenRain     0.6        -49.0000      8.2320       42       -5.95   <.0001     Tukey-         <.0001    0.05    -65.6129   -32.3871   -77.4655   -20.5345
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.0         -9.6658     10.6536     22.2       -0.91   0.3740     Tukey-         0.9987    0.05    -31.7485   12.4170    -46.5049   27.1734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.2        -31.4991     10.6536     22.2       -2.96   0.0072     Tukey-         0.1584    0.05    -53.5819    -9.4163   -68.3382    5.3400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.4        -40.1658     10.6536     22.2       -3.77   0.0010     Tukey-         0.0222    0.05    -62.2485   -18.0830   -77.0049    -3.3266
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Marvellous     0.6        -49.8324     10.6536     22.2       -4.68   0.0001     Tukey-         0.0016    0.05    -71.9152   -27.7497   -86.6716   -12.9933
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.0          5.5009     10.6536     22.2       0.52    0.6107     Tukey-         1.0000    0.05    -16.5819   27.5837    -31.3382   42.3400
+                                                                                                                           Kramer
+
+    Variety*Nitro   GoldenRain   0.0      Victory        0.2        -12.6658     10.6536     22.2       -1.19   0.2471     Tukey-         0.9871    0.05    -34.7485    9.4170    -49.5049   24.1734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.4        -33.8324     10.6536     22.2       -3.18   0.0043     Tukey-         0.0982    0.05    -55.9152   -11.7497   -70.6716    3.0067
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.0      Victory        0.6        -41.4991     10.6536     22.2       -3.90   0.0008     Tukey-         0.0158    0.05    -63.5819   -19.4163   -78.3382    -4.6600
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      GoldenRain     0.4        -10.0000      8.2320       42       -1.21   0.2312     Tukey-         0.9847    0.05    -26.6129    6.6129    -38.4655   18.4655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      GoldenRain     0.6        -26.2000      8.2320       42       -3.18   0.0027     Tukey-         0.0966    0.05    -42.8129    -9.5871   -54.6655    2.2655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.0         13.1342     10.6536     22.2       1.23    0.2305     Tukey-         0.9829    0.05     -8.9485   35.2170    -23.7049   49.9734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.2         -8.6991     10.6536     22.2       -0.82   0.4229     Tukey-         0.9995    0.05    -30.7819   13.3837    -45.5382   28.1400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.4        -17.3658     10.6536     22.2       -1.63   0.1172     Tukey-         0.8879    0.05    -39.4485    4.7170    -54.2049   19.4734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Marvellous     0.6        -27.0324     10.6536     22.2       -2.54   0.0187     Tukey-         0.3462    0.05    -49.1152    -4.9497   -63.8716    9.8067
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.0         28.3009     10.6536     22.2       2.66    0.0144     Tukey-         0.2828    0.05      6.2181   50.3837     -8.5382   65.1400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.2         10.1342     10.6536     22.2       0.95    0.3517     Tukey-         0.9980    0.05    -11.9485   32.2170    -26.7049   46.9734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.4        -11.0324     10.6536     22.2       -1.04   0.3116     Tukey-         0.9958    0.05    -33.1152   11.0503    -47.8716   25.8067
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.2      Victory        0.6        -18.6991     10.6536     22.2       -1.76   0.0930     Tukey-         0.8319    0.05    -40.7819    3.3837    -55.5382   18.1400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      GoldenRain     0.6        -16.2000      8.2320       42       -1.97   0.0557     Tukey-         0.7111    0.05    -32.8129    0.4129    -44.6655   12.2655
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.0         23.1342     10.6536     22.2       2.17    0.0409     Tukey-         0.5777    0.05      1.0515   45.2170    -13.7049   59.9734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.2          1.3009     10.6536     22.2       0.12    0.9039     Tukey-         1.0000    0.05    -20.7819   23.3837    -35.5382   38.1400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.4         -7.3658     10.6536     22.2       -0.69   0.4965     Tukey-         0.9999    0.05    -29.4485   14.7170    -44.2049   29.4734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Marvellous     0.6        -17.0324     10.6536     22.2       -1.60   0.1240     Tukey-         0.8999    0.05    -39.1152    5.0503    -53.8716   19.8067
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Victory        0.0         38.3009     10.6536     22.2       3.60    0.0016     Tukey-         0.0353    0.05     16.2181   60.3837     1.4618    75.1400
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Victory        0.2         20.1342     10.6536     22.2       1.89    0.0719     Tukey-         0.7585    0.05     -1.9485   42.2170    -16.7049   56.9734
+                                                                                                                           Kramer
+    Variety*Nitro   GoldenRain   0.4      Victory        0.4         -1.0324     10.6536     22.2       -0.10   0.9237     Tukey-         1.0000    0.05    -23.1152   21.0503    -37.8716   35.8067
+                                                                                                                           Kramer
+
+
+
+11/13/26, 11:31 PM                                                                               Results: Program 1
+                                                                           Differences of Least Squares Means
+                                                                          Standard                                                                                        Adj        Adj
+    Effect          Variety      Nitro   _Variety     _Nitro   Estimate       Error    DF    t Value   Pr > |t|   Adjustment    Adj P   Alpha     Lower      Upper      Lower      Upper
+    Variety*Nitro   GoldenRain   0.4     Victory      0.6       -8.6991    10.6536    22.2     -0.82   0.4229     Tukey-       0.9995    0.05   -30.7819   13.3837    -45.5382   28.1400
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.0       39.3342    10.6536    22.2     3.69    0.0013     Tukey-       0.0274    0.05   17.2515    61.4170     2.4951    76.1734
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.2       17.5009    10.6536    22.2     1.64    0.1145     Tukey-       0.8828    0.05    -4.5819   39.5837    -19.3382   54.3400
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.4        8.8342    10.6536    22.2     0.83    0.4158     Tukey-       0.9994    0.05   -13.2485   30.9170    -28.0049   45.6734
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Marvellous   0.6       -0.8324    10.6536    22.2     -0.08   0.9384     Tukey-       1.0000    0.05   -22.9152   21.2503    -37.6716   36.0067
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.0       54.5009    10.6536    22.2     5.12    <.0001     Tukey-       0.0004    0.05   32.4181    76.5837    17.6618    91.3400
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.2       36.3342    10.6536    22.2     3.41    0.0025     Tukey-       0.0562    0.05   14.2515    58.4170     -0.5049   73.1734
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.4       15.1676    10.6536    22.2     1.42    0.1684     Tukey-       0.9519    0.05    -6.9152   37.2503    -21.6716   52.0067
+                                                                                                                  Kramer
+    Variety*Nitro   GoldenRain   0.6     Victory      0.6        7.5009    10.6536    22.2     0.70    0.4887     Tukey-       0.9999    0.05   -14.5819   29.5837    -29.3382   44.3400
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.2      -21.8333     7.5148     42      -2.91   0.0058     Tukey-       0.1760    0.05   -36.9987    -6.6679   -47.8186    4.1520
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.4      -30.5000     7.5148     42      -4.06   0.0002     Tukey-       0.0100    0.05   -45.6654   -15.3346   -56.4853    -4.5147
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Marvellous   0.6      -40.1667     7.5148     42      -5.35   <.0001     Tukey-       0.0002    0.05   -55.3321   -25.0013   -66.1520   -14.1814
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.0       15.1667    10.0123     22      1.51    0.1440     Tukey-       0.9280    0.05    -5.5967   35.9300    -19.4548   49.7881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.2       -3.0000    10.0123     22      -0.30   0.7673     Tukey-       1.0000    0.05   -23.7634   17.7634    -37.6214   31.6214
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.4      -24.1667    10.0123     22      -2.41   0.0246     Tukey-       0.4196    0.05   -44.9300    -3.4033   -58.7881   10.4548
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.0     Victory      0.6      -31.8333    10.0123     22      -3.18   0.0043     Tukey-       0.0973    0.05   -52.5967   -11.0700   -66.4548    2.7881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Marvellous   0.4       -8.6667     7.5148     42      -1.15   0.2553     Tukey-       0.9898    0.05   -23.8321    6.4987    -34.6520   17.3186
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Marvellous   0.6      -18.3333     7.5148     42      -2.44   0.0190     Tukey-       0.4037    0.05   -33.4987    -3.1679   -44.3186    7.6520
+                                                                                                                  Kramer
+
+    Variety*Nitro   Marvellous   0.2     Victory      0.0       37.0000    10.0123     22      3.70    0.0013     Tukey-       0.0271    0.05   16.2366    57.7634     2.3786    71.6214
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.2       18.8333    10.0123     22      1.88    0.0733     Tukey-       0.7637    0.05    -1.9300   39.5967    -15.7881   53.4548
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.4       -2.3333    10.0123     22      -0.23   0.8179     Tukey-       1.0000    0.05   -23.0967   18.4300    -36.9548   32.2881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.2     Victory      0.6      -10.0000    10.0123     22      -1.00   0.3288     Tukey-       0.9969    0.05   -30.7634   10.7634    -44.6214   24.6214
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Marvellous   0.6       -9.6667     7.5148     42      -1.29   0.2054     Tukey-       0.9765    0.05   -24.8321    5.4987    -35.6520   16.3186
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.0       45.6667    10.0123     22      4.56    0.0002     Tukey-       0.0023    0.05   24.9033    66.4300    11.0452    80.2881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.2       27.5000    10.0123     22      2.75    0.0118     Tukey-       0.2400    0.05    6.7366    48.2634     -7.1214   62.1214
+                                                                                                                  Kramer
+
+    Variety*Nitro   Marvellous   0.4     Victory      0.4        6.3333    10.0123     22      0.63    0.5335     Tukey-       1.0000    0.05   -14.4300   27.0967    -28.2881   40.9548
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.4     Victory      0.6       -1.3333    10.0123     22      -0.13   0.8953     Tukey-       1.0000    0.05   -22.0967   19.4300    -35.9548   33.2881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.0       55.3333    10.0123     22      5.53    <.0001     Tukey-       0.0001    0.05   34.5700    76.0967    20.7119    89.9548
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.2       37.1667    10.0123     22      3.71    0.0012     Tukey-       0.0260    0.05   16.4033    57.9300     2.5452    71.7881
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.4       16.0000    10.0123     22      1.60    0.1243     Tukey-       0.9002    0.05    -4.7634   36.7634    -18.6214   50.6214
+                                                                                                                  Kramer
+    Variety*Nitro   Marvellous   0.6     Victory      0.6        8.3333    10.0123     22      0.83    0.4142     Tukey-       0.9994    0.05   -12.4300   29.0967    -26.2881   42.9548
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.2      -18.1667     7.5148     42      -2.42   0.0200     Tukey-       0.4173    0.05   -33.3321    -3.0013   -44.1520    7.8186
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.4      -39.3333     7.5148     42      -5.23   <.0001     Tukey-       0.0003    0.05   -54.4987   -24.1679   -65.3186   -13.3480
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.0     Victory      0.6      -47.0000     7.5148     42      -6.25   <.0001     Tukey-       <.0001    0.05   -62.1654   -31.8346   -72.9853   -21.0147
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.2     Victory      0.4      -21.1667     7.5148     42      -2.82   0.0074     Tukey-       0.2100    0.05   -36.3321    -6.0013   -47.1520    4.8186
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.2     Victory      0.6      -28.8333     7.5148     42      -3.84   0.0004     Tukey-       0.0185    0.05   -43.9987   -13.6679   -54.8186    -2.8480
+                                                                                                                  Kramer
+    Variety*Nitro   Victory      0.4     Victory      0.6       -7.6667     7.5148     42      -1.02   0.3135     Tukey-       0.9963    0.05   -22.8321    7.4987    -33.6520   18.3186
+                                                                                                                  Kramer
+
+
+
+
+

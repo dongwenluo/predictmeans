@@ -68,8 +68,19 @@ ggplot2::autoplot(pm, type = "pvalue")
 
 ## Degrees of freedom and standard errors
 
-For REML `lmer` fits the default is Kenward–Roger: adjusted standard errors and
-Kenward–Roger df, as SAS `DDFM=KR` and emmeans give. Other choices:
+`df_method = "auto"` (the default) chooses the df by the model:
+
+| Model | Default df | Other choices of `df_method` |
+|---|---|---|
+| REML `lmer`, `lme`, `gls` | Kenward–Roger, with adjusted SEs (as SAS `DDFM=KR`) | `"Satterthwaite"`, `"containment"`, `"between-within"`, `"KR-expected"`, `"KR-average"` |
+| ML `lmer`, `lme`, `gls` | Satterthwaite, from the ML likelihood | `"containment"`, `"between-within"` |
+| `glmer`, `glmmTMB` | `"inner-outer"`: the df of the grouping level at which each effect varies | `"containment"`, `"between-within"` (`glmer`), `"residual"` |
+| `glm`, `gam`: Poisson, binomial, negative binomial | none: z tests (`"asymptotic (z)"`), as emmeans and SAS GLIMMIX | `"residual"` (t tests, as 1.x) |
+| `lm`; `glm`, `gam` with an estimated dispersion (Gaussian, Gamma, quasi-) | residual df | |
+| `aov` with `Error()` | by strata, Satterthwaite's df across strata | |
+
+`settings$df_method` of the result says which was used. For the split plot (a REML
+`lmer` fit) the default gives Kenward–Roger SEs and df. Other choices:
 
 ```{r}
 # Satterthwaite df
@@ -88,6 +99,14 @@ information of Genstat's REML and gives Genstat's df (with `vcov_adjust = FALSE`
 `lme` and `gls` models with correlation or variance structures, `"Satterthwaite"`, `"Kenward-Roger"`,
 `"KR-expected"` and `"KR-average"` are available too. `vignette("sas", package = "predictmeans")` shows how each matches SAS PROC
 MIXED.
+
+ML fits get Satterthwaite df because Kenward–Roger's adjustment is derived for REML. For
+Poisson, binomial and negative binomial `glm` fits the dispersion is known, so there are
+no residual df to use: in simulations, t tests on the residual df rejected 0.3–4.5% of
+true hypotheses at the 5% level, and z tests 3.6–5.7%.
+
+Before reading the means, check the model: `pm_check()` and `residplot()`, in
+`vignette("checking", package = "predictmeans")`.
 
 ## Averaging over other factors
 
@@ -129,6 +148,8 @@ For a glm the means are also given on the response scale (here probabilities); s
 
 ## More
 
+- `vignette("checking", package = "predictmeans")`: checking the model with `pm_check()`
+  and `residplot()`.
 - `vignette("contrasts", package = "predictmeans")`: other adjustments for multiple
   testing, comparisons with a control, trends, joint tests (slices) and slopes.
 - `vignette("response-scale", package = "predictmeans")`: GLMs, GLMMs and transformed

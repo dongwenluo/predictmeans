@@ -83,3 +83,25 @@ test_that("lmer split plot with a lost cell: the comparisons on the varieties bo
   expect_equal(p$pairs$estimate[p$pairs$level1 == "0" & p$pairs$level2 == "0.2"], -19.5, tolerance = 1e-8)
   expect_true(is.na(p$pairs$over[p$pairs$level1 == "0" & p$pairs$level2 == "0.2"]))
 })
+
+test_that("a factor whose effects are nested in the compared factor is not matched (Sample_date/Farm)", {
+  # farms within dates (date/farm: a farm's effect differs by date), treatments
+  # crossed; no data for treatment B on farm F2 at date d2
+  set.seed(11)
+  d <- expand.grid(rep = 1:3, trt = factor(c("A", "B")), farm = factor(c("F1", "F2")), date = factor(c("d1", "d2")))
+  d <- d[!(d$date == "d2" & d$farm == "F2" & d$trt == "B"), ]
+  d$y <- 5 + as.integer(d$farm) * as.integer(d$date) + 0.5 * (d$trt == "B") + rnorm(nrow(d), 0, 0.3)
+  fm <- lm(y ~ date/farm + date * trt, data = d)
+  expect_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE), "d2:B")
+  pr <- p$pairs
+  pred <- function(dt, f, t) unname(predict(fm, data.frame(date = dt, farm = f, trt = t)))
+  # treatments at d2: farm effects are shared, so matched (farm F1 only)
+  r <- pr[pr$level1 == "d2:A" & pr$level2 == "d2:B", ]
+  expect_identical(r$over, "farm F1")
+  expect_equal(r$estimate, pred("d2", "F1", "A") - pred("d2", "F1", "B"), tolerance = 1e-8)
+  # dates: each date has its own farm effects, nothing to match; the means as they are
+  r <- pr[pr$level1 == "d1:B" & pr$level2 == "d2:B", ]
+  expect_true(is.na(r$over))
+  expect_equal(r$estimate, mean(c(pred("d1", "F1", "B"), pred("d1", "F2", "B"))) - pred("d2", "F1", "B"),
+               tolerance = 1e-8)
+})

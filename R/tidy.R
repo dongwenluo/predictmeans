@@ -127,6 +127,7 @@ pm_tidy_parts <- function(e) {
     cm <- as.vector(g("cm"))
     dses <- as.vector(g("dses"))
     pdf <- if (perm) rep(NA_real_, nrow(ij)) else rep_len(as.numeric(g("Df_diff")), nrow(ij))
+    pdf[is.na(cm)] <- NA                      # pairs that cannot be estimated
     stat <- cm/dses
     p <- if (perm) as.vector(g("t.p.values")) else 2*stats::pt(-abs(stat), pdf)
 
@@ -184,13 +185,12 @@ pm_tidy_parts <- function(e) {
       } else pdf
       pairs$p.equiv <- pm_tost(cm, dses, tdf, eqm)
     }
-    lsd_level <- g("level")
-    # critical values: t quantiles, or with a permlist those of the permutation
-    # distribution of |t| (simultaneous within each family with a max-|t| adj)
+    lsd_level <- if (is.null(g("user_level"))) g("level") else g("user_level")   # R/predictmeans-stages.R
+    # critical values for each comparison: t quantiles, or with a permlist
+    # those of the permutation distribution of |t|
     pT <- g("perm_T")
     crit <- if (perm && !is.null(pT)) {
-      maxt_fam <- if (adj %in% pm_perm_maxt_methods) { if (is.null(atvar)) rep("all", length(cm)) else by } else NULL
-      pm_perm_crit(pT$T, lsd_level, family = maxt_fam)
+      pm_perm_crit(pT$T, lsd_level)
     } else if (perm) {
       rep(NA_real_, length(cm))
     } else stats::qt(1 - lsd_level/2, pdf)
@@ -199,6 +199,15 @@ pm_tidy_parts <- function(e) {
     pairs$conf.low <- cm - crit*ci_se
     pairs$conf.high <- cm + crit*ci_se
     pairs$lsd <- crit*ci_se
+    # simultaneous limits within each family, agreeing with p.adj (R/p-adjust.R)
+    if (!perm || !is.null(pT)) {
+      fam <- if (is.null(atvar)) rep("all", length(cm)) else by
+      crit_adj <- pm_adjust_crit(adj, lsd_level, pdf, fam, est = !is.na(cm), R = g("pair_cor"), T = pT$T)
+      if (!is.null(crit_adj)) {
+        pairs$adj.conf.low <- cm - crit_adj*ci_se
+        pairs$adj.conf.high <- cm + crit_adj*ci_se
+      }
+    }
     pairs$p.method <- if (perm) {
       if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else "permutation"
     } else if (adj == "tukey") "tukey" else "t"

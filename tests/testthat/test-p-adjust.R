@@ -1,4 +1,5 @@
-# "sidak", "scheffe" and "mvt" adjustments, checked against emmeans.
+# "sidak", "scheffe" and "mvt" adjustments, and the adjusted confidence limits of
+# the pairs, checked against emmeans.
 
 oats_unbal <- function() {
   d <- as.data.frame(nlme::Oats)
@@ -45,6 +46,26 @@ test_that("contrastmeans(): sidak and scheffe (rank of ctrmatrix) match emmeans"
   }
 })
 
+test_that("contrastmeans(): adjusted limits match emmeans' confint() and agree with the p-values", {
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("mvtnorm")
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
+  cm <- rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0), c(0, 0, -1, 1), c(-1, 0, 0, 1))   # rank 3
+  for (a in c("bonferroni", "sidak", "scheffe", "mvt")) {
+    r <- suppressWarnings(contrastmeans(fm, "nitro", ctrmatrix = cm, adj = a, df_method = "KR-expected"))[[1]]
+    e <- as.data.frame(confint(emmeans::contrast(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"),
+                                                 method = list(a = cm[1, ], b = cm[2, ], c = cm[3, ], d = cm[4, ]),
+                                                 adjust = a)))
+    tol <- if (a == "mvt") 2e-3 else 1e-3      # the table is rounded to 4 decimals
+    expect_equal(unname(r[, "adj.lower.CL"]), e$lower.CL, tolerance = tol, label = a)
+    expect_equal(unname(r[, "adj.upper.CL"]), e$upper.CL, tolerance = tol, label = a)
+    if (a != "mvt") expect_identical(unname(r[, "adj.lower.CL"] > 0 | r[, "adj.upper.CL"] < 0),
+                                     unname(r[, "Pr(>|t|)"] < 0.05))
+  }
+  r <- contrastmeans(fm, "nitro", ctrmatrix = cm, adj = "holm")[[1]]
+  expect_false("adj.lower.CL" %in% colnames(r))
+})
+
 test_that("mvt repeats exactly and leaves the user's random numbers alone", {
   skip_if_not_installed("mvtnorm")
   d <- oats_unbal()   # (not in the call: predictmeans() re-evaluates the data argument)
@@ -66,4 +87,45 @@ test_that("with permutation p-values sidak works; scheffe and mvt stop", {
   m <- sum(!is.na(r$pairs$p.value))
   expect_equal(r$pairs$p.adj, 1 - (1 - r$pairs$p.value)^m)
   expect_error(predictmeans(fm, "nitro", permlist = pl, adj = "scheffe", plot = FALSE, ncore = 1), "not available")
+})
+
+test_that("adjusted limits of the pairs match emmeans' confint() and agree with p.adj", {
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("mvtnorm")
+  fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
+  for (a in c("tukey", "bonferroni", "sidak", "scheffe", "mvt")) {
+    tol <- if (a == "mvt") 1e-3 else 1e-8
+    pm <- predictmeans(fm, "nitro", adj = a, df_method = "KR-expected", plot = FALSE)$pairs
+    em <- as.data.frame(confint(pairs(emmeans::emmeans(fm, ~nitro, lmer.df = "kenward-roger"), adjust = a)))
+    lv <- do.call(rbind, strsplit(as.character(em$contrast), " - "))
+    i <- match(paste(pm$level1, pm$level2), paste(lv[, 1], lv[, 2]))
+    expect_false(anyNA(i))
+    expect_equal(pm$adj.conf.low, em$lower.CL[i], tolerance = tol, label = a)
+    expect_equal(pm$adj.conf.high, em$upper.CL[i], tolerance = tol, label = a)
+    # the per-comparison limits do not depend on adj
+    expect_equal(pm$conf.high - pm$estimate, qt(0.975, pm$df) * pm$std.error)
+    if (a != "mvt") expect_identical(pm$adj.conf.low > 0 | pm$adj.conf.high < 0, pm$p.adj < 0.05)
+
+    # within the levels of atvar; pairs across levels have no adjusted limits
+    pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = a, df_method = "KR-expected", plot = FALSE)$pairs
+    ea <- as.data.frame(confint(pairs(emmeans::emmeans(fm, ~nitro | Variety, lmer.df = "kenward-roger"),
+                                      adjust = a)))
+    lv <- do.call(rbind, strsplit(as.character(ea$contrast), " - "))
+    s <- pa[!is.na(pa$by), ]
+    j <- match(paste(s$by, sub(":.*", "", s$level1), sub(":.*", "", s$level2)), paste(ea$Variety, lv[, 1], lv[, 2]))
+    expect_false(anyNA(j))
+    expect_equal(s$adj.conf.low, ea$lower.CL[j], tolerance = tol, label = paste(a, "within Variety"))
+    expect_true(all(is.na(pa$adj.conf.low[is.na(pa$by)])))
+  }
+  # step-down and false discovery rate methods have no simultaneous limits
+  expect_null(predictmeans(fm, "nitro", adj = "holm", plot = FALSE)$pairs$adj.conf.low)
+  expect_null(predictmeans(fm, "nitro", adj = "BH", plot = FALSE)$pairs$adj.conf.low)
+})
+
+test_that("conf.low uses the user's level with adj = \"bonferroni\"; level can be given", {
+  fm <- lm(yield ~ Block + nitro*Variety, data = oats_unbal())
+  pm <- predictmeans(fm, "nitro", adj = "bonferroni", level = 0.1, plot = FALSE)$pairs
+  m <- nrow(pm)
+  expect_equal(pm$conf.high - pm$estimate, qt(0.95, pm$df) * pm$std.error)
+  expect_equal(pm$adj.conf.high - pm$estimate, qt(1 - 0.1/(2*m), pm$df) * pm$std.error)
 })

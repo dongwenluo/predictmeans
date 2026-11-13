@@ -454,10 +454,9 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     ddf <- if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) NULL else
       try(pm_kr_ddf(Lc, V0=vcov(model), Vadj=vcov_adj), silent=TRUE)
 
-    if (any(is.null(ddf),
-	        inherits(ddf, "try-error"),
-			ddf >= nrow(model.frame(model)),
-			ddf <= 0)) {
+    # rows that cannot be estimated (confounded factors) may give NaN: not a failure
+    if (is.null(ddf) || inherits(ddf, "try-error") ||
+        any(ddf >= nrow(model.frame(model)) | ddf <= 0, na.rm = TRUE)) {
       warning("Unable to compute Kenward-Roger Df: using Satterthwaite instead")
       type <- "Satterthwaite"
     }

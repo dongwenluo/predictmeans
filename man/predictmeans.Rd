@@ -20,7 +20,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
-standard errors of single means include the block stratum. For a \code{semireg} fit the
+standard errors of single means include the block stratum. With missing values in an orthogonal design (rows
+whose response is \code{NA}, or a few combinations of the design factors absent) they are estimated as Genstat's
+ANOVA does (the residual sum of squares of the lowest stratum made smallest; the residual df reduced) and the
+completed design is analysed by strata, with exact standard errors (Genstat's are those of the complete design);
+a message says that REML (\code{lmer()} with the \code{Error()} terms as random effects) uses the information in
+all strata and is the better analysis when plots are missing. For a \code{semireg} fit the
 means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.}
@@ -47,8 +52,9 @@ permutation version of Tukey's test: each pair's |t| is compared with the larges
 permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (1993), which is uniformly more
 powerful; both use the correlation between the comparisons. "westfall" needs \code{permlist}; "scheffe" is not
 available with it. 
-The default method is "none"; letter case does not matter ("Tukey" works). Note that LSD can't be adjusted
-except for "bonferroni" method.}
+The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
+the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}. The
+printed LSD is adjusted only by "bonferroni".}
 
 \item{Df}{A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.}
 
@@ -152,7 +158,9 @@ factors): with \code{"equal"}, a mean that averages over them is the average of 
 predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means
 average over different cells, so their difference would also carry the effects of the other factors; a pair
 with such a mean is therefore compared on the cells both means have (column \code{over} of \code{pairs}; NA,
-\code{over = "none"}, when they have none). In simulations comparing the averages rejected 8-78\% of true
+\code{over = "none"}, when they have none). Only factors whose effects the two means share are matched: with
+\code{Sample_date/Farm} in the model, two dates are not matched on farms (each date has its own farm effects),
+but two treatments at one date are. In simulations comparing the averages rejected 8-78\% of true
 null hypotheses at the 5\% level when the other factor had an effect, the common cells 4-6\%
 (\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.}
 
@@ -254,9 +262,14 @@ stay on the link scale.}
  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
  \code{equivalence}: the TOST p-value), \code{conf.low} and \code{conf.high} (limits of
- the difference at \code{level}), \code{lsd} (the half-width of those limits) and \code{p.method}; with \code{permlist}
- the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test; simultaneous
- within each family with \code{adj} "tukey", "mvt" or "westfall"); for a log
+ each difference at \code{level}, not adjusted), \code{lsd} (the half-width of those limits),
+ \code{adj.conf.low} and \code{adj.conf.high} (simultaneous limits within each family, which exclude 0 exactly
+ when \code{p.adj} is below \code{level}, as SAS \code{AdjLower} and \code{AdjUpper} and \pkg{emmeans}; for
+ \code{adj} "tukey" (each pair's own df, as SAS \code{ADJDFE=ROW}), "bonferroni", "sidak", "scheffe" and "mvt";
+ the step-down and false discovery rate methods have none) and \code{p.method}; with \code{permlist}
+ the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test), and the
+ adjusted limits use the permutation distribution of the family's largest |t| ("tukey", "mvt", "westfall") or
+ each pair's at level/m ("bonferroni", "sidak"); for a log
  link or \code{trans = exp} also \code{ratio} (of the back-transformed means, \code{exp(estimate)}),
  \code{ratio.conf.low} and \code{ratio.conf.high}, and for a logit link \code{odds.ratio} with its limits.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
