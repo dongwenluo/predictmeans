@@ -164,6 +164,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   it), and its pairs are compared on the cells both means have (column `over`), not as
   the difference of the two averages (since 2.0). Means that cannot be estimated (confounded
   factors) are NA, with their estimable differences kept. Check `estimable` and `n`.
+- `pm_check(model)`: a table of model checks (outliers, normality, equal variances, overdispersion,
+  interactions, straight line for numeric-level factors); `residplot(model)`: ggplot2 diagnostic plots
+  (`interactive = TRUE`: plotly).
 - `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
   the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).
 - `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use

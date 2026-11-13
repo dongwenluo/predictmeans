@@ -28,6 +28,7 @@ S3method(generics::tidy, predictmeans)
 S3method(generics::glance, predictmeans)
 S3method(ggplot2::autoplot, predictmeans)
 S3method(print, pm_residplot)
+S3method(print, pm_check)
 S3method(summary, predictmeans)
 S3method(print, summary.predictmeans)
 
@@ -66,5 +67,5 @@ importMethodsFrom("Matrix",
   importFrom("utils", "as.roman", "combn", "edit")
 
 export(pm_coef, pm_vcov, pm_basis, pm_data, pm_df, pm_linkinv)
-export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permcombine, permglmer, permglmmTMB, permindex, permlmer, permmodels, permstats, pm_joint, pm_slopes, PMplot, predictmeans, R2_glmm, R2_model, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
+export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permcombine, permglmer, permglmmTMB, permindex, permlmer, permmodels, permstats, pm_joint, pm_slopes, PMplot, pm_check, predictmeans, R2_glmm, R2_model, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
 S3method(update, semerLmerTest)

@@ -276,6 +276,20 @@
   the CIs). With two `atvar` factors the note is one line
   ("at each level of A:B") instead of two.
 
+
+## New features
+
+* `pm_check(model)`: a table of checks of a fitted model with a plain note on
+  each, for any model predictmeans handles: the fit (singular, convergence),
+  outliers (beyond 3, flagged when improbable for normal residuals),
+  influence (Cook's distance), normality of the residuals and of each
+  random-effect term, equal variances across the levels of each factor
+  (Brown-Forsythe), overdispersion of Poisson and binomial models,
+  interactions (Type III tests), whether a factor with numeric levels follows
+  a straight line (curvature contrasts with the actual spacing, by
+  `pm_joint()`), and aliased coefficients. The checks inform; they do not
+  simplify the model. `plot = TRUE` also draws `residplot()`.
+
 ## Stable result tables
 
 * `predictmeans()` results gain three slots with fixed names and unrounded
