@@ -34,7 +34,11 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   For type I ANOVA, F test is applied to all models, while for type II
   and III ANOVA, F test is performed for `lm`, Chisq test for `lme` and
   `gls` model, Chisq or F tests for `lmer` model and Likelihood ratio,
-  Wald or F tests for `glm` model.
+  Wald or F tests for `glm` model. The F tests of an `lmer` model are
+  Kenward-Roger F tests with the observed information of the variance
+  parameters, as in the rest of predictmeans
+  ([`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html) uses the
+  expected information; the two agree for balanced data).
 
 - exact:
 

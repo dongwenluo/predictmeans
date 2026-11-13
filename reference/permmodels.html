@@ -86,7 +86,10 @@ for the terms in a linear model such as <code>aov</code>, <code>lm</code>, <code
 
 <dt id="arg-test-statistic">test.statistic<a class="anchor" aria-label="anchor" href="#arg-test-statistic"></a></dt>
 <dd><p>For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for <code>lm</code>,
-Chisq test for <code>lme</code> and <code>gls</code> model, Chisq or F tests for <code>lmer</code> model and Likelihood ratio, Wald or F tests for <code>glm</code> model.</p></dd>
+Chisq test for <code>lme</code> and <code>gls</code> model, Chisq or F tests for <code>lmer</code> model and Likelihood ratio, Wald or F tests for <code>glm</code> model.
+The F tests of an <code>lmer</code> model are Kenward-Roger F tests with the observed information of the variance
+parameters, as in the rest of predictmeans (<code><a href="https://rdrr.io/pkg/car/man/Anova.html" class="external-link">car::Anova()</a></code> uses the expected information; the two agree
+for balanced data).</p></dd>
 
 
 <dt id="arg-exact">exact<a class="anchor" aria-label="anchor" href="#arg-exact"></a></dt>

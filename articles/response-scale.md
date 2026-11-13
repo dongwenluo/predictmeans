@@ -36,15 +36,15 @@ pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE, plot = FALSE, prtnum =
 pm_drug$means[, c("Drug", "estimate", "response", "response.std.error",
                   "response.conf.low", "response.conf.high")]
 #>          Drug   estimate  response response.std.error response.conf.low
-#> 1    Morphine  0.1739917 0.5433885         0.03034579         0.4743527
-#> 2     Amidone  0.5660805 0.6378583         0.03166332         0.5636524
-#> 3 Phenadoxone  2.4185555 0.9182314         0.01536127         0.8760708
-#> 4   Pethidine -1.7574624 0.1471084         0.02125403         0.1052064
+#> 1    Morphine  0.1739917 0.5433885         0.03034579         0.4835759
+#> 2     Amidone  0.5660805 0.6378583         0.03166332         0.5738120
+#> 3 Phenadoxone  2.4185555 0.9182314         0.01536127         0.8826288
+#> 4   Pethidine -1.7574624 0.1471084         0.02125403         0.1101238
 #>   response.conf.high
-#> 1          0.6107968
-#> 2          0.7060264
-#> 3          0.9469180
-#> 4          0.2019331
+#> 1          0.6019756
+#> 2          0.6973562
+#> 3          0.9437231
+#> 4          0.1938091
 ```
 
 `estimate` is the log odds of a response at the mean log dose;
@@ -56,19 +56,19 @@ log-odds scale, and each difference is the log of an odds ratio:
 pm_drug$pairs[, c("level1", "level2", "estimate", "p.value",
                   "odds.ratio", "odds.ratio.conf.low", "odds.ratio.conf.high")]
 #>        level1      level2   estimate      p.value odds.ratio
-#> 1    Morphine     Amidone -0.3920888 5.750270e-02  0.6756441
-#> 2    Morphine Phenadoxone -2.2445638 3.436176e-06  0.1059738
-#> 3     Amidone Phenadoxone -1.8524750 2.056205e-05  0.1568485
-#> 4    Morphine   Pethidine  1.9314541 1.150365e-05  6.8995356
-#> 5     Amidone   Pethidine  2.3235429 3.665914e-06 10.2117898
-#> 6 Phenadoxone   Pethidine  4.1760179 4.541004e-07 65.1060753
+#> 1    Morphine     Amidone -0.3920888 2.951890e-02  0.6756441
+#> 2    Morphine Phenadoxone -2.2445638 9.302021e-24  0.1059738
+#> 3     Amidone Phenadoxone -1.8524750 6.799382e-16  0.1568485
+#> 4    Morphine   Pethidine  1.9314541 4.069093e-18  6.8995356
+#> 5     Amidone   Pethidine  2.3235429 2.042589e-23 10.2117898
+#> 6 Phenadoxone   Pethidine  4.1760179 2.573901e-37 65.1060753
 #>   odds.ratio.conf.low odds.ratio.conf.high
-#> 1          0.44950381            1.0155531
-#> 2          0.06393713            0.1756481
-#> 3          0.09334124            0.2635646
-#> 4          4.16993639           11.4159036
-#> 5          6.02784628           17.2998191
-#> 6         31.06115941          136.4662854
+#> 1          0.47465285            0.9617449
+#> 2          0.06840188            0.1641832
+#> 3          0.10004256            0.2459098
+#> 4          4.46008846           10.6732394
+#> 5          6.46763307           16.1234642
+#> 6         34.28884136          123.6204222
 ```
 
 ``` r

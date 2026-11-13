@@ -129,6 +129,16 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
   evaluated on `grid`, e.g. the smooth terms of a `semireg` model, can
   be averaged in the same way as `W %*% basis`.
 
+- empty_cells:
+
+  `NULL`, or when some means average over empty cells
+  (`weights = "equal"`; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)):
+  `affected`, which rows of `K` do so, `missing`, the empty cells, and
+  `compare(C, together = FALSE)`, which gives comparisons `C` (rows over
+  the rows of `K`) on the cells their means have in common
+  (`together = TRUE`: the cells common to all the means of `C`).
+
 ## References
 
 Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),

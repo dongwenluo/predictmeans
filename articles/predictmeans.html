@@ -209,12 +209,15 @@ information of the variance parameters, as SAS does;
 <code>"KR-expected"</code> uses the expected information, as pbkrtest
 and emmeans. The two agree in balanced designs; with missing values only
 the observed information is valid, and in simulations it kept the 5%
-level where the expected one rejected 8.5% of true hypotheses. For
-<code>lme</code> and <code>gls</code> models with correlation or
-variance structures, <code>"Satterthwaite"</code>,
-<code>"Kenward-Roger"</code> and <code>"KR-expected"</code> are
-available too. <code><a href="../articles/sas.html">vignette("sas", package = "predictmeans")</a></code>
-shows how each matches SAS PROC MIXED.</p>
+level where the expected one rejected 8.5% of true hypotheses.
+<code>"KR-average"</code> uses the average information of Genstat’s REML
+and gives Genstat’s df (with <code>vcov_adjust = FALSE</code>, also its
+SEDs). For <code>lme</code> and <code>gls</code> models with correlation
+or variance structures, <code>"Satterthwaite"</code>,
+<code>"Kenward-Roger"</code>, <code>"KR-expected"</code> and
+<code>"KR-average"</code> are available too.
+<code><a href="../articles/sas.html">vignette("sas", package = "predictmeans")</a></code> shows how each
+matches SAS PROC MIXED.</p>
 </div>
 <div class="section level2">
 <h2 id="averaging-over-other-factors">Averaging over other factors<a class="anchor" aria-label="anchor" href="#averaging-over-other-factors"></a>
@@ -279,16 +282,21 @@ terms of a <code>gam</code>.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Drug</span><span class="op">)</span></span>
 <span><span class="va">fm_glm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">R</span>, <span class="va">N</span> <span class="op">-</span> <span class="va">R</span><span class="op">)</span> <span class="op">~</span> <span class="va">Drug</span> <span class="op">+</span> <span class="va">log10Dose</span>, family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">Drug</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_glm</span>, <span class="st">"Drug"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
-<span><span class="co">#&gt;          Drug log10Dose   estimate std.error df   conf.low  conf.high  response</span></span>
-<span><span class="co">#&gt; 1    Morphine  0.603011  0.1739917 0.1223041  9 -0.1026794  0.4506629 0.5433885</span></span>
-<span><span class="co">#&gt; 2     Amidone  0.603011  0.5660805 0.1370736  9  0.2559986  0.8761625 0.6378583</span></span>
-<span><span class="co">#&gt; 3 Phenadoxone  0.603011  2.4185555 0.2045918  9  1.9557367  2.8813742 0.9182314</span></span>
-<span><span class="co">#&gt; 4   Pethidine  0.603011 -1.7574624 0.1693986  9 -2.1406687 -1.3742560 0.1471084</span></span>
-<span><span class="co">#&gt;   response.std.error response.conf.low response.conf.high group n estimable</span></span>
-<span><span class="co">#&gt; 1         0.03034579         0.4743527          0.6107968   A   3      TRUE</span></span>
-<span><span class="co">#&gt; 2         0.03166332         0.5636524          0.7060264   A   3      TRUE</span></span>
-<span><span class="co">#&gt; 3         0.01536127         0.8760708          0.9469180    B  3      TRUE</span></span>
-<span><span class="co">#&gt; 4         0.02125403         0.1052064          0.2019331     C 5      TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;          Drug log10Dose   estimate std.error  df    conf.low  conf.high</span></span>
+<span><span class="co">#&gt; 1    Morphine  0.603011  0.1739917 0.1223041 Inf -0.06571997  0.4137034</span></span>
+<span><span class="co">#&gt; 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398</span></span>
+<span><span class="co">#&gt; 3 Phenadoxone  0.603011  2.4185555 0.2045918 Inf  2.01756299  2.8195480</span></span>
+<span><span class="co">#&gt; 4   Pethidine  0.603011 -1.7574624 0.1693986 Inf -2.08947760 -1.4254471</span></span>
+<span><span class="co">#&gt;    response response.std.error response.conf.low response.conf.high group n</span></span>
+<span><span class="co">#&gt; 1 0.5433885         0.03034579         0.4835759          0.6019756  A    3</span></span>
+<span><span class="co">#&gt; 2 0.6378583         0.03166332         0.5738120          0.6973562   B   3</span></span>
+<span><span class="co">#&gt; 3 0.9182314         0.01536127         0.8826288          0.9437231    C  3</span></span>
+<span><span class="co">#&gt; 4 0.1471084         0.02125403         0.1101238          0.1938091     D 5</span></span>
+<span><span class="co">#&gt;   estimable</span></span>
+<span><span class="co">#&gt; 1      TRUE</span></span>
+<span><span class="co">#&gt; 2      TRUE</span></span>
+<span><span class="co">#&gt; 3      TRUE</span></span>
+<span><span class="co">#&gt; 4      TRUE</span></span></code></pre></div>
 <p>For a glm the means are also given on the response scale (here
 probabilities); see <code><a href="../articles/response-scale.html">vignette("response-scale")</a></code>.</p>
 </div>

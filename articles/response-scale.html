@@ -114,15 +114,15 @@ doses.</p>
 <span><span class="va">pm_drug</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Drug"</span>, <span class="st">"estimate"</span>, <span class="st">"response"</span>, <span class="st">"response.std.error"</span>,</span>
 <span>                  <span class="st">"response.conf.low"</span>, <span class="st">"response.conf.high"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;          Drug   estimate  response response.std.error response.conf.low</span></span>
-<span><span class="co">#&gt; 1    Morphine  0.1739917 0.5433885         0.03034579         0.4743527</span></span>
-<span><span class="co">#&gt; 2     Amidone  0.5660805 0.6378583         0.03166332         0.5636524</span></span>
-<span><span class="co">#&gt; 3 Phenadoxone  2.4185555 0.9182314         0.01536127         0.8760708</span></span>
-<span><span class="co">#&gt; 4   Pethidine -1.7574624 0.1471084         0.02125403         0.1052064</span></span>
+<span><span class="co">#&gt; 1    Morphine  0.1739917 0.5433885         0.03034579         0.4835759</span></span>
+<span><span class="co">#&gt; 2     Amidone  0.5660805 0.6378583         0.03166332         0.5738120</span></span>
+<span><span class="co">#&gt; 3 Phenadoxone  2.4185555 0.9182314         0.01536127         0.8826288</span></span>
+<span><span class="co">#&gt; 4   Pethidine -1.7574624 0.1471084         0.02125403         0.1101238</span></span>
 <span><span class="co">#&gt;   response.conf.high</span></span>
-<span><span class="co">#&gt; 1          0.6107968</span></span>
-<span><span class="co">#&gt; 2          0.7060264</span></span>
-<span><span class="co">#&gt; 3          0.9469180</span></span>
-<span><span class="co">#&gt; 4          0.2019331</span></span></code></pre></div>
+<span><span class="co">#&gt; 1          0.6019756</span></span>
+<span><span class="co">#&gt; 2          0.6973562</span></span>
+<span><span class="co">#&gt; 3          0.9437231</span></span>
+<span><span class="co">#&gt; 4          0.1938091</span></span></code></pre></div>
 <p><code>estimate</code> is the log odds of a response at the mean log
 dose; <code>response</code> is the probability. The comparisons are
 tested on the log-odds scale, and each difference is the log of an odds
@@ -131,19 +131,19 @@ ratio:</p>
 <code class="sourceCode R"><span><span class="va">pm_drug</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>,</span>
 <span>                  <span class="st">"odds.ratio"</span>, <span class="st">"odds.ratio.conf.low"</span>, <span class="st">"odds.ratio.conf.high"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;        level1      level2   estimate      p.value odds.ratio</span></span>
-<span><span class="co">#&gt; 1    Morphine     Amidone -0.3920888 5.750270e-02  0.6756441</span></span>
-<span><span class="co">#&gt; 2    Morphine Phenadoxone -2.2445638 3.436176e-06  0.1059738</span></span>
-<span><span class="co">#&gt; 3     Amidone Phenadoxone -1.8524750 2.056205e-05  0.1568485</span></span>
-<span><span class="co">#&gt; 4    Morphine   Pethidine  1.9314541 1.150365e-05  6.8995356</span></span>
-<span><span class="co">#&gt; 5     Amidone   Pethidine  2.3235429 3.665914e-06 10.2117898</span></span>
-<span><span class="co">#&gt; 6 Phenadoxone   Pethidine  4.1760179 4.541004e-07 65.1060753</span></span>
+<span><span class="co">#&gt; 1    Morphine     Amidone -0.3920888 2.951890e-02  0.6756441</span></span>
+<span><span class="co">#&gt; 2    Morphine Phenadoxone -2.2445638 9.302021e-24  0.1059738</span></span>
+<span><span class="co">#&gt; 3     Amidone Phenadoxone -1.8524750 6.799382e-16  0.1568485</span></span>
+<span><span class="co">#&gt; 4    Morphine   Pethidine  1.9314541 4.069093e-18  6.8995356</span></span>
+<span><span class="co">#&gt; 5     Amidone   Pethidine  2.3235429 2.042589e-23 10.2117898</span></span>
+<span><span class="co">#&gt; 6 Phenadoxone   Pethidine  4.1760179 2.573901e-37 65.1060753</span></span>
 <span><span class="co">#&gt;   odds.ratio.conf.low odds.ratio.conf.high</span></span>
-<span><span class="co">#&gt; 1          0.44950381            1.0155531</span></span>
-<span><span class="co">#&gt; 2          0.06393713            0.1756481</span></span>
-<span><span class="co">#&gt; 3          0.09334124            0.2635646</span></span>
-<span><span class="co">#&gt; 4          4.16993639           11.4159036</span></span>
-<span><span class="co">#&gt; 5          6.02784628           17.2998191</span></span>
-<span><span class="co">#&gt; 6         31.06115941          136.4662854</span></span></code></pre></div>
+<span><span class="co">#&gt; 1          0.47465285            0.9617449</span></span>
+<span><span class="co">#&gt; 2          0.06840188            0.1641832</span></span>
+<span><span class="co">#&gt; 3          0.10004256            0.2459098</span></span>
+<span><span class="co">#&gt; 4          4.46008846           10.6732394</span></span>
+<span><span class="co">#&gt; 5          6.46763307           16.1234642</span></span>
+<span><span class="co">#&gt; 6         34.28884136          123.6204222</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm_drug</span>, type <span class="op">=</span> <span class="st">"response"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="response-scale_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>

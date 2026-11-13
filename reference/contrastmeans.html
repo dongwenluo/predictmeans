@@ -63,7 +63,7 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">Df</span>, <span class="va">permlist</span>,</span>
 <span>                vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
-<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
+<span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
 <span>                level<span class="op">=</span><span class="fl">0.05</span>, vcov<span class="op">=</span><span class="cn">NULL</span>, equivalence<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -124,18 +124,18 @@ over them (<code>"equal"</code>, the default, <code>"proportional"</code>, <code
 
 <dt id="arg-df-method">df_method<a class="anchor" aria-label="anchor" href="#arg-df-method"></a></dt>
 <dd><p>Denominator df: <code>"auto"</code> (Kenward-Roger for REML fits of <code>lmer</code>, <code>lme</code> and <code>gls</code>,
-Satterthwaite for ML <code>lmer</code> fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>), and
+Satterthwaite for ML fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>), and
 for <code>lmer</code>, <code>lme</code> and <code>gls</code> models <code>"between-within"</code> (SAS <code>DDFM=BETWITHIN</code>), and
 <code>"KR-expected"</code> (Kenward-Roger with the expected information, as <span class="pkg">pbkrtest</span>; <code>"Kenward-Roger"</code> uses
-the observed information, as SAS <code>DDFM=KR</code>); for <code>lme</code> and <code>gls</code> also <code>"Satterthwaite"</code>,
-<code>"Kenward-Roger"</code>, <code>"KR-expected"</code> and <code>"containment"</code> (<span class="pkg">nlme</span>'s or the residual df, as
+the observed information, as SAS <code>DDFM=KR</code>), <code>"KR-average"</code> (the average information, as Genstat); for <code>lme</code> and <code>gls</code> also <code>"Satterthwaite"</code>,
+<code>"Kenward-Roger"</code>, <code>"KR-expected"</code>, <code>"KR-average"</code> and <code>"containment"</code> (<span class="pkg">nlme</span>'s or the residual df, as
 predictmeans 1.x); see <code><a href="predictmeans.html">predictmeans</a></code>.</p></dd>
 
 
 <dt id="arg-joint">joint<a class="anchor" aria-label="anchor" href="#arg-joint"></a></dt>
 <dd><p>Logical: also test all the contrasts together (all of them zero), as <code><a href="pm_joint.html">pm_joint</a></code> does: an F
-test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML <code>lmer</code> fits)
-denominator df, <span class="pkg">nlme</span>'s df for ML <code>lme</code> fits, the residual df for other models (normal-based, i.e. chi-square /
+test with Kenward-Roger (REML fits, the scaled F of Kenward and Roger, 1997) or Satterthwaite (ML fits)
+denominator df, the residual df for other models (normal-based, i.e. chi-square /
 df1, when there is none). Contrasts that are linear combinations of others are dropped, so <code>df1</code> is the rank
 of <code>ctrmatrix</code>. With <code>permlist</code>, also a permutation p-value of the joint Wald F statistic, from the same
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is <code>FALSE</code>.</p></dd>

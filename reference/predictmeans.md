@@ -16,7 +16,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 ```
 
@@ -285,7 +285,22 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `"outer"` (products of each factor's own frequencies), `"cells"` (each
   mean weights the cells by their own frequencies) or `"flat"` (equal
   weights over the non-empty cells). The definitions are those of
-  emmeans.
+  emmeans. Empty cells (combinations of interacting factors without
+  data, not those absent by design, as for nested factors): with
+  `"equal"`, a mean that averages over them is the average of its
+  observed cells (as predictmeans 1.x, and ASReml and Genstat with
+  `PRESENT`), with a warning naming those means. Two such means average
+  over different cells, so their difference would also carry the effects
+  of the other factors; a pair with such a mean is therefore compared on
+  the cells both means have (column `over` of `pairs`; NA,
+  `over = "none"`, when they have none). In simulations comparing the
+  averages rejected 8-78% of true null hypotheses at the 5% level when
+  the other factor had an effect, the common cells 4-6%
+  (`dev/review-defaults.md` in the package sources).
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  and
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  do the same.
 
 - df_method:
 
@@ -298,11 +313,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   sources) F tests of repeated measures with missing values rejected 6%
   of true hypotheses at the 5% level with the observed information and
   8.5% with the expected. The two agree in balanced designs.
-  `"containment"` gives the SAS `DDFM=CONTAIN` df: the smallest rank
-  contribution to \\\[X Z\]\\ of the random effects that contain
-  `modelterm`, or the residual df when none does; all means and
-  comparisons of the term then share that df, and the unadjusted
-  covariance is used unless `vcov_adjust = TRUE` is given.
+  `"KR-average"` uses the average information of the REML iterations of
+  Genstat and ASReml (Gilmour, Thompson and Cullis 1995) and gives
+  Genstat's REML df; Genstat's SEDs are the unadjusted ones
+  (`vcov_adjust = FALSE`). `"containment"` gives the SAS `DDFM=CONTAIN`
+  df: the smallest rank contribution to \\\[X Z\]\\ of the random
+  effects that contain `modelterm`, or the residual df when none does;
+  all means and comparisons of the term then share that df, and the
+  unadjusted covariance is used unless `vcov_adjust = TRUE` is given.
   `"between-within"` gives the SAS `DDFM=BETWITHIN` df, for `lmer`,
   `lme` and `gls` models: the subject is the coarsest random-effect
   grouping (`lmer`, `lme`) or the grouping of the correlation structure
@@ -322,9 +340,14 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   log-likelihood, as SAS; its F tests are liberal when the covariance
   has several parameters), and `"containment"` gives nlme's df (`lme`)
   or the residual df (`gls`), as predictmeans 1.x. All are checked
-  against SAS PROC MIXED. ML fits of `lme` and `gls` use nlme's or the
-  residual df. For GLMMs (`glmer`, `glmmTMB`) `"auto"` is
-  `"inner-outer"`: the df of the level of the random effects at which
+  against SAS PROC MIXED. ML fits of `lme` and `gls` use Satterthwaite
+  from the ML log-likelihood, as ML `lmer` fits (lmerTest); before 2.0
+  they used nlme's or the residual df (`df_method = "containment"`). In
+  simulations of ML `gls` fits with an unstructured covariance the
+  residual df rejected 6.9% (t) and 9.3-11.7% (F) of true null
+  hypotheses, Satterthwaite 5.5% and 6.3-8.8%; fit by REML for
+  Kenward-Roger, which held 5%. For GLMMs (`glmer`, `glmmTMB`) `"auto"`
+  is `"inner-outer"`: the df of the level of the random effects at which
   each effect varies, nlme's rule (Pinheiro and Bates 2000), computed
   from the design and extended to crossed random effects; a contrast
   gets the smallest df of the coefficients it uses, and the means of a
@@ -334,7 +357,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
   is the check with few clusters. `"containment"` and `"between-within"`
   are also available for `glmer`, and `"inner-outer"` for `lmer` and
-  `lme`. Other choices are ignored for other model classes.
+  `lme`. `glm` models with a known dispersion (Poisson, binomial,
+  negative binomial) get z tests (`"asymptotic (z)"`), as emmeans and
+  SAS GLIMMIX; `"residual"` gives the t tests with the residual df of
+  predictmeans 1.x, which were conservative in simulations (0.3-4.5% of
+  true null hypotheses rejected at the 5% level, z tests 3.6-5.7%).
+  Other choices are ignored for other model classes.
 
 - vcov:
 
@@ -501,6 +529,10 @@ For `predictmeans` function, it is assumed that methods `coef`, `vcov`,
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008), *Simultaneous
 Inference in General Parametric Models. Biometrical*, Journal 50(3),
 346–363.
+
+Gilmour, A. R., Thompson, R. and Cullis, B. R. (1995), *Average
+information REML: an efficient algorithm for variance parameter
+estimation in linear mixed models*, Biometrics, 51(4), 1440-1450.
 
 Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 *Prediction in linear mixed models*, Australian and New Zealand Journal

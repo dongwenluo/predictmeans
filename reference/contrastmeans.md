@@ -9,7 +9,7 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), joint=FALSE,
+                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
                 level=0.05, vcov=NULL, equivalence=NULL)
 ```
 
@@ -86,14 +86,15 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 - df_method:
 
   Denominator df: `"auto"` (Kenward-Roger for REML fits of `lmer`, `lme`
-  and `gls`, Satterthwaite for ML `lmer` fits), `"Kenward-Roger"`,
+  and `gls`, Satterthwaite for ML fits), `"Kenward-Roger"`,
   `"Satterthwaite"` or `"containment"` (SAS `DDFM=CONTAIN`), and for
   `lmer`, `lme` and `gls` models `"between-within"` (SAS
   `DDFM=BETWITHIN`), and `"KR-expected"` (Kenward-Roger with the
   expected information, as pbkrtest; `"Kenward-Roger"` uses the observed
-  information, as SAS `DDFM=KR`); for `lme` and `gls` also
-  `"Satterthwaite"`, `"Kenward-Roger"`, `"KR-expected"` and
-  `"containment"` (nlme's or the residual df, as predictmeans 1.x); see
+  information, as SAS `DDFM=KR`), `"KR-average"` (the average
+  information, as Genstat); for `lme` and `gls` also `"Satterthwaite"`,
+  `"Kenward-Roger"`, `"KR-expected"`, `"KR-average"` and `"containment"`
+  (nlme's or the residual df, as predictmeans 1.x); see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
 - joint:
@@ -101,14 +102,13 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   Logical: also test all the contrasts together (all of them zero), as
   [`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
   does: an F test with Kenward-Roger (REML fits, the scaled F of Kenward
-  and Roger, 1997) or Satterthwaite (ML `lmer` fits) denominator df,
-  nlme's df for ML `lme` fits, the residual df for other models
-  (normal-based, i.e. chi-square / df1, when there is none). Contrasts
-  that are linear combinations of others are dropped, so `df1` is the
-  rank of `ctrmatrix`. With `permlist`, also a permutation p-value of
-  the joint Wald F statistic, from the same permutations (for
-  Freedman-Lane, the model with all the contrasts zero). The default is
-  `FALSE`.
+  and Roger, 1997) or Satterthwaite (ML fits) denominator df, the
+  residual df for other models (normal-based, i.e. chi-square / df1,
+  when there is none). Contrasts that are linear combinations of others
+  are dropped, so `df1` is the rank of `ctrmatrix`. With `permlist`,
+  also a permutation p-value of the joint Wald F statistic, from the
+  same permutations (for Freedman-Lane, the model with all the contrasts
+  zero). The default is `FALSE`.
 
 - level:
 

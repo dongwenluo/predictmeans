@@ -13,8 +13,10 @@ In short:
 - **A mean that averages over an empty cell** (e.g. the mean of a
   nitrogen level over the varieties when one variety lacks that level)
   keeps the rule of predictmeans 1.x: it is the average of the observed
-  cells, with a warning. Such a mean is not comparable with the means
-  that average over all cells.
+  cells, with a warning naming it.
+- **Its comparisons** with other means are made on the cells both means
+  have (column `over` of `pairs`), not as the difference of two averages
+  over different cells.
 - **Means that the data cannot determine** (because factors are
   confounded) are `NA`, with a message. Their pairwise differences are
   still given when they can be estimated, and letters are given among
@@ -64,8 +66,9 @@ warns:
 ``` r
 
 pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
-#> Warning in Kmatrix(model, modelterm, covariate, data = data, prtnum = prtnum, :
-#> Missing treatments' combination appeared, predicted means maybe misleading!
+#> Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only
+#> its observed cells; comparisons with it use only the cells that the compared
+#> means all have (column 'over' of the pairs).
 pm_n$means[, c("N", "estimate", "std.error", "n")]
 #>     N  estimate std.error  n
 #> 1   0  79.38889  6.972348 18
@@ -76,8 +79,48 @@ pm_n$means[, c("N", "estimate", "std.error", "n")]
 
 That mean leaves out Victory, the lowest-yielding variety at the other
 nitrogen levels, so it is too high compared with the others; emmeans
-calls it non-estimable. Comparisons that stay within the observed cells
-are sound, e.g. nitrogen levels within each variety:
+calls it non-estimable. The difference 125.8 − 79.4 = 46.4 would mix the
+nitrogen effect with the variety effect (Victory is in the mean of N = 0
+but not in that of 0.6). So predictmeans compares N = 0.6 with each
+other level on the varieties both have, Golden Rain and Marvellous
+(column `over`): 0.6 − 0 is the average of their two differences, 42.5.
+Pairs among the complete levels are the differences of the means as
+usual:
+
+``` r
+
+pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+pm_n2$pairs[, c("level1", "level2", "over", "estimate", "std.error", "p.value")]
+#>   level1 level2                            over   estimate std.error
+#> 1      0    0.2                            <NA> -19.500000  4.469636
+#> 2      0    0.4                            <NA> -34.833333  4.469636
+#> 3    0.2    0.4                            <NA> -15.333333  4.469636
+#> 4      0    0.6 Variety Golden Rain, Marvellous -42.500000  5.474164
+#> 5    0.2    0.6 Variety Golden Rain, Marvellous -22.333333  5.474164
+#> 6    0.4    0.6 Variety Golden Rain, Marvellous  -9.916667  5.474164
+#>        p.value
+#> 1 8.760703e-05
+#> 2 1.494073e-09
+#> 3 1.409747e-03
+#> 4 1.639811e-09
+#> 5 2.085466e-04
+#> 6 7.755869e-02
+```
+
+Comparing the two averages instead would wrongly call 0.6 and 0.4
+different here (p = 0.03 against 0.08 on the common varieties). In
+simulations (`dev/review-defaults.md` in the package sources) comparing
+averages over different cells rejected 8–78% of true null hypotheses
+when the other factor had an effect; comparing on the common cells 4–6%.
+When two means have no cell in common their difference is NA
+(`over = "none"`).
+[`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+tests a term on the cells common to all its means, and
+[`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+compares on the cells the means of each contrast have in common.
+
+Other comparisons that stay within the observed cells are sound too,
+e.g. nitrogen levels within each variety:
 
 ``` r
 

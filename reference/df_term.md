@@ -7,7 +7,7 @@ model using "Kenward-Roger" or "Satterthwaite" method.
 
 ``` r
 df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected"), vcov_adj=NULL)
+          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), vcov_adj=NULL)
 ```
 
 ## Arguments
@@ -48,7 +48,8 @@ df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
   "Kenward-Roger" uses the observed information of the variance
   parameters, as SAS `DDFM=KR`; "KR-expected" the expected information,
-  as pbkrtest and emmeans.
+  as pbkrtest and emmeans; "KR-average" the average information, as
+  Genstat.
 
 - vcov_adj:
 

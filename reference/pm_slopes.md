@@ -11,7 +11,7 @@ and SAS `ESTIMATE` statements on slope terms.
 
 ``` r
 pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
           vcov_adjust = TRUE,
           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```

@@ -65,7 +65,7 @@ compared within each level of the <code>by</code> factor(s): the test of <code>n
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pm_joint</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, by <span class="op">=</span> <span class="cn">NULL</span>, ctrmatrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>         df_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>,</span>
+<span>         df_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>,</span>
 <span>         weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>, vcov <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -122,24 +122,35 @@ the Wald F with this covariance, and the denominator df those of the model's own
 <dd><p>(<code>lmer</code>, <code>lme</code>, <code>gls</code>) Kenward-Roger with the expected information, as
   <code><a href="https://rdrr.io/pkg/pbkrtest/man/kr__modcomp.html" class="external-link">pbkrtest::KRmodcomp()</a></code> (see <code><a href="predictmeans.html">predictmeans</a></code>).</p></dd>
 
+<dt>KR-average</dt>
+<dd><p>(<code>lmer</code>, <code>lme</code>, <code>gls</code>) Kenward-Roger with the average information: Genstat's REML
+  df (Genstat's F statistic is the unscaled Wald F).</p></dd>
+
 <dt>between-within</dt>
 <dd><p>(<code>lmer</code>, <code>lme</code>, <code>gls</code>) the Wald F with the between-within df of
   <code>modelterm</code> (SAS <code>DDFM=BETWITHIN</code>; see <code><a href="predictmeans.html">predictmeans</a></code>).</p></dd>
 
-<dt><code>lme</code>, <code>gls</code> with <code>df_method = "Satterthwaite"</code>, <code>"Kenward-Roger"</code> or <code>"KR-expected"</code></dt>
+<dt><code>lme</code>, <code>gls</code> with <code>df_method = "Satterthwaite"</code>, <code>"Kenward-Roger"</code>, <code>"KR-expected"</code> or <code>"KR-average"</code></dt>
 <dd><p>as for <code>lmer</code> (Satterthwaite df of the
   F test, lmerTest's rule).</p></dd>
 
 <dt><code>lme</code>, <code>gls</code></dt>
-<dd><p>Kenward-Roger for REML fits (the default), as for <code>lmer</code>; with
-  <code>df_method = "containment"</code> (and for ML fits) the Wald F with <span class="pkg">nlme</span>'s df of <code>modelterm</code> (as
+<dd><p>Kenward-Roger for REML fits and Satterthwaite for ML fits (the defaults), as for
+  <code>lmer</code>; with <code>df_method = "containment"</code> the Wald F with <span class="pkg">nlme</span>'s df of <code>modelterm</code> (as
   <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code>; <code>"containment (nlme)"</code>) or the residual df (<code>gls</code>).</p></dd>
+
+<dt><code>glm</code> with a known dispersion</dt>
+<dd><p>(Poisson, binomial, negative binomial) the Wald chi-square / df
+  (denominator df <code>Inf</code>); <code>df_method = "residual"</code>: the residual df, as predictmeans 1.x.</p></dd>
 
 <dt>other models</dt>
 <dd><p>the Wald F with the residual df (normal-based when there is none).</p></dd>
 
 
 </dl><p>Contrasts that are linear combinations of others are dropped, so <code>df1</code> is the rank of the set.
+Without <code>ctrmatrix</code>, each set is written as each level against the last (SAS's Type 3 basis): Wald and
+Kenward-Roger F tests do not depend on the basis, but the Satterthwaite df of a test with several df do (Fai and
+Cornelius 1996), and with this basis they equal SAS's.
 <code><a href="https://rvlenth.github.io/emmeans/reference/joint_tests.html" class="external-link">emmeans::joint_tests()</a></code> gives a slightly different Kenward-Roger test (the unscaled F with its own df).</p>
     </div>
     <div class="section level2">

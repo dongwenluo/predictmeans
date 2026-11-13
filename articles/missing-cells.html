@@ -91,8 +91,11 @@ shown.</li>
 <strong>A mean that averages over an empty cell</strong> (e.g. the
 mean of a nitrogen level over the varieties when one variety lacks that
 level) keeps the rule of predictmeans 1.x: it is the average of the
-observed cells, with a warning. Such a mean is not comparable with the
-means that average over all cells.</li>
+observed cells, with a warning naming it.</li>
+<li>
+<strong>Its comparisons</strong> with other means are made on the
+cells both means have (column <code>over</code> of <code>pairs</code>),
+not as the difference of two averages over different cells.</li>
 <li>
 <strong>Means that the data cannot determine</strong> (because
 factors are confounded) are <code>NA</code>, with a message. Their
@@ -131,8 +134,9 @@ varieties have data, so its mean is their average, and predictmeans
 warns:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm_n</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in Kmatrix(model, modelterm, covariate, data = data, prtnum = prtnum, :</span></span>
-<span><span class="co">#&gt; Missing treatments' combination appeared, predicted means maybe misleading!</span></span>
+<span><span class="co">#&gt; Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only</span></span>
+<span><span class="co">#&gt; its observed cells; comparisons with it use only the cells that the compared</span></span>
+<span><span class="co">#&gt; means all have (column 'over' of the pairs).</span></span>
 <span><span class="va">pm_n</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"N"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     N  estimate std.error  n</span></span>
 <span><span class="co">#&gt; 1   0  79.38889  6.972348 18</span></span>
@@ -141,9 +145,42 @@ warns:</p>
 <span><span class="co">#&gt; 4 0.6 125.83333  7.471667 12</span></span></code></pre></div>
 <p>That mean leaves out Victory, the lowest-yielding variety at the
 other nitrogen levels, so it is too high compared with the others;
-emmeans calls it non-estimable. Comparisons that stay within the
-observed cells are sound, e.g. nitrogen levels within each variety:</p>
+emmeans calls it non-estimable. The difference 125.8 − 79.4 = 46.4 would
+mix the nitrogen effect with the variety effect (Victory is in the mean
+of N = 0 but not in that of 0.6). So predictmeans compares N = 0.6 with
+each other level on the varieties both have, Golden Rain and Marvellous
+(column <code>over</code>): 0.6 − 0 is the average of their two
+differences, 42.5. Pairs among the complete levels are the differences
+of the means as usual:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pm_n2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pm_n2</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"over"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2                            over   estimate std.error</span></span>
+<span><span class="co">#&gt; 1      0    0.2                            &lt;NA&gt; -19.500000  4.469636</span></span>
+<span><span class="co">#&gt; 2      0    0.4                            &lt;NA&gt; -34.833333  4.469636</span></span>
+<span><span class="co">#&gt; 3    0.2    0.4                            &lt;NA&gt; -15.333333  4.469636</span></span>
+<span><span class="co">#&gt; 4      0    0.6 Variety Golden Rain, Marvellous -42.500000  5.474164</span></span>
+<span><span class="co">#&gt; 5    0.2    0.6 Variety Golden Rain, Marvellous -22.333333  5.474164</span></span>
+<span><span class="co">#&gt; 6    0.4    0.6 Variety Golden Rain, Marvellous  -9.916667  5.474164</span></span>
+<span><span class="co">#&gt;        p.value</span></span>
+<span><span class="co">#&gt; 1 8.760703e-05</span></span>
+<span><span class="co">#&gt; 2 1.494073e-09</span></span>
+<span><span class="co">#&gt; 3 1.409747e-03</span></span>
+<span><span class="co">#&gt; 4 1.639811e-09</span></span>
+<span><span class="co">#&gt; 5 2.085466e-04</span></span>
+<span><span class="co">#&gt; 6 7.755869e-02</span></span></code></pre></div>
+<p>Comparing the two averages instead would wrongly call 0.6 and 0.4
+different here (p = 0.03 against 0.08 on the common varieties). In
+simulations (<code>dev/review-defaults.md</code> in the package sources)
+comparing averages over different cells rejected 8–78% of true null
+hypotheses when the other factor had an effect; comparing on the common
+cells 4–6%. When two means have no cell in common their difference is NA
+(<code>over = "none"</code>). <code><a href="../reference/pm_joint.html">pm_joint()</a></code> tests a term on
+the cells common to all its means, and <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>
+compares on the cells the means of each contrast have in common.</p>
+<p>Other comparisons that stay within the observed cells are sound too,
+e.g. nitrogen levels within each variety:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                     prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">within</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pm_v</span><span class="op">$</span><span class="va">pairs</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">by</span><span class="op">)</span><span class="op">)</span></span>
@@ -157,7 +194,7 @@ observed cells are sound, e.g. nitrogen levels within each variety:</p>
 <span><span class="co">#&gt; 23    0:Marvellous  0.4:Marvellous  Marvellous -30.50000 0.0017427519</span></span></code></pre></div>
 <p>or contrasts written with <code><a href="../reference/specify_contrast.html">specify_contrast()</a></code>, which
 refuses means that cannot be estimated:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/specify_contrast.html">specify_contrast</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span>,</span>
 <span>  N_effect_GR_and_M <span class="op">=</span> <span class="op">(</span><span class="va">`0.6:Golden Rain`</span> <span class="op">+</span> <span class="va">`0.6:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span> <span class="op">-</span> <span class="op">(</span><span class="va">`0:Golden Rain`</span> <span class="op">+</span> <span class="va">`0:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
@@ -173,7 +210,7 @@ refuses means that cannot be estimated:</p>
 </h2>
 <p>In this spray trial the highest spray volume was used only with fine
 droplets, and the other two volumes only with medium droplets:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">spray</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  droplet <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"medium"</span>, <span class="st">"fine"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"medium"</span>, <span class="st">"fine"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -190,7 +227,7 @@ droplets, and the other two volumes only with medium droplets:</p>
 factors, the effect of volume 400 cannot be told apart from that of fine
 droplets. A volume mean averaged over both droplet sizes needs both, so
 none of the volume means can be estimated:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">droplet</span> <span class="op">+</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">vol</span>, data <span class="op">=</span> <span class="va">spray</span><span class="op">)</span></span>
 <span><span class="va">pv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fs</span>, <span class="st">"vol"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Means that cannot be estimated are shown as NA: 130, 200, 400. Their pairwise differences are shown when estimable. If factors are confounded or cells are empty, weights = "cells" averages over the observed cells only.</span></span>
@@ -211,7 +248,7 @@ only.</p>
 averages over the observed combinations only, weighting them by their
 numbers of observations; these means depend on how the data happen to be
 spread over the other factors:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fs</span>, <span class="st">"vol"</span>, weights <span class="op">=</span> <span class="st">"cells"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vol"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   vol estimate  std.error</span></span>
 <span><span class="co">#&gt; 1 130 4.987406 0.03951695</span></span>
@@ -221,7 +258,7 @@ spread over the other factors:</p>
 size. The means of the observed droplet–volume combinations, averaged
 equally over <code>conc</code>, are then estimable (and equal to what
 emmeans gives after detecting the nesting):</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">droplet</span><span class="op">/</span><span class="va">vol</span>, data <span class="op">=</span> <span class="va">spray</span><span class="op">)</span></span>
 <span><span class="va">pn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fs2</span>, <span class="st">"droplet:vol"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pn</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"droplet"</span>, <span class="st">"vol"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"n"</span>, <span class="st">"group"</span><span class="op">)</span><span class="op">]</span></span>

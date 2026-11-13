@@ -11,7 +11,7 @@ rows are tested together.
 
 ``` r
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"),
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```
 
@@ -86,30 +86,46 @@ The F statistic and its denominator degrees of freedom follow the model:
   (see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
 
+- KR-average:
+
+  (`lmer`, `lme`, `gls`) Kenward-Roger with the average information:
+  Genstat's REML df (Genstat's F statistic is the unscaled Wald F).
+
 - between-within:
 
   (`lmer`, `lme`, `gls`) the Wald F with the between-within df of
   `modelterm` (SAS `DDFM=BETWITHIN`; see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
 
-- `lme`, `gls` with `df_method = "Satterthwaite"`, `"Kenward-Roger"` or
-  `"KR-expected"`:
+- `lme`, `gls` with `df_method = "Satterthwaite"`, `"Kenward-Roger"`,
+  `"KR-expected"` or `"KR-average"`:
 
   as for `lmer` (Satterthwaite df of the F test, lmerTest's rule).
 
 - `lme`, `gls`:
 
-  Kenward-Roger for REML fits (the default), as for `lmer`; with
-  `df_method = "containment"` (and for ML fits) the Wald F with nlme's
-  df of `modelterm` (as [`anova()`](https://rdrr.io/r/stats/anova.html);
+  Kenward-Roger for REML fits and Satterthwaite for ML fits (the
+  defaults), as for `lmer`; with `df_method = "containment"` the Wald F
+  with nlme's df of `modelterm` (as
+  [`anova()`](https://rdrr.io/r/stats/anova.html);
   `"containment (nlme)"`) or the residual df (`gls`).
+
+- `glm` with a known dispersion:
+
+  (Poisson, binomial, negative binomial) the Wald chi-square / df
+  (denominator df `Inf`); `df_method = "residual"`: the residual df, as
+  predictmeans 1.x.
 
 - other models:
 
   the Wald F with the residual df (normal-based when there is none).
 
 Contrasts that are linear combinations of others are dropped, so `df1`
-is the rank of the set.
+is the rank of the set. Without `ctrmatrix`, each set is written as each
+level against the last (SAS's Type 3 basis): Wald and Kenward-Roger F
+tests do not depend on the basis, but the Satterthwaite df of a test
+with several df do (Fai and Cornelius 1996), and with this basis they
+equal SAS's.
 [`emmeans::joint_tests()`](https://rvlenth.github.io/emmeans/reference/joint_tests.html)
 gives a slightly different Kenward-Roger test (the unscaled F with its
 own df).

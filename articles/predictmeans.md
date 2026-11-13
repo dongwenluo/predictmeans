@@ -154,10 +154,11 @@ Kenward–Roger uses the observed information of the variance parameters,
 as SAS does; `"KR-expected"` uses the expected information, as pbkrtest
 and emmeans. The two agree in balanced designs; with missing values only
 the observed information is valid, and in simulations it kept the 5%
-level where the expected one rejected 8.5% of true hypotheses. For `lme`
-and `gls` models with correlation or variance structures,
-`"Satterthwaite"`, `"Kenward-Roger"` and `"KR-expected"` are available
-too.
+level where the expected one rejected 8.5% of true hypotheses.
+`"KR-average"` uses the average information of Genstat’s REML and gives
+Genstat’s df (with `vcov_adjust = FALSE`, also its SEDs). For `lme` and
+`gls` models with correlation or variance structures, `"Satterthwaite"`,
+`"Kenward-Roger"`, `"KR-expected"` and `"KR-average"` are available too.
 [`vignette("sas", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/sas.md)
 shows how each matches SAS PROC MIXED.
 
@@ -231,16 +232,21 @@ through transformations such as
 data(Drug)
 fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
 predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$means
-#>          Drug log10Dose   estimate std.error df   conf.low  conf.high  response
-#> 1    Morphine  0.603011  0.1739917 0.1223041  9 -0.1026794  0.4506629 0.5433885
-#> 2     Amidone  0.603011  0.5660805 0.1370736  9  0.2559986  0.8761625 0.6378583
-#> 3 Phenadoxone  0.603011  2.4185555 0.2045918  9  1.9557367  2.8813742 0.9182314
-#> 4   Pethidine  0.603011 -1.7574624 0.1693986  9 -2.1406687 -1.3742560 0.1471084
-#>   response.std.error response.conf.low response.conf.high group n estimable
-#> 1         0.03034579         0.4743527          0.6107968   A   3      TRUE
-#> 2         0.03166332         0.5636524          0.7060264   A   3      TRUE
-#> 3         0.01536127         0.8760708          0.9469180    B  3      TRUE
-#> 4         0.02125403         0.1052064          0.2019331     C 5      TRUE
+#>          Drug log10Dose   estimate std.error  df    conf.low  conf.high
+#> 1    Morphine  0.603011  0.1739917 0.1223041 Inf -0.06571997  0.4137034
+#> 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398
+#> 3 Phenadoxone  0.603011  2.4185555 0.2045918 Inf  2.01756299  2.8195480
+#> 4   Pethidine  0.603011 -1.7574624 0.1693986 Inf -2.08947760 -1.4254471
+#>    response response.std.error response.conf.low response.conf.high group n
+#> 1 0.5433885         0.03034579         0.4835759          0.6019756  A    3
+#> 2 0.6378583         0.03166332         0.5738120          0.6973562   B   3
+#> 3 0.9182314         0.01536127         0.8826288          0.9437231    C  3
+#> 4 0.1471084         0.02125403         0.1101238          0.1938091     D 5
+#>   estimable
+#> 1      TRUE
+#> 2      TRUE
+#> 3      TRUE
+#> 4      TRUE
 ```
 
 For a glm the means are also given on the response scale (here

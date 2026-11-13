@@ -181,6 +181,12 @@ factor's own frequencies), <code>"cells"</code> (each mean weights the cells by 
  evaluated on <code>grid</code>, e.g. the smooth terms of a <code>semireg</code> model, can be averaged in the same way as
  <code>W %*% basis</code>.</p></dd>
 
+ <dt>empty_cells</dt>
+<dd><p><code>NULL</code>, or when some means average over empty cells (<code>weights = "equal"</code>; see
+ <code><a href="predictmeans.html">predictmeans</a></code>): <code>affected</code>, which rows of <code>K</code> do so, <code>missing</code>, the empty cells, and
+ <code>compare(C, together = FALSE)</code>, which gives comparisons <code>C</code> (rows over the rows of <code>K</code>) on the
+ cells their means have in common (<code>together = TRUE</code>: the cells common to all the means of <code>C</code>).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
