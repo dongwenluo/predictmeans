@@ -637,6 +637,13 @@
 
 ## Speed
 
+* Satterthwaite and Kenward-Roger df for `lme` and `gls` models build the
+  covariance of the data as a sparse matrix, block diagonal by subject, so the
+  time grows about linearly with the data: an unstructured `gls` with 2000
+  observations takes 3 s (was about 70 s), an `lme` random-intercept model
+  with 8000 observations under 1 s. Results are unchanged (to 1e-9, the
+  accuracy of the numerical derivatives).
+
 * Satterthwaite df (used for `lmer` models fitted by ML, and by
   `df_term(type = "Satterthwaite")`) are computed for all contrasts at once
   from ingredients computed once per model. They equal lmerTest's values,
