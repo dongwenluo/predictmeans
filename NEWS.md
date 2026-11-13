@@ -2,6 +2,15 @@
 
 ## Changes that affect results or scripts
 
+* **Type III tests no longer depend on the model's contrasts** (`permmodels(type
+  = "III")` and its tables). They are the tests of sum-to-zero contrasts, as SAS
+  Type 3, computed from the model's own coefficients without refitting. Before,
+  as `car::Anova()`, a model fitted with R's default treatment contrasts had
+  each main effect tested at the first level of the other factors. Oats with a
+  whole plot missing: Variety F 1.28 on 8.26 df and Nitro 37.92, as SAS (were
+  1.17 on 22.1 and 12.41). Interactions, and models fitted with sum-to-zero
+  contrasts, are unchanged.
+
 * Comparisons of means over empty cells match only the factors whose effects
   the two means share: with `Sample_date/Farm` in the model, two dates are no
   longer matched on farms (each date has its own farm effects), which gave NA

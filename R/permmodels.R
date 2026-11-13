@@ -13,6 +13,9 @@
 #'   \code{glmer} or \code{glmmTMB}.
 #' @param nperm The number of permutations. The default is 4999.
 #' @param type type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
+#'   Type III tests are those of sum-to-zero contrasts whatever contrasts the model was fitted with (as SAS Type 3);
+#'   \code{car::Anova()} gives them only for models fitted with such contrasts (with R's default treatment contrasts
+#'   it tests each main effect at the first level of the other factors).
 #' @param test.statistic For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
 #'   Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.
 #'   The F tests of an \code{lmer} model are Kenward-Roger F tests with the observed information of the variance

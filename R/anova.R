@@ -130,10 +130,9 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   } else {
     names <- names_all
     stat <- df <- res_df <- pval <- rep(0, length(names))
+    map <- pm_type3_map(model, names(b))
     for (term in seq_along(names)) {
-      subs <- which(assign == term - intercept)
-      H <- I.p[subs, , drop = FALSE][, not_aliased, drop = FALSE]
-      H <- H[!apply(H, 1, function(x) all(x == 0)), , drop = FALSE]
+      H <- pm_type3_hyp(map, term - intercept)       # sum-to-zero coding, whatever the model's
       if (nrow(H) == 0) {
         stat[term] <- NA; df[term] <- 0
         next
@@ -185,6 +184,7 @@ pm_anova_lm <- function(model, type) {
   b <- b_all[not_aliased]
   V <- as.matrix(stats::vcov(model))
   s2 <- summary(model)$sigma^2
+  if (type == "III") map <- pm_type3_map(model, names(b))
   assign <- model$assign
   assign[!not_aliased] <- NA
   I.p <- diag(length(b_all))
@@ -205,9 +205,7 @@ pm_anova_lm <- function(model, type) {
     names <- if (intercept) c("(Intercept)", term_names) else term_names
     SS <- df <- rep(0, length(names))
     for (term in seq_along(names)) {
-      subs <- which(assign == term - intercept)
-      H <- I.p[subs, , drop = FALSE][, not_aliased, drop = FALSE]
-      H <- H[!apply(H, 1, function(x) all(x == 0)), , drop = FALSE]
+      H <- pm_type3_hyp(map, term - intercept)       # sum-to-zero coding, whatever the model's
       if (nrow(H) == 0) { SS[term] <- NA; df[term] <- 0; next }
       SS[term] <- s2 * pm_wald_chisq(H, b, V)
       df[term] <- nrow(H)
@@ -286,16 +284,22 @@ pm_anova_glm_II <- function(model, test = c("LR", "F")) {
 }
 
 ## glm type III: LR or F tests from drop1() (car's Anova.III.LR.glm / Anova.III.F.glm).
+## The term's columns are dropped from the sum-to-zero design (pm_type3_map()),
+## so the tests do not depend on the model's contrasts.
 pm_anova_glm_III <- function(model, test = c("LR", "F")) {
   test <- match.arg(test)
   if (any(is.na(stats::coef(model)))) stop("there are aliased coefficients in the model")
   Source <- labels(stats::terms(model))
   n <- length(Source)
   stat <- df <- rep(0, n)
+  g <- pm_glm_parts(model)
+  map <- pm_type3_map(model, names(stats::coef(model)))
   for (term in seq_len(n)) {
-    d1 <- stats::drop1(model, scope = eval(parse(text = paste("~", Source[term]))))
-    df[term] <- d1$Df[2]
-    stat[term] <- d1$Deviance[2]
+    drop <- map$assign == term
+    f1 <- stats::glm.fit(map$Xs[, !drop, drop = FALSE], g$y, g$wt, offset = g$offset, family = g$family,
+                         control = g$control)
+    df[term] <- sum(drop)
+    stat[term] <- stats::deviance(f1)
   }
   resp <- paste("Response:", pm_response_name(model))
   if (test == "LR") {
@@ -337,4 +341,43 @@ pm_type1_F <- function(Ls, b, V) {
     as.numeric(crossprod(d, solve(L %*% V %*% t(L), d))) / nrow(L)
   }, numeric(1))
   matrix(Fv, ncol = 1, dimnames = list(names(Ls), "F value"))
+}
+
+## Type III hypotheses that do not depend on the model's contrasts.
+##
+## A term's Type III hypothesis is that its coefficients are zero when the
+## factors are coded with sum-to-zero contrasts (SAS's Type 3 for complete
+## data; car::Anova() gives it only for models fitted with such contrasts:
+## with R's default treatment contrasts it tests each main effect at the
+## first level of the other factors). Both codings span the same fitted
+## values, so the sum-to-zero coefficients are a linear function of the
+## model's own, beta_sum = B beta with B = (X_sum' X_sum)^-1 X_sum' X, and the
+## hypothesis of term j is B[term j, ] beta = 0: no refit.
+## Returns list(B, assign (term of each row of B; 0 = intercept), Xs (the
+## sum-to-zero design, rows as the model frame)).
+pm_type3_map <- function(model, coef_names) {
+  tt <- if (inherits(model, "merMod")) stats::terms(model, fixed.only = TRUE) else stats::terms(model)
+  tt <- stats::delete.response(tt)
+  dat <- if (inherits(model, c("lme", "gls"))) pm_get_data(model) else stats::model.frame(model)
+  mf <- stats::model.frame(tt, dat, na.action = stats::na.omit)
+  facs <- names(mf)[vapply(mf, function(v) is.factor(v) || is.character(v), logical(1))]
+  ctr <- pm_contrasts(model)
+  if (inherits(model, "merMod")) ctr <- attr(lme4::getME(model, "X"), "contrasts")
+  ctr <- ctr[intersect(names(ctr), facs)]
+  X <- stats::model.matrix(tt, mf, contrasts.arg = if (length(ctr)) ctr)
+  if (!all(coef_names %in% colnames(X))) stop("cannot rebuild the model matrix for Type III tests", call. = FALSE)
+  X <- X[, coef_names, drop = FALSE]
+  Xs <- stats::model.matrix(tt, mf, contrasts.arg = if (length(facs)) stats::setNames(rep(list("contr.sum"), length(facs)), facs))
+  qs <- qr(Xs)
+  if (qs$rank < ncol(Xs) || qr(X)$rank < ncol(Xs)) stop("there are aliased coefficients in the model")
+  B <- qr.coef(qs, X)
+  if (max(abs(Xs %*% B - X)) > 1e-8 * max(1, abs(X))) stop("cannot map the model's coefficients to sum-to-zero contrasts")
+  dimnames(B) <- list(colnames(Xs), coef_names)
+  list(B = B, assign = attr(Xs, "assign"), Xs = Xs)
+}
+
+## The Type III hypothesis matrix of term j (0 = intercept), from pm_type3_map().
+pm_type3_hyp <- function(map, j) {
+  H <- map$B[map$assign == j, , drop = FALSE]
+  H[apply(abs(H), 1, max) > 1e-12, , drop = FALSE]
 }
