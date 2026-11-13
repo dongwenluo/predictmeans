@@ -2,6 +2,14 @@
 
 ## Changes that affect results or scripts
 
+* New tests from the examples of *Experimental Design and Analysis for Tree
+  Improvement*, against Genstat and SAS runs: nested treatments (Genstat's
+  means, which average over the treatments that exist; SAS and emmeans
+  weight by the nesting), a split plot (Genstat's SEDs, and its 14.69 df for
+  comparisons across strata, equal to predictmeans' Kenward-Roger df), an
+  incomplete site-by-seedlot table (SAS LS-means) and families as random
+  effects (SAS PROC MIXED).
+
 * **GLMMs (`glmer`, `glmmTMB`) get the df of the grouping level at which
   each effect varies** (`df_method = "inner-outer"`, the new default), in
   place of the residual df (n minus parameters). This is nlme's rule
