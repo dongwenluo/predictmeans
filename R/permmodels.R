@@ -164,13 +164,14 @@ NULL
 ## Statistics kept from one permutation refit: coefficients and covariance
 ## (for permlist), the ANOVA table and the t table. For lmer refits the t
 ## values are computed from that covariance (as summary() does) instead of
-## calling summary(), which would compute it again.
-pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL) {
+## calling summary(), which would compute it again. 'map3': the Type III map
+## of the observed fit (R/anova.R), the same for every refit.
+pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL, map3 = NULL) {
   mp <- mymodelparm(rfitmodel, df = 0)[1:2]
   if (type %in% c("I", "1")) {
     # lmer: lmerTest's type I F (Wald tests of the hypotheses Ls), as in the observed table
     aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else anova(rfitmodel)
-  } else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic)
+  } else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic, type3_map=map3)
   if (inherits(rfitmodel, "lmerMod")) {
     se <- sqrt(diag(mp$vcov))
     coefT <- cbind("Estimate" = mp$coef, "Std. Error" = se, "t value" = mp$coef/se)
@@ -232,7 +233,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       d <- mod_df
       d[yname] <- mod_df[idx[, k], yname, drop = FALSE]
       rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic)
+      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic, map3 = map3)
     }
     packages <- character()
   }
@@ -270,7 +271,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       d <- mod_df
       d[, yname] <- xbeta[r] + W$mult(wterrors[r])
       rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic)
+      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic, map3 = map3)
     }
     packages <- "nlme"
   }
@@ -296,11 +297,16 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     one <- function(k) {
       r <- idx[, k]
       rfitmodel <- refit(model, xbeta[r] + W$mult(wterrors[r]))
-      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test.statistic, Ls)
+      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test.statistic, Ls, map3)
     }
     packages <- "lme4"
   }
 
+  # the Type III map depends only on the design, which the refits share
+  map3 <- if (type %in% c("III", "3")) tryCatch({
+    b0 <- pm_coef(model)
+    pm_type3_map(model, names(b0)[!is.na(b0)])
+  }, error = function(e) NULL)
   permmod <- pm_perm_drop(pm_perm_map(seq_len(nperm), one, ncore, packages))
   failures <- permmod$failures
   permmod <- permmod$res

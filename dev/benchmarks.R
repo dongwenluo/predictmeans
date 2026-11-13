@@ -36,3 +36,29 @@ for (nb in c(10, 50, 250)) {
 }
 res <- do.call(rbind, rows)
 cat("\nSeconds (minimum of 3 runs; pbkrtest/lmerTest 1 run):\n"); print(res, row.names = FALSE)
+
+## Permutation refits (type III tables, every refit) and means over an empty cell
+oats <- as.data.frame(nlme::Oats)
+oats$nitro <- factor(oats$nitro)
+oats$Variety <- factor(oats$Variety)
+oe <- droplevels(oats[!(oats$Variety == "Victory" & oats$nitro == "0.6"), ])   # empty cell
+mtc <- mtcars; mtc$cyl <- factor(mtc$cyl); mtc$am <- factor(mtc$am)
+ml <- lm(mpg ~ wt + cyl * am, data = mtc)
+mm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = oats)
+me <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = oe)
+mg <- glm(round(mpg) ~ wt + cyl, family = poisson, data = mtc)
+q <- function(x) suppressWarnings(suppressMessages(x))
+perm <- data.frame(
+  lm_raw_III = tm(q(permmodels(ml, nperm = 999, type = "III", seed = 1, method = "raw", prt = FALSE))),
+  lm_fl_III = tm(q(permmodels(ml, nperm = 999, type = "III", seed = 1, method = "freedman-lane", prt = FALSE))),
+  glm_III = tm(q(permmodels(mg, nperm = 199, type = "III", seed = 1, prt = FALSE))),
+  lmer_refit_III = tm(q(permmodels(mm, nperm = 49, type = "III", seed = 1, prt = FALSE)), 1),
+  lmer_norefit_III = tm(q(permmodels(mm, nperm = 999, type = "III", seed = 1, refit = FALSE, prt = FALSE))))
+cat("\nPermutation tests, seconds:\n"); print(perm, row.names = FALSE)
+pl <- q(permmodels(ml, nperm = 999, type = "II", seed = 1, method = "freedman-lane", prt = FALSE))
+cells <- data.frame(
+  lmer_full = tm(q(predictmeans(mm, "nitro:Variety", plot = FALSE, prtnum = FALSE))),
+  lmer_empty_cell = tm(q(predictmeans(me, "nitro:Variety", plot = FALSE, prtnum = FALSE))),
+  lmer_empty_main = tm(q(predictmeans(me, "nitro", plot = FALSE, prtnum = FALSE))),
+  lm_permlist = tm(q(predictmeans(ml, "cyl:am", permlist = pl, plot = FALSE, prtnum = FALSE))))
+cat("\npredictmeans(), seconds:\n"); print(cells, row.names = FALSE)

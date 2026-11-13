@@ -7,10 +7,13 @@
 ## pm_coef() and pm_vcov(), so this also works through the model adapter.
 ## Kenward-Roger F tests (lmer, test.statistic = "F") use the observed
 ## information, as everywhere in predictmeans (R/inference.R);
-## kr_information = "expected" gives car's (pbkrtest's) values.
+## kr_information = "expected" gives car's (pbkrtest's) values. 'type3_map':
+## pm_type3_map() of a fit with the same design, which permutation refits
+## (only the response changes) compute once.
 
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
-                     test.statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed") {
+                     test.statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
+                     type3_map = NULL) {
   type <- as.character(type)
   type <- match.arg(type)
   type <- c("2" = "II", "3" = "III", II = "II", III = "III")[[type]]
@@ -19,17 +22,18 @@ pm_anova <- function(model, type = c("II", "III", "2", "3"),
   if (inherits(model, "glm")) {
     if (!test.statistic %in% c("LR", "Wald", "F")) test.statistic <- "LR"
     return(switch(test.statistic,
-                  LR = if (type == "II") pm_anova_glm_II(model, "LR") else pm_anova_glm_III(model, "LR"),
-                  F = if (type == "II") pm_anova_glm_II(model, "F") else pm_anova_glm_III(model, "F"),
-                  Wald = pm_anova_wald(model, type, layout = "default")))
+                  LR = if (type == "II") pm_anova_glm_II(model, "LR") else pm_anova_glm_III(model, "LR", type3_map),
+                  F = if (type == "II") pm_anova_glm_II(model, "F") else pm_anova_glm_III(model, "F", type3_map),
+                  Wald = pm_anova_wald(model, type, layout = "default", type3_map = type3_map)))
   }
-  if (inherits(model, "lm")) return(pm_anova_lm(model, type))
-  if (inherits(model, "lme")) return(pm_anova_wald(model, type, layout = "lme"))
+  if (inherits(model, "lm")) return(pm_anova_lm(model, type, type3_map))
+  if (inherits(model, "lme")) return(pm_anova_wald(model, type, layout = "lme", type3_map = type3_map))
   if (inherits(model, "merMod")) {
     test <- if (test.statistic == "F") "F" else "Chisq"
-    return(pm_anova_wald(model, type, layout = "mer", test = test, kr_information = kr_information))
+    return(pm_anova_wald(model, type, layout = "mer", test = test, kr_information = kr_information,
+                         type3_map = type3_map))
   }
-  pm_anova_wald(model, type, layout = "default")
+  pm_anova_wald(model, type, layout = "default", type3_map = type3_map)
 }
 
 ## car::relatives(): the other terms that contain 'term'.
@@ -76,7 +80,7 @@ pm_anova_result <- function(df, row_names, col_names, heading) {
 
 ## Wald tests: lme (Chisq, Df, Pr), mer (Chisq or KR F), others (Df, Chisq, Pr).
 pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test = "Chisq",
-                          kr_information = "observed") {
+                          kr_information = "observed", type3_map = NULL) {
   layout <- match.arg(layout)
   tt <- stats::terms(model)
   fac <- attr(tt, "factors")
@@ -130,7 +134,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   } else {
     names <- names_all
     stat <- df <- res_df <- pval <- rep(0, length(names))
-    map <- pm_type3_map(model, names(b))
+    map <- if (is.null(type3_map)) pm_type3_map(model, names(b)) else type3_map
     for (term in seq_along(names)) {
       H <- pm_type3_hyp(map, term - intercept)       # sum-to-zero coding, whatever the model's
       if (nrow(H) == 0) {
@@ -166,7 +170,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
 }
 
 ## lm: F tests with sums of squares (car's Anova.II.lm / Anova.III.lm).
-pm_anova_lm <- function(model, type) {
+pm_anova_lm <- function(model, type, type3_map = NULL) {
   if (stats::df.residual(model) == 0) stop("residual df = 0")
   if (stats::deviance(model) < sqrt(.Machine$double.eps)) stop("residual sum of squares is 0 (within rounding error)")
   if (any(is.na(stats::coef(model))) && type == "II") {
@@ -184,7 +188,7 @@ pm_anova_lm <- function(model, type) {
   b <- b_all[not_aliased]
   V <- as.matrix(stats::vcov(model))
   s2 <- summary(model)$sigma^2
-  if (type == "III") map <- pm_type3_map(model, names(b))
+  if (type == "III") map <- if (is.null(type3_map)) pm_type3_map(model, names(b)) else type3_map
   assign <- model$assign
   assign[!not_aliased] <- NA
   I.p <- diag(length(b_all))
@@ -286,14 +290,14 @@ pm_anova_glm_II <- function(model, test = c("LR", "F")) {
 ## glm type III: LR or F tests from drop1() (car's Anova.III.LR.glm / Anova.III.F.glm).
 ## The term's columns are dropped from the sum-to-zero design (pm_type3_map()),
 ## so the tests do not depend on the model's contrasts.
-pm_anova_glm_III <- function(model, test = c("LR", "F")) {
+pm_anova_glm_III <- function(model, test = c("LR", "F"), type3_map = NULL) {
   test <- match.arg(test)
   if (any(is.na(stats::coef(model)))) stop("there are aliased coefficients in the model")
   Source <- labels(stats::terms(model))
   n <- length(Source)
   stat <- df <- rep(0, n)
   g <- pm_glm_parts(model)
-  map <- pm_type3_map(model, names(stats::coef(model)))
+  map <- if (is.null(type3_map)) pm_type3_map(model, names(stats::coef(model))) else type3_map
   for (term in seq_len(n)) {
     drop <- map$assign == term
     f1 <- stats::glm.fit(map$Xs[, !drop, drop = FALSE], g$y, g$wt, offset = g$offset, family = g$family,
