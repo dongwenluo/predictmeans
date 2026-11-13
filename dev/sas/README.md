@@ -143,3 +143,14 @@ expected and observed information differ much more than with one subplot
 missing: Kenward-Roger df for Golden Rain − Victory 9.25 (pbkrtest,
 `"Kenward-Roger"`) against SAS's 8.35 (`"KR-SAS"`), and 9.16 against 8.26 for
 the Variety F test. Between-within: Variety 9, Nitro 15, Variety × Nitro 27.
+
+## Next runs (scripts ready, not yet run)
+
+- `pm-reference-adjust.sas`: Tukey–Kramer with `ADJDFE=ROW` and `SOURCE`
+  on the 68-observation oats data.
+- `pm-reference-ar1.sas` (2026-11-13): AR(1) repeated measures with 5 of 48
+  values missing (`ar1.txt`, simulated), with `DDFM=KR`, `KR(FIRSTORDER)`,
+  `KR2`, `SATTERTHWAITE` and `BETWITHIN`. AR(1) is not linear in its
+  parameter, so SAS's default KR adds second-derivative terms that depend on
+  the parameterisation; predictmeans leaves them out, so `"KR-SAS"` should
+  match `KR(FIRSTORDER)`. The same data are in `dev/genstat/pm-reference.gen`.
