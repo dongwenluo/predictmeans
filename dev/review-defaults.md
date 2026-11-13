@@ -82,8 +82,8 @@ themselves (`"A:B"`), where nothing is averaged.
 ## 4. Steps
 
 1. Empty cells: comparisons over common cells, warning only where a mean
-   averages over an empty cell (changes `pairs` for such means — needs the
-   maintainer's yes).
+   averages over an empty cell (changes `pairs` for such means) — **done**
+   (maintainer's yes, 2026-11-13; `R/empty-cells.R`).
 2. `df_term()` through `pm_df_method()`; empty-cell rule in one function (no
    change in output; snapshot check).
 3. ML `lme`/`gls`: Satterthwaite from the ML Hessian, as ML `lmer` (changes

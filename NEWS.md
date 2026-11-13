@@ -2,6 +2,23 @@
 
 ## Changes that affect results or scripts
 
+* **Means over empty cells are compared on the cells both means have.** With
+  `weights = "equal"`, a mean that averages over cells without data keeps the
+  1.x rule (the average of its observed cells), but two such means average
+  over different cells, so their difference also carried the effects of the
+  other factors: in simulations (`dev/review-defaults.md`,
+  `dev/sim-empty-cells.R`) it rejected 8–78% of true null hypotheses when the
+  other factor had an effect. Now a pair with such a mean is compared on the
+  cells both means have (4–6% in the same simulations), and the new column
+  `over` of `pairs` says which (`"none"`: no cell in common, the pair is NA).
+  Example: oats with Victory lost at N = 0.6: 0.6 − 0 is 42.5 (Golden Rain and
+  Marvellous) instead of 46.4, and 0.6 vs 0.4 has p = 0.08 instead of 0.03.
+  `contrastmeans()` and `pm_joint()` (column `over`) do the same; means,
+  and pairs of means without empty cells, are unchanged. The warning now
+  names the empty cells and the means concerned, and is no longer given
+  where no mean averages over an empty cell (e.g. for the cell means
+  themselves).
+
 * New `df_method = "KR-average"` (in `predictmeans()`, `contrastmeans()`,
   `pm_joint()`, `pm_slopes()`, `covariatemeans()` and `df_term()`, for
   `lmer`, `lme` and `gls`): Kenward-Roger with the average information of

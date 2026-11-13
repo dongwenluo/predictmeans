@@ -135,7 +135,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
          "\"mvt\" (single step) or \"holm\".", call. = FALSE)
   }
-  KK <- Kmatrix(model, modelterm, weights=weights)$K
+  km <- Kmatrix(model, modelterm, weights=weights)
+  KK <- km$K
   termsLabel <- rownames(KK)
   if (missing(ctrmatrix)) {
     if (!interactive()) {
@@ -196,6 +197,14 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   mp <- inf$mp
   K <- KK[, mp$estimable, drop=FALSE]
   rK <- ctrmatrix%*%K
+  # contrasts with a mean over empty cells: on the cells all their means have (R/empty-cells.R)
+  cr <- pm_common_rows(km$empty_cells, ctrmatrix, rK, colnames(K))
+  rK <- cr$L
+  if (any(cr$sub)) {
+    cn <- if (is.null(rownames(ctrmatrix))) paste("contrast", seq_len(nrow(ctrmatrix))) else rownames(ctrmatrix)
+    message("Contrasts with means over empty cells use only the cells their means all have: ",
+            paste0(cn[cr$sub], ": ", ifelse(cr$na[cr$sub], "none (NA)", cr$over[cr$sub]), collapse = "; "))
+  }
 
   if (all(missing(permlist), missing(Df))) Df <- inf$df(rK, modelterm)
 
@@ -203,6 +212,8 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   vcovm <- mp$vcov
   vcov.contr <- rK %*% tcrossprod(vcovm, rK)
   ses <- sqrt(diag(vcov.contr))
+  cm[cr$na] <- NA                 # no cells in common
+  ses[cr$na] <- NA
   t.v <- cm/ses
   nr <- nrow(rK)
   dv <- t(1/ses)

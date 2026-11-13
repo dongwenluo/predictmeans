@@ -122,8 +122,21 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
   inf <- pm_inference(model, df_method, vcov_adjust = FALSE, vcov = vcov)
   K <- KK[, inf$mp$estimable, drop = FALSE]
   K[!est_flag, ] <- 0
-  res <- t(vapply(sets, function(C) inf$ftest(C %*% K, modelterm), numeric(4)))
+  # a set with a mean over empty cells: tested on the cells all its means have (R/empty-cells.R)
+  over <- rep(NA_character_, length(sets))
+  res <- t(vapply(seq_along(sets), function(s) {
+    C <- sets[[s]]
+    cr <- pm_common_rows(km$empty_cells, C, C %*% K, colnames(K), together = TRUE)
+    if (any(cr$sub)) over[s] <<- if (any(cr$na)) "none" else cr$over[which(cr$sub)[1]]
+    if (any(cr$na)) return(c(qr(t(C))$rank, NA, NA, NA))
+    inf$ftest(cr$L, modelterm)
+  }, numeric(4)))
   out <- data.frame(df1 = res[, 1], df2 = res[, 2], F.ratio = res[, 3], p.value = res[, 4])
+  if (any(!is.na(over))) {
+    out$over <- over          # tested on the cells common to the means (empty cells)
+    message("Means over empty cells: tested on the cells all the compared means have (column 'over'; ",
+            "\"none\": no cell in common, NA).")
+  }
   if (!is.null(by_tab)) out <- cbind(by_tab, out)
   attr(out, "df_method") <- inf$label
   if (!is.null(inf$vcov_label)) attr(out, "vcov") <- inf$vcov_label

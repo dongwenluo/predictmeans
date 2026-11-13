@@ -62,6 +62,10 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
  (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
  evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
  \code{W \%*\% basis}.}
+ \item{empty_cells}{\code{NULL}, or when some means average over empty cells (\code{weights = "equal"}; see
+ \code{\link{predictmeans}}): \code{affected}, which rows of \code{K} do so, \code{missing}, the empty cells, and
+ \code{compare(C, together = FALSE)}, which gives comparisons \code{C} (rows over the rows of \code{K}) on the
+ cells their means have in common (\code{together = TRUE}: the cells common to all the means of \code{C}).}
 }
 \description{
 This function obtains a matrix of coefficients (the linear functions \eqn{K} such that the

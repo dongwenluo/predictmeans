@@ -67,7 +67,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 |---|---|
 | `level1`, `level2` | the two means, labels `"a:b"` for several factors |
 | `by` | the `atvar` level (only with `atvar`; NA for pairs across levels) |
-| `estimate` | mean of `level1` minus mean of `level2` (link scale) |
+| `over` | only when a mean averages over empty cells: the cells of the other factors the pair is compared on (those both means have; `"none"`: NA pair); NA for the other pairs |
+| `estimate` | mean of `level1` minus mean of `level2` (link scale; with `over`: on the common cells) |
 | `std.error`, `df`, `statistic`, `p.value` | t test of the difference |
 | `p.adj` | p-value adjusted by `adj` (within each `by` level with `atvar`) |
 | `p.equiv` | with `equivalence = d` or `c(lower, upper)`: TOST p-value (difference within the margins) |
@@ -156,8 +157,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   those of a unit with all random effects zero (not population averages); ratios do not
   depend on this.
 - Empty cells: cell means of unobserved combinations are not shown; a mean averaging over
-  an empty cell follows the 1.x rule (average of the observed cells, with a warning) and
-  is not comparable with complete means. Means that cannot be estimated (confounded
+  an empty cell follows the 1.x rule (average of the observed cells, with a warning naming
+  it), and its pairs are compared on the cells both means have (column `over`), not as
+  the difference of the two averages (since 2.0). Means that cannot be estimated (confounded
   factors) are NA, with their estimable differences kept. Check `estimable` and `n`.
 - `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
   the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).

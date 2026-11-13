@@ -294,6 +294,7 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
 
   w <- rep(1, nrow(grid))
   if (!is.null(profiles)) w <- w * prof_w[idx[[".profile"]]]
+  w0 <- w                                    # weights before dropping cells (R/empty-cells.R)
   if (!is.null(present)) w <- w * as.numeric(present(grid))
   tot <- as.vector(tapply(w, factor(key, levels = seq_len(nrow(target))), sum))
   tot[is.na(tot)] <- 0
@@ -301,7 +302,11 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
   keep <- w > 0
   W <- Matrix::sparseMatrix(i = key[keep], j = which(keep), x = x[keep],
                             dims = c(nrow(target), nrow(grid)))
-  structure(list(grid = grid, W = W, target = target, empty = as.vector(tot == 0)),
+  # key: the target row of each grid row; idx: each grid row's position in
+  # each dimension (dimension names in 'dim_vars'); used by R/empty-cells.R
+  structure(list(grid = grid, W = W, target = target, empty = as.vector(tot == 0),
+                 key = key, w0 = w0, idx = idx, tdims = tdims,
+                 dim_vars = lapply(dims, `[[`, "vars")),
             class = "pm_refgrid")
 }
 

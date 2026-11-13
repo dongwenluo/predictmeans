@@ -62,6 +62,10 @@
 #'  (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
 #'  evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
 #'  \code{W \%*\% basis}.}
+#'  \item{empty_cells}{\code{NULL}, or when some means average over empty cells (\code{weights = "equal"}; see
+#'  \code{\link{predictmeans}}): \code{affected}, which rows of \code{K} do so, \code{missing}, the empty cells, and
+#'  \code{compare(C, together = FALSE)}, which gives comparisons \code{C} (rows over the rows of \code{K}) on the
+#'  cells their means have in common (\code{together = TRUE}: the cells common to all the means of \code{C}).}
 #' @references
 #' Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 #' 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347.
@@ -269,6 +273,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   # Only the factors that interact matter: blocks or other main-effect-only
   # factors would make every cell look single (one observation per cell),
   # hiding structurally empty combinations such as nested treatments.
+  empty_rule <- NULL
   if (weights == "equal" && length(factor_names) != 0) {
     fac_mat <- attr(Terms, "factors")
     ord <- attr(Terms, "order")
@@ -283,12 +288,19 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
         length(inter_vars) > 1 && any(ndf$Freq == 0) &&
         !setequal(unique(ndf$Freq), c(0, 1))) {
       # combinations absent by design (a factor nested in another: each of its
-      # levels occurs with one level of the other) are not missing cells
-      if (any(ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars))) {
-        warning("Missing treatments' combination appeared, predicted means maybe misleading!")
-      }
+      # levels occurs with one level of the other) are not missing cells;
+      # means over the others are the averages of their observed cells, and
+      # comparisons of such means use common cells (R/empty-cells.R)
       seen <- unique(cell_key(preddf, inter_vars))
       present <- function(grid) cell_key(grid, inter_vars) %in% seen
+      missing_cells <- ndf[ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars),
+                           inter_vars, drop = FALSE]
+      if (nrow(missing_cells)) {
+        empty_rule <- list(
+          design = function(grid) !pm_nested_absent(grid[, inter_vars, drop = FALSE], preddf, inter_vars),
+          unmatched = pm_unmatched_factors(preddf, setdiff(inter_vars, facs), intersect(facs, factor_names)),
+          missing = do.call(paste, c(lapply(missing_cells, as.character), sep = ":")))
+      }
     }
   }
 
@@ -328,6 +340,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   # nothing for full-rank models.
   estimable <- rep(TRUE, nrow(K))
   null_proj <- NULL
+  null_space <- NULL
   if (info$builder != "gam" && info$rank_deficient(colnames(K))) {
     Xfit <- basis(model_data)
     XtX <- crossprod(Xfit)
@@ -335,6 +348,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     tol <- max(dim(Xfit)) * max(ev$values) * .Machine$double.eps * 100
     N <- ev$vectors[, ev$values <= tol, drop = FALSE]
     if (ncol(N)) {
+      null_space <- N
+      rownames(null_space) <- colnames(Xfit)
       Kfull <- K[, colnames(Xfit), drop = FALSE]
       null_proj <- Kfull %*% N
       nonest <- abs(null_proj)
@@ -343,6 +358,26 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   }
   estimable[is.na(estimable) | rg$empty] <- FALSE
   names(estimable) <- rnK
+
+  # means that average over empty cells: say which, and prepare their
+  # comparisons on common cells (R/empty-cells.R)
+  empty_cells <- NULL
+  if (!is.null(empty_rule)) {
+    empty_cells <- pm_empty_cells(rg, observed = present(rg$grid), design = empty_rule$design(rg$grid),
+                                  unmatched = empty_rule$unmatched, inter_vars = inter_vars, basis = basis,
+                                  coef_names = info$coef_names, N = null_space, labels = rnK)
+    if (!is.null(empty_cells)) {
+      short <- function(x) paste(if (length(x) > 6) c(x[1:6], "...") else x, collapse = ", ")
+      empty_cells$missing <- empty_rule$missing
+      one <- sum(empty_cells$affected) == 1
+      warning("No data for ", paste(inter_vars, collapse = ":"), " ", short(empty_rule$missing), ". ",
+              if (one) "The mean of " else "The means of ", modelterm, " = ", short(rnK[empty_cells$affected]),
+              if (one) " averages only its observed cells; comparisons with it" else
+                " average only their observed cells; comparisons with them",
+              " use only the cells that the compared means all have (column 'over' of the pairs).",
+              call. = FALSE)
+    }
+  }
 
   K <- K[, info$coef_names, drop = FALSE]
   attr(K, "estimable") <- estimable
@@ -364,7 +399,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   rownames(fctnames) <- NULL
 
   rg$basis <- basis              # the basis of the grid rows (for means averaged on the response scale)
-  return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data))
+  return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data,
+              empty_cells=empty_cells))
 }
 
 

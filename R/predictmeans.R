@@ -109,6 +109,14 @@
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#'   Empty cells (combinations of interacting factors without data, not those absent by design, as for nested
+#'   factors): with \code{"equal"}, a mean that averages over them is the average of its observed cells (as
+#'   predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means
+#'   average over different cells, so their difference would also carry the effects of the other factors; a pair
+#'   with such a mean is therefore compared on the cells both means have (column \code{over} of \code{pairs}; NA,
+#'   \code{over = "none"}, when they have none). In simulations comparing the averages rejected 8-78\% of true
+#'   null hypotheses at the 5\% level when the other factor had an effect, the common cells 4-6\%
+#'   (\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.
 #' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
 #'   REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
 #'   parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
