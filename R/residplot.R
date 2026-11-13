@@ -30,8 +30,26 @@ NULL
 
 residplot <- function(model, group="none", level=1, slope=FALSE, id=FALSE, newwd=FALSE, ask=FALSE) { 
 
-  if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
   if (newwd) dev.new()
+  if (inherits(model, "aovlist")) {
+    # aov with Error(): the residuals of the lowest stratum (proj()), as a
+    # multistratum ANOVA gives them; fitted = response - residuals
+    pr <- stats::proj(model)
+    low <- pr[[length(pr)]]
+    res <- low[, "Residuals"]
+    y <- stats::model.response(stats::model.frame(model))
+    fit <- y - res
+    op <- par(mfrow = c(2, 2), cex = 0.7, mar = c(5, 5, 4, 2), mex = 0.8, ask = ask)
+    on.exit(par(op))
+    plot(fit, res, xlab = "Fitted values", ylab = "Residuals",
+         main = paste("Residuals vs fitted (", names(pr)[length(pr)], " stratum)", sep = ""), col = "blue")
+    abline(h = 0, lty = 2)
+    qqnorm(res, main = "Normal Q-Q", col = "blue"); qqline(res)
+    hist(res, main = "Histogram of residuals", xlab = "Residuals", col = "grey")
+    plot(res, xlab = "Index", ylab = "Residuals", main = "Residuals in data order", col = "blue")
+    abline(h = 0, lty = 2)
+    return(invisible(data.frame(fitted = fit, residuals = res)))
+  }
   if (inherits(model, "lm") || inherits(model, "aov")){
     op <- par(mfrow=c(2, 2), cex=0.7, mar=c(5, 5, 4, 2), mex=0.8, ask=ask)
     plot(model, cex.caption=0.8, which=1:4, col="blue")

@@ -21,10 +21,12 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `vcov_adjust = FALSE` reproduces 1.x numbers.
 - glmmTMB in Imports; car and pbkrtest in Suggests (own code in `R/anova.R`,
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
-- Means over empty cells: NA by default (the maintainer's decision of
-  2026-11-13); a new option, `empty = "average"`, restores the 1.x rule
-  (average of the observed cells, with a warning). Combinations absent by
-  design (nested factors) are not empty cells.
+- Means over empty cells keep the 1.x rule: the average of the observed
+  cells, with a warning (the maintainer's decision of 2026-11-13, replacing
+  an earlier "NA by default"). Combinations absent by design (nested
+  factors) are not empty cells. Truly non-estimable means are NA.
+- `aov` models with `Error()` (aovlist) are analysed by strata, as Genstat:
+  standard errors from the stratum mean squares, never by refitting as lmer.
 - emmeans (and SAS) are not the reference for nested treatment structures or
   missing combinations (the EOD tree-improvement examples): there
   predictmeans averages with equal weights over the combinations that exist

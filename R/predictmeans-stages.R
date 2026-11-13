@@ -73,9 +73,8 @@ pm_code_setup <- quote({
     trans <- I
   }
 
-  # if (inherits(model, "aovlist")) stop("Plese use model 'lme' instead of 'aov'!")
   if (inherits(model, "aovlist")){
-    model <- aovlist_lmer(model)
+    model <- pm_aov_carrier(model)
   }
 
   # Models with a link function other than the identity: means are

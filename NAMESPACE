@@ -51,7 +51,7 @@ importMethodsFrom("Matrix",
   importFrom("nlme", "getData", "intervals", "getResponse")
   importFrom("grDevices", "dev.new")
   importFrom("Matrix", ".bdiag", "Diagonal", "forceSymmetric", "Matrix", "nearPD")
-  importFrom("graphics", "abline", "axis", "box", "identify", "image",
+  importFrom("graphics", "abline", "axis", "box", "hist", "identify", "image",
              "legend", "lines", "par", "plot", "points", "text", "title")
   importFrom("methods", "is", "slot", "as")
   importFrom("stats", "anova", "as.formula", "aov", "coef", "complete.cases", "confint", "delete.response",

@@ -66,7 +66,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
-  if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
+  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
   pm_check_modelterm(model, modelterm)
   km <- Kmatrix(model, modelterm, weights = weights)
   KK <- km$K

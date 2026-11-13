@@ -123,7 +123,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   on.exit(options(op), add = TRUE)
 
   if (inherits(model, "aovlist")) {
-    model <- aovlist_lmer(model)
+    model <- pm_aov_carrier(model)
   }
 
   if (is.null(ctrnames) || all(ctrnames%in%c("NULL", ""))) {

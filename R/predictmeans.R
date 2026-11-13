@@ -17,7 +17,10 @@
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "inner-outer", "residual"), vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
-#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. For a \code{semireg} fit the
+#'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
+#'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
+#'   strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
+#'   standard errors of single means include the block stratum. For a \code{semireg} fit the
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 #'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.

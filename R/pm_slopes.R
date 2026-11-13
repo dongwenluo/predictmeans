@@ -50,7 +50,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
   adj <- pm_match_adj(adj)
-  if (inherits(model, "aovlist")) model <- aovlist_lmer(model)
+  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
   pm_check_modelterm(model, modelterm)
   dat <- pm_get_data(model)
   if (!covariate %in% names(dat) || !is.numeric(dat[[covariate]])) {

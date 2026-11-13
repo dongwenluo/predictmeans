@@ -1213,38 +1213,6 @@ ci_mcp <- function(LL, UL, trt_n=NULL) {
   return(ci_mcp_letters)
 }
 
-########################################################
-# To handle aovlist object refit by lmer function
-aovlist_lmer <- function(object) {
-  stopifnot(inherits(object, "aovlist"))
-  mod_df <- model.frame(object)
-  lmer_call = match.call(aov, attr(object, "call"))
-
-  trms = terms(object)
-  response <- as.character(attr(trms, "variables"))[[2]]
-
-  # Find the Error terms
-  trms_label = attr(trms, "term.labels")
-  err.idx = grep("^Error\\(", trms_label)
-
-  # Original Error term
-  error_term <- trms_label[err.idx]
-  error_term <- gsub("Error\\(|\\)", "", error_term)
-  error_terms <- strsplit(error_term, "\\+\\s+")[[1]]
-
-  # Reformat into lmer format
-  lmer_random_parts <- paste0("(1|", error_terms, ")", collapse = " + ")
-  lmer_fix_parts <- paste0(trms_label[-err.idx], collapse = " + ")
-
-  lmer_call$formula <- as.formula(paste(response, " ~ ", lmer_fix_parts, "+", lmer_random_parts, sep=""))
-  lmer_call[[1]] <- as.name("lmer")
-  assign(as.character(lmer_call$data), mod_df)
-  lmer_object <- eval(lmer_call)
-  return(lmer_object)
-}
-
-
-
 ## findbars() moved from lme4 to reformulas; use reformulas when installed.
 pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)

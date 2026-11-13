@@ -22,6 +22,8 @@
 ##    "between-within" unless vcov_adjust = TRUE is given (as SAS); not with a
 ##    permlist (the refits use the unadjusted covariance); the user's 'vcov'
 ##    (R/vcov.R) replaces the model's covariance.
+##  * aov() models with Error(): analysed by strata (R/aovlist.R): stratum
+##    mean squares and Satterthwaite df across strata ("multistratum").
 ##  * df of a row of L: per row with Kenward-Roger and Satterthwaite (and a
 ##    pm_df() method); with inner-outer df (GLMMs) the smallest df of the
 ##    coefficients the row uses (R/df-innerouter.R); with one df per term (containment, between-within,
@@ -54,16 +56,25 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
   if (!is.null(vcov)) vcov_adjust <- FALSE          # the user's covariance replaces the adjusted one
 
   ## df method and its ingredients (computed once, shared by all df)
-  dfm <- pm_df_method(model, df_method)
-  df_type <- dfm$df_type
-  vcov_adj <- dfm$vcov_adj
   lmer <- inherits(model, "lmerMod")
   nlme <- inherits(model, c("lme", "gls"))
+  aovl <- inherits(model, "pm_aovlist")               # aov() with Error(): by strata (R/aovlist.R)
+  if (aovl) {
+    if (df_method != "auto") warning("'df_method' is not used for aov models with Error(): they are analysed by ",
+                                     "strata.", call. = FALSE)
+    if (!is.null(vcov)) warning("'vcov' is not used for aov models with Error().", call. = FALSE)
+    vcov <- NULL
+    sa <- pm_aov_strata(model)
+    dfm <- list(df_type = "Satterthwaite", vcov_adj = sa$parts)
+  } else dfm <- pm_df_method(model, df_method)
+  df_type <- dfm$df_type
+  vcov_adj <- dfm$vcov_adj
   if (any(df_type %in% c("containment", "between-within")) && vcov_adjust && lmer && lme4::getME(model, "is_REML"))
     vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
 
   ## coefficients and covariance
-  mp <- if (lmer && !term_df) mymodelparm(model, df = 0) else mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
+  mp <- if (aovl) sa$mp else if (lmer && !term_df) mymodelparm(model, df = 0) else
+    mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
   adjusted <- FALSE
   if (vcov_adjust) {
     if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
@@ -86,7 +97,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     stats::terms(model$fixDF)                          # nlme's df of each term
   }
   io <- dfm$io                                         # inner-outer df of each coefficient
-  per_row_kr_satt <- any(df_type %in% c("Kenward-Roger", "Satterthwaite")) && (lmer || nlme)
+  per_row_kr_satt <- any(df_type %in% c("Kenward-Roger", "Satterthwaite")) && (lmer || nlme || aovl)
   resid_df <- if (is.null(one_df) && !per_row_kr_satt && is.null(io)) {
     d <- mp$df
     if (is.numeric(d) && length(d) == 1 && is.finite(d) && d > 0) d else Inf    # normal-based when unknown
@@ -117,7 +128,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
       }))
     }
     if (per_row_kr_satt) {
-      if (nlme) return(as.numeric(pm_nlme_df(L, model, df_type, vcov_adj)))
+      if (nlme || aovl) return(as.numeric(pm_nlme_df(L, model, df_type, vcov_adj)))
       return(as.numeric(df_term(model, ctrmatrix = L, type = df_type, vcov_adj = vcov_adj)))
     }
     if (custom) return(rep_len(as.numeric(pm_df(model, L)), n))
@@ -154,7 +165,9 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     c(q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE))
   }
 
-  label <- if (identical(df_method, "KR-expected") && identical(df_type, "Kenward-Roger")) {
+  label <- if (aovl) {
+    "multistratum"                                  # stratum mean squares, Satterthwaite across strata
+  } else if (identical(df_method, "KR-expected") && identical(df_type, "Kenward-Roger")) {
     "KR-expected"                                   # Kenward-Roger with the expected information
   } else if (!is.null(df_type)) {
     df_type

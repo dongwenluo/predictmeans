@@ -54,7 +54,11 @@ reference_cases <- function() {
   cap("oats_pm_lmer_atvar", pmo(fm_lmer, "nitro:Variety", atvar = "Variety", adj = "BH"))
   cap("oats_pm_lme_int", pmo(fm_lme, "nitro:Variety", pairwise = TRUE))
   cap("oats_pm_lm_int", pmo(fm_lm, "nitro:Variety", adj = "tukey"))
-  cap("oats_pm_aov", pmo(fm_aov, "nitro"))
+  # 1.1.1 refitted aov(... + Error()) as lmer; 2.0 analyses it by strata (R/aovlist.R), so the 1.1.1 numbers
+  # come from that lmer model, given explicitly
+  aov_strata <- exists("pm_aov_carrier", envir = asNamespace("predictmeans"), inherits = FALSE)
+  fm_aov_ref <- if (aov_strata) lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats) else fm_aov
+  cap("oats_pm_aov", pmo(fm_aov_ref, "nitro"))
 
   Om <- Oats[!(Oats$nitro == "0.6" & Oats$Variety == "Victory"), ]
   fm_miss <- lm(yield ~ nitro*Variety, data = Om)

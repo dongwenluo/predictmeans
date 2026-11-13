@@ -2,6 +2,22 @@
 
 ## Changes that affect results or scripts
 
+* **`aov()` models with `Error()` strata are analysed by strata**, as
+  Genstat's ANOVA does, in `predictmeans()`, `contrastmeans()`, `pm_joint()`
+  and `pm_slopes()` (new `R/aovlist.R`). They were refitted as `lmer`
+  models, which changed the analysis: when a stratum variance is negative by
+  ANOVA, REML fixes it at zero and the treatments were compared with the
+  wrong error (tree-improvement Exam 3.1, diameter: SED 1.5 on 75 df, where
+  the plot stratum gives 1.074 on 4 df, as Genstat). Now each comparison
+  uses the mean squares of the strata it draws on, with Satterthwaite's df
+  across strata (Genstat's rule: split plot, 0.583 on 14.69 df); the F tests
+  are the stratum F tests; `settings$df_method` is `"multistratum"`.
+  Standard errors of single means include the block stratum (Genstat's
+  e.s.e., which leaves it out, is the SED divided by sqrt(2)). `residplot()`
+  shows the residuals of the lowest stratum (`proj()`). To get the 1.x
+  numbers fit the mixed model yourself, e.g.
+  `lmer(y ~ trt + (1 | block/plot))`.
+
 * New tests from the examples of *Experimental Design and Analysis for Tree
   Improvement*, against Genstat and SAS runs: nested treatments (Genstat's
   means, which average over the treatments that exist; SAS and emmeans
