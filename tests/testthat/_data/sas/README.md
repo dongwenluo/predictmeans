@@ -16,3 +16,9 @@ unstructured covariance) x `DDFM=CONTAIN`, `BETWITHIN`, `SATTERTHWAITE`, `KR`.
 Tables: covariance parameters (`covparms`), number of observations (`nobs`),
 fixed-effect solutions (`solution`), Type 3 tests (`tests3`), LS-means
 (`lsmeans`) and their differences (`diffs`).
+
+`proc-mixed-adjust.csv.gz`: the Tukey-Kramer differences of LS-means printed
+by `dev/sas/pm-reference-adjust.sas` (2026-11-13, "Results: Program 4"; text
+in `dev/sas/sas-results-2026-11-13-adjust.txt`, parsed by
+`dev/sas/parse-sas-adjust.py`): Variety and Variety x Nitro on the 68
+observations, `DDFM=KR`, `ADJDFE=ROW` and `ADJDFE=SOURCE`.
