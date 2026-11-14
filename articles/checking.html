@@ -105,7 +105,7 @@ on sub-plots.</p>
 <span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span>
 <span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pm_check.html">pm_check</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Checks of a lmerModLmerTest model (72 observations)</span></span>
+<span><span class="co">#&gt; Checks of a lmerMod model (72 observations)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;    check                                     </span></span>
 <span><span class="co">#&gt;    Fit                                       </span></span>

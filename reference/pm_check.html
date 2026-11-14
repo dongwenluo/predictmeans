@@ -141,7 +141,7 @@ sets; the plots say how large a departure is.</p><dl><dt>Fit</dt>
 <span class="r-in"><span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pm_check</span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Checks of a lmerModLmerTest model (72 observations)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Checks of a lmerMod model (72 observations)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    check                                     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    Fit                                       </span>

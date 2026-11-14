@@ -81,9 +81,10 @@ the plotly widget.
 
 The plots:
 
-1.  Residuals against fitted values, with a loess smooth: look for
-    trends (a missing term, a wrong link) and for spread that changes
-    with the fitted values.
+1.  Residuals against fitted values, with a loess smooth (with fewer
+    than 7 distinct fitted values, the mean residual at each, joined):
+    look for trends (a missing term, a wrong link) and for spread that
+    changes with the fitted values.
 
 2.  Normal Q-Q plot of the residuals: the points should lie near the
     line.

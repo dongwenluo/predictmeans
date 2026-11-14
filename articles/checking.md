@@ -28,7 +28,7 @@ Oats <- as.data.frame(nlme::Oats)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 pm_check(fm)
-#> Checks of a lmerModLmerTest model (72 observations)
+#> Checks of a lmerMod model (72 observations)
 #> 
 #>    check                                     
 #>    Fit                                       

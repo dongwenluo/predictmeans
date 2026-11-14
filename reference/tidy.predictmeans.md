@@ -141,8 +141,8 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
 #>       modelterm n.means n.pairs nobs     df.method adjust level  vcov
 #> 1 nitro:Variety      12      66   72 Kenward-Roger  tukey  0.05 model
-#>   vcov.adjust  sed.min sed.mean sed.max lsd.mean nperm     model.class
-#> 1        TRUE 7.682948 9.160819 9.71502 18.64525    NA lmerModLmerTest
+#>   vcov.adjust  sed.min sed.mean sed.max lsd.mean nperm model.class
+#> 1        TRUE 7.682948 9.160819 9.71502 18.64525    NA     lmerMod
 
   # Any contrast of the means from coef() and vcov(): Victory - Golden Rain at nitro 0.6
   b <- coef(pm)

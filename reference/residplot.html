@@ -126,7 +126,8 @@ the <span class="pkg">plotly</span> widget.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The plots:</p><ol><li><p>Residuals against fitted values, with a loess smooth: look for trends (a missing term, a wrong link) and
+    <p>The plots:</p><ol><li><p>Residuals against fitted values, with a loess smooth (with fewer than 7 distinct fitted values, the mean
+  residual at each, joined): look for trends (a missing term, a wrong link) and
   for spread that changes with the fitted values.</p></li>
 <li><p>Normal Q-Q plot of the residuals: the points should lie near the line.</p></li>
 <li><p>Mixed models: normal Q-Q plot of the random effects of term <code>level</code>. <code>gls</code>: autocorrelation of the

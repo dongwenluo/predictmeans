@@ -26,7 +26,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
                    plot = FALSE, prtnum = FALSE)
 summary(pm)
-#> Predicted means for 'nitro:Variety' (lmerModLmerTest model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
+#> Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
 #> Confidence limits: 95%
 #> 
 #>  nitro     Variety estimate std.error    df conf.low conf.high group
@@ -138,7 +138,8 @@ ggplot2::autoplot(pm, type = "pvalue")
 ![](predictmeans_files/figure-html/unnamed-chunk-6-2.png)
 
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
-still draws its classic plots when `plot = TRUE` (the default);
+draws its classic plots with `plot = TRUE` (since 2.0 the default is
+`FALSE`; `options(predictmeans.plot = TRUE)` sets it for a session);
 `which.plots` chooses among the means, bar, p-value and back-transformed
 plots.
 

@@ -6,8 +6,10 @@
 
 predictmeans 2.0 keeps the 1.x functions and printed output, and changes
 defaults where simulations or the literature showed a more reliable
-method. Results checked against SAS PROC MIXED, Genstat and emmeans are
-in the tests.
+method. Plots are drawn only when asked for (`plot = TRUE` or
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)),
+and lmerTest is no longer attached. Results checked against SAS PROC
+MIXED, Genstat and emmeans are in the tests.
 
 - **Degrees of freedom** are chosen by the model in one place
   (`df_method = "auto"`): Kenward-Roger with adjusted SEs for REML
@@ -46,22 +48,65 @@ in the tests.
   model classes
   ([`?pm_coef`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)).
 
-### Planned for 2.1
-
-- **lmerTest will move from Depends to Suggests.**
-  [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/)
-  will then no longer attach lmerTest, and
-  [`summary()`](https://rdrr.io/r/base/summary.html) of an
-  [`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) fit will show no df
-  or p-values unless you load lmerTest yourself. predictmeans’ own df do
-  not depend on it.
-- **`plot = FALSE` will become the default** of
-  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
-  To get that now, set `options(predictmeans.plot = FALSE)`;
-  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
-  draws the plots from the result.
-
 ### Changes that affect results or scripts
+
+- **[`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+  for every model class**, with one rule for SEs and intervals. New:
+  `lm`, `aov` and `glm` (the error term: residual variance, dispersion,
+  negative binomial theta), `aov` with `Error()` (analysis of variance
+  estimates of the stratum variances, also with missing values), `gls`
+  (correlation and variance-function parameters), `gam` (any mgcv
+  version: `gam.vcomp()` returns a list since mgcv 1.9-3) and `semireg`
+  fits; `glmer` with several grouping factors (failed) and with
+  `nAGQ = 0`; `lme` with correlation and variance structures (failed,
+  e.g. AR(1)); lmeInfo is no longer used. SEs are from the observed
+  information (as SAS PROC MIXED) by the delta method;
+  `information = "average"` gives Genstat’s s.e. (equal to the printed
+  digits in 17 of 17 values) and `"expected"` the expected information.
+  Checked against real runs (2026-11-14): SAS’s standard errors and
+  limits for 10 designs (missing plots, random slope, AR(1),
+  unstructured repeated measures with the covariances’ SEs, a component
+  at zero, crossed factors) and Genstat’s s.e. for 5 (a negative
+  component equals the `aov` estimate), all to the printed digits; SAS’s
+  limits for covariances and correlations are Wald on the natural scale,
+  predictmeans’ on the Fisher z scale. Intervals of variances are
+  Satterthwaite’s chi-square intervals with nu = 2 (estimate/SE)^2
+  (SAS’s `COVTEST CL`; the exact interval for an `lm` residual
+  variance); before, `lmer` had lme4’s profile intervals, which for a
+  REML fit are those of the ML fit, and `lme` nlme’s. A variance at zero
+  has no SE. One naming for every class (`group.term`,
+  `group.term1.term2`, `cor.`, `var.`, `residual`); glmmTMB `ar1`, `cs`
+  and `toep` terms give their variance and correlation instead of every
+  element. Much faster for `lmer`: 1,200 rows 7.6 s -\> 0.06 s; 6,000
+  rows over 20 minutes -\> 0.2 s.
+
+- **[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  no longer draws plots unless asked** (`plot = FALSE` is the default).
+  Drawing took most of the time of a call (0.22 s against 0.03 s for the
+  oats example) and put graphics pages into scripts, reports, Shiny apps
+  and loops. The result holds the same tables, and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  draws from it. `plot = TRUE`, or `options(predictmeans.plot = TRUE)`
+  for a session, draws the 1.x plots; so does asking for plots by name
+  (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
+  `bkplot`).
+
+- **lmerTest is no longer attached** by
+  [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/):
+  it moved from Depends to Imports. predictmeans’ own df and tests do
+  not use it. Scripts that relied on lmerTest’s
+  [`lmer()`](https://rdrr.io/pkg/lmerTest/man/lmer.html) (df and
+  p-values in [`summary()`](https://rdrr.io/r/base/summary.html),
+  `anova(..., ddf =)`,
+  [`ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html)) need
+  [`library(lmerTest)`](https://github.com/runehaubo/lmerTestR). It is
+  still installed with predictmeans, for the
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits (their [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`lmerTest::ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html));
+  whether it is needed at all will be decided when
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  is upgraded.
 
 - **Adjusted confidence limits of the pairs.** With `adj` “tukey”,
   “bonferroni”, “sidak”, “scheffe” or “mvt”, `pairs` has the columns
@@ -86,6 +131,60 @@ in the tests.
   [`confint()`](https://rdrr.io/r/stats/confint.html); its `lower.CL`
   and `upper.CL` are per contrast, also with a `permlist` and a
   max-\|t\| adjustment.
+
+- [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  for lmer models prints its tables (coefficients with Satterthwaite df
+  and p-values; the type I ANOVA) from predictmeans’ own Satterthwaite
+  code instead of converting the fit to an lmerTest object. The numbers
+  are lmerTest’s: the type I hypotheses now use lmerTest’s unit-diagonal
+  rows, on which its Satterthwaite df of several rows depend (unbalanced
+  data: 0.03-0.04 df closer to lmerTest’s in
+  [`permstats()`](https://dongwenluo.github.io/predictmeans/reference/permstats.md)).
+
+- Review of the week’s additions, with edge cases (model classes, odd
+  designs):
+
+  - [`aov()`](https://rdrr.io/r/stats/aov.html) with `Error()` and
+    missing values: rows left out by `subset =` were taken as missing
+    values to estimate (13 instead of 1 in a test); they no longer are.
+    The estimation no longer forms n x n matrices: 2,000 plots took 11
+    s, now 0.2 s; results identical. A check that observed plots are in
+    the fixed part of the model never ran; it does now.
+  - The empty-cell warning named the means with covariate values when
+    the grid had a covariate
+    ([`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md),
+    [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md):
+    “b2:0.1494…”, many times over); it names the factor levels, once.
+    [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+    gives it once instead of twice.
+  - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md):
+    with fewer than 7 distinct fitted values (a model with factors only)
+    the trend line joins the mean residual at each fitted value instead
+    of a loess smooth, which warned.
+    [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md):
+    no warning from the equal-variance test when the deviations are
+    equal within every level.
+
+- **One computation of the pairs.** The `pairs` table, the printed
+  p-value matrices and the letter groups now read one table of pair
+  statistics, and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and the means of `semireg` fits use one set of adjustment functions
+  (`R/p-adjust.R`). The printed output is unchanged except where the two
+  computations disagreed:
+
+  - With a `permlist` and `level` other than 0.05, the letters among all
+    means used 0.05 (the letters within `atvar` levels and their note
+    used `level`). Both now use `level`, and `settings$level` is
+    `level`.
+  - With means that cannot be estimated (confounded factors), Tukey’s k
+    within an `atvar` level counted them in `pairs$p.adj` but not in the
+    printed matrices; both now count the means that take part in the
+    estimable comparisons. Scheffe’s rank is the rank of those
+    comparisons (as emmeans), and the adjusted limits use the same sizes
+    as `p.adj`.
 
 - Fixed:
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
@@ -1596,6 +1695,12 @@ in the tests.
   `Authors@R`).
 - `which.plots` is documented. DESCRIPTION no longer carries
   CRAN-generated fields, and `NeedsCompilation` is “no”.
+- Each pull request is timed against its base branch on the same runner
+  (`.github/workflows/benchmarks.yaml`, `dev/benchmarks-ci.R`): it fails
+  when a key timing (means and comparisons of a 1,200-row lmer, empty
+  cells, Satterthwaite df, contrasts, aov with missing values,
+  permutation tests, residual plots) is more than 1.5 times slower and
+  at least 0.1 s slower.
 - GitHub Actions R CMD check on Linux, macOS and Windows, with
   `--as-cran`, and one job that runs the tests as CRAN does (without
   `NOT_CRAN`: 140 s). Release preparation (no release yet):

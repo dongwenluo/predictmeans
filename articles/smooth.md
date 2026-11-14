@@ -40,13 +40,13 @@ fm <- semireg(rate ~ pressure * QB + (pressure | Subject),
 
 `k` is the number of interior knots of the spline. `fm$semer` is the
 fitted mixed model, so the usual tests apply.
-[`ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html) tests the
-random terms, including the smooth: a significant smooth term means the
-curve is not a straight line.
+[`lmerTest::ranova()`](https://rdrr.io/pkg/lmerTest/man/ranova.html)
+tests the random terms, including the smooth: a significant smooth term
+means the curve is not a straight line.
 
 ``` r
 
-ranova(fm$semer)
+lmerTest::ranova(fm$semer)
 #> ANOVA-like table for random-effects: Single term deletions
 #> 
 #> Model:

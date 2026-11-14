@@ -254,7 +254,7 @@ anova(fm$semer)
 #> pressure:QB  372.6   372.6     1 23.616   77.186 6.629e-09 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-ranova(fm$semer)
+lmerTest::ranova(fm$semer)
 #> ANOVA-like table for random-effects: Single term deletions
 #> 
 #> Model:

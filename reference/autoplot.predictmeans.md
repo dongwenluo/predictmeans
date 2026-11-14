@@ -77,7 +77,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
   summary(pm)
-#> Predicted means for 'nitro:Variety' (lmerModLmerTest model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
+#> Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
 #> Confidence limits: 95%
 #> 
 #>  nitro     Variety estimate std.error    df conf.low conf.high group

@@ -23,8 +23,15 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
 
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
-- glmmTMB in Imports; car and pbkrtest in Suggests (own code in
-  `R/anova.R`, `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
+- glmmTMB and lmerTest in Imports (lmerTest only for
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits; not attached since 2.0; its removal is reconsidered when
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  is upgraded); car and pbkrtest in Suggests (own code in `R/anova.R`,
+  `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
+- [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  draws plots only when asked (`plot = FALSE` default since 2.0;
+  `which.plots` etc. turn plotting on); `autoplot()` draws from results.
 - Means over empty cells keep the 1.x rule: the average of the observed
   cells, with a warning (the maintainer’s decision of 2026-11-13,
   replacing an earlier “NA by default”). Combinations absent by design
@@ -42,6 +49,12 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   emmeans weights by the nesting hierarchy or gives NA.
 - `R/inference.R` (`pm_inference()`) decides covariance, df and their
   labels for every front end; change a df or covariance rule there only.
+- `R/p-adjust.R` decides multiplicity for every front end: families and
+  their sizes (`pm_families()`), adjusted p-values (`pm_adjust_p()`) and
+  the simultaneous limits that go with them (`pm_adjust_crit()`). In
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  every statistic of the pairs is computed once, in `pm_pair_table()`;
+  the `pairs` table, the printed matrices and the letters read it.
 - The maintainer can run SAS and Genstat on request: scripts go in
   `dev/sas/` and `dev/genstat/`. Reference values come only from real
   runs (uploaded results pages, output or CSV files). Do not use SAS
@@ -74,7 +87,9 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   `Rscript dev/snapshot-predictmeans.R <lib> before.rds` on the old
   build and `... after.rds` on the new one, then compare with
   `all.equal(readRDS("before.rds"), readRDS("after.rds"), tolerance = 0)`.
-- Timings: `Rscript dev/benchmarks.R`.
+- Timings: `Rscript dev/benchmarks.R`. Pull requests are timed against
+  their base branch in CI (`dev/benchmarks-ci.R`; fails when a key
+  timing is over 1.5 times the base’s and at least 0.1 s longer).
 - Run `R CMD check` once at the end of a piece of work, not after every
   edit.
 - Add a NEWS entry and update the plan’s status table with each change.

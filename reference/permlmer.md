@@ -131,7 +131,7 @@ anova(fm1, fm2, fm3)
 #> Data: sleepstudy
 #> Models:
 #> fm3: Reaction ~ Days + (1 | Subject)
-#> fm2: Reaction ~ Days + (Days || Subject)
+#> fm2: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))
 #> fm1: Reaction ~ Days + (Days | Subject)
 #>     npar    AIC    BIC  logLik -2*log(L)   Chisq Df Pr(>Chisq)    
 #> fm3    4 1802.1 1814.8 -897.04    1794.1                          
@@ -144,14 +144,14 @@ permlmer(fm3, fm2, nperm=99, ncore=1)
 #> Data: sleepstudy
 #> Models:
 #> lmer0: Reaction ~ Days + (1 | Subject)
-#> lmer1: Reaction ~ Days + (Days || Subject)
+#> lmer1: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))
 #>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    4 1794.5 1807.2 -893.23    1786.5                            
 #> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01
 permlmer(fm2, fm1, nperm=99, ncore=1)
 #> Data: sleepstudy
 #> Models:
-#> lmer0: Reaction ~ Days + (Days || Subject)
+#> lmer0: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))
 #> lmer1: Reaction ~ Days + (Days | Subject)
 #>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    5 1753.7 1769.6 -871.83    1743.7                           

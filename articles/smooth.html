@@ -105,11 +105,11 @@ and slope for each dialyzer:</p>
 <span>              data <span class="op">=</span> <span class="va">Dialyzer</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><code>k</code> is the number of interior knots of the spline.
 <code>fm$semer</code> is the fitted mixed model, so the usual tests
-apply. <code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">ranova()</a></code> tests the random terms, including the
-smooth: a significant smooth term means the curve is not a straight
+apply. <code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">lmerTest::ranova()</a></code> tests the random terms, including
+the smooth: a significant smooth term means the curve is not a straight
 line.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">ranova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">lmerTest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">ranova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ANOVA-like table for random-effects: Single term deletions</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Model:</span></span>

@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(predictmeans)
+library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
 library(HRW)
 library(gridExtra)
 library(car)
@@ -533,7 +534,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  28.439   0.096  28.456
+    ##  26.745   0.082  26.757
 
 ``` r
 
@@ -1380,14 +1381,14 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-35-1.png)
+    ## NULL
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-![](overview_files/figure-html/unnamed-chunk-35-2.png)
+    ## NULL
 
 - **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
   the diagonal at each ‘time’**
@@ -1766,7 +1767,7 @@ kable(anova(mod1$semer))
 
 ``` r
 
-kable(ranova(mod1$semer))
+kable(lmerTest::ranova(mod1$semer))
 ```
 
 |            | npar |    logLik |      AIC |     LRT |  Df | Pr(\>Chisq) |
@@ -1870,7 +1871,7 @@ kable(anova(mod2$semer))
 
 ``` r
 
-kable(ranova(mod2$semer))
+kable(lmerTest::ranova(mod2$semer))
 ```
 
 |                        | npar |    logLik |      AIC |       LRT |  Df | Pr(\>Chisq) |
@@ -2666,7 +2667,7 @@ kable(anova(mod$semer))
 
 ``` r
 
-kable(ranova(mod$semer))
+kable(lmerTest::ranova(mod$semer))
 ```
 
 |                | npar |    logLik |      AIC |      LRT |  Df | Pr(\>Chisq) |

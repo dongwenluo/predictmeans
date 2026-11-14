@@ -101,7 +101,7 @@ plots within six blocks, four nitrogen levels on subplots.</p>
 <code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>,</span>
 <span>                   plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Predicted means for 'nitro:Variety' (lmerModLmerTest model; df: Kenward-Roger, Kenward-Roger adjusted SEs)</span></span>
+<span><span class="co">#&gt; Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)</span></span>
 <span><span class="co">#&gt; Confidence limits: 95%</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  nitro     Variety estimate std.error    df conf.low conf.high group</span></span>
@@ -196,9 +196,11 @@ generics package, <code>tidy()</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, type <span class="op">=</span> <span class="st">"pvalue"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="predictmeans_files/figure-html/unnamed-chunk-6-2.png" class="r-plt" alt="" width="672"></p>
-<p><code><a href="../reference/predictmeans.html">predictmeans()</a></code> still draws its classic plots when
-<code>plot = TRUE</code> (the default); <code>which.plots</code> chooses
-among the means, bar, p-value and back-transformed plots.</p>
+<p><code><a href="../reference/predictmeans.html">predictmeans()</a></code> draws its classic plots with
+<code>plot = TRUE</code> (since 2.0 the default is <code>FALSE</code>;
+<code>options(predictmeans.plot = TRUE)</code> sets it for a session);
+<code>which.plots</code> chooses among the means, bar, p-value and
+back-transformed plots.</p>
 </div>
 <div class="section level2">
 <h2 id="degrees-of-freedom-and-standard-errors">Degrees of freedom and standard errors<a class="anchor" aria-label="anchor" href="#degrees-of-freedom-and-standard-errors"></a>

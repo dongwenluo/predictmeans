@@ -41,29 +41,19 @@
 - [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   : Calculate degree of freedom of a modelterm (contrast) for a lmer
   model
-
 - [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
   : An adjusted coefficient of determination (R2) for generalized linear
   mixed models
-
 - [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
   : R-squared for Mixed Models as Numbers
-
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
-  :
-
-  Calculate SE and CI of variance components for `lmer`, `glmer`, `lme`,
-  `glmmTMB` model
-
+  : Variance Components with Standard Errors and Confidence Intervals
 - [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
   : Extract Standard Errors of Model Random Effects
-
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
   : Calculates and plots Cook's distances for a Linear (Mixed) Model
-
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
   : Diagnostic Plots for a Fitted Model
-
 - [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
   : Checks of a Fitted Model
 

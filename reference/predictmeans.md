@@ -12,7 +12,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
@@ -213,9 +213,12 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - plot:
 
-  An option for drawing plots, or not. The default is TRUE, unless
-  `options(predictmeans.plot = FALSE)` is set (e.g. for scripts, reports
-  and pipelines that use the `means` and `pairs` tables only).
+  Draw the plots now? The default is `FALSE` (since 2.0; 1.x drew them):
+  the result holds the tables, and `autoplot()` draws the plots from it.
+  `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a whole
+  session, draws them as 1.x did; asking for plots with `which.plots`,
+  `plotord` or the old `mplot`, `barplot`, `pplot` and `bkplot` also
+  draws them.
 
 - jitterv:
 
@@ -641,13 +644,13 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> NULL
 #> 
 #> $model_class
-#> [1] "lmerModLmerTest"
+#> [1] "lmerMod"
 #> 
 #> $version
 #> [1] "1.1.1.9000"
 #> 
   summary(pm)
-#> Predicted means for 'nitro' (lmerModLmerTest model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
+#> Predicted means for 'nitro' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
 #> Confidence limits: 95%
 #> 
 #>  nitro estimate std.error    df conf.low conf.high

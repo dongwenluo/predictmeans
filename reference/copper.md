@@ -42,7 +42,7 @@ mod <- semireg(log(grade) ~ (xcoord + ycoord + zcoord)^2,
 #> Warning: Some predictor variables are on very different scales: consider rescaling. 
 #> You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
 #> boundary (singular) fit: see help('isSingular')
-ranova(mod$semer)
+lmerTest::ranova(mod$semer)
 #> Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
 #>   Consider formula(paste(x, collapse = " ")) instead.
 #> ANOVA-like table for random-effects: Single term deletions

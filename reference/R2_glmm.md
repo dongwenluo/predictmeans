@@ -39,7 +39,7 @@ Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID:
   library(predictmeans)
   Oats$nitro <- factor(Oats$nitro)
   (fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats))
-#> Linear mixed model fit by REML ['lmerModLmerTest']
+#> Linear mixed model fit by REML ['lmerMod']
 #> Formula: yield ~ nitro * Variety + (1 | Block/Variety)
 #>    Data: Oats
 #> REML criterion at convergence: 529.0285

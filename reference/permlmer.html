@@ -162,7 +162,7 @@ default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, g
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> fm3: Reaction ~ Days + (1 | Subject)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> fm2: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fm2: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> fm1: Reaction ~ Days + (Days | Subject)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     npar    AIC    BIC  logLik -2*log(L)   Chisq Df Pr(&gt;Chisq)    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> fm3    4 1802.1 1814.8 -897.04    1794.1                          </span>
@@ -175,14 +175,14 @@ default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, g
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + (1 | Subject)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01</span>
 <span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm2</span>, <span class="va">fm1</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + (Days || Subject)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days | Subject)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    5 1753.7 1769.6 -871.83    1743.7                           </span>
