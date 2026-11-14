@@ -105,3 +105,17 @@ test_that("a factor whose effects are nested in the compared factor is not match
   expect_equal(r$estimate, mean(c(pred("d1", "F1", "B"), pred("d1", "F2", "B"))) - pred("d2", "F1", "B"),
                tolerance = 1e-8)
 })
+
+test_that("the empty-cell warning names the means by their factor levels, once", {
+  set.seed(2)
+  d <- expand.grid(B = factor(c("b1", "b2")), C = factor(c("c1", "c2", "c3")), rep = 1:3)
+  d$x <- rnorm(nrow(d)); d$y <- as.numeric(d$B) + d$x + rnorm(nrow(d))
+  e <- d[!(d$B == "b2" & d$C == "c1"), ]
+  w <- character()
+  withCallingHandlers(invisible(pm_slopes(lm(y ~ x*B + C, data = e), "x", "B")),
+                      warning = function(x) { w <<- c(w, conditionMessage(x)); invokeRestart("muffleWarning") })
+  expect_length(w, 1)
+  expect_match(w, "The mean of B = b2 averages", fixed = TRUE)
+  expect_warning(covariatemeans(lm(y ~ x + B*C, data = e), "B", covariate = "x", plot = FALSE),
+                 "The mean of B = b2 averages", fixed = TRUE)
+})

@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align =
 #| label: setup
 library(tidyverse)
 library(predictmeans)
+library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
 library(HRW)
 library(gridExtra)
 library(car)
@@ -644,7 +645,7 @@ kable(anova(mod1$semer))
 -   **RANOVA**
 
 ```{r}
-kable(ranova(mod1$semer))
+kable(lmerTest::ranova(mod1$semer))
 ```
 
 -   **$R^2$**
@@ -703,7 +704,7 @@ kable(anova(mod2$semer))
 -   **RANOVA**
 
 ```{r}
-kable(ranova(mod2$semer))
+kable(lmerTest::ranova(mod2$semer))
 ```
 
 -   **$R^2$**
@@ -1138,7 +1139,7 @@ kable(anova(mod$semer))
 -   **RANOVA**
 
 ```{r}
-kable(ranova(mod$semer))
+kable(lmerTest::ranova(mod$semer))
 ```
 
 -   **$R^2$**

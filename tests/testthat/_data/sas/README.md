@@ -22,3 +22,12 @@ by `dev/sas/pm-reference-adjust.sas` (2026-11-13, "Results: Program 4"; text
 in `dev/sas/sas-results-2026-11-13-adjust.txt`, parsed by
 `dev/sas/parse-sas-adjust.py`): Variety and Variety x Nitro on the 68
 observations, `DDFM=KR`, `ADJDFE=ROW` and `ADJDFE=SOURCE`.
+
+`proc-mixed-varcomp.csv.gz`: the covariance parameter tables (estimate,
+standard error, lower and upper limit; `COVTEST CL`) printed by
+`dev/sas/pm-reference-varcomp.sas` (2026-11-14; text without the session URLs
+in `dev/sas/sas-results-2026-11-14-varcomp.txt`, parsed by
+`dev/sas/parse-sas-varcomp.py`): oats with and without missing plots, a random
+intercept and slope (unstructured), a random intercept with AR(1),
+unstructured repeated measures, AR(1) with missing values, Dyestuff,
+Dyestuff2 (a component at zero) and Penicillin (crossed).

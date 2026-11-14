@@ -10,9 +10,9 @@ Description: Providing functions to diagnose and make inferences from various li
     such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB', 'gam' and 'semireg'. 
 	Inferences include predicted means and standard errors, contrasts, multiple comparisons, 
 	permutation tests, adjusted R-square and graphs.
-Depends: R (>= 3.6.0), lme4, nlme, lmerTest
-Imports: glmmTMB, ggplot2, graphics, grDevices, grid, Matrix, MASS, methods, numDeriv, parallel, stats, utils
-Suggests: car, reformulas, emmeans, generics, marginaleffects, mvtnorm, HRW, lmeInfo, lmeSplines, mgcv, pbkrtest, plotly, splines2, testthat (>= 3.0.0), knitr, rmarkdown
+Depends: R (>= 3.6.0), lme4, nlme
+Imports: glmmTMB, ggplot2, graphics, grDevices, grid, lmerTest, Matrix, MASS, methods, numDeriv, parallel, stats, utils
+Suggests: car, reformulas, emmeans, generics, marginaleffects, mvtnorm, HRW, lmeSplines, mgcv, pbkrtest, plotly, splines2, testthat (>= 3.0.0), knitr, rmarkdown
 Config/testthat/edition: 3
 License: GPL (>= 2)
 URL: https://dongwenluo.github.io/predictmeans/, https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans

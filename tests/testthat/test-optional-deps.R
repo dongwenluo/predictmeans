@@ -8,13 +8,9 @@ test_that("internal point-in-polygon matches HRW::pointsInPoly for closed polygo
   expect_identical(predictmeans:::pm_points_in_poly(pts, poly_closed[-6, ]), predictmeans:::pm_points_in_poly(pts, poly_closed))
 })
 
-test_that("optional spline types and lme variance components work when installed", {
+test_that("optional spline types work when installed", {
   x <- seq(0, 1, length = 50)
   skip_if_not_installed("splines2")
   Z <- smZ(x, k = 5, type = "bSpline")
   expect_equal(nrow(Z), 50)
-  skip_if_not_installed("lmeInfo")
-  fm <- lme(yield ~ Variety, random = ~1|Block, data = nlme::Oats)
-  vc <- varcomp(fm)
-  expect_true(all(c("vcov", "SE") %in% colnames(vc)))
 })

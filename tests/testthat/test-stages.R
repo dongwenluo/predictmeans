@@ -19,7 +19,7 @@ test_that("mean table: t limits, or mean +/- 2 SE at 0.05 with permutation", {
   r <- predictmeans:::pm_mean_table(mt, "A", perm = FALSE, slevel = 0.1, ndecimal = 4)
   expect_equal(r$table[["LL(90%)"]], round(c(10, 12) - qt(0.95, 5) * c(1, 2), 4))
   rp <- predictmeans:::pm_mean_table(mt, "A", perm = TRUE, slevel = 0.1, ndecimal = 4)
-  expect_equal(rp$slevel, 0.05)
+  expect_equal(rp$ci_level, 0.05)
   expect_equal(rp$table[["LL(95%)"]], c(8, 8))
   expect_true(all(is.na(rp$table$Df)))
 })
@@ -34,7 +34,7 @@ test_that("compare: SEDs and nested factors drop atvar", {
   ok <- table(d$A, d$B)[cbind(k$fctnames$A, k$fctnames$B)] > 0   # cells with data
   K <- k$K[ok, mp$estimable, drop = FALSE]
   r <- predictmeans:::pm_compare_sed(K, k$K, k$fctnames[ok, ], k$fctnames, c("A", "B"),
-                                     mp$coef, mp$vcov, "none", 0.05, atvar = "A")
+                                     mp$coef, mp$vcov, atvar = "A")
   expect_equal(unname(r$SED.out[1:2]), rep(sqrt(2 * sigma(m)^2 / 3), 2))
   expect_null(r$atvar)                     # no pairs within a level of B
 })
@@ -62,5 +62,23 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
   expect_equal(r$pairs$estimate[1], unname(-coef(m)["Aa2"]))
   expect_true(all(is.na(r$pairs$estimate[2:3])))
   pdf(NULL); on.exit(dev.off())
-  expect_message(predictmeans(m, "A", prtnum = FALSE, prtplt = FALSE), "no mean plots")
+  expect_message(predictmeans(m, "A", plot = TRUE, prtnum = FALSE, prtplt = FALSE), "no mean plots")
+})
+
+test_that("plots only when asked: plot = TRUE, the option, or plots named", {
+  O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
+  fm <- lm(yield ~ Block + nitro*Variety, data = O)
+  f <- tempfile(fileext = ".pdf")
+  pages <- function(expr) {
+    grDevices::pdf(f); on.exit(grDevices::dev.off())
+    force(expr)
+    grDevices::dev.off(); on.exit()
+    # PDF page objects, read as bytes (the file is not text in a UTF-8 locale)
+    length(grepRaw("/Type /Page[^s]", readBin(f, "raw", file.size(f)), all = TRUE))
+  }
+  expect_equal(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE, prtnum = FALSE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", which.plots = "mean", prtnum = FALSE)), 0)
+  op <- options(predictmeans.plot = TRUE); on.exit(options(op), add = TRUE)
+  expect_gt(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
 })

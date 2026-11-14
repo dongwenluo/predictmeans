@@ -22,8 +22,10 @@ for run, path in enumerate(sys.argv[1:-1], start=1):
         elif sec == "reml":
             if c and c[0] in ("Block", "Block.Variety") and len(c) == 3 and num.match(c[1]):
                 add(an, "vc", c[0], "component", c[1])
+                add(an, "vc", c[0], "se", c[2])
             elif len(c) >= 4 and c[-3] in ("Sigma2", "phi_1"):
                 add(an, "vc", c[-3], "estimate", c[-2])
+                add(an, "vc", c[-3], "se", c[-1])
             elif s.startswith("Sequentially adding terms"): sub = "seq"
             elif s.startswith("Dropping individual terms"): sub = "drop"
             elif sub in ("seq", "drop") and len(c) == 6 and num.match(c[1]):

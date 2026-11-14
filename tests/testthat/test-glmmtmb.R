@@ -115,9 +115,10 @@ test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left a
   expect_identical(rownames(v2), rownames(v1))
   expect_equal(v2[, "vcov"], v1[, "vcov"], tolerance = 1e-4)
   expect_equal(v2[, "SE"], v1[, "SE"], tolerance = 1e-3)
-  # variances: glmmTMB's Wald CIs for the SDs, squared
+  # variances, with ci_method = "Wald": glmmTMB's Wald CIs for the SDs, squared
   ci_sd <- confint(m2, parm = "theta_")[1:2, 1:2]
-  expect_equal(unname(as.matrix(v2[c(1, 3), 3:4])), unname(ci_sd^2), tolerance = 1e-4)
+  v3 <- varcomp(m2, ci_method = "Wald")
+  expect_equal(unname(as.matrix(v3[c(1, 3), 3:4])), unname(ci_sd^2), tolerance = 1e-4)
   expect_true(all(v2[, 3] < v2[, "vcov"] & v2[, "vcov"] < v2[, 4]))
   # the fitted model is unchanged
   expect_equal(as.numeric(glmmTMB::VarCorr(m2)$cond$Subject[1, 1]), v2[1, "vcov"], tolerance = 1e-6)

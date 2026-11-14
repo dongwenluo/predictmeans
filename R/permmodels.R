@@ -283,8 +283,6 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 	mod_df <- as.data.frame(pm_mer_data(model))
 	mod_df <- na.omit(mod_df[, lmer_var_names])	
 	model <- pm_refit(model, data=mod_df, check=TRUE)
-	# lmerTest tables (Satterthwaite df and p-values) however the model was fitted
-	if (!inherits(model, "lmerModLmerTest")) model <- as_lmerModLmerTest(model)	
     fixef <- fixef(model) 
     Lambda <- getME(model, "Lambda")
     # V = Z Lambda Lambda' Z' + I; W is its order-invariant square root (R/whiten.R)
@@ -314,8 +312,11 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   if (nperm==0) stop("permutation can't produce useful data!")
   failnote <- pm_perm_failnote(failures)
 
+  # lmer: the tables with Satterthwaite df and p-values (as lmerTest's), however
+  # the model was fitted (R/anova.R)
+  lt <- if (inherits(model, "lmerMod")) tryCatch(pm_lmer_tables(model), error = function(e) NULL)
   if (!(inherits(model, "aov"))) {
-	model_tTable <- coef(summary(model))
+	model_tTable <- if (!is.null(lt)) lt$coef else coef(summary(model))
     Tvalue <- colnames(model_tTable)[grep("value", colnames(model_tTable))][1] 
     Tper.p <- pm_perm_p(abs(model_tTable[, Tvalue]), sapply(permmod, function(x) abs(x[[3]][, Tvalue])), exact)
 	if ("(Intercept)" %in% rownames(model_tTable)) Tper.p[1] <- NA
@@ -328,8 +329,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   }else COEFFICENTS <- NULL
   
   if (type %in% c("I", "1")) {
-    # (lmerTest's anova() gives type III unless asked for type I)
-    key_anova <- if (inherits(model, "lmerModLmerTest")) anova(model, type = "I") else anova(model)
+    key_anova <- if (!is.null(lt)) lt$anova else anova(model)
     stats_value <- colnames(key_anova)[grep("F.value",colnames(key_anova))]
     if (class(model)[1] %in% c("glm")) stats_value <- "Deviance"
   }else{

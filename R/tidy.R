@@ -120,93 +120,42 @@ pm_tidy_parts <- function(e) {
     dimnames(V) <- list(rownames(K), rownames(K))
   }
 
-  ## Pairs
+  ## Pairs: every statistic from the pair table of the compare stage
+  ## (pm_pair_table(), R/predictmeans-stages.R), as the printed matrices
   pairs <- NULL
-  if (nK > 1 && !is.null(g("cm"))) {
-    ij <- do.call(rbind, lapply(2:nK, function(i) cbind(j = seq_len(i - 1), i = i)))
-    cm <- as.vector(g("cm"))
-    dses <- as.vector(g("dses"))
-    pdf <- if (perm) rep(NA_real_, nrow(ij)) else rep_len(as.numeric(g("Df_diff")), nrow(ij))
-    pdf[is.na(cm)] <- NA                      # pairs that cannot be estimated
-    stat <- cm/dses
-    p <- if (perm) as.vector(g("t.p.values")) else 2*stats::pt(-abs(stat), pdf)
-
+  pt <- g("pair_tab")
+  if (nK > 1 && is.data.frame(pt)) {
+    cm <- pt$estimate
     rnK <- rownames(K)
-    pairs <- data.frame(level1 = rnK[ij[, "j"]], level2 = rnK[ij[, "i"]], stringsAsFactors = FALSE)
-    by <- rep(NA_character_, nrow(ij))
-    if (!is.null(atvar)) {
-      A <- label[ij[, "j"], atvar, drop = FALSE]
-      B <- label[ij[, "i"], atvar, drop = FALSE]
-      same <- Reduce(`&`, lapply(atvar, function(v) as.character(A[[v]]) == as.character(B[[v]])))
-      by[same] <- do.call(paste, c(lapply(A[same, , drop = FALSE], as.character), sep = " : "))
-      pairs$by <- by
-    }
+    pairs <- data.frame(level1 = rnK[pt$j], level2 = rnK[pt$i], stringsAsFactors = FALSE)
+    if (!is.null(atvar)) pairs$by <- pt$by
     po <- g("pair_over")
     if (length(po) == nrow(pairs) && any(!is.na(po))) pairs$over <- po   # compared on common cells
     pairs$estimate <- cm
-    pairs$std.error <- dses
-    pairs$df <- pdf
-    pairs$statistic <- stat
-    pairs$p.value <- p
-
-    adjust_group <- function(idx) {
-      n <- length(idx)
-      if (adj == "tukey") {
-        if (n < 2) return(p[idx])
-        # number of means k from the k(k-1)/2 pairs among them
-        stats::ptukey(sqrt(2)*abs(stat[idx]), (1 + sqrt(1 + 8*n))/2, pdf[idx], lower.tail = FALSE)
-      } else if (adj %in% pm_adjust_extra_methods) {
-        if (n < 2) return(p[idx])
-        pm_adjust_extra(adj, stat[idx], p[idx], pdf[idx], rank = (1 + sqrt(1 + 8*n))/2 - 1,
-                        R = if (adj == "mvt") g("pair_cor")[idx, idx, drop = FALSE])
-      } else {
-        stats::p.adjust(p[idx], adj)
-      }
-    }
-    p_adj <- rep(NA_real_, length(p))
-    if ((adj %in% pm_adjust_extra_methods || (perm && adj %in% pm_perm_maxt_methods)) &&
-        length(g("p.extra")) == length(p)) {
-      p_adj <- g("p.extra")              # computed with the legacy tables
-    } else if (is.null(atvar)) {
-      p_adj <- adjust_group(seq_along(p))
-    } else {
-      for (b in unique(stats::na.omit(by))) {
-        idx <- which(by == b)
-        p_adj[idx] <- adjust_group(idx)
-      }
-    }
-    pairs$p.adj <- p_adj
+    pairs$std.error <- pt$std.error
+    pairs$df <- pt$df
+    pairs$statistic <- pt$statistic
+    pairs$p.value <- pt$p.value
+    pairs$p.adj <- pt$p.adj
     # equivalence tests (TOST); with a permlist they are t-based too
     eqm <- pm_equiv_margins(g("equivalence"))
     if (!is.null(eqm)) {
       tdf <- if (perm) {
         dd <- g("Df_diff")
         if (length(dd)) rep_len(as.numeric(dd), length(cm)) else Inf
-      } else pdf
-      pairs$p.equiv <- pm_tost(cm, dses, tdf, eqm)
+      } else pt$df
+      pairs$p.equiv <- pm_tost(cm, pt$std.error, tdf, eqm)
     }
-    lsd_level <- if (is.null(g("user_level"))) g("level") else g("user_level")   # R/predictmeans-stages.R
-    # critical values for each comparison: t quantiles, or with a permlist
-    # those of the permutation distribution of |t|
-    pT <- g("perm_T")
-    crit <- if (perm && !is.null(pT)) {
-      pm_perm_crit(pT$T, lsd_level)
-    } else if (perm) {
-      rep(NA_real_, length(cm))
-    } else stats::qt(1 - lsd_level/2, pdf)
-    # a robust permlist (permmodels(robust = TRUE)) studentises with HC3 SEs
-    ci_se <- if (!is.null(pT$se)) pT$se else dses
+    # limits of each pair (t, or the permutation quantile of |t|), and the
+    # simultaneous limits that agree with p.adj (R/p-adjust.R)
+    crit <- pt$crit
+    ci_se <- pt$ci_se              # HC3 SEs with a robust permlist
     pairs$conf.low <- cm - crit*ci_se
     pairs$conf.high <- cm + crit*ci_se
     pairs$lsd <- crit*ci_se
-    # simultaneous limits within each family, agreeing with p.adj (R/p-adjust.R)
-    if (!perm || !is.null(pT)) {
-      fam <- if (is.null(atvar)) rep("all", length(cm)) else by
-      crit_adj <- pm_adjust_crit(adj, lsd_level, pdf, fam, est = !is.na(cm), R = g("pair_cor"), T = pT$T)
-      if (!is.null(crit_adj)) {
-        pairs$adj.conf.low <- cm - crit_adj*ci_se
-        pairs$adj.conf.high <- cm + crit_adj*ci_se
-      }
+    if (!is.null(pt$crit_adj)) {
+      pairs$adj.conf.low <- cm - pt$crit_adj*ci_se
+      pairs$adj.conf.high <- cm + pt$crit_adj*ci_se
     }
     pairs$p.method <- if (perm) {
       if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else "permutation"

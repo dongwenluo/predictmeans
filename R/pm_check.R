@@ -120,7 +120,9 @@ pm_check <- function(model, plot = FALSE) {
       if (nlevels(g) < 2 || any(table(g) < 2)) next
       sds <- tapply(r[ok], g, stats::sd)
       dev <- abs(r[ok] - stats::ave(r[ok], g, FUN = stats::median))
-      bf <- tryCatch(stats::anova(stats::lm(dev ~ g))[1, "Pr(>F)"], error = function(e) NA_real_)
+      # (no test when the deviations are equal within every level, e.g. two observations per level)
+      bf <- if (stats::var(dev - stats::ave(dev, g)) < 1e-12 * max(1, stats::var(dev))) NA_real_ else
+        tryCatch(quiet(stats::anova(stats::lm(dev ~ g))[1, "Pr(>F)"]), error = function(e) NA_real_)
       ratio <- max(sds) / min(sds)
       add(paste0("Equal variances: ", f),
           paste0("SD ratio ", round(ratio, 2), " (", names(which.max(sds)), " / ", names(which.min(sds)), ")"), bf,

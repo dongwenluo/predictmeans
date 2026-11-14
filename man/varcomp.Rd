@@ -2,42 +2,99 @@
 % Please edit documentation in R/varcomp.R
 \name{varcomp}
 \alias{varcomp}
-\title{Calculate SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model}
+\title{Variance Components with Standard Errors and Confidence Intervals}
 \usage{
-varcomp(model, ci=TRUE, level=0.95)
+varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+        information = c("observed", "average", "expected"))
 }
 \arguments{
-\item{model}{Model object returned by \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB}.}
+\item{model}{A fitted model (see Description).}
 
-\item{ci}{a logical value to indicates wheather or not to simulate a confidence interval for \code{lmer} and \code{glmmTMB} models, the default value is TRUE.}
+\item{ci}{\code{TRUE} (the default): add confidence intervals.}
 
-\item{level}{level of confidence of CI, the default value is 0.95.}
+\item{level}{Confidence level of the intervals; the default is 0.95.}
+
+\item{ci_method}{How the intervals of variances are made: \code{"Satterthwaite"} (the default) chi-square
+intervals with \eqn{\nu = 2 (estimate/SE)^2} df, as SAS PROC MIXED (\code{COVTEST CL}); \code{"Wald"} Wald
+intervals on the log scale; \code{"profile"} (\code{lmer}, \code{glmer}) lme4's profile-likelihood intervals,
+which for a REML fit are those of the ML fit (lme4 profiles the ML deviance), so they do not go with the REML
+estimates. The other components always get the Wald intervals of the Details.}
+
+\item{information}{For REML fits of \code{lmer}, \code{lme} and \code{gls} models: the information matrix of
+the variance parameters behind the SEs: \code{"observed"} (the default, as SAS PROC MIXED), \code{"average"}
+(the average information of Genstat's and ASReml's REML: Genstat's s.e.) or \code{"expected"}; the same
+choices as for the Kenward-Roger df (\code{df_method} of \code{\link{predictmeans}}). Other fits use the
+observed information.}
 }
 \value{
-Variance components table.
+A data frame with one row per component (random-effect variances and covariances by group, named
+  \code{group.term} and \code{group.term1.term2}; correlation and variance-function parameters named
+  \code{cor.name} and \code{var.name}; \code{residual}) and columns \code{vcov} (the estimate), \code{SE} and,
+  with \code{ci = TRUE}, the limits. Values are rounded to 4 decimals; attribute \code{"ci_method"} says how
+  the intervals were made.
 }
 \description{
-This function calculates SE and CI of variance components for \code{lmer}, \code{glmer}, \code{lme}, \code{glmmTMB} model. For \code{lme} models it needs package \pkg{lmeInfo}.
+The variance components of a fitted model, with standard errors and confidence intervals, for every model class
+that \code{\link{predictmeans}} handles: the random-effect variances and covariances and the residual variance
+of \code{lmer}, \code{lme} and \code{glmmTMB} models (also with correlation and variance structures and random
+slopes), the random-effect (co)variances of \code{glmer} models, the correlation and variance-function parameters
+of \code{gls} and \code{lme} models, the stratum variance components of \code{aov} models with \code{Error()},
+the smoothing variance components of \code{mgcv::gam} models and \code{\link{semireg}} fits, and the error term
+of \code{lm}, \code{aov} and \code{glm} models (residual variance, dispersion, or the negative binomial
+\eqn{\theta}).
 }
 \details{
-For \code{glmmTMB} models the table holds the variances and covariances of each random-effect term
-(conditional model, then the zero-inflation model with prefix \code{zi.}) and, for gaussian models, the
-residual variance. SEs are from the delta method. CIs are Wald intervals on the log scale for variances
-and on the Fisher z (atanh) scale for correlations, times the two standard deviations for covariances.
+Standard errors are from the observed information of the variance parameters (the inverse Hessian of the
+REML, or ML, deviance at the estimates, as SAS PROC MIXED and the Kenward-Roger df of predictmeans), carried to
+the variance components by the delta method: \code{lmer} from the deviance in (theta, sigma), \code{glmer} from
+the Hessian lme4 stores for (theta, beta) (\code{nAGQ = 0} fits: the deviance in theta), \code{lme} and
+\code{gls} from the REML (ML) log-likelihood in their unconstrained \code{modelStruct} parameters (any
+\code{pdMat}, \code{corStruct} and \code{varFunc}), \code{glmmTMB} from \code{vcov(full = TRUE)}.
+
+Intervals of variances: Satterthwaite's chi-square interval
+\eqn{[\nu \hat\sigma^2/\chi^2_{\nu, 1-\alpha/2}, \nu \hat\sigma^2/\chi^2_{\nu, \alpha/2}]} with
+\eqn{\nu = 2 (\hat\sigma^2/SE)^2} (positive and skewed as the sampling distribution of a variance; for the
+residual variance of an \code{lm} it is the exact interval, \eqn{\nu} the residual df; for the stratum
+components of an \code{aov} Satterthwaite's interval from the mean squares). Other components: Wald intervals
+on the scale where the parameter is unbounded: atanh for correlations (a covariance: the interval of its
+correlation times the two SDs), log for other positive parameters (\code{varIdent} ratios, ranges,
+\eqn{\theta}), and the natural scale otherwise (e.g. the power of \code{varPower}). A variance estimated at its
+bound, zero, has no SE (the interval is (0, NA)), as SAS prints it; an analysis of variance estimate can be
+negative.
+
+\code{lm}, \code{aov}, gaussian \code{glm}: the residual variance \eqn{s^2} with SE \eqn{s^2 \sqrt{2/df}} and
+the exact chi-square interval. Other \code{glm} families with an estimated dispersion (Gamma, inverse gaussian,
+quasi): the Pearson dispersion, with the same (approximate) SE and interval. Poisson and binomial: the
+dispersion is fixed at 1 (no SE). Negative binomial (\code{MASS::glm.nb}): \eqn{\theta} with its SE.
+
+\code{aov} with \code{Error()}: the analysis of variance (method of moments) estimates of the variance of each
+error stratum, from the stratum mean squares and their expectations (as Genstat's stratum variances; they equal
+the REML estimates in balanced designs when positive, and can be negative), with SEs from
+\eqn{var(MS) = 2 MS^2/df} and Satterthwaite's chi-square intervals; with missing values, those of the design
+completed as in \code{\link{predictmeans}}.
+
+\code{gam}: \code{mgcv::gam.vcomp()} (variances of the smooths, and the scale), its intervals squared, and the
+SEs from their width on the log scale; it needs \code{method = "REML"} or \code{"ML"}.
 }
 \examples{
 library(predictmeans)
-Oats$nitro <- factor(Oats$nitro) 
+Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-\dontrun{varcomp(fm)}
+varcomp(fm)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
+# the same components by the analysis of variance
+varcomp(aov(yield ~ nitro*Variety + Error(Block/Variety), data=Oats))
 
 data(Orthodont, package="nlme")
-mod <- lmer(distance ~ age + (age|Subject), data=Orthodont)
-\dontrun{varcomp(mod)}
 mod1 <- lme(distance ~ age, random=~age|Subject, data=Orthodont)
 varcomp(mod1)
+# correlation and variance structures
+mod2 <- gls(distance ~ age*Sex, correlation=corAR1(form=~1|Subject),
+            weights=varIdent(form=~1|Sex), data=Orthodont)
+varcomp(mod2)
+# the error term of a linear model
+varcomp(lm(yield ~ Block + nitro*Variety, data=Oats))
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

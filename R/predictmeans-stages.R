@@ -3,7 +3,9 @@
 ##   estimate       pm_inference(), pm_estimate_means(): K matrix,
 ##                  predicted means, SEs, legacy tables
 ##   compare        pm_compare_sed(), pm_compare_df(), pm_compare_lsd(),
-##                  pm_pair_pvalues(), pm_pairs_overall() / pm_pairs_atvar()
+##                  pm_pair_pvalues(), pm_pair_table() (every statistic of
+##                  the pairs, once), pm_pairs_overall() / pm_pairs_atvar()
+##                  (the printed matrices and letters, from that table)
 ##   mean_table     pm_mean_table(): the mean table with confidence limits
 ##   backtransform  pm_back_transform(), pm_final_mean_table(): response
 ##                  scale; letters
@@ -139,9 +141,10 @@ pm_code_setup <- quote({
   if (is.null(level)){
     slevel <- level <- 0.05
   }
-  # the user's level: 'level' becomes level/m with adj = "bonferroni" (the
-  # legacy LSD) and 'slevel' 0.05 with a permlist (the legacy mean table)
-  slevel <- user_level <- level
+  # 'level' and 'slevel' are the user's level everywhere; the printed LSD of
+  # adj = "bonferroni" uses 'lsd_level' (compare stage) and the mean table
+  # with a permlist (limits +- 2 SE) 'ci_level' (mean_table stage)
+  slevel <- level
 
   if (!is.null(plotord) && !unique(plotord%in%c("NULL", ""))) {
     plot <- mplot <- TRUE
@@ -286,26 +289,32 @@ pm_code_compare <- quote({
     LSD <- NA
   }else {
     perm <- pm_perm_given(permlist)
-    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, adj, level, atvar,
+    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, atvar,
                             cells = ctr.matrix$empty_cells), envir = environment())
     if (!perm) {
       list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
       bkmt <- mt  # update bkmt
     }
-    LSD <- pm_compare_lsd(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm)
+    # the printed LSDs: with adj = "bonferroni" at level/m over all pairs (1.x)
+    lsd_level <- if (adj == "bonferroni") level/length(dses) else level
+    LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd_level, Df, slevel, ndecimal, perm)
+
+    # every statistic of the pairs, once (the pairs table, the printed
+    # matrices and the letters read it)
+    no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
+    list2env(pm_pair_pvalues(model, rK, cm, dses, if (perm) NULL else Df_diff, adj, perm, permlist, ncore, vcovm),
+             envir = environment())
+    pair_tab <- pm_pair_table(label, if (no_atvar) NULL else atvar, rK, cm, dses, if (perm) NULL else Df_diff,
+                              t.p.values, adj, perm, level, pair_cor, perm_T)
 
     if (pairwise) {
       p_valueMatrix <- NULL
-      perm_T <- NULL
-      list2env(pm_pair_pvalues(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm),
-               envir = environment())
-      if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
-        list2env(pm_pairs_overall(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                                  adj, perm, nsim, level, slevel, meandecr, Df_diff, pair_cor, perm_T),
-                 envir = environment())
+      if (no_atvar) {
+        list2env(pm_pairs_overall(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
+                                  meandecr), envir = environment())
       } else {
-        list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                                Df_diff, adj, slevel, pair_cor, perm_T), envir = environment())
+        list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pair_tab, slevel),
+                 envir = environment())
       }
     }
   } # end of if (nK == 1) ... else
@@ -320,7 +329,7 @@ pm_existing <- function(nms, env) mget(intersect(nms, ls(env, all.names = TRUE))
 ## (nested factors). 'cells' (Kmatrix()$empty_cells): pairs with a mean over
 ## empty cells are compared on the cells both means have (R/empty-cells.R);
 ## pair_over says which.
-pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level, atvar, cells = NULL) {
+pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cells = NULL) {
   nK <- nrow(K)
   rnK <- rownames(K)
   # pairs (i, j), i > j, in column order; level labels come from the label
@@ -362,13 +371,9 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
   cm[non_est_pair] <- NA
   dses[non_est_pair] <- NA
 
-  if (adj == "bonferroni"){
-    level <- level/length(dses)
-  }
-
   SED.out <- if (all(is.na(dses))) c(Max.SED = NA_real_, Min.SED = NA_real_, Aveg.SED = NA_real_) else
     c(Max.SED = max(dses, na.rm = TRUE), Min.SED = min(dses, na.rm = TRUE), Aveg.SED = mean(dses, na.rm = TRUE))
-  dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses)
+  dses.df <- data.frame(labK[pp$i, , drop=FALSE], labK[pp$j, , drop=FALSE], dses, pair_id = seq_along(pp$i))
   dses.m <- NULL
 
   if (length(vars) > 1) {
@@ -387,7 +392,7 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, adj, level
     }
     attr(SED.out, "For the Same Level of Factor") <- dses.m
   }
-  list(rK = rK, cm = cm, dses = dses, level = level, SED.out = SED.out, dses.df = dses.df,
+  list(rK = rK, cm = cm, dses = dses, SED.out = SED.out, dses.df = dses.df,
        dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar, pair_over = pair_over)
 }
 
@@ -444,58 +449,76 @@ pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, p
   LSD
 }
 
-## t values and raw p-values of the pairs (t, Tukey or permutation).
-pm_pair_pvalues <- function(model, rK, cm, dses, nK, Df, Df_diff, adj, perm, permlist, ncore, vcovm = NULL) {
-      t.v <- cm/dses
-      pair_cor <- p.extra <- perm_T <- NULL
-
-      # correlation of the pairwise contrasts, for adj = "mvt"
-      if (!perm && adj == "mvt") pair_cor <- stats::cov2cor(as.matrix(rK %*% tcrossprod(vcovm, rK)))
-
-      if (!perm) {
-        # each pair with its own df (they vary with Kenward-Roger and Satterthwaite)
-        pdf <- rep_len(as.numeric(Df_diff), length(t.v))
-        if (adj == "tukey") p.tukey <- ptukey(sqrt(2)*abs(as.vector(t.v)), nK, pdf, lower.tail=FALSE)
-        t.p.values <- 2 * pt(-abs(as.vector(t.v)), pdf)
-      }else{
-        nsim <- pm_perm_n(permlist)
-        # permutation p-values; with a max-|t| adjustment also the joint
-        # permutation distribution of the pairs' |t| (perm_T)
-        # (the joint distribution also gives the permutation confidence intervals)
-        fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore, joint = TRUE)
-        t.p.values <- fam$p
-        perm_T <- fam[intersect(c("obs", "T", "se"), names(fam))]   # se: robust SEs (robust permlist)
-
-      } # end of if (is.null(permlist))
-
-  pm_existing(c("t.v", "p.tukey", "t.p.values", "nsim", "pair_cor", "p.extra", "perm_T"), environment())
+## t values and raw p-values of the pairs: t with each pair's df, or by
+## permutation (perm_T: the observed and permuted |t|, for max-|t|
+## adjustments and permutation limits). pair_cor: the correlation of the
+## pairs, for adj = "mvt".
+pm_pair_pvalues <- function(model, rK, cm, dses, Df_diff, adj, perm, permlist, ncore, vcovm = NULL) {
+  t.v <- cm/dses
+  pair_cor <- perm_T <- nsim <- NULL
+  if (!perm && adj == "mvt") pair_cor <- stats::cov2cor(as.matrix(rK %*% tcrossprod(vcovm, rK)))
+  if (!perm) {
+    t.p.values <- 2 * stats::pt(-abs(as.vector(t.v)), rep_len(as.numeric(Df_diff), length(t.v)))
+  } else {
+    nsim <- pm_perm_n(permlist)
+    fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), ncore, joint = TRUE)
+    t.p.values <- fam$p
+    perm_T <- fam[intersect(c("obs", "T", "se"), names(fam))]   # se: robust SEs (robust permlist)
+  }
+  pm_existing(c("t.v", "t.p.values", "nsim", "pair_cor", "perm_T"), environment())
 }
 
-## Overall pairwise tables: p-values (t value above the diagonal), LSDs and
-## the matrix used for letter groups.
-pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey, nK, Df, pairDf,
-                             adj, perm, nsim, level, slevel, meandecr, Df_diff = NULL, pair_cor = NULL,
-                             perm_T = NULL) {
+## The level of 'atvar' a pair lies within, NA for a pair across its levels
+## (pairs of the means in the rows of 'label', in pm_pair_index() order).
+pm_pair_by <- function(label, pp, atvar) {
+  by <- rep(NA_character_, length(pp$i))
+  if (is.null(atvar)) return(by)
+  A <- label[pp$j, atvar, drop = FALSE]
+  B <- label[pp$i, atvar, drop = FALSE]
+  same <- Reduce(`&`, lapply(atvar, function(v) as.character(A[[v]]) == as.character(B[[v]])))
+  by[same] <- do.call(paste, c(lapply(A[same, , drop = FALSE], as.character), sep = " : "))
+  by
+}
+
+## Every statistic of the pairs, computed once (pure function): the pairs
+## table, the printed p-value and LSD matrices and the letter groups all
+## read it. One row per pair in pm_pair_index() order (mean j minus mean i):
+## by (the 'atvar' level, NA across levels), estimate, std.error, df,
+## statistic, p.value, p.adj (within all the pairs, or within each level of
+## 'atvar'; R/p-adjust.R), crit (critical value of each pair's limits at
+## 'level': t, or the permutation quantile of |t|), crit_adj (of the
+## simultaneous limits; only for methods that have them) and ci_se (the SEs
+## of the limits: HC3 with a robust permlist).
+pm_pair_table <- function(label, atvar, rK, cm, dses, Df_diff, p, adj, perm, level, pair_cor = NULL,
+                          perm_T = NULL) {
+  pp <- pm_pair_index(nrow(label))
+  cm <- as.vector(cm)
+  dses <- as.vector(dses)
+  n <- length(cm)
+  pdf <- if (perm) rep(NA_real_, n) else rep_len(as.numeric(Df_diff), n)
+  pdf[is.na(cm)] <- NA
+  stat <- cm/dses
+  by <- pm_pair_by(label, pp, atvar)
+  fams <- pm_families(if (is.null(atvar)) rep("all", n) else by, est = !is.na(cm), ij = cbind(pp$j, pp$i), L = rK)
+  out <- data.frame(j = pp$j, i = pp$i, by = by, estimate = cm, std.error = dses, df = pdf, statistic = stat,
+                    p.value = as.vector(p), stringsAsFactors = FALSE)
+  out$p.adj <- pm_adjust_p(adj, stat, out$p.value, pdf, fams, R = pair_cor, perm_T = perm_T)
+  out$crit <- if (!perm) stats::qt(1 - level/2, pdf) else if (!is.null(perm_T)) pm_perm_crit(perm_T$T, level) else NA_real_
+  crit_adj <- if (!perm || !is.null(perm_T)) pm_adjust_crit(adj, level, pdf, fams, R = pair_cor, T = perm_T$T)
+  if (!is.null(crit_adj)) out$crit_adj <- crit_adj
+  out$ci_se <- if (!is.null(perm_T$se)) perm_T$se else dses
+  out
+}
+
+## Overall pairwise tables, from the pair table: p-values (t value above
+## the diagonal), LSDs and the matrix used for letter groups.
+pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
+                             meandecr) {
   tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
   rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
-  tvm[upper.tri(tvm)] <- t.v
+  tvm[upper.tri(tvm)] <- pair_tab$statistic
   p_valueMatrix <- NULL
-
-        if (perm && adj %in% pm_perm_maxt_methods) {
-          # permutation max-|t| over all the pairs (Westfall-Young)
-          p.extra <- pm_perm_maxT(perm_T$obs, perm_T$T, stepdown = adj == "westfall", p_raw = as.vector(t.p.values))
-          t.p.valuem[upper.tri(t.p.valuem)] <- p.extra
-        }else if (adj=="tukey"){
-          t.p.valuem[upper.tri(t.p.valuem)] <- p.tukey
-        }else if (adj %in% pm_adjust_extra_methods) {
-          # all pairs as one family (with permutation p-values only "sidak", which needs no df)
-          p.extra <- pm_adjust_extra(adj, as.vector(t.v), as.vector(t.p.values),
-                                     if (adj == "sidak") NA_real_ else Df_diff, rank = nK - 1,
-                                     R = if (adj == "mvt") pair_cor)
-          t.p.valuem[upper.tri(t.p.valuem)] <- p.extra
-        }else{
-          t.p.valuem[upper.tri(t.p.valuem)] <- p.adjust(t.p.values, adj)
-        }
+  t.p.valuem[upper.tri(t.p.valuem)] <- pair_tab$p.adj
 
         t.p.valuep <- t.p.valuem    # for plot
         t.p.valuem <- t(t.p.valuem) + tvm
@@ -510,9 +533,9 @@ pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey,
 
 		      attr(t.p.valuem, "Note") <- paste("The matrix has t-value above the diagonal, p-value (adjusted by '",
                                             adj, "' method) below the diagonal", sep="")
-          LSDm.up <- qt(1-level/2, df = Df)*dses
+          LSDm.up <- qt(1-lsd_level/2, df = Df)*pair_tab$std.error
           LSDm[upper.tri(LSDm)] <- LSDm.up
-          Diffm[upper.tri(Diffm)] <- cm
+          Diffm[upper.tri(Diffm)] <- pair_tab$estimate
           LSDm <- t(LSDm)+Diffm
           names(LSDm) <- NULL
           attr(LSDm,"Significant level") <- slevel
@@ -540,22 +563,13 @@ pm_pairs_overall <- function(model, rnK, mt, cm, dses, t.v, t.p.values, p.tukey,
         p_valueMatrix <- round(t(t.p.valuep), 4)
       }
 
-  pm_existing(c("t.p.valuem", "t.p.valuep", "LSDm", "t.p.valuemGrp", "p_valueMatrix", "p.extra"), environment())
+  pm_existing(c("t.p.valuem", "t.p.valuep", "LSDm", "t.p.valuemGrp", "p_valueMatrix"), environment())
 }
 
-## Pairwise tables within each level of 'atvar': adjusted p-values, letters
-## and the means ordered by 'atvar'.
-pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v, t.p.values,
-                           Df_diff, adj, slevel, pair_cor = NULL, perm_T = NULL) {
+## Pairwise tables within each level of 'atvar', from the pair table:
+## adjusted p-values, letters and the means ordered by 'atvar'.
+pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pair_tab, slevel) {
   p_valueMatrix <- NULL
-      dses.df$tvalue <- t.v
-      dses.df$pvalue <- t.p.values
-      maxt <- !is.null(perm_T) && adj %in% pm_perm_maxt_methods   # permutation max-|t| within each atvar group
-      if (adj %in% pm_adjust_extra_methods || maxt) dses.df$pair_id <- seq_len(nrow(dses.df))   # row of the pair (pair_cor, p.extra)
-      if (!maxt && adj %in% c("tukey", pm_adjust_extra_methods)) {
-        dses.df$pair_df <- if (adj == "sidak") NA_real_ else rep_len(Df_diff, nrow(dses.df))   # df of each pair (varies for lmer)
-      }
-
       for (i in which(vars%in%atvar)) { # To find rows relating atvar
         KKvarndiff <- KKvarndiff[which(as.character(KKvarndiff[, i]) == as.character(KKvarndiff[, length(vars) + i])), ]
       }
@@ -567,37 +581,9 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
           atvar.df[,i] <- factor(atvar.df[,i], levels=levels(mdf[, i][[1]]))
       }
 
-      # adjusted p-values within each atvar group, kept in the rows they
-      # belong to (the group's own rows, not split()/unlist() order)
+      # adjusted p-values within each atvar group (pm_pair_table())
       key_atv <- do.call("paste", c(lapply(atvar.df[, atvar, drop=FALSE], as.character), sep=" : "))
-      atvar.df$adj.pvalue <- NA_real_
-      for (g in unique(key_atv)) {
-        idx <- which(key_atv == g)
-        x <- atvar.df[idx, , drop=FALSE]
-        t_valueN <- length(na.omit(x$tvalue))
-        if (t_valueN < 2) {
-          atvar.df$adj.pvalue[idx] <- x$pvalue
-        } else if (maxt) {
-          atvar.df$adj.pvalue[idx] <- pm_perm_maxT(perm_T$obs[x$pair_id], perm_T$T[x$pair_id, , drop = FALSE],
-                                                   stepdown = adj == "westfall", p_raw = x$pvalue)
-        } else if (adj=="tukey") {
-          # Tukey's range distribution needs the number of means, k, in
-          # this level; the group holds all k(k-1)/2 pairs among them.
-          n_means <- (1 + sqrt(1 + 8*t_valueN))/2
-          atvar.df$adj.pvalue[idx] <- ptukey(sqrt(2)*abs(x$tvalue), n_means, x$pair_df, lower.tail=FALSE)
-        } else if (adj %in% pm_adjust_extra_methods) {
-          n_means <- (1 + sqrt(1 + 8*t_valueN))/2
-          atvar.df$adj.pvalue[idx] <- pm_adjust_extra(adj, x$tvalue, x$pvalue, x$pair_df, rank = n_means - 1,
-                                                      R = if (adj == "mvt") pair_cor[x$pair_id, x$pair_id])
-        } else {
-          atvar.df$adj.pvalue[idx] <- p.adjust(x$pvalue, adj)
-        }
-      }
-
-      if (adj %in% pm_adjust_extra_methods || maxt) {   # adjusted p-values by pair, for the stable pairs table
-        p.extra <- rep(NA_real_, nrow(dses.df))
-        p.extra[atvar.df$pair_id] <- atvar.df$adj.pvalue
-      }
+      atvar.df$adj.pvalue <- pair_tab$p.adj[atvar.df$pair_id]
 
       rnK.df <- as.data.frame(labKK) # To find the suitable names for pm
       colnames(rnK.df) <- vars
@@ -663,7 +649,7 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, t.v
       }
 
   pm_existing(c("resvar", "atvar.levels", "rcnplotm", "bkmt", "listlength", "nrow.pm", "pmlist",
-                "pmlistTab", "pmlistLetter", "p_valueMatrix", "p.extra"), environment())
+                "pmlistTab", "pmlistLetter", "p_valueMatrix"), environment())
 }
 
 ## Mean table with confidence limits.
@@ -672,13 +658,13 @@ pm_code_mean_table <- quote({
   mt_res <- pm_mean_table(mt, vars, perm = pm_perm_given(permlist),
                           slevel = slevel, ndecimal = ndecimal)
   meanTable <- mt_res$table
-  slevel <- mt_res$slevel
+  ci_level <- mt_res$ci_level     # level of the table's limits (0.05 with a permlist: +- 2 SE)
 })
 
 ## Mean table with confidence limits (pure function).
 ## mt: data frame with columns pm, ses, Df and the factors 'vars'.
-## With permutation p-values there are no df: limits are mean +/- 2 SE and
-## the level becomes 0.05. Returns list(table, slevel).
+## With permutation p-values there are no df: limits are mean +/- 2 SE, at
+## about the 0.05 level. Returns list(table, ci_level: the level of the limits).
 pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
   meanTable <- mt
   if (!perm) {
@@ -687,7 +673,7 @@ pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
   } else {
     meanTable$LL <- meanTable$pm - 2 * meanTable$ses
     meanTable$UL <- meanTable$pm + 2 * meanTable$ses
-    slevel <- 0.05
+    slevel <- 0.05                     # (local: the label of these limits)
     meanTable$Df <- NA
   }
   rownames(meanTable) <- NULL
@@ -696,7 +682,7 @@ pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
   meanTable$ses <- round(meanTable$ses, ndecimal+1)
   colnames(meanTable) <- c(vars, "Mean", "SE", "Df", paste("LL(", (1 - slevel) * 100, "%)", sep = ""),
                            paste("UL(", (1 - slevel) * 100, "%)", sep = ""))
-  list(table = meanTable, slevel = slevel)
+  list(table = meanTable, ci_level = slevel)
 }
 
 ## Back-transformed means, and letters for the mean table.
@@ -709,7 +695,7 @@ pm_code_backtransform <- quote({
                               ndecimal = ndecimal, count = count)
     nc <- ncol(bkmt)   # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
     meanTable <- pm_final_mean_table(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter)
+                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level)
   }
 })
 
@@ -748,9 +734,10 @@ pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, cou
 ## Final mean table (pure function): ordered by 'atvar', back-transformed
 ## columns when they differ from the means, and letter groups when pairwise.
 ## 'resvar', 't.p.valuemGrp' and 'pmlistLetter' are only used (and only need
-## to exist) in the branches that need them.
+## to exist) in the branches that need them. Letters at the user's level
+## 'slevel'; the back-transformed limits are labelled with 'ci_level'.
 pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter) {
+                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level = slevel) {
   no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
   if (!no_atvar) {
     all_var_names <- colnames(meanTable)
@@ -760,8 +747,8 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
 
   if (any(meanTable$Mean!=bkmt$Mean, na.rm = TRUE)) {
     meanTable <- cbind(meanTable, round(bkmt[, (ncol(bkmt)-2):ncol(bkmt)], ndecimal))
-    colnames(meanTable)[(ncol(meanTable)-2):ncol(meanTable)] <-  c("Bk_Mean", paste("Bk_LL(", (1 - slevel) * 100, "%)", sep = ""),
-                                                                   paste("Bk_UL(", (1 - slevel) * 100, "%)", sep = ""))
+    colnames(meanTable)[(ncol(meanTable)-2):ncol(meanTable)] <-  c("Bk_Mean", paste("Bk_LL(", (1 - ci_level) * 100, "%)", sep = ""),
+                                                                   paste("Bk_UL(", (1 - ci_level) * 100, "%)", sep = ""))
   }
 
   if (pairwise) {
@@ -830,7 +817,7 @@ pm_code_plots <- quote({
 })
 
 ## Values the plots are drawn from.
-pm_plot_inputs <- c("LL", "LSD", "Mean", "SED.out", "Trt", "UL", "adj", "atvar", "barplot", "basesz",
+pm_plot_inputs <- c("LL", "LSD", "Mean", "SED.out", "Trt", "UL", "adj", "atvar", "barplot", "basesz", "ci_level",
                     "bkmt", "bkplot", "ciPlot", "jitterv", "lineplot", "lsd_bar", "mdf", "meanPlot",
                     "model", "modelterm", "mplot", "mt", "nK", "nc", "newwd", "nrow.pm", "pairwise",
                     "plot", "plotord", "plottitle", "plotxlab", "plotylab", "pm", "pmlist", "pplot",
@@ -932,7 +919,7 @@ pm_code_draw <- quote({
         mtitle <- plottitle
 
         if (is.null(plottitle) || plottitle%in%c("NULL", "")){
-          mtitle <- paste("Predicted means for \"", vars, "\" with ", bar_label, " (", slevel * 100, "%) Bar", sep="")
+          mtitle <- paste("Predicted means for \"", vars, "\" with ", bar_label, " (", ci_level * 100, "%) Bar", sep="")
         }
 
         p1 <- ggplot(plotmt, aes(eval(parse(text = vars)), pm, group=1))+
@@ -1015,7 +1002,7 @@ pm_code_draw <- quote({
 
           if (is.null(plottitle) || plottitle%in%c("NULL", "")){
             mtitle <- paste("Predicted means for \"", fact1, "\" by \"", fact2, "\" with ",
-                            paste(atvar, collapse=" "), " ", bar_label, " (", slevel * 100, "%) Bar", sep = "")
+                            paste(atvar, collapse=" "), " ", bar_label, " (", ci_level * 100, "%) Bar", sep = "")
           }
 
           plotmt[, fact1] <- factor(plotmt[, fact1], levels = c(bar_label, levels(plotmt[, fact1])))
@@ -1098,7 +1085,7 @@ pm_code_draw <- quote({
         if (is.null(plottitle) || plottitle%in%c("NULL", "")){
           mtitle <- paste("Predicted means for '", fact1, "' by '", fact2, "' for each '",
                            fact3, "'\n with ", paste(atvar, collapse=" "), " ",
-                          bar_label, " (", slevel * 100, "%) Bar\n", sep = "")
+                          bar_label, " (", ci_level * 100, "%) Bar\n", sep = "")
         }
 
         mxlab <- plotxlab
@@ -1200,7 +1187,7 @@ pm_code_draw <- quote({
       mtitle <- plottitle
 
       if (is.null(plottitle) || plottitle%in%c("NULL", "")){
-        mtitle <- paste("Back Transformed Means with ", (1 - slevel) * 100, "% CIs\n for '",
+        mtitle <- paste("Back Transformed Means with ", (1 - ci_level) * 100, "% CIs\n for '",
                         modelterm, "'", "\n", sep = "")
       }
 

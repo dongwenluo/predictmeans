@@ -150,7 +150,8 @@ pm_aov_complete <- function(carrier) {
   cl <- attr(aovl, "call")
   dat <- tryCatch(eval(cl$data, environment(stats::formula(stats::terms(aovl)))), error = function(e) NULL)
   yv <- all.vars(stats::formula(stats::terms(aovl))[[2]])
-  if (is.data.frame(dat) && all(c(vars, yv) %in% names(dat))) {
+  # (rows a 'subset' left out are not missing values: then only (b))
+  if (is.null(cl$subset) && is.data.frame(dat) && all(c(vars, yv) %in% names(dat))) {
     keep <- stats::complete.cases(dat[vars])
     miss <- keep & !stats::complete.cases(dat[yv])
     if (any(miss)) {
@@ -178,6 +179,23 @@ pm_aov_qr <- function(ef, dat) {
   list(qe = qe, grp = c(asg, rep(max(asg) + 1L, nrow(Xe) - rk)))
 }
 
+## Each stratum of a design (pm_aov_qr()): its rows of Q', an orthonormal
+## basis U of the treatment design X in them, and its residual df; the
+## residual projector of the stratum is I - U U' on its rows.
+pm_aov_bases <- function(qe, grp, X) {
+  tX <- qr.qty(qe, X)
+  lapply(sort(unique(grp)), function(g) {
+    sel <- which(grp == g)
+    Xi <- tX[sel, , drop = FALSE]
+    cols <- colSums(Xi^2) > 1e-8 * max(1, colSums(X^2))
+    U <- if (any(cols)) {
+      qi <- qr(Xi[, cols, drop = FALSE])
+      qr.Q(qi)[, seq_len(qi$rank), drop = FALSE]
+    } else matrix(0, length(sel), 0)
+    list(sel = sel, U = U, df = length(sel) - ncol(U))
+  })
+}
+
 ## TRUE when every treatment term lies in a single stratum (an orthogonal design).
 pm_aov_orthogonal <- function(qe, grp, carrier, dat) {
   op <- options(contrasts = c("contr.helmert", "contr.poly"))
@@ -197,51 +215,55 @@ pm_aov_orthogonal <- function(qe, grp, carrier, dat) {
 }
 
 ## The analysis with the missing values estimated (NULL when the completed
-## design is not orthogonal).
+## design is not orthogonal). Q (the strata's rotation, from the QR of the
+## Error() model) is applied to the few columns needed, never formed: the cost
+## grows with n x (rank of the Error() model) x (coefficients + missing
+## values), not n^3.
 pm_aov_missing <- function(carrier, comp, X, y) {
   if (ncol(X) != length(stats::coef(carrier))) return(NULL)      # aliased in the observed data
   full <- comp$full
   # rows of the carrier's frame (the fixed part) for the observed units
+  was_obs <- !is.na(comp$obs)
   rn_aov <- rownames(stats::model.frame(attr(carrier, "aovlist")))
   comp$obs <- match(rn_aov[comp$obs], rownames(stats::model.frame(carrier)))
-  if (anyNA(comp$obs[!is.na(match(seq_along(comp$obs), which(!is.na(comp$obs))))])) return(NULL)
+  if (anyNA(comp$obs[was_obs])) return(NULL)                     # an observed unit not in the fixed part
   ef <- attr(carrier, "error_formula")
   sq <- pm_aov_qr(ef, full)
   if (!pm_aov_orthogonal(sq$qe, sq$grp, carrier, full)) return(NULL)
+  qe <- sq$qe
   n <- nrow(full)
   obs <- !is.na(comp$obs)
-  no <- sum(obs)
-  nm_ <- n - no
-  Xf <- stats::model.matrix(stats::delete.response(stats::terms(carrier)), full,
-                            contrasts.arg = carrier$contrasts)[, colnames(X), drop = FALSE]
-  Q <- qr.Q(sq$qe, complete = TRUE)
-  grp <- sq$grp
-  st <- sort(unique(grp))
-  tX <- crossprod(Q, Xf)
-  # residual quadratic form of each stratum: A_i = Q_i (I - H_i) Q_i'
-  A <- lapply(st, function(g) {
-    sel <- grp == g
-    Qi <- Q[, sel, drop = FALSE]
-    Xi <- tX[sel, , drop = FALSE]
-    cols <- colSums(Xi^2) > 1e-8 * max(1, colSums(Xf^2))
-    R <- if (any(cols)) {
-      qi <- qr(Xi[, cols, drop = FALSE])
-      Qi %*% (diag(sum(sel)) - tcrossprod(qr.Q(qi)[, seq_len(qi$rank), drop = FALSE])) %*% t(Qi)
-    } else tcrossprod(Qi)
-    list(R = R, df = sum(sel) - if (any(cols)) qr(Xi[, cols, drop = FALSE])$rank else 0L)
-  })
-  # the missing values, stratum by stratum from the lowest: y_m = C y_o + N z
   m <- which(!obs)
   o <- which(obs)
+  no <- length(o)
+  nm_ <- length(m)
+  Xf <- stats::model.matrix(stats::delete.response(stats::terms(carrier)), full,
+                            contrasts.arg = carrier$contrasts)[, colnames(X), drop = FALSE]
+  p <- ncol(Xf)
+  grp <- sq$grp
+  st <- sort(unique(grp))
+  tX <- qr.qty(qe, Xf)                                           # Q'X, by stratum rows
+  S <- pm_aov_bases(qe, grp, Xf)
+  res <- function(i, Z) Z - S[[i]]$U %*% crossprod(S[[i]]$U, Z)
+  # rows m of the residual projector of each stratum, R_i[m, ] = Q_i (I - U U') Q_i'[, m]
+  Em <- matrix(0, n, nm_)
+  Em[cbind(m, seq_len(nm_))] <- 1
+  Tm <- qr.qty(qe, Em)                                           # Q'[, m]
+  Rm <- lapply(seq_along(st), function(i) {
+    Z <- matrix(0, n, nm_)
+    Z[S[[i]]$sel, ] <- res(i, Tm[S[[i]]$sel, , drop = FALSE])
+    t(qr.qy(qe, Z))                                               # nm_ x n
+  })
+  # the missing values, stratum by stratum from the lowest: y_m = C y_o + N z
   C <- matrix(0, nm_, no)
   N <- diag(nm_)
   red <- integer(length(st))
   for (k in rev(seq_along(st))) {
-    if (!ncol(N) || A[[k]]$df <= 0) next
-    Amm <- A[[k]]$R[m, m, drop = FALSE]
-    Amo <- A[[k]]$R[m, o, drop = FALSE]
-    S <- crossprod(N, Amm %*% N)
-    es <- eigen((S + t(S)) / 2, symmetric = TRUE)
+    if (!ncol(N) || S[[k]]$df <= 0) next
+    Amm <- Rm[[k]][, m, drop = FALSE]
+    Amo <- Rm[[k]][, o, drop = FALSE]
+    SS <- crossprod(N, Amm %*% N)
+    es <- eigen((SS + t(SS)) / 2, symmetric = TRUE)
     pos <- es$values > 1e-8 * max(1, abs(es$values))
     if (!any(pos)) next
     Sinv <- es$vectors[, pos, drop = FALSE] %*% (t(es$vectors[, pos, drop = FALSE]) / es$values[pos])
@@ -249,14 +271,14 @@ pm_aov_missing <- function(carrier, comp, X, y) {
     red[k] <- sum(pos)
     N <- N %*% es$vectors[, !pos, drop = FALSE]
   }
-  E <- matrix(0, n, no)
-  E[cbind(o, seq_len(no))] <- 1
-  E[m, ] <- C
   yo <- y[comp$obs[o]]
-  yc <- drop(E %*% yo)
+  yc <- numeric(n)
+  yc[o] <- yo
+  yc[m] <- drop(C %*% yo)
   # stratum mean squares of the completed data, residual df less the values each determined
-  dfs <- vapply(A, `[[`, numeric(1), "df") - red
-  ss <- vapply(A, function(a) drop(crossprod(yc, a$R %*% yc)), numeric(1))
+  qyc <- qr.qty(qe, yc)
+  dfs <- vapply(S, `[[`, numeric(1), "df") - red
+  ss <- vapply(seq_along(st), function(i) sum(res(i, qyc[S[[i]]$sel])^2), numeric(1))
   ms <- ifelse(dfs > 0, ss / pmax(dfs, 1), NA_real_)
   known <- which(dfs > 0)
   if (!length(known)) return(NULL)
@@ -266,16 +288,23 @@ pm_aov_missing <- function(carrier, comp, X, y) {
     if (length(below)) min(below) else max(known[known < i])
   }, integer(1))
   xi <- ms[donor]
-  # coefficients of the completed design (each term from its own stratum) and their exact covariance
-  W <- Reduce(`+`, lapply(seq_along(st), function(i) crossprod(tX[grp == st[i], , drop = FALSE]) / xi[i]))
-  Bc <- solve(W, Reduce(`+`, lapply(seq_along(st), function(i) {
-    sel <- grp == st[i]
-    crossprod(tX[sel, , drop = FALSE], t(Q[, sel, drop = FALSE])) / xi[i]
-  })))
-  B <- Bc %*% E
+  # coefficients of the completed design (each term from its own stratum),
+  # b = Bc y_c with Bc = W^-1 sum_i X_i'Q_i'/xi_i, and in the observed data
+  # B = Bc E (E: y_o -> y_c)
+  W <- Reduce(`+`, lapply(seq_along(st), function(i) crossprod(tX[S[[i]]$sel, , drop = FALSE]) / xi[i]))
+  Ztx <- tX
+  for (i in seq_along(st)) Ztx[S[[i]]$sel, ] <- tX[S[[i]]$sel, , drop = FALSE] / xi[i]
+  Bc <- solve(W, t(qr.qy(qe, Ztx)))                              # p x n
+  B <- Bc[, o, drop = FALSE] + Bc[, m, drop = FALSE] %*% C        # p x no
   b <- drop(B %*% yo)
-  Pobs <- lapply(seq_along(st), function(i) tcrossprod(Q[o, grp == st[i], drop = FALSE]))
-  Jac <- lapply(known, function(d) B %*% Reduce(`+`, Pobs[donor == d]) %*% t(B))
+  # exact covariance: sum_d ms_d B Q[o, strata of d] Q[o, strata of d]' B'
+  Zb <- matrix(0, n, p)
+  Zb[o, ] <- t(B)
+  QZ <- qr.qty(qe, Zb)                                            # Q[o, ]' B'
+  Jac <- lapply(known, function(d) {
+    rows <- unlist(lapply(which(donor == d), function(i) S[[i]]$sel))
+    crossprod(QZ[rows, , drop = FALSE])
+  })
   V <- Reduce(`+`, Map(function(J, d) J * ms[d], Jac, known))
   dimnames(V) <- list(colnames(X), colnames(X))
   names(b) <- colnames(X)

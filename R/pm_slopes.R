@@ -60,7 +60,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   if (is.null(at)) at <- mean(x, na.rm = TRUE)
   h <- 1e-4 * (if (isTRUE(stats::sd(x, na.rm = TRUE) > 0)) stats::sd(x, na.rm = TRUE) else 1)
   kp <- Kmatrix(model, modelterm, covariate, covariateV = at + h, weights = weights)
-  km <- Kmatrix(model, modelterm, covariate, covariateV = at - h, weights = weights)
+  km <- suppressWarnings(Kmatrix(model, modelterm, covariate, covariateV = at - h, weights = weights))   # (warned once)
   vars <- unlist(strsplit(modelterm, ":"))
   lab <- kp$fctnames[vars]
   rownames(lab) <- NULL
@@ -94,11 +94,8 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
     pdf <- df_of(rL)
     stat <- pe/pse
     p <- 2*stats::pt(-abs(stat), pdf)
-    p_adj <- if (adj == "tukey") {
-      stats::ptukey(sqrt(2)*abs(stat), n, pdf, lower.tail = FALSE)
-    } else if (adj %in% pm_adjust_extra_methods) {
-      pm_adjust_extra(adj, stat, p, pdf, rank = n - 1, R = if (adj == "mvt") stats::cov2cor(pV))
-    } else stats::p.adjust(p, adj)
+    fams <- pm_families(rep("all", length(stat)), est = !is.na(stat), ij = cbind(pp$j, pp$i), L = rL)
+    p_adj <- pm_adjust_p(adj, stat, p, pdf, fams, R = if (adj == "mvt") stats::cov2cor(pV))   # R/p-adjust.R
     pairs <- data.frame(level1 = levs[pp$j], level2 = levs[pp$i], estimate = pe, std.error = pse, df = pdf,
                         statistic = stat, p.value = p, p.adj = p_adj, stringsAsFactors = FALSE)
   }

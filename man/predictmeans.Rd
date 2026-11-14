@@ -8,7 +8,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
@@ -111,9 +111,11 @@ The default is \code{c("mean", "pval", "back")}.}
 
 \item{bkplot}{Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.}
 
-\item{plot}{An option for drawing plots, or not. The default is TRUE, unless
-\code{options(predictmeans.plot = FALSE)} is set (e.g. for scripts, reports and pipelines that use the
-\code{means} and \code{pairs} tables only).}
+\item{plot}{Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
+tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
+\code{options(predictmeans.plot = TRUE)} for a whole session, draws them as 1.x did; asking for plots with
+\code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
+also draws them.}
 
 \item{jitterv}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
 

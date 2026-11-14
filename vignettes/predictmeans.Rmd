@@ -63,8 +63,9 @@ ggplot2::autoplot(pm)
 ggplot2::autoplot(pm, type = "pvalue")
 ```
 
-`predictmeans()` still draws its classic plots when `plot = TRUE` (the default);
-`which.plots` chooses among the means, bar, p-value and back-transformed plots.
+`predictmeans()` draws its classic plots with `plot = TRUE` (since 2.0 the default is
+`FALSE`; `options(predictmeans.plot = TRUE)` sets it for a session); `which.plots` chooses
+among the means, bar, p-value and back-transformed plots.
 
 ## Degrees of freedom and standard errors
 

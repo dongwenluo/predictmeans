@@ -10,7 +10,7 @@
 #'   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
 #'   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
 #'   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE),
+#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
 #'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
@@ -85,9 +85,11 @@
 #' @param barplot Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.
 #' @param pplot Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.
 #' @param bkplot Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.
-#' @param plot An option for drawing plots, or not. The default is TRUE, unless
-#'   \code{options(predictmeans.plot = FALSE)} is set (e.g. for scripts, reports and pipelines that use the
-#'   \code{means} and \code{pairs} tables only).
+#' @param plot Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
+#'   tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
+#'   \code{options(predictmeans.plot = TRUE)} for a whole session, draws them as 1.x did; asking for plots with
+#'   \code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
+#'   also draws them.
 #' @param jitterv A degree of jitter in x and y direction in the back transformed means graph. The default is zero.
 #' @param basesz The base font size. The default is 12.
 #' @param prtnum An option for printing covariate information on the screen, or not. The default is TRUE.
@@ -289,7 +291,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 						  responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, plotxlab=NULL,
 						  plotylab=NULL,
 						  which.plots = c("mean", "pval", "back"),
-						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", TRUE), jitterv=0.2,
+						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE), jitterv=0.2,
 						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
@@ -316,6 +318,9 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
+  # plots asked for by name are drawn, whatever the default of 'plot'
+  if (missing(plot) && (!missing(which.plots) || !all(vapply(list(mplot, barplot, pplot, bkplot), is.null, logical(1)))))
+    plot <- TRUE
 
   # The calculation runs in stages that share this call's state (see
   # predictmeans-stages.R).

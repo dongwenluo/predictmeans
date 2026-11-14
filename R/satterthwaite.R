@@ -7,25 +7,12 @@
 ## computed once per model by pm_satt_parts() and reused for every contrast.
 
 pm_satt_parts <- function(model) {
-  cl <- stats::getCall(model)
-  cl[[1]] <- quote(lme4::lmer)
-  cl$devFunOnly <- TRUE
-  if (is.null(cl$control)) cl$control <- lme4::lmerControl(check.rankX = "silent.drop.cols")
-  devfun <- eval(cl, pm_fit_env(model))
-  is_reml <- lme4::getME(model, "is_REML")
-  varpar <- unname(c(lme4::getME(model, "theta"), stats::sigma(model)))
-  h <- numDeriv::hessian(func = devfun_vp, x = varpar, devfun = devfun, reml = is_reml)
-  eig <- eigen(h, symmetric = TRUE)
-  tol <- 1e-8
-  pos <- eig$values > tol
-  q <- sum(pos)
-  h_inv <- eig$vectors[, pos, drop = FALSE] %*% diag(1/eig$values[pos], nrow = q) %*%
-    t(eig$vectors[, pos, drop = FALSE])
+  vp <- pm_lmer_varpar(model)                 # (theta, sigma) and their covariance (R/varcomp.R)
   p <- length(lme4::fixef(model))
-  Jac <- numDeriv::jacobian(func = get_covbeta, x = varpar, devfun = devfun)
-  devfun(lme4::getME(model, "theta"))         # leave the deviance function at the optimum
+  Jac <- numDeriv::jacobian(func = get_covbeta, x = vp$varpar, devfun = vp$devfun)
+  vp$devfun(lme4::getME(model, "theta"))      # leave the deviance function at the optimum
   structure(list(vcov_beta = as.matrix(stats::vcov(model)),
-                 vcov_varpar = 2 * h_inv,
+                 vcov_varpar = vp$vcov_varpar,
                  Jac_list = lapply(seq_len(ncol(Jac)), function(i) array(Jac[, i], dim = c(p, p)))),
             class = "pm_satt")
 }

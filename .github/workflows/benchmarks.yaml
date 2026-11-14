@@ -1,0 +1,43 @@
+# Timings of a pull request against its base branch, on the same runner
+# (dev/benchmarks-ci.R): fails when a key timing is more than 1.5 times the
+# base's and at least 0.1 s longer.
+on:
+  pull_request:
+
+name: benchmarks
+
+permissions: read-all
+
+jobs:
+  timings:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # The repository's .Rprofile activates renv; CI installs packages itself.
+      RENV_CONFIG_AUTOLOADER_ENABLED: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: new
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: new
+
+      - name: Install the base branch and this version
+        run: |
+          mkdir lib-base lib-new
+          R CMD INSTALL --no-docs --no-multiarch --no-test-load -l lib-base base
+          R CMD INSTALL --no-docs --no-multiarch --no-test-load -l lib-new new
+
+      - name: Compare timings
+        run: Rscript --no-init-file new/dev/benchmarks-ci.R lib-base lib-new
