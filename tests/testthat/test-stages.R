@@ -19,7 +19,7 @@ test_that("mean table: t limits, or mean +/- 2 SE at 0.05 with permutation", {
   r <- predictmeans:::pm_mean_table(mt, "A", perm = FALSE, slevel = 0.1, ndecimal = 4)
   expect_equal(r$table[["LL(90%)"]], round(c(10, 12) - qt(0.95, 5) * c(1, 2), 4))
   rp <- predictmeans:::pm_mean_table(mt, "A", perm = TRUE, slevel = 0.1, ndecimal = 4)
-  expect_equal(rp$slevel, 0.05)
+  expect_equal(rp$ci_level, 0.05)
   expect_equal(rp$table[["LL(95%)"]], c(8, 8))
   expect_true(all(is.na(rp$table$Df)))
 })
@@ -34,7 +34,7 @@ test_that("compare: SEDs and nested factors drop atvar", {
   ok <- table(d$A, d$B)[cbind(k$fctnames$A, k$fctnames$B)] > 0   # cells with data
   K <- k$K[ok, mp$estimable, drop = FALSE]
   r <- predictmeans:::pm_compare_sed(K, k$K, k$fctnames[ok, ], k$fctnames, c("A", "B"),
-                                     mp$coef, mp$vcov, "none", 0.05, atvar = "A")
+                                     mp$coef, mp$vcov, atvar = "A")
   expect_equal(unname(r$SED.out[1:2]), rep(sqrt(2 * sigma(m)^2 / 3), 2))
   expect_null(r$atvar)                     # no pairs within a level of B
 })

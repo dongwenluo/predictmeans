@@ -31,6 +31,12 @@ ds <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")),
 ds <- ds[!(ds$date == "d2" & ds$trt == "a"), ]; ds$y <- as.numeric(ds$trt) + rnorm(nrow(ds))
 m_single <- lm(y ~ date * trt, data = ds)
 perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1, method = "raw"))
+perm_lm <- suppressWarnings(permmodels(m_lm, nperm = 99, prt = FALSE, ncore = 1, seed = 1))
+# confounded factors (drop "fine" only and always with v3): means and pairs that cannot be estimated
+set.seed(9); dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
+dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))
+dc$y <- as.numeric(dc$vol) + as.numeric(dc$C) + rnorm(nrow(dc))
+m_conf <- lm(y ~ C*vol + drop, data = dc)
 calls <- list(
   lm_def = quote(predictmeans(m_lm, "nitro")),
   lm_int = quote(predictmeans(m_lm, "nitro:Variety")),
@@ -70,7 +76,20 @@ calls <- list(
   nested_treat = quote(predictmeans(m_nest, "treat", adj = "BH")),
   nested_atvar2 = quote(predictmeans(m_nest, "contcomp:seedlot:treat", atvar = c("treat", "contcomp"), adj = "BH")),
   atvar_single_level = quote(predictmeans(m_single, "date:trt", atvar = "date", adj = "BH")),
-  colon_levels = quote(predictmeans(m_colon, "nitro:Variety", atvar = "nitro", adj = "BH")))
+  colon_levels = quote(predictmeans(m_colon, "nitro:Variety", atvar = "nitro", adj = "BH")),
+  level10 = quote(predictmeans(m_lm, "nitro:Variety", adj = "tukey", level = 0.1)),
+  level10_atvar = quote(predictmeans(m_lm, "nitro:Variety", atvar = "Variety", adj = "BH", level = 0.1)),
+  bonf_atvar = quote(predictmeans(m_lm, "nitro:Variety", atvar = "Variety", adj = "bonferroni")),
+  sidak_atvar = quote(predictmeans(m_lmer, "nitro:Variety", atvar = "Variety", adj = "sidak")),
+  scheffe = quote(predictmeans(m_lmer, "nitro", adj = "scheffe")),
+  mvt_atvar = quote(predictmeans(m_lm, "nitro:Variety", atvar = "Variety", adj = "mvt")),
+  perm_tukey = quote(predictmeans(m_lm, "nitro:Variety", permlist = perm_lm, adj = "tukey")),
+  perm_westfall_at = quote(predictmeans(m_lm, "nitro:Variety", permlist = perm_lm, atvar = "Variety", adj = "westfall")),
+  perm_level10 = quote(predictmeans(m_lm, "nitro", permlist = perm_lm, adj = "holm", level = 0.1)),
+  perm_level10_at = quote(predictmeans(m_lm, "nitro:Variety", permlist = perm_lm, atvar = "Variety", level = 0.1)),
+  confounded = quote(predictmeans(m_conf, "C:vol", pairwise = TRUE, adj = "tukey")),
+  confounded_at = quote(predictmeans(m_conf, "C:vol", atvar = "C", adj = "tukey")),
+  confounded_sch = quote(predictmeans(m_conf, "C:vol", atvar = "C", adj = "scheffe")))
 plotdata <- function(p) if (inherits(p, "ggplot")) lapply(seq_along(p$layers), function(i) ggplot2::layer_data(p, i)) else p
 R <- list()
 for (nm in names(calls)) {

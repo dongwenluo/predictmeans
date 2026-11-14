@@ -226,15 +226,14 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (missing(permlist)) {
    # t.p.value <- 2*pt(-abs(t.v), Df)
 	t.p.value <- apply(cbind(t.v, Df), 1, function(x) 2*pt(-abs(x[1]), x[2]))
-    t.p.value <- if (adj %in% pm_adjust_extra_methods) {
-      pm_adjust_extra(adj, as.vector(t.v), t.p.value, Df, rank = qr(ctrmatrix)$rank, R = cor.contr)
-    } else p.adjust(t.p.value, adj)
+    # one family (R/p-adjust.R); Scheffe with the rank of ctrmatrix
+    fams <- pm_families(rep("all", nr), est = !is.na(as.vector(cm)), rank = qr(ctrmatrix)$rank)
+    t.p.value <- pm_adjust_p(adj, t.v, t.p.value, rep_len(Df, nr), fams, R = cor.contr)
     crit <- stats::qt(1 - level/2, Df)
     out.put <- cbind(cm, ses, t.v, Df, t.p.value, cm - crit*ses, cm + crit*ses)
     colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
     # simultaneous limits that agree with the adjusted p-values (R/p-adjust.R)
-    crit_adj <- pm_adjust_crit(adj, level, Df, rep("all", nr), est = !is.na(cm), R = cor.contr,
-                               rank = qr(ctrmatrix)$rank)
+    crit_adj <- pm_adjust_crit(adj, level, rep_len(Df, nr), fams, R = cor.contr)
     if (!is.null(crit_adj)) {
       out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ses, adj.upper.CL = as.vector(cm) + crit_adj*ses)
     }
@@ -255,12 +254,9 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
   fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = TRUE)
   per.p <- fam$p
+  fams <- pm_families(rep("all", nr), est = !is.na(as.vector(cm)))
   if (nrow(rK) > 1 && adj != "none") {
-    per.p <- if (maxt) {
-      pm_perm_maxT(fam$obs, fam$T, stepdown = adj == "westfall", p_raw = per.p)
-    } else if (adj == "sidak") {
-      pm_adjust_extra("sidak", as.vector(t.v), per.p, NA_real_)
-    } else p.adjust(per.p, adj)
+    per.p <- pm_adjust_p(adj, t.v, per.p, rep(NA_real_, nr), fams, perm_T = list(obs = fam$obs, T = fam$T))
   }
   # permutation-t limits of each contrast, and simultaneous ones with the
   # adjustments that have them (max-|t|, bonferroni, sidak; R/p-adjust.R)
@@ -268,7 +264,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   ci_se <- if (!is.null(fam$se)) fam$se else ses   # robust permlist: HC3 SEs
   out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ci_se, cm + crit*ci_se)
   colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
-  crit_adj <- if (nrow(rK) > 1) pm_adjust_crit(adj, level, NA_real_, rep("all", nr), est = !is.na(cm), T = fam$T)
+  crit_adj <- if (nrow(rK) > 1) pm_adjust_crit(adj, level, rep(NA_real_, nr), fams, T = fam$T)
   if (!is.null(crit_adj)) {
     out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ci_se, adj.upper.CL = as.vector(cm) + crit_adj*ci_se)
   }

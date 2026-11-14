@@ -62,6 +62,19 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `ctrmatrix`, "mvt"; with a `permlist` also "westfall"), equal to emmeans'
   `confint()`; its `lower.CL` and `upper.CL` are per contrast, also with a
   `permlist` and a max-|t| adjustment.
+* **One computation of the pairs.** The `pairs` table, the printed p-value
+  matrices and the letter groups now read one table of pair statistics, and
+  `predictmeans()`, `contrastmeans()`, `pm_slopes()` and the means of
+  `semireg` fits use one set of adjustment functions (`R/p-adjust.R`). The
+  printed output is unchanged except where the two computations disagreed:
+  * With a `permlist` and `level` other than 0.05, the letters among all
+    means used 0.05 (the letters within `atvar` levels and their note used
+    `level`). Both now use `level`, and `settings$level` is `level`.
+  * With means that cannot be estimated (confounded factors), Tukey's k
+    within an `atvar` level counted them in `pairs$p.adj` but not in the
+    printed matrices; both now count the means that take part in the
+    estimable comparisons. Scheffe's rank is the rank of those comparisons
+    (as emmeans), and the adjusted limits use the same sizes as `p.adj`.
 * Fixed: `predictmeans()` with `level` given (and `letterCI = FALSE`)
   stopped with "object 'slevel' not found" when making pairwise comparisons,
   as in 1.1.1.

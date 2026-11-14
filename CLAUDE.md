@@ -37,6 +37,12 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   hierarchy or gives NA.
 - `R/inference.R` (`pm_inference()`) decides covariance, df and their labels
   for every front end; change a df or covariance rule there only.
+- `R/p-adjust.R` decides multiplicity for every front end: families and their
+  sizes (`pm_families()`), adjusted p-values (`pm_adjust_p()`) and the
+  simultaneous limits that go with them (`pm_adjust_crit()`). In
+  `predictmeans()` every statistic of the pairs is computed once, in
+  `pm_pair_table()`; the `pairs` table, the printed matrices and the letters
+  read it.
 - The maintainer can run SAS and Genstat on request: scripts go in
   `dev/sas/` and `dev/genstat/`. Reference values come only from real runs
   (uploaded results pages, output or CSV files). Do not use SAS tables typed into chat as references

@@ -70,20 +70,10 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     pairs$df <- Inf
     pairs$statistic <- stat
     pairs$p.value <- p
-    adjust <- function(idx) {
-      k <- length(idx)
-      if (k < 2) return(p[idx])
-      nm <- (1 + sqrt(1 + 8*k))/2
-      if (adj == "tukey") return(stats::ptukey(sqrt(2)*abs(stat[idx]), nm, Inf, lower.tail = FALSE))
-      if (adj %in% pm_adjust_extra_methods) {
-        return(pm_adjust_extra(adj, stat[idx], p[idx], Inf, rank = nm - 1,
-                               R = if (adj == "mvt") stats::cov2cor(pV[idx, idx, drop = FALSE])))
-      }
-      stats::p.adjust(p[idx], adj)
-    }
-    p_adj <- rep(NA_real_, length(p))
-    if (is.null(atvar)) p_adj <- adjust(seq_along(p)) else
-      for (b in unique(stats::na.omit(by))) p_adj[by == b & !is.na(by)] <- adjust(which(by == b))
+    # all the pairs, or the pairs within each level of atvar (R/p-adjust.R)
+    fams <- pm_families(if (is.null(atvar)) rep("all", length(p)) else by, est = !is.na(stat),
+                        ij = cbind(pp$j, pp$i), L = CM %*% D)
+    p_adj <- pm_adjust_p(adj, stat, p, Inf, fams, R = if (adj == "mvt") stats::cov2cor(pV))
     pairs$p.adj <- p_adj
     pairs$p.method <- if (adj == "tukey") "tukey" else "z"
     if (is.null(atvar)) {             # letters among all means
