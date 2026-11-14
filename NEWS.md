@@ -1158,6 +1158,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * James Curran is credited as a contributor (DESCRIPTION now uses `Authors@R`).
 * `which.plots` is documented. DESCRIPTION no longer carries CRAN-generated
   fields, and `NeedsCompilation` is "no".
+* Each pull request is timed against its base branch on the same runner
+  (`.github/workflows/benchmarks.yaml`, `dev/benchmarks-ci.R`): it fails when
+  a key timing (means and comparisons of a 1,200-row lmer, empty cells,
+  Satterthwaite df, contrasts, aov with missing values, permutation tests,
+  residual plots) is more than 1.5 times slower and at least 0.1 s slower.
 * GitHub Actions R CMD check on Linux, macOS and Windows, with `--as-cran`,
   and one job that runs the tests as CRAN does (without `NOT_CRAN`: 140 s).
   Release preparation (no release yet): `cran-comments.md` (draft), and a

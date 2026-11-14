@@ -69,7 +69,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   `Rscript dev/snapshot-predictmeans.R <lib> before.rds` on the old build and
   `... after.rds` on the new one, then compare with
   `all.equal(readRDS("before.rds"), readRDS("after.rds"), tolerance = 0)`.
-- Timings: `Rscript dev/benchmarks.R`.
+- Timings: `Rscript dev/benchmarks.R`. Pull requests are timed against their
+  base branch in CI (`dev/benchmarks-ci.R`; fails when a key timing is over
+  1.5 times the base's and at least 0.1 s longer).
 - Run `R CMD check` once at the end of a piece of work, not after every edit.
 - Add a NEWS entry and update the plan's status table with each change.
 
