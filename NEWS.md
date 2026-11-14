@@ -35,6 +35,33 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Several hundred means** (e.g. the lines of a breeding trial). With more
+  than 100 means and no comparison asked for, `predictmeans()` gives the
+  means, their SEs and the SED and LSD summaries (maximum, minimum, average;
+  within the levels of each factor for a term with several factors) from the
+  covariance of the means, without a row for every pair, and `pairs` is
+  `NULL` (a message says so; `summary()` prints the SED and LSD ranges). 200
+  lines in an `lmer` model took 47 s and now take 0.7 s with the same
+  results; 300 lines (44,850 pairs) take about a second. `pairwise = TRUE`
+  (or `adj`) still compares every pair (200 lines: 5 s). Letter groups are
+  not made for more than 100 means: they cannot be read and the letter
+  algorithm takes minutes. `options(predictmeans.max_means = )` changes the
+  limit. Up to 100 means nothing changes.
+
+* **`PMplot()` is drawn with ggplot2** and returns the plot: a square level
+  plot of the lower triangle, like a correlation plot, with the legend in
+  the empty corner. New: `values = TRUE` prints the p-values on the tiles,
+  `basesz` sets the font size, a list of matrices (`atvar`) is drawn as
+  blocks down the diagonal with lines between them, and a matrix with as few
+  as two levels is plotted. `margin` is no longer used. Inside a function or
+  a loop wrap the call in `print()`. `autoplot(type = "pvalue")` draws the
+  same plot (before: tiles of unequal sides, one panel per `atvar` level) and
+  gains `values`.
+
+* Faster with many pairs: the SEDs no longer build the covariance matrix of
+  all pairs (96 means, 4,560 pairs: 1.4 s -> 0.2 s), and Tukey-adjusted limits
+  compute one quantile for each distinct df (60 means: 1.8 s -> 0.2 s).
+
 * **`varcomp()` for every model class**, with one rule for SEs and
   intervals. New: `lm`, `aov` and `glm` (the error term: residual variance,
   dispersion, negative binomial theta), `aov` with `Error()` (analysis of

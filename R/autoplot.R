@@ -13,17 +13,20 @@
 #' (e.g. \code{renderPlot(autoplot(pm))}) or made interactive with \code{plotly::ggplotly()}.
 #' @usage
 #' \method{autoplot}{predictmeans}(object, type = c("means", "pvalue", "response"),
-#'          interval = c("ci", "lsd", "none"), ...)
+#'          interval = c("ci", "lsd", "none"), values = FALSE, ...)
 #'
 #' \method{summary}{predictmeans}(object, digits = 4, ...)
 #'
 #' \method{print}{summary.predictmeans}(x, ...)
 #' @param object A result of \code{\link{predictmeans}}.
-#' @param type \code{"means"} (the default) plots the predicted means; \code{"pvalue"} a heatmap of the adjusted
-#'   pairwise p-values (within each level of \code{atvar} when it was given); \code{"response"} the back-transformed
-#'   means.
+#' @param type \code{"means"} (the default) plots the predicted means; \code{"pvalue"} a square level plot of the
+#'   adjusted pairwise p-values, like a correlation plot (the plot of \code{\link{PMplot}}; with \code{atvar} the
+#'   comparisons within each of its levels are blocks down the diagonal); \code{"response"} the back-transformed
+#'   means. \code{"pvalue"} needs the \code{pairs} table (with more than 100 means: \code{pairwise = TRUE} in
+#'   \code{predictmeans()}).
 #' @param interval Bars around the means: confidence limits (\code{"ci"}, the default), half the average LSD
 #'   (\code{"lsd"}; means whose bars do not overlap differ significantly when the LSDs are equal), or none.
+#' @param values For \code{type = "pvalue"}: print each p-value on its tile (the default is \code{FALSE}).
 #' @param digits Number of significant digits printed (plus two).
 #' @param x A result of \code{summary()}.
 #' @param \dots Not used.
@@ -47,14 +50,14 @@
 NULL
 
 autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"),
-                                  interval = c("ci", "lsd", "none"), ...) {
+                                  interval = c("ci", "lsd", "none"), values = FALSE, ...) {
   type <- match.arg(type)
   interval <- match.arg(interval)
   means <- object$means
   vars <- unlist(strsplit(object$settings$modelterm, ":"))
   level <- object$settings$level
 
-  if (type == "pvalue") return(pm_pvalue_plot(object))
+  if (type == "pvalue") return(pm_pvalue_plot(object, values = values))
 
   if (type == "response") {
     if (is.null(means$response)) {
@@ -106,39 +109,48 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
 }
 
 ## Average LSD used for the half-LSD bars: within atvar levels when given.
+## Without a pairs table (no comparisons asked for) the average LSD of the
+## summary.
 pm_average_lsd <- function(object, means, vars) {
   pairs <- object$pairs
-  if (is.null(pairs)) return(rep(NA_real_, nrow(means)))
+  if (is.null(pairs)) {
+    lsd <- object$LSD
+    return(rep(if (is.numeric(lsd) && "Aveg.LSD" %in% names(lsd)) unname(lsd["Aveg.LSD"]) else NA_real_, nrow(means)))
+  }
   if (!is.null(pairs$by)) pairs <- pairs[!is.na(pairs$by), , drop = FALSE]
   rep(mean(pairs$lsd, na.rm = TRUE), nrow(means))
 }
 
-## Heatmap of adjusted pairwise p-values in the significance bands of PMplot().
-pm_pvalue_plot <- function(object) {
+## Level plot of the adjusted pairwise p-values: the plot of PMplot()
+## (pm_ptile_plot(), R/PMplot.R), from the pairs table. With 'atvar' the
+## comparisons within each of its levels are blocks down the diagonal.
+pm_pvalue_plot <- function(object, values = FALSE) {
   pairs <- object$pairs
-  if (is.null(pairs) || nrow(pairs) == 0) stop("There are no pairwise comparisons to plot.", call. = FALSE)
-  if (!is.null(pairs$by)) pairs <- pairs[!is.na(pairs$by), , drop = FALSE]
-  levs <- unique(c(rbind(pairs$level1, pairs$level2)))
-  levs <- levs[order(match(levs, do.call(paste, c(lapply(object$means[unlist(strsplit(object$settings$modelterm, ":"))],
-                                                          as.character), sep = ":"))))]
-  pairs$row <- factor(pairs$level2, levels = rev(levs))
-  pairs$col <- factor(pairs$level1, levels = levs)
-  bands <- c("p <= 0.01", "0.01 < p <= 0.05", "0.05 < p <= 0.1", "p > 0.1")
-  pairs$band <- factor(bands[findInterval(pairs$p.adj, c(0.01, 0.05, 0.1), left.open = TRUE) + 1], levels = bands)
-  adj <- object$settings$adjust
-  p <- ggplot2::ggplot(pairs, ggplot2::aes(x = .data$col, y = .data$row, fill = .data$band)) +
-    ggplot2::geom_tile(colour = "white") +
-    ggplot2::scale_fill_manual(values = stats::setNames(c("#0D0DFF", "#5D5DFF", "#A1A1FF", "#E4E4FF"), bands),
-                               drop = FALSE, name = "Adjusted p-value") +
-    ggplot2::labs(x = NULL, y = NULL,
-                  title = paste0("Pairwise p-values (adjusted by '", adj, "') for '",
-                                 object$settings$modelterm, "'")) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1), panel.grid = ggplot2::element_blank())
-  if (!is.null(pairs$by)) {
-    p <- p + ggplot2::facet_wrap(~by, scales = "free")
+  if (is.null(pairs) || nrow(pairs) == 0) {
+    stop("There are no pairwise comparisons to plot (one mean, or more than 100 means without pairwise = TRUE).",
+         call. = FALSE)
   }
-  p
+  s <- object$settings
+  vars <- unlist(strsplit(s$modelterm, ":"))
+  all_levs <- do.call(paste, c(lapply(object$means[vars], as.character), sep = ":"))
+  by <- if (is.null(pairs$by)) rep("all", nrow(pairs)) else pairs$by
+  keep <- !is.na(by)
+  groups <- unique(by[keep])
+  mats <- lapply(groups, function(g) {
+    pg <- pairs[keep & by == g, , drop = FALSE]
+    levs <- intersect(all_levs, c(pg$level1, pg$level2))
+    P <- matrix(NA_real_, length(levs), length(levs), dimnames = list(levs, levs))
+    i <- match(pg$level1, levs)
+    j <- match(pg$level2, levs)
+    P[cbind(pmax(i, j), pmin(i, j))] <- pg$p.adj
+    P
+  })
+  P <- do.call(adiag, c(unname(mats), pad = NA))
+  title <- paste0("Pairwise p-values (adjusted by '", s$adjust, "') for '", s$modelterm, "'",
+                  if (!is.null(pairs$by)) paste0("\nat each level of '", paste(s$atvar, collapse = ":"), "'"))
+  pm_ptile_plot(P, unlist(lapply(mats, rownames)), level = s$level, title = title,
+                legend_title = if (identical(s$adjust, "none")) "p-value" else "Adjusted p-value",
+                blocks = vapply(mats, nrow, integer(1)), values = values)
 }
 
 summary.predictmeans <- function(object, digits = 4, ...) {
@@ -154,8 +166,9 @@ summary.predictmeans <- function(object, digits = 4, ...) {
   tab[num] <- lapply(tab[num], function(z) signif(z, digits + 2))
   pairs <- object$pairs
   if (!is.null(pairs) && !is.null(pairs$by)) pairs <- pairs[!is.na(pairs$by), , drop = FALSE]
+  # the SED and LSD summaries of the result (also there without a pairs table)
   structure(list(table = tab, settings = s, pairs = pairs, nonestimable = sum(!means$estimable),
-                 digits = digits),
+                 sed = object[["Standard Error of Differences"]], lsd = object$LSD, digits = digits),
             class = "summary.predictmeans")
 }
 
@@ -170,6 +183,17 @@ print.summary.predictmeans <- function(x, ...) {
   print(x$table, row.names = FALSE, digits = x$digits)
   cat("\n")
   p <- x$pairs
+  if (is.null(p) && is.numeric(x$sed) && all(c("Max.SED", "Min.SED", "Aveg.SED") %in% names(x$sed))) {
+    # no comparisons asked for: the summaries over all pairs of means
+    n <- nrow(x$table)
+    cat(n*(n - 1)/2, " pairs of means, not tabulated (pairwise = TRUE compares them).\n", sep = "")
+    cat("SED: min ", fmt(x$sed[["Min.SED"]]), ", mean ", fmt(x$sed[["Aveg.SED"]]), ", max ", fmt(x$sed[["Max.SED"]]), "\n", sep = "")
+    if (is.numeric(x$lsd) && "Aveg.LSD" %in% names(x$lsd)) {
+      ddf <- attr(x$lsd, "Degree of freedom")
+      cat("LSD (", s$level * 100, "%", if (!is.null(ddf)) paste0(", ", fmt(ddf), " df"), "): min ", fmt(x$lsd[["Min.LSD"]]),
+          ", mean ", fmt(x$lsd[["Aveg.LSD"]]), ", max ", fmt(x$lsd[["Max.LSD"]]), "\n", sep = "")
+    }
+  }
   if (!is.null(p) && nrow(p) > 0) {
     within <- if (!is.null(s$atvar)) paste0(" within each level of ", paste(s$atvar, collapse = " and ")) else ""
     cat(nrow(p), " pairwise comparisons", within, ".\n", sep = "")

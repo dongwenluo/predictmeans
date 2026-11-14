@@ -65,7 +65,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | `n` | number of observations in the cell |
 | `estimable` | FALSE when the mean cannot be estimated (then `estimate` is NA) |
 
-`pm$pairs`, one row per pair (NULL when there is only one mean):
+`pm$pairs`, one row per pair (NULL when there is only one mean, or more than 100 means and no
+comparison asked for: then only the SED and LSD summaries are computed, fast for several hundred means):
 
 | column | meaning |
 |---|---|

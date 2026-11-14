@@ -289,24 +289,43 @@ pm_code_compare <- quote({
     LSD <- NA
   }else {
     perm <- pm_perm_given(permlist)
-    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, atvar,
-                            cells = ctr.matrix$empty_cells), envir = environment())
+    # The pairs are tabulated (one row per pair) when comparisons are asked
+    # for (pairwise, adj, atvar, letterCI, permlist, equivalence), and
+    # otherwise for up to pm_max_means() means. Above that (several hundred
+    # lines of a breeding trial) the SEDs and LSDs are summarised from the
+    # covariance of the means, without a row per pair (pm_sed_summary()).
+    # Means over empty cells and non-estimable means need each pair's
+    # contrast, so their SEDs take the first route too.
+    tab_pairs <- pairwise || !is.null(equivalence) || nK <= pm_max_means()
+    by_pair <- tab_pairs || !is.null(ctr.matrix$empty_cells) || !is.null(attr(KK, "null_proj"))
+    if (!tab_pairs) {
+      message(nK, " means of '", modelterm, "' (", nK*(nK - 1)/2, " pairs): the SEDs and LSDs are summarised and ",
+              "the pairs are not tabulated. pairwise = TRUE (or 'adj') compares them.")
+    }
+    if (by_pair) {
+      list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, atvar,
+                              cells = ctr.matrix$empty_cells), envir = environment())
+    } else {
+      list2env(pm_sed_summary(K, label, vars, vcovm, atvar), envir = environment())
+      rK <- NULL
+    }
     if (!perm) {
       list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
       bkmt <- mt  # update bkmt
     }
     # the printed LSDs: with adj = "bonferroni" at level/m over all pairs (1.x)
-    lsd_level <- if (adj == "bonferroni") level/length(dses) else level
+    lsd_level <- if (adj == "bonferroni") level/(nK*(nK - 1)/2) else level
     LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd_level, Df, slevel, ndecimal, perm)
 
-    # every statistic of the pairs, once (the pairs table, the printed
-    # matrices and the letters read it)
-    no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
-    list2env(pm_pair_pvalues(model, rK, cm, dses, if (perm) NULL else Df_diff, adj, perm, permlist, ncore, vcovm),
-             envir = environment())
-    pair_tab <- pm_pair_table(label, if (no_atvar) NULL else atvar, rK, cm, dses, if (perm) NULL else Df_diff,
-                              t.p.values, adj, perm, level, pair_cor, perm_T)
-
+    if (tab_pairs) {
+      # every statistic of the pairs, once (the pairs table, the printed
+      # matrices and the letters read it)
+      no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
+      list2env(pm_pair_pvalues(model, rK, cm, dses, if (perm) NULL else Df_diff, adj, perm, permlist, ncore, vcovm),
+               envir = environment())
+      pair_tab <- pm_pair_table(label, if (no_atvar) NULL else atvar, rK, cm, dses, if (perm) NULL else Df_diff,
+                                t.p.values, adj, perm, level, pair_cor, perm_T)
+    }
     if (pairwise) {
       p_valueMatrix <- NULL
       if (no_atvar) {
@@ -335,7 +354,6 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
   # pairs (i, j), i > j, in column order; level labels come from the label
   # tables, not from splitting row names at ":" (levels may contain ":")
   pp <- pm_pair_index(nK)
-  CM <- pm_pair_matrix(nK)
   labK <- pm_label_matrix(label, length(vars))
 
   nKK <- nrow(KK)
@@ -344,30 +362,30 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
 
   KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
 
-  rK <- CM%*%K                    # calculate stats
+  rK <- K[pp$j, , drop = FALSE] - K[pp$i, , drop = FALSE]     # mean j minus mean i
   # differences that cannot be estimated (their components along the
   # non-estimable directions do not cancel) are NA, not computed with the
   # dropped coefficients taken as zero
   non_est_pair <- rep(FALSE, nrow(rK))
   null_proj <- attr(KK, "null_proj")
   if (!is.null(null_proj) && all(rnK %in% rownames(null_proj))) {
-    pd <- CM %*% null_proj[rnK, , drop = FALSE]
+    np <- null_proj[rnK, , drop = FALSE]
+    pd <- np[pp$j, , drop = FALSE] - np[pp$i, , drop = FALSE]
     scale_r <- pmax(1, apply(abs(rK), 1, max))
     non_est_pair <- apply(abs(pd), 1, max) > 1e-6 * scale_r
   }
   # pairs with a mean over empty cells: on the cells both means have
   pair_over <- rep(NA_character_, nrow(rK))
   if (!is.null(cells)) {
-    Cf <- matrix(0, nrow(CM), nrow(KK))
-    Cf[, match(rnK, rownames(KK))] <- CM
+    Cf <- matrix(0, length(pp$i), nrow(KK))
+    Cf[, match(rnK, rownames(KK))] <- pm_pair_matrix(nK)
     cr <- pm_common_rows(cells, Cf, rK, colnames(K))
     rK <- cr$L
     non_est_pair[cr$sub] <- cr$na[cr$sub]
     pair_over <- cr$over
   }
   cm <- rK%*%coef
-  vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-  dses <- sqrt(diag(vcov.contr))
+  dses <- sqrt(rowSums((rK %*% vcovm) * rK))       # the diagonal of rK V rK' only
   cm[non_est_pair] <- NA
   dses[non_est_pair] <- NA
 
@@ -384,7 +402,8 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
     for (i in seq_along(vars)) {
       varsindx <- as.character(dses.df[,i])==as.character(dses.df[, length(vars)+i])
       if(any(varsindx)){  # in case of A/B
-        dses.m[,i] <- summary.default(dses.df[varsindx,"dses"])[c(4,1,6)]
+        dv <- dses.df[varsindx, "dses"]
+        dses.m[,i] <- if (all(is.na(dv))) NA else c(mean(dv, na.rm = TRUE), min(dv, na.rm = TRUE), max(dv, na.rm = TRUE))
       }else{
         dses.m[,i] <- NA
         atvar <- NULL
@@ -396,16 +415,83 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
        dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar, pair_over = pair_over)
 }
 
+## Above this many means, the pairs are tabulated only when comparisons are
+## asked for, and no letter groups are made (pm_letter_groups()): one limit
+## for both, options(predictmeans.max_means = ).
+pm_max_means <- function() {
+  n <- getOption("predictmeans.max_means", 100)
+  if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 2) stop("options(predictmeans.max_means = ) must be a number of at least 2.", call. = FALSE)
+  n
+}
+
+## The SEDs summarised without a row per pair (no comparisons asked for):
+## the variance of mean j minus mean i is c_jj + c_ii - 2 c_ij, C = K V K'
+## the covariance of the means, so all n(n-1)/2 SEDs come from one n x n
+## matrix. Returns what the summaries of pm_compare_sed() return: SED.out
+## (maximum, minimum, average; within the levels of each factor as an
+## attribute), dses.m and 'atvar' (NULL when a factor has no pairs within its
+## levels).
+pm_sed_summary <- function(K, label, vars, vcovm, atvar) {
+  C <- K %*% tcrossprod(as.matrix(vcovm), K)
+  d <- diag(C)
+  S <- sqrt(pmax(outer(d, d, "+") - 2*C, 0))
+  low <- lower.tri(S)
+  s3 <- function(x) c(max(x), min(x), mean(x))
+  SED.out <- stats::setNames(s3(S[low]), c("Max.SED", "Min.SED", "Aveg.SED"))
+  dses.m <- NULL
+  if (length(vars) > 1) {
+    labK <- pm_label_matrix(label, length(vars))
+    dses.m <- matrix(0, nrow = 3, ncol = length(vars), dimnames = list(c("Aveg.SED", "Min.SED", "Max.SED"), vars))
+    for (i in seq_along(vars)) {
+      same <- low & outer(labK[, i], labK[, i], "==")
+      if (any(same)) {
+        dses.m[, i] <- s3(S[same])[c(3, 2, 1)]
+      } else {                      # in case of A/B
+        dses.m[, i] <- NA
+        atvar <- NULL
+      }
+    }
+    attr(SED.out, "For the Same Level of Factor") <- dses.m
+  }
+  list(SED.out = SED.out, dses.m = dses.m, atvar = atvar)
+}
+
+## The mean df of all the pairs of the rows of K, a block of pairs at a time
+## (each block's contrasts are built, used and dropped).
+pm_pair_df_mean <- function(inf, modelterm, K, block = 5000L) {
+  pp <- pm_pair_index(nrow(K))
+  n <- length(pp$i)
+  tot <- 0
+  n_ok <- 0L
+  for (a in seq.int(1L, n, by = block)) {
+    k <- a:min(n, a + block - 1L)
+    d <- inf$df(K[pp$j[k], , drop = FALSE] - K[pp$i[k], , drop = FALSE], modelterm)
+    tot <- tot + sum(d, na.rm = TRUE)
+    n_ok <- n_ok + sum(!is.na(d))
+  }
+  tot/n_ok
+}
+
 ## Degrees of freedom of the means and of the pairs (no permutation tests):
 ## the user's Df, else from the call's inference choices (R/inference.R).
 ## Df: one df for the LSD tables (lmer: the term's df; df varying by row:
 ## their mean); pairDf: the df printed with the legacy p-value matrix.
+## rK = NULL (the pairs are not tabulated, pm_sed_summary()): the same Df,
+## without the df of each pair.
 pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
   if (length(Df)) {
     mt$Df <- Df
-    return(list(Df = Df, mt = mt, Df_diff = rep_len(Df, nrow(rK)), pairDf = Df, df_user = TRUE))
+    return(list(Df = Df, mt = mt, Df_diff = if (!is.null(rK)) rep_len(Df, nrow(rK)), pairDf = Df, df_user = TRUE))
   }
   pm_df_raw <- inf$df(K, modelterm)
+  if (is.null(rK)) {
+    term_df <- inf$per_row && !is.null(names(inf$mp$df)) && modelterm %in% names(inf$mp$df)
+    Df <- if (term_df) unname(inf$mp$df[modelterm]) else if (inf$per_row) pm_pair_df_mean(inf, modelterm, K) else
+      inf$df(K[1, , drop = FALSE] - K[2, , drop = FALSE], modelterm)
+    if (isTRUE(Df == 0)) stop("You need provide Df for this model!")
+    mt$Df <- round(pm_df_raw, 2)
+    return(list(Df = Df, mt = mt, pm_df_raw = pm_df_raw))
+  }
   Df_diff <- inf$df(rK, modelterm)
   # pairs that cannot be estimated (confounded factors) have NA df: leave them out
   if (inf$per_row) {
@@ -835,7 +921,7 @@ pm_make_plots <- function(x) {
 }
 
 pm_code_draw <- quote({
-  # p-value level plots (base graphics)
+  # p-value level plots
   if (pairwise && nK > 1) {
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
       if (all(nrow(t.p.valuep) > 2, pplot, plot, prtplt)) {
@@ -845,7 +931,7 @@ pm_code_draw <- quote({
           mtitle <- paste("Level Plot of p-value (adjusted by '", adj, "' method)\n for Pairwise Comparison", sep="")
         }
 
-        PMplot(t(t.p.valuep), level=slevel, legendx=0.69, mtitle=mtitle, newwd=newwd)
+        print(PMplot(t(t.p.valuep), level=slevel, mtitle=mtitle, newwd=newwd, basesz=basesz))
       }
     } else {
       if (all(nrow.pm > 2, pplot, plot, prtplt)) {
@@ -856,7 +942,7 @@ pm_code_draw <- quote({
                           "' method)\n for Pairwise Comparison at Each Level of '",paste(atvar, collapse =" and "), "'", sep="")
         }
 
-        PMplot(pmlist, level=slevel, xylabel=rcnplotm, legendx=0.69, mtitle=mtitle, newwd=newwd)
+        print(PMplot(pmlist, level=slevel, xylabel=rcnplotm, mtitle=mtitle, newwd=newwd, basesz=basesz))
       }
     }
   }
@@ -1343,6 +1429,15 @@ pm_letter_groups <- function(P, has_data, slevel) {
   levs <- rownames(P)
   out <- rep(NA_character_, length(levs)); names(out) <- levs
   ok <- has_data
+  # The letter algorithm (insert-absorb) can take minutes for a few hundred
+  # means, and that many letters cannot be read: no letters above the limit.
+  max_n <- pm_max_means()
+  if (sum(ok) > max_n) {
+    message("No letter groups for ", sum(ok), " means (more than ", max_n, "): they could not be read and take ",
+            "long to make. The comparisons are in the 'pairs' table; options(predictmeans.max_means = ) ",
+            "changes the limit.")
+    return(out)
+  }
   diag(P) <- 1
   while (sum(ok) > 1 && anyNA(P[ok, ok])) {
     n_na <- rowSums(is.na(P[ok, ok, drop = FALSE]))

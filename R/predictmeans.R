@@ -34,6 +34,12 @@
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some 
 #'   variable trnasformation in the model.
 #' @param pairwise An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.
+#'   The \code{pairs} table of the result is made in either case for up to 100 means. With more means (e.g. several
+#'   hundred lines of a breeding trial) and no comparison asked for, the means, their SEs and the SED and LSD
+#'   summaries (maximum, minimum, average) are computed from the covariance of the means, without a row per pair
+#'   (300 means: about a second), and \code{pairs} is \code{NULL}; \code{pairwise = TRUE} (or \code{adj}) still
+#'   compares all the pairs. No letter groups are made for more than 100 means.
+#'   \code{options(predictmeans.max_means = )} changes the limit of 100.
 #' @param atvar When \code{pairwise = TRUE}, a quoted name indicating within levels of which variable in 
 #'   \code{modelterm} the multiple comparison will be performed.
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
@@ -214,7 +220,8 @@
 #'  \code{type = "response"}), \code{response.conf.low} and \code{response.conf.high}; \code{group}
 #'  (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
 #'  not rounded. Also returned by \code{tidy()} and \code{as.data.frame()}.}
-#'  \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
+#'  \item{pairs}{A data frame with one row per pairwise comparison (\code{NULL} with one mean, or with more than
+#'  100 means when no comparison was asked for; see \code{pairwise}): \code{level1}, \code{level2}, \code{by} (the
 #'  level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
 #'  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
 #'  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with

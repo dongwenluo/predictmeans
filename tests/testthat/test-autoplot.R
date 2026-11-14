@@ -28,7 +28,9 @@ test_that("autoplot(type = 'pvalue') shows one tile per comparison", {
   pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "BH", plot = FALSE, prtnum = FALSE)
   pp <- ggplot2::autoplot(pa, type = "pvalue")
   expect_equal(nrow(ggplot2::layer_data(pp, 1)), 3 * 6)
-  expect_s3_class(pp$facet, "FacetWrap")
+  # the comparisons within each level of 'atvar' are blocks down the diagonal of one square plot
+  expect_s3_class(pp$coordinates, "CoordFixed")
+  expect_length(pp$layers, 3)                       # tiles and the lines between the blocks
 })
 
 test_that("autoplot(type = 'response') uses the back-transformed means", {

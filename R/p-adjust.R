@@ -113,7 +113,10 @@ pm_adjust_crit <- function(adj, alpha, df, fams, R = NULL, T = NULL) {
       if (adj %in% c("bonferroni", "sidak")) pm_perm_crit(T[ok, , drop = FALSE], a1) else
         pm_perm_crit(T[ok, , drop = FALSE], alpha, family = rep("f", m))
     } else switch(adj,
-      tukey = stats::qtukey(1 - alpha, max(f$k, 2), df[ok])/sqrt(2),
+      tukey = {                    # one quantile for each distinct df
+        du <- unique(df[ok])
+        (stats::qtukey(1 - alpha, max(f$k, 2), du)/sqrt(2))[match(df[ok], du)]
+      },
       bonferroni = , sidak = stats::qt(1 - a1/2, df[ok]),
       scheffe = sqrt(f$r*stats::qf(1 - alpha, f$r, df[ok])),
       mvt = pm_q_mvt(alpha, df[ok], R[ok, ok, drop = FALSE]))
