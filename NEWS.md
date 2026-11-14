@@ -39,7 +39,8 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   intervals. New: `lm`, `aov` and `glm` (the error term: residual variance,
   dispersion, negative binomial theta), `aov` with `Error()` (analysis of
   variance estimates of the stratum variances, also with missing values),
-  `gls` (correlation and variance-function parameters), `gam` and `semireg`
+  `gls` (correlation and variance-function parameters), `gam` (any mgcv
+  version: `gam.vcomp()` returns a list since mgcv 1.9-3) and `semireg`
   fits; `glmer` with several grouping factors (failed) and with `nAGQ = 0`;
   `lme` with correlation and variance structures (failed, e.g. AR(1)); lmeInfo
   is no longer used. SEs are from the observed information (as SAS PROC

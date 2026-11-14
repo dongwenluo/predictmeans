@@ -73,8 +73,8 @@ test_that("plots only when asked: plot = TRUE, the option, or plots named", {
     grDevices::pdf(f); on.exit(grDevices::dev.off())
     force(expr)
     grDevices::dev.off(); on.exit()
-    length(gregexpr("/Type /Page[^s]", paste(readLines(f, warn = FALSE), collapse = "\n"))[[1]]) *
-      grepl("/Type /Page[^s]", paste(readLines(f, warn = FALSE), collapse = "\n"))
+    # PDF page objects, read as bytes (the file is not text in a UTF-8 locale)
+    length(grepRaw("/Type /Page[^s]", readBin(f, "raw", file.size(f)), all = TRUE))
   }
   expect_equal(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
   expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE, prtnum = FALSE)), 0)

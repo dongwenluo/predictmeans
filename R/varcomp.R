@@ -500,7 +500,7 @@ pm_vc_gam <- function(model, ci, level) {
   vc <- NULL
   utils::capture.output(vc <- tryCatch(mgcv::gam.vcomp(model, conf.lev = level), error = function(e) NULL))
   if (is.null(vc)) stop("mgcv::gam.vcomp() failed for this model.", call. = FALSE)
-  if (!is.matrix(vc)) vc <- cbind(std.dev = vc, lower = NA_real_, upper = NA_real_)
+  vc <- pm_gam_vcomp_matrix(vc)
   rn <- rownames(vc)
   rn[rn == "scale"] <- "residual"
   est <- stats::setNames(vc[, "std.dev"]^2, rn)
@@ -508,6 +508,16 @@ pm_vc_gam <- function(model, ci, level) {
   z <- stats::qnorm(1 - (1 - level)/2)
   se_log_sd <- (log(vc[, "upper"]) - log(vc[, "lower"]))/(2 * z)
   pm_vc_table(est, se = est * 2 * se_log_sd, type = rep("var", length(est)), ci = ci, level = level)
+}
+
+## gam.vcomp() returns a matrix (std.dev, lower, upper) or, without REML/ML,
+## a vector; since mgcv 1.9-3 either one sits in element 'vc' of a list
+pm_gam_vcomp_matrix <- function(vc) {
+  if (is.list(vc)) vc <- vc$vc
+  if (is.matrix(vc)) return(unclass(vc)[, c("std.dev", "lower", "upper"), drop = FALSE])
+  out <- cbind(std.dev = as.numeric(vc), lower = NA_real_, upper = NA_real_)
+  rownames(out) <- names(vc)
+  out
 }
 
 ## ---- aov with Error() ----

@@ -144,6 +144,12 @@ test_that("gam and semireg fits; information and ci_method choices", {
   v <- varcomp(mgcv::gam(y ~ s(x) + s(g, bs = "re"), data = d, method = "REML"))
   expect_identical(rownames(v), c("s(x)", "s(g)", "residual"))
   expect_true(all(v$SE > 0))
+  # gam.vcomp()'s shapes: matrix or vector (mgcv < 1.9-3), a list holding them (later)
+  m <- cbind(std.dev = c(a = 1, scale = 2), lower = c(0.5, 1.5), upper = c(2, 3))
+  for (x in list(m, list(all = NULL, vc = m)))
+    expect_identical(pm_gam_vcomp_matrix(x), m)
+  for (x in list(c(a = 1, scale = 2), list(vc = c(a = 1, scale = 2), all = c(a = 1, b = 1, scale = 2))))
+    expect_identical(pm_gam_vcomp_matrix(x), cbind(std.dev = c(a = 1, scale = 2), lower = NA_real_, upper = NA_real_))
   data(Dialyzer)
   fm <- semireg(rate ~ pressure*QB, smoothZ = list(qb = smZ(pressure, k = 4, by = QB, group = TRUE)),
                 data = Dialyzer, prt = FALSE)
