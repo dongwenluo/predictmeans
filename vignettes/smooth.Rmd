@@ -42,11 +42,11 @@ fm <- semireg(rate ~ pressure * QB + (pressure | Subject),
 ```
 
 `k` is the number of interior knots of the spline. `fm$semer` is the fitted mixed
-model, so the usual tests apply. `ranova()` tests the random terms, including the
+model, so the usual tests apply. `lmerTest::ranova()` tests the random terms, including the
 smooth: a significant smooth term means the curve is not a straight line.
 
 ```{r}
-ranova(fm$semer)
+lmerTest::ranova(fm$semer)
 ```
 
 ## Curves with confidence bands

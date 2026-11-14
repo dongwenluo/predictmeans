@@ -28,6 +28,7 @@ added here.
 This is a major release. Some defaults change, each documented in NEWS with
 the argument that restores the 1.x result: Kenward-Roger adjusted standard
 errors for REML mixed models (`vcov_adjust = FALSE`), degrees of freedom
-chosen by model class (`df_method = "residual"` or `"containment"`), and
-Freedman-Lane permutations (`method = "raw"`). The 1.x functions and their
-printed output are kept.
+chosen by model class (`df_method = "residual"` or `"containment"`),
+Freedman-Lane permutations (`method = "raw"`), and plots drawn only when
+asked for (`plot = TRUE`). lmerTest moved from Depends to Imports. The 1.x
+functions and their printed output are kept.

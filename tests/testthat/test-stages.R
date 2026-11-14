@@ -62,5 +62,23 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
   expect_equal(r$pairs$estimate[1], unname(-coef(m)["Aa2"]))
   expect_true(all(is.na(r$pairs$estimate[2:3])))
   pdf(NULL); on.exit(dev.off())
-  expect_message(predictmeans(m, "A", prtnum = FALSE, prtplt = FALSE), "no mean plots")
+  expect_message(predictmeans(m, "A", plot = TRUE, prtnum = FALSE, prtplt = FALSE), "no mean plots")
+})
+
+test_that("plots only when asked: plot = TRUE, the option, or plots named", {
+  O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
+  fm <- lm(yield ~ Block + nitro*Variety, data = O)
+  f <- tempfile(fileext = ".pdf")
+  pages <- function(expr) {
+    grDevices::pdf(f); on.exit(grDevices::dev.off())
+    force(expr)
+    grDevices::dev.off(); on.exit()
+    length(gregexpr("/Type /Page[^s]", paste(readLines(f, warn = FALSE), collapse = "\n"))[[1]]) *
+      grepl("/Type /Page[^s]", paste(readLines(f, warn = FALSE), collapse = "\n"))
+  }
+  expect_equal(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE, prtnum = FALSE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", which.plots = "mean", prtnum = FALSE)), 0)
+  op <- options(predictmeans.plot = TRUE); on.exit(options(op), add = TRUE)
+  expect_gt(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
 })

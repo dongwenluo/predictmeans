@@ -4,6 +4,8 @@
 
 predictmeans 2.0 keeps the 1.x functions and printed output, and changes
 defaults where simulations or the literature showed a more reliable method.
+Plots are drawn only when asked for (`plot = TRUE` or `autoplot()`), and
+lmerTest is no longer attached.
 Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 * **Degrees of freedom** are chosen by the model in one place (`df_method =
@@ -31,18 +33,23 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   response-scale means with bias adjustment, and an adapter for new model
   classes (`?pm_coef`).
 
-## Planned for 2.1
-
-* **lmerTest will move from Depends to Suggests.** `library(predictmeans)`
-  will then no longer attach lmerTest, and `summary()` of an `lmer()` fit will
-  show no df or p-values unless you load lmerTest yourself. predictmeans'
-  own df do not depend on it.
-* **`plot = FALSE` will become the default** of `predictmeans()`. To get
-  that now, set `options(predictmeans.plot = FALSE)`; `autoplot()` draws the
-  plots from the result.
-
 ## Changes that affect results or scripts
 
+* **`predictmeans()` no longer draws plots unless asked** (`plot = FALSE` is
+  the default). Drawing took most of the time of a call (0.22 s against
+  0.03 s for the oats example) and put graphics pages into scripts, reports,
+  Shiny apps and loops. The result holds the same tables, and `autoplot()`
+  draws from it. `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a
+  session, draws the 1.x plots; so does asking for plots by name
+  (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
+  `bkplot`).
+* **lmerTest is no longer attached** by `library(predictmeans)`: it moved
+  from Depends to Imports. predictmeans' own df and tests do not use it.
+  Scripts that relied on lmerTest's `lmer()` (df and p-values in
+  `summary()`, `anova(..., ddf =)`, `ranova()`) need `library(lmerTest)`.
+  It is still installed with predictmeans, for the `semireg()` fits (their
+  `summary()` and `lmerTest::ranova()`); whether it is needed at all will be
+  decided when `semireg()` is upgraded.
 * **Adjusted confidence limits of the pairs.** With `adj` "tukey",
   "bonferroni", "sidak", "scheffe" or "mvt", `pairs` has the columns
   `adj.conf.low` and `adj.conf.high`: simultaneous limits within each family

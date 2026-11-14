@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align =
 #| label: setup
 library(tidyverse)
 library(predictmeans)
+library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
 library(eda4treeR)
 library(gridExtra)
 library(car)

@@ -19,8 +19,12 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
-- glmmTMB in Imports; car and pbkrtest in Suggests (own code in `R/anova.R`,
+- glmmTMB and lmerTest in Imports (lmerTest only for `semireg()` fits; not
+  attached since 2.0; its removal is reconsidered when `semireg()` is
+  upgraded); car and pbkrtest in Suggests (own code in `R/anova.R`,
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
+- `predictmeans()` draws plots only when asked (`plot = FALSE` default since
+  2.0; `which.plots` etc. turn plotting on); `autoplot()` draws from results.
 - Means over empty cells keep the 1.x rule: the average of the observed
   cells, with a warning (the maintainer's decision of 2026-11-13, replacing
   an earlier "NA by default"). Combinations absent by design (nested
