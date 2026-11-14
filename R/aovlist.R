@@ -179,6 +179,23 @@ pm_aov_qr <- function(ef, dat) {
   list(qe = qe, grp = c(asg, rep(max(asg) + 1L, nrow(Xe) - rk)))
 }
 
+## Each stratum of a design (pm_aov_qr()): its rows of Q', an orthonormal
+## basis U of the treatment design X in them, and its residual df; the
+## residual projector of the stratum is I - U U' on its rows.
+pm_aov_bases <- function(qe, grp, X) {
+  tX <- qr.qty(qe, X)
+  lapply(sort(unique(grp)), function(g) {
+    sel <- which(grp == g)
+    Xi <- tX[sel, , drop = FALSE]
+    cols <- colSums(Xi^2) > 1e-8 * max(1, colSums(X^2))
+    U <- if (any(cols)) {
+      qi <- qr(Xi[, cols, drop = FALSE])
+      qr.Q(qi)[, seq_len(qi$rank), drop = FALSE]
+    } else matrix(0, length(sel), 0)
+    list(sel = sel, U = U, df = length(sel) - ncol(U))
+  })
+}
+
 ## TRUE when every treatment term lies in a single stratum (an orthogonal design).
 pm_aov_orthogonal <- function(qe, grp, carrier, dat) {
   op <- options(contrasts = c("contr.helmert", "contr.poly"))
@@ -226,18 +243,7 @@ pm_aov_missing <- function(carrier, comp, X, y) {
   grp <- sq$grp
   st <- sort(unique(grp))
   tX <- qr.qty(qe, Xf)                                           # Q'X, by stratum rows
-  # each stratum: its rows, an orthonormal basis U of its part of the design,
-  # residual df; res(i, Z) = (I - U U') Z on its rows
-  S <- lapply(st, function(g) {
-    sel <- which(grp == g)
-    Xi <- tX[sel, , drop = FALSE]
-    cols <- colSums(Xi^2) > 1e-8 * max(1, colSums(Xf^2))
-    U <- if (any(cols)) {
-      qi <- qr(Xi[, cols, drop = FALSE])
-      qr.Q(qi)[, seq_len(qi$rank), drop = FALSE]
-    } else matrix(0, length(sel), 0)
-    list(sel = sel, U = U, df = length(sel) - ncol(U))
-  })
+  S <- pm_aov_bases(qe, grp, Xf)
   res <- function(i, Z) Z - S[[i]]$U %*% crossprod(S[[i]]$U, Z)
   # rows m of the residual projector of each stratum, R_i[m, ] = Q_i (I - U U') Q_i'[, m]
   Em <- matrix(0, n, nm_)

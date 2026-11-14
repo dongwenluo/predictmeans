@@ -45,9 +45,15 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
   # of the other factors under treatment contrasts (test-anova.R). The
   # interaction is the same either way.
   type3 <- "perm_lmer_III"
+  # Since 2.0 varcomp() has one layout for every class and Satterthwaite's
+  # intervals (1.1.1: profile intervals for lmer, nlme's for lme, a matrix for
+  # lme); the estimates and SEs are compared.
+  vc_cases <- c("varcomp_lmer", "varcomp_lme")
+  vc_core <- function(x) { x <- as.matrix(x); unname(cbind(as.numeric(x[, 1]), as.numeric(x[, 2]))) }
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
     a <- strip_ci(new[[nm]]); b <- ref[[nm]]
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
+    if (nm %in% vc_cases) { a <- vc_core(a); b <- vc_core(b) }
     if (nm %in% type3) {
       a$ANOVA <- a$ANOVA[grepl(":", rownames(a$ANOVA)), , drop = FALSE]
       b$ANOVA <- b$ANOVA[grepl(":", rownames(b$ANOVA)), , drop = FALSE]

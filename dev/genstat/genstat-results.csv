@@ -1,7 +1,10 @@
 analysis,table,term,key,value
 run1:Yield,vc,Block,component,179.2
+run1:Yield,vc,Block,se,164.4
 run1:Yield,vc,Block.Variety,component,131.3
+run1:Yield,vc,Block.Variety,se,84.3
 run1:Yield,vc,Sigma2,estimate,169.4
+run1:Yield,vc,Sigma2,se,37.0
 run1:Yield,wald_seq,Variety,wald,2.56
 run1:Yield,wald_seq,Variety,ndf,2
 run1:Yield,wald_seq,Variety,F,1.28
@@ -55,7 +58,9 @@ run1:Yield,sed_same,Variety.Nitro,maximum:Nitro,10.59
 run1:Yield,sed_same,Variety.Nitro,minimum:Variety,7.515
 run1:Yield,sed_same,Variety.Nitro,minimum:Nitro,10.01
 run1:Y,vc,Sigma2,estimate,1.194
+run1:Y,vc,Sigma2,se,0.355
 run1:Y,vc,phi_1,estimate,0.6157
+run1:Y,vc,phi_1,se,0.1289
 run1:Y,wald_seq,Time,wald,11.18
 run1:Y,wald_seq,Time,ndf,3
 run1:Y,wald_seq,Time,F,3.71
@@ -104,8 +109,11 @@ run1:Y,sed_same,Time.Group,maximum:Group,0.5960
 run1:Y,sed_same,Time.Group,minimum:Time,0.6453
 run1:Y,sed_same,Time.Group,minimum:Group,0.3912
 run2:YA,vc,Block,component,188.7
+run2:YA,vc,Block,se,166.3
 run2:YA,vc,Block.Variety,component,118.6
+run2:YA,vc,Block.Variety,se,78.8
 run2:YA,vc,Sigma2,estimate,171.0
+run2:YA,vc,Sigma2,se,37.8
 run2:YA,wald_seq,Variety,wald,2.96
 run2:YA,wald_seq,Variety,ndf,2
 run2:YA,wald_seq,Variety,F,1.48
@@ -161,8 +169,11 @@ run2:YA,sed_same,Variety.Nitro,maximum:Nitro,10.75
 run2:YA,sed_same,Variety.Nitro,minimum:Variety,7.550
 run2:YA,sed_same,Variety.Nitro,minimum:Nitro,9.825
 run2:YB,vc,Block,component,205.2
+run2:YB,vc,Block,se,158.1
 run2:YB,vc,Block.Variety,component,79.8
+run2:YB,vc,Block.Variety,se,58.6
 run2:YB,vc,Sigma2,estimate,179.8
+run2:YB,vc,Sigma2,se,40.2
 run2:YB,wald_seq,Variety,wald,8.73
 run2:YB,wald_seq,Variety,ndf,2
 run2:YB,wald_seq,Variety,F,4.37
@@ -269,8 +280,11 @@ run2:YC:anova,aov_sed,same Variety,s.e.d.,7.72
 run2:YC:anova,aov_sed,d.f.,values,44
 run2:YC:anova,missing_value,unit 24,estimate,113.0
 run2:YC,vc,Block,component,220.6
+run2:YC,vc,Block,se,170.5
 run2:YC,vc,Block.Variety,component,95.2
+run2:YC,vc,Block.Variety,se,63.9
 run2:YC,vc,Sigma2,estimate,178.8
+run2:YC,vc,Sigma2,se,38.1
 run2:YC,wald_seq,Variety,wald,3.41
 run2:YC,wald_seq,Variety,ndf,2
 run2:YC,wald_seq,Variety,F,1.70
@@ -326,8 +340,11 @@ run2:YC,sed_same,Variety.Nitro,maximum:Nitro,9.936
 run2:YC,sed_same,Variety.Nitro,minimum:Variety,7.720
 run2:YC,sed_same,Variety.Nitro,minimum:Nitro,9.558
 run2:YD,vc,Block,component,200.6
+run2:YD,vc,Block,se,164.7
 run2:YD,vc,Block.Variety,component,120.8
+run2:YD,vc,Block.Variety,se,76.5
 run2:YD,vc,Sigma2,estimate,176.0
+run2:YD,vc,Sigma2,se,39.3
 run2:YD,wald_seq,Variety,wald,1.71
 run2:YD,wald_seq,Variety,ndf,2
 run2:YD,wald_seq,Variety,F,0.86

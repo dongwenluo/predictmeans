@@ -44,7 +44,8 @@ if (identical(args[1], "--time")) {
     predictmeans_aov_missing = tm(q(ma, "W:S", pairwise = TRUE)),
     permmodels_lm_III = tm(permmodels(ml, nperm = 499, type = "III", seed = 1, method = "raw", prt = FALSE), 1),
     permmodels_lmer_refit = tm(permmodels(mo, nperm = 19, seed = 1, prt = FALSE), 1),
-    residplot_lmer = tm(residplot(m, plot = FALSE)))
+    residplot_lmer = tm(residplot(m, plot = FALSE)),
+    varcomp_lmer = tm(varcomp(m)))
   saveRDS(res, args[3])
   quit(save = "no")
 }

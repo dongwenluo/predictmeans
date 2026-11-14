@@ -58,7 +58,7 @@ test_that("Genstat REML: variance components, sequential Wald tests (KR-average 
     m <- fits[[an]]
     g <- G[G$analysis == an, ]
     nl <- inherits(m, "gls")
-    gv <- function(term) g$value[g$table == "vc" & g$term == term]
+    gv <- function(term) g$value[g$table == "vc" & g$term == term & g$key != "se"]
     if (nl) {
       add(an, "vc", "Sigma2", gv("Sigma2"), m$sigma^2)
       add(an, "vc", "phi_1", gv("phi_1"), coef(m$modelStruct$corStruct, unconstrained = FALSE))
@@ -153,4 +153,31 @@ test_that("empty cell: Genstat's PRESENT means equal predictmeans'; its SEDs are
   r <- p$pairs[p$pairs$level1 == "0.0" & p$pairs$level2 == "0.6", ]
   expect_equal(r$std.error, 5.474, tolerance = 1e-3)
   expect_identical(sd$value[sd$key == "0.0|0.6"], "5.214")
+})
+
+test_that("varcomp(): Genstat's variance components and their s.e. (average information)", {
+  skip_on_cran()
+  G <- gen_ref()
+  fits <- gen_fits()
+  res <- list()
+  for (an in names(fits)) {
+    m <- fits[[an]]
+    g <- G[G$analysis == an & G$table == "vc", ]
+    v <- suppressMessages(varcomp(m, information = "average"))
+    nm <- if (inherits(m, "gls")) c(Sigma2 = "residual", phi_1 = "cor.Phi") else
+      c(Block = "Block.(Intercept)", Block.Variety = "Variety:Block.(Intercept)", Sigma2 = "residual")
+    est <- g[g$key != "se", ]
+    se <- g[g$key == "se", ]
+    res[[an]] <- data.frame(an = an, what = c(rep("estimate", nrow(est)), rep("s.e.", nrow(se))),
+                            term = c(est$term, se$term), genstat = c(est$value, se$value),
+                            r = c(v[nm[est$term], "vcov"], v[nm[se$term], "SE"]))
+  }
+  all <- do.call(rbind, res)
+  # varcomp() rounds to 4 decimals: compare within one unit of Genstat's last digit
+  all$ok <- gen_agree(all$r, all$genstat) | abs(all$r - as.numeric(all$genstat)) <= 1e-4 * abs(as.numeric(all$genstat))
+  expect(all(all$ok), paste(utils::capture.output(print(all[!all$ok, ], row.names = FALSE)), collapse = "\n"))
+  expect_equal(nrow(all), 34)
+  # the default (observed information, as SAS) differs by a few per cent where plots are missing
+  vo <- suppressMessages(varcomp(fits[["run1:Yield"]]))
+  expect_gt(vo["Block.(Intercept)", "SE"], 170)
 })

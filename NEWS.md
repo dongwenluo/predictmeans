@@ -35,6 +35,26 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`varcomp()` for every model class**, with one rule for SEs and
+  intervals. New: `lm`, `aov` and `glm` (the error term: residual variance,
+  dispersion, negative binomial theta), `aov` with `Error()` (analysis of
+  variance estimates of the stratum variances, also with missing values),
+  `gls` (correlation and variance-function parameters), `gam` and `semireg`
+  fits; `glmer` with several grouping factors (failed) and with `nAGQ = 0`;
+  `lme` with correlation and variance structures (failed, e.g. AR(1)); lmeInfo
+  is no longer used. SEs are from the observed information (as SAS PROC
+  MIXED) by the delta method; `information = "average"` gives Genstat's s.e.
+  (equal to the printed digits in 17 of 17 values) and `"expected"` the
+  expected information. Intervals of variances are Satterthwaite's
+  chi-square intervals with nu = 2 (estimate/SE)^2 (SAS's `COVTEST CL`; the
+  exact interval for an `lm` residual variance); before, `lmer` had lme4's
+  profile intervals, which for a REML fit are those of the ML fit, and `lme`
+  nlme's. A variance at zero has no SE. One naming for every class
+  (`group.term`, `group.term1.term2`, `cor.`, `var.`, `residual`); glmmTMB
+  `ar1`, `cs` and `toep` terms give their variance and correlation instead of
+  every element. Much faster for `lmer`: 1,200 rows 7.6 s -> 0.06 s; 6,000
+  rows over 20 minutes -> 0.2 s.
+
 * **`predictmeans()` no longer draws plots unless asked** (`plot = FALSE` is
   the default). Drawing took most of the time of a call (0.22 s against
   0.03 s for the oats example) and put graphics pages into scripts, reports,

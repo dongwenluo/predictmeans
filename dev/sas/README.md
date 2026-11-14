@@ -187,3 +187,11 @@ tested in `tests/testthat/test-sas-ar1.R`.
   Type 3 basis (each level against the last) 26.11, as SAS. `pm_joint()`
   now uses SAS's basis when no `ctrmatrix` is given. Kenward-Roger does not
   depend on the basis (26.62 either way).
+
+`pm-reference-varcomp.sas` (to be run): reference SEs and confidence limits of
+variance components for `varcomp()` (`COVTEST CL ASYCOV`): oats with and
+without missing plots, a random intercept and slope (unstructured), a random
+intercept with AR(1), unstructured repeated measures, AR(1) with missing
+values, a component estimated at zero (Dyestuff2) and crossed random effects
+(Penicillin). The estimates of the 16 runs and the AR(1) run are already
+compared in `test-sas-reference.R`.

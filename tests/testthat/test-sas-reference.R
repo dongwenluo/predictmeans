@@ -136,3 +136,51 @@ test_that("pbkrtest's Kenward-Roger (KR-expected) differs from SAS's when a whol
   expect_equal(s, as.numeric(D$df), tolerance = 2e-3)                      # 8.35, 8.35, 8.1
   expect_true(all(k / as.numeric(D$df) > 1.08))                            # 9.25, 9.25, 9.01
 })
+
+test_that("varcomp(): SAS's covariance parameters (oats with and without missing plots, unstructured, AR(1))", {
+  skip_on_cran()
+  ref <- sas_ref()
+  cp <- ref[ref$table == "covparms" & ref$ddfm == "KR", ]
+  res <- list()
+  for (dname in c("OATS", "OATS_MISSWP", "OATS_MISS")) {
+    d <- sas_oats()
+    if (dname %in% c("OATS_MISSWP", "OATS_MISS")) d <- d[!(d$Block == "I" & d$Variety == "GoldenRain"), ]
+    if (dname == "OATS_MISS") d <- d[!(d$Block == "II" & d$Variety == "Victory" & d$Nitro == "0.6"), ]
+    m <- lme4::lmer(Yield ~ Variety * Nitro + (1 | Block) + (1 | Block:Variety), data = droplevels(d))
+    v <- varcomp(m)
+    S <- cp[cp$data == dname, ]
+    r <- c(Intercept = v["Block.(Intercept)", "vcov"], Variety = v["Block:Variety.(Intercept)", "vcov"],
+           Residual = v["residual", "vcov"])
+    res[[dname]] <- data.frame(data = dname, key = S$effect, sas = S$est, r = r[S$effect])
+  }
+  # unstructured (gls with corSymm and varIdent): the covariances from the correlations and SD ratios
+  m <- nlme::gls(Y ~ Group * Time, data = sas_rep(), correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
+                 weights = nlme::varIdent(form = ~ 1 | Time))
+  v <- varcomp(m)
+  # SD of each time: residual SD times the varIdent ratio (1 for the reference time)
+  vr <- grep("^var\\.", rownames(v), value = TRUE)
+  ratio <- stats::setNames(rep(1, 3), 1:3)
+  ratio[sub("^var\\.", "", vr)] <- v[vr, "vcov"]
+  sds <- sqrt(v["residual", "vcov"]) * ratio
+  R <- diag(3)
+  R[upper.tri(R)] <- v[c("cor.1.2", "cor.1.3", "cor.2.3"), "vcov"]
+  R[lower.tri(R)] <- t(R)[lower.tri(R)]
+  U <- R * outer(sds, sds)
+  S <- cp[cp$data == "REPEATEDLONG", ]
+  ij <- regmatches(S$effect, regexpr("[0-9],[0-9]", S$effect))
+  res$un <- data.frame(data = "REPEATEDLONG", key = S$effect, sas = S$est,
+                       r = vapply(strsplit(ij, ","), function(k) U[as.integer(k[1]), as.integer(k[2])], numeric(1)))
+  # AR(1) repeated measures with missing values
+  a <- read.csv(test_path("_data", "sas", "proc-mixed-ar1.csv.gz"), colClasses = "character")
+  a <- a[a$table == "covparms" & a$ddfm == "KR", ]
+  d <- read.table(test_path("_data", "sas", "ar1.txt"), header = TRUE)
+  d$Subj <- factor(d$Subj); d$Group <- factor(d$Group); d$t <- d$Time; d$Time <- factor(d$Time)
+  g <- nlme::gls(Y ~ Group * Time, data = d, correlation = nlme::corAR1(form = ~ t | Subj))
+  va <- varcomp(g)
+  res$ar1 <- data.frame(data = "AR1", key = a$effect, sas = a$est,
+                        r = c("AR(1)" = va["cor.Phi", "vcov"], Residual = va["residual", "vcov"])[a$effect])
+  all <- do.call(rbind, res)
+  all$ok <- sas_agree(all$r, all$sas)
+  expect(all(all$ok), paste(utils::capture.output(print(all[!all$ok, ], row.names = FALSE)), collapse = "\n"))
+  expect_equal(nrow(all), 17)
+})

@@ -122,3 +122,12 @@ What differs, and why:
   values as Genstat's ANOVA, with exact SEDs and a message recommending REML
   (`R/aovlist.R`, `test-aov-missing.R`): the means, stratum mean squares and
   the missing value now equal Genstat's.
+
+## The third program (`pm-reference-3.gen`, to be run)
+
+Variance components and their s.e. for `varcomp()`, with edge cases: one-way
+(Dyestuff), a component at zero (Dyestuff2), crossed (Penicillin), a random
+slope (Orthodont) and a random intercept with AR(1). The s.e. of the 2026-11-14
+runs are now parsed (table `vc`, key `se`) and equal `varcomp(information =
+"average")` to the printed digits (`test-genstat-reference.R`); the default
+observed information (as SAS) differs by up to 6% where plots are missing.
