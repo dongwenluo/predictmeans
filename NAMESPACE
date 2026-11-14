@@ -48,7 +48,7 @@ importMethodsFrom("Matrix",
   import(glmmTMB)
   importFrom("numDeriv", "hessian", "jacobian")
   importFrom("MASS", "theta.ml", "negative.binomial")
-  importFrom("lmerTest", "as_lmerModLmerTest")
+  importClassesFrom("lmerTest", "lmerModLmerTest")
   importFrom("splines", "ns", "bs")
   importFrom("nlme", "getData", "intervals", "getResponse")
   importFrom("grDevices", "dev.new")

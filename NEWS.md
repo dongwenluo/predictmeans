@@ -62,6 +62,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `ctrmatrix`, "mvt"; with a `permlist` also "westfall"), equal to emmeans'
   `confint()`; its `lower.CL` and `upper.CL` are per contrast, also with a
   `permlist` and a max-|t| adjustment.
+* `permmodels()` for lmer models prints its tables (coefficients with
+  Satterthwaite df and p-values; the type I ANOVA) from predictmeans' own
+  Satterthwaite code instead of converting the fit to an lmerTest object.
+  The numbers are lmerTest's: the type I hypotheses now use lmerTest's
+  unit-diagonal rows, on which its Satterthwaite df of several rows depend
+  (unbalanced data: 0.03-0.04 df closer to lmerTest's in `permstats()`).
 * Review of the week's additions, with edge cases (model classes, odd
   designs):
   * `aov()` with `Error()` and missing values: rows left out by `subset =`

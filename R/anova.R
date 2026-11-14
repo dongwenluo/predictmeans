@@ -327,13 +327,41 @@ pm_anova_glm_III <- function(model, test = c("LR", "F"), type3_map = NULL) {
 
 ## Type I (sequential) hypotheses of lmerTest: for each term, the rows of the
 ## Doolittle factor of X'X in the term's columns, i.e. the rows of the
-## Cholesky factor R of X'X (Doolittle's t(L) is R with rows scaled, which
-## does not change a Wald test). Returns a list of L matrices named by term.
+## Cholesky factor R of X'X scaled to a unit diagonal (the scaling does not
+## change a Wald F, but the Satterthwaite df of several rows depend on it).
+## Returns a list of L matrices named by term.
 pm_type1_L <- function(X, labels, asgn = attr(X, "assign")) {
   R <- chol(crossprod(as.matrix(X)))
+  R <- R / diag(R)
   out <- lapply(seq_along(labels), function(j) R[asgn == j, , drop = FALSE])
   names(out) <- labels
   out[vapply(out, nrow, 1L) > 0]
+}
+
+## The tables lmerTest prints for an lmer fit, from predictmeans' own
+## Satterthwaite df (R/satterthwaite.R; equal to lmerTest's): the
+## coefficients (Estimate, Std. Error, df, t value, Pr(>|t|)) and the type I
+## ANOVA (Sum Sq, Mean Sq, NumDF, DenDF, F value, Pr(>F); sums of squares as
+## lmerTest's, F x sigma^2 x NumDF). No lmerTest object is needed.
+pm_lmer_tables <- function(model) {
+  b <- lme4::fixef(model)
+  V <- as.matrix(stats::vcov(model))
+  parts <- pm_satt_parts(model)
+  se <- sqrt(diag(V))
+  dfc <- pm_satt_ddf(diag(length(b)), parts)
+  tv <- b/se
+  coefT <- cbind(Estimate = b, "Std. Error" = se, df = dfc, "t value" = tv, "Pr(>|t|)" = 2*stats::pt(-abs(tv), dfc))
+  rownames(coefT) <- names(b)
+  Ls <- pm_type1_L(lme4::getME(model, "X"), attr(stats::terms(model), "term.labels"))
+  Fv <- pm_type1_F(Ls, b, V)[, 1]
+  q <- vapply(Ls, nrow, 1L)
+  ddf <- vapply(Ls, function(L) pm_satt_Fddf(L, parts), numeric(1))
+  ms <- Fv * stats::sigma(model)^2
+  aT <- data.frame(ms * q, ms, q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE), row.names = names(Ls))
+  names(aT) <- c("Sum Sq", "Mean Sq", "NumDF", "DenDF", "F value", "Pr(>F)")
+  attr(aT, "heading") <- "Type I Analysis of Variance Table with Satterthwaite's method"
+  class(aT) <- c("anova", "data.frame")
+  list(coef = coefT, anova = aT)
 }
 
 ## Wald F of each hypothesis L b = 0 (q = rows of L), with covariance V.
