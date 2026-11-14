@@ -123,7 +123,7 @@ What differs, and why:
   (`R/aovlist.R`, `test-aov-missing.R`): the means, stratum mean squares and
   the missing value now equal Genstat's.
 
-## The third program (`pm-reference-3.gen`, to be run)
+## The third program (`pm-reference-3.gen`, run 2026-11-14)
 
 Variance components and their s.e. for `varcomp()`, with edge cases: one-way
 (Dyestuff), a component at zero (Dyestuff2), crossed (Penicillin), a random
@@ -131,3 +131,8 @@ slope (Orthodont) and a random intercept with AR(1). The s.e. of the 2026-11-14
 runs are now parsed (table `vc`, key `se`) and equal `varcomp(information =
 "average")` to the printed digits (`test-genstat-reference.R`); the default
 observed information (as SAS) differs by up to 6% where plots are missing.
+The run itself (`genstat-results-2026-11-14-run3.txt`, parsed by
+`parse-genstat-varcomp.py` into `genstat-results-varcomp.csv`) agrees with
+`varcomp(information = "average")` in all 26 values: Genstat centres age for
+the random slope (lmer with `age - 11`), and its REML keeps the negative
+Dyestuff2 component (-1.32, s.e. 1.36), which is the `aov` estimate.

@@ -181,3 +181,36 @@ test_that("varcomp(): Genstat's variance components and their s.e. (average info
   vo <- suppressMessages(varcomp(fits[["run1:Yield"]]))
   expect_gt(vo["Block.(Intercept)", "SE"], 170)
 })
+
+test_that("varcomp(): Genstat's s.e. with edge cases (run 3: one-way, negative, crossed, slope, AR(1))", {
+  skip_on_cran()
+  G <- read.csv(test_path("_data", "genstat", "genstat-varcomp.csv.gz"), colClasses = "character")
+  data(Orthodont, package = "nlme"); data(Dyestuff, Dyestuff2, Penicillin, package = "lme4")
+  o <- Orthodont
+  o$agec <- o$age - 11                         # Genstat centres covariates
+  av <- function(m) suppressMessages(varcomp(m, information = "average"))
+  fits <- list(
+    DYESTUFF = list(av(lme4::lmer(Yield ~ 1 + (1|Batch), data = Dyestuff)),
+                    c(Batch = "Batch.(Intercept)", Sigma2 = "residual")),
+    # Genstat's REML does not keep the Batch variance positive: the ANOVA estimate (balanced data)
+    DYESTUFF2 = list(suppressMessages(varcomp(aov(Yield ~ 1 + Error(Batch), data = Dyestuff2))),
+                     c(Batch = "Batch", Sigma2 = "residual")),
+    PENICILLIN = list(av(lme4::lmer(diameter ~ 1 + (1|plate) + (1|sample), data = Penicillin)),
+                      c(plate = "plate.(Intercept)", sample = "sample.(Intercept)", Sigma2 = "residual")),
+    ORTHO_SLOPE_CENTRED = list(av(lme4::lmer(distance ~ age + (1|Subject) + (0 + agec|Subject), data = o)),
+                               c(Subject = "Subject.(Intercept)", Subject.age = "Subject.agec", Sigma2 = "residual")),
+    ORTHO_AR1 = list(av(nlme::lme(distance ~ age, random = ~1|Subject, correlation = nlme::corAR1(), data = o)),
+                     c(Subject = "Subject.(Intercept)", Sigma2 = "residual", phi_1 = "cor.Phi")))
+  res <- list()
+  for (cs in names(fits)) {
+    g <- G[G$case == cs, ]
+    v <- fits[[cs]][[1]]
+    map <- fits[[cs]][[2]]
+    res[[cs]] <- rbind(data.frame(case = cs, term = g$term, what = "estimate", genstat = g$est, r = v[map[g$term], "vcov"]),
+                       data.frame(case = cs, term = g$term, what = "s.e.", genstat = g$se, r = v[map[g$term], "SE"]))
+  }
+  all <- do.call(rbind, res)
+  all$ok <- gen_agree(all$r, all$genstat) | abs(all$r - as.numeric(all$genstat)) <= 1e-4 * abs(as.numeric(all$genstat))
+  expect(all(all$ok), paste(utils::capture.output(print(all[!all$ok, ], row.names = FALSE)), collapse = "\n"))
+  expect_equal(nrow(all), 26)
+})

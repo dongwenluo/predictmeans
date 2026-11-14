@@ -1,0 +1,852 @@
+11/14/26, 7:34 PM                                                                        Results: Program 1
+
+                                           varcomp: Oats (random Block, Block*Variety)
+                                                                      The Mixed Procedure
+
+                                                                        Model Information
+                                                 Data Set                                 WORK.OATS
+                                                 Dependent Variable                       Yield
+                                                 Covariance Structure                     Variance Components
+                                                 Subject Effect                           Block
+
+                                                 Estimation Method                        REML
+                                                 Residual Variance Method                 Profile
+                                                 Fixed Effects SE Method                  Model-Based
+                                                 Degrees of Freedom Method                Containment
+
+
+                                                                  Class Level Information
+                                                   Class        Levels       Values
+
+                                                   Block                6    I II III IV V VI
+                                                   Variety              3    GoldenRain Marvellous Victory
+                                                   Nitro                4    0.0 0.2 0.4 0.6
+
+
+                                                                            Dimensions
+                                                              Covariance Parameters                   3
+                                                              Columns in X                           20
+                                                              Columns in Z per Subject                4
+                                                              Subjects                                6
+                                                              Max Obs per Subject                    12
+
+
+                                                                 Number of Observations
+
+                                                          Number of Observations Read                       72
+                                                          Number of Observations Used                       72
+                                                          Number of Observations Not Used                    0
+
+
+                                                                        Iteration History
+                                                Iteration    Evaluations         -2 Res Log Like             Criterion
+                                                       0                    1      564.36420957
+                                                       1                    1      529.02850701            0.00000000
+
+
+
+                                                                  Convergence criteria met.
+
+
+                                                             Covariance Parameter Estimates
+                                                                  Standard
+                            Cov Parm    Subject     Estimate          Error        Z Value         Pr > Z     Alpha       Lower     Upper
+                            Intercept   Block          214.48           168.83           1.27      0.1020        0.05    70.8619   2575.21
+                            Variety     Block          106.06         67.8755            1.56      0.0591        0.05    40.9773    657.77
+                            Residual                   177.08         37.3324            4.74      <.0001        0.05     121.83    280.92
+
+
+
+                                                      Asymptotic Covariance Matrix of Estimates
+                                                   Row      Cov Parm            CovP1           CovP2       CovP3
+                                                      1     Intercept            28505     -1506.66          2E-11
+
+                                                      2     Variety          -1506.66        4607.09        -348.43
+                                                      3     Residual             2E-11          -348.43     1393.71
+
+
+                                                                            Fit Statistics
+                                                             -2 Res Log Likelihood                 529.0
+
+                                                             AIC (Smaller is Better)               535.0
+
+11/14/26, 7:34 PM                                                                   Results: Program 1
+                                                                       Fit Statistics
+                                                           AICC (Smaller is Better)            535.5
+
+                                                           BIC (Smaller is Better)             534.4
+
+
+                                                            Type 3 Tests of Fixed Effects
+                                              Effect            Num DF          Den DF       F Value         Pr > F
+                                              Variety                      2         10          1.49        0.2724
+
+                                              Nitro                        3         45         37.69        <.0001
+                                              Variety*Nitro                6         45          0.30        0.9322
+
+
+
+
+                                      varcomp: Oats_MissWP (random Block, Block*Variety)
+                                                                The Mixed Procedure
+
+                                                                  Model Information
+                                              Data Set                               WORK.OATS_MISSWP
+                                              Dependent Variable                     Yield
+
+                                              Covariance Structure                   Variance Components
+                                              Subject Effect                         Block
+                                              Estimation Method                      REML
+                                              Residual Variance Method               Profile
+
+                                              Fixed Effects SE Method                Model-Based
+                                              Degrees of Freedom Method              Containment
+
+
+                                                               Class Level Information
+
+                                                 Class       Levels     Values
+                                                 Block            6     I II III IV V VI
+                                                 Variety          3     GoldenRain Marvellous Victory
+
+                                                 Nitro            4     0.0 0.2 0.4 0.6
+
+
+                                                                       Dimensions
+                                                            Covariance Parameters                 3
+                                                            Columns in X                         20
+
+                                                            Columns in Z per Subject              4
+                                                            Subjects                              6
+                                                            Max Obs per Subject                  12
+
+
+
+                                                               Number of Observations
+                                                       Number of Observations Read                      68
+                                                       Number of Observations Used                      68
+
+                                                       Number of Observations Not Used                   0
+
+
+                                                                   Iteration History
+                                             Iteration     Evaluations         -2 Res Log Like           Criterion
+                                                       0               1         521.44621607
+
+                                                       1               3         493.82000502          0.00084055
+                                                       2               1         493.63194260          0.00005861
+                                                       3               1         493.61992578          0.00000037
+
+                                                       4               1         493.61985335          0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+
+
+11/14/26, 7:34 PM                                                                          Results: Program 1
+                                                              Covariance Parameter Estimates
+                                                                   Standard
+                            Cov Parm    Subject    Estimate            Error         Z Value        Pr > Z     Alpha         Lower     Upper
+                            Intercept   Block           179.22           174.77            1.03     0.1526          0.05    49.6391   6065.27
+                            Variety     Block           131.32         86.7929             1.51     0.0651          0.05    49.5652    888.25
+                            Residual                    169.41         36.9694             4.58     <.0001          0.05     115.18    273.68
+
+
+
+                                                    Asymptotic Covariance Matrix of Estimates
+                                                  Row        Cov Parm           CovP1             CovP2       CovP3
+                                                        1    Intercept             30544     -4579.74        0.04935
+
+                                                        2    Variety          -4579.74        7533.02         -341.67
+                                                        3    Residual          0.04935           -341.67     1366.73
+
+
+                                                                             Fit Statistics
+
+                                                               -2 Res Log Likelihood                493.6
+                                                               AIC (Smaller is Better)              499.6
+                                                               AICC (Smaller is Better)             500.1
+                                                               BIC (Smaller is Better)              499.0
+
+
+
+                                                                 Type 3 Tests of Fixed Effects
+                                                Effect                 Num DF       Den DF         F Value         Pr > F
+                                                Variety                        2             9         1.28        0.3238
+
+                                                Nitro                          3            42        37.92        <.0001
+                                                Variety*Nitro                  6            42         0.41        0.8656
+
+
+
+
+                                        varcomp: Oats_Miss (random Block, Block*Variety)
+                                                                       The Mixed Procedure
+
+                                                                         Model Information
+                                                Data Set                                    WORK.OATS_MISS
+                                                Dependent Variable                          Yield
+                                                Covariance Structure                        Variance Components
+                                                Subject Effect                              Block
+                                                Estimation Method                           REML
+                                                Residual Variance Method                    Profile
+
+                                                Fixed Effects SE Method                     Model-Based
+                                                Degrees of Freedom Method                   Containment
+
+
+                                                                   Class Level Information
+
+                                                  Class          Levels       Values
+                                                  Block                  6    I II III IV V VI
+                                                  Variety                3    GoldenRain Marvellous Victory
+                                                  Nitro                  4    0.0 0.2 0.4 0.6
+
+
+                                                                             Dimensions
+                                                                Covariance Parameters                   3
+                                                                Columns in X                          20
+
+                                                                Columns in Z per Subject                4
+                                                                Subjects                                6
+                                                                Max Obs per Subject                   12
+
+
+                                                                   Number of Observations
+
+                                                            Number of Observations Read                       67
+
+11/14/26, 7:34 PM                                                                            Results: Program 1
+                                                                    Number of Observations
+                                                             Number of Observations Used                        67
+
+                                                             Number of Observations Not Used                     0
+
+
+                                                                          Iteration History
+                                                Iteration      Evaluations           -2 Res Log Like             Criterion
+                                                          0                  1         512.40459227
+                                                          1                  3         485.18901540           0.00052694
+                                                          2                  1         485.07507055           0.00002729
+                                                          3                  1         485.06961842           0.00000012
+
+                                                          4                  1         485.06959499           0.00000000
+
+
+                                                                    Convergence criteria met.
+
+
+                                                                Covariance Parameter Estimates
+                                                                    Standard
+                            Cov Parm    Subject     Estimate            Error          Z Value        Pr > Z     Alpha         Lower     Upper
+                            Intercept   Block            188.74           175.18             1.08     0.1407          0.05    54.5113   4822.15
+                            Variety     Block            118.59         80.9762              1.46     0.0715          0.05    43.7000    880.41
+
+                            Residual                     171.02         37.7812              4.53     <.0001          0.05     115.77    278.12
+
+
+                                                      Asymptotic Covariance Matrix of Estimates
+                                                   Row        Cov Parm           CovP1              CovP2       CovP3
+
+                                                         1    Intercept              30689     -3919.50        16.7433
+                                                         2    Variety        -3919.50           6557.15         -373.00
+                                                         3    Residual           16.7433           -373.00     1427.42
+
+
+
+                                                                            Fit Statistics
+                                                                -2 Res Log Likelihood                 485.1
+                                                                AIC (Smaller is Better)               491.1
+                                                                AICC (Smaller is Better)              491.5
+
+                                                                BIC (Smaller is Better)               490.4
+
+
+                                                                  Type 3 Tests of Fixed Effects
+                                                 Effect                 Num DF        Den DF         F Value         Pr > F
+
+                                                 Variety                         2             9         1.21        0.3414
+                                                 Nitro                           3            41        37.81        <.0001
+                                                 Variety*Nitro                   6            41         0.45        0.8378
+
+
+
+
+                                varcomp: Orthodont, random intercept and slope (unstructured)
+                                                                        The Mixed Procedure
+
+                                                                          Model Information
+                                                  Data Set                                    WORK.ORTHODONT
+                                                  Dependent Variable                          distance
+
+                                                  Covariance Structure                        Unstructured
+                                                  Subject Effect                              Subject
+                                                  Estimation Method                           REML
+                                                  Residual Variance Method                    Profile
+                                                  Fixed Effects SE Method                     Model-Based
+                                                  Degrees of Freedom Method                   Containment
+
+
+
+
+11/14/26, 7:34 PM                                                                    Results: Program 1
+                                                                 Class Level Information
+      Class     Levels   Values
+
+      Subject       27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                         Dimensions
+                                                            Covariance Parameters                    4
+                                                            Columns in X                             2
+                                                            Columns in Z per Subject                 2
+                                                            Subjects                             27
+                                                            Max Obs per Subject                      4
+
+
+
+                                                                 Number of Observations
+                                                    Number of Observations Read                          108
+                                                    Number of Observations Used                          108
+
+                                                    Number of Observations Not Used                        0
+
+
+                                                                     Iteration History
+                                             Iteration     Evaluations        -2 Res Log Like              Criterion
+                                                    0                    1      509.16949644
+                                                    1                    1      442.63668588             0.00000000
+
+
+                                                                 Convergence criteria met.
+
+
+                                                           Covariance Parameter Estimates
+
+                                                                  Standard
+                             Cov Parm   Subject   Estimate            Error     Z Value          Pr Z       Alpha       Lower    Upper
+                             UN(1,1)    Subject     5.4151          4.9583            1.09     0.1374          0.05     1.5819   128.70
+                             UN(2,1)    Subject     -0.3211         0.4244           -0.76     0.4493          0.05    -1.1528   0.5107
+                             UN(2,2)    Subject    0.05127         0.04145            1.24     0.1081          0.05    0.01658   0.6844
+                             Residual               1.7162          0.3303            5.20     <.0001          0.05     1.2163   2.6042
+
+
+                                                   Asymptotic Covariance Matrix of Estimates
+                                           Row    Cov Parm         CovP1         CovP2           CovP3            CovP4
+                                              1   UN(1,1)         24.5852       -1.9570          0.1575           -0.6872
+                                              2   UN(2,1)         -1.9570        0.1801        -0.01634        0.06000
+
+                                              3   UN(2,2)          0.1575      -0.01634       0.001718         -0.00545
+                                              4   Residual        -0.6872       0.06000        -0.00545           0.1091
+
+
+                                                                         Fit Statistics
+                                                            -2 Res Log Likelihood             442.6
+                                                            AIC (Smaller is Better)           450.6
+                                                            AICC (Smaller is Better)          451.0
+                                                            BIC (Smaller is Better)           455.8
+
+
+
+                                                           Null Model Likelihood Ratio Test
+                                                            DF     Chi-Square          Pr > ChiSq
+                                                             3               66.53            <.0001
+
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                                  Effect     Num DF          Den DF       F Value        Pr > F
+                                                  age                1           26          85.85       <.0001
+
+
+
+
+11/14/26, 7:34 PM                                                                        Results: Program 1
+                                          varcomp: Orthodont, random intercept and AR(1)
+                                                                      The Mixed Procedure
+
+                                                                         Model Information
+                                         Data Set                                WORK.ORTHODONT
+                                         Dependent Variable                      distance
+                                         Covariance Structures                   Variance Components, Autoregressive
+                                         Subject Effects                         Subject, Subject
+                                         Estimation Method                       REML
+                                         Residual Variance Method                Profile
+                                         Fixed Effects SE Method                 Model-Based
+
+                                         Degrees of Freedom Method               Containment
+
+
+                                                                     Class Level Information
+      Class     Levels   Values
+      Subject       27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                           Dimensions
+                                                               Covariance Parameters                   3
+                                                               Columns in X                            2
+
+                                                               Columns in Z per Subject                1
+                                                               Subjects                             27
+                                                               Max Obs per Subject                     4
+
+
+                                                                     Number of Observations
+                                                         Number of Observations Read                       108
+                                                         Number of Observations Used                       108
+                                                         Number of Observations Not Used                     0
+
+
+                                                                         Iteration History
+                                              Iteration       Evaluations        -2 Res Log Like             Criterion
+                                                         0                  1      509.16949644
+
+                                                         1                  2      446.92582808            0.00000256
+                                                         2                  1      446.92550572            0.00000000
+
+
+                                                                     Convergence criteria met.
+
+
+                                                              Covariance Parameter Estimates
+                                                                      Standard
+                             Cov Parm    Subject    Estimate              Error     Z Value         Pr Z         Alpha   Lower     Upper
+
+                             Intercept   Subject         4.4252          1.3985            3.16   0.0008          0.05   2.5909    9.2231
+                             AR(1)       Subject     0.04720             0.1725            0.27   0.7844          0.05   -0.2910   0.3854
+                             Residual                    2.1012          0.3951            5.32   <.0001          0.05   1.5000    3.1549
+
+
+                                                     Asymptotic Covariance Matrix of Estimates
+                                                   Row       Cov Parm           CovP1         CovP2         CovP3
+                                                     1       Intercept          1.9558      -0.03166       -0.06883
+                                                     2       AR(1)          -0.03166         0.02977       0.03689
+                                                     3       Residual       -0.06883         0.03689         0.1561
+
+
+                                                                           Fit Statistics
+                                                               -2 Res Log Likelihood              446.9
+                                                               AIC (Smaller is Better)            452.9
+
+                                                               AICC (Smaller is Better)           453.2
+
+
+11/14/26, 7:34 PM                                                                 Results: Program 1
+                                                                        Fit Statistics
+                                                            BIC (Smaller is Better)         456.8
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                                   Effect    Num DF         Den DF       F Value    Pr > F
+                                                   age              1           80       109.43     <.0001
+
+
+
+
+                                        varcomp: Orthodont, unstructured repeated measures
+                                                                 The Mixed Procedure
+
+                                                                   Model Information
+                                               Data Set                              WORK.ORTHODONT2
+                                               Dependent Variable                    distance
+                                               Covariance Structure                  Unstructured
+                                               Subject Effect                        Subject
+                                               Estimation Method                     REML
+
+                                               Residual Variance Method              None
+                                               Fixed Effects SE Method               Model-Based
+                                               Degrees of Freedom Method             Between-Within
+
+
+                                                                Class Level Information
+      Class     Levels   Values
+      Subject       27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+      agef           4   8 10 12 14
+
+
+                                                                        Dimensions
+                                                              Covariance Parameters            10
+                                                              Columns in X                      5
+
+                                                              Columns in Z                      0
+                                                              Subjects                         27
+                                                              Max Obs per Subject               4
+
+
+                                                                Number of Observations
+                                                     Number of Observations Read                    108
+                                                     Number of Observations Used                    108
+                                                     Number of Observations Not Used                   0
+
+
+                                                                    Iteration History
+                                              Iteration     Evaluations      -2 Res Log Like           Criterion
+                                                     0                  1      503.68000236
+
+                                                     1                  1      431.37333687         0.00000000
+
+
+                                                                Convergence criteria met.
+
+
+                                                            Covariance Parameter Estimates
+                                                                 Standard
+                             Cov Parm    Subject   Estimate          Error     Z Value          Pr Z    Alpha      Lower     Upper
+                             UN(1,1)     Subject     5.9259        1.6436            3.61    0.0002        0.05    3.6752   11.1294
+                             UN(2,1)     Subject     3.2853        1.2148            2.70    0.0068        0.05    0.9042    5.6663
+
+                             UN(2,2)     Subject     4.6538        1.2907            3.61    0.0002        0.05    2.8862    8.7403
+                             UN(3,1)     Subject     4.8754        1.6503            2.95    0.0031        0.05    1.6408    8.1099
+                             UN(3,2)     Subject     3.8590        1.4120            2.73    0.0063        0.05    1.0915    6.6264
+                             UN(3,3)     Subject     7.9387        2.2018            3.61    0.0002        0.05    4.9235   14.9096
+
+11/14/26, 7:34 PM                                                                     Results: Program 1
+                                                            Covariance Parameter Estimates
+                                                                  Standard
+                             Cov Parm    Subject   Estimate           Error        Z Value            Pr Z     Alpha    Lower     Upper
+                             UN(4,1)     Subject     4.0399            1.5402           2.62        0.0087      0.05    1.0211    7.0587
+                             UN(4,2)     Subject     4.5321            1.4697           3.08        0.0020      0.05    1.6514    7.4127
+                             UN(4,3)     Subject     6.1973            1.9530           3.17        0.0015      0.05    2.3694   10.0252
+                             UN(4,4)     Subject     7.6546            2.1230           3.61        0.0002      0.05    4.7472   14.3759
+
+
+                                                    Asymptotic Covariance Matrix of Estimates
+                    Row   Cov Parm     CovP1    CovP2     CovP3        CovP4       CovP5           CovP6       CovP7    CovP8    CovP9     CovP10
+                      1   UN(1,1)      2.7013   1.4976      0.8302     2.2224      1.2321           1.8284     1.8415   1.0209   1.5151    1.2554
+                      2   UN(2,1)      1.4976   1.4758      1.1761     1.4956      1.3603           1.4472     1.5434   1.2958   1.4494    1.4084
+                      3   UN(2,2)      0.8302   1.1761      1.6660     0.9752      1.3815           1.1455     1.1453   1.6224   1.3453    1.5800
+                      4   UN(3,1)      2.2224   1.4956      0.9752     2.7236      1.7267           2.9772     2.1700   1.3827   2.3956    1.9259
+                      5   UN(3,2)      1.2321   1.3603      1.3815     1.7267      1.9937           2.3566     1.6329   1.7819   2.3036    2.1605
+                      6   UN(3,3)      1.8284   1.4472      1.1455     2.9772      2.3566           4.8480     2.3242   1.8396   3.7845    2.9543
+                      7   UN(4,1)      1.8415   1.5434      1.1453     2.1700      1.6329           2.3242     2.3723   1.6714   2.3983    2.3787
+
+                      8   UN(4,2)      1.0209   1.2958      1.6224     1.3827      1.7819           1.8396     1.6714   2.1601   2.2164    2.6685
+                      9   UN(4,3)      1.5151   1.4494      1.3453     2.3956      2.3036           3.7845     2.3983   2.2164   3.8144    3.6490
+                     10   UN(4,4)      1.2554   1.4084      1.5800     1.9259      2.1605           2.9543     2.3787   2.6685   3.6490    4.5071
+
+
+                                                                           Fit Statistics
+                                                             -2 Res Log Likelihood                 431.4
+                                                             AIC (Smaller is Better)               451.4
+                                                             AICC (Smaller is Better)              453.7
+                                                             BIC (Smaller is Better)               464.3
+
+
+                                                            Null Model Likelihood Ratio Test
+                                                             DF       Chi-Square         Pr > ChiSq
+
+                                                              9               72.31                <.0001
+
+
+                                                              Type 3 Tests of Fixed Effects
+                                                   Effect     Num DF         Den DF         F Value         Pr > F
+                                                   agef                3           26          31.26        <.0001
+
+
+
+
+                                       varcomp: AR(1) repeated measures with missing values
+                                                                     The Mixed Procedure
+
+                                                                      Model Information
+                                                   Data Set                                    WORK.AR1
+                                                   Dependent Variable                          Y
+                                                   Covariance Structure                        Autoregressive
+                                                   Subject Effect                              Subj
+                                                   Estimation Method                           REML
+                                                   Residual Variance Method                    Profile
+                                                   Fixed Effects SE Method                     Model-Based
+                                                   Degrees of Freedom Method                   Between-Within
+
+
+                                                                  Class Level Information
+                                                     Class        Levels      Values
+                                                     Subj              12     1 2 3 4 5 6 7 8 9 10 11 12
+
+                                                     Group              2     AB
+
+
+
+11/14/26, 7:34 PM                                                                       Results: Program 1
+                                                                     Class Level Information
+                                                        Class        Levels        Values
+                                                        Time               4       1234
+
+
+                                                                           Dimensions
+                                                                 Covariance Parameters                2
+                                                                 Columns in X                        15
+                                                                 Columns in Z                         0
+                                                                 Subjects                            12
+                                                                 Max Obs per Subject                  4
+
+
+
+                                                                     Number of Observations
+                                                          Number of Observations Read                        43
+                                                          Number of Observations Used                        43
+                                                          Number of Observations Not Used                     0
+
+
+                                                                         Iteration History
+                                                Iteration   Evaluations            -2 Res Log Like            Criterion
+                                                        0                  1         122.33893215
+                                                        1                  2         107.79150179           0.00566230
+                                                        2                  1         107.66254324           0.00003272
+                                                        3                  1         107.66183166           0.00000000
+
+
+
+                                                                     Convergence criteria met.
+
+
+                                                             Covariance Parameter Estimates
+                                                                      Standard
+                             Cov Parm    Subject     Estimate             Error       Z Value          Pr Z       Alpha    Lower    Upper
+                             AR(1)       Subj             0.6157          0.1208            5.10    <.0001          0.05   0.3789   0.8524
+                             Residual                     1.1943          0.3470            3.44    0.0003          0.05   0.7261   2.3228
+
+
+                                                      Asymptotic Covariance Matrix of Estimates
+
+                                                        Row       Cov Parm              CovP1             CovP2
+                                                            1     AR(1)                0.01459         0.02382
+                                                            2     Residual             0.02382            0.1204
+
+
+                                                                           Fit Statistics
+                                                                -2 Res Log Likelihood              107.7
+                                                                AIC (Smaller is Better)             111.7
+                                                                AICC (Smaller is Better)            112.0
+                                                                BIC (Smaller is Better)             112.6
+
+
+                                                                Null Model Likelihood Ratio Test
+                                                                DF     Chi-Square           Pr > ChiSq
+
+                                                                 1             14.68               0.0001
+
+
+                                                                 Type 3 Tests of Fixed Effects
+                                                 Effect              Num DF         Den DF         F Value        Pr > F
+                                                 Group                         1            10        5.01    0.0492
+                                                 Time                          3            25        3.68    0.0254
+                                                 Group*Time                    3            25        0.77    0.5207
+
+
+
+
+11/14/26, 7:34 PM                                                                   Results: Program 1
+                                                  varcomp: Dyestuff (random Batch)
+                                                                  The Mixed Procedure
+
+                                                                   Model Information
+                                               Data Set                              WORK.DYESTUFF
+                                               Dependent Variable                    Yield
+                                               Covariance Structure                  Variance Components
+                                               Estimation Method                     REML
+                                               Residual Variance Method              Profile
+                                               Fixed Effects SE Method               Model-Based
+                                               Degrees of Freedom Method             Containment
+
+
+
+                                                                 Class Level Information
+                                                              Class      Levels     Values
+                                                              Batch           6     ABCDEF
+
+
+                                                                         Dimensions
+                                                              Covariance Parameters             2
+                                                              Columns in X                      1
+                                                              Columns in Z                      6
+                                                              Subjects                          1
+                                                              Max Obs per Subject              30
+
+
+                                                                Number of Observations
+                                                     Number of Observations Read                      30
+                                                     Number of Observations Used                      30
+                                                     Number of Observations Not Used                   0
+
+
+                                                                       Iteration History
+                                             Iteration    Evaluations        -2 Res Log Like           Criterion
+                                                    0                    1     326.02323216
+                                                    1                    1     319.65427684          0.00000000
+
+
+
+                                                                Convergence criteria met.
+
+
+                                                          Covariance Parameter Estimates
+                                                          Standard
+                                 Cov Parm    Estimate         Error       Z Value     Pr > Z        Alpha     Lower     Upper
+                                 Batch        1764.05        1432.75         1.23    0.1091          0.05     568.50    23994
+                                 Residual     2451.25         707.61         3.46    0.0003          0.05    1494.51   4743.91
+
+
+
+                                                   Asymptotic Covariance Matrix of Estimates
+                                                    Row        Cov Parm             CovP1           CovP2
+                                                         1     Batch              2052776       -100144
+                                                         2     Residual           -100144           500719
+
+
+                                                                        Fit Statistics
+                                                             -2 Res Log Likelihood           319.7
+                                                             AIC (Smaller is Better)         323.7
+                                                             AICC (Smaller is Better)        324.1
+                                                             BIC (Smaller is Better)         323.2
+
+
+
+
+                                      varcomp: Dyestuff2 (Batch variance estimated at zero)
+
+11/14/26, 7:34 PM                                                                          Results: Program 1
+                                                                   The Mixed Procedure
+
+                                                                    Model Information
+                                               Data Set                                     WORK.DYESTUFF2
+                                               Dependent Variable                           Yield
+                                               Covariance Structure                         Variance Components
+                                               Estimation Method                            REML
+                                               Residual Variance Method                     Profile
+                                               Fixed Effects SE Method                      Model-Based
+                                               Degrees of Freedom Method                    Containment
+
+
+                                                                  Class Level Information
+                                                               Class        Levels         Values
+                                                               Batch               6       ABCDEF
+
+
+
+                                                                            Dimensions
+                                                               Covariance Parameters                      2
+                                                               Columns in X                               1
+                                                               Columns in Z                               6
+                                                               Subjects                                   1
+                                                               Max Obs per Subject                    30
+
+
+                                                                 Number of Observations
+                                                      Number of Observations Read                               30
+                                                      Number of Observations Used                               30
+                                                      Number of Observations Not Used                            0
+
+
+                                                                       Iteration History
+                                              Iteration   Evaluations             -2 Res Log Like                Criterion
+                                                     0                      1       161.82827781
+                                                     1                      1       161.82827781               0.00000000
+
+
+                                                                 Convergence criteria met.
+
+
+                                                    Estimated G matrix is not positive definite.
+
+                                                          Covariance Parameter Estimates
+
+                                                          Standard
+                                 Cov Parm     Estimate        Error             Z Value      Pr > Z           Alpha      Lower     Upper
+                                 Batch               0                  .              .              .              .        .         .
+                                 Residual      13.8063          3.6257             3.81      <.0001            0.05      8.7568   24.9505
+
+
+                                                    Asymptotic Covariance Matrix of Estimates
+                                                     Row        Cov Parm                   CovP1              CovP2
+                                                          1     Batch
+
+                                                          2     Residual                                  13.1458
+
+
+                                                                            Fit Statistics
+                                                              -2 Res Log Likelihood                 161.8
+                                                              AIC (Smaller is Better)               163.8
+                                                              AICC (Smaller is Better)              164.0
+                                                              BIC (Smaller is Better)               163.6
+
+
+
+
+                                            varcomp: Penicillin (crossed: plate and sample)
+
+11/14/26, 7:34 PM                                                                           Results: Program 1
+                                                                         The Mixed Procedure
+
+                                                                           Model Information
+
+                                               Data Set                                      WORK.PENICILLIN
+                                               Dependent Variable                            diameter
+                                               Covariance Structure                          Variance Components
+                                               Estimation Method                             REML
+
+                                               Residual Variance Method                      Profile
+                                               Fixed Effects SE Method                       Model-Based
+                                               Degrees of Freedom Method                     Containment
+
+
+                                                                        Class Level Information
+                                            Class           Levels        Values
+                                            plate               24        abcdefghijklmnopqrstuvwx
+                                            sample                  6     ABCDEF
+
+
+                                                                              Dimensions
+                                                               Covariance Parameters                     3
+                                                               Columns in X                              1
+                                                               Columns in Z                             30
+                                                               Subjects                                  1
+                                                               Max Obs per Subject                     144
+
+
+                                                                     Number of Observations
+                                                        Number of Observations Read                           144
+                                                        Number of Observations Used                           144
+
+                                                        Number of Observations Not Used                         0
+
+
+                                                                            Iteration History
+                                             Iteration        Evaluations           -2 Res Log Like             Criterion
+                                                        0                     1       613.43004159
+
+                                                        1                     1       330.86058899            0.00000000
+
+
+                                                                        Convergence criteria met.
+
+
+                                                              Covariance Parameter Estimates
+
+                                                              Standard
+                                 Cov Parm    Estimate             Error           Z Value      Pr > Z        Alpha   Lower     Upper
+                                 plate         0.7169               0.2264           3.17     0.0008          0.05   0.4199    1.4930
+                                 sample        3.7309               2.3676           1.58     0.0575          0.05   1.4502   22.6378
+                                 Residual      0.3024           0.03988              7.58     <.0001          0.05   0.2373    0.3988
+
+
+                                                    Asymptotic Covariance Matrix of Estimates
+                                               Row          Cov Parm              CovP1         CovP2           CovP3
+
+                                                    1       plate              0.05124       0.000011          -0.00027
+                                                    2       sample            0.000011          5.6056         -0.00007
+                                                    3       Residual          -0.00027        -0.00007        0.001591
+
+
+                                                                              Fit Statistics
+                                                              -2 Res Log Likelihood                330.9
+                                                              AIC (Smaller is Better)              336.9
+                                                              AICC (Smaller is Better)             337.0
+                                                              BIC (Smaller is Better)              340.4
+
+
+
+
+

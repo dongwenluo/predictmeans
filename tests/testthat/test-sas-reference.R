@@ -184,3 +184,84 @@ test_that("varcomp(): SAS's covariance parameters (oats with and without missing
   expect(all(all$ok), paste(utils::capture.output(print(all[!all$ok, ], row.names = FALSE)), collapse = "\n"))
   expect_equal(nrow(all), 17)
 })
+
+test_that("varcomp(): SAS's COVTEST standard errors and limits (edge cases)", {
+  skip_on_cran()
+  S <- read.csv(test_path("_data", "sas", "proc-mixed-varcomp.csv.gz"), colClasses = "character")
+  data(Orthodont, package = "nlme"); data(Dyestuff, Dyestuff2, Penicillin, package = "lme4")
+  res <- list()
+  # rows of varcomp() for SAS's parameters; 'lim' = FALSE: SAS's limits are Wald
+  # on the covariance or correlation itself, predictmeans' on the atanh scale
+  cmp <- function(case, v, map, lim = rep(TRUE, length(map))) {
+    s <- S[S$case == case, ]
+    k <- match(names(map), s$parm)
+    stopifnot(!anyNA(k))
+    r <- v[unname(map), ]
+    res[[case]] <<- rbind(
+      data.frame(case = case, parm = names(map), what = "estimate", sas = s$est[k], r = r$vcov),
+      data.frame(case = case, parm = names(map), what = "SE", sas = s$se[k], r = r$SE),
+      data.frame(case = case, parm = names(map)[lim], what = "lower", sas = s$lower[k][lim], r = r[lim, 3]),
+      data.frame(case = case, parm = names(map)[lim], what = "upper", sas = s$upper[k][lim], r = r[lim, 4]))
+  }
+  oats <- c(Intercept = "Block.(Intercept)", Variety = "Block:Variety.(Intercept)", Residual = "residual")
+  for (dname in c("OATS", "OATS_MISSWP", "OATS_MISS")) {
+    d <- sas_oats()
+    if (dname %in% c("OATS_MISSWP", "OATS_MISS")) d <- d[!(d$Block == "I" & d$Variety == "GoldenRain"), ]
+    if (dname == "OATS_MISS") d <- d[!(d$Block == "II" & d$Variety == "Victory" & d$Nitro == "0.6"), ]
+    cmp(dname, varcomp(lme4::lmer(Yield ~ Variety * Nitro + (1 | Block) + (1 | Block:Variety), data = droplevels(d))),
+        oats)
+  }
+  cmp("ORTHO_SLOPE", varcomp(nlme::lme(distance ~ age, random = ~age|Subject, data = Orthodont)),
+      c("UN(1,1)" = "Subject.(Intercept)", "UN(2,1)" = "Subject.age.(Intercept)", "UN(2,2)" = "Subject.age",
+        Residual = "residual"), lim = c(TRUE, FALSE, TRUE, TRUE))
+  cmp("ORTHO_AR1", varcomp(nlme::lme(distance ~ age, random = ~1|Subject, correlation = nlme::corAR1(),
+                                     data = Orthodont)),
+      c(Intercept = "Subject.(Intercept)", "AR(1)" = "cor.Phi", Residual = "residual"), lim = c(TRUE, FALSE, TRUE))
+  d <- read.table(test_path("_data", "sas", "ar1.txt"), header = TRUE)
+  d$Subj <- factor(d$Subj); d$Group <- factor(d$Group); d$t <- d$Time; d$Time <- factor(d$Time)
+  cmp("AR1", varcomp(nlme::gls(Y ~ Group * Time, data = d, correlation = nlme::corAR1(form = ~ t | Subj))),
+      c("AR(1)" = "cor.Phi", Residual = "residual"), lim = c(FALSE, TRUE))
+  cmp("DYESTUFF", varcomp(lme4::lmer(Yield ~ 1 + (1|Batch), data = Dyestuff)),
+      c(Batch = "Batch.(Intercept)", Residual = "residual"))
+  cmp("PENICILLIN", varcomp(lme4::lmer(diameter ~ 1 + (1|plate) + (1|sample), data = Penicillin)),
+      c(plate = "plate.(Intercept)", sample = "sample.(Intercept)", Residual = "residual"))
+  # a variance at zero: estimate 0, no SE, no limits (SAS prints ".")
+  v2 <- suppressMessages(varcomp(lme4::lmer(Yield ~ 1 + (1|Batch), data = Dyestuff2)))
+  s2 <- S[S$case == "DYESTUFF2", ]
+  expect_equal(v2["Batch.(Intercept)", "vcov"], as.numeric(s2$est[s2$parm == "Batch"]))
+  expect_true(is.na(v2["Batch.(Intercept)", "SE"]) && s2$se[s2$parm == "Batch"] == ".")
+  cmp("DYESTUFF2", v2[2, , drop = FALSE], c(Residual = "residual"))
+  # unstructured repeated measures (gls with corSymm and varIdent): SAS's
+  # covariances and their SEs, by the delta method from the same information
+  m <- nlme::gls(distance ~ factor(age), data = Orthodont, correlation = nlme::corSymm(form = ~1|Subject),
+                 weights = nlme::varIdent(form = ~1|age))
+  f <- pm_vc_nlme_fun(m)
+  x0 <- unname(c(stats::coef(m$modelStruct), log(m$sigma)))
+  W <- pm_nlme_W_observed(pm_nlme_reml(m))
+  un <- function(x) {
+    v <- f(x)
+    ratio <- stats::setNames(rep(1, 4), c(8, 10, 12, 14))
+    vr <- v[grep("^var\\.", names(v))]
+    ratio[sub("^var\\.", "", names(vr))] <- vr
+    sds <- sqrt(v[["residual"]]) * ratio
+    R <- diag(4)
+    ij <- which(upper.tri(R), arr.ind = TRUE)
+    ij <- ij[order(ij[, 1], ij[, 2]), ]
+    R[ij[, 2:1]] <- v[grep("^cor\\.", names(v))]
+    R[upper.tri(R)] <- t(R)[upper.tri(R)]
+    U <- R * outer(sds, sds)
+    k <- which(lower.tri(U, diag = TRUE), arr.ind = TRUE)
+    k <- k[order(k[, 1], k[, 2]), ]
+    stats::setNames(U[k], paste0("UN(", k[, 1], ",", k[, 2], ")"))
+  }
+  J <- numDeriv::jacobian(un, x0)
+  su <- S[S$case == "ORTHO_UN", ]
+  res$un <- rbind(data.frame(case = "ORTHO_UN", parm = names(un(x0)), what = "estimate", sas = su$est, r = un(x0)),
+                  data.frame(case = "ORTHO_UN", parm = names(un(x0)), what = "SE", sas = su$se,
+                             r = sqrt(diag(J %*% W %*% t(J)))))
+  all <- do.call(rbind, res)
+  # varcomp() rounds to 4 decimals; SAS prints 5 for small values
+  all$ok <- sas_agree(all$r, all$sas) | abs(all$r - as.numeric(all$sas)) <= 5e-5 + 1e-9
+  expect(all(all$ok), paste(utils::capture.output(print(all[!all$ok, ], row.names = FALSE)), collapse = "\n"))
+  expect_equal(nrow(all), 110)
+})

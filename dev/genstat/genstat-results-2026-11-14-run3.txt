@@ -1,0 +1,213 @@
+   2  \ Third Genstat reference program for predictmeans: variance components and
+   3  \ their s.e. for varcomp(), with edge cases. Please save the whole Output
+   4  \ window (File > Save) and send that file; the first run may need small
+   5  \ syntax fixes. Cases: (1) Dyestuff, random Batch; (2) Dyestuff2, the Batch
+   6  \ variance estimated at zero (Genstat may report a bound or a negative value);
+   7  \ (3) Penicillin, crossed random plate and sample; (4) Orthodont, random
+   8  \ intercept and uncorrelated random slope of age; (5) Orthodont, random
+   9  \ intercept with AR(1) between the four ages of each child.
+  10
+  11  \ ---- 1 and 2. Dyestuff and Dyestuff2 (6 batches x 5) ----
+  12  UNITS [NVALUES=30]
+  13  FACTOR [LEVELS=6] Batch
+  14  VARIATE Yield, Yield2
+  15  READ Batch, Yield, Yield2
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	Yield	 1440	 1528	 1635	 30	 0	 
+	Yield2	 -0.8920	 5.666	 13.43	 30	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	Batch	 30	 0	 6
+ 
+  21  :
+  22  VCOMPONENTS RANDOM=Batch
+  23  REML [PRINT=model, components; METHOD=AI] Yield
+ 
+REML variance components analysis
+ 
+Response variate:	Yield
+Fixed model:	Constant
+Random model:	Batch
+Number of units:	30
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Batch	 1764.	 1433.
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	2451.	 708.
+ 
+  24  REML [PRINT=model, components; METHOD=AI] Yield2
+ 
+REML variance components analysis
+ 
+Response variate:	Yield2
+Fixed model:	Constant
+Random model:	Batch
+Number of units:	30
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Batch	 -1.32	 1.36
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	14.95	 4.31
+ 
+  25
+  26  \ ---- 3. Penicillin: 24 plates x 6 samples, crossed ----
+  27  UNITS [NVALUES=144]
+  28  FACTOR [LEVELS=24] plate
+  29  FACTOR [LEVELS=6] sample
+  30  VARIATE diameter
+  31  READ plate, sample, diameter
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	diameter	 18.00	 22.97	 27.00	 144	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	plate	 144	 0	 24
+	sample	 144	 0	 6
+ 
+  56  :
+  57  VCOMPONENTS RANDOM=plate + sample
+  58  REML [PRINT=model, components; METHOD=AI] diameter
+ 
+REML variance components analysis
+ 
+Response variate:	diameter
+Fixed model:	Constant
+Random model:	plate + sample
+Number of units:	144
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+plate	 0.7169	 0.2264
+sample	 3.7309	 2.3676
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	0.302	 0.0399
+ 
+  59
+  60  \ ---- 4 and 5. Orthodont: 27 children x 4 ages (8, 10, 12, 14) ----
+  61  UNITS [NVALUES=108]
+  62  FACTOR [LEVELS=27] Subject
+  63  FACTOR [LEVELS=4] Occ
+  64  VARIATE age, distance
+  65  READ Subject, Occ, age, distance
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	age	 8.000	 11.00	 14.00	 108	 0	 
+	distance	 16.50	 24.02	 31.50	 108	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	Subject	 108	 0	 27
+	Occ	 108	 0	 4
+ 
+  93  :
+  94  \ (4) random intercept and an uncorrelated random slope (lmer: age || Subject)
+  95  VCOMPONENTS [FIXED=age] RANDOM=Subject + Subject.age
+  96  REML [PRINT=model, components; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject + Subject.age
+Number of units:	108
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject	 4.555	 1.385
+Subject.age	 0.051	 0.041
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	1.716	 0.330
+ 
+  97  \ (5) random intercept; AR(1) between the ages of each child in the residual
+  98  VCOMPONENTS [FIXED=age] RANDOM=Subject + Subject.Occ
+  99  VSTRUCTURE [TERMS=Subject.Occ] FACTOR=Occ; MODEL=AR; ORDER=1
+ 100  REML [PRINT=model, components; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject + Subject.Occ
+Number of units:	108
+ 
+Subject.Occ used as residual term with covariance structure as below
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+Subject.Occ	Subject	Identity	1	27
+	Occ	Auto-regressive	1	4
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject	 4.425	 1.398
+ 
+ 
+Residual variance model
+ 
+Term	Factor	Model(order)	Parameter	Estimate	s.e.
+Subject.Occ	 		Sigma2	2.101	 0.387
+	Subject	Identity	-        	-	-
+	Occ	AR(1)	phi_1	 0.04721	 0.15900
+ 
+ 101  STOP
+ 
+End of job.
+ 
+Genstat 64-bit Release 23.1 ( PC/Windows 11) 14 November 2026 19:37:10
+Copyright 2023, VSN International Ltd.  
+ 

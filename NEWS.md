@@ -45,7 +45,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   is no longer used. SEs are from the observed information (as SAS PROC
   MIXED) by the delta method; `information = "average"` gives Genstat's s.e.
   (equal to the printed digits in 17 of 17 values) and `"expected"` the
-  expected information. Intervals of variances are Satterthwaite's
+  expected information. Checked against real runs (2026-11-14): SAS's
+  standard errors and limits for 10 designs (missing plots, random slope,
+  AR(1), unstructured repeated measures with the covariances' SEs, a
+  component at zero, crossed factors) and Genstat's s.e. for 5 (a negative
+  component equals the `aov` estimate), all to the printed digits; SAS's
+  limits for covariances and correlations are Wald on the natural scale,
+  predictmeans' on the Fisher z scale. Intervals of variances are Satterthwaite's
   chi-square intervals with nu = 2 (estimate/SE)^2 (SAS's `COVTEST CL`; the
   exact interval for an `lm` residual variance); before, `lmer` had lme4's
   profile intervals, which for a REML fit are those of the ML fit, and `lme`
