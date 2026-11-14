@@ -76,10 +76,11 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 - Timings: `Rscript dev/benchmarks.R`. Pull requests are timed against their
   base branch in CI (`dev/benchmarks-ci.R`; fails when a key timing is over
   1.5 times the base's and at least 0.1 s longer).
-- Run `R CMD check` once at the end of a piece of work, not after every edit.
+- Run `R CMD check` once, just before opening a pull request (CI runs it on
+  the PR as well); during the work run only the related tests.
 - Add a NEWS entry and update the plan's status table with each change.
 
 ## Working style the maintainer asked for
 - One step per message; run only the tests related to the change, and
-  R CMD check once at the end.
+  R CMD check once just before a pull request.
 - Keep explanations short and plain.
