@@ -74,3 +74,14 @@ test_that("complete orthogonal designs: no message; designs that are not orthogo
   d$y <- rnorm(nrow(d))
   expect_message(pm_aov_strata(pm_aov_carrier(aov(y ~ trt + Error(blk), data = d))), "not orthogonal")
 })
+
+test_that("rows left out by 'subset' are not missing values", {
+  O <- as.data.frame(nlme::Oats); O$nitro <- factor(O$nitro)
+  O$yield[O$Block == "II" & O$Variety == "Victory" & O$nitro == "0.6"] <- NA
+  m <- aov(yield ~ Variety * nitro + Error(Block/Variety), data = O, subset = Block != "VI")
+  expect_message(p <- predictmeans(m, "nitro", plot = FALSE, prtnum = FALSE), "and 1 missing value:")
+  # the same as the data without block VI
+  m2 <- aov(yield ~ Variety * nitro + Error(Block/Variety), data = droplevels(O[O$Block != "VI", ]))
+  p2 <- suppressMessages(predictmeans(m2, "nitro", plot = FALSE, prtnum = FALSE))
+  expect_equal(p$means[c("estimate", "std.error", "df")], p2$means[c("estimate", "std.error", "df")])
+})

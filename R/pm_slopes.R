@@ -60,7 +60,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   if (is.null(at)) at <- mean(x, na.rm = TRUE)
   h <- 1e-4 * (if (isTRUE(stats::sd(x, na.rm = TRUE) > 0)) stats::sd(x, na.rm = TRUE) else 1)
   kp <- Kmatrix(model, modelterm, covariate, covariateV = at + h, weights = weights)
-  km <- Kmatrix(model, modelterm, covariate, covariateV = at - h, weights = weights)
+  km <- suppressWarnings(Kmatrix(model, modelterm, covariate, covariateV = at - h, weights = weights))   # (warned once)
   vars <- unlist(strsplit(modelterm, ":"))
   lab <- kp$fctnames[vars]
   rownames(lab) <- NULL

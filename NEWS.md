@@ -62,6 +62,22 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `ctrmatrix`, "mvt"; with a `permlist` also "westfall"), equal to emmeans'
   `confint()`; its `lower.CL` and `upper.CL` are per contrast, also with a
   `permlist` and a max-|t| adjustment.
+* Review of the week's additions, with edge cases (model classes, odd
+  designs):
+  * `aov()` with `Error()` and missing values: rows left out by `subset =`
+    were taken as missing values to estimate (13 instead of 1 in a test);
+    they no longer are. The estimation no longer forms n x n matrices: 2,000
+    plots took 11 s, now 0.2 s; results identical. A check that observed
+    plots are in the fixed part of the model never ran; it does now.
+  * The empty-cell warning named the means with covariate values when the
+    grid had a covariate (`pm_slopes()`, `covariatemeans()`: "b2:0.1494...",
+    many times over); it names the factor levels, once. `pm_slopes()` gives
+    it once instead of twice.
+  * `residplot()`: with fewer than 7 distinct fitted values (a model with
+    factors only) the trend line joins the mean residual at each fitted
+    value instead of a loess smooth, which warned. `pm_check()`: no warning
+    from the equal-variance test when the deviations are equal within every
+    level.
 * **One computation of the pairs.** The `pairs` table, the printed p-value
   matrices and the letter groups now read one table of pair statistics, and
   `predictmeans()`, `contrastmeans()`, `pm_slopes()` and the means of

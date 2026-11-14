@@ -176,9 +176,13 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
     list(L = L, sub = sub, na = na, estimable = estimable, over = over)
   }
   short <- function(x) paste(if (length(x) > 6) c(x[1:6], "...") else x, collapse = ", ")
-  one <- sum(affected) == 1
+  # the means by their factor levels (without covariate values in the grid)
+  fcols <- names(rg$target)[vapply(rg$target, function(v) is.factor(v) || is.character(v), logical(1))]
+  fac_lab <- if (length(fcols)) do.call(paste, c(lapply(rg$target[fcols], as.character), sep = ":")) else labels
+  aff_lab <- unique(fac_lab[affected])
+  one <- length(aff_lab) == 1
   warning("No data for ", paste(inter_vars, collapse = ":"), " ", short(rule$missing), ". ",
-          if (one) "The mean of " else "The means of ", modelterm, " = ", short(labels[affected]),
+          if (one) "The mean of " else "The means of ", modelterm, " = ", short(aff_lab),
           if (one) " averages only its observed cells; comparisons with it" else
             " average only their observed cells; comparisons with them",
           " use only the cells that the compared means all have (column 'over' of the pairs).",

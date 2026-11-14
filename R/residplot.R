@@ -27,7 +27,8 @@
 #' @details
 #' The plots:
 #' \enumerate{
-#' \item Residuals against fitted values, with a loess smooth: look for trends (a missing term, a wrong link) and
+#' \item Residuals against fitted values, with a loess smooth (with fewer than 7 distinct fitted values, the mean
+#'   residual at each, joined): look for trends (a missing term, a wrong link) and
 #'   for spread that changes with the fitted values.
 #' \item Normal Q-Q plot of the residuals: the points should lie near the line.
 #' \item Mixed models: normal Q-Q plot of the random effects of term \code{level}. \code{gls}: autocorrelation of the
@@ -301,10 +302,21 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
   dd <- d[ok, ]
   if (grp) dd$group <- d$group[ok]
 
+  # a loess smooth of y against the fitted values; with few distinct fitted
+  # values (a model of factors only) the mean at each of them, joined
+  trend <- function(dd, y) {
+    if (length(unique(dd$x)) >= 7) {
+      ggplot2::geom_smooth(ggplot2::aes(x = .data$x, y = .data[[y]]), data = dd, method = "loess", formula = y ~ x,
+                           se = FALSE, colour = "firebrick", linewidth = 0.6)
+    } else {
+      ggplot2::stat_summary(ggplot2::aes(x = .data$x, y = .data[[y]]), data = dd, fun = mean, geom = "line",
+                            colour = "firebrick", linewidth = 0.6)
+    }
+  }
+
   # 1. residuals vs fitted
   p1 <- ggplot2::ggplot() + ggplot2::geom_hline(yintercept = 0, linetype = 2, colour = "grey40") + pts(dd, "x", "resid") +
-    ggplot2::geom_smooth(ggplot2::aes(x = .data$x, y = .data$resid), data = dd, method = "loess", formula = y ~ x,
-                         se = FALSE, colour = "firebrick", linewidth = 0.6) +
+    trend(dd, "resid") +
     lab(dd, "x", "resid", top(dd$resid, nlab)) +
     ggplot2::labs(title = "Residuals vs fitted", x = xlab, y = rlab) + th
   if (grp) p1 <- p1 + ggplot2::labs(colour = NULL)
@@ -348,9 +360,7 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
     }
   } else {
     dd$root <- sqrt(abs(dd$resid))
-    p3 <- ggplot2::ggplot() + pts(dd, "x", "root") +
-      ggplot2::geom_smooth(ggplot2::aes(x = .data$x, y = .data$root), data = dd, method = "loess", formula = y ~ x,
-                           se = FALSE, colour = "firebrick", linewidth = 0.6) +
+    p3 <- ggplot2::ggplot() + pts(dd, "x", "root") + trend(dd, "root") +
       ggplot2::labs(title = "Scale-location", x = xlab, y = paste0("sqrt(|", rlab, "|)")) + th +
       ggplot2::theme(legend.position = "none")
   }
