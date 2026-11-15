@@ -109,6 +109,15 @@ sets; the plots say how large a departure is.</p><dl><dt>Fit</dt>
 <dt>Normality</dt>
 <dd><p>Shapiro-Wilk tests of the residuals and of each term's random effects (intercepts).</p></dd>
 
+<dt>Transformation of the response</dt>
+<dd><p>(<code>lm</code> and <code>aov</code> with a positive response that is not
+  transformed in the formula) the Box-Cox power the residuals favour: the profile likelihood estimate of
+  \(\lambda\) and its 95% interval (Box and Cox, 1964; as <code><a href="https://rdrr.io/pkg/MASS/man/boxcox.html" class="external-link">MASS::boxcox()</a></code>). Worth a look when the
+  interval leaves out 1 (no transformation); the note names the usual transformation within the interval
+  (\(\lambda\) = 0: log; 0.5: square root; -1: reciprocal), to write in the formula as <code>log(y)</code>,
+  <code>sqrt(y)</code> or <code><a href="pm_boxcox.html">pm_boxcox</a>(y, lambda)</code>. It is judged on the residuals of the model, not on the
+  raw response; for counts and proportions a generalized linear (mixed) model is usually the better choice.</p></dd>
+
 <dt>Equal variances</dt>
 <dd><p>for each factor: the ratio of the largest to the smallest standard deviation of the
   residuals within its levels, and the Brown-Forsythe test (ANOVA of the absolute deviations from the medians).</p></dd>

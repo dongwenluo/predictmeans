@@ -45,9 +45,10 @@ summary(pm)
 #> 
 #> 18 pairwise comparisons within each level of Variety.
 #> SED: min 7.683, mean 7.683, max 7.683
-#> LSD (5%): min 15.47, mean 15.47, max 15.47
+#> LSD (5%, tukey): min 20.5, mean 20.5, max 20.5
 #> p-values: t tests, adjusted by 'tukey'.
 #> Means sharing a letter are not significantly different at the 5% level within each level of Variety.
+#> Comparison intervals: mean +/- 1.125 SE (72.3% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.
 ```
 
 `atvar = "Variety"` compares the nitrogen levels within each variety,
@@ -62,20 +63,20 @@ or export.
 ``` r
 
 head(pm$means)
-#>   nitro     Variety  estimate std.error       df conf.low conf.high group n
-#> 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806   A   6
-#> 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472    A  6
-#> 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806    A  6
-#> 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806   AB  6
-#> 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806     B 6
-#> 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472    A  6
-#>   estimable
-#> 1      TRUE
-#> 2      TRUE
-#> 3      TRUE
-#> 4      TRUE
-#> 5      TRUE
-#> 6      TRUE
+#>   nitro     Variety  estimate std.error       df conf.low conf.high
+#> 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806
+#> 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472
+#> 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806
+#> 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806
+#> 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806
+#> 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472
+#>   comparison.low comparison.high group n estimable
+#> 1       69.75210        90.24790   A   6      TRUE
+#> 2       76.41877        96.91456    A  6      TRUE
+#> 3       61.25210        81.74790    A  6      TRUE
+#> 4       88.25210       108.74790   AB  6      TRUE
+#> 5       98.25210       118.74790     B 6      TRUE
+#> 6       79.41877        99.91456    A  6      TRUE
 head(pm$pairs)
 #>          level1          level2          by   estimate std.error       df
 #> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23080
@@ -208,11 +209,16 @@ definitions as emmeans.
 ``` r
 
 predictmeans(fm, "nitro", weights = "proportional", plot = FALSE, prtnum = FALSE)$means
-#>   nitro  estimate std.error       df  conf.low conf.high  n estimable
-#> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047 18      TRUE
-#> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047 18      TRUE
-#> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381 18      TRUE
-#> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047 18      TRUE
+#>   nitro  estimate std.error       df  conf.low conf.high comparison.low
+#> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186
+#> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186
+#> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381      109.75519
+#> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047      118.92186
+#>   comparison.high  n estimable
+#> 1        83.85592 18      TRUE
+#> 2       103.35592 18      TRUE
+#> 3       118.68925 18      TRUE
+#> 4       127.85592 18      TRUE
 ```
 
 ## Custom contrasts
@@ -273,16 +279,16 @@ predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$mean
 #> 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398
 #> 3 Phenadoxone  0.603011  2.4185555 0.2045918 Inf  2.01756299  2.8195480
 #> 4   Pethidine  0.603011 -1.7574624 0.1693986 Inf -2.08947760 -1.4254471
-#>    response response.std.error response.conf.low response.conf.high group n
-#> 1 0.5433885         0.03034579         0.4835759          0.6019756  A    3
-#> 2 0.6378583         0.03166332         0.5738120          0.6973562   B   3
-#> 3 0.9182314         0.01536127         0.8826288          0.9437231    C  3
-#> 4 0.1471084         0.02125403         0.1101238          0.1938091     D 5
-#>   estimable
-#> 1      TRUE
-#> 2      TRUE
-#> 3      TRUE
-#> 4      TRUE
+#>   comparison.low comparison.high  response response.std.error response.conf.low
+#> 1    -0.00369742       0.3516809 0.5433885         0.03034579         0.4835759
+#> 2     0.36693366       0.7652274 0.6378583         0.03166332         0.5738120
+#> 3     2.12131502       2.7157960 0.9182314         0.01536127         0.8826288
+#> 4    -2.00357261      -1.5113521 0.1471084         0.02125403         0.1101238
+#>   response.conf.high group n estimable
+#> 1          0.6019756  A    3      TRUE
+#> 2          0.6973562   B   3      TRUE
+#> 3          0.9437231    C  3      TRUE
+#> 4          0.1938091     D 5      TRUE
 ```
 
 For a glm the means are also given on the response scale (here

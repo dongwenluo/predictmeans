@@ -63,13 +63,13 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
   predictmeans(fm, "nitro", pair=TRUE, level=0.166, letterCI = TRUE, plot=FALSE)$mean_table
 #> $Table
-#>   nitro     Mean      SE   Df LL(83.4%) UL(83.4%) LetterGrp
-#> 1     0  79.3889 7.17468 6.79   68.2563   90.5215       A  
-#> 2   0.2  98.8889 7.17468 6.79   87.7563  110.0215       AB 
-#> 3   0.4 114.2222 7.17468 6.79  103.0897  125.3548        BC
-#> 4   0.6 123.3889 7.17468 6.79  112.2563  134.5215         C
+#>   nitro     Mean      SE   Df LL(32.3%) UL(32.3%) LetterGrp
+#> 1     0  79.3889 7.17468 6.79   76.2661   82.5117      A   
+#> 2   0.2  98.8889 7.17468 6.79   95.7661  102.0117       B  
+#> 3   0.4 114.2222 7.17468 6.79  111.0994  117.3450        C 
+#> 4   0.6 123.3889 7.17468 6.79  120.2661  126.5117         D
 #> 
 #> $Note
-#> [1] "Letter-based representation of pairwise comparisons by overlap of the 83.4% CIs (about significant level '0.05' for two uncorrelated means with equal SEs)"
+#> [1] "Letter-based representation of pairwise comparisons by overlap of the comparison intervals (LL, UL: mean +/- 0.4353 SE, 32.3% intervals): two means differ at significant level '0.166' when their intervals do not overlap"
 #> 
 ```

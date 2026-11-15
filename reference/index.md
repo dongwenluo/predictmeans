@@ -56,6 +56,9 @@
   : Diagnostic Plots for a Fitted Model
 - [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
   : Checks of a Fitted Model
+- [`pm_boxcox()`](https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.md)
+  [`pm_yeojohnson()`](https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.md)
+  : Box-Cox and Yeo-Johnson Transformations of a Response
 
 ## Permutation tests
 
@@ -107,6 +110,7 @@
   [`pm_data()`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)
   [`pm_df()`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)
   [`pm_linkinv()`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)
+  [`pm_contrasts()`](https://dongwenluo.github.io/predictmeans/reference/pm_coef.md)
   : Supporting a New Model Class
 
 ## Data

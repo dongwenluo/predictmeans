@@ -66,15 +66,13 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">predictmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, data<span class="op">=</span><span class="cn">NULL</span>, pairwise<span class="op">=</span><span class="cn">FALSE</span>, atvar<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, Df<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>  lsd_bar<span class="op">=</span><span class="cn">TRUE</span>, level<span class="op">=</span><span class="cn">NULL</span>, covariate<span class="op">=</span><span class="cn">NULL</span>, meandecr<span class="op">=</span><span class="cn">NULL</span>, letterCI<span class="op">=</span><span class="cn">FALSE</span>, trans <span class="op">=</span> <span class="va">I</span>,</span>
-<span>  transOff <span class="op">=</span> <span class="fl">0</span>, responsen<span class="op">=</span><span class="cn">NULL</span>, count<span class="op">=</span><span class="cn">FALSE</span>, plotord<span class="op">=</span><span class="cn">NULL</span>, lineplot<span class="op">=</span><span class="cn">TRUE</span>, plottitle<span class="op">=</span><span class="cn">NULL</span>, </span>
-<span>  plotxlab<span class="op">=</span><span class="cn">NULL</span>, plotylab<span class="op">=</span><span class="cn">NULL</span>, which.plots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>,</span>
-<span>  mplot<span class="op">=</span><span class="cn">NULL</span>, barplot<span class="op">=</span><span class="cn">NULL</span>, pplot<span class="op">=</span><span class="cn">NULL</span>, bkplot<span class="op">=</span><span class="cn">NULL</span>, plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  jitterv<span class="op">=</span><span class="fl">0.2</span>, basesz<span class="op">=</span><span class="fl">12</span>, prtnum<span class="op">=</span><span class="cn">TRUE</span>, prtplt<span class="op">=</span><span class="cn">TRUE</span>, newwd<span class="op">=</span><span class="cn">FALSE</span>, permlist<span class="op">=</span><span class="cn">NULL</span>, </span>
+<span>  level<span class="op">=</span><span class="cn">NULL</span>, covariate<span class="op">=</span><span class="cn">NULL</span>, meandecr<span class="op">=</span><span class="cn">NULL</span>, letterCI<span class="op">=</span><span class="cn">FALSE</span>, trans <span class="op">=</span> <span class="va">I</span>, transOff <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  count<span class="op">=</span><span class="cn">FALSE</span>, which.plots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>,</span>
+<span>  plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, prtnum<span class="op">=</span><span class="cn">TRUE</span>, permlist<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>  ncore<span class="op">=</span><span class="fl">1</span>, ndecimal<span class="op">=</span><span class="fl">4</span>, cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>, vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>,</span>
 <span>  weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
 <span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>, vcov<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>  equivalence<span class="op">=</span><span class="cn">NULL</span>, bias_adjust<span class="op">=</span><span class="cn">FALSE</span>, sigma<span class="op">=</span><span class="cn">NULL</span>, average<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link"</span>, <span class="st">"response"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  equivalence<span class="op">=</span><span class="cn">NULL</span>, bias_adjust<span class="op">=</span><span class="cn">FALSE</span>, sigma<span class="op">=</span><span class="cn">NULL</span>, average<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link"</span>, <span class="st">"response"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -98,8 +96,11 @@ means include the smooth terms (as <code><a href="semipred.html">semipred</a></c
 
 
 <dt id="arg-modelterm">modelterm<a class="anchor" aria-label="anchor" href="#arg-modelterm"></a></dt>
-<dd><p>Name (in "quotes") for indicating which factor term's predicted mean to be calculated.
-The <code>modelterm</code> must be factors and given exactly as it appears in the printed model, e.g. "A" or "A:B".</p></dd>
+<dd><p>Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
+factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
+model can be asked for too (e.g. "A:B" for <code>y ~ A + B</code>): its means are the sums of the factors' effects
+that the model implies (a note says so), which gives a table of predictions for every combination, also
+those without data. Covariates are set with <code>covariate</code>.</p></dd>
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
@@ -108,7 +109,13 @@ variable trnasformation in the model.</p></dd>
 
 
 <dt id="arg-pairwise">pairwise<a class="anchor" aria-label="anchor" href="#arg-pairwise"></a></dt>
-<dd><p>An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.</p></dd>
+<dd><p>An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.
+The <code>pairs</code> table of the result is made in either case for up to 100 means. With more means (e.g. several
+hundred lines of a breeding trial) and no comparison asked for, the means, their SEs and the SED and LSD
+summaries (maximum, minimum, average) are computed from the covariance of the means, without a row per pair
+(300 means: about a second), and <code>pairs</code> is <code>NULL</code>; <code>pairwise = TRUE</code> (or <code>adj</code>) still
+compares all the pairs. No letter groups are made for more than 100 means.
+<code>options(predictmeans.max_means = )</code> changes the limit of 100.</p></dd>
 
 
 <dt id="arg-atvar">atvar<a class="anchor" aria-label="anchor" href="#arg-atvar"></a></dt>
@@ -129,16 +136,18 @@ permuted data set), and "westfall" the step-down max-|t| of Westfall and Young (
 powerful; both use the correlation between the comparisons. "westfall" needs <code>permlist</code>; "scheffe" is not
 available with it.
 The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
-the adjusted p-values are in the columns <code>adj.conf.low</code> and <code>adj.conf.high</code> of <code>pairs</code>. The
-printed LSD is adjusted only by "bonferroni".</p></dd>
+the adjusted p-values are in the columns <code>adj.conf.low</code> and <code>adj.conf.high</code> of <code>pairs</code>.
+The printed LSDs go with the p-values: the SED times the critical value of the method, for the same family
+of pairs (all pairs, or the pairs within a level of <code>atvar</code>): <em>t</em> for "none", the studentized range
+divided by \(\sqrt{2}\) for "tukey" (the HSD), <em>t</em> at the adjusted level for "bonferroni" and "sidak",
+and the Scheffe and multivariate <em>t</em> values. So a difference is beyond its LSD exactly when its adjusted
+p-value is below <code>level</code>. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
+critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
+"bonferroni" adjusted the LSDs, with all the pairs as family also with <code>atvar</code>.)</p></dd>
 
 
 <dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
 <dd><p>A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.</p></dd>
-
-
-<dt id="arg-lsd-bar">lsd_bar<a class="anchor" aria-label="anchor" href="#arg-lsd-bar"></a></dt>
-<dd><p>A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.</p></dd>
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
@@ -146,8 +155,10 @@ printed LSD is adjusted only by "bonferroni".</p></dd>
 
 
 <dt id="arg-covariate">covariate<a class="anchor" aria-label="anchor" href="#arg-covariate"></a></dt>
-<dd><p>A numerical vector to specify values of covariates for calculating predicted means. The default
-values are the means of the associated covariates.</p></dd>
+<dd><p>The values of covariates at which the means are predicted: a named list or vector, e.g.
+<code>list(x = 2, z = 0.3)</code> (covariates not named are at their means), or an unnamed numerical vector with one
+value for each covariate of the model, in their order. The default values are the means of the covariates
+(see <code>cov_reduce</code>). For means along the values of a covariate use <code><a href="covariatemeans.html">covariatemeans</a></code>.</p></dd>
 
 
 <dt id="arg-meandecr">meandecr<a class="anchor" aria-label="anchor" href="#arg-meandecr"></a></dt>
@@ -156,76 +167,47 @@ The default is NULL which indicates the mean order follows the associated factor
 
 
 <dt id="arg-letterci">letterCI<a class="anchor" aria-label="anchor" href="#arg-letterci"></a></dt>
-<dd><p>A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table.
-The default is FALSE. With <code>level = NULL</code> the CIs are 83.4% CIs: for two uncorrelated means with equal SEs
-they fail to overlap when the means differ at about the 5% level. Otherwise overlap only approximates the
-pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
-and more when their SEs differ (Maghsoodloo and Huang, 2010). With <code>letterCI = TRUE</code>, <code>level</code> sets the CIs
-(e.g. <code>level = 0.05</code> gives 95% CIs), <code>adj</code> is "none", and with <code>atvar</code> the letters compare
-the means within each <code>atvar</code> group. The note under the mean table gives the CI level and the
-approximate test level.</p></dd>
+<dd><p>A logical variable to indicate printed letters for multiple comparisons by whether or not the
+comparison intervals of the means overlap (the default is FALSE). The comparison intervals are mean
+\(\pm c\,SE\) with \(c = t \times SED/(SE_1 + SE_2)\), averaged over the pairs compared, so that two means
+differ at <code>level</code> when their intervals do not overlap: 83.4% intervals for independent means with equal
+SEs and a 5% test, wider when the SEs differ, narrower when the means are correlated as in most mixed
+models (Goldstein and Healy, 1995; Maghsoodloo and Huang, 2010; Afshartous and Preston, 2010). They are shown
+as LL and UL in <code>mean_table</code>, labelled with their level, and the note under the table says how many
+pairs are judged differently by their own tests when the SEDs differ. <code>level</code> is the significance level
+of the comparisons (default 0.05), <code>adj</code> is "none", and with <code>atvar</code> the letters compare the means
+within each <code>atvar</code> group. (Before 2.0 the intervals were 83.4% confidence intervals whatever the
+design, and <code>level</code> set their level, 0.166 by default.) The comparison intervals are in every result:
+columns <code>comparison.low</code> and <code>comparison.high</code> of <code>means</code>, and
+<code>autoplot(interval = "comparison")</code>.</p></dd>
 
 
 <dt id="arg-trans">trans<a class="anchor" aria-label="anchor" href="#arg-trans"></a></dt>
-<dd><p>A function object for calculating the back transformed means, e.g. <code>trans=exp</code>.</p></dd>
+<dd><p>A function object for calculating the back transformed means, e.g. <code>trans=exp</code>. When it is
+not given and the response is transformed in the model formula (<code>log(y)</code>, <code>log(y + c)</code>,
+<code>log10(y)</code>, <code>log2(y)</code>, <code>log1p(y)</code>, <code>sqrt(y)</code>, <code>y^p</code>, <code>1/y</code>, <code>qlogis(y)</code>,
+<code>asin(sqrt(y))</code>, <code><a href="pm_boxcox.html">pm_boxcox</a>(y, lambda)</code>, <code>pm_yeojohnson(y, lambda)</code>), the inverse is
+used, constant included, and a message says so; <code>trans = I</code> keeps the model scale only. Models with a
+link (<code>glm</code>, <code>glmer</code>, <code>glmmTMB</code>) are back-transformed with its inverse. What the
+back-transformed mean is depends on the model: for a GLM the mean; for a GLMM the response of a typical
+cluster (random effects at zero); for a transformed response the median of the original scale (the geometric
+mean for a log). <code>bias_adjust = TRUE</code> gives the mean in the last two cases;
+<code>settings$back_transform</code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> say which it is.</p></dd>
 
 
 <dt id="arg-transoff">transOff<a class="anchor" aria-label="anchor" href="#arg-transoff"></a></dt>
-<dd><p>When you use <code>trans=exp(x+1)</code>, then <code>transOff=1</code>, the default is 0.</p></dd>
-
-
-<dt id="arg-responsen">responsen<a class="anchor" aria-label="anchor" href="#arg-responsen"></a></dt>
-<dd><p>Name (in "quotes") of the back transformed response variable in the <code>model</code>.</p></dd>
+<dd><p>When you use <code>trans=exp(x+1)</code>, then <code>transOff=1</code>, the default is 0. (Not needed when
+the transformation is taken from the formula.)</p></dd>
 
 
 <dt id="arg-count">count<a class="anchor" aria-label="anchor" href="#arg-count"></a></dt>
 <dd><p>An option for indicating the back transformed mean values are counts or not. The default is FALSE.</p></dd>
 
 
-<dt id="arg-plotord">plotord<a class="anchor" aria-label="anchor" href="#arg-plotord"></a></dt>
-<dd><p>A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.
-<code>plotord = c(2, 1, 3)</code> or <code>plotord = c("B", "A", "C")</code> will put the second variable 'B' in
-<code>modelterm</code> on the <code>X</code> axis, the first variable 'A' as the grouping variable, and the third one
-'C' as the panel variable). The defaults are <code>c(1, 2)</code> and <code>c(1, 2, 3)</code> for two and three way
-interactions.</p></dd>
-
-
-<dt id="arg-lineplot">lineplot<a class="anchor" aria-label="anchor" href="#arg-lineplot"></a></dt>
-<dd><p>An option for drawing a line chart, or dot chart. The default is TRUE.</p></dd>
-
-
-<dt id="arg-plottitle">plottitle<a class="anchor" aria-label="anchor" href="#arg-plottitle"></a></dt>
-<dd><p>A character vector specifying the main title for plot(s). The default is NULL.</p></dd>
-
-
-<dt id="arg-plotxlab">plotxlab<a class="anchor" aria-label="anchor" href="#arg-plotxlab"></a></dt>
-<dd><p>A character vector specifying the x label for plot(s). The default is NULL.</p></dd>
-
-
-<dt id="arg-plotylab">plotylab<a class="anchor" aria-label="anchor" href="#arg-plotylab"></a></dt>
-<dd><p>A character vector specifying the y label for plot(s). The default is NULL.</p></dd>
-
-
 <dt id="arg-which-plots">which.plots<a class="anchor" aria-label="anchor" href="#arg-which-plots"></a></dt>
 <dd><p>Which plots to draw: any of <code>"mean"</code> (means plot), <code>"bar"</code> (bar chart), <code>"pval"</code>
 (p-value plot, when there are more than six p-values) and <code>"back"</code> (back-transformed plot).
 The default is <code>c("mean", "pval", "back")</code>.</p></dd>
-
-
-<dt id="arg-mplot">mplot<a class="anchor" aria-label="anchor" href="#arg-mplot"></a></dt>
-<dd><p>Deprecated, use <code>which.plots</code>. An option for drawing a means plot, or not.</p></dd>
-
-
-<dt id="arg-barplot">barplot<a class="anchor" aria-label="anchor" href="#arg-barplot"></a></dt>
-<dd><p>Deprecated, use <code>which.plots</code>. An option for drawing a bar chart, or not.</p></dd>
-
-
-<dt id="arg-pplot">pplot<a class="anchor" aria-label="anchor" href="#arg-pplot"></a></dt>
-<dd><p>Deprecated, use <code>which.plots</code>. An option for drawing a p-values plot, or not.</p></dd>
-
-
-<dt id="arg-bkplot">bkplot<a class="anchor" aria-label="anchor" href="#arg-bkplot"></a></dt>
-<dd><p>Deprecated, use <code>which.plots</code>. An option for drawing back transformed plot, or not.</p></dd>
 
 
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
@@ -236,24 +218,53 @@ tables, and <code>autoplot()</code> draws the plots from it. <code>plot = TRUE</
 also draws them.</p></dd>
 
 
-<dt id="arg-jitterv">jitterv<a class="anchor" aria-label="anchor" href="#arg-jitterv"></a></dt>
+<dt id="arg-plot-args">plot_args<a class="anchor" aria-label="anchor" href="#arg-plot-args"></a></dt>
+<dd><p>A named list of settings for the plots, e.g.
+<code>plot_args = list(plottitle = "Yield", basesz = 14)</code>:</p><dl><dt><code>plottitle</code></dt>
+<dd><p>A character vector specifying the main title for plot(s). The default is NULL.</p></dd>
+
+  <dt><code>plotxlab</code></dt>
+<dd><p>A character vector specifying the x label for plot(s). The default is NULL.</p></dd>
+
+  <dt><code>plotylab</code></dt>
+<dd><p>A character vector specifying the y label for plot(s). The default is NULL.</p></dd>
+
+  <dt><code>plotord</code></dt>
+<dd><p>A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  <code>plotord = c(2, 1, 3)</code> or <code>plotord = c("B", "A", "C")</code> will put the second variable 'B' in  <code>modelterm</code> on the <code>X</code> axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are <code>c(1, 2)</code> and <code>c(1, 2, 3)</code> for two and three way  interactions.</p></dd>
+
+  <dt><code>lineplot</code></dt>
+<dd><p>An option for drawing a line chart, or dot chart. The default is TRUE.</p></dd>
+
+  <dt><code>lsd_bar</code></dt>
+<dd><p>A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.</p></dd>
+
+  <dt><code>responsen</code></dt>
+<dd><p>Name (in "quotes") of the back transformed response variable in the <code>model</code>.</p></dd>
+
+  <dt><code>jitterv</code></dt>
 <dd><p>A degree of jitter in x and y direction in the back transformed means graph. The default is zero.</p></dd>
 
-
-<dt id="arg-basesz">basesz<a class="anchor" aria-label="anchor" href="#arg-basesz"></a></dt>
+  <dt><code>basesz</code></dt>
 <dd><p>The base font size. The default is 12.</p></dd>
+
+  <dt><code>prtplt</code></dt>
+<dd><p>An option for printing plots on the screen, or not. The default is TRUE.</p></dd>
+
+  <dt><code>newwd</code></dt>
+<dd><p>A logical variable to indicate whether to print graph in a new window. The default is FALSE.</p></dd>
+
+
+</dl><p>As in 1.x these may also be given as arguments of their own (<code>plottitle = "Yield"</code>).</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>The settings of <code>plot_args</code> given by name as in 1.x, and the 1.x choices of plots
+<code>mplot</code>, <code>barplot</code>, <code>pplot</code> and <code>bkplot</code>, which still work with a warning that names
+the <code>which.plots</code> to use. Other names are an error.</p></dd>
 
 
 <dt id="arg-prtnum">prtnum<a class="anchor" aria-label="anchor" href="#arg-prtnum"></a></dt>
 <dd><p>An option for printing covariate information on the screen, or not. The default is TRUE.</p></dd>
-
-
-<dt id="arg-prtplt">prtplt<a class="anchor" aria-label="anchor" href="#arg-prtplt"></a></dt>
-<dd><p>An option for printing plots on the screen, or not. The default is TRUE.</p></dd>
-
-
-<dt id="arg-newwd">newwd<a class="anchor" aria-label="anchor" href="#arg-newwd"></a></dt>
-<dd><p>A logical variable to indicate whether to print graph in a new window. The default is FALSE.</p></dd>
 
 
 <dt id="arg-permlist">permlist<a class="anchor" aria-label="anchor" href="#arg-permlist"></a></dt>
@@ -374,11 +385,14 @@ one-sided p-values; below <code>level</code>, the difference lies within the mar
 
 
 <dt id="arg-bias-adjust">bias_adjust<a class="anchor" aria-label="anchor" href="#arg-bias-adjust"></a></dt>
-<dd><p>Logical: adjust the back-transformed means (non-identity link or <code>trans</code>) for the random
-effects (and, for a transformed response of a linear model, the residual error): \(h(\eta) + \sigma^2 h''(\eta)/2\)
-instead of \(h(\eta)\), the second-order approximation of the mean over the population (as emmeans'
-<code>bias.adjust</code>); the response-scale SEs follow by the delta method. Without it (the default) the
-back-transformed mean is that of a unit with all random effects zero.</p></dd>
+<dd><p>Adjust the back-transformed means (non-identity link or <code>trans</code>) to be means on the
+response scale: <code>TRUE</code> gives \(E\,h(\eta + u)\), \(u \sim N(0, \sigma^2)\), the mean over the
+random effects (and, for a transformed response of a linear model, the residual error), computed by
+Gauss-Hermite quadrature: \(\exp(\eta + \sigma^2/2)\) for a log, \(\eta^2 + \sigma^2\) for a square
+root. <code>"taylor"</code> gives the second-order approximation \(h(\eta) + \sigma^2 h''(\eta)/2\) (emmeans'
+<code>bias.adjust</code>), which is too low for a log when \(\sigma\) is large and off for a logit. The
+response-scale SEs follow by the delta method. <code>FALSE</code> (the default): the back-transformed mean is that
+of a unit with all random effects zero, or the median for a transformed response.</p></dd>
 
 
 <dt id="arg-sigma">sigma<a class="anchor" aria-label="anchor" href="#arg-sigma"></a></dt>
@@ -409,7 +423,9 @@ stay on the link scale.</p></dd>
 <dd><p>Standard errors of differences between predicted means.</p></dd>
 
  <dt>LSD</dt>
-<dd><p>Least significant differences between predicted means.</p></dd>
+<dd><p>Least significant differences between predicted means (maximum, minimum and average), with the
+ critical value that goes with <code>adj</code> (see there); attribute <code>"Note"</code> says when they are adjusted,
+ or why not.</p></dd>
 
  <dt>Pairwise p-value</dt>
 <dd><p>A matrix with t-values above the diagonal and p-values below the diagonal, or
@@ -433,14 +449,18 @@ stay on the link scale.</p></dd>
 
  <dt>means</dt>
 <dd><p>A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
- columns, <code>estimate</code>, <code>std.error</code>, <code>df</code>, <code>conf.low</code>, <code>conf.high</code>; when the means are
+ columns, <code>estimate</code>, <code>std.error</code>, <code>df</code>, <code>conf.low</code>, <code>conf.high</code> (confidence limits
+ of each mean, not for comparing means), <code>comparison.low</code> and <code>comparison.high</code> (comparison
+ intervals: two means differ at <code>level</code>, with the adjustment of <code>adj</code> when it has a critical value,
+ when these do not overlap; see <code>letterCI</code>; present when the pairs are tabulated); when the means are
  back-transformed also <code>response</code>, <code>response.std.error</code> (delta method, as <span class="pkg">emmeans</span> with
  <code>type = "response"</code>), <code>response.conf.low</code> and <code>response.conf.high</code>; <code>group</code>
  (letters, when pairwise comparisons are made), <code>n</code> (number of observations) and <code>estimable</code>. Values are
  not rounded. Also returned by <code>tidy()</code> and <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>.</p></dd>
 
  <dt>pairs</dt>
-<dd><p>A data frame with one row per pairwise comparison: <code>level1</code>, <code>level2</code>, <code>by</code> (the
+<dd><p>A data frame with one row per pairwise comparison (<code>NULL</code> with one mean, or with more than
+ 100 means when no comparison was asked for; see <code>pairwise</code>): <code>level1</code>, <code>level2</code>, <code>by</code> (the
  level of <code>atvar</code>, when given; <code>NA</code> for pairs across levels), <code>estimate</code> (mean of <code>level1</code>
  minus mean of <code>level2</code>), <code>std.error</code>, <code>df</code>, <code>statistic</code> (t), <code>p.value</code>, <code>p.adj</code>
  (adjusted by <code>adj</code>, within each level of <code>atvar</code> when given), <code>p.equiv</code> (with
@@ -460,7 +480,9 @@ stay on the link scale.</p></dd>
 <dd><p>A list with the options used: model term, significance level, adjustment method, <code>atvar</code>,
  degrees-of-freedom method, <code>vcov_adjust</code>, <code>vcov</code> (<code>"model"</code>, <code>"HC3"</code>, ...), <code>singular</code> (a
  singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
- package version.</p></dd>
+ package version; <code>comparison</code>, the comparison intervals: the multiplier <code>mult</code> of the SE, its
+ confidence level, the number of pairs and how many of them are judged differently by their own tests
+ (<code>disagree</code>; 0 and <code>exact = TRUE</code> when all SEDs are equal).</p></dd>
 
 </dl><p>The result has class <code>c("predictmeans", "pdmlist")</code>. Printing shows the same output as earlier versions;
  the <code>means</code>, <code>pairs</code> and <code>settings</code> slots are not printed.</p>
@@ -489,6 +511,12 @@ stay on the link scale.</p></dd>
 <p>Maghsoodloo, S. and Huang, C.-Y. (2010), <em>Comparing the overlapping of two independent confidence intervals
 	with a single confidence interval for two normal population parameters</em>, Journal of Statistical Planning and
 	Inference, 140(11), 3295-3305.</p>
+<p>Goldstein, H. and Healy, M. J. R. (1995), <em>The graphical presentation of a collection of means</em>, Journal
+	of the Royal Statistical Society A, 158(1), 175-177.</p>
+<p>Austin, P. C. and Hux, J. E. (2002), <em>A brief note on overlapping confidence intervals</em>, Journal of
+	Vascular Surgery, 36(1), 194-195.</p>
+<p>Afshartous, D. and Preston, R. A. (2010), <em>Confidence intervals for dependent data: equating non-overlap
+	with statistical significance</em>, Computational Statistics and Data Analysis, 54(10), 2296-2305.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -503,11 +531,16 @@ stay on the link scale.</p></dd>
 <span class="r-in"><span>  <span class="co">## The results as tables (columns described under Value)</span></span></span>
 <span class="r-in"><span>  <span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu">predictmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, plot<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">pm</span><span class="op">$</span><span class="va">means</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   nitro  estimate std.error       df  conf.low conf.high  n estimable</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047 18      TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047 18      TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381 18      TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047 18      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   nitro  estimate std.error       df  conf.low conf.high comparison.low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381      109.75519</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047      118.92186</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   comparison.high  n estimable</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        83.85592 18      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       103.35592 18      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       118.68925 18      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4       127.85592 18      TRUE</span>
 <span class="r-in"><span>  <span class="va">pm</span><span class="op">$</span><span class="va">pairs</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2   estimate std.error       df statistic      p.value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1      0    0.2 -19.500000  4.435752 45.00014 -4.396098 6.656699e-05</span>
@@ -548,6 +581,38 @@ stay on the link scale.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $equivalence</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$mult</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6226041</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$conf.level</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.4461306</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$level</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$adjust</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "none"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$adjusted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$pairs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$disagree</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$exact</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $comparison$range</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6226041 0.6226041</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $back_transform</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $bias_adjust</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -583,6 +648,7 @@ stay on the link scale.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SED: min 4.436, mean 4.436, max 4.436</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> LSD (5%): min 8.934, mean 8.934, max 8.934</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> p-values: t tests, adjusted by 'none'.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Comparison intervals: mean +/- 0.6226 SE (44.6% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.</span>
 <span class="r-in"><span>  <span class="co">## Means within each variety, Tukey-adjusted pairs, plots</span></span></span>
 <span class="r-in"><span>  <span class="va">predictout</span> <span class="op">&lt;-</span> <span class="fu">predictmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar<span class="op">=</span><span class="st">"Variety"</span>, adj<span class="op">=</span><span class="st">"tukey"</span>,</span></span>
 <span class="r-in"><span>    which.plots<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"bar"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>, line<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>

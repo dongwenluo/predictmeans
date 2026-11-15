@@ -8,19 +8,25 @@ as `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`
 The predicted means are built on a reference grid: every combination of
 the factor levels in the model, with covariates fixed at their means (or
 other chosen values). Each row of `K` is the equally weighted average of
-the grid rows for one level combination of `modelterm`. The design
-matrix of the grid is evaluated with the model's own stored basis
-information, so covariates may enter the model through transformations
-such as `poly(x, 2)`, `ns(x, 3)`, `bs(x)`, `log(x)`, `scale(x)` or
-`I(x^2)`, only through interactions (e.g. `A:x` without `x`, or `x:z`),
-or through smooth terms (`s(x)`, `te(x, z)`, `s(x, by = A)`) of a `gam`.
+the grid rows for one level combination of `modelterm`. Combinations of
+nested factors that cannot exist (a term of the model holds both
+factors, e.g. `G/T`, and each level of one occurs with one level of the
+other) are left out of the averages; so are, with `weights = "equal"`,
+the empty cells of interaction terms (see
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+The design matrix of the grid is evaluated with the model's own stored
+basis information, so covariates may enter the model through
+transformations such as `poly(x, 2)`, `ns(x, 3)`, `bs(x)`, `log(x)`,
+`scale(x)` or `I(x^2)`, only through interactions (e.g. `A:x` without
+`x`, or `x:z`), or through smooth terms (`s(x)`, `te(x, z)`,
+`s(x, by = A)`) of a `gam`.
 
 ## Usage
 
 ``` r
 Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
         cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"))
+        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
 ```
 
 ## Arguments
@@ -33,30 +39,46 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
 
 - modelterm:
 
-  Name (in "quotes") for indicating which model term's predicted mean to
-  be calculated. The `modelterm` must be given exactly as it appears in
-  the printed model, e.g. "A" or "A:B". A factor created in the model
-  formula, e.g. `factor(dose)`, can be given either as "factor(dose)" or
-  as "dose".
+  Name (in "quotes") of the variables whose combinations give the rows
+  of `K`: fixed-effect variables of the model joined by ":", e.g. "A" or
+  "A:B". It need not be a term of the model: any combination of its
+  factors can be asked for (e.g. "A:B" for `y ~ A + B`), and a covariate
+  may be among them (its values as given in `covariate`, else its mean).
+  A factor created in the model formula, e.g. `factor(dose)`, can be
+  given either as "factor(dose)" or as "dose".
 
 - covariate:
 
-  A numerical vector to specify values of covariates for calculating
-  predicted means, default values are the means of the associated
-  covariates. It also can be the name of one or more covariates in the
-  model, in which case predictions are made over a range of values of
-  those covariates (see `covariateV`). For a `semireg` model this may
-  also be a covariate that only appears in the smooth terms.
+  The values of covariates; those not mentioned are at their means (see
+  `cov_reduce`).
+
+  - A named list (or named numeric vector) of values, e.g.
+    `list(x = c(-1, 0, 1), z = 0.3)`: a covariate with one value is
+    fixed there; one with several values gives rows of `K` for each
+    value (all combinations for several such covariates). A data frame
+    gives joint points: one set of rows for each of its rows.
+
+  - An unnamed numeric vector with one value for each covariate of the
+    model, in the order they have in the model. With another length this
+    is an error (before 2.0 the values were recycled, and names were
+    ignored).
+
+  - The name of one or more covariates, in which case predictions are
+    made over a range of values of those covariates (see `covariateV`).
+
+  For a `semireg` model this may also be a covariate that only appears
+  in the smooth terms.
 
 - covariateV:
 
   Values for the covariate(s) named in `covariate`. For one covariate, a
   numeric vector. For several covariates, either a list of numeric
-  vectors (all combinations are used) or a matrix with one named column
-  per covariate, where each row is one prediction point (e.g. a set of
-  locations for a two-dimensional smooth). When `covariateV` is `NULL`,
-  50 (one covariate) or 30 (several covariates) equally spaced values
-  over the observed range are used.
+  vectors (all combinations are used; named by covariate, or in the
+  order of `covariate`) or a matrix with one named column per covariate,
+  where each row is one prediction point (e.g. a set of locations for a
+  two-dimensional smooth). When `covariateV` is `NULL`, 50 (one
+  covariate) or 30 (several covariates) equally spaced values over the
+  observed range are used.
 
 - data:
 
@@ -99,6 +121,16 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
   weights over the non-empty cells). The definitions are those of
   emmeans.
 
+- refgrid:
+
+  Return the grid of all combinations (element `refgrid`)? The default
+  `FALSE` builds it only when it is needed (`semireg` models, means over
+  empty cells). Otherwise each group of variables that share a model
+  term is averaged on its own grid, which gives the same `K` and is much
+  smaller when factors do not interact: for `y ~ Line + Block + Site`
+  with 300, 90 and 4 levels, grids of 300, 90 and 4 rows instead of
+  108,000.
+
 ## Value
 
 - K:
@@ -122,12 +154,13 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
 
 - refgrid:
 
-  The reference grid used to build `K`: a list with the grid data
-  (`grid`), the sparse weight matrix `W` that averages grid rows into
-  rows of `K`, and the rows of `fctnames` (`target`), and `basis`, the
-  function that gives the model's basis for grid rows. Any other basis
-  evaluated on `grid`, e.g. the smooth terms of a `semireg` model, can
-  be averaged in the same way as `W %*% basis`.
+  `NULL`, or (see argument `refgrid`) the reference grid of all
+  combinations: a list with the grid data (`grid`), the sparse weight
+  matrix `W` that averages grid rows into rows of `K`, and the rows of
+  `fctnames` (`target`), and `basis`, the function that gives the
+  model's basis for grid rows. Any other basis evaluated on `grid`, e.g.
+  the smooth terms of a `semireg` model, can be averaged in the same way
+  as `W %*% basis`.
 
 - empty_cells:
 
@@ -873,18 +906,64 @@ This function heavily depends on the codes from package "lsmeans".
 #>            TRUE            TRUE            TRUE            TRUE            TRUE 
 #>     Victory:0.6 
 #>            TRUE 
+  Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
+#>                 (Intercept) nitro VarietyMarvellous VarietyVictory
+#> Golden Rain:0             1   0.0                 0              0
+#> Golden Rain:0.3           1   0.3                 0              0
+#> Golden Rain:0.6           1   0.6                 0              0
+#> Marvellous:0              1   0.0                 1              0
+#> Marvellous:0.3            1   0.3                 1              0
+#> Marvellous:0.6            1   0.6                 1              0
+#> Victory:0                 1   0.0                 0              1
+#> Victory:0.3               1   0.3                 0              1
+#> Victory:0.6               1   0.6                 0              1
+#>                 nitro:VarietyMarvellous nitro:VarietyVictory
+#> Golden Rain:0                       0.0                  0.0
+#> Golden Rain:0.3                     0.0                  0.0
+#> Golden Rain:0.6                     0.0                  0.0
+#> Marvellous:0                        0.0                  0.0
+#> Marvellous:0.3                      0.3                  0.0
+#> Marvellous:0.6                      0.6                  0.0
+#> Victory:0                           0.0                  0.0
+#> Victory:0.3                         0.0                  0.3
+#> Victory:0.6                         0.0                  0.6
+#> attr(,"estimable")
+#>   Golden Rain:0 Golden Rain:0.3 Golden Rain:0.6    Marvellous:0  Marvellous:0.3 
+#>            TRUE            TRUE            TRUE            TRUE            TRUE 
+#>  Marvellous:0.6       Victory:0     Victory:0.3     Victory:0.6 
+#>            TRUE            TRUE            TRUE            TRUE 
+  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
+#>    Block     Variety nitro
+#> 1     VI Golden Rain   0.3
+#> 2     VI  Marvellous   0.3
+#> 3     VI     Victory   0.3
+#> 4      V Golden Rain   0.3
+#> 5      V  Marvellous   0.3
+#> 6      V     Victory   0.3
+#> 7    III Golden Rain   0.3
+#> 8    III  Marvellous   0.3
+#> 9    III     Victory   0.3
+#> 10    IV Golden Rain   0.3
+#> 11    IV  Marvellous   0.3
+#> 12    IV     Victory   0.3
+#> 13    II Golden Rain   0.3
+#> 14    II  Marvellous   0.3
+#> 15    II     Victory   0.3
+#> 16     I Golden Rain   0.3
+#> 17     I  Marvellous   0.3
+#> 18     I     Victory   0.3
 
   # Covariates entering through transformations or only through interactions
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
   Kmatrix(fm2, "Variety")$K
-#>             (Intercept)       Block.L       Block.Q       Block.C       Block^4
-#> Golden Rain           1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
-#> Marvellous            1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
-#> Victory               1 -6.938894e-17 -2.775558e-17 -6.938894e-18 -2.081668e-17
+#>             (Intercept)       Block.L Block.Q Block.C       Block^4
+#> Golden Rain           1 -1.110223e-16       0       0 -2.775558e-17
+#> Marvellous            1 -1.110223e-16       0       0 -2.775558e-17
+#> Victory               1 -1.110223e-16       0       0 -2.775558e-17
 #>                   Block^5 VarietyMarvellous VarietyVictory poly(nitro, 2)1
-#> Golden Rain -1.387779e-17                 0              0               0
-#> Marvellous  -1.387779e-17                 1              0               0
-#> Victory     -1.387779e-17                 0              1               0
+#> Golden Rain -1.387779e-17                 0  -1.110223e-16               0
+#> Marvellous  -1.387779e-17                 1  -1.110223e-16               0
+#> Victory     -1.387779e-17                 0   1.000000e+00               0
 #>             poly(nitro, 2)2
 #> Golden Rain      -0.1473139
 #> Marvellous       -0.1473139
@@ -936,17 +1015,17 @@ This function heavily depends on the codes from package "lsmeans".
     Kmatrix(fm4, "Variety", cov_reduce = "average")$K
   }
 #>             (Intercept) VarietyMarvellous VarietyVictory    s(nitro).1
-#> Golden Rain           1                 0              0 -6.938894e-17
-#> Marvellous            1                 1              0 -6.938894e-17
-#> Victory               1                 0              1 -6.938894e-17
-#>               s(nitro).2   s(nitro).3 s(Block).1 s(Block).2 s(Block).3
-#> Golden Rain 2.428613e-17 5.551115e-17          0          0          0
-#> Marvellous  2.428613e-17 5.551115e-17          0          0          0
-#> Victory     2.428613e-17 5.551115e-17          0          0          0
-#>             s(Block).4 s(Block).5 s(Block).6
-#> Golden Rain          0          0          0
-#> Marvellous           0          0          0
-#> Victory              0          0          0
+#> Golden Rain           1                 0              0 -5.551115e-17
+#> Marvellous            1                 1              0 -5.551115e-17
+#> Victory               1                 0              1 -5.551115e-17
+#>             s(nitro).2 s(nitro).3 s(Block).1 s(Block).2 s(Block).3 s(Block).4
+#> Golden Rain          0          0          0          0          0          0
+#> Marvellous           0          0          0          0          0          0
+#> Victory              0          0          0          0          0          0
+#>             s(Block).5 s(Block).6
+#> Golden Rain          0          0
+#> Marvellous           0          0
+#> Victory              0          0
 #> attr(,"estimable")
 #> Golden Rain  Marvellous     Victory 
 #>        TRUE        TRUE        TRUE 

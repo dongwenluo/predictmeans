@@ -5,12 +5,12 @@
 [`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
 and
 [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
-get everything they need from a model through these six generics. Their
-default methods work for any model class with the usual methods (`coef`,
-`vcov`, `terms`, `df.residual`, `family`), so many classes need no extra
-code. For a class that lacks one of these, or needs something special,
-write a method for the corresponding generic only; nothing inside
-predictmeans needs to change.
+get everything they need from a model through these seven generics.
+Their default methods work for any model class with the usual methods
+(`coef`, `vcov`, `terms`, `df.residual`, `family`), so many classes need
+no extra code. For a class that lacks one of these, or needs something
+special, write a method for the corresponding generic only; nothing
+inside predictmeans needs to change.
 
 ## Usage
 
@@ -21,6 +21,7 @@ pm_basis(model, newdata, ...)
 pm_data(model, ...)
 pm_df(model, L, ...)
 pm_linkinv(model, ...)
+pm_contrasts(model, ...)
 ```
 
 ## Arguments
@@ -91,6 +92,14 @@ As described in Details.
   none. Default: the inverse link of `family(model)` unless it is the
   identity.
 
+- `pm_contrasts(model)`:
+
+  The contrasts of the factors used in the fit, as for the
+  `contrasts.arg` argument of
+  [`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html).
+  Default: those of `model.matrix(model)`, else `model$contrasts`; a
+  method is only needed for a class that has neither.
+
 The model also needs a [`terms()`](https://rdrr.io/r/stats/terms.html)
 method for its fixed effects (used to find the variables in the model),
 and its call ([`getCall()`](https://rdrr.io/r/stats/update.html)) or a
@@ -117,10 +126,10 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   Oats$nitro <- factor(Oats$nitro)
   m <- fit_mymodel(yield ~ Block + nitro*Variety, data = Oats)
   predictmeans(m, "nitro", plot = FALSE)$means
-#> Error in x$terms %||% attr(x, "terms") %||% stop("no terms component nor attribute"): no terms component nor attribute
+#> Error: Can't handle a model of class ‘mymodel’: it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).
 
   # Degrees of freedom of its own, e.g. normal-based:
   pm_df.mymodel <- function(model, L, ...) rep(Inf, nrow(L))
   predictmeans(m, "nitro", plot = FALSE)$means
-#> Error in x$terms %||% attr(x, "terms") %||% stop("no terms component nor attribute"): no terms component nor attribute
+#> Error: Can't handle a model of class ‘mymodel’: it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).
 ```

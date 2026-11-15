@@ -124,8 +124,8 @@ pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "respo
                        plot = FALSE, prtnum = FALSE)
 pm_pop$means[, c("Treatment", "response", "response.std.error")]
 #>   Treatment response response.std.error
-#> 1       Exp 7.282088          1.1947757
-#> 2      Cont 4.379663          0.7246387
+#> 1       Exp 7.428952          1.2188717
+#> 2      Cont 4.467991          0.7392531
 pm_pop$settings[c("bias_adjust", "average")]
 #> $bias_adjust
 #> [1] 0.6532427

@@ -90,32 +90,32 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
   as.data.frame(pm)
-#>    nitro     Variety  estimate std.error       df  conf.low conf.high group n
-#> 1      0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806   A   6
-#> 2      0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472    A  6
-#> 3      0     Victory  71.50000   9.10701 16.08144  52.20194  90.79806    A  6
-#> 4    0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806   AB  6
-#> 5    0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806     B 6
-#> 6    0.2     Victory  89.66667   9.10701 16.08144  70.36861 108.96472    A  6
-#> 7    0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472    BC 6
-#> 8    0.4  Marvellous 117.16667   9.10701 16.08144  97.86861 136.46472     B 6
-#> 9    0.4     Victory 110.83333   9.10701 16.08144  91.53528 130.13139     B 6
-#> 10   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139     C 6
-#> 11   0.6  Marvellous 126.83333   9.10701 16.08144 107.53528 146.13139     B 6
-#> 12   0.6     Victory 118.50000   9.10701 16.08144  99.20194 137.79806     B 6
-#>    estimable
-#> 1       TRUE
-#> 2       TRUE
-#> 3       TRUE
-#> 4       TRUE
-#> 5       TRUE
-#> 6       TRUE
-#> 7       TRUE
-#> 8       TRUE
-#> 9       TRUE
-#> 10      TRUE
-#> 11      TRUE
-#> 12      TRUE
+#>    nitro     Variety  estimate std.error       df  conf.low conf.high
+#> 1      0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806
+#> 2      0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472
+#> 3      0     Victory  71.50000   9.10701 16.08144  52.20194  90.79806
+#> 4    0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806
+#> 5    0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806
+#> 6    0.2     Victory  89.66667   9.10701 16.08144  70.36861 108.96472
+#> 7    0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472
+#> 8    0.4  Marvellous 117.16667   9.10701 16.08144  97.86861 136.46472
+#> 9    0.4     Victory 110.83333   9.10701 16.08144  91.53528 130.13139
+#> 10   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139
+#> 11   0.6  Marvellous 126.83333   9.10701 16.08144 107.53528 146.13139
+#> 12   0.6     Victory 118.50000   9.10701 16.08144  99.20194 137.79806
+#>    comparison.low comparison.high group n estimable
+#> 1        69.75210        90.24790   A   6      TRUE
+#> 2        76.41877        96.91456    A  6      TRUE
+#> 3        61.25210        81.74790    A  6      TRUE
+#> 4        88.25210       108.74790   AB  6      TRUE
+#> 5        98.25210       118.74790     B 6      TRUE
+#> 6        79.41877        99.91456    A  6      TRUE
+#> 7       104.41877       124.91456    BC 6      TRUE
+#> 8       106.91877       127.41456     B 6      TRUE
+#> 9       100.58544       121.08123     B 6      TRUE
+#> 10      114.58544       135.08123     C 6      TRUE
+#> 11      116.58544       137.08123     B 6      TRUE
+#> 12      108.25210       128.74790     B 6      TRUE
   head(as.data.frame(pm, what = "pairs"))
 #>          level1          level2          by   estimate std.error       df
 #> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23080

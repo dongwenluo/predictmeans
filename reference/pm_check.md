@@ -70,6 +70,22 @@ large ones in small data sets; the plots say how large a departure is.
   Shapiro-Wilk tests of the residuals and of each term's random effects
   (intercepts).
 
+- Transformation of the response:
+
+  (`lm` and `aov` with a positive response that is not transformed in
+  the formula) the Box-Cox power the residuals favour: the profile
+  likelihood estimate of \\\lambda\\ and its 95% interval (Box and Cox,
+  1964; as
+  [`MASS::boxcox()`](https://rdrr.io/pkg/MASS/man/boxcox.html)). Worth a
+  look when the interval leaves out 1 (no transformation); the note
+  names the usual transformation within the interval (\\\lambda\\ = 0:
+  log; 0.5: square root; -1: reciprocal), to write in the formula as
+  `log(y)`, `sqrt(y)` or
+  [`pm_boxcox`](https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.md)`(y, lambda)`.
+  It is judged on the residuals of the model, not on the raw response;
+  for counts and proportions a generalized linear (mixed) model is
+  usually the better choice.
+
 - Equal variances:
 
   for each factor: the ratio of the largest to the smallest standard

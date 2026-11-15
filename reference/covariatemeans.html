@@ -62,7 +62,7 @@
 <span>  cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>  weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
 <span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>,</span>
-<span>  vcov_adjust<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span>  vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, contr<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -95,7 +95,12 @@ The <code>modelterm</code> must be given exactly as it appears in the printed mo
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>A significant level for calculating confident interval. The default value is 0.05.</p></dd>
+<dd><p>A significant level for calculating confident interval. The default value is 0.05. The limits
+are for each line on its own: whether the bands of two groups overlap is not a test of their difference
+(the lines are estimated from the same model and are correlated; see <code>letterCI</code> in
+<code><a href="predictmeans.html">predictmeans</a></code>). Use <code>contr</code> for the band of the difference between two groups, or compare
+groups at chosen covariate values with <code><a href="predictmeans.html">predictmeans</a></code> (<code>covariate = </code>) and their slopes
+with <code><a href="pm_slopes.html">pm_slopes</a></code>.</p></dd>
 
 
 <dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
@@ -103,7 +108,11 @@ The <code>modelterm</code> must be given exactly as it appears in the printed mo
 
 
 <dt id="arg-trans">trans<a class="anchor" aria-label="anchor" href="#arg-trans"></a></dt>
-<dd><p>A function object for calculating the back transformed means, e.g. <code>trans=exp</code>.</p></dd>
+<dd><p>A function object for calculating the back transformed means, e.g. <code>trans=exp</code>. When it is
+not given, the inverse link of the model is used, or the inverse of a transformation of the response in the
+model formula (<code>log(y)</code>, <code>sqrt(y)</code>, ...; see <code><a href="predictmeans.html">predictmeans</a></code>), with a message;
+<code>trans = I</code> keeps the model scale. The back-transformed line is the back-transformed fitted value.
+(Before 2.0 half the standard error of the fitted value was added inside <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> for a log.)</p></dd>
 
 
 <dt id="arg-transoff">transOff<a class="anchor" aria-label="anchor" href="#arg-transoff"></a></dt>
@@ -171,13 +180,27 @@ has its own) and adjusted standard errors for models fitted by REML (<code>lmer<
 predictmeans 1.x used the unadjusted covariance and, for <code>lmer</code>, one df per term; <code>vcov_adjust = FALSE</code>
 and, for <code>lme</code> and <code>gls</code>, <code>df_method = "containment"</code> give its results.</p></dd>
 
+
+<dt id="arg-contr">contr<a class="anchor" aria-label="anchor" href="#arg-contr"></a></dt>
+<dd><p>Two levels of <code>modelterm</code> (numbers or names, e.g. <code>c(1, 3)</code> or
+<code>c("Golden Rain", "Victory")</code>; for a term with several factors the combined labels such as
+<code>"a:x"</code>): the difference between the first and the second along the covariate, with its confidence
+band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
+band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
+model scale; with a log link or a log response the table also has the ratio.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
 
 
-<dl><dt>Predicted Means</dt>
-<dd><p>A table of predicted means.</p></dd>
+<dl><dt>plt</dt>
+<dd><p>The plot (a <code>ggplot</code>).</p></dd>
+
+<dt>pltdf</dt>
+<dd><p>The data of the plot: the fitted values with their limits, or with <code>contr</code> the differences
+  (<code>diff</code>, <code>ses</code>, <code>Df</code>, <code>LL</code>, <code>UL</code>, and <code>ratio</code>, <code>ratio.LL</code>,
+  <code>ratio.UL</code> for a log).</p></dd>
 
 </dl></div>
     <div class="section level2">

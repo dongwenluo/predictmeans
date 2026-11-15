@@ -145,32 +145,32 @@ the class listed first: <code>options(marginaleffects_model_classes = "predictme
 <span class="r-in"><span>  <span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    nitro     Variety  estimate std.error       df  conf.low conf.high group n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806   A   6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472    A  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      0     Victory  71.50000   9.10701 16.08144  52.20194  90.79806    A  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806   AB  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806     B 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6    0.2     Victory  89.66667   9.10701 16.08144  70.36861 108.96472    A  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472    BC 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8    0.4  Marvellous 117.16667   9.10701 16.08144  97.86861 136.46472     B 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9    0.4     Victory 110.83333   9.10701 16.08144  91.53528 130.13139     B 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139     C 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11   0.6  Marvellous 126.83333   9.10701 16.08144 107.53528 146.13139     B 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12   0.6     Victory 118.50000   9.10701 16.08144  99.20194 137.79806     B 6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    estimable</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9       TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10      TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11      TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    nitro     Variety  estimate std.error       df  conf.low conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      0     Victory  71.50000   9.10701 16.08144  52.20194  90.79806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    0.2     Victory  89.66667   9.10701 16.08144  70.36861 108.96472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    0.4  Marvellous 117.16667   9.10701 16.08144  97.86861 136.46472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9    0.4     Victory 110.83333   9.10701 16.08144  91.53528 130.13139</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11   0.6  Marvellous 126.83333   9.10701 16.08144 107.53528 146.13139</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12   0.6     Victory 118.50000   9.10701 16.08144  99.20194 137.79806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    comparison.low comparison.high group n estimable</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        69.75210        90.24790   A   6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        76.41877        96.91456    A  6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        61.25210        81.74790    A  6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        88.25210       108.74790   AB  6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        98.25210       118.74790     B 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        79.41877        99.91456    A  6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7       104.41877       124.91456    BC 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8       106.91877       127.41456     B 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9       100.58544       121.08123     B 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10      114.58544       135.08123     C 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11      116.58544       137.08123     B 6      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12      108.25210       128.74790     B 6      TRUE</span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">pm</span>, what <span class="op">=</span> <span class="st">"pairs"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          level1          level2          by   estimate std.error       df</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 0:Golden Rain    0:Marvellous        &lt;NA&gt;  -6.666667  9.715020 30.23080</span>

@@ -12,7 +12,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-  vcov_adjust=TRUE)
+  vcov_adjust=TRUE, contr=NULL)
 ```
 
 ## Arguments
@@ -50,7 +50,16 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 - level:
 
   A significant level for calculating confident interval. The default
-  value is 0.05.
+  value is 0.05. The limits are for each line on its own: whether the
+  bands of two groups overlap is not a test of their difference (the
+  lines are estimated from the same model and are correlated; see
+  `letterCI` in
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+  Use `contr` for the band of the difference between two groups, or
+  compare groups at chosen covariate values with
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  (`covariate = `) and their slopes with
+  [`pm_slopes`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md).
 
 - Df:
 
@@ -61,7 +70,14 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 - trans:
 
   A function object for calculating the back transformed means, e.g.
-  `trans=exp`.
+  `trans=exp`. When it is not given, the inverse link of the model is
+  used, or the inverse of a transformation of the response in the model
+  formula (`log(y)`, `sqrt(y)`, ...; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)),
+  with a message; `trans = I` keeps the model scale. The
+  back-transformed line is the back-transformed fitted value. (Before
+  2.0 half the standard error of the fitted value was added inside
+  [`exp()`](https://rdrr.io/r/base/Log.html) for a log.)
 
 - transOff:
 
@@ -147,11 +163,28 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   `lmer`, one df per term; `vcov_adjust = FALSE` and, for `lme` and
   `gls`, `df_method = "containment"` give its results.
 
+- contr:
+
+  Two levels of `modelterm` (numbers or names, e.g. `c(1, 3)` or
+  `c("Golden Rain", "Victory")`; for a term with several factors the
+  combined labels such as `"a:x"`): the difference between the first and
+  the second along the covariate, with its confidence band, is returned
+  and plotted instead of the lines. The two lines differ at a covariate
+  value when this band leaves out zero; whether the bands of the two
+  lines overlap does not say so. The difference is on the model scale;
+  with a log link or a log response the table also has the ratio.
+
 ## Value
 
-- Predicted Means:
+- plt:
 
-  A table of predicted means.
+  The plot (a `ggplot`).
+
+- pltdf:
+
+  The data of the plot: the fitted values with their limits, or with
+  `contr` the differences (`diff`, `ses`, `Df`, `LL`, `UL`, and `ratio`,
+  `ratio.LL`, `ratio.UL` for a log).
 
 ## Author
 

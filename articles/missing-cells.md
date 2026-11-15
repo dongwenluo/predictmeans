@@ -184,6 +184,7 @@ means can be estimated:
 
 fs <- lm(y ~ droplet + conc + vol, data = spray)
 pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+#> In the data 'vol' is nested in 'droplet' (each level of vol occurs with one level of droplet), and the model has them as separate effects, which cannot be told apart. To get the means, write droplet/vol in the model formula (or use weights = "cells").
 #> Means that cannot be estimated are shown as NA: 130, 200, 400. Their pairwise differences are shown when estimable. If factors are confounded or cells are empty, weights = "cells" averages over the observed cells only.
 pv$means[, c("vol", "estimate", "n", "estimable", "group")]
 #>   vol estimate  n estimable group

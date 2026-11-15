@@ -18,7 +18,7 @@ interactive with
 ``` r
 # S3 method for class 'predictmeans'
 autoplot(object, type = c("means", "pvalue", "response"),
-         interval = c("ci", "lsd", "none"), ...)
+         interval = c("ci", "comparison", "lsd", "none"), values = FALSE, ...)
 
 # S3 method for class 'predictmeans'
 summary(object, digits = 4, ...)
@@ -36,15 +36,38 @@ print(x, ...)
 
 - type:
 
-  `"means"` (the default) plots the predicted means; `"pvalue"` a
-  heatmap of the adjusted pairwise p-values (within each level of
-  `atvar` when it was given); `"response"` the back-transformed means.
+  `"means"` (the default) plots the predicted means; `"pvalue"` a square
+  level plot of the adjusted pairwise p-values, like a correlation plot
+  (the plot of
+  [`PMplot`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md);
+  with `atvar` the comparisons within each of its levels are blocks down
+  the diagonal); `"response"` the back-transformed means. `"pvalue"`
+  needs the `pairs` table (with more than 100 means: `pairwise = TRUE`
+  in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
 
 - interval:
 
-  Bars around the means: confidence limits (`"ci"`, the default), half
-  the average LSD (`"lsd"`; means whose bars do not overlap differ
-  significantly when the LSDs are equal), or none.
+  Bars around the means: confidence limits (`"ci"`, the default);
+  comparison intervals (`"comparison"`); half the average LSD (`"lsd"`);
+  or none. Confidence limits are for each mean and must not be read as
+  tests: two means can differ significantly while their 95% limits
+  overlap, and with correlated means (blocks, mixed models) by a wide
+  margin. Comparison intervals are made for that reading: mean \\\pm
+  c\\SE\\ with \\c = crit \times SED/(SE_1 + SE_2)\\ averaged over the
+  pairs, so that two means differ at the level (and adjustment) of the
+  result when their bars do not overlap; exactly so when the SEDs are
+  equal, and the subtitle says how many pairs are judged differently by
+  their own tests otherwise (columns `comparison.low` and
+  `comparison.high` of `means`; see
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
+  Half-LSD bars are the same idea with the average LSD (adjusted as the
+  p-values when `adj` has a critical value).
+
+- values:
+
+  For `type = "pvalue"`: print each p-value on its tile (the default is
+  `FALSE`).
 
 - digits:
 
@@ -96,9 +119,10 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> 18 pairwise comparisons within each level of Variety.
 #> SED: min 7.683, mean 7.683, max 7.683
-#> LSD (5%): min 15.47, mean 15.47, max 15.47
+#> LSD (5%, tukey): min 20.5, mean 20.5, max 20.5
 #> p-values: t tests, adjusted by 'tukey'.
 #> Means sharing a letter are not significantly different at the 5% level within each level of Variety.
+#> Comparison intervals: mean +/- 1.125 SE (72.3% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.
   ggplot2::autoplot(pm)
 
   ggplot2::autoplot(pm, interval = "lsd")

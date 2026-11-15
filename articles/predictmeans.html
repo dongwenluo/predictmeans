@@ -120,9 +120,10 @@ plots within six blocks, four nitrogen levels on subplots.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 18 pairwise comparisons within each level of Variety.</span></span>
 <span><span class="co">#&gt; SED: min 7.683, mean 7.683, max 7.683</span></span>
-<span><span class="co">#&gt; LSD (5%): min 15.47, mean 15.47, max 15.47</span></span>
+<span><span class="co">#&gt; LSD (5%, tukey): min 20.5, mean 20.5, max 20.5</span></span>
 <span><span class="co">#&gt; p-values: t tests, adjusted by 'tukey'.</span></span>
-<span><span class="co">#&gt; Means sharing a letter are not significantly different at the 5% level within each level of Variety.</span></span></code></pre></div>
+<span><span class="co">#&gt; Means sharing a letter are not significantly different at the 5% level within each level of Variety.</span></span>
+<span><span class="co">#&gt; Comparison intervals: mean +/- 1.125 SE (72.3% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.</span></span></code></pre></div>
 <p><code>atvar = "Variety"</code> compares the nitrogen levels within
 each variety, with Tukey adjustment within each variety.</p>
 </div>
@@ -134,20 +135,20 @@ each variety, with Tukey adjustment within each variety.</p>
 frames, so they are easy to filter, join or export.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">means</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   nitro     Variety  estimate std.error       df conf.low conf.high group n</span></span>
-<span><span class="co">#&gt; 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806   A   6</span></span>
-<span><span class="co">#&gt; 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472    A  6</span></span>
-<span><span class="co">#&gt; 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806    A  6</span></span>
-<span><span class="co">#&gt; 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806   AB  6</span></span>
-<span><span class="co">#&gt; 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806     B 6</span></span>
-<span><span class="co">#&gt; 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472    A  6</span></span>
-<span><span class="co">#&gt;   estimable</span></span>
-<span><span class="co">#&gt; 1      TRUE</span></span>
-<span><span class="co">#&gt; 2      TRUE</span></span>
-<span><span class="co">#&gt; 3      TRUE</span></span>
-<span><span class="co">#&gt; 4      TRUE</span></span>
-<span><span class="co">#&gt; 5      TRUE</span></span>
-<span><span class="co">#&gt; 6      TRUE</span></span>
+<span><span class="co">#&gt;   nitro     Variety  estimate std.error       df conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806</span></span>
+<span><span class="co">#&gt; 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472</span></span>
+<span><span class="co">#&gt; 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806</span></span>
+<span><span class="co">#&gt; 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806</span></span>
+<span><span class="co">#&gt; 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806</span></span>
+<span><span class="co">#&gt; 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472</span></span>
+<span><span class="co">#&gt;   comparison.low comparison.high group n estimable</span></span>
+<span><span class="co">#&gt; 1       69.75210        90.24790   A   6      TRUE</span></span>
+<span><span class="co">#&gt; 2       76.41877        96.91456    A  6      TRUE</span></span>
+<span><span class="co">#&gt; 3       61.25210        81.74790    A  6      TRUE</span></span>
+<span><span class="co">#&gt; 4       88.25210       108.74790   AB  6      TRUE</span></span>
+<span><span class="co">#&gt; 5       98.25210       118.74790     B 6      TRUE</span></span>
+<span><span class="co">#&gt; 6       79.41877        99.91456    A  6      TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          level1          level2          by   estimate std.error       df</span></span>
 <span><span class="co">#&gt; 1 0:Golden Rain    0:Marvellous        &lt;NA&gt;  -6.666667  9.715020 30.23080</span></span>
@@ -321,11 +322,16 @@ and <code><a href="../reference/residplot.html">residplot()</a></code>, in
 the same definitions as emmeans.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, weights <span class="op">=</span> <span class="st">"proportional"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
-<span><span class="co">#&gt;   nitro  estimate std.error       df  conf.low conf.high  n estimable</span></span>
-<span><span class="co">#&gt; 1     0  79.38889  7.174754 6.791824  62.31730  96.46047 18      TRUE</span></span>
-<span><span class="co">#&gt; 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047 18      TRUE</span></span>
-<span><span class="co">#&gt; 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381 18      TRUE</span></span>
-<span><span class="co">#&gt; 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047 18      TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;   nitro  estimate std.error       df  conf.low conf.high comparison.low</span></span>
+<span><span class="co">#&gt; 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186</span></span>
+<span><span class="co">#&gt; 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186</span></span>
+<span><span class="co">#&gt; 3   0.4 114.22222  7.174754 6.791824  97.15064 131.29381      109.75519</span></span>
+<span><span class="co">#&gt; 4   0.6 123.38889  7.174754 6.791824 106.31730 140.46047      118.92186</span></span>
+<span><span class="co">#&gt;   comparison.high  n estimable</span></span>
+<span><span class="co">#&gt; 1        83.85592 18      TRUE</span></span>
+<span><span class="co">#&gt; 2       103.35592 18      TRUE</span></span>
+<span><span class="co">#&gt; 3       118.68925 18      TRUE</span></span>
+<span><span class="co">#&gt; 4       127.85592 18      TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="custom-contrasts">Custom contrasts<a class="anchor" aria-label="anchor" href="#custom-contrasts"></a>
@@ -379,16 +385,16 @@ terms of a <code>gam</code>.</p>
 <span><span class="co">#&gt; 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398</span></span>
 <span><span class="co">#&gt; 3 Phenadoxone  0.603011  2.4185555 0.2045918 Inf  2.01756299  2.8195480</span></span>
 <span><span class="co">#&gt; 4   Pethidine  0.603011 -1.7574624 0.1693986 Inf -2.08947760 -1.4254471</span></span>
-<span><span class="co">#&gt;    response response.std.error response.conf.low response.conf.high group n</span></span>
-<span><span class="co">#&gt; 1 0.5433885         0.03034579         0.4835759          0.6019756  A    3</span></span>
-<span><span class="co">#&gt; 2 0.6378583         0.03166332         0.5738120          0.6973562   B   3</span></span>
-<span><span class="co">#&gt; 3 0.9182314         0.01536127         0.8826288          0.9437231    C  3</span></span>
-<span><span class="co">#&gt; 4 0.1471084         0.02125403         0.1101238          0.1938091     D 5</span></span>
-<span><span class="co">#&gt;   estimable</span></span>
-<span><span class="co">#&gt; 1      TRUE</span></span>
-<span><span class="co">#&gt; 2      TRUE</span></span>
-<span><span class="co">#&gt; 3      TRUE</span></span>
-<span><span class="co">#&gt; 4      TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;   comparison.low comparison.high  response response.std.error response.conf.low</span></span>
+<span><span class="co">#&gt; 1    -0.00369742       0.3516809 0.5433885         0.03034579         0.4835759</span></span>
+<span><span class="co">#&gt; 2     0.36693366       0.7652274 0.6378583         0.03166332         0.5738120</span></span>
+<span><span class="co">#&gt; 3     2.12131502       2.7157960 0.9182314         0.01536127         0.8826288</span></span>
+<span><span class="co">#&gt; 4    -2.00357261      -1.5113521 0.1471084         0.02125403         0.1101238</span></span>
+<span><span class="co">#&gt;   response.conf.high group n estimable</span></span>
+<span><span class="co">#&gt; 1          0.6019756  A    3      TRUE</span></span>
+<span><span class="co">#&gt; 2          0.6973562   B   3      TRUE</span></span>
+<span><span class="co">#&gt; 3          0.9437231    C  3      TRUE</span></span>
+<span><span class="co">#&gt; 4          0.1938091     D 5      TRUE</span></span></code></pre></div>
 <p>For a glm the means are also given on the response scale (here
 probabilities); see <code><a href="../articles/response-scale.html">vignette("response-scale")</a></code>.</p>
 </div>

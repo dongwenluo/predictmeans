@@ -280,6 +280,8 @@ print(predm_out[1:4])
     ## [1] 0.05
     ## attr(,"Degree of freedom")
     ## [1] 45
+    ## attr(,"Note")
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
 
 ``` r
 
@@ -391,6 +393,8 @@ print(predm_out[1:4])
     ## [1] 0.05
     ## attr(,"Degree of freedom")
     ## [1] 45
+    ## attr(,"Note")
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
 
 ``` r
 
@@ -534,7 +538,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  26.745   0.082  26.757
+    ##  27.181   0.082  27.188
 
 ``` r
 
@@ -909,6 +913,8 @@ print(predm_out[1:4])
     ## [1] 0.05
     ## attr(,"Degree of freedom")
     ## [1] 171
+    ## attr(,"Note")
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
 
 ``` r
 
@@ -1114,6 +1120,8 @@ print(predm_out[1:4])
     ## [1] 0.05
     ## attr(,"Degree of freedom")
     ## [1] 171
+    ## attr(,"Note")
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
 
 ``` r
 
@@ -1322,6 +1330,8 @@ print(predm_out[1:4])
     ## [1] 0.05
     ## attr(,"Degree of freedom")
     ## [1] 171
+    ## attr(,"Note")
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
 
 ``` r
 
@@ -1672,8 +1682,14 @@ Options in function ‘covariatemeans’:
   utilizing predicted means with 83.4% CIs. When the CIs of two
   predicted means overlap, the associated means are not significantly
   different at the 0.05 level; otherwise, they are considered
-  significant. The function **‘ci_mcp(LL, UL)’** is used to produce
-  indicating letters.
+  significant. This holds for independent means with equal standard
+  errors. When the means are correlated (blocks, repeated measures,
+  mixed models) or their standard errors differ, the level that makes
+  overlap agree with the test is different:
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  computes it from the model (`letterCI = TRUE`, or
+  `autoplot(pm, interval = "comparison")`). The function **‘ci_mcp(LL,
+  UL)’** is used to produce indicating letters.
 
 **DT_df** is a function for producing data table in html with ‘CSV’
 download button. To download the whole data, you need to select ‘All’

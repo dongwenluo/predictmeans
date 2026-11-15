@@ -64,7 +64,7 @@
 <li>glmmTMB and lmerTest in Imports (lmerTest only for <code><a href="reference/semireg.html">semireg()</a></code> fits; not attached since 2.0; its removal is reconsidered when <code><a href="reference/semireg.html">semireg()</a></code> is upgraded); car and pbkrtest in Suggests (own code in <code>R/anova.R</code>, <code>R/kr.R</code>, <code>R/satterthwaite.R</code>, <code>R/df-containment.R</code>).</li>
 <li>
 <code><a href="reference/predictmeans.html">predictmeans()</a></code> draws plots only when asked (<code>plot = FALSE</code> default since 2.0; <code>which.plots</code> etc. turn plotting on); <code>autoplot()</code> draws from results.</li>
-<li>Means over empty cells keep the 1.x rule: the average of the observed cells, with a warning (the maintainer’s decision of 2026-11-13, replacing an earlier “NA by default”). Combinations absent by design (nested factors) are not empty cells. Truly non-estimable means are NA.</li>
+<li>Means over empty cells keep the 1.x rule: the average of the observed cells, with a warning (the maintainer’s decision of 2026-11-13, replacing an earlier “NA by default”). Combinations absent by design (nested factors) are not empty cells. Truly non-estimable means are NA. Nesting must be said in the formula (<code>G/T</code>): nesting that is only in the data (<code>y ~ G + T</code>, or a factor confounded with another as in the spray trial) gives NA, with a note that says to write <code>G/T</code> or use <code>weights = "cells"</code> (decision of 2026-11-15). The cells are those of each interaction term of the model.</li>
 <li>
 <code>aov</code> models with <code>Error()</code> (aovlist) are analysed by strata, as Genstat: standard errors from the stratum mean squares, never by refitting as lmer. Missing values in an orthogonal design are estimated as Genstat’s ANOVA does (exact SEDs), with a message recommending REML (decision of 2026-11-14).</li>
 <li>emmeans (and SAS) are not the reference for nested treatment structures or missing combinations (the EOD tree-improvement examples): there predictmeans averages with equal weights over the combinations that exist (<code>tests/testthat/test-nested.R</code>), where emmeans weights by the nesting hierarchy or gives NA.</li>
@@ -77,7 +77,7 @@
 <div class="section level2">
 <h2 id="layout">Layout<a class="anchor" aria-label="anchor" href="#layout"></a></h2>
 <ul><li>
-<code>R/predictmeans.R</code> calls the stages in <code>R/predictmeans-stages.R</code>; the work is done by pure functions there (<code>pm_estimate_means()</code>, <code>pm_compare_*()</code>, <code>pm_make_plots()</code>, …). Only the setup stage edits the call’s state.</li>
+<code>R/predictmeans.R</code> calls the stages in <code>R/predictmeans-stages.R</code>, ordinary functions that each take the results of those before and return a named list: <code>opt &lt;- pm_setup()</code>, <code>est &lt;- pm_estimate(opt)</code>, <code>cmp &lt;- pm_compare(opt, est)</code>, <code>tab &lt;- pm_tables(opt, est, cmp)</code>; <code>pm_flat()</code> joins them for <code>pm_make_plots()</code> and <code>pm_assemble()</code>. Plot settings go through <code>plot_args</code> (<code>pm_plot_args()</code>).</li>
 <li>
 <code>R/Kmatrix.R</code> + <code>R/refgrid.R</code>: reference grid and K matrix.</li>
 <li>
@@ -89,12 +89,12 @@
 <ul><li>Tests: <code>NOT_CRAN=true Rscript -e 'devtools::test()'</code> (the 1.1.1 reference tests only run with NOT_CRAN). One file: <code>testthat::test_file(&lt;file&gt;, package = "predictmeans", load_package = "source")</code> (with <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all()</a></code> + <code>test_file()</code> tests can’t see unregistered internal methods). Mixed-model reference values are compared to 2% because lme4/nlme versions move them; everything else to 1e-6.</li>
 <li>Refactors must not change output: run <code>Rscript dev/snapshot-predictmeans.R &lt;lib&gt; before.rds</code> on the old build and <code>... after.rds</code> on the new one, then compare with <code>all.equal(readRDS("before.rds"), readRDS("after.rds"), tolerance = 0)</code>.</li>
 <li>Timings: <code>Rscript dev/benchmarks.R</code>. Pull requests are timed against their base branch in CI (<code>dev/benchmarks-ci.R</code>; fails when a key timing is over 1.5 times the base’s and at least 0.1 s longer).</li>
-<li>Run <code>R CMD check</code> once at the end of a piece of work, not after every edit.</li>
+<li>Run <code>R CMD check</code> once, just before opening a pull request (CI runs it on the PR as well); during the work run only the related tests.</li>
 <li>Add a NEWS entry and update the plan’s status table with each change.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="working-style-the-maintainer-asked-for">Working style the maintainer asked for<a class="anchor" aria-label="anchor" href="#working-style-the-maintainer-asked-for"></a></h2>
-<ul><li>One step per message; run only the tests related to the change, and R CMD check once at the end.</li>
+<ul><li>One step per message; run only the tests related to the change, and R CMD check once just before a pull request.</li>
 <li>Keep explanations short and plain.</li>
 </ul></div>
 </div>

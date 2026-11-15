@@ -36,7 +36,11 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   cells, with a warning (the maintainer’s decision of 2026-11-13,
   replacing an earlier “NA by default”). Combinations absent by design
   (nested factors) are not empty cells. Truly non-estimable means are
-  NA.
+  NA. Nesting must be said in the formula (`G/T`): nesting that is only
+  in the data (`y ~ G + T`, or a factor confounded with another as in
+  the spray trial) gives NA, with a note that says to write `G/T` or use
+  `weights = "cells"` (decision of 2026-11-15). The cells are those of
+  each interaction term of the model.
 - `aov` models with `Error()` (aovlist) are analysed by strata, as
   Genstat: standard errors from the stratum mean squares, never by
   refitting as lmer. Missing values in an orthogonal design are
@@ -62,10 +66,12 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
 
 ## Layout
 
-- `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`; the
-  work is done by pure functions there (`pm_estimate_means()`,
-  `pm_compare_*()`, `pm_make_plots()`, …). Only the setup stage edits
-  the call’s state.
+- `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`,
+  ordinary functions that each take the results of those before and
+  return a named list: `opt <- pm_setup()`, `est <- pm_estimate(opt)`,
+  `cmp <- pm_compare(opt, est)`, `tab <- pm_tables(opt, est, cmp)`;
+  `pm_flat()` joins them for `pm_make_plots()` and `pm_assemble()`. Plot
+  settings go through `plot_args` (`pm_plot_args()`).
 - `R/Kmatrix.R` + `R/refgrid.R`: reference grid and K matrix.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
 - Help pages: edit the roxygen2 block above each function (data sets in
@@ -90,12 +96,12 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
 - Timings: `Rscript dev/benchmarks.R`. Pull requests are timed against
   their base branch in CI (`dev/benchmarks-ci.R`; fails when a key
   timing is over 1.5 times the base’s and at least 0.1 s longer).
-- Run `R CMD check` once at the end of a piece of work, not after every
-  edit.
+- Run `R CMD check` once, just before opening a pull request (CI runs it
+  on the PR as well); during the work run only the related tests.
 - Add a NEWS entry and update the plan’s status table with each change.
 
 ## Working style the maintainer asked for
 
 - One step per message; run only the tests related to the change, and R
-  CMD check once at the end.
+  CMD check once just before a pull request.
 - Keep explanations short and plain.
