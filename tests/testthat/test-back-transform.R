@@ -199,5 +199,28 @@ test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmean
   pI <- suppressMessages(covariatemeans(mods[[3]], "A", covariate = "x", contr = c(1, 3), covariateV = xs, trans = I))
   expect_null(pI$pltdf$response.diff)
   expect_equal(ggplot2::layer_data(pI$plt, 3)$y, pI$pltdf$diff)
-  expect_error(covariatemeans(aov(y ~ A * x + Error(Blk), d), "A", covariate = "x"), "no covariates")
+})
+
+test_that("an aov model with Error() and a covariate: covariatemeans() by strata equals the mixed model", {
+  skip_on_cran()
+  # repeated measures over time, one baseline covariate per subject
+  set.seed(4)
+  my <- expand.grid(time = factor(1:4), subject = factor(1:24))
+  my$group <- factor(rep(c("ctl", "trt"), each = 48))
+  my$baseline <- rnorm(24, 10, 2)[my$subject]
+  my$y <- 5 + 0.6*my$baseline + (my$group == "trt")*as.numeric(my$time)*0.4 + rnorm(24)[my$subject] + rnorm(96, sd = 0.7)
+  ma <- aov(y ~ baseline + group * time + Error(subject / time), data = my)
+  ml <- lme4::lmer(y ~ baseline + group * time + (1 | subject), data = my)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- c(8, 10, 12)
+  f <- function(m, ...) suppressWarnings(suppressMessages(covariatemeans(m, "group", covariate = "baseline", covariateV = xs, ...)))$pltdf
+  a <- f(ma); l <- f(ml)
+  expect_equal(a[c("Mean", "ses", "LL", "UL")], l[c("Mean", "ses", "LL", "UL")], tolerance = 1e-4)
+  ac <- f(ma, contr = c(1, 2)); lc <- f(ml, contr = c(1, 2))
+  expect_equal(ac[c("diff", "ses", "Df", "LL", "UL")], lc[c("diff", "ses", "Df", "LL", "UL")], tolerance = 1e-4)
+  expect_equal(unique(round(ac$Df)), 21)                       # the subject stratum: 24 - 2 groups - 1 covariate
+  # predictmeans() at a chosen baseline
+  pa <- suppressMessages(predictmeans(ma, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
+  pl <- suppressMessages(predictmeans(ml, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
+  expect_equal(pa[c("estimate", "std.error")], pl[c("estimate", "std.error")], tolerance = 1e-4)
 })

@@ -99,11 +99,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
                             vcov_adjust=TRUE, contr=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
-  # an analysis of variance by strata has no covariates
-  if (inherits(model, "aovlist")) {
-    stop("covariatemeans() does not take an aov model with Error(): the analysis by strata has no covariates. ",
-         "Fit the model with lmer() or lme(), with the Error() terms as random effects.", call. = FALSE)
-  }
+  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate

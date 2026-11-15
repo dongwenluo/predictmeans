@@ -47,8 +47,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (`pairs()` and `regrid()`). In a simulation with a Poisson GLMM the delta
   band covered the true difference in 94% of data sets; the difference of
   the two lines' limits in 100% (far too wide).
-* `covariatemeans()` stops with a clear message for an `aov` model with
-  `Error()` (the analysis by strata has no covariates).
+* `covariatemeans()` takes `aov` models with `Error()` that have a covariate
+  (e.g. a baseline covariate per subject in repeated measures): analysed by
+  strata, equal to the mixed model in balanced data (it failed before).
 * **Fewer arguments in `predictmeans()`: `plot_args`.** The eleven plot
   settings (`plottitle`, `plotxlab`, `plotylab`, `plotord`, `lineplot`,
   `lsd_bar`, `responsen`, `jitterv`, `basesz`, `prtplt`, `newwd`) are one
