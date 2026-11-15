@@ -85,14 +85,19 @@ value for each covariate of the model, in their order. The default values are th
 \item{meandecr}{A logical variable to indicate whether to print letters for multiple comparisons by decreasing order of means in the mean_table. 
 The default is NULL which indicates the mean order follows the associated factor levels.}
 
-\item{letterCI}{A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table. 
-The default is FALSE. With \code{level = NULL} the CIs are 83.4\% CIs: for two uncorrelated means with equal SEs
-they fail to overlap when the means differ at about the 5\% level. Otherwise overlap only approximates the
-pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
-and more when their SEs differ (Maghsoodloo and Huang, 2010). With \code{letterCI = TRUE}, \code{level} sets the CIs
-(e.g. \code{level = 0.05} gives 95\% CIs), \code{adj} is "none", and with \code{atvar} the letters compare
-the means within each \code{atvar} group. The note under the mean table gives the CI level and the
-approximate test level.}
+\item{letterCI}{A logical variable to indicate printed letters for multiple comparisons by whether or not the
+comparison intervals of the means overlap (the default is FALSE). The comparison intervals are mean
+\eqn{\pm c\,SE} with \eqn{c = t \times SED/(SE_1 + SE_2)}, averaged over the pairs compared, so that two means
+differ at \code{level} when their intervals do not overlap: 83.4\% intervals for independent means with equal
+SEs and a 5\% test, wider when the SEs differ, narrower when the means are correlated as in most mixed
+models (Goldstein and Healy, 1995; Maghsoodloo and Huang, 2010; Afshartous and Preston, 2010). They are shown
+as LL and UL in \code{mean_table}, labelled with their level, and the note under the table says how many
+pairs are judged differently by their own tests when the SEDs differ. \code{level} is the significance level
+of the comparisons (default 0.05), \code{adj} is "none", and with \code{atvar} the letters compare the means
+within each \code{atvar} group. (Before 2.0 the intervals were 83.4\% confidence intervals whatever the
+design, and \code{level} set their level, 0.166 by default.) The comparison intervals are in every result:
+columns \code{comparison.low} and \code{comparison.high} of \code{means}, and
+\code{autoplot(interval = "comparison")}.}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
 
@@ -273,7 +278,10 @@ stay on the link scale.}
  \item{predictmeansBarPlot}{gg bar plot of predicted means.}
  \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
  \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
- columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high}; when the means are
+ columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} (confidence limits
+ of each mean, not for comparing means), \code{comparison.low} and \code{comparison.high} (comparison
+ intervals: two means differ at \code{level}, with the adjustment of \code{adj} when it has a critical value,
+ when these do not overlap; see \code{letterCI}; present when the pairs are tabulated); when the means are
  back-transformed also \code{response}, \code{response.std.error} (delta method, as \pkg{emmeans} with
  \code{type = "response"}), \code{response.conf.low} and \code{response.conf.high}; \code{group}
  (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
@@ -297,7 +305,9 @@ stay on the link scale.}
  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), \code{singular} (a
  singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
- package version.}
+ package version; \code{comparison}, the comparison intervals: the multiplier \code{mult} of the SE, its
+ confidence level, the number of pairs and how many of them are judged differently by their own tests
+ (\code{disagree}; 0 and \code{exact = TRUE} when all SEDs are equal).}
  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
  the \code{means}, \code{pairs} and \code{settings} slots are not printed.
 }
@@ -355,6 +365,15 @@ Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 	Maghsoodloo, S. and Huang, C.-Y. (2010), \emph{Comparing the overlapping of two independent confidence intervals
 	with a single confidence interval for two normal population parameters}, Journal of Statistical Planning and
 	Inference, 140(11), 3295-3305.
+
+	Goldstein, H. and Healy, M. J. R. (1995), \emph{The graphical presentation of a collection of means}, Journal
+	of the Royal Statistical Society A, 158(1), 175-177.
+
+	Austin, P. C. and Hux, J. E. (2002), \emph{A brief note on overlapping confidence intervals}, Journal of
+	Vascular Surgery, 36(1), 194-195.
+
+	Afshartous, D. and Preston, R. A. (2010), \emph{Confidence intervals for dependent data: equating non-overlap
+	with statistical significance}, Computational Statistics and Data Analysis, 54(10), 2296-2305.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

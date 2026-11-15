@@ -26,7 +26,11 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 
 \item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.}
 
-\item{level}{A significant level for calculating confident interval. The default value is 0.05.}
+\item{level}{A significant level for calculating confident interval. The default value is 0.05. The limits
+are for each line on its own: whether the bands of two groups overlap is not a test of their difference
+(the lines are estimated from the same model and are correlated; see \code{letterCI} in
+\code{\link{predictmeans}}). Compare groups at chosen covariate values with \code{\link{predictmeans}}
+(\code{covariate = }) or their slopes with \code{\link{pm_slopes}}.}
 
 \item{Df}{A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.}
 

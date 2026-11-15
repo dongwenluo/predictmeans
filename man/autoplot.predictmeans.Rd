@@ -7,7 +7,7 @@
 \title{Plots and Summary of Predicted Means}
 \usage{
 \method{autoplot}{predictmeans}(object, type = c("means", "pvalue", "response"),
-         interval = c("ci", "lsd", "none"), values = FALSE, ...)
+         interval = c("ci", "comparison", "lsd", "none"), values = FALSE, ...)
 
 \method{summary}{predictmeans}(object, digits = 4, ...)
 
@@ -22,8 +22,15 @@ comparisons within each of its levels are blocks down the diagonal); \code{"resp
 means. \code{"pvalue"} needs the \code{pairs} table (with more than 100 means: \code{pairwise = TRUE} in
 \code{predictmeans()}).}
 
-\item{interval}{Bars around the means: confidence limits (\code{"ci"}, the default), half the average LSD
-(\code{"lsd"}; means whose bars do not overlap differ significantly when the LSDs are equal), or none.}
+\item{interval}{Bars around the means: confidence limits (\code{"ci"}, the default); comparison intervals
+(\code{"comparison"}); half the average LSD (\code{"lsd"}); or none. Confidence limits are for each mean and
+must not be read as tests: two means can differ significantly while their 95\% limits overlap, and with
+correlated means (blocks, mixed models) by a wide margin. Comparison intervals are made for that reading: mean
+\eqn{\pm c\,SE} with \eqn{c = crit \times SED/(SE_1 + SE_2)} averaged over the pairs, so that two means differ
+at the level (and adjustment) of the result when their bars do not overlap; exactly so when the SEDs are
+equal, and the subtitle says how many pairs are judged differently by their own tests otherwise (columns
+\code{comparison.low} and \code{comparison.high} of \code{means}; see \code{\link{predictmeans}}). Half-LSD
+bars are the same idea with the average LSD (adjusted as the p-values when \code{adj} has a critical value).}
 
 \item{values}{For \code{type = "pvalue"}: print each p-value on its tile (the default is \code{FALSE}).}
 

@@ -46,6 +46,12 @@ pm_tidy_parts <- function(e) {
   means$df <- df
   means$conf.low <- est - crit*se
   means$conf.high <- est + crit*se
+  # comparison intervals (R/comparison.R): overlap answers the pairwise tests
+  cmp <- g("cmp_int")
+  if (!is.null(cmp)) {
+    means$comparison.low <- est - cmp$mult*se
+    means$comparison.high <- est + cmp$mult*se
+  }
 
   back <- function(x) {
     if (identical(trans, stats::make.link("log")$linkinv) || identical(trans, exp)) {
@@ -191,6 +197,7 @@ pm_tidy_parts <- function(e) {
     vcov_adjust = isTRUE(g("vcov_adjust")),
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),
+    comparison = cmp,
     bias_adjust = ba_sigma,
     singular = pm_singular(model),
     average = avg,

@@ -20,7 +20,9 @@ test_that("the SED and LSD summaries without a pair table equal those from the p
     expect_false(is.null(full$pairs))
     for (part in c("Predicted Means", "Standard Error of Means", "Standard Error of Differences", "LSD", "mean_table"))
       expect_equal(short[[part]], full[[part]], tolerance = 1e-8, info = paste(nm, term, part))
-    expect_equal(short$means, full$means, tolerance = 1e-8, info = paste(nm, term))
+    # (comparison intervals need the pairs)
+    expect_equal(short$means, full$means[setdiff(names(full$means), c("comparison.low", "comparison.high"))],
+                 tolerance = 1e-8, info = paste(nm, term))
   }
 })
 

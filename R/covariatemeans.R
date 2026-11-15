@@ -17,7 +17,11 @@
 #' @param as.is A logic value to specify wheather or not using original covariate values' rage for graph, the default is FALSE.
 #' @param covariateV A numeric vector when as.is is FALSE, then covariatemeans will produce the result for \code{covariate} at value of \code{covariateV}.
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.
-#' @param level A significant level for calculating confident interval. The default value is 0.05.
+#' @param level A significant level for calculating confident interval. The default value is 0.05. The limits
+#'   are for each line on its own: whether the bands of two groups overlap is not a test of their difference
+#'   (the lines are estimated from the same model and are correlated; see \code{letterCI} in
+#'   \code{\link{predictmeans}}). Compare groups at chosen covariate values with \code{\link{predictmeans}}
+#'   (\code{covariate = }) or their slopes with \code{\link{pm_slopes}}.
 #' @param Df A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.
 #' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
 #' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.

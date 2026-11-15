@@ -35,6 +35,31 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Comparison intervals: overlap that answers the tests.** Confidence
+  limits of means are not for comparing means: with random blocks (oats) two
+  means with p < 0.001 have overlapping 95% limits, and the limits that just
+  touch at p = 0.05 are 49% limits, not the 83.4% of the rule for
+  independent means. Every result now has comparison intervals, mean +- c SE
+  with c = crit x SED/(SE1 + SE2) averaged over the pairs compared (all
+  pairs, or those within a level of `atvar`; crit is t, or the critical
+  value of `adj` when it has one): two means differ at `level` when their
+  intervals do not overlap. This is exact when the SEDs are equal (balanced
+  designs); otherwise the number of pairs judged differently by their own
+  tests is reported. For independent means with equal SEs c is t/sqrt(2)
+  (83.4% for a 5% test), with SE ratio K it is t sqrt(1 + K^2)/(1 + K), as
+  in Maghsoodloo and Huang (2010). They are in `means` (`comparison.low`,
+  `comparison.high`), `settings$comparison`, `summary()` and
+  `autoplot(interval = "comparison")`.
+* **`letterCI = TRUE` reads its letters from the comparison intervals**,
+  which the mean table shows as LL and UL with their level, and `level` is
+  the significance level of the comparisons (default 0.05), as everywhere
+  else. Before, the intervals were 83.4% confidence intervals whatever the
+  design (`level` set their level, 0.166 by default), which finds too few
+  differences when the means are correlated. A script with `letterCI = TRUE,
+  level = 0.166` now compares at the 16.6% level: drop `level`.
+* `autoplot(interval = "lsd")` and the LSD line of `summary()` use the LSDs
+  that go with the adjusted p-values.
+
 * **The printed LSDs go with the adjusted p-values.** `predictmeans()` printed
   the unadjusted LSD (t x SED) with every adjustment except Bonferroni, so
   with `adj = "tukey"` a difference could be larger than the LSD and have an

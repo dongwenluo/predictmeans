@@ -13,7 +13,7 @@
 #' (e.g. \code{renderPlot(autoplot(pm))}) or made interactive with \code{plotly::ggplotly()}.
 #' @usage
 #' \method{autoplot}{predictmeans}(object, type = c("means", "pvalue", "response"),
-#'          interval = c("ci", "lsd", "none"), values = FALSE, ...)
+#'          interval = c("ci", "comparison", "lsd", "none"), values = FALSE, ...)
 #'
 #' \method{summary}{predictmeans}(object, digits = 4, ...)
 #'
@@ -24,8 +24,15 @@
 #'   comparisons within each of its levels are blocks down the diagonal); \code{"response"} the back-transformed
 #'   means. \code{"pvalue"} needs the \code{pairs} table (with more than 100 means: \code{pairwise = TRUE} in
 #'   \code{predictmeans()}).
-#' @param interval Bars around the means: confidence limits (\code{"ci"}, the default), half the average LSD
-#'   (\code{"lsd"}; means whose bars do not overlap differ significantly when the LSDs are equal), or none.
+#' @param interval Bars around the means: confidence limits (\code{"ci"}, the default); comparison intervals
+#'   (\code{"comparison"}); half the average LSD (\code{"lsd"}); or none. Confidence limits are for each mean and
+#'   must not be read as tests: two means can differ significantly while their 95\% limits overlap, and with
+#'   correlated means (blocks, mixed models) by a wide margin. Comparison intervals are made for that reading: mean
+#'   \eqn{\pm c\,SE} with \eqn{c = crit \times SED/(SE_1 + SE_2)} averaged over the pairs, so that two means differ
+#'   at the level (and adjustment) of the result when their bars do not overlap; exactly so when the SEDs are
+#'   equal, and the subtitle says how many pairs are judged differently by their own tests otherwise (columns
+#'   \code{comparison.low} and \code{comparison.high} of \code{means}; see \code{\link{predictmeans}}). Half-LSD
+#'   bars are the same idea with the average LSD (adjusted as the p-values when \code{adj} has a critical value).
 #' @param values For \code{type = "pvalue"}: print each p-value on its tile (the default is \code{FALSE}).
 #' @param digits Number of significant digits printed (plus two).
 #' @param x A result of \code{summary()}.
@@ -50,7 +57,7 @@
 NULL
 
 autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"),
-                                  interval = c("ci", "lsd", "none"), values = FALSE, ...) {
+                                  interval = c("ci", "comparison", "lsd", "none"), values = FALSE, ...) {
   type <- match.arg(type)
   interval <- match.arg(interval)
   means <- object$means
@@ -67,7 +74,7 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
     means$lo <- means$response.conf.low
     means$hi <- means$response.conf.high
     ylab <- "Back-transformed mean"
-    if (interval == "lsd") interval <- "ci"
+    if (interval %in% c("lsd", "comparison")) interval <- "ci"
   } else {
     means$y <- means$estimate
     means$lo <- means$conf.low
@@ -80,11 +87,26 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
       means$lo <- means$y - half
       means$hi <- means$y + half
     }
+    if (interval == "comparison") {
+      if (is.null(means$comparison.low)) {
+        stop("There are no comparison intervals: they need the pairs (one mean, or more than 100 means without ",
+             "pairwise = TRUE, or permutation tests without limits).", call. = FALSE)
+      }
+      means$lo <- means$comparison.low
+      means$hi <- means$comparison.high
+    }
   }
+  cmp <- object$settings$comparison
   ci_label <- switch(interval,
                      ci = paste0(" with ", (1 - level) * 100, "% confidence limits"),
                      lsd = paste0(" with half-LSD (", level * 100, "%) bars"),
+                     comparison = " with comparison intervals",
                      none = "")
+  subtitle <- if (interval == "comparison") {
+    paste(strwrap(paste0("Means differ at the ", level * 100, "% level",
+                         if (isTRUE(cmp$adjusted)) paste0(" (", cmp$adjust, ")"),
+                         " when their bars do not overlap", pm_comparison_caveat(cmp)), 90), collapse = "\n")
+  }
 
   x <- vars[1]
   grp <- if (length(vars) >= 2) vars[2] else NULL
@@ -103,7 +125,7 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
   if (length(vars) >= 3) {
     p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", paste(sprintf("`%s`", vars[-(1:2)]), collapse = "+"))))
   }
-  p + ggplot2::labs(x = x, y = ylab,
+  p + ggplot2::labs(x = x, y = ylab, subtitle = subtitle,
                     title = paste0("Predicted means for '", object$settings$modelterm, "'", ci_label)) +
     ggplot2::theme_bw()
 }
@@ -118,7 +140,9 @@ pm_average_lsd <- function(object, means, vars) {
     return(rep(if (is.numeric(lsd) && "Aveg.LSD" %in% names(lsd)) unname(lsd["Aveg.LSD"]) else NA_real_, nrow(means)))
   }
   if (!is.null(pairs$by)) pairs <- pairs[!is.na(pairs$by), , drop = FALSE]
-  rep(mean(pairs$lsd, na.rm = TRUE), nrow(means))
+  # the LSDs that go with the p-values: adjusted when 'adj' has a critical value
+  lsd <- if (!is.null(pairs$adj.conf.high)) (pairs$adj.conf.high - pairs$adj.conf.low)/2 else pairs$lsd
+  rep(mean(lsd, na.rm = TRUE), nrow(means))
 }
 
 ## Level plot of the adjusted pairwise p-values: the plot of PMplot()
@@ -157,7 +181,7 @@ summary.predictmeans <- function(object, digits = 4, ...) {
   s <- object$settings
   means <- object$means
   vars <- unlist(strsplit(s$modelterm, ":"))
-  show <- c(setdiff(names(means), c("std.error", "df", "conf.low", "conf.high", "estimate", "response",
+  show <- c(setdiff(names(means), c("std.error", "df", "conf.low", "conf.high", "comparison.low", "comparison.high", "estimate", "response",
                                     "response.conf.low", "response.conf.high", "group", "n", "estimable")),
             "estimate", "std.error", "df", "conf.low", "conf.high",
             intersect(c("response", "response.conf.low", "response.conf.high", "group"), names(means)))
@@ -198,12 +222,23 @@ print.summary.predictmeans <- function(x, ...) {
     within <- if (!is.null(s$atvar)) paste0(" within each level of ", paste(s$atvar, collapse = " and ")) else ""
     cat(nrow(p), " pairwise comparisons", within, ".\n", sep = "")
     cat("SED: min ", fmt(min(p$std.error)), ", mean ", fmt(mean(p$std.error)), ", max ", fmt(max(p$std.error)), "\n", sep = "")
-    cat("LSD (", s$level * 100, "%): min ", fmt(min(p$lsd)), ", mean ", fmt(mean(p$lsd)), ", max ", fmt(max(p$lsd)), "\n", sep = "")
+    # the LSDs that go with the p-values: adjusted when 'adj' has a critical value
+    adj_lsd <- !is.null(p$adj.conf.high)
+    lsd <- if (adj_lsd) (p$adj.conf.high - p$adj.conf.low)/2 else p$lsd
+    cat("LSD (", s$level * 100, "%", if (adj_lsd) paste0(", ", s$adjust), "): min ", fmt(min(lsd, na.rm = TRUE)), ", mean ",
+        fmt(mean(lsd, na.rm = TRUE)), ", max ", fmt(max(lsd, na.rm = TRUE)), "\n", sep = "")
     method <- if (identical(s$df_method, "permutation")) paste0("permutation (", s$nperm, " permutations)") else "t tests"
     cat("p-values: ", method, ", adjusted by '", s$adjust, "'.\n", sep = "")
     if ("group" %in% names(x$table)) {
       cat("Means sharing a letter are not significantly different at the ", s$level * 100, "% level",
           within, ".\n", sep = "")
+    }
+    cmp <- s$comparison
+    if (!is.null(cmp)) {
+      cat("Comparison intervals: mean +/- ", fmt(cmp$mult), " SE (", round(100 * cmp$conf.level, 1),
+          "% intervals); means differ at the ", s$level * 100, "% level when these do not overlap",
+          pm_comparison_caveat(cmp), ". The ", (1 - s$level) * 100, "% confidence limits are not for comparing means.\n",
+          sep = "")
     }
   }
   if (!is.null(s$covariates)) {

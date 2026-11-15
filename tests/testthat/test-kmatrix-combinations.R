@@ -122,7 +122,7 @@ test_that("nesting the formula does not say (confounded factors) stays not estim
   pg <- suppressMessages(predictmeans(lm(y ~ G/T, dn), "G", prtnum = FALSE))
   expect_equal(pg$means$estimate, c(cell[["c"]], mean(cell[c("t1", "t2", "t3")])), tolerance = 1e-10)
   # not declared (G + T): G and T cannot be told apart; NA, and a note says how to get the means
-  expect_message(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE), "A formula with G/T, or weights = \"cells\"")
+  expect_message(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE), "write G/T in the model formula \\(or use weights = \"cells\"\\)")
   expect_true(all(is.na(pa$means$estimate)))
   pc <- suppressMessages(predictmeans(lm(y ~ G + T, dn), "T", weights = "cells", prtnum = FALSE))
   expect_equal(pc$means$estimate, as.vector(cell), tolerance = 1e-10)

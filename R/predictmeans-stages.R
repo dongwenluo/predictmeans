@@ -136,15 +136,11 @@ pm_code_setup <- quote({
     pairwise <- TRUE
   }
 
+  # letters by overlap of the comparison intervals (R/comparison.R); 'level'
+  # is the significance level of the comparisons, as everywhere
   if (letterCI) {
     pairwise <- TRUE
     adj <- "none"
-
-    if (is.null(level)){
-      slevel <- level <- 0.166
-    }else{
-      slevel <- level
-    }
   }
 
   if (is.null(level)){
@@ -305,6 +301,7 @@ pm_code_compare <- quote({
   nK <- nrow(K)          # To setup various matrix and row, col names
   rnK <- rownames(K)
 
+  cmp_int <- NULL        # comparison intervals (R/comparison.R)
   if (nK == 1) {
     SED.out <- NA
     LSD <- NA
@@ -349,6 +346,7 @@ pm_code_compare <- quote({
     lsd <- if (perm) list(crit = NA_real_, note = NULL) else
       pm_lsd_crit(adj, level, Df, if (tab_pairs) attr(pair_tab, "families"), if (tab_pairs) pair_cor)
     LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd$crit, Df, slevel, ndecimal, perm, lsd$note)
+    if (tab_pairs) cmp_int <- pm_comparison_intervals(pair_tab, mt$ses, if (perm) NULL else mt$Df, level, adj)
     if (pairwise) {
       p_valueMatrix <- NULL
       if (no_atvar) {
@@ -767,8 +765,9 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pai
 ## Mean table with confidence limits.
 pm_stage_mean_table <- function(st) eval(pm_code_mean_table, st)
 pm_code_mean_table <- quote({
+  # with letterCI the table's limits are the comparison intervals the letters are read from
   mt_res <- pm_mean_table(mt, vars, perm = pm_perm_given(permlist),
-                          slevel = slevel, ndecimal = ndecimal)
+                          slevel = slevel, ndecimal = ndecimal, cmp = if (letterCI) cmp_int)
   meanTable <- mt_res$table
   ci_level <- mt_res$ci_level     # level of the table's limits (0.05 with a permlist: +- 2 SE)
 })
@@ -776,10 +775,17 @@ pm_code_mean_table <- quote({
 ## Mean table with confidence limits (pure function).
 ## mt: data frame with columns pm, ses, Df and the factors 'vars'.
 ## With permutation p-values there are no df: limits are mean +/- 2 SE, at
-## about the 0.05 level. Returns list(table, ci_level: the level of the limits).
-pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
+## about the 0.05 level. 'cmp' (pm_comparison_intervals()): the limits are the
+## comparison intervals, mean +/- cmp$mult SE, instead.
+## Returns list(table, ci_level: the level of the limits).
+pm_mean_table <- function(mt, vars, perm, slevel, ndecimal, cmp = NULL) {
   meanTable <- mt
-  if (!perm) {
+  if (!is.null(cmp)) {
+    meanTable$LL <- meanTable$pm - cmp$mult * meanTable$ses
+    meanTable$UL <- meanTable$pm + cmp$mult * meanTable$ses
+    slevel <- round(1 - cmp$conf.level, 3)           # (local: the label of these limits)
+    if (perm) meanTable$Df <- NA
+  } else if (!perm) {
     meanTable$LL <- meanTable$pm - qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
     meanTable$UL <- meanTable$pm + qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
   } else {
@@ -804,24 +810,27 @@ pm_code_backtransform <- quote({
     Mean <- Trt <- ciPlot <- NULL
     perm <- pm_perm_given(permlist)
     bkmt <- pm_back_transform(bkmt, trans, transOff, perm = perm, slevel = slevel,
-                              ndecimal = ndecimal, count = count)
+                              ndecimal = ndecimal, count = count, cmp = if (letterCI) cmp_int)
     nc <- ncol(bkmt)   # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
     meanTable <- pm_final_mean_table(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level)
+                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level, cmp_int)
   }
 })
 
 ## Means and confidence limits on the response scale (pure function).
 ## bkmt has columns pm, ses, Df (absent with permutation p-values) and the
 ## factors; returns the factors with Mean, LL and UL.
-pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count) {
+pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count, cmp = NULL) {
   bkmt$Mean <- trans(bkmt$pm)-transOff
 
   if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)){
     bkmt$Mean <- exp(bkmt$pm)-transOff
   }
 
-  if (!perm) {
+  if (!is.null(cmp)) {                       # comparison intervals (letterCI)
+    bkmt$LL <- trans(bkmt$pm - cmp$mult * bkmt$ses)-transOff
+    bkmt$UL <- trans(bkmt$pm + cmp$mult * bkmt$ses)-transOff
+  } else if (!perm) {
     bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
     bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
   } else {
@@ -849,7 +858,8 @@ pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, cou
 ## to exist) in the branches that need them. Letters at the user's level
 ## 'slevel'; the back-transformed limits are labelled with 'ci_level'.
 pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level = slevel) {
+                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level = slevel,
+                                cmp = NULL) {
   no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
   if (!no_atvar) {
     all_var_names <- colnames(meanTable)
@@ -876,7 +886,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
         meanTable$LetterGrp <- unname(pm_letter_groups(t.p.valuemGrp, rep(TRUE, nrow(t.p.valuemGrp)), slevel))
       }
 
-      meanTable <- list(Table=meanTable, Note=pm_letter_note(letterCI, slevel))
+      meanTable <- list(Table=meanTable, Note=pm_letter_note(letterCI, slevel, cmp))
     } else {
       if (letterCI) {
         # CI overlap within each 'atvar' group
@@ -890,7 +900,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
                       do.call("paste", c(lapply(meanTable[resvar], as.character), sep=" : ")), sep="\r")
         meanTable$LetterGrp <- unname(lets[mkey])
       }
-      meanTable <- list(Table=meanTable, Note=paste(pm_letter_note(letterCI, slevel), " at each level of ", paste(atvar, collapse = ":"), sep=""))
+      meanTable <- list(Table=meanTable, Note=paste(pm_letter_note(letterCI, slevel, cmp), " at each level of ", paste(atvar, collapse = ":"), sep=""))
     }
   }
   meanTable
@@ -908,15 +918,17 @@ pm_ci_letters <- function(tab) {
   out
 }
 
-## Note under the mean table saying how the letters were made. With letterCI,
-## 'slevel' sets the CI level; non-overlap of two such CIs is a test at about
-## 2(1 - pnorm(sqrt(2) z)) for two uncorrelated means with equal SEs, where
-## z = qnorm(1 - slevel/2) (83.4% CIs: about 0.05).
-pm_letter_note <- function(letterCI, slevel) {
+## Note under the mean table saying how the letters were made. With letterCI
+## they are read from the overlap of the comparison intervals 'cmp'
+## (R/comparison.R), which the table shows as LL and UL.
+pm_letter_note <- function(letterCI, slevel, cmp = NULL) {
   if (!letterCI) return(paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
-  alpha <- 2*(1 - stats::pnorm(sqrt(2)*stats::qnorm(1 - slevel/2)))
-  paste("Letter-based representation of pairwise comparisons by overlap of the ", (1 - slevel)*100,
-        "% CIs (about significant level '", signif(alpha, 2), "' for two uncorrelated means with equal SEs)", sep="")
+  if (is.null(cmp)) {
+    return(paste("Letter-based representation of pairwise comparisons by overlap of the confidence limits", sep=""))
+  }
+  paste0("Letter-based representation of pairwise comparisons by overlap of the comparison intervals (LL, UL: mean +/- ",
+         signif(cmp$mult, 4), " SE, ", round(100*cmp$conf.level, 1), "% intervals): two means differ at significant level '",
+         slevel, "' when their intervals do not overlap", pm_comparison_caveat(cmp))
 }
 
 ## All graphics: p-value plots, mean and bar plots, back-transformed plot.

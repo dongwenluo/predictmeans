@@ -480,8 +480,8 @@ pm_note_nesting <- function(undeclared, facs, weights) {
     if (!any(c(p$a, p$b) %in% facs) || paste(p$b, p$a) %in% said) next     # (aliased factors: both directions)
     said <- c(said, paste(p$a, p$b))
     message("In the data '", p$b, "' is nested in '", p$a, "' (each level of ", p$b, " occurs with one level of ",
-            p$a, "), and the model has them as separate effects, which cannot be told apart. A formula with ",
-            p$a, "/", p$b, ", or weights = \"cells\", gives the means of the combinations that exist.")
+            p$a, "), and the model has them as separate effects, which cannot be told apart. To get the means, ",
+            "write ", p$a, "/", p$b, " in the model formula (or use weights = \"cells\").")
   }
   invisible(NULL)
 }

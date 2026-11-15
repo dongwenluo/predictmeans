@@ -59,7 +59,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 |---|---|
 | factor (and covariate) columns | the level of each variable of `modelterm` |
 | `estimate`, `std.error`, `df` | mean on the model (link) scale, SE, denominator df |
-| `conf.low`, `conf.high` | confidence limits at `1 - level` |
+| `conf.low`, `conf.high` | confidence limits at `1 - level` (of each mean; not for comparing means) |
+| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap |
 | `response`, `response.std.error`, `response.conf.low`, `response.conf.high` | only when the means are back-transformed (non-identity link or `trans`); SE by the delta method |
 | `group` | letters (only with pairwise comparisons); means sharing a letter do not differ |
 | `n` | number of observations in the cell |
@@ -86,7 +87,8 @@ comparison asked for: then only the SED and LSD summaries are computed, fast for
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
-`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `bias_adjust` (the SD
+`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `comparison` (the comparison intervals: `mult`, `conf.level`, `pairs`,
+`disagree`, `exact`; NULL without pairs), `bias_adjust` (the SD
 used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `singular` (TRUE when
 the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`,
 `model_class`, `version`.
@@ -171,8 +173,13 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
 - `pm_check(model)`: a table of model checks (outliers, normality, equal variances, overdispersion,
   interactions, straight line for numeric-level factors); `residplot(model)`: ggplot2 diagnostic plots
   (`interactive = TRUE`: plotly); see `vignette("checking")`.
-- `letterCI = TRUE`: letters from overlap of the confidence intervals; `level` then sets
-  the CIs (default 0.166, i.e. 83.4% CIs, about a 0.05-level test).
+- Comparison intervals (`means$comparison.low/high`, `settings$comparison`,
+  `autoplot(pm, interval = "comparison")`): mean +/- c SE with c = crit x SED/(SE1 + SE2)
+  averaged over the pairs, so two means differ at `level` when their intervals do not
+  overlap (83.4% intervals for independent means with equal SEs; narrower for correlated
+  means). Confidence limits of means are not for comparing means.
+- `letterCI = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
+  in `mean_table`; `level` is the significance level (default 0.05).
 - `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use
   `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down
