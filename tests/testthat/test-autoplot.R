@@ -16,7 +16,8 @@ test_that("autoplot() draws the means from the means table", {
   pl <- ggplot2::autoplot(pm, interval = "lsd")
   bl <- ggplot2::layer_data(pl, 3)
   within <- pm$pairs[!is.na(pm$pairs$by), ]
-  expect_equal(unique(round(bl$ymax - bl$ymin, 8)), round(mean(within$lsd), 8))
+  # the LSDs that go with the (Tukey) p-values
+  expect_equal(unique(round(bl$ymax - bl$ymin, 8)), round(mean((within$adj.conf.high - within$adj.conf.low)/2), 8))
   expect_length(ggplot2::autoplot(pm, interval = "none")$layers, 2)
 })
 
@@ -28,7 +29,9 @@ test_that("autoplot(type = 'pvalue') shows one tile per comparison", {
   pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "BH", plot = FALSE, prtnum = FALSE)
   pp <- ggplot2::autoplot(pa, type = "pvalue")
   expect_equal(nrow(ggplot2::layer_data(pp, 1)), 3 * 6)
-  expect_s3_class(pp$facet, "FacetWrap")
+  # the comparisons within each level of 'atvar' are blocks down the diagonal of one square plot
+  expect_equal(pp$coordinates$ratio, 1)
+  expect_length(pp$layers, 3)                       # tiles and the lines between the blocks
 })
 
 test_that("autoplot(type = 'response') uses the back-transformed means", {
@@ -49,7 +52,8 @@ test_that("summary() describes the result", {
   expect_true(any(grepl("Predicted means for 'nitro:Variety'.*Kenward-Roger", out)))
   expect_true(any(grepl("18 pairwise comparisons within each level of Variety", out)))
   expect_true(any(grepl("^SED: min", out)))
-  expect_true(any(grepl("^LSD \\(5%\\): min", out)))
+  expect_true(any(grepl("^LSD \\(5%, tukey\\): min", out)))
+  expect_true(any(grepl("^Comparison intervals: mean \\+/- ", out)))
   expect_true(any(grepl("adjusted by 'tukey'", out)))
   expect_true(any(grepl("Means sharing a letter", out)))
   perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))

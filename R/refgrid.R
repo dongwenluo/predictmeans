@@ -61,49 +61,28 @@ pm_model_info <- function(model, data = NULL, exclude = NULL) {
     model <- model$semer
   }
 
-  builder <- "mm"
-  if (inherits(model, "gam")) {
-    if (!requireNamespace("mgcv", quietly = TRUE)) {
-      stop("Package 'mgcv' is needed for 'gam' models.")
-    }
-    builder <- "gam"
-    thecall <- model$call
-    contrasts <- NULL
-    coef_names <- names(coef(model))
-  } else if (inherits(model, "mer") || inherits(model, "merMod")) {
-    if (!lme4::isLMM(model) && !lme4::isGLMM(model)) {
-      stop("Can't handle a nonlinear mixed model")
-    }
-    thecall <- slot(model, "call")
-    mm <- model.matrix(model)
-    contrasts <- attr(mm, "contrasts")
-    coef_names <- colnames(mm)
-  } else if (inherits(model, "lme") || inherits(model, "gls")) {
-    thecall <- model$call
-    contrasts <- model$contrasts
-    coef_names <- colnames(model.matrix(model))
-  } else if (inherits(model, "lm") || inherits(model, "glmmTMB")) {
-    thecall <- model$call
-    mm <- model.matrix(model)
-    contrasts <- attr(mm, "contrasts")
-    coef_names <- colnames(mm)
-  } else {
-    # Any other model class, through the adapter generics (see ?pm_coef).
-    builder <- "custom"
-    coef_try <- tryCatch(pm_coef(model), error = function(e) NULL)
-    if (!is.numeric(coef_try) || is.null(names(coef_try))) {
-      stop("Can't handle a model of class ", sQuote(class(model)[1]),
-           ": it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).",
-           call. = FALSE)
-    }
-    thecall <- tryCatch(stats::getCall(model), error = function(e) NULL)
-    contrasts <- pm_contrasts(model)
-    coef_names <- names(coef_try)
+  # The model's facts come through the adapter generics (R/adapter.R):
+  # coefficients, contrasts and the call. Only mgcv models build their basis
+  # differently (the linear predictor matrix).
+  builder <- if (inherits(model, "gam")) "gam" else "mm"
+  if (builder == "gam") pm_need("mgcv", "'gam' models")
+  if ((inherits(model, "mer") || inherits(model, "merMod")) && !lme4::isLMM(model) && !lme4::isGLMM(model)) {
+    stop("Can't handle a nonlinear mixed model")
   }
+  coef_vals <- tryCatch(pm_coef(model), error = function(e) NULL)
+  # (coef() of an aov model leaves out its aliased coefficients)
+  if (inherits(model, "lm") && is.numeric(model$coefficients) && !is.matrix(model$coefficients)) coef_vals <- model$coefficients
+  if (!is.numeric(coef_vals) || is.null(names(coef_vals))) {
+    stop("Can't handle a model of class ", sQuote(class(model)[1]),
+         ": it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).",
+         call. = FALSE)
+  }
+  coef_names <- pm_coef_names(model, coef_vals)
+  contrasts <- if (builder == "gam") NULL else pm_contrasts(model)
+  thecall <- tryCatch(stats::getCall(model), error = function(e) NULL)
 
   # A fit is rank deficient if coefficients are aliased (NA) or design
   # columns were dropped before fitting (lme4, glmmTMB).
-  coef_vals <- tryCatch(pm_coef(model), error = function(e) NULL)
   coef_na <- any(is.na(coef_vals))
   rank_deficient <- function(full_cols) {
     builder != "gam" && (coef_na || length(setdiff(full_cols, coef_names)) > 0)
@@ -156,7 +135,7 @@ pm_model_info <- function(model, data = NULL, exclude = NULL) {
     excluded_only <- setdiff(excl_vars, kept_vars)
   }
 
-  list(model = model, builder = builder, thecall = thecall, contrasts = contrasts,
+  list(model = model, builder = builder, semireg = data_first, thecall = thecall, contrasts = contrasts,
        coef_names = coef_names, rank_deficient = rank_deficient,
        Terms = Terms, envir = envir, yname = yname,
        offset_vars = offset_vars, rhs_vars = rhs_vars, resp_vars = resp_vars,
@@ -240,20 +219,14 @@ pm_recover_data <- function(info) {
   list(data = droplevels(dat), needed = needed, constants = constants)
 }
 
-## Build the reference grid.
-##   facs        variables defining the target rows (factors and/or varied covariates)
-##   baselevs    named list of values for each single variable dimension
-##   joint       optional data frame of jointly specified covariate points
-##   profiles    optional data frame of observed covariate profiles to average over
-##   prof_w      weights for 'profiles' (sum to 1)
-##   present     function(grid) -> weight for each grid row's factor cell (logical
-##               TRUE/FALSE for usable/unusable cells, or numeric cell weights)
-pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
-                            profiles = NULL, prof_w = NULL, present = NULL) {
+## The dimensions of a reference grid: one per variable (its values), except
+## the jointly specified covariate points ('joint') and the observed
+## covariate profiles to average over ('profiles', weights 'prof_w'), which
+## are one dimension each. Each is list(vars, values (data frame), w).
+pm_grid_dims <- function(baselevs, joint = NULL, profiles = NULL, prof_w = NULL) {
   dims <- list()
   for (v in names(baselevs)) {
-    dims[[v]] <- list(vars = v, values = setNames(data.frame(baselevs[[v]],
-                                                             stringsAsFactors = FALSE), v))
+    dims[[v]] <- list(vars = v, values = setNames(data.frame(baselevs[[v]], stringsAsFactors = FALSE), v))
   }
   if (!is.null(joint)) {
     for (v in names(joint)) dims[[v]] <- NULL
@@ -263,7 +236,39 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
     for (v in names(profiles)) dims[[v]] <- NULL
     dims[[".profile"]] <- list(vars = names(profiles), values = profiles, w = prof_w)
   }
+  dims
+}
 
+## The target rows (the rows of K): the combinations of the dimensions that
+## hold the variables 'facs'; the first one varies slowest, as in Kmatrix()
+## 1.x. Returns list(target, tdims, tsizes, strides, tidx): row r of 'target'
+## is at position tidx[r, k] of target dimension k, and has the number
+## 1 + sum_k (tidx[r, k] - 1) * strides[k].
+pm_grid_target <- function(dims, facs) {
+  sizes <- vapply(dims, function(d) nrow(d$values), integer(1))
+  tdims <- names(dims)[vapply(dims, function(d) any(d$vars %in% facs), logical(1))]
+  tdims <- tdims[order(vapply(tdims, function(nm) min(match(dims[[nm]]$vars, facs), na.rm = TRUE),
+                              numeric(1)))]
+  tsizes <- sizes[tdims]
+  strides <- rev(cumprod(rev(c(tsizes[-1], 1))))
+  tidx <- do.call(expand.grid, c(lapply(rev(tsizes), seq_len), KEEP.OUT.ATTRS = FALSE))
+  tidx <- tidx[, rev(seq_along(tsizes)), drop = FALSE]
+  names(tidx) <- tdims
+  target <- do.call(cbind, unname(lapply(tdims, function(nm) {
+    dims[[nm]]$values[tidx[[nm]], , drop = FALSE]
+  })))
+  target <- target[, intersect(facs, names(target)), drop = FALSE]
+  rownames(target) <- NULL
+  list(target = target, tdims = tdims, tsizes = tsizes, strides = strides, tidx = tidx)
+}
+
+## Build the reference grid: every combination of the dimensions.
+##   facs        variables defining the target rows (factors and/or varied covariates)
+##   dims        pm_grid_dims()
+##   matdat      matrix covariates (their column means)
+##   present     function(grid) -> weight for each grid row's factor cell (logical
+##               TRUE/FALSE for usable/unusable cells, or numeric cell weights)
+pm_make_refgrid <- function(facs, dims, matdat, present = NULL) {
   sizes <- vapply(dims, function(d) nrow(d$values), integer(1))
   idx <- do.call(expand.grid, c(lapply(sizes, seq_len), KEEP.OUT.ATTRS = FALSE))
   grid <- do.call(cbind, unname(lapply(names(dims), function(nm) {
@@ -275,25 +280,13 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
                          dimnames = list(NULL, names(matdat[[nm]])))
   }
 
-  # Target dimensions: first one varies slowest, as in Kmatrix() 1.x.
-  tdims <- names(dims)[vapply(dims, function(d) any(d$vars %in% facs), logical(1))]
-  tdims <- tdims[order(vapply(tdims, function(nm) min(match(dims[[nm]]$vars, facs), na.rm = TRUE),
-                              numeric(1)))]
-  tsizes <- sizes[tdims]
-  strides <- rev(cumprod(rev(c(tsizes[-1], 1))))
+  tg <- pm_grid_target(dims, facs)
+  target <- tg$target
   key <- rep(1L, nrow(grid))
-  for (k in seq_along(tdims)) key <- key + (idx[[tdims[k]]] - 1L) * as.integer(strides[k])
-  tidx <- do.call(expand.grid, c(lapply(rev(tsizes), seq_len), KEEP.OUT.ATTRS = FALSE))
-  tidx <- tidx[, rev(seq_along(tsizes)), drop = FALSE]
-  names(tidx) <- tdims
-  target <- do.call(cbind, unname(lapply(tdims, function(nm) {
-    dims[[nm]]$values[tidx[[nm]], , drop = FALSE]
-  })))
-  target <- target[, intersect(facs, names(target)), drop = FALSE]
-  rownames(target) <- NULL
+  for (k in seq_along(tg$tdims)) key <- key + (idx[[tg$tdims[k]]] - 1L) * as.integer(tg$strides[k])
 
   w <- rep(1, nrow(grid))
-  if (!is.null(profiles)) w <- w * prof_w[idx[[".profile"]]]
+  if (!is.null(dims[[".profile"]]$w)) w <- w * dims[[".profile"]]$w[idx[[".profile"]]]
   w0 <- w                                    # weights before dropping cells (R/empty-cells.R)
   if (!is.null(present)) w <- w * as.numeric(present(grid))
   tot <- as.vector(tapply(w, factor(key, levels = seq_len(nrow(target))), sum))
@@ -305,9 +298,63 @@ pm_make_refgrid <- function(facs, baselevs, matdat, joint = NULL,
   # key: the target row of each grid row; idx: each grid row's position in
   # each dimension (dimension names in 'dim_vars'); used by R/empty-cells.R
   structure(list(grid = grid, W = W, target = target, empty = as.vector(tot == 0),
-                 key = key, w0 = w0, idx = idx, tdims = tdims,
+                 key = key, w0 = w0, idx = idx, tdims = tg$tdims, strides = tg$strides,
                  dim_vars = lapply(dims, `[[`, "vars")),
             class = "pm_refgrid")
+}
+
+## Groups of dimensions that must be crossed with each other: dimensions are
+## linked when some set of 'sets' (the variables of a model term, a pair of
+## nested factors, the factors weighted jointly) has variables in both.
+## Returns a list of character vectors of dimension names (a partition).
+pm_dim_groups <- function(dims, sets) {
+  dn <- names(dims)
+  dim_of <- unlist(lapply(dn, function(nm) setNames(rep(nm, length(dims[[nm]]$vars)), dims[[nm]]$vars)))
+  grp <- setNames(seq_along(dn), dn)
+  for (s in sets) {
+    d <- unique(unname(dim_of[intersect(s, names(dim_of))]))
+    if (length(d) > 1) grp[grp %in% grp[d]] <- min(grp[d])
+  }
+  unname(split(dn, grp))
+}
+
+## The average of a row-wise basis over the reference grid without building
+## the grid of all combinations. A column of the basis belongs to one model
+## term, and the variables of a term lie in one group of pm_dim_groups(), so
+## with the other groups held at a reference row 'ref' (the position of an
+## observed combination in each dimension) a group's columns are averaged
+## over its own combinations only: basis(ref) + sum over the groups of
+## (average over the group's grid - basis(ref)). For y ~ Line + Block + Site
+## the grids have 300, 90 and 4 rows instead of 108,000.
+## Returns list(K, target, empty), as W %*% FUN(grid) of the whole grid.
+pm_average_by_groups <- function(facs, dims, matdat, present, groups, ref, FUN) {
+  tg <- pm_grid_target(dims, facs)
+  one <- lapply(setNames(names(dims), names(dims)), function(nm) {
+    d <- dims[[nm]]
+    d$values <- d$values[ref[[nm]], , drop = FALSE]
+    rownames(d$values) <- NULL
+    d$w <- NULL
+    d
+  })
+  r0 <- as.matrix(FUN(pm_make_refgrid(facs, one, matdat)$grid))
+  nT <- nrow(tg$target)
+  R0 <- matrix(rep(as.vector(r0), each = nT), nT, dimnames = list(NULL, colnames(r0)))
+  K <- R0
+  empty <- rep(FALSE, nT)
+  sizes <- vapply(dims, function(d) nrow(d$values), integer(1))
+  for (g in groups) {
+    if (all(sizes[g] == 1L)) next
+    dg <- one
+    dg[g] <- dims[g]
+    rg <- pm_make_refgrid(facs, dg, matdat, present)
+    A <- as.matrix(pm_refgrid_average(rg, FUN))
+    pos <- rep(1L, nT)                     # the group's target row of each target row
+    for (k in which(tg$tdims %in% g)) pos <- pos + (tg$tidx[[k]] - 1L) * as.integer(rg$strides[k])
+    K <- K + (A[pos, , drop = FALSE] - R0)
+    empty <- empty | rg$empty[pos]
+  }
+  K[empty, ] <- NaN
+  list(K = K, target = tg$target, empty = empty)
 }
 
 ## Average a row-wise basis over the reference grid: W %*% FUN(grid).

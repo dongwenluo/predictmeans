@@ -211,9 +211,12 @@ test_that("back-transformed data points are shifted by transOff, like the means"
 
 test_that("clear messages for a misspelled 'adj' or a term in the wrong order or case", {
   m <- oats_lmer()
-  expect_error(predictmeans(m, "Variety:nitro", plot = FALSE), "Did you mean 'nitro:Variety'")
+  # the factors of a term in another order: the same means, rows in that order
+  vn <- predictmeans(m, "Variety:nitro", plot = FALSE, prtnum = FALSE)$means
+  nv <- predictmeans(m, "nitro:Variety", plot = FALSE, prtnum = FALSE)$means
+  expect_equal(vn$estimate[order(vn$nitro, vn$Variety)], nv$estimate)
   expect_error(predictmeans(m, "variety", plot = FALSE), "Did you mean 'Variety'")
-  expect_error(predictmeans(m, "Bloc", plot = FALSE), "terms of the model are: 'nitro', 'Variety'")
+  expect_error(predictmeans(m, "Bloc", plot = FALSE), "Their variables are: nitro, Variety")
   expect_error(predictmeans(m, "Variety", adj = "holms", plot = FALSE), "'adj' must be one of")
   # any letter case
   r1 <- predictmeans(m, "Variety", adj = "Tukey", plot = FALSE, prtnum = FALSE)

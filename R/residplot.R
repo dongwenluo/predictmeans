@@ -278,6 +278,7 @@ pm_resid_ranef <- function(model, level, slope) {
 ## The four plots.
 pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
   th <- ggplot2::theme_bw(base_size = 10)
+  rp_title <- function(x) pm_wrap_title(x, 10, panels = 2)      # (the panels are drawn two side by side)
   col <- "steelblue"
   grp <- !is.null(d$group)
   top <- function(v, k) if (k > 0) utils::head(order(abs(v), decreasing = TRUE), k) else integer(0)
@@ -318,7 +319,7 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
   p1 <- ggplot2::ggplot() + ggplot2::geom_hline(yintercept = 0, linetype = 2, colour = "grey40") + pts(dd, "x", "resid") +
     trend(dd, "resid") +
     lab(dd, "x", "resid", top(dd$resid, nlab)) +
-    ggplot2::labs(title = "Residuals vs fitted", x = xlab, y = rlab) + th
+    ggplot2::labs(title = rp_title("Residuals vs fitted"), x = xlab, y = rlab) + th
   if (grp) p1 <- p1 + ggplot2::labs(colour = NULL)
 
   # 2. normal Q-Q of the residuals
@@ -328,7 +329,7 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
   slope <- diff(qline) / diff(qn)
   p2 <- ggplot2::ggplot() + ggplot2::geom_abline(intercept = qline[1] - slope * qn[1], slope = slope, colour = "grey40") +
     pts(qq, "theoretical", "resid") + lab(qq, "theoretical", "resid", top(qq$resid, nlab)) +
-    ggplot2::labs(title = "Normal Q-Q of residuals", x = "Theoretical quantiles (standard normal)", y = rlab) + th +
+    ggplot2::labs(title = rp_title("Normal Q-Q of residuals"), x = "Theoretical quantiles (standard normal)", y = rlab) + th +
     ggplot2::theme(legend.position = "none")
 
   # 3. random effects / ACF (gls) / scale-location
@@ -338,14 +339,14 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
     ql <- stats::quantile(rd$value, c(0.25, 0.75)); s3 <- diff(ql) / diff(qn)
     p3 <- ggplot2::ggplot() + ggplot2::geom_abline(intercept = ql[1] - s3 * qn[1], slope = s3, colour = "grey40") +
       pts(rd, "theoretical", "value", colour = FALSE) + lab(rd, "theoretical", "value", top(rd$value, nlab)) +
-      ggplot2::labs(title = paste0("Normal Q-Q of random effects: ", re$what, " | ", re$term),
+      ggplot2::labs(title = rp_title(paste0("Normal Q-Q of random effects: ", re$what, " | ", re$term)),
                     x = "Theoretical quantiles (standard normal)", y = "Predicted random effects") + th
   } else if (inherits(model, "gls")) {
     form <- attr(model$modelStruct$corStruct, "formula")
     if (is.null(form)) form <- ~1
     ac <- tryCatch(nlme::ACF(model, form = form, resType = "normalized"), error = function(e) NULL)
     if (is.null(ac) || anyNA(ac$ACF)) {
-      p3 <- ggplot2::ggplot() + ggplot2::labs(title = "Autocorrelation: not available") + th
+      p3 <- ggplot2::ggplot() + ggplot2::labs(title = rp_title("Autocorrelation: not available")) + th
     } else {
       ac <- as.data.frame(ac)
       nu <- attr(nlme::ACF(model, form = form), "n.used")
@@ -356,12 +357,12 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
         ggplot2::geom_line(ggplot2::aes(y = .data$lim), linetype = 2, colour = "grey40", na.rm = TRUE) +
         ggplot2::geom_line(ggplot2::aes(y = -.data$lim), linetype = 2, colour = "grey40", na.rm = TRUE) +
         ggplot2::geom_hline(yintercept = 0) +
-        ggplot2::labs(title = "Autocorrelation of normalized residuals", x = "Lag", y = "Autocorrelation") + th
+        ggplot2::labs(title = rp_title("Autocorrelation of normalized residuals"), x = "Lag", y = "Autocorrelation") + th
     }
   } else {
     dd$root <- sqrt(abs(dd$resid))
     p3 <- ggplot2::ggplot() + pts(dd, "x", "root") + trend(dd, "root") +
-      ggplot2::labs(title = "Scale-location", x = xlab, y = paste0("sqrt(|", rlab, "|)")) + th +
+      ggplot2::labs(title = rp_title("Scale-location"), x = xlab, y = paste0("sqrt(|", rlab, "|)")) + th +
       ggplot2::theme(legend.position = "none")
   }
 
@@ -372,7 +373,7 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
       ggplot2::geom_segment(ggplot2::aes(x = .data$case, xend = .data$case, y = 0, yend = .data$cook), data = cd,
                             colour = col) +
       pts(cd, "case", "cook", colour = FALSE) + lab(cd, "case", "cook", top(cd$cook, nlab)) +
-      ggplot2::labs(title = "Cook's distance", x = "Observation", y = "Cook's distance") + th
+      ggplot2::labs(title = rp_title("Cook's distance"), x = "Observation", y = "Cook's distance") + th
   } else {
     od <- d[is.finite(d$observed) & is.finite(d$fitted), ]
     binary <- nrow(od) > 0 && all(od$observed %in% c(0, 1))
@@ -385,15 +386,15 @@ pm_resid_plots <- function(model, d, re, nlab, tooltip = FALSE) {
         ggplot2::geom_abline(intercept = 0, slope = 1, colour = "grey40") +
         ggplot2::geom_point(ggplot2::aes(size = .data$n), colour = col) +
         ggplot2::scale_size_area(max_size = 4, guide = "none") + ggplot2::coord_equal(xlim = 0:1, ylim = 0:1) +
-        ggplot2::labs(title = "Calibration (tenths of fitted values)", x = "Mean fitted probability",
+        ggplot2::labs(title = rp_title("Calibration (tenths of fitted values)"), x = "Mean fitted probability",
                       y = "Observed proportion") + th
     } else if (nrow(od)) {
       p4 <- ggplot2::ggplot() + ggplot2::geom_abline(intercept = 0, slope = 1, colour = "grey40") +
         pts(od, "observed", "fitted") +
-        ggplot2::labs(title = "Fitted vs observed", x = "Observed values", y = "Fitted values") + th +
+        ggplot2::labs(title = rp_title("Fitted vs observed"), x = "Observed values", y = "Fitted values") + th +
         ggplot2::theme(legend.position = "none")
     } else {
-      p4 <- ggplot2::ggplot() + ggplot2::labs(title = "Fitted vs observed: response not available") + th
+      p4 <- ggplot2::ggplot() + ggplot2::labs(title = rp_title("Fitted vs observed: response not available")) + th
     }
   }
   list(resid_fitted = p1, qq = p2, third = p3, fourth = p4)

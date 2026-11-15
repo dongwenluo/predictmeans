@@ -11,14 +11,21 @@ glmm_data <- function() {
 }
 resp <- function(pm) pm$means[, c("response", "response.std.error")]
 
-test_that("bias adjustment by hand: h(eta) + sigma^2/2 h''(eta), SE (h' + sigma^2/2 h''') SE", {
+test_that("bias adjustment by hand: the mean of h(eta + u); 'taylor' is h(eta) + sigma^2/2 h''(eta)", {
   d <- glmm_data()
   m <- lme4::glmer(y ~ A * B + (1 | block), family = poisson, data = d)
   s2 <- as.data.frame(lme4::VarCorr(m))$vcov[1]
   pm <- predictmeans(m, "A", bias_adjust = TRUE, plot = FALSE, prtnum = FALSE)
   eta <- pm$means$estimate
-  expect_equal(pm$means$response, exp(eta) * (1 + s2 / 2), tolerance = 1e-6)          # log link: h'' = exp
-  expect_equal(pm$means$response.std.error, exp(eta) * (1 + s2 / 2) * pm$means$std.error, tolerance = 1e-6)
+  # log link: E exp(eta + u) = exp(eta + sigma^2/2), exactly
+  expect_equal(pm$means$response, exp(eta + s2 / 2), tolerance = 1e-8)
+  expect_equal(pm$means$response.std.error, exp(eta + s2 / 2) * pm$means$std.error, tolerance = 1e-8)
+  # the second-order formula (emmeans' bias.adjust), lower
+  pt <- predictmeans(m, "A", bias_adjust = "taylor", plot = FALSE, prtnum = FALSE)
+  expect_equal(pt$means$response, exp(eta) * (1 + s2 / 2), tolerance = 1e-6)          # h'' = exp
+  expect_equal(pt$means$response.std.error, exp(eta) * (1 + s2 / 2) * pt$means$std.error, tolerance = 1e-6)
+  expect_true(all(pt$means$response < pm$means$response))
+  expect_error(predictmeans(m, "A", bias_adjust = "yes", plot = FALSE, prtnum = FALSE), "TRUE, FALSE or \"taylor\"")
   expect_equal(pm$settings$bias_adjust, sqrt(s2))
   expect_identical(pm$settings$average, "link")
   p0 <- predictmeans(m, "A", plot = FALSE, prtnum = FALSE)
@@ -26,16 +33,18 @@ test_that("bias adjustment by hand: h(eta) + sigma^2/2 h''(eta), SE (h' + sigma^
   expect_equal(p0$means$response, exp(eta))
   # a given sigma
   expect_equal(predictmeans(m, "A", bias_adjust = TRUE, sigma = 1, plot = FALSE, prtnum = FALSE)$means$response,
+               exp(eta + 0.5), tolerance = 1e-8)
+  expect_equal(predictmeans(m, "A", bias_adjust = "taylor", sigma = 1, plot = FALSE, prtnum = FALSE)$means$response,
                exp(eta) * 1.5, tolerance = 1e-6)
 })
 
-test_that("equal to emmeans (bias.adjust, regrid) for Poisson, binomial and a log-transformed response", {
+test_that("bias_adjust = 'taylor' equals emmeans (bias.adjust, regrid) for Poisson, binomial and a log response", {
   skip_if_not_installed("emmeans")
   d <- glmm_data()
   m <- lme4::glmer(y ~ A * B + (1 | block), family = poisson, data = d)
   s <- sqrt(as.data.frame(lme4::VarCorr(m))$vcov[1])
   e1 <- summary(emmeans::emmeans(m, ~ A, type = "response", bias.adjust = TRUE, sigma = s))
-  expect_equal(unname(as.matrix(resp(predictmeans(m, "A", bias_adjust = TRUE, plot = FALSE, prtnum = FALSE)))),
+  expect_equal(unname(as.matrix(resp(predictmeans(m, "A", bias_adjust = "taylor", plot = FALSE, prtnum = FALSE)))),
                unname(as.matrix(e1[, c("rate", "SE")])), tolerance = 1e-6)
   e2 <- summary(emmeans::emmeans(emmeans::regrid(emmeans::ref_grid(m)), ~ A))
   expect_equal(unname(as.matrix(resp(predictmeans(m, "A", average = "response", plot = FALSE, prtnum = FALSE)))),
@@ -43,12 +52,12 @@ test_that("equal to emmeans (bias.adjust, regrid) for Poisson, binomial and a lo
   mb <- lme4::glmer(cbind(r, 10 - r) ~ A + B + (1 | block), family = binomial, data = d)
   sb <- sqrt(as.data.frame(lme4::VarCorr(mb))$vcov[1])
   eb <- summary(emmeans::emmeans(emmeans::regrid(emmeans::ref_grid(mb), bias.adjust = TRUE, sigma = sb), ~ A))
-  pb <- predictmeans(mb, "A", bias_adjust = TRUE, average = "response", plot = FALSE, prtnum = FALSE)
+  pb <- predictmeans(mb, "A", bias_adjust = "taylor", average = "response", plot = FALSE, prtnum = FALSE)
   expect_equal(unname(as.matrix(resp(pb))), unname(as.matrix(eb[, c("prob", "SE")])), tolerance = 1e-6)
   ml <- lme4::lmer(log(w) ~ A + B + (1 | block), data = d)
   sl <- sqrt(sum(as.data.frame(lme4::VarCorr(ml))$vcov))          # default: random + residual variance
   el <- summary(emmeans::emmeans(ml, ~ A, type = "response", bias.adjust = TRUE, sigma = sl))
-  pl <- predictmeans(ml, "A", trans = exp, bias_adjust = TRUE, plot = FALSE, prtnum = FALSE)
+  pl <- predictmeans(ml, "A", trans = exp, bias_adjust = "taylor", plot = FALSE, prtnum = FALSE)
   expect_equal(unname(as.matrix(resp(pl))), unname(as.matrix(el[, c("response", "SE")])), tolerance = 1e-6)
 })
 
@@ -60,5 +69,5 @@ test_that("identity scale and random slopes", {
   ms <- suppressWarnings(lme4::glmer(y ~ A + x + (x | block), family = poisson, data = d))
   expect_error(predictmeans(ms, "A", bias_adjust = TRUE, plot = FALSE, prtnum = FALSE), "sigma")
   pm <- predictmeans(ms, "A", bias_adjust = TRUE, sigma = 0.5, plot = FALSE, prtnum = FALSE)
-  expect_equal(pm$means$response, exp(pm$means$estimate) * (1 + 0.25 / 2), tolerance = 1e-6)
+  expect_equal(pm$means$response, exp(pm$means$estimate + 0.25 / 2), tolerance = 1e-8)
 })

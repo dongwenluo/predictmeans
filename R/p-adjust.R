@@ -113,12 +113,42 @@ pm_adjust_crit <- function(adj, alpha, df, fams, R = NULL, T = NULL) {
       if (adj %in% c("bonferroni", "sidak")) pm_perm_crit(T[ok, , drop = FALSE], a1) else
         pm_perm_crit(T[ok, , drop = FALSE], alpha, family = rep("f", m))
     } else switch(adj,
-      tukey = stats::qtukey(1 - alpha, max(f$k, 2), df[ok])/sqrt(2),
+      tukey = {                    # one quantile for each distinct df
+        du <- unique(df[ok])
+        (stats::qtukey(1 - alpha, max(f$k, 2), du)/sqrt(2))[match(df[ok], du)]
+      },
       bonferroni = , sidak = stats::qt(1 - a1/2, df[ok]),
       scheffe = sqrt(f$r*stats::qf(1 - alpha, f$r, df[ok])),
       mvt = pm_q_mvt(alpha, df[ok], R[ok, ok, drop = FALSE]))
   }
   out
+}
+
+## The critical value of the printed LSDs (LSD = SED x this value, with the
+## one df 'Df' of the LSD tables): the half-width of the limits that agree
+## with the p-values shown, for the same families of pairs (pm_families():
+## all the pairs, or the pairs within a level of 'atvar').
+##   none        t
+##   tukey       studentized range of the k means compared, / sqrt(2) (the HSD)
+##   bonferroni, sidak   t at the level adjusted for the m pairs
+##   scheffe, mvt        their critical values (pm_adjust_crit())
+##   holm, hochberg, hommel, BH, BY: step-wise methods have no critical value
+##     for all pairs: t, and a note says the LSDs are not adjusted.
+## Families of different sizes (levels of 'atvar' with different numbers of
+## means): the largest value. Returns list(crit, adjusted, note).
+pm_lsd_crit <- function(adj, level, Df, fams = NULL, R = NULL) {
+  t0 <- stats::qt(1 - level/2, df = Df)
+  if (adj == "none" || !length(fams)) return(list(crit = t0, adjusted = FALSE, note = NULL))
+  n <- max(unlist(lapply(fams, `[[`, "idx")))
+  cr <- pm_adjust_crit(adj, level, rep(Df, n), fams, R = R)
+  if (is.null(cr) || all(is.na(cr))) {
+    return(list(crit = t0, adjusted = FALSE,
+                note = paste0("These LSDs are not adjusted: '", adj, "' is a step-wise method and has no critical ",
+                              "value for all pairs. Use the adjusted p-values for the comparisons.")))
+  }
+  list(crit = max(cr, na.rm = TRUE), adjusted = TRUE,
+       note = paste0("LSDs adjusted by the '", adj, "' method: the half-width of the simultaneous confidence limits ",
+                     "of a difference, which agree with the adjusted p-values."))
 }
 
 ## mvtnorm's integer df, rounded as emmeans does (0: normal)

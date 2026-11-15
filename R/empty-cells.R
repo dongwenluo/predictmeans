@@ -16,41 +16,98 @@
 ## of the term is nested in them) cannot be matched and are averaged within
 ## each mean, as for the means. With no common cell the comparison is NA.
 
-## The cells: the combinations of the factors that interact in the model
-## (blocks or other main-effect-only factors would make every cell look
-## single, hiding structurally empty combinations such as nested
-## treatments). When some have no data (and not every cell is single), means
-## average only over the observed ones. Returns NULL (no empty cells: means
-## average over all cells) or list(present = function(grid) -> observed?,
-## inter_vars, design = function(grid) -> exists by design?, unmatched
-## (factors nested in or nesting the term's factors), missing (labels of the
-## cells missing not by design)). apply_rule: FALSE when the term is a
-## covariate.
-pm_empty_rule <- function(Terms, factor_names, preddf, facs, apply_rule = TRUE) {
+## The variables of each term of the model: a list of character vectors, one
+## per term (e.g. A:B gives c("A", "B"), A:poly(x, 2) gives c("A", "x")).
+pm_term_sets <- function(Terms) {
   fac_mat <- attr(Terms, "factors")
-  ord <- attr(Terms, "order")
-  inter_rows <- if (length(fac_mat) && any(ord > 1))
-    rownames(fac_mat)[rowSums(fac_mat[, ord > 1, drop = FALSE] > 0) > 0] else character(0)
-  inter_vars <- factor_names[factor_names %in% inter_rows |
-                               vapply(factor_names, function(v) any(grepl(paste0("\\b", v, "\\b"), inter_rows)),
-                                      logical(1))]
-  if (length(inter_vars) < 2) inter_vars <- factor_names
-  ndf <- data.frame(table(preddf[, inter_vars, drop = FALSE]))
-  if (!(apply_rule && max(c(0, ord)) > 1 && length(inter_vars) > 1 && any(ndf$Freq == 0) &&
-        !setequal(unique(ndf$Freq), c(0, 1)))) return(NULL)
-  cell_key <- function(df) do.call(paste, c(lapply(inter_vars, function(v) as.character(df[[v]])), sep = "\r"))
-  seen <- unique(cell_key(preddf))
-  # combinations absent by design (a factor nested in another: each of its
-  # levels occurs with one level of the other) are not missing cells
-  missing_cells <- ndf[ndf$Freq == 0 & !pm_nested_absent(ndf[, inter_vars, drop = FALSE], preddf, inter_vars),
-                       inter_vars, drop = FALSE]
+  if (!length(fac_mat)) return(list())
+  row_vars <- lapply(rownames(fac_mat), function(r) {
+    e <- tryCatch(str2lang(r), error = function(err) NULL)
+    if (is.null(e)) r else all.vars(e)
+  })
+  lapply(seq_len(ncol(fac_mat)), function(t) unique(unlist(row_vars[fac_mat[, t] > 0])))
+}
+
+## Pairs of nested factors, from the data alone: b is nested in a when each
+## level of b occurs with one level of a (and a has several levels). Their
+## other combinations cannot exist. Returns a list of list(a, b, seen), 'seen'
+## the combinations that occur.
+pm_nested_pairs <- function(data, vars) {
+  out <- list()
+  if (length(vars) < 2) return(out)
+  code <- lapply(data[vars], function(z) as.integer(factor(z)))
+  nlev <- vapply(code, function(z) length(unique(z)), integer(1))
+  for (a in vars) for (b in vars) {
+    if (a == b || nlev[[a]] < 2) next
+    if (length(unique(code[[a]] * (max(code[[b]]) + 1) + code[[b]])) != nlev[[b]]) next
+    out[[length(out) + 1]] <- list(a = a, b = b,
+                                   seen = unique(paste(as.character(data[[a]]), as.character(data[[b]]), sep = "\r")))
+  }
+  out
+}
+
+## TRUE for the rows of 'grid' that hold a combination of nested factors that
+## cannot exist ('pairs': pm_nested_pairs()).
+pm_absent_by_design <- function(grid, pairs) {
+  out <- rep(FALSE, nrow(grid))
+  for (p in pairs) {
+    out <- out | !(paste(as.character(grid[[p$a]]), as.character(grid[[p$b]]), sep = "\r") %in% p$seen)
+  }
+  out
+}
+
+## The cells of the model and its empty cells.
+##
+## A cell is a combination of the levels of the factors of one interaction
+## term (the term with the most factors of each group of terms: A:B:C, not
+## also A:B). Factors that only have main effects, or that interact with
+## other factors only, do not make cells together: in y ~ A*B + C the cells
+## are those of A:B, and a combination of A and C without data is not an
+## empty cell (the model is additive in C). A cell without data that could
+## exist (not a combination of nested factors, 'nested') is an empty cell:
+## with weights = "equal" the means average over the observed cells only.
+##
+## Returns NULL (no cell is without data) or list(present = function(grid) ->
+## observed?, inter_vars (the factors that interact), factors (variables x
+## terms), design = function(grid) -> exists by design?, unmatched (factors
+## nested in or nesting the term's factors), missing (labels of the empty
+## cells), missing_term (the term of each)). apply_rule: FALSE when the rows
+## of K are not defined by a factor.
+pm_empty_rule <- function(Terms, factor_names, preddf, facs, nested = list(), apply_rule = TRUE) {
+  if (!apply_rule) return(NULL)
+  sets <- unique(lapply(pm_term_sets(Terms), function(s) intersect(factor_names, s)))
+  sets <- sets[lengths(sets) > 1]
+  sets <- sets[!vapply(seq_along(sets), function(i) any(vapply(sets[-i], function(o) all(sets[[i]] %in% o) &&
+                                                                 length(o) > length(sets[[i]]), logical(1))), logical(1))]
+  if (!length(sets)) return(NULL)
+  cell_key <- function(df, vs) do.call(paste, c(lapply(vs, function(v) as.character(df[[v]])), sep = "\r"))
+  seen <- lapply(sets, function(vs) unique(cell_key(preddf, vs)))
+  inter_vars <- factor_names[factor_names %in% unlist(sets)]
+  inter_pairs <- nested[vapply(nested, function(p) all(c(p$a, p$b) %in% inter_vars), logical(1))]
+  missing <- missing_term <- character(0)
+  any_unobserved <- FALSE
+  for (i in seq_along(sets)) {
+    vs <- sets[[i]]
+    all_cells <- do.call(expand.grid, c(lapply(preddf[vs], function(z) levels(factor(z))), KEEP.OUT.ATTRS = FALSE,
+                                        stringsAsFactors = FALSE))
+    unobs <- !(cell_key(all_cells, vs) %in% seen[[i]])
+    any_unobserved <- any_unobserved || any(unobs)
+    acc <- all_cells[unobs & !pm_absent_by_design(all_cells, inter_pairs[vapply(inter_pairs, function(p)
+      all(c(p$a, p$b) %in% vs), logical(1))]), , drop = FALSE]
+    if (nrow(acc)) {
+      missing <- c(missing, do.call(paste, c(lapply(acc, as.character), sep = ":")))
+      missing_term <- c(missing_term, rep(paste(vs, collapse = ":"), nrow(acc)))
+    }
+  }
+  if (!any_unobserved) return(NULL)
+  fac_mat <- attr(Terms, "factors")
   if (length(fac_mat)) rownames(fac_mat) <- pm_term_vars(rownames(fac_mat))
-  list(present = function(grid) cell_key(grid) %in% seen,
+  list(present = function(grid) Reduce(`&`, lapply(seq_along(sets), function(i) cell_key(grid, sets[[i]]) %in% seen[[i]])),
        inter_vars = inter_vars,
        factors = if (length(fac_mat)) fac_mat,
-       design = function(grid) !pm_nested_absent(grid[, inter_vars, drop = FALSE], preddf, inter_vars),
+       design = function(grid) !pm_absent_by_design(grid, inter_pairs),
        unmatched = pm_unmatched_factors(preddf, setdiff(inter_vars, facs), intersect(facs, factor_names)),
-       missing = do.call(paste, c(lapply(missing_cells, as.character), sep = ":")))
+       missing = missing, missing_term = missing_term)
 }
 
 ## The means over empty cells of a reference grid, with a warning naming them,
@@ -181,7 +238,12 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   fac_lab <- if (length(fcols)) do.call(paste, c(lapply(rg$target[fcols], as.character), sep = ":")) else labels
   aff_lab <- unique(fac_lab[affected])
   one <- length(aff_lab) == 1
-  warning("No data for ", paste(inter_vars, collapse = ":"), " ", short(rule$missing), ". ",
+  # the empty cells by their term: "A:B a3:b2" (several terms: joined by "; ")
+  mt <- if (length(rule$missing_term) == length(rule$missing)) rule$missing_term else
+    rep(paste(inter_vars, collapse = ":"), length(rule$missing))
+  miss_lab <- paste(vapply(unique(mt), function(tm) paste(tm, short(rule$missing[mt == tm])), character(1)),
+                    collapse = "; ")
+  warning("No data for ", miss_lab, ". ",
           if (one) "The mean of " else "The means of ", modelterm, " = ", short(aff_lab),
           if (one) " averages only its observed cells; comparisons with it" else
             " average only their observed cells; comparisons with them",

@@ -14,19 +14,40 @@ pm_match_adj <- function(adj, tukey = TRUE, westfall = FALSE) {
   hit
 }
 
-## 'modelterm' must be a fixed-effect term of the model, written as in the
-## model. For the same factors in another order or letter case, say which.
+## 'modelterm' is one string: fixed-effect variables of the model joined by
+## ":" ("A", "A:B"). It need not be a term of the model: any combination of
+## its factors gives means (Kmatrix() says which variables exist).
 pm_check_modelterm <- function(model, modelterm) {
-  labs <- attr(stats::terms(model), "term.labels")
-  if (is.character(modelterm) && length(modelterm) == 1 && modelterm %in% labs) return(invisible(modelterm))
-  term <- paste(modelterm, collapse = " ")
-  key <- function(x) vapply(strsplit(tolower(x), ":", fixed = TRUE),
-                            function(v) paste(sort(trimws(v)), collapse = ":"), "")
-  hit <- labs[key(labs) == key(term)]
-  hint <- if (length(hit)) {
-    paste0(" Did you mean '", hit[1], "'?")
-  } else {
-    paste0(" The terms of the model are: ", paste0("'", labs, "'", collapse = ", "), ".")
+  if (!is.character(modelterm) || length(modelterm) != 1 || is.na(modelterm) || !nzchar(modelterm)) {
+    stop("'modelterm' must be one character string such as \"A\" or \"A:B\".", call. = FALSE)
   }
-  stop("'", term, "' is not a term of the model.", hint, call. = FALSE)
+  invisible(modelterm)
+}
+
+## A combination of factors that is not a term of the model: its means are
+## what the model implies for it, the sum of the effects of its parts.
+pm_note_not_a_term <- function(model, modelterm) {
+  labs <- tryCatch(attr(stats::terms(model), "term.labels"), error = function(e) NULL)
+  if (is.null(labs)) return(invisible(NULL))
+  key <- function(x) vapply(strsplit(x, ":", fixed = TRUE), function(v) paste(sort(pm_term_vars(v)), collapse = ":"), "")
+  if (key(modelterm) %in% key(labs)) return(invisible(NULL))
+  message("'", modelterm, "' is not a term of the model: its factors do not interact there, so these means are the ",
+          "sums of their effects (the differences between the levels of one factor are the same at every level ",
+          "of the others).")
+  invisible(NULL)
+}
+
+## The df of a term from a set of df by term ('one_df', named by term label):
+## the term's own df; for a combination of variables that is not a term of
+## the model (A:B in y ~ A + B), the smallest df of the model's terms made of
+## its variables. NULL when no term of the model is made of them.
+pm_term_df <- function(one_df, term) {
+  vars_of <- function(x) strsplit(x, ":", fixed = TRUE)
+  d <- one_df[intersect(term, names(one_df))]
+  if (length(d)) return(min(unname(d)))
+  tv <- unique(pm_term_vars(unlist(vars_of(term))))
+  labs <- setdiff(names(one_df), "(Intercept)")
+  inside <- vapply(vars_of(labs), function(v) all(pm_term_vars(v) %in% tv), logical(1))
+  if (!any(inside)) return(NULL)
+  min(unname(one_df[labs[inside]]))
 }

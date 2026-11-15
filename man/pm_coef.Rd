@@ -7,6 +7,7 @@
 \alias{pm_data}
 \alias{pm_df}
 \alias{pm_linkinv}
+\alias{pm_contrasts}
 \title{Supporting a New Model Class}
 \usage{
 pm_coef(model, ...)
@@ -15,6 +16,7 @@ pm_basis(model, newdata, ...)
 pm_data(model, ...)
 pm_df(model, L, ...)
 pm_linkinv(model, ...)
+pm_contrasts(model, ...)
 }
 \arguments{
 \item{model}{A fitted model.}
@@ -31,7 +33,7 @@ As described in Details.
 }
 \description{
 \code{\link{Kmatrix}}, \code{\link{predictmeans}}, \code{\link{contrastmeans}} and \code{\link{covariatemeans}} get
-everything they need from a model through these six generics. Their default methods work for any model class with
+everything they need from a model through these seven generics. Their default methods work for any model class with
 the usual methods (\code{coef}, \code{vcov}, \code{terms}, \code{df.residual}, \code{family}), so many classes need
 no extra code. For a class that lacks one of these, or needs something special, write a method for the
 corresponding generic only; nothing inside predictmeans needs to change.
@@ -52,6 +54,9 @@ corresponding generic only; nothing inside predictmeans needs to change.
   there is none. Kenward-Roger df for \code{lmer} and the rules of \pkg{nlme} for \code{lme} are built in.}
   \item{\code{pm_linkinv(model)}}{Inverse link function used to back-transform the means, or \code{NULL} for
   none. Default: the inverse link of \code{family(model)} unless it is the identity.}
+  \item{\code{pm_contrasts(model)}}{The contrasts of the factors used in the fit, as for the
+  \code{contrasts.arg} argument of \code{model.matrix()}. Default: those of \code{model.matrix(model)}, else
+  \code{model$contrasts}; a method is only needed for a class that has neither.}
 }
 The model also needs a \code{terms()} method for its fixed effects (used to find the variables in the model), and
 its call (\code{getCall()}) or a \code{pm_data()} method so that the data can be found.

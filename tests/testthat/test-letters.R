@@ -10,7 +10,7 @@ test_that("letters: two means share a letter exactly when they don't differ (40 
   expect_equal(share[upper.tri(share)], (P >= 0.05)[upper.tri(P)])
 })
 
-test_that("letterCI with atvar: CI-overlap letters within each atvar group", {
+test_that("letterCI with atvar: letters from the overlap of the comparison intervals within each atvar group", {
   data(Oats, package = "nlme", envir = environment())
   Oats$nitro <- factor(Oats$nitro)
   fm <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
@@ -18,9 +18,9 @@ test_that("letterCI with atvar: CI-overlap letters within each atvar group", {
   tab <- r$mean_table$Table
   for (v in levels(Oats$Variety)) {
     g <- tab[tab$Variety == v, ]
-    expect_equal(unname(g$LetterGrp), unname(ci_mcp(g[["LL(83.4%)"]], g[["UL(83.4%)"]])))
+    expect_equal(unname(g$LetterGrp), unname(ci_mcp(g[[grep("^LL", names(g))]], g[[grep("^UL", names(g))]])))
   }
-  expect_match(r$mean_table$Note, "overlap of the 83.4% CIs", fixed = TRUE)
+  expect_match(r$mean_table$Note, "overlap of the comparison intervals", fixed = TRUE)
   expect_match(r$mean_table$Note, "at each level of Variety$")
   expect_equal(r$means$group[match(paste(tab$Variety, tab$nitro), paste(r$means$Variety, r$means$nitro))],
                as.character(tab$LetterGrp))

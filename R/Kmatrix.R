@@ -9,7 +9,10 @@
 #'   The predicted means are built on a reference grid: every combination of the factor levels in
 #'   the model, with covariates fixed at their means (or other chosen values). Each row of \code{K}
 #'   is the equally weighted average of the grid rows for one level combination of
-#'   \code{modelterm}. The design matrix of the grid is evaluated with the model's own stored basis
+#'   \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
+#'   factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
+#'   the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
+#'   \code{\link{predictmeans}}). The design matrix of the grid is evaluated with the model's own stored basis
 #'   information, so covariates may enter the model through transformations such as
 #'   \code{poly(x, 2)}, \code{ns(x, 3)}, \code{bs(x)}, \code{log(x)}, \code{scale(x)} or
 #'   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
@@ -17,20 +20,32 @@
 #' @usage
 #' Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
 #'         cov_reduce=mean, exclude=NULL,
-#'         weights=c("equal", "proportional", "outer", "cells", "flat"))
+#'         weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #' \code{glmer}, \code{glmmTMB}, \code{gam}/\code{bam} (package \pkg{mgcv}; for \code{gamm} use its
 #' \code{$gam} component) or \code{semireg}.
-#' @param modelterm Name (in "quotes") for indicating which model term's predicted mean to be calculated.
-#'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
+#' @param modelterm Name (in "quotes") of the variables whose combinations give the rows of \code{K}: fixed-effect
+#'   variables of the model joined by ":", e.g. "A" or "A:B". It need not be a term of the model: any combination
+#'   of its factors can be asked for (e.g. "A:B" for \code{y ~ A + B}), and a covariate may be among them (its
+#'   values as given in \code{covariate}, else its mean).
 #'   A factor created in the model formula, e.g. \code{factor(dose)}, can be given either as
 #'   "factor(dose)" or as "dose".
-#' @param covariate A numerical vector to specify values of covariates for calculating predicted means,
-#' default values are the means of the associated covariates. It also can be the name of one or more covariates in the model,
-#' in which case predictions are made over a range of values of those covariates (see \code{covariateV}).
+#' @param covariate The values of covariates; those not mentioned are at their means (see \code{cov_reduce}).
+#'   \itemize{
+#'   \item A named list (or named numeric vector) of values, e.g. \code{list(x = c(-1, 0, 1), z = 0.3)}: a covariate
+#'     with one value is fixed there; one with several values gives rows of \code{K} for each value (all
+#'     combinations for several such covariates). A data frame gives joint points: one set of rows for each of
+#'     its rows.
+#'   \item An unnamed numeric vector with one value for each covariate of the model, in the order they have in
+#'     the model. With another length this is an error (before 2.0 the values were recycled, and names were
+#'     ignored).
+#'   \item The name of one or more covariates, in which case predictions are made over a range of values of those
+#'     covariates (see \code{covariateV}).
+#'   }
 #' For a \code{semireg} model this may also be a covariate that only appears in the smooth terms.
 #' @param covariateV Values for the covariate(s) named in \code{covariate}. For one covariate, a numeric vector. For several covariates,
-#'   either a list of numeric vectors (all combinations are used) or a matrix with one named column per covariate,
+#'   either a list of numeric vectors (all combinations are used; named by covariate, or in the order of
+#'   \code{covariate}) or a matrix with one named column per covariate,
 #'   where each row is one prediction point (e.g. a set of locations for a two-dimensional smooth).
 #'   When \code{covariateV} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.
 #' @param data In some cases, you need to provide the data set used in model fitting, for example when the data
@@ -50,6 +65,11 @@
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#' @param refgrid Return the grid of all combinations (element \code{refgrid})? The default \code{FALSE} builds
+#'   it only when it is needed (\code{semireg} models, means over empty cells). Otherwise each group of variables
+#'   that share a model term is averaged on its own grid, which gives the same \code{K} and is much smaller
+#'   when factors do not interact: for \code{y ~ Line + Block + Site} with 300, 90 and 4 levels, grids of 300,
+#'   90 and 4 rows instead of 108,000.
 #' @return
 #' \item{K}{Coefficients matrix. It has an attribute \code{"estimable"}, a logical vector with one value per row that is
 #'  \code{FALSE} for rows that are not estimable functions of the model parameters (e.g. means for a missing cell in a
@@ -57,7 +77,7 @@
 #'  \item{fctnames}{A model frame contains factor(s) info in the model.}
 #'  \item{response}{The name of response variable in the model.}
 #'  \item{preddf}{The data of the predictor variables used in model fitting.}
-#'  \item{refgrid}{The reference grid used to build \code{K}: a list with the grid data (\code{grid}), the sparse
+#'  \item{refgrid}{\code{NULL}, or (see argument \code{refgrid}) the reference grid of all combinations: a list with the grid data (\code{grid}), the sparse
 #'  weight matrix \code{W} that averages grid rows into rows of \code{K}, and the rows of \code{fctnames}
 #'  (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
 #'  evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
@@ -80,6 +100,8 @@
 #'   Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
 #'   Kmatrix(fm, "Variety", "nitro")$K
 #'   Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
+#'   Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
+#'   Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
 #'
 #'   # Covariates entering through transformations or only through interactions
 #'   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
@@ -97,129 +119,39 @@ NULL
 
 Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL,
                     prtnum=FALSE, cov_reduce=mean, exclude=NULL,
-                    weights=c("equal", "proportional", "outer", "cells", "flat")) {
+                    weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE) {
 
   weights <- match.arg(weights)
+  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
+
+  ## 1. The model and the data of its fixed-effect variables
   info <- pm_model_info(model, data, exclude)
   model <- info$model
   Terms <- info$Terms
-  yname <- info$yname
-
   rec <- pm_recover_data(info)
   model_data <- rec$data
-  nm <- rec$needed
+  pv <- pm_predictors(info, model_data, rec$needed)
+  X <- pv$X
 
-  # Raw predictor values (one column per variable) for the rows used in the fit.
-  form <- as.formula(paste("~", paste(pm_bq(nm), collapse = "+")), env = info$envir)
-  X <- model.frame(form, model_data, na.action = na.omit, drop.unused.levels = TRUE)
-  for (v in names(X)) {
-    if (is.character(X[[v]]) || is.logical(X[[v]])) X[[v]] <- factor(X[[v]])
-  }
-  preddf <- X
-
-  # Variables wrapped in factor() etc. in the formula are treated as factors
-  # with their observed values as levels.
-  coerced <- intersect(pm_coerced_vars(formula(Terms)), names(X))
-  excluded_only <- intersect(info$excluded_only, names(X))
-
+  ## 2. The rows of K: the variables of 'modelterm' (factors: their levels;
+  ## covariates: their values) and the values of the other covariates
   term_labels <- unlist(strsplit(modelterm, "\\:"))
   term_vars <- pm_term_vars(term_labels)
-
-  cov_given <- !pm_is_null(covariate)
-  if (!cov_given || !setequal(covariate, modelterm)) {
-    is_fac <- vapply(term_vars, function(v) {
-      v %in% names(X) && (is.factor(X[[v]]) || v %in% coerced)
-    }, logical(1))
-    if (any(!is_fac)) {
-      stop(paste(term_labels[!is_fac], "must be factor(s) or not in the fixed effects!"))
-    }
-    if (any(term_vars %in% excluded_only)) {
-      stop(paste("Factor(s)", paste(term_labels[term_vars %in% excluded_only], collapse = ", "),
-                 "only appear in smooth terms excluded from prediction (see 'exclude')."))
-    }
-  }
-
+  pm_check_term_vars(term_labels, term_vars, pv)
   average_cov <- identical(cov_reduce, "average")
   if (!average_cov && !is.function(cov_reduce)) {
     stop("'cov_reduce' must be a function such as mean or median, or \"average\".")
   }
-  reduce <- function(x) {
-    if (average_cov) return(mean(x, na.rm = TRUE))
-    val <- cov_reduce(x)
-    if (!is.numeric(val) || length(val) != 1) {
-      stop("'cov_reduce' must return a single number.")
-    }
-    val
-  }
-
-  baselevs <- xlev <- matdat <- list()
-  for (xname in names(X)) {
-    obj <- X[[xname]]
-    if (is.factor(obj)) {
-      xlev[[xname]] <- levels(obj)
-      baselevs[[xname]] <- factor(levels(obj), levels = levels(obj), ordered = is.ordered(obj))
-    } else if (is.matrix(obj)) {
-      # Matrix covariates: use column means
-      matdat[[xname]] <- apply(obj, 2, mean, na.rm = TRUE)
-    } else if (xname %in% coerced) {
-      baselevs[[xname]] <- sort(unique(obj))
-    } else {
-      baselevs[[xname]] <- reduce(obj)
-    }
-  }
-  # Variables used only in excluded smooths: fixed at one value, never averaged.
-  for (v in excluded_only) baselevs[[v]] <- baselevs[[v]][1]
-
-  factor_names <- setdiff(c(names(xlev), coerced), excluded_only)
-  covlevname <- setdiff(names(baselevs), c(names(xlev), coerced))
-  covlevname <- setdiff(covlevname, c(info$offset_vars, excluded_only))
-
-  joint <- NULL
-  if (cov_given && is.numeric(covariate)) {
-    baselevs[covlevname] <- as.list(covariate)
-  }
-  if (cov_given && is.character(covariate) && all(covariate %in% covlevname)) {
-    if (length(covariate) == 1) {
-      if (!pm_is_null(covariateV) && is.vector(covariateV)) {
-        baselevs[[covariate]] <- covariateV
-      } else {
-        baselevs[[covariate]] <- sort(unique(c(seq(min(X[[covariate]]), max(X[[covariate]]), length=50),
-                                               X[[covariate]])))
-      }
-    } else {
-      if (!pm_is_null(covariateV) && is.matrix(covariateV)) {
-        # A matrix gives joint points, one row per prediction point.
-        joint <- as.data.frame(covariateV)
-        if (is.null(colnames(covariateV))) names(joint) <- covariate
-        if (!all(covariate %in% names(joint))) {
-          stop("The columns of 'covariateV' must be named ", paste(covariate, collapse = ", "))
-        }
-        joint <- joint[covariate]
-      } else if (!pm_is_null(covariateV) && is.list(covariateV)) {
-        for (i in seq_along(covariate))
-          baselevs[[covariate[i]]] <- sort(unique(covariateV[[i]]))
-      } else {
-        for (i in covariate)
-          baselevs[[i]] <- sort(unique(c(seq(min(X[[i]]), max(X[[i]]), length=30))))
-      }
-    }
-  }
-
-  # These are the variables defining the rows of K.
-  facs <- term_vars
-  if (cov_given && all(is.character(covariate), all(!covariate %in% facs))) {
-    facs <- c(facs, covariate)
-  }
-  if (any(!facs %in% names(baselevs))) {
-    stop(paste("Unknown factor(s) in specification:", paste(facs[!facs %in% names(baselevs)], collapse=" ")))
-  }
+  cv <- pm_cov_values(covariate, covariateV, pv$covariates, X)
+  baselevs <- pm_base_values(pv, cv, cov_reduce)
+  facs <- c(term_vars, setdiff(cv$varied, term_vars))
 
   # Optionally average over the observed values of the covariates that are
-  # not varied, instead of fixing them at one value.
+  # not varied or given, instead of fixing them at one value.
   profiles <- prof_w <- NULL
   avg_vars <- character(0)
   if (average_cov) {
-    avg_vars <- setdiff(covlevname, facs)
+    avg_vars <- setdiff(pv$covariates, c(facs, names(cv$fixed)))
     if (length(avg_vars)) {
       pdat <- X[avg_vars]
       pkey <- do.call(paste, c(lapply(pdat, function(z) format(z, digits = 15)), sep = "\r"))
@@ -229,9 +161,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
       prof_w <- as.vector(table(factor(pkey, levels = pkey[first]))) / length(pkey)
     }
   }
-
-  if (prtnum && length(covlevname) != 0) {
-    fixed_cov <- setdiff(covlevname, c(facs, avg_vars))
+  if (prtnum && length(pv$covariates) != 0) {
+    fixed_cov <- setdiff(pv$covariates, c(facs, avg_vars))
     if (length(fixed_cov)) {
       message("\n The predicted means are estimated at \n")
       message(paste(utils::capture.output(print(round(unlist(baselevs[fixed_cov]), 4))), collapse = "\n"))
@@ -242,76 +173,80 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     }
   }
 
-  # Weights for averaging over the factors that are not in modelterm.
-  cell_key <- function(df, vs) {
-    do.call(paste, c(lapply(vs, function(v) as.character(df[[v]])), sep = "\r"))
-  }
-  # number of observations in each grid row's combination of the factors 'vs'
-  count_of <- function(vs) {
-    tab <- table(cell_key(preddf, vs))
-    function(grid) {
-      n <- as.vector(tab[cell_key(grid, vs)])
-      n[is.na(n)] <- 0
-      n
+  ## 3. The weights of the cells averaged over
+  factor_names <- pv$factors
+  by_factor <- any(term_vars %in% factor_names)
+  # Nested factors: combinations that cannot exist are left out of the
+  # averages. The formula says which factors are nested (a term with both, as
+  # G/T or G:T). Nesting that is only in the data (y ~ droplet + vol, each vol
+  # with one droplet) is confounding: those effects cannot be separated and
+  # the means stay not estimable (a note says how to get them).
+  nested_data <- pm_nested_pairs(X, factor_names)
+  declared <- vapply(nested_data, function(p) any(vapply(pm_term_sets(Terms), function(s) all(c(p$a, p$b) %in% s),
+                                                         logical(1))), logical(1))
+  nested <- nested_data[declared]
+  # empty cells of the interaction terms (R/empty-cells.R): with equal
+  # weights, means average over the observed cells only
+  empty_rule <- if (weights == "equal") pm_empty_rule(Terms, factor_names, X, facs, nested, apply_rule = by_factor)
+  cw <- pm_cell_weights(weights, X, factor_names, setdiff(factor_names, facs))
+  present <- NULL
+  if (length(nested) || !is.null(empty_rule) || !is.null(cw$fun)) {
+    present <- function(grid) {
+      w <- if (is.null(cw$fun)) rep(1, nrow(grid)) else as.numeric(cw$fun(grid))
+      if (length(nested)) w <- w * !pm_absent_by_design(grid, nested)
+      if (!is.null(empty_rule)) w <- w * empty_rule$present(grid)
+      w
     }
   }
-  nuisance <- setdiff(factor_names, facs)
-  present <- NULL
-  if (weights != "equal" && length(factor_names) != 0) {
-    present <- switch(weights,
-      # same weights for every mean: frequencies of the averaged-over cells (SAS OM)
-      proportional = if (length(nuisance)) count_of(nuisance),
-      # product of each averaged-over factor's own frequencies
-      outer = if (length(nuisance)) function(grid) Reduce(`*`, lapply(nuisance, function(v) count_of(v)(grid))),
-      # each mean weights the cells by their own frequencies
-      cells = count_of(factor_names),
-      # equal weights over the non-empty cells
-      flat = function(grid) as.numeric(count_of(factor_names)(grid) > 0))
+
+  ## 4. The basis of the fixed effects for rows of predictor values,
+  ## through pm_basis() (see ?pm_coef), with the covariates' values beside it
+  basis <- pm_grid_basis(info, model_data, pv$xlev)
+  Terms <- basis$Terms
+  basis <- basis$fun
+  cov_report <- setdiff(pv$covariates, facs)
+  basis_cov <- function(nd) {
+    B <- basis(nd)
+    if (length(cov_report)) B <- cbind(B, matrix(unlist(lapply(nd[cov_report], as.numeric)), nrow(nd),
+                                                 dimnames = list(NULL, paste0("\rcov:", cov_report))))
+    B
   }
 
-  # Empty cells of the interacting factors (R/empty-cells.R): with equal
-  # weights, means average over the observed cells only
-  empty_rule <- NULL
-  if (weights == "equal" && length(factor_names) != 0) {
-    empty_rule <- pm_empty_rule(Terms, factor_names, preddf, facs,
-                                apply_rule = !cov_given || !setequal(covariate, modelterm))
-    if (!is.null(empty_rule)) present <- empty_rule$present
-  }
-
-  rg <- pm_make_refgrid(facs, baselevs, matdat, joint, profiles, prof_w, present)
-
-  # Basis evaluated row by row on the grid, through pm_basis() (see ?pm_coef).
-  if (info$builder == "gam") {
-    gam_excl <- if (length(info$gam_exclude)) info$gam_exclude else NULL
-    basis <- function(nd) pm_basis(model, nd, exclude = gam_excl)
+  ## 5. K: the basis averaged over the reference grid. The grid of all
+  ## combinations is built only when it is needed ('refgrid', semireg fits,
+  ## comparisons on common cells); otherwise each group of interacting
+  ## variables is averaged on its own grid (pm_average_by_groups()).
+  dims <- pm_grid_dims(baselevs, cv$joint, profiles, prof_w)
+  need_grid <- isTRUE(refgrid) || isTRUE(info$semireg) || length(empty_rule$missing) > 0
+  groups <- if (!need_grid) pm_dim_groups(dims, c(pm_basis_sets(info, Terms), cw$sets,
+                                                 lapply(nested, function(p) c(p$a, p$b))))
+  rg <- NULL
+  if (need_grid || length(groups) < 2) {
+    rg <- pm_make_refgrid(facs, dims, pv$matdat, present)
+    Kc <- as.matrix(pm_refgrid_average(rg, basis_cov))
+    target <- rg$target
+    empty <- rg$empty
   } else {
-    contrasts <- info$contrasts
-    # Levels of every factor in the model frame (incl. factor(x) terms and
-    # character variables), so any subset of grid rows gives the same columns.
-    mf_fit <- model.frame(Terms, model_data, na.action = na.omit, drop.unused.levels = TRUE)
-    if (is.null(attr(Terms, "predvars"))) Terms <- attr(mf_fit, "terms")
-    is_lev <- vapply(mf_fit, function(z) is.factor(z) || is.character(z), logical(1))
-    mxlev <- lapply(mf_fit[is_lev], function(z) if (is.factor(z)) levels(z) else sort(unique(z)))
-    mxlev <- mxlev[!names(mxlev) %in% names(xlev)]
-    xlev_all <- c(xlev, mxlev)
-    basis <- function(nd) pm_basis(model, nd, terms = Terms, contrasts = contrasts, xlev = xlev_all)
+    av <- pm_average_by_groups(facs, dims, pv$matdat, present, groups, pm_ref_positions(dims, X), basis_cov)
+    Kc <- av$K
+    target <- av$target
+    empty <- av$empty
   }
+  is_cov <- startsWith(colnames(Kc), "\rcov:")
+  K <- Kc[, !is_cov, drop = FALSE]
 
-  K <- as.matrix(pm_refgrid_average(rg, basis))
-
-  fctnames <- rg$target
+  fctnames <- target
   names(fctnames)[seq_along(term_vars)] <- term_labels
   rnK <- do.call("paste", c(fctnames[, seq_along(facs), drop = FALSE], sep=":"))
   rownames(K) <- rnK
-
   if (length(setdiff(info$coef_names, colnames(K))) != 0) {
     stop(paste("You may need drop empty levels in factor", modelterm))
   }
 
-  # Estimability: a row of K is estimable if it is orthogonal to the null
-  # space of the design matrix used in the fit. Only rank-deficient fits
-  # (aliased or dropped coefficients) have a null space, so the check costs
-  # nothing for full-rank models.
+  ## 6. Estimability: a row of K is estimable if it is orthogonal to the null
+  ## space of the design matrix used in the fit. Only rank-deficient fits
+  ## (aliased or dropped coefficients) have a null space, so the check costs
+  ## nothing for full-rank models.
   estimable <- rep(TRUE, nrow(K))
   null_proj <- NULL
   null_space <- NULL
@@ -330,13 +265,14 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
       estimable <- apply(nonest, 1, max) <= 1e-6 * pmax(1, apply(abs(Kfull), 1, max))
     }
   }
-  estimable[is.na(estimable) | rg$empty] <- FALSE
+  estimable[is.na(estimable) | empty] <- FALSE
   names(estimable) <- rnK
+  if (any(!estimable & !empty)) pm_note_nesting(nested_data[!declared], facs, weights)
 
   # means that average over empty cells: say which, and prepare their
   # comparisons on common cells (R/empty-cells.R)
-  empty_cells <- if (!is.null(empty_rule)) pm_empty_cells(rg, empty_rule, basis, info$coef_names, null_space, rnK,
-                                                          modelterm)
+  empty_cells <- if (length(empty_rule$missing)) pm_empty_cells(rg, empty_rule, basis, info$coef_names, null_space, rnK,
+                                                                modelterm)
 
   K <- K[, info$coef_names, drop = FALSE]
   attr(K, "estimable") <- estimable
@@ -347,36 +283,277 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
     attr(K, "null_proj") <- null_proj
   }
 
-  # Covariates that are fixed (not varied) are reported with the value used.
-  cov_report <- setdiff(covlevname, names(fctnames))
+  ## 7. Covariates that are fixed (not varied) are reported with the value used.
   if (length(cov_report)) {
-    cov_vals <- as.matrix(rg$W %*% as.matrix(rg$grid[cov_report]))
-    if (any(rg$empty)) cov_vals[rg$empty, ] <- NaN
+    cov_vals <- Kc[, is_cov, drop = FALSE]
+    if (any(empty)) cov_vals[empty, ] <- NaN
     colnames(cov_vals) <- cov_report
+    rownames(cov_vals) <- NULL
     fctnames <- cbind(fctnames, cov_vals)
   }
   rownames(fctnames) <- NULL
 
-  rg$basis <- basis              # the basis of the grid rows (for means averaged on the response scale)
-  return(list(K=K, fctnames=fctnames, response=yname, preddf=preddf, refgrid=rg, data=model_data,
+  if (!is.null(rg)) rg$basis <- basis    # the basis of the grid rows (for means averaged on the response scale)
+  return(list(K=K, fctnames=fctnames, response=info$yname, preddf=X, refgrid=rg, data=model_data,
               empty_cells=empty_cells))
 }
 
+## ---- The steps of Kmatrix() ----
 
-## TRUE for the rows of 'grid' (combinations of the factors 'vars') that are
-## absent by design: for some pair of factors where b is nested in a (each
-## level of b occurs with one level of a in the data), the row's (a, b)
-## combination does not occur.
-pm_nested_absent <- function(grid, data, vars) {
-  out <- rep(FALSE, nrow(grid))
-  for (a in vars) for (b in vars) {
-    if (a == b) next
-    fa <- as.character(data[[a]]); fb <- as.character(data[[b]])
-    if (length(unique(fa)) < 2) next
-    nested <- all(tapply(fa, fb, function(v) length(unique(v)) == 1L))
-    if (!nested) next
-    seen <- unique(paste(fa, fb, sep = "\r"))
-    out <- out | !(paste(as.character(grid[[a]]), as.character(grid[[b]]), sep = "\r") %in% seen)
+## The fixed-effect variables of the model, from the data used in the fit:
+##   X           one column per variable (characters and logicals as factors)
+##   xlev        levels of the factors
+##   coerced     numeric variables used as factors in the formula (factor(dose))
+##   factors     the variables whose levels are averaged over or define rows
+##   covariates  the numeric variables (not offsets)
+##   matdat      matrix covariates: their column means
+##   excluded_only  variables only in excluded smooth terms (gam)
+pm_predictors <- function(info, model_data, needed) {
+  form <- as.formula(paste("~", paste(pm_bq(needed), collapse = "+")), env = info$envir)
+  X <- model.frame(form, model_data, na.action = na.omit, drop.unused.levels = TRUE)
+  for (v in names(X)) {
+    if (is.character(X[[v]]) || is.logical(X[[v]])) X[[v]] <- factor(X[[v]])
+  }
+  coerced <- intersect(pm_coerced_vars(formula(info$Terms)), names(X))
+  excluded_only <- intersect(info$excluded_only, names(X))
+  is_fac <- vapply(X, is.factor, logical(1))
+  is_mat <- vapply(X, is.matrix, logical(1))
+  xlev <- lapply(X[is_fac], levels)
+  matdat <- lapply(X[is_mat], function(obj) apply(obj, 2, mean, na.rm = TRUE))
+  list(X = X, xlev = xlev, coerced = coerced, matdat = matdat, excluded_only = excluded_only,
+       factors = setdiff(c(names(xlev), coerced), excluded_only),
+       covariates = setdiff(names(X)[!is_fac & !is_mat], c(coerced, info$offset_vars, excluded_only)))
+}
+
+## The variables of 'modelterm' must be fixed-effect variables of the model.
+pm_check_term_vars <- function(term_labels, term_vars, pv) {
+  known <- c(pv$factors, pv$covariates)
+  bad <- !term_vars %in% known
+  if (any(term_vars %in% pv$excluded_only)) {
+    stop(paste("Factor(s)", paste(term_labels[term_vars %in% pv$excluded_only], collapse = ", "),
+               "only appear in smooth terms excluded from prediction (see 'exclude')."))
+  }
+  if (any(bad)) {
+    hit <- known[match(tolower(term_vars[bad]), tolower(known))]
+    stop("'", paste(term_labels[bad], collapse = "', '"), "' ", if (sum(bad) > 1) "are" else "is",
+         " not in the fixed effects of the model.",
+         if (!anyNA(hit)) paste0(" Did you mean '", paste(hit, collapse = "', '"), "'?") else
+           paste0(" Their variables are: ", paste(known, collapse = ", "), "."), call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+## The covariate values asked for. 'covariate' may be
+##   a named list or named numeric vector, e.g. list(x = c(-1, 0, 1), z = 0.3):
+##     several values give rows of K (all combinations), one value fixes the
+##     covariate; a data frame gives joint points, one row of K for each of
+##     its rows (per level combination);
+##   an unnamed numeric vector with one value for each covariate of the
+##     model, in their order;
+##   covariate names, with their values in 'covariateV' (a vector for one
+##     covariate; a list, by name or in the order of 'covariate', or a matrix
+##     of joint points for several); without 'covariateV', 50 (one covariate)
+##     or 30 values over the observed range.
+## Returns list(fixed (named list of single values), values (named list of
+## the values that define rows), varied (their names, in order), joint).
+pm_cov_values <- function(covariate, covariateV, covs, X) {
+  out <- list(fixed = list(), values = list(), varied = character(0), joint = NULL)
+  if (pm_is_null(covariate)) return(out)
+  known <- function(nm) {
+    if (any(!nm %in% covs)) {
+      stop("Unknown covariate(s) in 'covariate': ", paste(setdiff(nm, covs), collapse = ", "), ". ",
+           if (length(covs)) paste0("The covariates of the model are: ", paste(covs, collapse = ", "), ".") else
+             "The model has no covariates.", call. = FALSE)
+    }
+    if (anyDuplicated(nm)) stop("A covariate is given twice in 'covariate'.", call. = FALSE)
+  }
+  num <- function(v, nm) {
+    if (!is.numeric(v) || !length(v) || anyNA(v)) stop("The values of covariate '", nm, "' must be numbers.", call. = FALSE)
+    v
+  }
+  if (is.data.frame(covariate) || (is.matrix(covariate) && is.numeric(covariate) && !is.null(colnames(covariate)))) {
+    joint <- as.data.frame(covariate)
+    known(names(joint))
+    out$joint <- joint
+    out$varied <- names(joint)
+  } else if (is.list(covariate)) {
+    if (is.null(names(covariate)) || any(!nzchar(names(covariate)))) {
+      stop("A list in 'covariate' must be named by covariate, e.g. list(x = c(0, 1), z = 2).", call. = FALSE)
+    }
+    known(names(covariate))
+    for (nm in names(covariate)) {
+      v <- unique(num(covariate[[nm]], nm))
+      if (length(v) == 1) out$fixed[[nm]] <- v else out$values[[nm]] <- v
+    }
+    out$varied <- names(out$values)
+  } else if (is.numeric(covariate)) {
+    if (!is.null(names(covariate)) && all(nzchar(names(covariate)))) {
+      known(names(covariate))
+      out$fixed <- as.list(covariate)
+    } else {
+      if (length(covariate) != length(covs)) {
+        stop("'covariate' has ", length(covariate), " value(s) and the model has ", length(covs), " covariate(s)",
+             if (length(covs)) paste0(" (", paste(covs, collapse = ", "), ")"), ". Give one value for each, in ",
+             "this order, or name them: covariate = c(", if (length(covs)) covs[1] else "x", " = 1).", call. = FALSE)
+      }
+      out$fixed <- setNames(as.list(unname(covariate)), covs)
+    }
+  } else if (is.character(covariate)) {
+    known(covariate)
+    if (!pm_is_null(covariateV) && (is.matrix(covariateV) || is.data.frame(covariateV)) && length(covariate) > 1) {
+      # joint points, one row per prediction point
+      joint <- as.data.frame(covariateV)
+      if (is.matrix(covariateV) && is.null(colnames(covariateV))) names(joint) <- covariate
+      if (!all(covariate %in% names(joint))) {
+        stop("The columns of 'covariateV' must be named ", paste(covariate, collapse = ", "))
+      }
+      out$joint <- joint[covariate]
+    } else if (!pm_is_null(covariateV)) {
+      if (!is.list(covariateV)) covariateV <- list(covariateV)
+      if (length(covariateV) != length(covariate)) {
+        stop("'covariateV' must have the values of ", length(covariate), " covariate(s): ",
+             paste(covariate, collapse = ", "), ".", call. = FALSE)
+      }
+      by_name <- !is.null(names(covariateV)) && all(nzchar(names(covariateV)))
+      if (by_name && !setequal(names(covariateV), covariate)) {
+        stop("The names of 'covariateV' must be those in 'covariate': ", paste(covariate, collapse = ", "), ".",
+             call. = FALSE)
+      }
+      for (i in seq_along(covariate)) {
+        v <- num(covariateV[[if (by_name) covariate[i] else i]], covariate[i])
+        out$values[[covariate[i]]] <- if (length(covariate) == 1) v else sort(unique(v))
+      }
+    } else if (length(covariate) == 1) {
+      x <- X[[covariate]]
+      out$values[[covariate]] <- sort(unique(c(seq(min(x), max(x), length = 50), x)))
+    } else {
+      for (i in covariate) out$values[[i]] <- sort(unique(seq(min(X[[i]]), max(X[[i]]), length = 30)))
+    }
+    out$varied <- covariate
+  } else {
+    stop("'covariate' must be numbers (values), names of covariates, or a named list of values.", call. = FALSE)
   }
   out
+}
+
+## The values of each variable in the reference grid: the levels of factors,
+## the values given for covariates ('cv': pm_cov_values()), and 'cov_reduce'
+## of the other covariates (their mean by default).
+pm_base_values <- function(pv, cv, cov_reduce) {
+  X <- pv$X
+  reduce <- function(x) {
+    if (identical(cov_reduce, "average")) return(mean(x, na.rm = TRUE))
+    val <- cov_reduce(x)
+    if (!is.numeric(val) || length(val) != 1) {
+      stop("'cov_reduce' must return a single number.")
+    }
+    val
+  }
+  baselevs <- list()
+  for (xname in names(X)) {
+    obj <- X[[xname]]
+    if (is.matrix(obj)) next                                   # matrix covariates: column means (matdat)
+    baselevs[[xname]] <- if (is.factor(obj)) {
+      factor(levels(obj), levels = levels(obj), ordered = is.ordered(obj))
+    } else if (xname %in% pv$coerced) {
+      sort(unique(obj))
+    } else if (!is.null(cv$fixed[[xname]])) {
+      cv$fixed[[xname]]
+    } else if (!is.null(cv$values[[xname]])) {
+      cv$values[[xname]]
+    } else {
+      reduce(obj)
+    }
+  }
+  # Variables used only in excluded smooths: fixed at one value, never averaged.
+  for (v in pv$excluded_only) baselevs[[v]] <- baselevs[[v]][1]
+  baselevs
+}
+
+## Means that cannot be estimated because a factor is nested in another in
+## the data while the formula has them as separate effects: say so, and how
+## to get the means of the combinations that exist.
+pm_note_nesting <- function(undeclared, facs, weights) {
+  if (!length(undeclared) || weights %in% c("cells", "flat")) return(invisible(NULL))
+  said <- character(0)
+  for (p in undeclared) {
+    if (!any(c(p$a, p$b) %in% facs) || paste(p$b, p$a) %in% said) next     # (aliased factors: both directions)
+    said <- c(said, paste(p$a, p$b))
+    message("In the data '", p$b, "' is nested in '", p$a, "' (each level of ", p$b, " occurs with one level of ",
+            p$a, "), and the model has them as separate effects, which cannot be told apart. To get the means, ",
+            "write ", p$a, "/", p$b, " in the model formula (or use weights = \"cells\").")
+  }
+  invisible(NULL)
+}
+
+## Weights of the cells for the 'weights' schemes other than "equal":
+## list(fun = function(grid) -> weight of each row's cell (NULL: equal), sets:
+## the factors that are weighted jointly, so their combinations are needed).
+pm_cell_weights <- function(weights, preddf, factor_names, nuisance) {
+  if (weights == "equal" || !length(factor_names)) return(list(fun = NULL, sets = list()))
+  cell_key <- function(df, vs) {
+    do.call(paste, c(lapply(vs, function(v) as.character(df[[v]])), sep = "\r"))
+  }
+  # number of observations in each grid row's combination of the factors 'vs'
+  count_of <- function(vs) {
+    tab <- table(cell_key(preddf, vs))
+    function(grid) {
+      n <- as.vector(tab[cell_key(grid, vs)])
+      n[is.na(n)] <- 0
+      n
+    }
+  }
+  switch(weights,
+    # same weights for every mean: frequencies of the averaged-over cells (SAS OM)
+    proportional = list(fun = if (length(nuisance)) count_of(nuisance), sets = list(nuisance)),
+    # product of each averaged-over factor's own frequencies
+    outer = list(fun = if (length(nuisance)) {
+      cnt <- lapply(nuisance, count_of)
+      function(grid) Reduce(`*`, lapply(cnt, function(f) f(grid)))
+    }, sets = list()),
+    # each mean weights the cells by their own frequencies
+    cells = list(fun = count_of(factor_names), sets = list(factor_names)),
+    # equal weights over the non-empty cells
+    flat = list(fun = local({cnt <- count_of(factor_names); function(grid) as.numeric(cnt(grid) > 0)}),
+                sets = list(factor_names)))
+}
+
+## The basis of the fixed effects for rows of predictor values: list(fun,
+## Terms). The levels of every factor of the model frame (incl. factor(x)
+## terms and character variables) are fixed, so any rows give the same columns.
+pm_grid_basis <- function(info, model_data, xlev) {
+  model <- info$model
+  Terms <- info$Terms
+  if (info$builder == "gam") {
+    gam_excl <- if (length(info$gam_exclude)) info$gam_exclude else NULL
+    return(list(fun = function(nd) pm_basis(model, nd, exclude = gam_excl), Terms = Terms))
+  }
+  contrasts <- info$contrasts
+  mf_fit <- model.frame(Terms, model_data, na.action = na.omit, drop.unused.levels = TRUE)
+  if (is.null(attr(Terms, "predvars"))) Terms <- attr(mf_fit, "terms")
+  is_lev <- vapply(mf_fit, function(z) is.factor(z) || is.character(z), logical(1))
+  mxlev <- lapply(mf_fit[is_lev], function(z) if (is.factor(z)) levels(z) else sort(unique(z)))
+  mxlev <- mxlev[!names(mxlev) %in% names(xlev)]
+  xlev_all <- c(xlev, mxlev)
+  list(fun = function(nd) pm_basis(model, nd, terms = Terms, contrasts = contrasts, xlev = xlev_all), Terms = Terms)
+}
+
+## The sets of variables that share columns of the basis: the variables of
+## each term of the model (mgcv: of each parametric term and each smooth).
+pm_basis_sets <- function(info, Terms) {
+  if (info$builder != "gam") return(pm_term_sets(Terms))
+  sm <- info$model$smooth
+  c(pm_term_sets(stats::delete.response(info$model$pterms)),
+    lapply(sm, function(s) setdiff(c(s$term, s$by), "NA")))
+}
+
+## The position, in each dimension of the grid, of the values of the first
+## row of the data: an observed combination, which every restriction on the
+## cells (observed cells, nested factors, frequencies) accepts.
+pm_ref_positions <- function(dims, X) {
+  lapply(dims, function(d) {
+    if (length(d$vars) != 1 || nrow(d$values) == 1 || !d$vars %in% names(X)) return(1L)
+    k <- match(as.character(X[[d$vars]][1]), as.character(d$values[[1]]))
+    if (is.na(k)) 1L else k
+  })
 }

@@ -35,6 +35,172 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* `covariatemeans(contr = c(1, 3))` gives the difference between two levels
+  of the term along the covariate with its confidence band (as `semipred()`
+  does): the two lines differ where the band leaves out zero, which the
+  overlap of the lines' own bands does not show.
+* **Fewer arguments in `predictmeans()`: `plot_args`.** The eleven plot
+  settings (`plottitle`, `plotxlab`, `plotylab`, `plotord`, `lineplot`,
+  `lsd_bar`, `responsen`, `jitterv`, `basesz`, `prtplt`, `newwd`) are one
+  argument, `plot_args = list(plottitle = "Yield", basesz = 14)`. Scripts
+  that give them by name as before (`plottitle = "Yield"`) keep working, also
+  abbreviated. `mplot`, `barplot`, `pplot` and `bkplot` (deprecated for
+  `which.plots`) are no longer arguments but still work, with the same
+  warning. An argument name that does not exist is now an error. Only calls
+  that passed arguments after `Df` by position need a change: `lsd_bar` was
+  the eighth argument, where `level` is now.
+* Inside `predictmeans()` the stages are ordinary functions with named
+  results (`pm_setup()`, `pm_estimate()`, `pm_compare()`, `pm_tables()`)
+  instead of code evaluated in the call's environment; the snapshot of 52
+  calls is identical.
+
+* **Back-transformation.**
+  * *A transformed response in the formula is back-transformed by default*,
+    as a link is: `log(y)`, `log(y + c)`, `log10(y)`, `log2(y)`, `log1p(y)`,
+    `sqrt(y)`, `y^p`, `1/y`, `qlogis(y)`, `asin(sqrt(y))` and the new
+    `pm_boxcox(y, lambda)` and `pm_yeojohnson(y, lambda)` (Box-Cox and
+    Yeo-Johnson, to use in a formula). `predictmeans()` and
+    `covariatemeans()` say so in a message; `trans = I` keeps the model scale
+    only, and a `trans` that is given is used as before. For `log(y)` the
+    pairs also have the ratios.
+  * *What the back-transformed mean is* is now stated
+    (`settings$back_transform`, `summary()`): for a GLM the mean; for a GLMM
+    the response of a typical cluster (random effects at zero); for a
+    transformed response the median of the original scale (the geometric
+    mean for a log).
+  * *`bias_adjust = TRUE` gives the mean exactly*: E h(eta + u) by
+    Gauss-Hermite quadrature, which is exp(eta + sigma^2/2) for a log and
+    eta^2 + sigma^2 for a square root. Before, it was the second-order
+    formula h + sigma^2 h''/2 (as emmeans), which is too low for a log when
+    sigma is large and was off by up to 0.018 for a logit with sigma = 1.2
+    (0.389 against the true 0.371). `bias_adjust = "taylor"` keeps that
+    formula.
+  * `covariatemeans()` with a log link or `trans = exp`: the line is the
+    back-transformed fitted value. 1.x drew exp(fitted + SE/2), adding half
+    the standard error of the fitted value, which is not a bias adjustment
+    and made the line depend on its own precision.
+  * `pm_check()` reports the Box-Cox power the residuals of an `lm` fit
+    favour, with its 95% interval, and names the usual transformation within
+    it; it points to a generalized linear model for counts and proportions.
+
+* **Comparison intervals: overlap that answers the tests.** Confidence
+  limits of means are not for comparing means: with random blocks (oats) two
+  means with p < 0.001 have overlapping 95% limits, and the limits that just
+  touch at p = 0.05 are 49% limits, not the 83.4% of the rule for
+  independent means. Every result now has comparison intervals, mean +- c SE
+  with c = crit x SED/(SE1 + SE2) averaged over the pairs compared (all
+  pairs, or those within a level of `atvar`; crit is t, or the critical
+  value of `adj` when it has one): two means differ at `level` when their
+  intervals do not overlap. This is exact when the SEDs are equal (balanced
+  designs); otherwise the number of pairs judged differently by their own
+  tests is reported. For independent means with equal SEs c is t/sqrt(2)
+  (83.4% for a 5% test), with SE ratio K it is t sqrt(1 + K^2)/(1 + K), as
+  in Maghsoodloo and Huang (2010). They are in `means` (`comparison.low`,
+  `comparison.high`), `settings$comparison`, `summary()` and
+  `autoplot(interval = "comparison")`.
+* **`letterCI = TRUE` reads its letters from the comparison intervals**,
+  which the mean table shows as LL and UL with their level, and `level` is
+  the significance level of the comparisons (default 0.05), as everywhere
+  else. Before, the intervals were 83.4% confidence intervals whatever the
+  design (`level` set their level, 0.166 by default), which finds too few
+  differences when the means are correlated. A script with `letterCI = TRUE,
+  level = 0.166` now compares at the 16.6% level: drop `level`.
+* `autoplot(interval = "lsd")` and the LSD line of `summary()` use the LSDs
+  that go with the adjusted p-values.
+* **Long plot titles are broken into lines** in every plot of the package
+  (the mean, bar and back-transformed plots of `predictmeans()`, `PMplot()`,
+  `autoplot()`, `covariatemeans()`, `semipred()`, `residplot()`), also a
+  title given by the user (`plottitle`, `mtitle`); line breaks in it are
+  kept. The line length follows the font size;
+  `options(predictmeans.title_width = )` sets a number of characters.
+
+* **The printed LSDs go with the adjusted p-values.** `predictmeans()` printed
+  the unadjusted LSD (t x SED) with every adjustment except Bonferroni, so
+  with `adj = "tukey"` a difference could be larger than the LSD and have an
+  adjusted p-value above 0.05 (oats, nitrogen: LSD 10.65, but 14.08 is the
+  value that matches the Tukey p-values). Now the LSD is the SED times the
+  critical value of the method: t (`"none"`), the studentized range over
+  sqrt(2) (`"tukey"`, the HSD), t at the adjusted level (`"bonferroni"`,
+  `"sidak"`), and the Scheffe and multivariate t values (`"scheffe"`,
+  `"mvt"`), so a difference is beyond its LSD exactly when its adjusted
+  p-value is below the level. The family is that of the p-values: with
+  `atvar`, the pairs within a level (Bonferroni used all pairs: oats,
+  `atvar = "Variety"`: 32.8, now 25.2). The step-wise methods (`"holm"`,
+  `"hochberg"`, `"hommel"`, `"BH"`, `"BY"`) have no critical value for all
+  pairs: their LSDs stay unadjusted, and a note printed with the LSDs says
+  so. The LSD bar of the mean plot follows. `adj = "none"` is unchanged.
+
+* **`Kmatrix()` reviewed** (the 52-call snapshot of `predictmeans()` is
+  unchanged; 549 of 592 `Kmatrix()` cases are identical, the others are the
+  changes below).
+  * *Covariate values by name.* `covariate = list(x = c(-1, 0, 1), z = 0.3)`:
+    several values give rows, one value fixes the covariate, the others stay
+    at their means; a data frame gives joint points. Before, the names of
+    `covariate = c(z = 0.2, x = 0.5)` and of a `covariateV` list were ignored
+    (values went by position, without a warning) and one value was recycled
+    to every covariate; unnamed values must now be one per covariate.
+  * *Any combination of variables.* `modelterm` need not be a term of the
+    model: `"A:B"` for `y ~ A + B`, and a covariate may be in it (`"A:x"`).
+    `predictmeans()` accepts combinations of factors that are not a term
+    (with a note: such means are sums of the factors' effects), shows a
+    combination without data when its mean can be estimated, and uses the
+    smallest df of the terms of its factors where df go by term. The
+    factors of a term in another order (`"Variety:nitro"`) now give the
+    means in that order instead of an error.
+  * *Faster for factors that do not interact.* Each group of variables that
+    share a model term is averaged on its own grid: `y ~ Line + Block + Site
+    + Year` with 300, 90, 4 and 3 levels took 3.6 s (324,000 grid rows) and
+    takes 0.14 s; `cov_reduce = "average"` with 200,000 observations 20 s ->
+    1.1 s. The model matrix of the data is no longer built to read the
+    coefficient names. `refgrid = TRUE` returns the grid of all combinations
+    (`$refgrid` is otherwise `NULL` unless it was needed).
+  * *Empty cells are those of each interaction term.* Before, the cells were
+    the combinations of all factors that interact with anything, so in
+    `y ~ date/farm + date*trt` a date-farm-treatment combination without data
+    made the mean of that date and treatment an average over its observed
+    farms (with a warning), though farm and treatment do not interact and the
+    mean over all farms can be estimated. Now it is that mean. The same for a
+    factor that interacts only with a covariate. The exception "every cell
+    has 0 or 1 observation" is gone: unreplicated interacting factors with an
+    empty cell get the average of the observed cells and the warning, as
+    replicated ones.
+  * *Nested factors* declared in the formula (`G/T`) are also left out of
+    the averages with `weights = "proportional"` and `"outer"` (gave NA).
+    Nesting that is only in the data (`y ~ G + T`) still gives NA (the
+    effects cannot be told apart), now with a note that says so and how to
+    get the means (`G/T` or `weights = "cells"`).
+  * `Kmatrix()` accepts `aov` models with `Error()`; an `aov` fit with
+    aliased coefficients gets the estimability check; clearer errors for
+    unknown variables and covariates. New adapter generic `pm_contrasts()`
+    (a new model class needs `coef()`, `vcov()` and `terms()` only).
+
+* **Several hundred means** (e.g. the lines of a breeding trial). With more
+  than 100 means and no comparison asked for, `predictmeans()` gives the
+  means, their SEs and the SED and LSD summaries (maximum, minimum, average;
+  within the levels of each factor for a term with several factors) from the
+  covariance of the means, without a row for every pair, and `pairs` is
+  `NULL` (a message says so; `summary()` prints the SED and LSD ranges). 200
+  lines in an `lmer` model took 47 s and now take 0.7 s with the same
+  results; 300 lines (44,850 pairs) take about a second. `pairwise = TRUE`
+  (or `adj`) still compares every pair (200 lines: 5 s). Letter groups are
+  not made for more than 100 means: they cannot be read and the letter
+  algorithm takes minutes. `options(predictmeans.max_means = )` changes the
+  limit. Up to 100 means nothing changes.
+
+* **`PMplot()` is drawn with ggplot2** and returns the plot: a square level
+  plot of the lower triangle, like a correlation plot, with the legend in
+  the empty corner. New: `values = TRUE` prints the p-values on the tiles,
+  `basesz` sets the font size, a list of matrices (`atvar`) is drawn as
+  blocks down the diagonal with lines between them, and a matrix with as few
+  as two levels is plotted. `margin` is no longer used. Inside a function or
+  a loop wrap the call in `print()`. `autoplot(type = "pvalue")` draws the
+  same plot (before: tiles of unequal sides, one panel per `atvar` level) and
+  gains `values`.
+
+* Faster with many pairs: the SEDs no longer build the covariance matrix of
+  all pairs (96 means, 4,560 pairs: 1.4 s -> 0.2 s), and Tukey-adjusted limits
+  compute one quantile for each distinct df (60 means: 1.8 s -> 0.2 s).
+
 * **`varcomp()` for every model class**, with one rule for SEs and
   intervals. New: `lm`, `aov` and `glm` (the error term: residual variance,
   dispersion, negative binomial theta), `aov` with `Error()` (analysis of

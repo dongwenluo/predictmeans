@@ -30,7 +30,8 @@ test_that("every model class gives four ggplots with the right panels", {
     expect_s3_class(p, "pm_residplot")
     expect_length(p, 4)
     expect_true(all(vapply(p, ggplot2::is.ggplot, logical(1))), label = nm)
-    expect_identical(p[[3]]$labels$title, unname(third[nm]), label = nm)
+    # (long titles are broken into lines: compare the words)
+    expect_identical(gsub("\n", " ", p[[3]]$labels$title), unname(third[nm]), label = nm)
     expect_identical(p[[4]]$labels$title, if (nm %in% c("lm", "glm")) "Cook's distance" else "Fitted vs observed",
                      label = nm)
     expect_no_error(ggplot2::ggplot_build(p[[1]]))
@@ -70,7 +71,7 @@ test_that("group colours, labels of extreme points, binary calibration, semireg,
   b <- data.frame(x = rnorm(200), g = factor(rep(1:20, 10)))
   b$y <- rbinom(200, 1, plogis(0.5 * b$x))
   gb <- lme4::glmer(y ~ x + (1 | g), family = binomial, data = b)
-  expect_identical(suppressMessages(rp(gb))[[4]]$labels$title, "Calibration (tenths of fitted values)")
+  expect_identical(gsub("\n", " ", suppressMessages(rp(gb))[[4]]$labels$title), "Calibration (tenths of fitted values)")
   skip_if_not_installed("plotly")
   expect_s3_class(residplot(fm, interactive = TRUE, plot = FALSE), "plotly")
 })

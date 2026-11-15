@@ -6,25 +6,37 @@
 \usage{
 Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
         cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"))
+        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 \code{glmer}, \code{glmmTMB}, \code{gam}/\code{bam} (package \pkg{mgcv}; for \code{gamm} use its
 \code{$gam} component) or \code{semireg}.}
 
-\item{modelterm}{Name (in "quotes") for indicating which model term's predicted mean to be calculated.
-The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
+\item{modelterm}{Name (in "quotes") of the variables whose combinations give the rows of \code{K}: fixed-effect
+variables of the model joined by ":", e.g. "A" or "A:B". It need not be a term of the model: any combination
+of its factors can be asked for (e.g. "A:B" for \code{y ~ A + B}), and a covariate may be among them (its
+values as given in \code{covariate}, else its mean).
 A factor created in the model formula, e.g. \code{factor(dose)}, can be given either as
 "factor(dose)" or as "dose".}
 
-\item{covariate}{A numerical vector to specify values of covariates for calculating predicted means,
-default values are the means of the associated covariates. It also can be the name of one or more covariates in the model,
-in which case predictions are made over a range of values of those covariates (see \code{covariateV}).
+\item{covariate}{The values of covariates; those not mentioned are at their means (see \code{cov_reduce}).
+  \itemize{
+  \item A named list (or named numeric vector) of values, e.g. \code{list(x = c(-1, 0, 1), z = 0.3)}: a covariate
+    with one value is fixed there; one with several values gives rows of \code{K} for each value (all
+    combinations for several such covariates). A data frame gives joint points: one set of rows for each of
+    its rows.
+  \item An unnamed numeric vector with one value for each covariate of the model, in the order they have in
+    the model. With another length this is an error (before 2.0 the values were recycled, and names were
+    ignored).
+  \item The name of one or more covariates, in which case predictions are made over a range of values of those
+    covariates (see \code{covariateV}).
+  }
 For a \code{semireg} model this may also be a covariate that only appears in the smooth terms.}
 
 \item{covariateV}{Values for the covariate(s) named in \code{covariate}. For one covariate, a numeric vector. For several covariates,
-either a list of numeric vectors (all combinations are used) or a matrix with one named column per covariate,
+either a list of numeric vectors (all combinations are used; named by covariate, or in the order of
+\code{covariate}) or a matrix with one named column per covariate,
 where each row is one prediction point (e.g. a set of locations for a two-dimensional smooth).
 When \code{covariateV} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.}
 
@@ -49,6 +61,12 @@ set to zero), e.g. \code{"s(Block)"}. The default \code{NULL} excludes random-ef
 those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
+
+\item{refgrid}{Return the grid of all combinations (element \code{refgrid})? The default \code{FALSE} builds
+it only when it is needed (\code{semireg} models, means over empty cells). Otherwise each group of variables
+that share a model term is averaged on its own grid, which gives the same \code{K} and is much smaller
+when factors do not interact: for \code{y ~ Line + Block + Site} with 300, 90 and 4 levels, grids of 300,
+90 and 4 rows instead of 108,000.}
 }
 \value{
 \item{K}{Coefficients matrix. It has an attribute \code{"estimable"}, a logical vector with one value per row that is
@@ -57,7 +75,7 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
  \item{fctnames}{A model frame contains factor(s) info in the model.}
  \item{response}{The name of response variable in the model.}
  \item{preddf}{The data of the predictor variables used in model fitting.}
- \item{refgrid}{The reference grid used to build \code{K}: a list with the grid data (\code{grid}), the sparse
+ \item{refgrid}{\code{NULL}, or (see argument \code{refgrid}) the reference grid of all combinations: a list with the grid data (\code{grid}), the sparse
  weight matrix \code{W} that averages grid rows into rows of \code{K}, and the rows of \code{fctnames}
  (\code{target}), and \code{basis}, the function that gives the model's basis for grid rows. Any other basis
  evaluated on \code{grid}, e.g. the smooth terms of a \code{semireg} model, can be averaged in the same way as
@@ -76,7 +94,10 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
   The predicted means are built on a reference grid: every combination of the factor levels in
   the model, with covariates fixed at their means (or other chosen values). Each row of \code{K}
   is the equally weighted average of the grid rows for one level combination of
-  \code{modelterm}. The design matrix of the grid is evaluated with the model's own stored basis
+  \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
+  factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
+  the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
+  \code{\link{predictmeans}}). The design matrix of the grid is evaluated with the model's own stored basis
   information, so covariates may enter the model through transformations such as
   \code{poly(x, 2)}, \code{ns(x, 3)}, \code{bs(x)}, \code{log(x)}, \code{scale(x)} or
   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
@@ -91,6 +112,8 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
   Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
   Kmatrix(fm, "Variety", "nitro")$K
   Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
+  Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
+  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
 
   # Covariates entering through transformations or only through interactions
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)

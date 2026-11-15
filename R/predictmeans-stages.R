@@ -1,80 +1,88 @@
-## The stages of predictmeans(), in this order:
-##   setup          check arguments and options; link function; plot choices
-##   estimate       pm_inference(), pm_estimate_means(): K matrix,
-##                  predicted means, SEs, legacy tables
-##   compare        pm_compare_sed(), pm_compare_df(), pm_compare_lsd(),
-##                  pm_pair_pvalues(), pm_pair_table() (every statistic of
-##                  the pairs, once), pm_pairs_overall() / pm_pairs_atvar()
-##                  (the printed matrices and letters, from that table)
-##   mean_table     pm_mean_table(): the mean table with confidence limits
-##   backtransform  pm_back_transform(), pm_final_mean_table(): response
-##                  scale; letters
-##   plots          pm_make_plots(): all graphics (only when plot = TRUE)
-##   assemble       pm_tidy_parts(), pm_legacy_output(), pm_finish()
-## The work is done by the pure functions named above: they take their
-## inputs as arguments and return their results. Each stage is a short
-## quoted expression, evaluated in the state of one predictmeans() call
-## ('st'), that calls them and stores what later stages use. Only setup
-## works on the state directly, because it rewrites the call's arguments
-## (pairwise, atvar, adj, level, the plot choices).
-## All statistics are computed before any plotting, so plot = FALSE skips
-## all graphics work.
+## The stages of predictmeans(), in this order. Each is an ordinary function
+## that takes the results of the stages before it and returns a named list:
+##   opt  pm_setup()     the arguments as used: checked and resolved options,
+##                       link or response back-transformation, plot choices
+##   est  pm_estimate()  pm_inference(), Kmatrix(), pm_estimate_means(): K
+##                       matrix, predicted means, SEs, legacy tables
+##   cmp  pm_compare()   pm_compare_sed() or pm_sed_summary(), pm_compare_df(),
+##                       pm_pair_table() (every statistic of the pairs, once),
+##                       pm_lsd_crit(), pm_comparison_intervals(),
+##                       pm_pairs_overall() / pm_pairs_atvar() (the printed
+##                       matrices and letters, from the pair table)
+##   tab  pm_tables()    pm_mean_table(), pm_back_transform(),
+##                       pm_final_mean_table(): the mean table, the response
+##                       scale, letters
+## pm_flat() puts the four lists together (a later stage's value replaces an
+## earlier one: 'atvar', 'mt' and 'bkmt' are updated by pm_compare()) for the
+## two readers of everything: pm_make_plots() (only when plot = TRUE; all
+## statistics are computed before any plotting) and pm_assemble() (the stable
+## tables of R/tidy.R and the legacy list).
 
-## Arguments, options, link function and plot choices.
-pm_stage_setup <- function(st) eval(pm_code_setup, st)
-pm_code_setup <- quote({
+## The plot settings of predictmeans(): its argument 'plot_args', a named list
+## of these (the defaults are those of 1.x).
+pm_plot_defaults <- list(lsd_bar = TRUE, responsen = NULL, plotord = NULL, lineplot = TRUE, plottitle = NULL,
+                         plotxlab = NULL, plotylab = NULL, jitterv = 0.2, basesz = 12, prtplt = TRUE, newwd = FALSE)
 
+## The plot settings of a call: 'plot_args', and the same names given as
+## arguments of their own as in 1.x ('dots': the ... of predictmeans()), where
+## the four choices of plots replaced by which.plots (mplot, barplot, pplot,
+## bkplot) are still taken. Names may be abbreviated. Returns the settings and
+## 'legacy', the plot choices given.
+pm_plot_args <- function(plot_args = list(), dots = list()) {
+  nms <- names(pm_plot_defaults)
+  old <- c("mplot", "barplot", "pplot", "bkplot")
+  named <- function(x) !length(x) || (!is.null(names(x)) && all(nzchar(names(x))))
+  if (!is.list(plot_args) || !named(plot_args)) {
+    stop("'plot_args' must be a named list, e.g. plot_args = list(plottitle = \"Yield\", basesz = 14).", call. = FALSE)
+  }
+  full <- function(given, choices, what) {
+    k <- pmatch(given, choices, duplicates.ok = TRUE)
+    if (anyNA(k)) stop(what, paste(given[is.na(k)], collapse = ", "), call. = FALSE)
+    choices[k]
+  }
+  if (!named(dots)) stop("predictmeans(): arguments after the options must be named.", call. = FALSE)
+  dn <- full(names(dots), c(nms, old), "unused argument(s) in predictmeans(): ")
+  pn <- full(names(plot_args), nms, paste0("'plot_args' can hold ", paste(nms, collapse = ", "), "; not "))
+  out <- pm_plot_defaults
+  for (i in which(dn %in% nms)) out[dn[i]] <- list(dots[[i]])
+  for (i in seq_along(pn)) out[pn[i]] <- list(plot_args[[i]])
+  legacy <- stats::setNames(dots[dn %in% old], dn[dn %in% old])
+  out$legacy <- legacy[!vapply(legacy, is.null, logical(1))]
+  out
+}
+
+## Which plots: which.plots, or the 1.x arguments mplot, barplot, pplot and
+## bkplot ('legacy'), which still work, with a warning naming which.plots.
+pm_which_plots <- function(which.plots, legacy = list()) {
+  kinds <- c("mean", "bar", "pval", "back")
+  which.plots <- match.arg(which.plots, choices = kinds, several.ok = TRUE)
+  out <- stats::setNames(as.list(kinds %in% which.plots), c("mplot", "barplot", "pplot", "bkplot"))
+  if (length(legacy)) {
+    # arguments not given keep their which.plots setting (the default draws
+    # all plots), so e.g. 'bar = TRUE' does not turn the mean plot off
+    out[names(legacy)] <- legacy
+    notnull <- names(legacy)
+    nn <- length(notnull)
+    arg_list <- if (nn == 1) notnull else paste(paste(notnull[-nn], collapse = ", "), "and", notnull[nn])
+    wp_now <- kinds[vapply(out, isTRUE, logical(1))]
+    warning(arg_list, " ", if (nn == 1) "is" else "are", " deprecated: use which.plots = c(",
+            paste0('"', wp_now, '"', collapse = ", "), ") instead.", call. = FALSE)
+  }
+  out
+}
+
+## Arguments, options, link function and plot choices: the arguments of
+## predictmeans() ('a') and its plot settings ('pa', pm_plot_args()) as they
+## are used by the later stages.
+pm_setup <- function(a, pa) {
+  model <- a$model
+  modelterm <- a$modelterm
   pm_check_modelterm(model, modelterm)
-  adj <- pm_match_adj(adj, westfall = TRUE)
+  pm_note_not_a_term(model, modelterm)
+  adj <- pm_match_adj(a$adj, westfall = TRUE)
+  wp <- pm_which_plots(a$which.plots, pa$legacy)
 
-  all.null = function(...){
-    all(unlist(lapply(list(...), is.null)))
-  }
-
-  if(all.null(mplot, barplot, pplot, bkplot)){
-    which.plots = match.arg(which.plots, choices = c("mean", "bar", "pval", "back"), several.ok = TRUE)
-
-    which.plots.num = c("mean", "bar", "pval", "back") %in% which.plots
-    mplot = which.plots.num[1]
-    barplot = which.plots.num[2]
-    pplot = which.plots.num[3]
-    bkplot = which.plots.num[4]
-  }else{
-    ## Once you remove the old arguments you remove the if statement and delete this
-
-    old_args = c("mplot", "barplot", "pplot", "bkplot")
-    is_null = vapply(list(mplot, barplot, pplot, bkplot), is.null, logical(1))
-    notnull = old_args[!is_null]
-    nn = length(notnull)
-
-    if(nn == 1){
-      arg_list = notnull
-      verb = "is"
-    }else{
-      arg_list = paste(paste(notnull[-nn], collapse = ", "), "and", notnull[nn])
-      verb = "are"
-    }
-
-    ## arguments not given keep their which.plots setting (the default
-    ## draws all plots), so e.g. 'bar = TRUE' no longer turns the mean plot off
-    which.plots = match.arg(which.plots, choices = c("mean", "bar", "pval", "back"), several.ok = TRUE)
-    wp_default = c("mean", "bar", "pval", "back") %in% which.plots
-    for(k in which(is_null)){
-      assign(old_args[k], wp_default[k])
-    }
-
-    wp_now = c("mean", "bar", "pval", "back")[c(isTRUE(mplot), isTRUE(barplot), isTRUE(pplot), isTRUE(bkplot))]
-    warnMessage = paste0(arg_list, " ", verb, " deprecated: use which.plots = c(",
-                         paste0('"', wp_now, '"', collapse = ", "), ") instead.")
-    warning(warnMessage, call. = FALSE)
-  }
-
-  meanPlot <- ciPlot <- predictmeansBarPlot <- NULL
-
-  if (is.null(trans)) {
-    trans <- I
-  }
-
+  trans <- if (is.null(a$trans)) I else a$trans
   if (inherits(model, "aovlist")){
     model <- pm_aov_carrier(model)
   }
@@ -84,11 +92,25 @@ pm_code_setup <- quote({
   # other model classes). Otherwise the user's 'trans' is used.
   linkinv <- pm_link_trans(model)
   link_scale <- !is.null(linkinv)
+  trans_by <- if (identical(trans, I)) NA_character_ else "trans"
   if (link_scale) {
     trans <- linkinv
+    trans_by <- "the inverse link"
+  } else if (isTRUE(a$trans_default)) {
+    # a transformed response in the model formula (log(y), sqrt(y), ...,
+    # R/back-transform.R): back-transformed too, as for a link; trans = I
+    # keeps the model scale only
+    resp_trans <- pm_response_trans(model)
+    if (!is.null(resp_trans)) {
+      trans <- resp_trans$fun
+      trans_by <- paste0("the inverse of ", resp_trans$label, " (the response in the model formula)")
+      message("The response is ", resp_trans$label, ": the means are also given back-transformed to the original ",
+              "scale (trans = I for the model scale only).")
+    }
   }
 
   # Poisson models: the back-transformed means are counts
+  count <- a$count
   if (inherits(model, c("glm", "glmerMod", "glmmTMB")) &&
       stats::family(model)$family %in% c("poisson", "quasipoisson")) {
     count <- TRUE
@@ -96,18 +118,25 @@ pm_code_setup <- quote({
 
   vars <- unlist(strsplit(modelterm, "\\:"))
   # Model frame; for model classes without one, the data recovered by
-  # Kmatrix() are used instead (below).
+  # Kmatrix() are used instead (pm_estimate()).
   mdf <- tryCatch(model.frame(model), error = function(e) NULL)
 
-  if(!is.null(mdf) && any(!is.element(vars, names(mdf)[sapply(mdf,is.factor)]))){
-    stop(paste(vars, "must be factor(s)!"))
+  # predictmeans() tabulates by factors: a covariate is set with 'covariate',
+  # and means along a covariate come from covariatemeans() or Kmatrix()
+  if (!is.null(mdf)) {
+    not_fac <- intersect(vars, names(mdf)[!vapply(mdf, function(z) is.factor(z) || is.character(z) || is.logical(z),
+                                                   logical(1))])
+    if (length(not_fac)) {
+      stop("'", paste(not_fac, collapse = "', '"), "' ", if (length(not_fac) > 1) "are covariates" else "is a covariate",
+           ": predictmeans() gives means for the levels of factors. Set its value with covariate = list(",
+           not_fac[1], " = ), or use covariatemeans() or Kmatrix() for means along a covariate.", call. = FALSE)
+    }
   }
 
-  # option checking
-  if (length(vars)==1){
-    atvar <- NULL
-  }
-
+  # comparisons are made when asked for in any of these ways
+  atvar <- if (length(vars) == 1) NULL else a$atvar
+  pairwise <- a$pairwise
+  permlist <- a$permlist
   if (pm_perm_given(permlist)) {
     pairwise <- TRUE
     # "tukey", "mvt": single-step max-|t|; "westfall": step-down (pm_perm_maxT())
@@ -118,88 +147,79 @@ pm_code_setup <- quote({
     stop("adj = \"westfall\" (step-down max-|t|) needs permutation p-values ('permlist'); without them use ",
          "\"mvt\" (single step) or \"holm\".", call. = FALSE)
   }
-
   if (!is.null(atvar) && !unique(atvar%in%c("NULL", ""))){
     pairwise <- TRUE
   }
-
   if (adj != "none"){
     pairwise <- TRUE
   }
-
-  if (letterCI) {
+  # letters by overlap of the comparison intervals (R/comparison.R); 'level'
+  # is the significance level of the comparisons, as everywhere
+  if (a$letterCI) {
     pairwise <- TRUE
     adj <- "none"
-
-    if (is.null(level)){
-      slevel <- level <- 0.166
-    }else{
-      slevel <- level
-    }
   }
 
-  if (is.null(level)){
-    slevel <- level <- 0.05
-  }
-  # 'level' and 'slevel' are the user's level everywhere; the printed LSD of
-  # adj = "bonferroni" uses 'lsd_level' (compare stage) and the mean table
-  # with a permlist (limits +- 2 SE) 'ci_level' (mean_table stage)
-  slevel <- level
+  # 'level' and 'slevel' are the user's level everywhere; the printed LSDs
+  # take the critical value of 'adj' at this level (pm_lsd_crit()) and the
+  # mean table with a permlist (limits +- 2 SE) 'ci_level' (pm_tables())
+  level <- if (is.null(a$level)) 0.05 else a$level
 
+  # an order for the plot asks for the mean plot
+  plot <- a$plot
+  plotord <- pa$plotord
   if (!is.null(plotord) && !unique(plotord%in%c("NULL", ""))) {
-    plot <- mplot <- TRUE
-
+    plot <- wp$mplot <- TRUE
     if(length(plotord) != length(vars)){
       stop(paste("plotord must be a vector of length", length(vars)))
     }
-
     if(is.character(plotord)){
-      i = match(plotord, vars)
-
+      i <- match(plotord, vars)
       if(any(is.na(i))){
         stop(paste("The entries", paste0(plotord[is.na(i)], sep = ", "), "do not match any term in ", modelterm))
-      }else{
-        plotord = i
       }
+      plotord <- i
     }
   }
 
-  if (!is.logical(meandecr)){
-    meandecr <- NULL
-  }
-
-  if (!prtplt){
-    newwd <- FALSE
-  }
-
-})
+  list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf,
+       pairwise = pairwise, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,
+       covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
+       meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letterCI = a$letterCI,
+       trans = trans, transOff = a$transOff, trans_by = trans_by, link_scale = link_scale, count = count,
+       bias_adjust = a$bias_adjust, sigma = a$sigma, average = a$average,
+       permlist = permlist, ncore = a$ncore, ndecimal = a$ndecimal, prtnum = a$prtnum,
+       df_method = a$df_method, vcov = a$vcov, vcov_adjust = a$vcov_adjust,
+       vcov_adjust_default = a$vcov_adjust_default, equivalence = a$equivalence,
+       plot = plot, mplot = wp$mplot, barplot = wp$barplot, pplot = wp$pplot, bkplot = wp$bkplot,
+       plotord = plotord, lsd_bar = pa$lsd_bar, responsen = pa$responsen, lineplot = pa$lineplot,
+       plottitle = pa$plottitle, plotxlab = pa$plotxlab, plotylab = pa$plotylab, jitterv = pa$jitterv,
+       basesz = pa$basesz, prtplt = pa$prtplt, newwd = pa$newwd && pa$prtplt)
+}
 
 ## K matrix, predicted means, standard errors and the legacy mean/SE tables.
-pm_stage_estimate <- function(st) eval(pm_code_estimate, st)
-pm_code_estimate <- quote({
-  ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum,
-                        cov_reduce=cov_reduce, exclude=exclude, weights=weights)
+pm_estimate <- function(opt) {
+  # (the grid of all combinations is only needed to average on the response scale)
+  ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data, prtnum=opt$prtnum,
+                        cov_reduce=opt$cov_reduce, exclude=opt$exclude, weights=opt$weights,
+                        refgrid=identical(opt$average, "response"))
   KK <- ctr.matrix$K
-  if (is.null(mdf)) {
-    mdf <- ctr.matrix$data
+  if (anyDuplicated(ctr.matrix$fctnames[seq_along(opt$vars)])) {
+    stop("predictmeans() gives one mean for each combination of the levels of '", opt$modelterm, "': give one value ",
+         "for each covariate in 'covariate', or use covariatemeans() or Kmatrix() for several values.", call. = FALSE)
   }
-  response <- ctr.matrix$response
-  inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov, permlist, term_df = TRUE)
+  mdf <- if (is.null(opt$mdf)) ctr.matrix$data else opt$mdf
+  inf <- pm_inference(opt$model, opt$df_method, opt$vcov_adjust, opt$vcov_adjust_default, opt$vcov, opt$permlist,
+                      term_df = TRUE)
   mp <- inf$mp
-  vcov_adjust <- inf$vcov_adjust
-  vcov_label <- inf$vcov_label
-  est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, vars, mp, ndecimal)
-  K <- est$K
-  label <- est$label
-  pm <- est$pm
-  ses <- est$ses
-  ndf <- est$ndf          # cell counts, used by the stable tables
-  mt <- bkmt <- est$mt    # bkmt: for back transformed
-  vcovm <- mp$vcov
-  mean.table <- est$mean.table
-  se.table <- est$se.table
-  LL <- UL <- NULL
-})
+  est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, opt$vars, mp, opt$ndecimal)
+  list(ctr.matrix = ctr.matrix, KK = KK, mdf = mdf, response = ctr.matrix$response, inf = inf, mp = mp,
+       vcov_adjust = inf$vcov_adjust, vcov_label = inf$vcov_label, vcovm = mp$vcov,
+       K = est$K, label = est$label, pm = est$pm, ses = est$ses,
+       ndf = est$ndf,                 # cell counts, used by the stable tables
+       mt = est$mt, bkmt = est$mt,    # bkmt: for back transformed
+       mean.table = est$mean.table, se.table = est$se.table)
+}
 
 ## Predicted means, their SEs and the legacy mean/SE tables (pure function).
 ## KK: K matrix of all cells; fctnames: their labels; cells with no data are
@@ -212,19 +232,23 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   ndf <- data.frame(n.table)       ## To obtain info from model
 
   K <- KK[, mp$estimable, drop = FALSE]          # To match coef names
+  est_flag <- attr(KK, "estimable")
 
+  # Combinations of levels without data are left out, unless their mean can
+  # be estimated (a combination of factors that do not interact in the model)
   if (any(ndf$Freq==0)) {
     rnTrt <- do.call("paste", c(ndf[, vars, drop=FALSE], sep=":"))
-    rnTrt <- rnTrt[ndf$Freq!=0]      # To delete any missing level in factor
-    K <- K[rownames(K)%in%rnTrt, , drop=FALSE]
-    label <- label[rownames(label)%in%rnTrt, , drop=FALSE]
+    rnTrt <- rnTrt[ndf$Freq!=0]
+    keep <- rownames(K) %in% rnTrt
+    if (!is.null(est_flag)) keep <- keep | (est_flag[rownames(K)] %in% TRUE)
+    K <- K[keep, , drop=FALSE]
+    label <- label[keep, , drop=FALSE]
   }
 
   pm <- K %*% mp$coef
   ses <- as.numeric(apply(K, 1, function(x) {y <- matrix(x, nrow=1);sqrt(y %*% tcrossprod(mp$vcov, y))}))
   # Means that cannot be estimated (they depend on aliased coefficients) are
   # NA; their differences may still be estimable and are kept.
-  est_flag <- attr(KK, "estimable")
   if (!is.null(est_flag)) {
     non_est <- !est_flag[rownames(K)]
     non_est[is.na(non_est)] <- FALSE
@@ -250,8 +274,9 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   })
   mean.table <- tabs[[1]]
   se.table <- tabs[[2]]
-  mean.table[!(n.table)] <- NA
-  se.table[!(n.table)] <- NA
+  no_mean <- !(xtabs(~ ., mt[, vars, drop = FALSE], drop.unused.levels = TRUE) > 0)   # combinations left out
+  mean.table[no_mean] <- NA
+  se.table[no_mean] <- NA
   if (anyNA(mt$pm)) {   # non-estimable means: xtabs() would show 0
     na_cells <- as.matrix(mt[is.na(mt$pm), vars, drop = FALSE])
     mean.table[na_cells] <- NA
@@ -279,49 +304,106 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
 }
 
 ## SEDs, LSDs, degrees of freedom and pairwise comparisons.
-pm_stage_compare <- function(st) eval(pm_code_compare, st)
-pm_code_compare <- quote({
+pm_compare <- function(opt, est) {
+  K <- est$K
+  KK <- est$KK
+  label <- est$label
+  vars <- opt$vars
   nK <- nrow(K)          # To setup various matrix and row, col names
   rnK <- rownames(K)
+  perm <- pm_perm_given(opt$permlist)
+  # what the stage gives; 'atvar', 'mt', 'bkmt' and 'Df' start as they came
+  atvar <- opt$atvar
+  mt <- est$mt
+  bkmt <- est$bkmt
+  Df <- opt$Df
+  SED.out <- LSD <- NA
+  cmp_int <- NULL        # comparison intervals (R/comparison.R)
+  rK <- cm <- dses <- dses.df <- dses.m <- KKvarndiff <- labKK <- pair_over <- NULL
+  pm_df_raw <- Df_diff <- pairDf <- df_user <- pair_tab <- nsim <- NULL
+  t.p.valuem <- t.p.valuep <- LSDm <- t.p.valuemGrp <- p_valueMatrix <- NULL
+  resvar <- atvar.levels <- rcnplotm <- listlength <- nrow.pm <- pmlist <- pmlistTab <- pmlistLetter <- NULL
+  result <- function() {
+    list(nK = nK, rnK = rnK, perm = perm, atvar = atvar, mt = mt, bkmt = bkmt, Df = Df, SED.out = SED.out, LSD = LSD,
+         cmp_int = cmp_int, rK = rK, cm = cm, dses = dses, dses.df = dses.df, dses.m = dses.m,
+         KKvarndiff = KKvarndiff, labKK = labKK, pair_over = pair_over, pm_df_raw = pm_df_raw, Df_diff = Df_diff,
+         pairDf = pairDf, df_user = df_user, pair_tab = pair_tab, nsim = nsim, t.p.valuem = t.p.valuem,
+         t.p.valuep = t.p.valuep, LSDm = LSDm, t.p.valuemGrp = t.p.valuemGrp, p_valueMatrix = p_valueMatrix,
+         resvar = resvar, atvar.levels = atvar.levels, rcnplotm = rcnplotm, listlength = listlength,
+         nrow.pm = nrow.pm, pmlist = pmlist, pmlistTab = pmlistTab, pmlistLetter = pmlistLetter)
+  }
+  if (nK == 1) return(result())
 
-  if (nK == 1) {
-    SED.out <- NA
-    LSD <- NA
-  }else {
-    perm <- pm_perm_given(permlist)
-    list2env(pm_compare_sed(K, KK, label, ctr.matrix$fctnames, vars, mp$coef, vcovm, atvar,
-                            cells = ctr.matrix$empty_cells), envir = environment())
-    if (!perm) {
-      list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
-      bkmt <- mt  # update bkmt
-    }
-    # the printed LSDs: with adj = "bonferroni" at level/m over all pairs (1.x)
-    lsd_level <- if (adj == "bonferroni") level/length(dses) else level
-    LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd_level, Df, slevel, ndecimal, perm)
+  # The pairs are tabulated (one row per pair) when comparisons are asked
+  # for (pairwise, adj, atvar, letterCI, permlist, equivalence), and
+  # otherwise for up to pm_max_means() means. Above that (several hundred
+  # lines of a breeding trial) the SEDs and LSDs are summarised from the
+  # covariance of the means, without a row per pair (pm_sed_summary()).
+  # Means over empty cells and non-estimable means need each pair's
+  # contrast, so their SEDs take the first route too.
+  tab_pairs <- opt$pairwise || !is.null(opt$equivalence) || nK <= pm_max_means()
+  by_pair <- tab_pairs || !is.null(est$ctr.matrix$empty_cells) || !is.null(attr(KK, "null_proj"))
+  if (!tab_pairs) {
+    message(nK, " means of '", opt$modelterm, "' (", nK*(nK - 1)/2, " pairs): the SEDs and LSDs are summarised and ",
+            "the pairs are not tabulated. pairwise = TRUE (or 'adj') compares them.")
+  }
+  if (by_pair) {
+    s <- pm_compare_sed(K, KK, label, est$ctr.matrix$fctnames, vars, est$mp$coef, est$vcovm, atvar,
+                        cells = est$ctr.matrix$empty_cells)
+    rK <- s[["rK"]]; cm <- s[["cm"]]; dses <- s[["dses"]]; dses.df <- s[["dses.df"]]
+    KKvarndiff <- s[["KKvarndiff"]]; labKK <- s[["labKK"]]; pair_over <- s[["pair_over"]]
+  } else {
+    s <- pm_sed_summary(K, label, vars, est$vcovm, atvar)
+  }
+  SED.out <- s[["SED.out"]]
+  dses.m <- s[["dses.m"]]
+  atvar <- s[["atvar"]]              # NULL when a factor has no pairs within its levels (nested factors)
 
+  if (!perm) {
+    d <- pm_compare_df(est$inf, opt$modelterm, K, rK, mt, Df)
+    Df <- d[["Df"]]; mt <- d[["mt"]]; pm_df_raw <- d[["pm_df_raw"]]; Df_diff <- d[["Df_diff"]]
+    pairDf <- d[["pairDf"]]; df_user <- d[["df_user"]]
+    bkmt <- mt
+  }
+  no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
+  pair_cor <- NULL
+  if (tab_pairs) {
     # every statistic of the pairs, once (the pairs table, the printed
     # matrices and the letters read it)
-    no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
-    list2env(pm_pair_pvalues(model, rK, cm, dses, if (perm) NULL else Df_diff, adj, perm, permlist, ncore, vcovm),
-             envir = environment())
+    pv <- pm_pair_pvalues(opt$model, rK, cm, dses, if (perm) NULL else Df_diff, opt$adj, perm, opt$permlist,
+                          opt$ncore, est$vcovm)
+    nsim <- pv[["nsim"]]
+    pair_cor <- pv[["pair_cor"]]
     pair_tab <- pm_pair_table(label, if (no_atvar) NULL else atvar, rK, cm, dses, if (perm) NULL else Df_diff,
-                              t.p.values, adj, perm, level, pair_cor, perm_T)
+                              pv[["t.p.values"]], opt$adj, perm, opt$level, pair_cor, pv[["perm_T"]])
+  }
+  # The printed LSDs are the SEDs times the critical value that goes with
+  # the p-values shown (pm_lsd_crit(), R/p-adjust.R): the half-width of the
+  # limits that agree with them, with the same family of pairs.
+  lsd <- if (perm) list(crit = NA_real_, note = NULL) else
+    pm_lsd_crit(opt$adj, opt$level, Df, if (tab_pairs) attr(pair_tab, "families"), pair_cor)
+  LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd$crit, Df, opt$slevel, opt$ndecimal, perm, lsd$note)
+  if (tab_pairs) cmp_int <- pm_comparison_intervals(pair_tab, mt$ses, if (perm) NULL else mt$Df, opt$level, opt$adj)
 
-    if (pairwise) {
-      p_valueMatrix <- NULL
-      if (no_atvar) {
-        list2env(pm_pairs_overall(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
-                                  meandecr), envir = environment())
-      } else {
-        list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pair_tab, slevel),
-                 envir = environment())
-      }
+  # the printed matrices and the letters, from the pair table
+  if (opt$pairwise) {
+    if (no_atvar) {
+      o <- pm_pairs_overall(opt$model, rnK, mt, pair_tab, nK, Df, pairDf, opt$adj, perm, nsim, lsd$crit, opt$slevel,
+                            opt$meandecr)
+      t.p.valuem <- o[["t.p.valuem"]]; t.p.valuep <- o[["t.p.valuep"]]; LSDm <- o[["LSDm"]]
+      t.p.valuemGrp <- o[["t.p.valuemGrp"]]; p_valueMatrix <- o[["p_valueMatrix"]]
+    } else {
+      o <- pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, est$mdf, vars, atvar, pair_tab, opt$slevel)
+      resvar <- o[["resvar"]]; atvar.levels <- o[["atvar.levels"]]; rcnplotm <- o[["rcnplotm"]]
+      bkmt <- o[["bkmt"]]; listlength <- o[["listlength"]]; nrow.pm <- o[["nrow.pm"]]; pmlist <- o[["pmlist"]]
+      pmlistTab <- o[["pmlistTab"]]; pmlistLetter <- o[["pmlistLetter"]]; p_valueMatrix <- o[["p_valueMatrix"]]
     }
-  } # end of if (nK == 1) ... else
-})
+  }
+  result()
+}
 
 ## The pure functions of the compare stage. Each returns a named list of the
-## values it creates (only those that exist), which the stage stores.
+## values it creates (only those that exist).
 pm_existing <- function(nms, env) mget(intersect(nms, ls(env, all.names = TRUE)), envir = env)
 
 ## Pairwise contrasts and their SEDs (overall and within levels of each
@@ -335,7 +417,6 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
   # pairs (i, j), i > j, in column order; level labels come from the label
   # tables, not from splitting row names at ":" (levels may contain ":")
   pp <- pm_pair_index(nK)
-  CM <- pm_pair_matrix(nK)
   labK <- pm_label_matrix(label, length(vars))
 
   nKK <- nrow(KK)
@@ -344,30 +425,30 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
 
   KKvarndiff <- data.frame(labKK[ppKK$i, , drop=FALSE], labKK[ppKK$j, , drop=FALSE])
 
-  rK <- CM%*%K                    # calculate stats
+  rK <- K[pp$j, , drop = FALSE] - K[pp$i, , drop = FALSE]     # mean j minus mean i
   # differences that cannot be estimated (their components along the
   # non-estimable directions do not cancel) are NA, not computed with the
   # dropped coefficients taken as zero
   non_est_pair <- rep(FALSE, nrow(rK))
   null_proj <- attr(KK, "null_proj")
   if (!is.null(null_proj) && all(rnK %in% rownames(null_proj))) {
-    pd <- CM %*% null_proj[rnK, , drop = FALSE]
+    np <- null_proj[rnK, , drop = FALSE]
+    pd <- np[pp$j, , drop = FALSE] - np[pp$i, , drop = FALSE]
     scale_r <- pmax(1, apply(abs(rK), 1, max))
     non_est_pair <- apply(abs(pd), 1, max) > 1e-6 * scale_r
   }
   # pairs with a mean over empty cells: on the cells both means have
   pair_over <- rep(NA_character_, nrow(rK))
   if (!is.null(cells)) {
-    Cf <- matrix(0, nrow(CM), nrow(KK))
-    Cf[, match(rnK, rownames(KK))] <- CM
+    Cf <- matrix(0, length(pp$i), nrow(KK))
+    Cf[, match(rnK, rownames(KK))] <- pm_pair_matrix(nK)
     cr <- pm_common_rows(cells, Cf, rK, colnames(K))
     rK <- cr$L
     non_est_pair[cr$sub] <- cr$na[cr$sub]
     pair_over <- cr$over
   }
   cm <- rK%*%coef
-  vcov.contr <- rK %*% tcrossprod(vcovm, rK)
-  dses <- sqrt(diag(vcov.contr))
+  dses <- sqrt(rowSums((rK %*% vcovm) * rK))       # the diagonal of rK V rK' only
   cm[non_est_pair] <- NA
   dses[non_est_pair] <- NA
 
@@ -384,7 +465,8 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
     for (i in seq_along(vars)) {
       varsindx <- as.character(dses.df[,i])==as.character(dses.df[, length(vars)+i])
       if(any(varsindx)){  # in case of A/B
-        dses.m[,i] <- summary.default(dses.df[varsindx,"dses"])[c(4,1,6)]
+        dv <- dses.df[varsindx, "dses"]
+        dses.m[,i] <- if (all(is.na(dv))) NA else c(mean(dv, na.rm = TRUE), min(dv, na.rm = TRUE), max(dv, na.rm = TRUE))
       }else{
         dses.m[,i] <- NA
         atvar <- NULL
@@ -396,16 +478,83 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
        dses.m = dses.m, KKvarndiff = KKvarndiff, labKK = labKK, atvar = atvar, pair_over = pair_over)
 }
 
+## Above this many means, the pairs are tabulated only when comparisons are
+## asked for, and no letter groups are made (pm_letter_groups()): one limit
+## for both, options(predictmeans.max_means = ).
+pm_max_means <- function() {
+  n <- getOption("predictmeans.max_means", 100)
+  if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 2) stop("options(predictmeans.max_means = ) must be a number of at least 2.", call. = FALSE)
+  n
+}
+
+## The SEDs summarised without a row per pair (no comparisons asked for):
+## the variance of mean j minus mean i is c_jj + c_ii - 2 c_ij, C = K V K'
+## the covariance of the means, so all n(n-1)/2 SEDs come from one n x n
+## matrix. Returns what the summaries of pm_compare_sed() return: SED.out
+## (maximum, minimum, average; within the levels of each factor as an
+## attribute), dses.m and 'atvar' (NULL when a factor has no pairs within its
+## levels).
+pm_sed_summary <- function(K, label, vars, vcovm, atvar) {
+  C <- K %*% tcrossprod(as.matrix(vcovm), K)
+  d <- diag(C)
+  S <- sqrt(pmax(outer(d, d, "+") - 2*C, 0))
+  low <- lower.tri(S)
+  s3 <- function(x) c(max(x), min(x), mean(x))
+  SED.out <- stats::setNames(s3(S[low]), c("Max.SED", "Min.SED", "Aveg.SED"))
+  dses.m <- NULL
+  if (length(vars) > 1) {
+    labK <- pm_label_matrix(label, length(vars))
+    dses.m <- matrix(0, nrow = 3, ncol = length(vars), dimnames = list(c("Aveg.SED", "Min.SED", "Max.SED"), vars))
+    for (i in seq_along(vars)) {
+      same <- low & outer(labK[, i], labK[, i], "==")
+      if (any(same)) {
+        dses.m[, i] <- s3(S[same])[c(3, 2, 1)]
+      } else {                      # in case of A/B
+        dses.m[, i] <- NA
+        atvar <- NULL
+      }
+    }
+    attr(SED.out, "For the Same Level of Factor") <- dses.m
+  }
+  list(SED.out = SED.out, dses.m = dses.m, atvar = atvar)
+}
+
+## The mean df of all the pairs of the rows of K, a block of pairs at a time
+## (each block's contrasts are built, used and dropped).
+pm_pair_df_mean <- function(inf, modelterm, K, block = 5000L) {
+  pp <- pm_pair_index(nrow(K))
+  n <- length(pp$i)
+  tot <- 0
+  n_ok <- 0L
+  for (a in seq.int(1L, n, by = block)) {
+    k <- a:min(n, a + block - 1L)
+    d <- inf$df(K[pp$j[k], , drop = FALSE] - K[pp$i[k], , drop = FALSE], modelterm)
+    tot <- tot + sum(d, na.rm = TRUE)
+    n_ok <- n_ok + sum(!is.na(d))
+  }
+  tot/n_ok
+}
+
 ## Degrees of freedom of the means and of the pairs (no permutation tests):
 ## the user's Df, else from the call's inference choices (R/inference.R).
 ## Df: one df for the LSD tables (lmer: the term's df; df varying by row:
 ## their mean); pairDf: the df printed with the legacy p-value matrix.
+## rK = NULL (the pairs are not tabulated, pm_sed_summary()): the same Df,
+## without the df of each pair.
 pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
   if (length(Df)) {
     mt$Df <- Df
-    return(list(Df = Df, mt = mt, Df_diff = rep_len(Df, nrow(rK)), pairDf = Df, df_user = TRUE))
+    return(list(Df = Df, mt = mt, Df_diff = if (!is.null(rK)) rep_len(Df, nrow(rK)), pairDf = Df, df_user = TRUE))
   }
   pm_df_raw <- inf$df(K, modelterm)
+  if (is.null(rK)) {
+    term_df <- inf$per_row && !is.null(names(inf$mp$df)) && modelterm %in% names(inf$mp$df)
+    Df <- if (term_df) unname(inf$mp$df[modelterm]) else if (inf$per_row) pm_pair_df_mean(inf, modelterm, K) else
+      inf$df(K[1, , drop = FALSE] - K[2, , drop = FALSE], modelterm)
+    if (isTRUE(Df == 0)) stop("You need provide Df for this model!")
+    mt$Df <- round(pm_df_raw, 2)
+    return(list(Df = Df, mt = mt, pm_df_raw = pm_df_raw))
+  }
   Df_diff <- inf$df(rK, modelterm)
   # pairs that cannot be estimated (confounded factors) have NA df: leave them out
   if (inf$per_row) {
@@ -421,20 +570,22 @@ pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
   list(Df = Df, mt = mt, pm_df_raw = pm_df_raw, Df_diff = Df_diff, pairDf = pairDf)
 }
 
-## LSDs from the SEDs: t quantile with the df, or 2 x SED with permutation tests.
-pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm) {
+## LSDs from the SEDs: SED x 'crit' (pm_lsd_crit(): the critical value that
+## goes with the p-values), or 2 x SED with permutation tests.
+pm_compare_lsd <- function(SED.out, dses.m, vars, crit, Df, slevel, ndecimal, perm, note = NULL) {
   if (!perm) {
-    LSD <- round(qt(1 - level/2, df = Df) * SED.out, ndecimal+1)
+    LSD <- round(crit * SED.out, ndecimal+1)
     names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
     attr(LSD, "For the Same Level of Factor") <- NULL
 
     if (length(vars) > 1) {
       rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
-      attr(LSD, "For the Same Level of Factor") <- round(qt(1 - level/2, df = Df) * dses.m, ndecimal+1)
+      attr(LSD, "For the Same Level of Factor") <- round(crit * dses.m, ndecimal+1)
     }
 
     attr(LSD, "Significant level") <- slevel
     attr(LSD, "Degree of freedom") <- round(Df, 2)
+    if (!is.null(note)) attr(LSD, "Note") <- note
   }else{
     LSD <- round(2 * SED.out[1:3], ndecimal+1)
     names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
@@ -507,12 +658,13 @@ pm_pair_table <- function(label, atvar, rK, cm, dses, Df_diff, p, adj, perm, lev
   crit_adj <- if (!perm || !is.null(perm_T)) pm_adjust_crit(adj, level, pdf, fams, R = pair_cor, T = perm_T$T)
   if (!is.null(crit_adj)) out$crit_adj <- crit_adj
   out$ci_se <- if (!is.null(perm_T$se)) perm_T$se else dses
+  attr(out, "families") <- fams
   out
 }
 
 ## Overall pairwise tables, from the pair table: p-values (t value above
 ## the diagonal), LSDs and the matrix used for letter groups.
-pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
+pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_crit, slevel,
                              meandecr) {
   tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
   rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
@@ -533,7 +685,7 @@ pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm
 
 		      attr(t.p.valuem, "Note") <- paste("The matrix has t-value above the diagonal, p-value (adjusted by '",
                                             adj, "' method) below the diagonal", sep="")
-          LSDm.up <- qt(1-lsd_level/2, df = Df)*pair_tab$std.error
+          LSDm.up <- lsd_crit*pair_tab$std.error
           LSDm[upper.tri(LSDm)] <- LSDm.up
           Diffm[upper.tri(Diffm)] <- pair_tab$estimate
           LSDm <- t(LSDm)+Diffm
@@ -652,22 +804,44 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pai
                 "pmlistTab", "pmlistLetter", "p_valueMatrix"), environment())
 }
 
-## Mean table with confidence limits.
-pm_stage_mean_table <- function(st) eval(pm_code_mean_table, st)
-pm_code_mean_table <- quote({
-  mt_res <- pm_mean_table(mt, vars, perm = pm_perm_given(permlist),
-                          slevel = slevel, ndecimal = ndecimal)
-  meanTable <- mt_res$table
+## The mean table: confidence limits (the comparison intervals with
+## letterCI), the response scale, and letters.
+pm_tables <- function(opt, est, cmp) {
+  perm <- pm_perm_given(opt$permlist)
+  cmp_shown <- if (opt$letterCI) cmp$cmp_int       # the limits the letters are read from
+  mt_res <- pm_mean_table(cmp$mt, opt$vars, perm = perm, slevel = opt$slevel, ndecimal = opt$ndecimal,
+                          cmp = cmp_shown)
   ci_level <- mt_res$ci_level     # level of the table's limits (0.05 with a permlist: +- 2 SE)
-})
+  bkmt <- pm_back_transform(cmp$bkmt, opt$trans, opt$transOff, perm = perm, slevel = opt$slevel,
+                            ndecimal = opt$ndecimal, count = opt$count, cmp = cmp_shown)
+  meanTable <- pm_final_mean_table(mt_res$table, bkmt, opt$vars, cmp$atvar, cmp$resvar, opt$pairwise, opt$meandecr,
+                                   opt$letterCI, opt$slevel, opt$ndecimal, cmp$t.p.valuemGrp, cmp$pmlistLetter,
+                                   ci_level, cmp$cmp_int)
+  list(meanTable = meanTable, ci_level = ci_level, bkmt = bkmt,
+       nc = ncol(bkmt))           # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
+}
+
+## The results of the stages in one list: a later stage's value replaces an
+## earlier one (also by NULL).
+pm_flat <- function(...) {
+  all <- do.call(c, rev(list(...)))
+  all[!duplicated(names(all))]
+}
 
 ## Mean table with confidence limits (pure function).
 ## mt: data frame with columns pm, ses, Df and the factors 'vars'.
 ## With permutation p-values there are no df: limits are mean +/- 2 SE, at
-## about the 0.05 level. Returns list(table, ci_level: the level of the limits).
-pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
+## about the 0.05 level. 'cmp' (pm_comparison_intervals()): the limits are the
+## comparison intervals, mean +/- cmp$mult SE, instead.
+## Returns list(table, ci_level: the level of the limits).
+pm_mean_table <- function(mt, vars, perm, slevel, ndecimal, cmp = NULL) {
   meanTable <- mt
-  if (!perm) {
+  if (!is.null(cmp)) {
+    meanTable$LL <- meanTable$pm - cmp$mult * meanTable$ses
+    meanTable$UL <- meanTable$pm + cmp$mult * meanTable$ses
+    slevel <- round(1 - cmp$conf.level, 3)           # (local: the label of these limits)
+    if (perm) meanTable$Df <- NA
+  } else if (!perm) {
     meanTable$LL <- meanTable$pm - qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
     meanTable$UL <- meanTable$pm + qt(1 - slevel/2, df = meanTable$Df) * meanTable$ses
   } else {
@@ -685,31 +859,20 @@ pm_mean_table <- function(mt, vars, perm, slevel, ndecimal) {
   list(table = meanTable, ci_level = slevel)
 }
 
-## Back-transformed means, and letters for the mean table.
-pm_stage_backtransform <- function(st) eval(pm_code_backtransform, st)
-pm_code_backtransform <- quote({
-  if (!is.null(trans)) {
-    Mean <- Trt <- ciPlot <- NULL
-    perm <- pm_perm_given(permlist)
-    bkmt <- pm_back_transform(bkmt, trans, transOff, perm = perm, slevel = slevel,
-                              ndecimal = ndecimal, count = count)
-    nc <- ncol(bkmt)   # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)
-    meanTable <- pm_final_mean_table(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                     letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level)
-  }
-})
-
 ## Means and confidence limits on the response scale (pure function).
 ## bkmt has columns pm, ses, Df (absent with permutation p-values) and the
 ## factors; returns the factors with Mean, LL and UL.
-pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count) {
+pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count, cmp = NULL) {
   bkmt$Mean <- trans(bkmt$pm)-transOff
 
   if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)){
     bkmt$Mean <- exp(bkmt$pm)-transOff
   }
 
-  if (!perm) {
+  if (!is.null(cmp)) {                       # comparison intervals (letterCI)
+    bkmt$LL <- trans(bkmt$pm - cmp$mult * bkmt$ses)-transOff
+    bkmt$UL <- trans(bkmt$pm + cmp$mult * bkmt$ses)-transOff
+  } else if (!perm) {
     bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
     bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
   } else {
@@ -737,7 +900,8 @@ pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, cou
 ## to exist) in the branches that need them. Letters at the user's level
 ## 'slevel'; the back-transformed limits are labelled with 'ci_level'.
 pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, meandecr,
-                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level = slevel) {
+                                letterCI, slevel, ndecimal, t.p.valuemGrp, pmlistLetter, ci_level = slevel,
+                                cmp = NULL) {
   no_atvar <- is.null(atvar) || all(atvar%in%c("NULL", ""))
   if (!no_atvar) {
     all_var_names <- colnames(meanTable)
@@ -764,7 +928,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
         meanTable$LetterGrp <- unname(pm_letter_groups(t.p.valuemGrp, rep(TRUE, nrow(t.p.valuemGrp)), slevel))
       }
 
-      meanTable <- list(Table=meanTable, Note=pm_letter_note(letterCI, slevel))
+      meanTable <- list(Table=meanTable, Note=pm_letter_note(letterCI, slevel, cmp))
     } else {
       if (letterCI) {
         # CI overlap within each 'atvar' group
@@ -778,7 +942,7 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
                       do.call("paste", c(lapply(meanTable[resvar], as.character), sep=" : ")), sep="\r")
         meanTable$LetterGrp <- unname(lets[mkey])
       }
-      meanTable <- list(Table=meanTable, Note=paste(pm_letter_note(letterCI, slevel), " at each level of ", paste(atvar, collapse = ":"), sep=""))
+      meanTable <- list(Table=meanTable, Note=paste(pm_letter_note(letterCI, slevel, cmp), " at each level of ", paste(atvar, collapse = ":"), sep=""))
     }
   }
   meanTable
@@ -796,46 +960,42 @@ pm_ci_letters <- function(tab) {
   out
 }
 
-## Note under the mean table saying how the letters were made. With letterCI,
-## 'slevel' sets the CI level; non-overlap of two such CIs is a test at about
-## 2(1 - pnorm(sqrt(2) z)) for two uncorrelated means with equal SEs, where
-## z = qnorm(1 - slevel/2) (83.4% CIs: about 0.05).
-pm_letter_note <- function(letterCI, slevel) {
+## Note under the mean table saying how the letters were made. With letterCI
+## they are read from the overlap of the comparison intervals 'cmp'
+## (R/comparison.R), which the table shows as LL and UL.
+pm_letter_note <- function(letterCI, slevel, cmp = NULL) {
   if (!letterCI) return(paste("Letter-based representation of pairwise comparisons at significant level '", slevel, "'", sep=""))
-  alpha <- 2*(1 - stats::pnorm(sqrt(2)*stats::qnorm(1 - slevel/2)))
-  paste("Letter-based representation of pairwise comparisons by overlap of the ", (1 - slevel)*100,
-        "% CIs (about significant level '", signif(alpha, 2), "' for two uncorrelated means with equal SEs)", sep="")
+  if (is.null(cmp)) {
+    return(paste("Letter-based representation of pairwise comparisons by overlap of the confidence limits", sep=""))
+  }
+  paste0("Letter-based representation of pairwise comparisons by overlap of the comparison intervals (LL, UL: mean +/- ",
+         signif(cmp$mult, 4), " SE, ", round(100*cmp$conf.level, 1), "% intervals): two means differ at significant level '",
+         slevel, "' when their intervals do not overlap", pm_comparison_caveat(cmp))
 }
 
-## All graphics: p-value plots, mean and bar plots, back-transformed plot.
-pm_stage_plots <- function(st) eval(pm_code_plots, st)
-pm_code_plots <- quote({
-  plots <- pm_make_plots(mget(pm_plot_inputs, envir = environment(), ifnotfound = list(NULL)))
-  meanPlot <- plots$meanPlot
-  ciPlot <- plots$ciPlot
-  predictmeansBarPlot <- plots$predictmeansBarPlot
-})
-
-## Values the plots are drawn from.
-pm_plot_inputs <- c("LL", "LSD", "Mean", "SED.out", "Trt", "UL", "adj", "atvar", "barplot", "basesz", "ci_level",
-                    "bkmt", "bkplot", "ciPlot", "jitterv", "lineplot", "lsd_bar", "mdf", "meanPlot",
-                    "model", "modelterm", "mplot", "mt", "nK", "nc", "newwd", "nrow.pm", "pairwise",
-                    "plot", "plotord", "plottitle", "plotxlab", "plotylab", "pm", "pmlist", "pplot",
-                    "predictmeansBarPlot", "prtplt", "rcnplotm", "response", "responsen", "resvar",
-                    "ses", "slevel", "t.p.valuep", "trans", "transOff", "link_scale", "vars")
-
-## All graphics of predictmeans(): draws the requested plots and returns
-## list(meanPlot, ciPlot, predictmeansBarPlot). 'x' is a named list of the
-## values in pm_plot_inputs; the drawing code runs in a new environment that
-## holds only those values.
+## All graphics of predictmeans(): p-value plots, mean and bar plots,
+## back-transformed plot. Draws the requested plots and returns
+## list(meanPlot, ciPlot, predictmeansBarPlot). 'x': the results of the stages
+## (pm_flat()); these values of it are used.
 pm_make_plots <- function(x) {
-  env <- list2env(x, envir = new.env(parent = environment(pm_make_plots)))
-  eval(pm_code_draw, env)
-  mget(c("meanPlot", "ciPlot", "predictmeansBarPlot"), envir = env)
-}
+  LSD <- x[["LSD"]]; SED.out <- x[["SED.out"]]; adj <- x[["adj"]]
+  atvar <- x[["atvar"]]; barplot <- x[["barplot"]]; basesz <- x[["basesz"]]
+  ci_level <- x[["ci_level"]]; bkmt <- x[["bkmt"]]; bkplot <- x[["bkplot"]]
+  jitterv <- x[["jitterv"]]; lineplot <- x[["lineplot"]]; lsd_bar <- x[["lsd_bar"]]
+  mdf <- x[["mdf"]]; model <- x[["model"]]; modelterm <- x[["modelterm"]]
+  mplot <- x[["mplot"]]; mt <- x[["mt"]]; nK <- x[["nK"]]
+  nc <- x[["nc"]]; newwd <- x[["newwd"]]; nrow.pm <- x[["nrow.pm"]]
+  pairwise <- x[["pairwise"]]; plot <- x[["plot"]]; plotord <- x[["plotord"]]
+  plottitle <- x[["plottitle"]]; plotxlab <- x[["plotxlab"]]; plotylab <- x[["plotylab"]]
+  pm <- x[["pm"]]; pmlist <- x[["pmlist"]]; pplot <- x[["pplot"]]
+  prtplt <- x[["prtplt"]]; rcnplotm <- x[["rcnplotm"]]; response <- x[["response"]]
+  responsen <- x[["responsen"]]; resvar <- x[["resvar"]]; ses <- x[["ses"]]
+  slevel <- x[["slevel"]]; t.p.valuep <- x[["t.p.valuep"]]; trans <- x[["trans"]]
+  transOff <- x[["transOff"]]; link_scale <- x[["link_scale"]]; vars <- x[["vars"]]
+  LL <- UL <- Mean <- Trt <- NULL                       # (columns named in the plots)
+  meanPlot <- ciPlot <- predictmeansBarPlot <- NULL
 
-pm_code_draw <- quote({
-  # p-value level plots (base graphics)
+  # p-value level plots
   if (pairwise && nK > 1) {
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
       if (all(nrow(t.p.valuep) > 2, pplot, plot, prtplt)) {
@@ -845,7 +1005,7 @@ pm_code_draw <- quote({
           mtitle <- paste("Level Plot of p-value (adjusted by '", adj, "' method)\n for Pairwise Comparison", sep="")
         }
 
-        PMplot(t(t.p.valuep), level=slevel, legendx=0.69, mtitle=mtitle, newwd=newwd)
+        print(PMplot(t(t.p.valuep), level=slevel, mtitle=mtitle, newwd=newwd, basesz=basesz))
       }
     } else {
       if (all(nrow.pm > 2, pplot, plot, prtplt)) {
@@ -856,7 +1016,7 @@ pm_code_draw <- quote({
                           "' method)\n for Pairwise Comparison at Each Level of '",paste(atvar, collapse =" and "), "'", sep="")
         }
 
-        PMplot(pmlist, level=slevel, xylabel=rcnplotm, legendx=0.69, mtitle=mtitle, newwd=newwd)
+        print(PMplot(pmlist, level=slevel, xylabel=rcnplotm, mtitle=mtitle, newwd=newwd, basesz=basesz))
       }
     }
   }
@@ -923,7 +1083,7 @@ pm_code_draw <- quote({
         }
 
         p1 <- ggplot(plotmt, aes(eval(parse(text = vars)), pm, group=1))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             lims(x= c(bar_label, levels(plotmt[, vars])), y = c(yMin - offSet, max(yMax + offSet, yMin + LSD_value + offSet))) +
             geom_point(colour="red", size=2)+
           #  geom_line(linewidth=0.5)+
@@ -955,7 +1115,7 @@ pm_code_draw <- quote({
 
         dodge <- position_dodge(width=0.9)
         bp1 <- ggplot(plotmt, aes(eval(parse(text = vars)), pm))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             ylim(c(min(0, (min(pm) - max(ses)) * 1.2), max(0, (max(pm) + max(ses)) * 1.2))) +
             geom_bar(position=dodge, stat="identity", fill="papayawhip", colour="darkgreen") +
             geom_errorbar(limits, position=dodge, width=0.25, colour="blue")+theme_bw(basesz)+
@@ -1007,7 +1167,7 @@ pm_code_draw <- quote({
 
           plotmt[, fact1] <- factor(plotmt[, fact1], levels = c(bar_label, levels(plotmt[, fact1])))
           p2 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=eval(parse(text = fact2)), col=eval(parse(text = fact2))))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             lims(x= levels(plotmt[, fact1]), y = c(yMin - offSet, max(yMax + offSet, yMin + LSD_value + offSet))) +
 			      geom_point(size=2)+
            # geom_line(aes(linetype=eval(parse(text = fact2)), col=eval(parse(text = fact2))), linewidth=0.96)+
@@ -1046,7 +1206,7 @@ pm_code_draw <- quote({
           bp2 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=eval(parse(text = fact2)), fill=  eval(parse(text = fact2))))+
             geom_point(position=dodge) +
             geom_bar(stat = "identity", position=dodge)+
-            labs( x = mxlab, y = mylab, title =mtitle)+
+            labs( x = mxlab, y = mylab, title = pm_wrap_title(mtitle, basesz))+
             ylim(c(min(0, (min(pm) - max(ses)) * 1.1), max(0, (max(pm) + max(ses)) * 1.1))) +
             geom_errorbar(limits, position=dodge, width=0.25, colour="blue")+theme_bw(basesz)+
             scale_fill_brewer()+
@@ -1101,7 +1261,7 @@ pm_code_draw <- quote({
         }
 
         p3 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=factor(eval(parse(text = fact2))), col=factor(eval(parse(text = fact2)))))+
-          labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+          labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
           lims(x= levels(plotmt[, fact1]), y = c(yMin-0.5*offSet, max(yMax+0.5*offSet, yMin+LSD_value+0.5*offSet))) +
           geom_errorbar(aes(ymax=up, ymin=yMin, x=bar_label), width=0.15, linewidth=0.8, colour="blue")+
 		      geom_point(size=2)+
@@ -1199,7 +1359,7 @@ pm_code_draw <- quote({
 	    bkmt[, c("Mean", "LL", "UL")] <- lapply(bkmt[, c("Mean", "LL", "UL")], as.numeric)
 	    newdata2$bky <- as.numeric(newdata2$bky)
 	    p <- ggplot(bkmt, aes(Mean, Trt))+
-        labs(title=mtitle, x="", y="")+
+        labs(title=pm_wrap_title(mtitle, basesz), x="", y="")+
         xlim(xlimv) +
         geom_point(colour="red") + geom_errorbar(aes(xmax = UL, xmin=LL ), width=0.2, linewidth=0.8, colour="red", orientation="y") +
         scale_y_discrete(limits = rev(unique(bkmt$Trt)))+
@@ -1214,19 +1374,19 @@ pm_code_draw <- quote({
 
   })
 
-})
+  list(meanPlot = meanPlot, ciPlot = ciPlot, predictmeansBarPlot = predictmeansBarPlot)
+}
 
-## Stable tables and the returned list.
-pm_stage_assemble <- function(st) eval(pm_code_assemble, st)
-pm_code_assemble <- quote({
-  predictmeansPlot <- list(meanPlot=meanPlot, ciPlot=ciPlot)
-
-  # Stable result tables (means, pairs, settings) from the values above.
-  tidy_parts <- pm_tidy_parts(environment())
-  outputlist <- pm_legacy_output(mget(pm_legacy_inputs, envir = environment(),
-                                      ifnotfound = list(NULL)))
-  pm_out <- pm_finish(outputlist, tidy_parts)
-})
+## Stable tables and the returned list, from the results of the stages
+## ('v', pm_flat()) and the plots.
+pm_assemble <- function(v, plots) {
+  # Stable result tables (means, pairs, settings).
+  tidy_parts <- pm_tidy_parts(v)
+  x <- stats::setNames(lapply(pm_legacy_inputs, function(n) v[[n]]), pm_legacy_inputs)
+  x$predictmeansPlot <- list(meanPlot = plots$meanPlot, ciPlot = plots$ciPlot)
+  x["predictmeansBarPlot"] <- list(plots$predictmeansBarPlot)
+  pm_finish(pm_legacy_output(x), tidy_parts)
+}
 
 ## Values the legacy result list is built from.
 pm_legacy_inputs <- c("pairwise", "atvar", "permlist", "adj", "ndecimal", "mean.table", "se.table",
@@ -1343,6 +1503,15 @@ pm_letter_groups <- function(P, has_data, slevel) {
   levs <- rownames(P)
   out <- rep(NA_character_, length(levs)); names(out) <- levs
   ok <- has_data
+  # The letter algorithm (insert-absorb) can take minutes for a few hundred
+  # means, and that many letters cannot be read: no letters above the limit.
+  max_n <- pm_max_means()
+  if (sum(ok) > max_n) {
+    message("No letter groups for ", sum(ok), " means (more than ", max_n, "): they could not be read and take ",
+            "long to make. The comparisons are in the 'pairs' table; options(predictmeans.max_means = ) ",
+            "changes the limit.")
+    return(out)
+  }
   diag(P) <- 1
   while (sum(ok) > 1 && anyNA(P[ok, ok])) {
     n_na <- rowSums(is.na(P[ok, ok, drop = FALSE]))

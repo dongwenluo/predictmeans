@@ -429,9 +429,10 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
     # one df per term (SAS DDFM=CONTAIN, DDFM=BETWITHIN): every row gets the df of 'modelterm'
     if (missing(modelterm)) stop(type, " df need 'modelterm'")
     cdf <- if (type == "containment") pm_containment_df(model) else pm_betwithin_df(model)
-    if (!modelterm %in% names(cdf)) stop("'", modelterm, "' is not a term of the model")
+    d <- pm_term_df(cdf, modelterm)
+    if (is.null(d)) stop("'", modelterm, "' is not a term of the model")
     n_row <- if (is.null(ctrmatrix)) nrow(Kmatrix(model, modelterm, covariate)$K) else NROW(rbind(ctrmatrix))
-    return(rep(unname(cdf[modelterm]), n_row))
+    return(rep(d, n_row))
   }
 
   if (!is.null(ctrmatrix)) {

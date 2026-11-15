@@ -50,8 +50,26 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
   # lme); the estimates and SEs are compared.
   vc_cases <- c("varcomp_lmer", "varcomp_lme")
   vc_core <- function(x) { x <- as.matrix(x); unname(cbind(as.numeric(x[, 1]), as.numeric(x[, 2]))) }
+  # Since 2.0 the printed LSDs take the critical value that goes with 'adj'
+  # and say so in a note; 1.1.1 used t for every method but bonferroni (and
+  # for bonferroni with 'atvar' all the pairs). They are equal for the
+  # step-wise methods; for the others they must be one multiple of 1.1.1's
+  # (the rule itself is tested in test-stages.R).
+  lsd_core <- function(a, b, nm) {
+    if (!is.list(a) || is.null(a$LSD) || is.null(attr(a$LSD, "Note")) || !is.null(attr(b$LSD, "Note"))) return(a)
+    adjusted <- !grepl("not adjusted", attr(a$LSD, "Note"))
+    attr(a$LSD, "Note") <- NULL
+    if (adjusted) {
+      ratio <- as.vector(a$LSD)/as.vector(b$LSD)
+      expect_true(all(abs(ratio/ratio[1] - 1) < 1e-4), label = paste(nm, "LSDs a multiple of 1.1.1's"))
+      a$LSD <- b$LSD
+      if (!is.null(b[["Pairwise LSDs"]])) a[["Pairwise LSDs"]] <- b[["Pairwise LSDs"]]
+    }
+    a
+  }
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
     a <- strip_ci(new[[nm]]); b <- ref[[nm]]
+    a <- lsd_core(a, b, nm)
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
     if (nm %in% vc_cases) { a <- vc_core(a); b <- vc_core(b) }
     if (nm %in% type3) {

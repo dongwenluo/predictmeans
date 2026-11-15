@@ -7,15 +7,13 @@
 #'   and permutation tests.
 #' @usage
 #' predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-#'   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
-#'   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
-#'   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
-#'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+#'   level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff = 0,
+#'   count=FALSE, which.plots = c("mean", "pval", "back"),
+#'   plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE, permlist=NULL,
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
+#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
@@ -29,11 +27,20 @@
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 #'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.
-#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-#'   The \code{modelterm} must be factors and given exactly as it appears in the printed model, e.g. "A" or "A:B".
+#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
+#'   factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
+#'   model can be asked for too (e.g. "A:B" for \code{y ~ A + B}): its means are the sums of the factors' effects
+#'   that the model implies (a note says so), which gives a table of predictions for every combination, also
+#'   those without data. Covariates are set with \code{covariate}.
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some 
 #'   variable trnasformation in the model.
 #' @param pairwise An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.
+#'   The \code{pairs} table of the result is made in either case for up to 100 means. With more means (e.g. several
+#'   hundred lines of a breeding trial) and no comparison asked for, the means, their SEs and the SED and LSD
+#'   summaries (maximum, minimum, average) are computed from the covariance of the means, without a row per pair
+#'   (300 means: about a second), and \code{pairs} is \code{NULL}; \code{pairwise = TRUE} (or \code{adj}) still
+#'   compares all the pairs. No letter groups are made for more than 100 means.
+#'   \code{options(predictmeans.max_means = )} changes the limit of 100.
 #' @param atvar When \code{pairwise = TRUE}, a quoted name indicating within levels of which variable in 
 #'   \code{modelterm} the multiple comparison will be performed.
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
@@ -48,53 +55,76 @@
 #'   powerful; both use the correlation between the comparisons. "westfall" needs \code{permlist}; "scheffe" is not
 #'   available with it. 
 #'   The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
-#'   the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}. The
-#'   printed LSD is adjusted only by "bonferroni".
+#'   the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}.
+#'   The printed LSDs go with the p-values: the SED times the critical value of the method, for the same family
+#'   of pairs (all pairs, or the pairs within a level of \code{atvar}): \emph{t} for "none", the studentized range
+#'   divided by \eqn{\sqrt{2}} for "tukey" (the HSD), \emph{t} at the adjusted level for "bonferroni" and "sidak",
+#'   and the Scheffe and multivariate \emph{t} values. So a difference is beyond its LSD exactly when its adjusted
+#'   p-value is below \code{level}. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
+#'   critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
+#'   "bonferroni" adjusted the LSDs, with all the pairs as family also with \code{atvar}.)
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
-#' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
-#' @param covariate A numerical vector to specify values of covariates for calculating predicted means. The default 
-#'   values are the means of the associated covariates.
+#' @param covariate The values of covariates at which the means are predicted: a named list or vector, e.g.
+#'   \code{list(x = 2, z = 0.3)} (covariates not named are at their means), or an unnamed numerical vector with one
+#'   value for each covariate of the model, in their order. The default values are the means of the covariates
+#'   (see \code{cov_reduce}). For means along the values of a covariate use \code{\link{covariatemeans}}.
 #' @param meandecr A logical variable to indicate whether to print letters for multiple comparisons by decreasing order of means in the mean_table. 
 #'   The default is NULL which indicates the mean order follows the associated factor levels.
-#' @param letterCI A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table. 
-#'   The default is FALSE. With \code{level = NULL} the CIs are 83.4\% CIs: for two uncorrelated means with equal SEs
-#'   they fail to overlap when the means differ at about the 5\% level. Otherwise overlap only approximates the
-#'   pairwise test: it finds fewer differences when the means are positively correlated, as in most mixed models,
-#'   and more when their SEs differ (Maghsoodloo and Huang, 2010). With \code{letterCI = TRUE}, \code{level} sets the CIs
-#'   (e.g. \code{level = 0.05} gives 95\% CIs), \code{adj} is "none", and with \code{atvar} the letters compare
-#'   the means within each \code{atvar} group. The note under the mean table gives the CI level and the
-#'   approximate test level.
-#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
-#' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.
-#' @param responsen Name (in "quotes") of the back transformed response variable in the \code{model}.
+#' @param letterCI A logical variable to indicate printed letters for multiple comparisons by whether or not the
+#'   comparison intervals of the means overlap (the default is FALSE). The comparison intervals are mean
+#'   \eqn{\pm c\,SE} with \eqn{c = t \times SED/(SE_1 + SE_2)}, averaged over the pairs compared, so that two means
+#'   differ at \code{level} when their intervals do not overlap: 83.4\% intervals for independent means with equal
+#'   SEs and a 5\% test, wider when the SEs differ, narrower when the means are correlated as in most mixed
+#'   models (Goldstein and Healy, 1995; Maghsoodloo and Huang, 2010; Afshartous and Preston, 2010). They are shown
+#'   as LL and UL in \code{mean_table}, labelled with their level, and the note under the table says how many
+#'   pairs are judged differently by their own tests when the SEDs differ. \code{level} is the significance level
+#'   of the comparisons (default 0.05), \code{adj} is "none", and with \code{atvar} the letters compare the means
+#'   within each \code{atvar} group. (Before 2.0 the intervals were 83.4\% confidence intervals whatever the
+#'   design, and \code{level} set their level, 0.166 by default.) The comparison intervals are in every result:
+#'   columns \code{comparison.low} and \code{comparison.high} of \code{means}, and
+#'   \code{autoplot(interval = "comparison")}.
+#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
+#'   not given and the response is transformed in the model formula (\code{log(y)}, \code{log(y + c)},
+#'   \code{log10(y)}, \code{log2(y)}, \code{log1p(y)}, \code{sqrt(y)}, \code{y^p}, \code{1/y}, \code{qlogis(y)},
+#'   \code{asin(sqrt(y))}, \code{\link{pm_boxcox}(y, lambda)}, \code{pm_yeojohnson(y, lambda)}), the inverse is
+#'   used, constant included, and a message says so; \code{trans = I} keeps the model scale only. Models with a
+#'   link (\code{glm}, \code{glmer}, \code{glmmTMB}) are back-transformed with its inverse. What the
+#'   back-transformed mean is depends on the model: for a GLM the mean; for a GLMM the response of a typical
+#'   cluster (random effects at zero); for a transformed response the median of the original scale (the geometric
+#'   mean for a log). \code{bias_adjust = TRUE} gives the mean in the last two cases;
+#'   \code{settings$back_transform} and \code{summary()} say which it is.
+#' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0. (Not needed when
+#'   the transformation is taken from the formula.)
 #' @param count An option for indicating the back transformed mean values are counts or not. The default is FALSE.
-#' @param plotord A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
-#'   \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
-#'   \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one 
-#'   'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way 
-#'   interactions.
-#' @param lineplot An option for drawing a line chart, or dot chart. The default is TRUE.
-#' @param plottitle A character vector specifying the main title for plot(s). The default is NULL.
-#' @param plotxlab A character vector specifying the x label for plot(s). The default is NULL.
-#' @param plotylab A character vector specifying the y label for plot(s). The default is NULL.
 #' @param which.plots Which plots to draw: any of \code{"mean"} (means plot), \code{"bar"} (bar chart), \code{"pval"}
 #'   (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed plot).
 #'   The default is \code{c("mean", "pval", "back")}.
-#' @param mplot Deprecated, use \code{which.plots}. An option for drawing a means plot, or not.
-#' @param barplot Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.
-#' @param pplot Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.
-#' @param bkplot Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.
 #' @param plot Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
 #'   tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
 #'   \code{options(predictmeans.plot = TRUE)} for a whole session, draws them as 1.x did; asking for plots with
 #'   \code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
 #'   also draws them.
-#' @param jitterv A degree of jitter in x and y direction in the back transformed means graph. The default is zero.
-#' @param basesz The base font size. The default is 12.
+#' @param plot_args A named list of settings for the plots, e.g.
+#'   \code{plot_args = list(plottitle = "Yield", basesz = 14)}:
+#'   \describe{
+#'     \item{\code{plottitle}}{A character vector specifying the main title for plot(s). The default is NULL.}
+#'     \item{\code{plotxlab}}{A character vector specifying the x label for plot(s). The default is NULL.}
+#'     \item{\code{plotylab}}{A character vector specifying the y label for plot(s). The default is NULL.}
+#'     \item{\code{plotord}}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in  \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way  interactions.}
+#'     \item{\code{lineplot}}{An option for drawing a line chart, or dot chart. The default is TRUE.}
+#'     \item{\code{lsd_bar}}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
+#'     \item{\code{responsen}}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
+#'     \item{\code{jitterv}}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
+#'     \item{\code{basesz}}{The base font size. The default is 12.}
+#'     \item{\code{prtplt}}{An option for printing plots on the screen, or not. The default is TRUE.}
+#'     \item{\code{newwd}}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
+#'   }
+#'   As in 1.x these may also be given as arguments of their own (\code{plottitle = "Yield"}).
+#' @param \dots The settings of \code{plot_args} given by name as in 1.x, and the 1.x choices of plots
+#'   \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}, which still work with a warning that names
+#'   the \code{which.plots} to use. Other names are an error.
 #' @param prtnum An option for printing covariate information on the screen, or not. The default is TRUE.
-#' @param prtplt An option for printing plots on the screen, or not. The default is TRUE.
-#' @param newwd A logical variable to indicate whether to print graph in a new window. The default is FALSE.
 #' @param permlist A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 #'   the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
 #'   permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
@@ -182,11 +212,14 @@
 #'   one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
 #'   \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 #'   (normal-based in \code{contrastmeans}).
-#' @param bias_adjust Logical: adjust the back-transformed means (non-identity link or \code{trans}) for the random
-#'   effects (and, for a transformed response of a linear model, the residual error): \eqn{h(\eta) + \sigma^2 h''(\eta)/2}
-#'   instead of \eqn{h(\eta)}, the second-order approximation of the mean over the population (as emmeans'
-#'   \code{bias.adjust}); the response-scale SEs follow by the delta method. Without it (the default) the
-#'   back-transformed mean is that of a unit with all random effects zero.
+#' @param bias_adjust Adjust the back-transformed means (non-identity link or \code{trans}) to be means on the
+#'   response scale: \code{TRUE} gives \eqn{E\,h(\eta + u)}, \eqn{u \sim N(0, \sigma^2)}, the mean over the
+#'   random effects (and, for a transformed response of a linear model, the residual error), computed by
+#'   Gauss-Hermite quadrature: \eqn{\exp(\eta + \sigma^2/2)} for a log, \eqn{\eta^2 + \sigma^2} for a square
+#'   root. \code{"taylor"} gives the second-order approximation \eqn{h(\eta) + \sigma^2 h''(\eta)/2} (emmeans'
+#'   \code{bias.adjust}), which is too low for a log when \eqn{\sigma} is large and off for a logit. The
+#'   response-scale SEs follow by the delta method. \code{FALSE} (the default): the back-transformed mean is that
+#'   of a unit with all random effects zero, or the median for a transformed response.
 #' @param sigma With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
 #'   random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a
 #'   transformed response of a linear (mixed) model; models with random slopes need it given.
@@ -199,7 +232,9 @@
 #' \item{Predicted Means}{A table of predicted means.}
 #'  \item{Standard Error of Means}{A table of standard errors of predicted means.}
 #'  \item{Standard Error of Differences}{Standard errors of differences between predicted means.}
-#'  \item{LSD}{Least significant differences between predicted means.}
+#'  \item{LSD}{Least significant differences between predicted means (maximum, minimum and average), with the
+#'  critical value that goes with \code{adj} (see there); attribute \code{"Note"} says when they are adjusted,
+#'  or why not.}
 #'  \item{Pairwise p-value}{A matrix with t-values above the diagonal and p-values below the diagonal, or 
 #'  matrix of pairwise comparison p-values for each level of \code{atvar}.}
 #'  \item{mean_table}{A summary of predicted means result including 'Predicted means', 'Standard error', 'Df' 
@@ -209,12 +244,16 @@
 #'  \item{predictmeansBarPlot}{gg bar plot of predicted means.}
 #'  \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
 #'  \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
-#'  columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high}; when the means are
+#'  columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} (confidence limits
+#'  of each mean, not for comparing means), \code{comparison.low} and \code{comparison.high} (comparison
+#'  intervals: two means differ at \code{level}, with the adjustment of \code{adj} when it has a critical value,
+#'  when these do not overlap; see \code{letterCI}; present when the pairs are tabulated); when the means are
 #'  back-transformed also \code{response}, \code{response.std.error} (delta method, as \pkg{emmeans} with
 #'  \code{type = "response"}), \code{response.conf.low} and \code{response.conf.high}; \code{group}
 #'  (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
 #'  not rounded. Also returned by \code{tidy()} and \code{as.data.frame()}.}
-#'  \item{pairs}{A data frame with one row per pairwise comparison: \code{level1}, \code{level2}, \code{by} (the
+#'  \item{pairs}{A data frame with one row per pairwise comparison (\code{NULL} with one mean, or with more than
+#'  100 means when no comparison was asked for; see \code{pairwise}): \code{level1}, \code{level2}, \code{by} (the
 #'  level of \code{atvar}, when given; \code{NA} for pairs across levels), \code{estimate} (mean of \code{level1}
 #'  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
 #'  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
@@ -232,7 +271,9 @@
 #'  \item{settings}{A list with the options used: model term, significance level, adjustment method, \code{atvar},
 #'  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), \code{singular} (a
 #'  singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
-#'  package version.}
+#'  package version; \code{comparison}, the comparison intervals: the multiplier \code{mult} of the SE, its
+#'  confidence level, the number of pairs and how many of them are judged differently by their own tests
+#'  (\code{disagree}; 0 and \code{exact = TRUE} when all SEDs are equal).}
 #'  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
 #'  the \code{means}, \code{pairs} and \code{settings} slots are not printed.
 #' @note
@@ -262,6 +303,15 @@
 #' 	Maghsoodloo, S. and Huang, C.-Y. (2010), \emph{Comparing the overlapping of two independent confidence intervals
 #' 	with a single confidence interval for two normal population parameters}, Journal of Statistical Planning and
 #' 	Inference, 140(11), 3295-3305.
+#'
+#' 	Goldstein, H. and Healy, M. J. R. (1995), \emph{The graphical presentation of a collection of means}, Journal
+#' 	of the Royal Statistical Society A, 158(1), 175-177.
+#'
+#' 	Austin, P. C. and Hux, J. E. (2002), \emph{A brief note on overlapping confidence intervals}, Journal of
+#' 	Vascular Surgery, 36(1), 194-195.
+#'
+#' 	Afshartous, D. and Preston, R. A. (2010), \emph{Confidence intervals for dependent data: equating non-overlap
+#' 	with statistical significance}, Computational Statistics and Data Analysis, 54(10), 2296-2305.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -286,18 +336,15 @@
 #' @name predictmeans
 NULL
 
-predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL, lsd_bar=TRUE,
+predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
                           level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff=0,
-						  responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, plotxlab=NULL,
-						  plotylab=NULL,
-						  which.plots = c("mean", "pval", "back"),
-						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE), jitterv=0.2,
-						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
+                          count=FALSE, which.plots = c("mean", "pval", "back"),
+                          plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE,
+                          permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
-  vcov_adjust_default <- missing(vcov_adjust)
+                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...) {
   average <- match.arg(average)
   pm_equiv_margins(equivalence)                  # check early
   pm_note_singular(model)
@@ -318,21 +365,25 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
+  # the plot settings: plot_args, or the same names given as arguments (1.x)
+  pa <- pm_plot_args(plot_args, list(...))
   # plots asked for by name are drawn, whatever the default of 'plot'
-  if (missing(plot) && (!missing(which.plots) || !all(vapply(list(mplot, barplot, pplot, bkplot), is.null, logical(1)))))
-    plot <- TRUE
+  if (missing(plot) && (!missing(which.plots) || length(pa$legacy))) plot <- TRUE
 
-  # The calculation runs in stages that share this call's state (see
-  # predictmeans-stages.R).
-  st <- environment()
-  pm_stage_setup(st)
-  pm_stage_estimate(st)
-  pm_stage_compare(st)
-  pm_stage_mean_table(st)
-  pm_stage_backtransform(st)
-  if (plot) {
-    pm_stage_plots(st)
-  }
-  pm_stage_assemble(st)
-  get("pm_out", envir = st)
+  # The stages (R/predictmeans-stages.R): each takes the results of those
+  # before it and returns a named list.
+  opt <- pm_setup(list(model = model, modelterm = modelterm, data = data, pairwise = pairwise, atvar = atvar,
+                       adj = adj, Df = Df, level = level, covariate = covariate, meandecr = meandecr,
+                       letterCI = letterCI, trans = trans, trans_default = missing(trans), transOff = transOff,
+                       count = count, which.plots = which.plots, plot = plot, prtnum = prtnum,
+                       permlist = permlist, ncore = ncore, ndecimal = ndecimal, cov_reduce = cov_reduce,
+                       exclude = exclude, vcov_adjust = vcov_adjust, vcov_adjust_default = missing(vcov_adjust),
+                       weights = weights, df_method = df_method, vcov = vcov, equivalence = equivalence,
+                       bias_adjust = bias_adjust, sigma = sigma, average = average), pa)
+  est <- pm_estimate(opt)                        # K matrix, means, SEs
+  cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals
+  tab <- pm_tables(opt, est, cmp)                # mean table, response scale, letters
+  v <- pm_flat(opt, est, cmp, tab)
+  plots <- if (opt$plot) pm_make_plots(v) else list(meanPlot = NULL, ciPlot = NULL, predictmeansBarPlot = NULL)
+  pm_assemble(v, plots)
 }
