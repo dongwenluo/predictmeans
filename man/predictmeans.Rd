@@ -5,15 +5,13 @@
 \title{Predicted Means of a Linear Model}
 \usage{
 predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-  lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
-  transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
-  plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
-  jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+  level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff = 0,
+  count=FALSE, which.plots = c("mean", "pval", "back"),
+  plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE, permlist=NULL,
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
+  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -73,8 +71,6 @@ critical value for all pairs: their LSDs are not adjusted and a note with the LS
 
 \item{Df}{A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.}
 
-\item{lsd_bar}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
-
 \item{level}{A significant level for calculating LSD, CI etc. The default value is 0.05.}
 
 \item{covariate}{The values of covariates at which the means are predicted: a named list or vector, e.g.
@@ -113,35 +109,11 @@ mean for a log). \code{bias_adjust = TRUE} gives the mean in the last two cases;
 \item{transOff}{When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0. (Not needed when
 the transformation is taken from the formula.)}
 
-\item{responsen}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
-
 \item{count}{An option for indicating the back transformed mean values are counts or not. The default is FALSE.}
-
-\item{plotord}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
-\code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
-\code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one 
-'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way 
-interactions.}
-
-\item{lineplot}{An option for drawing a line chart, or dot chart. The default is TRUE.}
-
-\item{plottitle}{A character vector specifying the main title for plot(s). The default is NULL.}
-
-\item{plotxlab}{A character vector specifying the x label for plot(s). The default is NULL.}
-
-\item{plotylab}{A character vector specifying the y label for plot(s). The default is NULL.}
 
 \item{which.plots}{Which plots to draw: any of \code{"mean"} (means plot), \code{"bar"} (bar chart), \code{"pval"}
 (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed plot).
 The default is \code{c("mean", "pval", "back")}.}
-
-\item{mplot}{Deprecated, use \code{which.plots}. An option for drawing a means plot, or not.}
-
-\item{barplot}{Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.}
-
-\item{pplot}{Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.}
-
-\item{bkplot}{Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.}
 
 \item{plot}{Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
 tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
@@ -149,15 +121,28 @@ tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
 \code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
 also draws them.}
 
-\item{jitterv}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
+\item{plot_args}{A named list of settings for the plots, e.g.
+\code{plot_args = list(plottitle = "Yield", basesz = 14)}:
+\describe{
+  \item{\code{plottitle}}{A character vector specifying the main title for plot(s). The default is NULL.}
+  \item{\code{plotxlab}}{A character vector specifying the x label for plot(s). The default is NULL.}
+  \item{\code{plotylab}}{A character vector specifying the y label for plot(s). The default is NULL.}
+  \item{\code{plotord}}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in  \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way  interactions.}
+  \item{\code{lineplot}}{An option for drawing a line chart, or dot chart. The default is TRUE.}
+  \item{\code{lsd_bar}}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
+  \item{\code{responsen}}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
+  \item{\code{jitterv}}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
+  \item{\code{basesz}}{The base font size. The default is 12.}
+  \item{\code{prtplt}}{An option for printing plots on the screen, or not. The default is TRUE.}
+  \item{\code{newwd}}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
+}
+As in 1.x these may also be given as arguments of their own (\code{plottitle = "Yield"}).}
 
-\item{basesz}{The base font size. The default is 12.}
+\item{\dots}{The settings of \code{plot_args} given by name as in 1.x, and the 1.x choices of plots
+\code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}, which still work with a warning that names
+the \code{which.plots} to use. Other names are an error.}
 
 \item{prtnum}{An option for printing covariate information on the screen, or not. The default is TRUE.}
-
-\item{prtplt}{An option for printing plots on the screen, or not. The default is TRUE.}
-
-\item{newwd}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
 
 \item{permlist}{A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 

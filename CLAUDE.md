@@ -58,9 +58,12 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   (see `dev/sas/README.md`).
 
 ## Layout
-- `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`; the work is
-  done by pure functions there (`pm_estimate_means()`, `pm_compare_*()`,
-  `pm_make_plots()`, ...). Only the setup stage edits the call's state.
+- `R/predictmeans.R` calls the stages in `R/predictmeans-stages.R`, ordinary
+  functions that each take the results of those before and return a named
+  list: `opt <- pm_setup()`, `est <- pm_estimate(opt)`,
+  `cmp <- pm_compare(opt, est)`, `tab <- pm_tables(opt, est, cmp)`;
+  `pm_flat()` joins them for `pm_make_plots()` and `pm_assemble()`. Plot
+  settings go through `plot_args` (`pm_plot_args()`).
 - `R/Kmatrix.R` + `R/refgrid.R`: reference grid and K matrix.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
 - Help pages: edit the roxygen2 block above each function (data sets in

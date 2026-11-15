@@ -7,15 +7,13 @@
 #'   and permutation tests.
 #' @usage
 #' predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-#'   lsd_bar=TRUE, level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
-#'   transOff = 0, responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, 
-#'   plotxlab=NULL, plotylab=NULL, which.plots = c("mean", "pval", "back"),
-#'   mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE),
-#'   jitterv=0.2, basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, 
+#'   level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff = 0,
+#'   count=FALSE, which.plots = c("mean", "pval", "back"),
+#'   plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE, permlist=NULL,
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"))
+#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
@@ -66,7 +64,6 @@
 #'   critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
 #'   "bonferroni" adjusted the LSDs, with all the pairs as family also with \code{atvar}.)
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
-#' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
 #' @param covariate The values of covariates at which the means are predicted: a named list or vector, e.g.
 #'   \code{list(x = 2, z = 0.3)} (covariates not named are at their means), or an unnamed numerical vector with one
@@ -99,34 +96,35 @@
 #'   \code{settings$back_transform} and \code{summary()} say which it is.
 #' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0. (Not needed when
 #'   the transformation is taken from the formula.)
-#' @param responsen Name (in "quotes") of the back transformed response variable in the \code{model}.
 #' @param count An option for indicating the back transformed mean values are counts or not. The default is FALSE.
-#' @param plotord A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
-#'   \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
-#'   \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one 
-#'   'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way 
-#'   interactions.
-#' @param lineplot An option for drawing a line chart, or dot chart. The default is TRUE.
-#' @param plottitle A character vector specifying the main title for plot(s). The default is NULL.
-#' @param plotxlab A character vector specifying the x label for plot(s). The default is NULL.
-#' @param plotylab A character vector specifying the y label for plot(s). The default is NULL.
 #' @param which.plots Which plots to draw: any of \code{"mean"} (means plot), \code{"bar"} (bar chart), \code{"pval"}
 #'   (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed plot).
 #'   The default is \code{c("mean", "pval", "back")}.
-#' @param mplot Deprecated, use \code{which.plots}. An option for drawing a means plot, or not.
-#' @param barplot Deprecated, use \code{which.plots}. An option for drawing a bar chart, or not.
-#' @param pplot Deprecated, use \code{which.plots}. An option for drawing a p-values plot, or not.
-#' @param bkplot Deprecated, use \code{which.plots}. An option for drawing back transformed plot, or not.
 #' @param plot Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
 #'   tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
 #'   \code{options(predictmeans.plot = TRUE)} for a whole session, draws them as 1.x did; asking for plots with
 #'   \code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
 #'   also draws them.
-#' @param jitterv A degree of jitter in x and y direction in the back transformed means graph. The default is zero.
-#' @param basesz The base font size. The default is 12.
+#' @param plot_args A named list of settings for the plots, e.g.
+#'   \code{plot_args = list(plottitle = "Yield", basesz = 14)}:
+#'   \describe{
+#'     \item{\code{plottitle}}{A character vector specifying the main title for plot(s). The default is NULL.}
+#'     \item{\code{plotxlab}}{A character vector specifying the x label for plot(s). The default is NULL.}
+#'     \item{\code{plotylab}}{A character vector specifying the y label for plot(s). The default is NULL.}
+#'     \item{\code{plotord}}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in  \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way  interactions.}
+#'     \item{\code{lineplot}}{An option for drawing a line chart, or dot chart. The default is TRUE.}
+#'     \item{\code{lsd_bar}}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
+#'     \item{\code{responsen}}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
+#'     \item{\code{jitterv}}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
+#'     \item{\code{basesz}}{The base font size. The default is 12.}
+#'     \item{\code{prtplt}}{An option for printing plots on the screen, or not. The default is TRUE.}
+#'     \item{\code{newwd}}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
+#'   }
+#'   As in 1.x these may also be given as arguments of their own (\code{plottitle = "Yield"}).
+#' @param \dots The settings of \code{plot_args} given by name as in 1.x, and the 1.x choices of plots
+#'   \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}, which still work with a warning that names
+#'   the \code{which.plots} to use. Other names are an error.
 #' @param prtnum An option for printing covariate information on the screen, or not. The default is TRUE.
-#' @param prtplt An option for printing plots on the screen, or not. The default is TRUE.
-#' @param newwd A logical variable to indicate whether to print graph in a new window. The default is FALSE.
 #' @param permlist A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
 #'   the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
 #'   permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
@@ -338,19 +336,15 @@
 #' @name predictmeans
 NULL
 
-predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL, lsd_bar=TRUE,
+predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
                           level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff=0,
-						  responsen=NULL, count=FALSE, plotord=NULL, lineplot=TRUE, plottitle=NULL, plotxlab=NULL,
-						  plotylab=NULL,
-						  which.plots = c("mean", "pval", "back"),
-						  mplot=NULL, barplot=NULL, pplot=NULL, bkplot=NULL, plot=getOption("predictmeans.plot", FALSE), jitterv=0.2,
-						  basesz=12, prtnum=TRUE, prtplt=TRUE, newwd=FALSE, permlist=NULL, ncore=1, ndecimal=4,
+                          count=FALSE, which.plots = c("mean", "pval", "back"),
+                          plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE,
+                          permlist=NULL, ncore=1, ndecimal=4,
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response")) {
-  vcov_adjust_default <- missing(vcov_adjust)
-  trans_default <- missing(trans)                # then a transformed response in the formula is back-transformed
+                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...) {
   average <- match.arg(average)
   pm_equiv_margins(equivalence)                  # check early
   pm_note_singular(model)
@@ -371,21 +365,25 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   weights <- match.arg(weights)
   df_method <- match.arg(df_method)
+  # the plot settings: plot_args, or the same names given as arguments (1.x)
+  pa <- pm_plot_args(plot_args, list(...))
   # plots asked for by name are drawn, whatever the default of 'plot'
-  if (missing(plot) && (!missing(which.plots) || !all(vapply(list(mplot, barplot, pplot, bkplot), is.null, logical(1)))))
-    plot <- TRUE
+  if (missing(plot) && (!missing(which.plots) || length(pa$legacy))) plot <- TRUE
 
-  # The calculation runs in stages that share this call's state (see
-  # predictmeans-stages.R).
-  st <- environment()
-  pm_stage_setup(st)
-  pm_stage_estimate(st)
-  pm_stage_compare(st)
-  pm_stage_mean_table(st)
-  pm_stage_backtransform(st)
-  if (plot) {
-    pm_stage_plots(st)
-  }
-  pm_stage_assemble(st)
-  get("pm_out", envir = st)
+  # The stages (R/predictmeans-stages.R): each takes the results of those
+  # before it and returns a named list.
+  opt <- pm_setup(list(model = model, modelterm = modelterm, data = data, pairwise = pairwise, atvar = atvar,
+                       adj = adj, Df = Df, level = level, covariate = covariate, meandecr = meandecr,
+                       letterCI = letterCI, trans = trans, trans_default = missing(trans), transOff = transOff,
+                       count = count, which.plots = which.plots, plot = plot, prtnum = prtnum,
+                       permlist = permlist, ncore = ncore, ndecimal = ndecimal, cov_reduce = cov_reduce,
+                       exclude = exclude, vcov_adjust = vcov_adjust, vcov_adjust_default = missing(vcov_adjust),
+                       weights = weights, df_method = df_method, vcov = vcov, equivalence = equivalence,
+                       bias_adjust = bias_adjust, sigma = sigma, average = average), pa)
+  est <- pm_estimate(opt)                        # K matrix, means, SEs
+  cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals
+  tab <- pm_tables(opt, est, cmp)                # mean table, response scale, letters
+  v <- pm_flat(opt, est, cmp, tab)
+  plots <- if (opt$plot) pm_make_plots(v) else list(meanPlot = NULL, ciPlot = NULL, predictmeansBarPlot = NULL)
+  pm_assemble(v, plots)
 }

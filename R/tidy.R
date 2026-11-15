@@ -7,8 +7,9 @@
 ##   settings  the options that produced them
 ## Values are not rounded; rounding is left to printing.
 
+## 'e': the results of the stages of predictmeans() in one list (pm_flat()).
 pm_tidy_parts <- function(e) {
-  g <- function(nm) get0(nm, envir = e, inherits = FALSE)
+  g <- function(nm) e[[nm]]
   vars <- g("vars")
   K <- g("K")
   KK <- g("KK")

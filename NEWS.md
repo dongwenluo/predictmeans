@@ -35,6 +35,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Fewer arguments in `predictmeans()`: `plot_args`.** The eleven plot
+  settings (`plottitle`, `plotxlab`, `plotylab`, `plotord`, `lineplot`,
+  `lsd_bar`, `responsen`, `jitterv`, `basesz`, `prtplt`, `newwd`) are one
+  argument, `plot_args = list(plottitle = "Yield", basesz = 14)`. Scripts
+  that give them by name as before (`plottitle = "Yield"`) keep working, also
+  abbreviated. `mplot`, `barplot`, `pplot` and `bkplot` (deprecated for
+  `which.plots`) are no longer arguments but still work, with the same
+  warning. An argument name that does not exist is now an error. Only calls
+  that passed arguments after `Df` by position need a change: `lsd_bar` was
+  the eighth argument, where `level` is now.
+* Inside `predictmeans()` the stages are ordinary functions with named
+  results (`pm_setup()`, `pm_estimate()`, `pm_compare()`, `pm_tables()`)
+  instead of code evaluated in the call's environment; the snapshot of 52
+  calls is identical.
+
 * **Back-transformation.**
   * *A transformed response in the formula is back-transformed by default*,
     as a link is: `log(y)`, `log(y + c)`, `log10(y)`, `log2(y)`, `log1p(y)`,
