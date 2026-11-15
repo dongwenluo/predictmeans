@@ -47,6 +47,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (`pairs()` and `regrid()`). In a simulation with a Poisson GLMM the delta
   band covered the true difference in 94% of data sets; the difference of
   the two lines' limits in 100% (far too wide).
+* `R2_model()` takes every model class `predictmeans()` handles: `lm`, `aov`
+  (also with `Error()`), `glm`, `gls`, `lme`, `gam` and `semireg` fits as
+  well as `lmer`, `glmer` and `glmmTMB`. It is Piepho's adjusted R-squared
+  for all of them, one calculation: for `lm` and `aov` the usual adjusted
+  R-squared; `lme` and `aov` with `Error()` equal `lmer`; a `glm` equals the
+  `glmmTMB` fit without random effects; `gls` and `lme` with any correlation
+  and variance structure; a random-effect smooth of a `gam` equals the
+  `lmer` random effect. `R2_glmm()` is unchanged.
 * `covariatemeans()` takes `aov` models with `Error()` that have a covariate
   (e.g. a baseline covariate per subject in repeated measures): analysed by
   strata, equal to the mixed model in balanced data (it failed before).

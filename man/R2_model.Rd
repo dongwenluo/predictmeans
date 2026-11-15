@@ -2,16 +2,19 @@
 % Please edit documentation in R/R2_glmm.R
 \name{R2_model}
 \alias{R2_model}
-\title{R-squared for Mixed Models as Numbers}
+\title{R-squared of a Model as Numbers}
 \usage{
 R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 }
 \arguments{
-\item{model}{A model fitted by \code{lmer}, \code{glmer} or \code{glmmTMB}.}
+\item{model}{A model of any class \code{\link{predictmeans}} handles: \code{lm}, \code{aov} (also with
+\code{Error()}), \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB}, \code{gam} or a
+\code{\link{semireg}} fit.}
 
-\item{method}{\code{"piepho"} or \code{"nakagawa"}.}
+\item{method}{\code{"piepho"} (every class) or \code{"nakagawa"} (\code{lmer}, \code{glmer} and \code{glmmTMB}).}
 
-\item{over_disp}{For \code{"piepho"}: as in \code{\link{R2_glmm}}.}
+\item{over_disp}{For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: as in
+\code{\link{R2_glmm}}.}
 }
 \value{
 A named numeric vector of proportions (class \code{"pm_r2"}, printed as percentages). For \code{"nakagawa"},
@@ -19,13 +22,22 @@ A named numeric vector of proportions (class \code{"pm_r2"}, printed as percenta
 observation-level variances.
 }
 \description{
-The R-squared of a mixed model as a numeric result. \code{method = "piepho"} (the default) gives the same values as
+The R-squared of a model as a numeric result, for every model class of \code{\link{predictmeans}}. \code{method = "piepho"} (the default) gives the same values as
 \code{\link{R2_glmm}} (Piepho, 2023), as proportions: total, fixed, random and each random-effect component.
 \code{method = "nakagawa"} gives the marginal (fixed effects) and conditional (fixed and random effects) R-squared of
 Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014): the variance of each random-effect term is the
 mean of \eqn{z_i' \Sigma z_i} over the observations.
 }
 \details{
+Piepho's R-squared is one definition for every class: the variance of the fixed part of the model (less the bias from
+estimating the coefficients) and of the random effects, as shares of the average variance of the data. For models
+without random effects (\code{lm}, \code{aov}, \code{glm}, \code{gls}) \code{Total} equals \code{Fixed} and
+\code{Random} is 0; for \code{lm} and \code{aov} it is the usual adjusted R-squared. \code{glm} models are
+measured on the link scale (working variances; the latent distribution for a binary response); \code{gls} and
+\code{lme} models with any correlation and variance structure; \code{aov} models with \code{Error()} from the
+stratum variance components of \code{\link{varcomp}}. In \code{gam} models the smooths are part of the fixed share,
+except random-effect smooths (\code{bs = "re"}).
+
 For \code{"nakagawa"} the observation-level variance is the residual variance for gaussian models and the variance
 of the latent distribution for binomial models: \eqn{\pi^2/3} (logit), 1 (probit) or \eqn{\pi^2/6} (cloglog). Other
 families have several competing approximations; use \code{method = "piepho"} for them.
@@ -35,6 +47,8 @@ families have several competing approximations; use \code{method = "piepho"} for
   fm <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
   R2_model(fm)
   R2_model(fm, "nakagawa")
+  R2_model(lm(Reaction ~ Days, data = sleepstudy))   # the adjusted R-squared
+  R2_model(glm(breaks ~ wool*tension, family = poisson, data = warpbreaks))
 }
 \references{
 Piepho, H.-P. (2023), An adjusted coefficient of determination (R2) for generalized linear mixed models in one go,

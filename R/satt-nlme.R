@@ -65,7 +65,8 @@ pm_nlme_sigma <- function(model) {
     jb <- unlist(lapply(seq_along(sz), function(b) rep(seq_len(sz[b]), each = sz[b]) + off[b]))
     list(ia = ia, jb = jb, up = ord[ia] <= ord[jb])
   }
-  function(theta) {
+  # attribute Zs: the random-effect designs by level (R2_model())
+  structure(function(theta) {
     if (length(theta)) ms <- nlme::`coef<-`(ms, value = theta)
     w <- if (is.null(ms$varStruct)) rep(1, n) else 1 / nlme::varWeights(ms$varStruct)
     S <- if (is.null(blk)) {
@@ -84,7 +85,7 @@ pm_nlme_sigma <- function(model) {
       }
     }
     Matrix::forceSymmetric(methods::as(S, "CsparseMatrix"), uplo = "U")
-  }
+  }, Zs = Zs)
 }
 
 ## The likelihood pieces of a gls or lme fit as functions of theta =
