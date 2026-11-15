@@ -238,7 +238,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     }
     if (setequal(modelterm, covariate))  {
       plt <- ggplot(pltdf, aes(xvar, Mean))+
-        labs(title=paste(mtitle, "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
+        labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
         geom_line(linewidth=0.5)+
         theme_bw()
       if (ci) {
@@ -249,7 +249,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       }
     }else{
       plt <- ggplot(pltdf, aes(xvar, Mean, colour=factors))+
-        labs(title=paste(mtitle, "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
+        labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
         geom_line(linewidth=0.5)+
         theme_bw()
       if (ci) {
@@ -267,7 +267,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
         dev.new()
       }
       plt <- ggplot(pltdf, aes(xvar, Mean, colour=factors))+
-        labs(title=paste(mtitle, "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
+        labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
         geom_line(linewidth=0.5)+
         facet_wrap(~  factors)+
         theme_bw()
@@ -293,7 +293,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       fact1 <- (vars[plotord])[1]
       fact2 <- (vars[plotord])[2]
       plt <- ggplot(pltdf, aes(xvar, Mean, colour=factor(eval(parse(text = fact1)))))+
-        labs(title=paste(mtitle, "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
+        labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
         geom_line(linewidth=0.5)+
         facet_grid(eval(parse(text = paste("~",fact2, sep=""))))+
         theme_bw()
@@ -317,7 +317,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       fact2 <- (vars[plotord])[2]
       fact3 <- (vars[plotord])[3]
       plt <- ggplot(pltdf, aes(xvar, Mean, colour=factor(eval(parse(text = fact1)))))+
-        labs(title=paste(mtitle, "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
+        labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
         geom_line(linewidth=0.5)+
         facet_grid(eval(parse(text = paste(fact2, "~",fact3, sep=""))))+
         theme_bw()

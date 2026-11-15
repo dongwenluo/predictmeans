@@ -121,7 +121,7 @@ pm_ptile_plot <- function(P, labs, level = 0.05, title = NULL, legend_title = NU
     ggplot2::scale_x_continuous(breaks = cr[1]:cr[2], labels = labs[cr[1]:cr[2]]) +
     ggplot2::scale_y_reverse(breaks = rr[1]:rr[2], labels = labs[rr[1]:rr[2]]) +
     ggplot2::coord_fixed(xlim = cr + c(-0.5, 0.5), ylim = rev(rr + c(-0.5, 0.5)), expand = FALSE) +
-    ggplot2::labs(x = NULL, y = NULL, title = title) +
+    ggplot2::labs(x = NULL, y = NULL, title = pm_wrap_title(title, basesz)) +
     ggplot2::theme_bw(base_size = basesz) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.ticks = ggplot2::element_blank(),
                    axis.text.x = if (long) ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5) else

@@ -59,6 +59,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   level = 0.166` now compares at the 16.6% level: drop `level`.
 * `autoplot(interval = "lsd")` and the LSD line of `summary()` use the LSDs
   that go with the adjusted p-values.
+* **Long plot titles are broken into lines** in every plot of the package
+  (the mean, bar and back-transformed plots of `predictmeans()`, `PMplot()`,
+  `autoplot()`, `covariatemeans()`, `semipred()`, `residplot()`), also a
+  title given by the user (`plottitle`, `mtitle`); line breaks in it are
+  kept. The line length follows the font size;
+  `options(predictmeans.title_width = )` sets a number of characters.
 
 * **The printed LSDs go with the adjusted p-values.** `predictmeans()` printed
   the unadjusted LSD (t x SED) with every adjustment except Bonferroni, so

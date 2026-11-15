@@ -1047,7 +1047,7 @@ pm_code_draw <- quote({
         }
 
         p1 <- ggplot(plotmt, aes(eval(parse(text = vars)), pm, group=1))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             lims(x= c(bar_label, levels(plotmt[, vars])), y = c(yMin - offSet, max(yMax + offSet, yMin + LSD_value + offSet))) +
             geom_point(colour="red", size=2)+
           #  geom_line(linewidth=0.5)+
@@ -1079,7 +1079,7 @@ pm_code_draw <- quote({
 
         dodge <- position_dodge(width=0.9)
         bp1 <- ggplot(plotmt, aes(eval(parse(text = vars)), pm))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             ylim(c(min(0, (min(pm) - max(ses)) * 1.2), max(0, (max(pm) + max(ses)) * 1.2))) +
             geom_bar(position=dodge, stat="identity", fill="papayawhip", colour="darkgreen") +
             geom_errorbar(limits, position=dodge, width=0.25, colour="blue")+theme_bw(basesz)+
@@ -1131,7 +1131,7 @@ pm_code_draw <- quote({
 
           plotmt[, fact1] <- factor(plotmt[, fact1], levels = c(bar_label, levels(plotmt[, fact1])))
           p2 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=eval(parse(text = fact2)), col=eval(parse(text = fact2))))+
-            labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+            labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
             lims(x= levels(plotmt[, fact1]), y = c(yMin - offSet, max(yMax + offSet, yMin + LSD_value + offSet))) +
 			      geom_point(size=2)+
            # geom_line(aes(linetype=eval(parse(text = fact2)), col=eval(parse(text = fact2))), linewidth=0.96)+
@@ -1170,7 +1170,7 @@ pm_code_draw <- quote({
           bp2 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=eval(parse(text = fact2)), fill=  eval(parse(text = fact2))))+
             geom_point(position=dodge) +
             geom_bar(stat = "identity", position=dodge)+
-            labs( x = mxlab, y = mylab, title =mtitle)+
+            labs( x = mxlab, y = mylab, title = pm_wrap_title(mtitle, basesz))+
             ylim(c(min(0, (min(pm) - max(ses)) * 1.1), max(0, (max(pm) + max(ses)) * 1.1))) +
             geom_errorbar(limits, position=dodge, width=0.25, colour="blue")+theme_bw(basesz)+
             scale_fill_brewer()+
@@ -1225,7 +1225,7 @@ pm_code_draw <- quote({
         }
 
         p3 <- ggplot(plotmt, aes(eval(parse(text = fact1)), pm, group=factor(eval(parse(text = fact2))), col=factor(eval(parse(text = fact2)))))+
-          labs(title=paste(mtitle, "\n", sep=""), x=mxlab, y=mylab)+
+          labs(title=paste(pm_wrap_title(mtitle, basesz), "\n", sep=""), x=mxlab, y=mylab)+
           lims(x= levels(plotmt[, fact1]), y = c(yMin-0.5*offSet, max(yMax+0.5*offSet, yMin+LSD_value+0.5*offSet))) +
           geom_errorbar(aes(ymax=up, ymin=yMin, x=bar_label), width=0.15, linewidth=0.8, colour="blue")+
 		      geom_point(size=2)+
@@ -1323,7 +1323,7 @@ pm_code_draw <- quote({
 	    bkmt[, c("Mean", "LL", "UL")] <- lapply(bkmt[, c("Mean", "LL", "UL")], as.numeric)
 	    newdata2$bky <- as.numeric(newdata2$bky)
 	    p <- ggplot(bkmt, aes(Mean, Trt))+
-        labs(title=mtitle, x="", y="")+
+        labs(title=pm_wrap_title(mtitle, basesz), x="", y="")+
         xlim(xlimv) +
         geom_point(colour="red") + geom_errorbar(aes(xmax = UL, xmin=LL ), width=0.2, linewidth=0.8, colour="red", orientation="y") +
         scale_y_discrete(limits = rev(unique(bkmt$Trt)))+

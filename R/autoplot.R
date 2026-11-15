@@ -103,9 +103,9 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
                      comparison = " with comparison intervals",
                      none = "")
   subtitle <- if (interval == "comparison") {
-    paste(strwrap(paste0("Means differ at the ", level * 100, "% level",
+    pm_wrap_title(paste0("Means differ at the ", level * 100, "% level",
                          if (isTRUE(cmp$adjusted)) paste0(" (", cmp$adjust, ")"),
-                         " when their bars do not overlap", pm_comparison_caveat(cmp)), 90), collapse = "\n")
+                         " when their bars do not overlap", pm_comparison_caveat(cmp)), 11, rel = 1)
   }
 
   x <- vars[1]
@@ -126,7 +126,7 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
     p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", paste(sprintf("`%s`", vars[-(1:2)]), collapse = "+"))))
   }
   p + ggplot2::labs(x = x, y = ylab, subtitle = subtitle,
-                    title = paste0("Predicted means for '", object$settings$modelterm, "'", ci_label)) +
+                    title = pm_wrap_title(paste0("Predicted means for '", object$settings$modelterm, "'", ci_label), 11)) +
     ggplot2::theme_bw()
 }
 
