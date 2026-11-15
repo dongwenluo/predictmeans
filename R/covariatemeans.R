@@ -59,14 +59,27 @@
 #' @param contr Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
 #'   \code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
 #'   \code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
-#'   band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
-#'   band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
-#'   model scale; with a log link or a log response the table also has the ratio.
+#'   band, is returned and plotted instead of the lines. Whether the bands of the two lines overlap does not say
+#'   whether the lines differ (they are estimated from the same model and are correlated); the band of the
+#'   difference does. It is computed from the contrast of the two lines, not from their limits:
+#'   \itemize{
+#'   \item On the model (link) scale: \eqn{d = (K_a - K_b)\hat\beta} with
+#'     \eqn{SE^2 = (K_a - K_b) V (K_a - K_b)'} and limits \eqn{d \pm t\,SE} at the contrast's df (columns
+#'     \code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}). This is the scale of the test: the lines
+#'     differ at a covariate value when this band leaves out zero. For a log link or a log response the table
+#'     also has the \code{ratio} (exp of \code{diff} and of its limits), for a logit link the
+#'     \code{odds.ratio}.
+#'   \item On the response scale (models with a link, a transformed response or \code{trans}): the difference
+#'     of the back-transformed lines, \eqn{h(\eta_a) - h(\eta_b)}, with the delta-method standard error from
+#'     the gradient \eqn{h'(\eta_a) K_a - h'(\eta_b) K_b} (columns \code{response.diff},
+#'     \code{response.ses}, \code{response.LL}, \code{response.UL}). This is what is plotted, as the lines are
+#'     drawn on that scale; \code{trans = I} keeps the model scale. For a generalized linear mixed model it is the
+#'     difference for a typical cluster (random effects at zero), as the lines are.
+#'   }
 #' @return
 #' \item{plt}{The plot (a \code{ggplot}).}
 #' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-#'   (\code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}, and \code{ratio}, \code{ratio.LL},
-#'   \code{ratio.UL} for a log).}
+#'   on the model scale and, when back-transformed, on the response scale (see \code{contr}).}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -86,6 +99,11 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
                             vcov_adjust=TRUE, contr=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
+  # an analysis of variance by strata has no covariates
+  if (inherits(model, "aovlist")) {
+    stop("covariatemeans() does not take an aov model with Error(): the analysis by strata has no covariates. ",
+         "Fit the model with lmer() or lme(), with the Error() terms as random effects.", call. = FALSE)
+  }
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -366,6 +384,20 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 ## The difference between two levels of the term along the covariate, with
 ## its confidence band (covariatemeans(contr = )). KK: the rows of K of the
 ## grid 'pltdf' (the levels of 'vars' by the covariate values).
+##
+## The band of a difference is not made from the bands of the two lines: the
+## lines come from the same model and are correlated. Two bands are right:
+##  * model (link) scale: d = (Ka - Kb) b, SE^2 = (Ka - Kb) V (Ka - Kb)',
+##    limits d +- t SE with the df of the contrast. This is the scale of the
+##    test. Back-transformed it is a ratio for a log link (exp of d and of its
+##    limits) and an odds ratio for a logit link. For other links the
+##    back-transformed limits of d mean nothing.
+##  * response scale: h(eta_a) - h(eta_b), h the inverse link or the back-
+##    transformation. Not h of the limits of d, and not a difference of the
+##    lines' limits: by the delta method, with gradient
+##    g = h'(eta_a) Ka - h'(eta_b) Kb, SE^2 = g V g', limits +- t SE. In a
+##    GLMM this is the difference for a typical cluster (random effects at
+##    zero), as the lines of covariatemeans() are.
 pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, inf, level, Df, model, trans,
                               mtitle, newwd) {
   if (length(covariate) != 1 || setequal(modelterm, covariate)) {
@@ -382,31 +414,60 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   a <- which(lab == levs[k[1]])
   b <- which(lab == levs[k[2]])
   b <- b[match(x[a], x[b])]
-  L <- KK[a, , drop = FALSE] - KK[b, , drop = FALSE]
-  out <- data.frame(xvar = x[a], diff = as.numeric(L %*% mp$coef), ses = sqrt(rowSums((L %*% mp$vcov) * L)))
+  Ka <- KK[a, , drop = FALSE]
+  Kb <- KK[b, , drop = FALSE]
+  L <- Ka - Kb
+  V <- mp$vcov
+  out <- data.frame(xvar = x[a], diff = as.numeric(L %*% mp$coef), ses = sqrt(rowSums((L %*% V) * L)))
   out$Df <- if (is.null(Df) || all(Df %in% c("NULL", ""))) inf$df(L, modelterm) else Df
   crit <- stats::qt(1 - level/2, df = out$Df)
   out$LL <- out$diff - crit*out$ses
   out$UL <- out$diff + crit*out$ses
-  # a log link or a log response: the difference is the log of a ratio
-  if (is.null(trans)) trans <- pm_link_trans(model)
+
+  # the back-transformation: the inverse link, the response transformation
+  # in the formula, or 'trans' (trans = I: the model scale only)
+  link <- pm_link_trans(model)
+  if (is.null(trans)) trans <- link
   if (is.null(trans)) trans <- pm_response_trans(model)$fun
-  if (identical(trans, exp) || identical(trans, stats::make.link("log")$linkinv)) {
-    out$ratio <- exp(out$diff)
-    out$ratio.LL <- exp(out$LL)
-    out$ratio.UL <- exp(out$UL)
+  back <- !is.null(trans) && !identical(trans, I)
+  link_name <- if (!is.null(link) && identical(trans, link)) {
+    tryCatch(stats::family(model)$link, error = function(e) NA_character_)
+  } else NA_character_
+  if (back) {
+    # a log: the difference is the log of a ratio; a logit: of an odds ratio
+    if (identical(trans, exp) || identical(link_name, "log")) {
+      out$ratio <- exp(out$diff); out$ratio.LL <- exp(out$LL); out$ratio.UL <- exp(out$UL)
+    } else if (identical(trans, stats::plogis) || identical(link_name, "logit")) {
+      out$odds.ratio <- exp(out$diff); out$odds.ratio.LL <- exp(out$LL); out$odds.ratio.UL <- exp(out$UL)
+    }
+    # the difference on the response scale, by the delta method
+    eta_a <- as.numeric(Ka %*% mp$coef)
+    eta_b <- as.numeric(Kb %*% mp$coef)
+    d1 <- pm_back_funs(trans, trans, model, !is.na(link_name))$d1
+    G <- d1(eta_a) * Ka - d1(eta_b) * Kb
+    out$response.diff <- as.numeric(trans(eta_a)) - as.numeric(trans(eta_b))
+    out$response.ses <- sqrt(rowSums((G %*% V) * G))
+    out$response.LL <- out$response.diff - crit*out$response.ses
+    out$response.UL <- out$response.diff + crit*out$response.ses
   }
   names(out)[1] <- covariate
   if (is.null(mtitle) || mtitle %in% c("NULL", "")) {
     mtitle <- paste0("Difference between '", modelterm, "' ", levs[k[1]], " and ", levs[k[2]], " along ", covariate,
-                     " with ", (1 - level)*100, "% CI")
+                     " with ", (1 - level)*100, "% CI", if (back) " (response scale)" else "")
   }
-  plt <- ggplot2::ggplot(out, ggplot2::aes(x = .data[[covariate]], y = .data$diff)) +
+  # the plot: the difference of the lines as covariatemeans() draws them
+  pd <- if (back) data.frame(x = out[[covariate]], y = out$response.diff, lo = out$response.LL, hi = out$response.UL) else
+    data.frame(x = out[[covariate]], y = out$diff, lo = out$LL, hi = out$UL)
+  plt <- ggplot2::ggplot(pd, ggplot2::aes(x = .data$x, y = .data$y)) +
     ggplot2::geom_hline(yintercept = 0, linetype = 2, colour = "grey40") +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$LL, ymax = .data$UL), alpha = 0.2) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), alpha = 0.2) +
     ggplot2::geom_line() +
     ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate,
-                  y = paste0("Difference (", levs[k[1]], " - ", levs[k[2]], ")")) +
+                  y = paste0("Difference (", levs[k[1]], " - ", levs[k[2]], ")"),
+                  subtitle = if (back) pm_wrap_title(paste0(
+                    "Delta-method band of the difference of the back-transformed lines",
+                    if (inherits(model, c("merMod", "glmmTMB", "lme"))) " (random effects at zero)" else "",
+                    "; the test is on the model scale (columns diff, LL, UL)"), 11, rel = 1)) +
     ggplot2::theme_bw()
   if (newwd) grDevices::dev.new()
   print(plt)

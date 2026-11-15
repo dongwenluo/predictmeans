@@ -84,15 +84,28 @@ and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its re
 \item{contr}{Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
 \code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
 \code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
-band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
-band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
-model scale; with a log link or a log response the table also has the ratio.}
+band, is returned and plotted instead of the lines. Whether the bands of the two lines overlap does not say
+whether the lines differ (they are estimated from the same model and are correlated); the band of the
+difference does. It is computed from the contrast of the two lines, not from their limits:
+\itemize{
+\item On the model (link) scale: \eqn{d = (K_a - K_b)\hat\beta} with
+  \eqn{SE^2 = (K_a - K_b) V (K_a - K_b)'} and limits \eqn{d \pm t\,SE} at the contrast's df (columns
+  \code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}). This is the scale of the test: the lines
+  differ at a covariate value when this band leaves out zero. For a log link or a log response the table
+  also has the \code{ratio} (exp of \code{diff} and of its limits), for a logit link the
+  \code{odds.ratio}.
+\item On the response scale (models with a link, a transformed response or \code{trans}): the difference
+  of the back-transformed lines, \eqn{h(\eta_a) - h(\eta_b)}, with the delta-method standard error from
+  the gradient \eqn{h'(\eta_a) K_a - h'(\eta_b) K_b} (columns \code{response.diff},
+  \code{response.ses}, \code{response.LL}, \code{response.UL}). This is what is plotted, as the lines are
+  drawn on that scale; \code{trans = I} keeps the model scale. For a generalized linear mixed model it is the
+  difference for a typical cluster (random effects at zero), as the lines are.
+}}
 }
 \value{
 \item{plt}{The plot (a \code{ggplot}).}
 \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-  (\code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}, and \code{ratio}, \code{ratio.LL},
-  \code{ratio.UL} for a log).}
+  on the model scale and, when back-transformed, on the response scale (see \code{contr}).}
 }
 \description{
 This function obtains predicted means with graph for a new set of covariate values.

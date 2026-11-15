@@ -38,7 +38,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * `covariatemeans(contr = c(1, 3))` gives the difference between two levels
   of the term along the covariate with its confidence band (as `semipred()`
   does): the two lines differ where the band leaves out zero, which the
-  overlap of the lines' own bands does not show.
+  overlap of the lines' own bands does not show. The band comes from the
+  contrast of the two lines, on two scales: the model (link) scale, where
+  the test is made (with the ratio for a log link and the odds ratio for a
+  logit link), and, for models with a link or a transformed response, the
+  response scale by the delta method (gradient h'(eta_a) K_a - h'(eta_b)
+  K_b), which is what is plotted. Both equal emmeans for GLMs and GLMMs
+  (`pairs()` and `regrid()`). In a simulation with a Poisson GLMM the delta
+  band covered the true difference in 94% of data sets; the difference of
+  the two lines' limits in 100% (far too wide).
+* `covariatemeans()` stops with a clear message for an `aov` model with
+  `Error()` (the analysis by strata has no covariates).
 * **Fewer arguments in `predictmeans()`: `plot_args`.** The eleven plot
   settings (`plottitle`, `plotxlab`, `plotylab`, `plotord`, `lineplot`,
   `lsd_bar`, `responsen`, `jitterv`, `basesz`, `prtplt`, `newwd`) are one

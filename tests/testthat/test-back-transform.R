@@ -163,3 +163,41 @@ test_that("covariatemeans(contr = ): the difference between two lines with its o
   expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 1)), "two different levels")
   expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = "Golden"), "two levels")
 })
+
+test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmeans; no aov with Error()", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  set.seed(1)
+  d <- expand.grid(A = factor(c("a1", "a2", "a3")), Blk = factor(1:8), r = 1:4)
+  d$x <- runif(nrow(d), 0, 2); u <- rnorm(8, sd = 0.5)
+  d$cnt <- rpois(nrow(d), exp(0.2 + 0.3*as.numeric(d$A) + 0.4*d$x + u[d$Blk]))
+  d$bin <- rbinom(nrow(d), 1, plogis(-1 + 0.5*as.numeric(d$A) + 0.6*d$x + u[d$Blk]))
+  d$y <- rnorm(nrow(d)) + u[d$Blk]
+  xs <- c(0.2, 1, 1.8)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  mods <- list(glm(cnt ~ A * x, poisson, d), glm(bin ~ A * x, binomial, d),
+               suppressMessages(lme4::glmer(cnt ~ A * x + (1 | Blk), d, family = poisson)),
+               suppressMessages(lme4::glmer(bin ~ A * x + (1 | Blk), d, family = binomial)),
+               glmmTMB::glmmTMB(cnt ~ A * x + (1 | Blk), d, family = glmmTMB::nbinom2))
+  for (m in mods) {
+    r <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs))
+    p <- r$pltdf
+    eg <- emmeans::emmeans(m, ~ A | x, at = list(x = xs), data = d)
+    el <- as.data.frame(pairs(eg)); el <- el[el$contrast == "a1 - a3", ]
+    er <- as.data.frame(pairs(emmeans::regrid(eg, transform = "response"))); er <- er[er$contrast == "a1 - a3", ]
+    lab <- class(m)[1]
+    expect_equal(p$diff, el$estimate, tolerance = 1e-8, label = lab)
+    expect_equal(p$ses, el$SE, tolerance = 1e-6, label = lab)
+    expect_equal(p$response.diff, er$estimate, tolerance = 1e-8, label = lab)
+    expect_equal(p$response.ses, er$SE, tolerance = 1e-6, label = lab)
+    expect_equal(p$response.UL - p$response.diff, qt(0.975, p$Df)*p$response.ses, tolerance = 1e-10)
+    # a log link: ratios; a logit link: odds ratios; never the back-transformed limits of the difference
+    if (stats::family(m)$link == "log") expect_equal(p$ratio.UL, exp(p$UL)) else expect_equal(p$odds.ratio, exp(p$diff))
+    expect_equal(ggplot2::layer_data(r$plt, 3)$y, p$response.diff)       # the plot: the response scale
+  }
+  # trans = I: the model scale only
+  pI <- suppressMessages(covariatemeans(mods[[3]], "A", covariate = "x", contr = c(1, 3), covariateV = xs, trans = I))
+  expect_null(pI$pltdf$response.diff)
+  expect_equal(ggplot2::layer_data(pI$plt, 3)$y, pI$pltdf$diff)
+  expect_error(covariatemeans(aov(y ~ A * x + Error(Blk), d), "A", covariate = "x"), "no covariates")
+})
