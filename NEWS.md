@@ -35,6 +35,35 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Back-transformation.**
+  * *A transformed response in the formula is back-transformed by default*,
+    as a link is: `log(y)`, `log(y + c)`, `log10(y)`, `log2(y)`, `log1p(y)`,
+    `sqrt(y)`, `y^p`, `1/y`, `qlogis(y)`, `asin(sqrt(y))` and the new
+    `pm_boxcox(y, lambda)` and `pm_yeojohnson(y, lambda)` (Box-Cox and
+    Yeo-Johnson, to use in a formula). `predictmeans()` and
+    `covariatemeans()` say so in a message; `trans = I` keeps the model scale
+    only, and a `trans` that is given is used as before. For `log(y)` the
+    pairs also have the ratios.
+  * *What the back-transformed mean is* is now stated
+    (`settings$back_transform`, `summary()`): for a GLM the mean; for a GLMM
+    the response of a typical cluster (random effects at zero); for a
+    transformed response the median of the original scale (the geometric
+    mean for a log).
+  * *`bias_adjust = TRUE` gives the mean exactly*: E h(eta + u) by
+    Gauss-Hermite quadrature, which is exp(eta + sigma^2/2) for a log and
+    eta^2 + sigma^2 for a square root. Before, it was the second-order
+    formula h + sigma^2 h''/2 (as emmeans), which is too low for a log when
+    sigma is large and was off by up to 0.018 for a logit with sigma = 1.2
+    (0.389 against the true 0.371). `bias_adjust = "taylor"` keeps that
+    formula.
+  * `covariatemeans()` with a log link or `trans = exp`: the line is the
+    back-transformed fitted value. 1.x drew exp(fitted + SE/2), adding half
+    the standard error of the fitted value, which is not a bias adjustment
+    and made the line depend on its own precision.
+  * `pm_check()` reports the Box-Cox power the residuals of an `lm` fit
+    favour, with its 95% interval, and names the usual transformation within
+    it; it points to a generalized linear model for counts and proportions.
+
 * **Comparison intervals: overlap that answers the tests.** Confidence
   limits of means are not for comparing means: with random blocks (oats) two
   means with p < 0.001 have overlapping 95% limits, and the limits that just

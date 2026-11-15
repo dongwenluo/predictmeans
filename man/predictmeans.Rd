@@ -99,9 +99,19 @@ design, and \code{level} set their level, 0.166 by default.) The comparison inte
 columns \code{comparison.low} and \code{comparison.high} of \code{means}, and
 \code{autoplot(interval = "comparison")}.}
 
-\item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
+\item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
+not given and the response is transformed in the model formula (\code{log(y)}, \code{log(y + c)},
+\code{log10(y)}, \code{log2(y)}, \code{log1p(y)}, \code{sqrt(y)}, \code{y^p}, \code{1/y}, \code{qlogis(y)},
+\code{asin(sqrt(y))}, \code{\link{pm_boxcox}(y, lambda)}, \code{pm_yeojohnson(y, lambda)}), the inverse is
+used, constant included, and a message says so; \code{trans = I} keeps the model scale only. Models with a
+link (\code{glm}, \code{glmer}, \code{glmmTMB}) are back-transformed with its inverse. What the
+back-transformed mean is depends on the model: for a GLM the mean; for a GLMM the response of a typical
+cluster (random effects at zero); for a transformed response the median of the original scale (the geometric
+mean for a log). \code{bias_adjust = TRUE} gives the mean in the last two cases;
+\code{settings$back_transform} and \code{summary()} say which it is.}
 
-\item{transOff}{When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.}
+\item{transOff}{When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0. (Not needed when
+the transformation is taken from the formula.)}
 
 \item{responsen}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
 
@@ -246,11 +256,14 @@ one-sided p-values; below \code{level}, the difference lies within the margins (
 \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 (normal-based in \code{contrastmeans}).}
 
-\item{bias_adjust}{Logical: adjust the back-transformed means (non-identity link or \code{trans}) for the random
-effects (and, for a transformed response of a linear model, the residual error): \eqn{h(\eta) + \sigma^2 h''(\eta)/2}
-instead of \eqn{h(\eta)}, the second-order approximation of the mean over the population (as emmeans'
-\code{bias.adjust}); the response-scale SEs follow by the delta method. Without it (the default) the
-back-transformed mean is that of a unit with all random effects zero.}
+\item{bias_adjust}{Adjust the back-transformed means (non-identity link or \code{trans}) to be means on the
+response scale: \code{TRUE} gives \eqn{E\,h(\eta + u)}, \eqn{u \sim N(0, \sigma^2)}, the mean over the
+random effects (and, for a transformed response of a linear model, the residual error), computed by
+Gauss-Hermite quadrature: \eqn{\exp(\eta + \sigma^2/2)} for a log, \eqn{\eta^2 + \sigma^2} for a square
+root. \code{"taylor"} gives the second-order approximation \eqn{h(\eta) + \sigma^2 h''(\eta)/2} (emmeans'
+\code{bias.adjust}), which is too low for a log when \eqn{\sigma} is large and off for a logit. The
+response-scale SEs follow by the delta method. \code{FALSE} (the default): the back-transformed mean is that
+of a unit with all random effects zero, or the median for a transformed response.}
 
 \item{sigma}{With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
 random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a

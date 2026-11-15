@@ -88,7 +88,9 @@ comparison asked for: then only the SED and LSD summaries are computed, fast for
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
 `"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `comparison` (the comparison intervals: `mult`, `conf.level`, `pairs`,
-`disagree`, `exact`; NULL without pairs), `bias_adjust` (the SD
+`disagree`, `exact`; NULL without pairs), `back_transform` (what the back-transformed means are: `by` the
+inverse link, `trans` or the response transformation found in the formula; `estimate` mean, typical cluster,
+median or bias-adjusted mean; NULL when not back-transformed), `bias_adjust` (the SD
 used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `singular` (TRUE when
 the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`,
 `model_class`, `version`.

@@ -23,6 +23,13 @@
 #' \item{Influence}{(\code{lm}, \code{aov}, \code{glm}) the largest Cook's distance; above 0.5 is worth a look
 #'   (\code{\link{CookD}} for mixed models).}
 #' \item{Normality}{Shapiro-Wilk tests of the residuals and of each term's random effects (intercepts).}
+#' \item{Transformation of the response}{(\code{lm} and \code{aov} with a positive response that is not
+#'   transformed in the formula) the Box-Cox power the residuals favour: the profile likelihood estimate of
+#'   \eqn{\lambda} and its 95\% interval (Box and Cox, 1964; as \code{MASS::boxcox()}). Worth a look when the
+#'   interval leaves out 1 (no transformation); the note names the usual transformation within the interval
+#'   (\eqn{\lambda} = 0: log; 0.5: square root; -1: reciprocal), to write in the formula as \code{log(y)},
+#'   \code{sqrt(y)} or \code{\link{pm_boxcox}(y, lambda)}. It is judged on the residuals of the model, not on the
+#'   raw response; for counts and proportions a generalized linear (mixed) model is usually the better choice.}
 #' \item{Equal variances}{for each factor: the ratio of the largest to the smallest standard deviation of the
 #'   residuals within its levels, and the Brown-Forsythe test (ANOVA of the absolute deviations from the medians).}
 #' \item{Overdispersion}{Poisson and binomial (with more than one trial) models: Pearson chi-square / residual df,
@@ -101,6 +108,22 @@ pm_check <- function(model, plot = FALSE) {
       " (quantile)" else ""), "Shapiro-Wilk", sw,
       note = if (sw < 0.01) "See the Q-Q plot: skewness may call for a transformation or another distribution." else "",
       look = sw < 0.01)
+  }
+  # the Box-Cox power the residuals suggest (lm with a positive, untransformed response)
+  bc <- pm_boxcox_profile(model)
+  if (!is.null(bc)) {
+    worth <- bc$upper < 1 || bc$lower > 1                      # the interval leaves out "no transformation"
+    add("Transformation of the response (Box-Cox)",
+        paste0("lambda ", format(round(bc$lambda, 2)), " (95% interval ", format(round(bc$lower, 2)), " to ",
+               format(round(bc$upper, 2)), if (bc$edge) ", at the edge of -3 to 3" else "", ")"),
+        note = if (!worth) "" else if (!is.na(bc$pick)) {
+          paste0("The residuals favour a transformation: ", bc$name, " is within the interval",
+                 if (bc$pick != 0) paste0(" (pm_boxcox(y, ", bc$pick, ") in the formula)") else "",
+                 ". For counts or proportions a generalized linear model is usually better.")
+        } else {
+          paste0("The residuals favour a transformation: pm_boxcox(y, ", format(round(bc$lambda, 2)),
+                 ") in the formula. For counts or proportions a generalized linear model is usually better.")
+        }, look = worth)
   }
   for (j in seq_len(pm_check_nre(model))) {
     re <- quiet(pm_resid_ranef(model, j, FALSE))

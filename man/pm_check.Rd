@@ -36,6 +36,13 @@ sets; the plots say how large a departure is.
 \item{Influence}{(\code{lm}, \code{aov}, \code{glm}) the largest Cook's distance; above 0.5 is worth a look
   (\code{\link{CookD}} for mixed models).}
 \item{Normality}{Shapiro-Wilk tests of the residuals and of each term's random effects (intercepts).}
+\item{Transformation of the response}{(\code{lm} and \code{aov} with a positive response that is not
+  transformed in the formula) the Box-Cox power the residuals favour: the profile likelihood estimate of
+  \eqn{\lambda} and its 95\% interval (Box and Cox, 1964; as \code{MASS::boxcox()}). Worth a look when the
+  interval leaves out 1 (no transformation); the note names the usual transformation within the interval
+  (\eqn{\lambda} = 0: log; 0.5: square root; -1: reciprocal), to write in the formula as \code{log(y)},
+  \code{sqrt(y)} or \code{\link{pm_boxcox}(y, lambda)}. It is judged on the residuals of the model, not on the
+  raw response; for counts and proportions a generalized linear (mixed) model is usually the better choice.}
 \item{Equal variances}{for each factor: the ratio of the largest to the smallest standard deviation of the
   residuals within its levels, and the Brown-Forsythe test (ANOVA of the absolute deviations from the medians).}
 \item{Overdispersion}{Poisson and binomial (with more than one trial) models: Pearson chi-square / residual df,

@@ -58,6 +58,7 @@ reference:
   - CookD
   - residplot
   - pm_check
+  - pm_boxcox
 - title: Permutation tests
   contents:
   - permmodels

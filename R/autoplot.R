@@ -241,6 +241,12 @@ print.summary.predictmeans <- function(x, ...) {
           sep = "")
     }
   }
+  bt <- s$back_transform
+  if (!is.null(bt) && "response" %in% names(x$table)) {
+    cat("Back-transformed by ", bt$by, ": 'response' is the ", bt$estimate,
+        if (identical(bt$average, "response")) ", averaged over the other factors on the response scale" else "",
+        ".\n", sep = "")
+  }
   if (!is.null(s$covariates)) {
     cv <- s$covariates
     if (nrow(cv) == 1) {

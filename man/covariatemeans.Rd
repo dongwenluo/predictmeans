@@ -34,7 +34,11 @@ are for each line on its own: whether the bands of two groups overlap is not a t
 
 \item{Df}{A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.}
 
-\item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
+\item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
+not given, the inverse link of the model is used, or the inverse of a transformation of the response in the
+model formula (\code{log(y)}, \code{sqrt(y)}, ...; see \code{\link{predictmeans}}), with a message;
+\code{trans = I} keeps the model scale. The back-transformed line is the back-transformed fitted value.
+(Before 2.0 half the standard error of the fitted value was added inside \code{exp()} for a log.)}
 
 \item{transOff}{When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.}
 

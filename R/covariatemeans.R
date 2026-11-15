@@ -23,7 +23,11 @@
 #'   \code{\link{predictmeans}}). Compare groups at chosen covariate values with \code{\link{predictmeans}}
 #'   (\code{covariate = }) or their slopes with \code{\link{pm_slopes}}.
 #' @param Df A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.
-#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
+#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
+#'   not given, the inverse link of the model is used, or the inverse of a transformation of the response in the
+#'   model formula (\code{log(y)}, \code{sqrt(y)}, ...; see \code{\link{predictmeans}}), with a message;
+#'   \code{trans = I} keeps the model scale. The back-transformed line is the back-transformed fitted value.
+#'   (Before 2.0 half the standard error of the fitted value was added inside \code{exp()} for a log.)
 #' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.
 #' @param responsen Name (in "quotes") of the back transformed response variable in the \code{model}.
 #' @param trellis A logical variable. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.
@@ -132,6 +136,15 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 
   if (is.null(trans)) {
     trans <- pm_link_trans(model)   # NULL for an identity link
+    # a transformed response in the formula (log(y), ...; R/back-transform.R)
+    if (is.null(trans)) {
+      resp_trans <- pm_response_trans(model)
+      if (!is.null(resp_trans)) {
+        trans <- resp_trans$fun
+        message("The response is ", resp_trans$label, ": the fitted lines are back-transformed to the original scale ",
+                "(trans = I for the model scale).")
+      }
+    }
   }
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
@@ -140,10 +153,9 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     pltdf$LL <- pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses
     pltdf$UL <- pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses
   } else {
+    # (1.x added half the SE of the fitted value inside exp() for a log:
+    # not a bias adjustment, and the line then depended on its own precision)
     pltdf$Mean <- trans(pltdf$yhat)-transOff
-    if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)) {
-      pltdf$Mean <- exp(pltdf$yhat+pltdf$ses/2)-transOff
-    }
     pltdf$LL <- trans(pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses)-transOff
     pltdf$UL <- trans(pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses)-transOff
   }

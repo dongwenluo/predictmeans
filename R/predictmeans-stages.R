@@ -85,8 +85,21 @@ pm_code_setup <- quote({
   # other model classes). Otherwise the user's 'trans' is used.
   linkinv <- pm_link_trans(model)
   link_scale <- !is.null(linkinv)
+  trans_by <- if (identical(trans, I) || is.null(trans)) NA_character_ else "trans"
   if (link_scale) {
     trans <- linkinv
+    trans_by <- "the inverse link"
+  } else if (isTRUE(trans_default)) {
+    # a transformed response in the model formula (log(y), sqrt(y), ...,
+    # R/back-transform.R): back-transformed too, as for a link; trans = I
+    # keeps the model scale only
+    resp_trans <- pm_response_trans(model)
+    if (!is.null(resp_trans)) {
+      trans <- resp_trans$fun
+      trans_by <- paste0("the inverse of ", resp_trans$label, " (the response in the model formula)")
+      message("The response is ", resp_trans$label, ": the means are also given back-transformed to the original ",
+              "scale (trans = I for the model scale only).")
+    }
   }
 
   # Poisson models: the back-transformed means are counts

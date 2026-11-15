@@ -71,7 +71,9 @@ pm_tidy_parts <- function(e) {
     means$response.conf.high <- pmax(lo, hi)
   }
   # bias adjustment and averaging on the response scale (R/response-scale.R)
-  ba <- isTRUE(g("bias_adjust"))
+  ba_arg <- g("bias_adjust")
+  ba <- isTRUE(ba_arg) || identical(ba_arg, "taylor")
+  if (!ba && !isFALSE(ba_arg) && !is.null(ba_arg)) stop("'bias_adjust' must be TRUE, FALSE or \"taylor\".", call. = FALSE)
   avg <- if (is.null(g("average"))) "link" else g("average")
   ba_sigma <- NA_real_
   if (ba || identical(avg, "response")) {
@@ -83,8 +85,10 @@ pm_tidy_parts <- function(e) {
       bf <- pm_back_funs(back, trans, model, isTRUE(g("link_scale")))
       s2 <- if (!ba) 0 else if (!is.null(g("sigma"))) g("sigma")^2 else pm_bias_sigma2(model, isTRUE(g("link_scale")))
       if (ba) ba_sigma <- sqrt(s2)
-      hb <- function(x) bf$h(x) + s2/2 * bf$d2(x)
-      db <- function(x) bf$d1(x) + s2/2 * bf$d3(x)
+      # the mean of the back-transformed response (R/back-transform.R)
+      bias <- pm_bias_funs(bf, s2, if (identical(ba_arg, "taylor")) "taylor" else "exact")
+      hb <- bias$h
+      db <- bias$d
       if (identical(avg, "response")) {
         mp_ <- g("mp")
         ra <- pm_response_average(g("ctr.matrix")$refgrid, match(rownames(K), rownames(KK)), mp_$coef, mp_$vcov,
@@ -198,6 +202,7 @@ pm_tidy_parts <- function(e) {
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),
     comparison = cmp,
+    back_transform = pm_back_label(means, g("trans_by"), isTRUE(g("link_scale")), model, ba, avg),
     bias_adjust = ba_sigma,
     singular = pm_singular(model),
     average = avg,
