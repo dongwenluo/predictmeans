@@ -9,7 +9,7 @@
 #'   cov_reduce=mean, exclude=NULL,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-#'   vcov_adjust=TRUE)
+#'   vcov_adjust=TRUE, contr=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -20,8 +20,9 @@
 #' @param level A significant level for calculating confident interval. The default value is 0.05. The limits
 #'   are for each line on its own: whether the bands of two groups overlap is not a test of their difference
 #'   (the lines are estimated from the same model and are correlated; see \code{letterCI} in
-#'   \code{\link{predictmeans}}). Compare groups at chosen covariate values with \code{\link{predictmeans}}
-#'   (\code{covariate = }) or their slopes with \code{\link{pm_slopes}}.
+#'   \code{\link{predictmeans}}). Use \code{contr} for the band of the difference between two groups, or compare
+#'   groups at chosen covariate values with \code{\link{predictmeans}} (\code{covariate = }) and their slopes
+#'   with \code{\link{pm_slopes}}.
 #' @param Df A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.
 #' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
 #'   not given, the inverse link of the model is used, or the inverse of a transformation of the response in the
@@ -55,8 +56,17 @@
 #'   has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
 #'   predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
 #'   and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.
+#' @param contr Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
+#'   \code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
+#'   \code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
+#'   band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
+#'   band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
+#'   model scale; with a log link or a log response the table also has the ratio.
 #' @return
-#' \item{Predicted Means}{A table of predicted means.}
+#' \item{plt}{The plot (a \code{ggplot}).}
+#' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
+#'   (\code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}, and \code{ratio}, \code{ratio.LL},
+#'   \code{ratio.UL} for a log).}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -73,7 +83,7 @@ NULL
 covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL,
                             weights=c("equal", "proportional", "outer", "cells", "flat"),
                             df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-                            vcov_adjust=TRUE) {
+                            vcov_adjust=TRUE, contr=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
 
@@ -110,6 +120,12 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default)     # R/inference.R
   mp <- inf$mp
   bhat <- mp$coef
+
+  # the difference between two levels along the covariate, with its own band
+  if (!is.null(contr)) {
+    return(pm_cov_difference(contr, KK[, mp$estimable, drop = FALSE], pltdf, vars, covariate, modelterm, mp, inf,
+                             level, Df, model, trans, mtitle, newwd))
+  }
 
   if (!setequal(modelterm, covariate) & as.is) {
     agg_formula <- formula(paste(covariate, "~", paste(vars, collapse="+")))
@@ -345,4 +361,54 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   }
 
   return(invisible(list(plt=plt, pltdf=pltdf)))
+}
+
+## The difference between two levels of the term along the covariate, with
+## its confidence band (covariatemeans(contr = )). KK: the rows of K of the
+## grid 'pltdf' (the levels of 'vars' by the covariate values).
+pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, inf, level, Df, model, trans,
+                              mtitle, newwd) {
+  if (length(covariate) != 1 || setequal(modelterm, covariate)) {
+    stop("'contr' compares two levels of 'modelterm' along one covariate.", call. = FALSE)
+  }
+  lab <- do.call(paste, c(lapply(pltdf[vars], as.character), sep = ":"))
+  levs <- unique(lab)
+  if (length(contr) != 2) stop("'contr' must name two levels of '", modelterm, "'.", call. = FALSE)
+  k <- if (is.numeric(contr)) contr else match(contr, levs)
+  if (anyNA(k) || any(!k %in% seq_along(levs)) || k[1] == k[2]) {
+    stop("'contr' must be two different levels of '", modelterm, "': ", paste(levs, collapse = ", "), ".", call. = FALSE)
+  }
+  x <- pltdf[[covariate]]
+  a <- which(lab == levs[k[1]])
+  b <- which(lab == levs[k[2]])
+  b <- b[match(x[a], x[b])]
+  L <- KK[a, , drop = FALSE] - KK[b, , drop = FALSE]
+  out <- data.frame(xvar = x[a], diff = as.numeric(L %*% mp$coef), ses = sqrt(rowSums((L %*% mp$vcov) * L)))
+  out$Df <- if (is.null(Df) || all(Df %in% c("NULL", ""))) inf$df(L, modelterm) else Df
+  crit <- stats::qt(1 - level/2, df = out$Df)
+  out$LL <- out$diff - crit*out$ses
+  out$UL <- out$diff + crit*out$ses
+  # a log link or a log response: the difference is the log of a ratio
+  if (is.null(trans)) trans <- pm_link_trans(model)
+  if (is.null(trans)) trans <- pm_response_trans(model)$fun
+  if (identical(trans, exp) || identical(trans, stats::make.link("log")$linkinv)) {
+    out$ratio <- exp(out$diff)
+    out$ratio.LL <- exp(out$LL)
+    out$ratio.UL <- exp(out$UL)
+  }
+  names(out)[1] <- covariate
+  if (is.null(mtitle) || mtitle %in% c("NULL", "")) {
+    mtitle <- paste0("Difference between '", modelterm, "' ", levs[k[1]], " and ", levs[k[2]], " along ", covariate,
+                     " with ", (1 - level)*100, "% CI")
+  }
+  plt <- ggplot2::ggplot(out, ggplot2::aes(x = .data[[covariate]], y = .data$diff)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = 2, colour = "grey40") +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$LL, ymax = .data$UL), alpha = 0.2) +
+    ggplot2::geom_line() +
+    ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate,
+                  y = paste0("Difference (", levs[k[1]], " - ", levs[k[2]], ")")) +
+    ggplot2::theme_bw()
+  if (newwd) grDevices::dev.new()
+  print(plt)
+  invisible(list(plt = plt, pltdf = out))
 }

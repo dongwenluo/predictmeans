@@ -140,3 +140,26 @@ test_that("pm_check() gives the Box-Cox power the residuals suggest", {
   expect_null(pm_boxcox_profile(lm(log(yield) ~ Block + nitro, data = O)))
   expect_null(pm_boxcox_profile(glm(round(yield) ~ nitro, poisson, data = O)))
 })
+
+test_that("covariatemeans(contr = ): the difference between two lines with its own band", {
+  O <- as.data.frame(nlme::Oats)
+  fm <- lm(yield ~ Block + nitro * Variety, data = O)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  r <- covariatemeans(fm, "Variety", covariate = "nitro", contr = c("Golden Rain", "Victory"), covariateV = c(0, 0.3, 0.6))
+  expect_s3_class(r$plt, "ggplot")
+  b <- coef(fm)
+  # Golden Rain is the first level: the difference is -(Victory + nitro x Variety Victory)
+  expect_equal(r$pltdf$diff, -(b[["VarietyVictory"]] + c(0, 0.3, 0.6)*b[["nitro:VarietyVictory"]]), tolerance = 1e-10)
+  L <- matrix(0, 3, length(b), dimnames = list(NULL, names(b)))
+  L[, "VarietyVictory"] <- -1; L[, "nitro:VarietyVictory"] <- -c(0, 0.3, 0.6)
+  expect_equal(r$pltdf$ses, sqrt(diag(L %*% vcov(fm) %*% t(L))), tolerance = 1e-10)
+  expect_equal(r$pltdf$UL - r$pltdf$diff, qt(0.975, df.residual(fm))*r$pltdf$ses, tolerance = 1e-10)
+  # by number, and a log response gives ratios
+  r2 <- covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 3), covariateV = c(0, 0.3, 0.6))
+  expect_equal(r2$pltdf, r$pltdf)
+  rl <- covariatemeans(lm(log(yield) ~ Block + nitro * Variety, data = O), "Variety", covariate = "nitro", contr = c(1, 3),
+                       covariateV = c(0, 0.6))
+  expect_equal(rl$pltdf$ratio, exp(rl$pltdf$diff))
+  expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 1)), "two different levels")
+  expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = "Golden"), "two levels")
+})

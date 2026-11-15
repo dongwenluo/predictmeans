@@ -10,7 +10,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-  vcov_adjust=TRUE)
+  vcov_adjust=TRUE, contr=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -29,8 +29,9 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 \item{level}{A significant level for calculating confident interval. The default value is 0.05. The limits
 are for each line on its own: whether the bands of two groups overlap is not a test of their difference
 (the lines are estimated from the same model and are correlated; see \code{letterCI} in
-\code{\link{predictmeans}}). Compare groups at chosen covariate values with \code{\link{predictmeans}}
-(\code{covariate = }) or their slopes with \code{\link{pm_slopes}}.}
+\code{\link{predictmeans}}). Use \code{contr} for the band of the difference between two groups, or compare
+groups at chosen covariate values with \code{\link{predictmeans}} (\code{covariate = }) and their slopes
+with \code{\link{pm_slopes}}.}
 
 \item{Df}{A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.}
 
@@ -79,9 +80,19 @@ factor's own frequencies), \code{"cells"} (each mean weights the cells by their 
 has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
 predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
 and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.}
+
+\item{contr}{Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
+\code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
+\code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
+band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
+band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
+model scale; with a log link or a log response the table also has the ratio.}
 }
 \value{
-\item{Predicted Means}{A table of predicted means.}
+\item{plt}{The plot (a \code{ggplot}).}
+\item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
+  (\code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}, and \code{ratio}, \code{ratio.LL},
+  \code{ratio.UL} for a log).}
 }
 \description{
 This function obtains predicted means with graph for a new set of covariate values.

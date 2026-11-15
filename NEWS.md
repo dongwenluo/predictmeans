@@ -35,6 +35,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* `covariatemeans(contr = c(1, 3))` gives the difference between two levels
+  of the term along the covariate with its confidence band (as `semipred()`
+  does): the two lines differ where the band leaves out zero, which the
+  overlap of the lines' own bands does not show.
 * **Fewer arguments in `predictmeans()`: `plot_args`.** The eleven plot
   settings (`plottitle`, `plotxlab`, `plotylab`, `plotord`, `lineplot`,
   `lsd_bar`, `responsen`, `jitterv`, `basesz`, `prtplt`, `newwd`) are one
