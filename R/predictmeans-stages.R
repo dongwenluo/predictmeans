@@ -25,6 +25,7 @@ pm_stage_setup <- function(st) eval(pm_code_setup, st)
 pm_code_setup <- quote({
 
   pm_check_modelterm(model, modelterm)
+  pm_note_not_a_term(model, modelterm)
   adj <- pm_match_adj(adj, westfall = TRUE)
 
   all.null = function(...){
@@ -99,8 +100,16 @@ pm_code_setup <- quote({
   # Kmatrix() are used instead (below).
   mdf <- tryCatch(model.frame(model), error = function(e) NULL)
 
-  if(!is.null(mdf) && any(!is.element(vars, names(mdf)[sapply(mdf,is.factor)]))){
-    stop(paste(vars, "must be factor(s)!"))
+  # predictmeans() tabulates by factors: a covariate is set with 'covariate',
+  # and means along a covariate come from covariatemeans() or Kmatrix()
+  if (!is.null(mdf)) {
+    not_fac <- intersect(vars, names(mdf)[!vapply(mdf, function(z) is.factor(z) || is.character(z) || is.logical(z),
+                                                   logical(1))])
+    if (length(not_fac)) {
+      stop("'", paste(not_fac, collapse = "', '"), "' ", if (length(not_fac) > 1) "are covariates" else "is a covariate",
+           ": predictmeans() gives means for the levels of factors. Set its value with covariate = list(",
+           not_fac[1], " = ), or use covariatemeans() or Kmatrix() for means along a covariate.", call. = FALSE)
+    }
   }
 
   # option checking
@@ -177,9 +186,15 @@ pm_code_setup <- quote({
 ## K matrix, predicted means, standard errors and the legacy mean/SE tables.
 pm_stage_estimate <- function(st) eval(pm_code_estimate, st)
 pm_code_estimate <- quote({
+  # (the grid of all combinations is only needed to average on the response scale)
   ctr.matrix <- Kmatrix(model, modelterm, covariate, data=data, prtnum=prtnum,
-                        cov_reduce=cov_reduce, exclude=exclude, weights=weights)
+                        cov_reduce=cov_reduce, exclude=exclude, weights=weights,
+                        refgrid=identical(average, "response"))
   KK <- ctr.matrix$K
+  if (anyDuplicated(ctr.matrix$fctnames[seq_along(vars)])) {
+    stop("predictmeans() gives one mean for each combination of the levels of '", modelterm, "': give one value ",
+         "for each covariate in 'covariate', or use covariatemeans() or Kmatrix() for several values.", call. = FALSE)
+  }
   if (is.null(mdf)) {
     mdf <- ctr.matrix$data
   }
@@ -212,19 +227,23 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   ndf <- data.frame(n.table)       ## To obtain info from model
 
   K <- KK[, mp$estimable, drop = FALSE]          # To match coef names
+  est_flag <- attr(KK, "estimable")
 
+  # Combinations of levels without data are left out, unless their mean can
+  # be estimated (a combination of factors that do not interact in the model)
   if (any(ndf$Freq==0)) {
     rnTrt <- do.call("paste", c(ndf[, vars, drop=FALSE], sep=":"))
-    rnTrt <- rnTrt[ndf$Freq!=0]      # To delete any missing level in factor
-    K <- K[rownames(K)%in%rnTrt, , drop=FALSE]
-    label <- label[rownames(label)%in%rnTrt, , drop=FALSE]
+    rnTrt <- rnTrt[ndf$Freq!=0]
+    keep <- rownames(K) %in% rnTrt
+    if (!is.null(est_flag)) keep <- keep | (est_flag[rownames(K)] %in% TRUE)
+    K <- K[keep, , drop=FALSE]
+    label <- label[keep, , drop=FALSE]
   }
 
   pm <- K %*% mp$coef
   ses <- as.numeric(apply(K, 1, function(x) {y <- matrix(x, nrow=1);sqrt(y %*% tcrossprod(mp$vcov, y))}))
   # Means that cannot be estimated (they depend on aliased coefficients) are
   # NA; their differences may still be estimable and are kept.
-  est_flag <- attr(KK, "estimable")
   if (!is.null(est_flag)) {
     non_est <- !est_flag[rownames(K)]
     non_est[is.na(non_est)] <- FALSE
@@ -250,8 +269,9 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   })
   mean.table <- tabs[[1]]
   se.table <- tabs[[2]]
-  mean.table[!(n.table)] <- NA
-  se.table[!(n.table)] <- NA
+  no_mean <- !(xtabs(~ ., mt[, vars, drop = FALSE], drop.unused.levels = TRUE) > 0)   # combinations left out
+  mean.table[no_mean] <- NA
+  se.table[no_mean] <- NA
   if (anyNA(mt$pm)) {   # non-estimable means: xtabs() would show 0
     na_cells <- as.matrix(mt[is.na(mt$pm), vars, drop = FALSE])
     mean.table[na_cells] <- NA

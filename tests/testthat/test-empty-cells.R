@@ -84,26 +84,36 @@ test_that("lmer split plot with a lost cell: the comparisons on the varieties bo
   expect_true(is.na(p$pairs$over[p$pairs$level1 == "0" & p$pairs$level2 == "0.2"]))
 })
 
-test_that("a factor whose effects are nested in the compared factor is not matched (Sample_date/Farm)", {
+test_that("a combination without data is not an empty cell when its factors do not interact (Sample_date/Farm)", {
   # farms within dates (date/farm: a farm's effect differs by date), treatments
-  # crossed; no data for treatment B on farm F2 at date d2
+  # crossed with dates; no data for treatment B on farm F2 at date d2. Farm
+  # and treatment do not interact in the model, so its cells are those of
+  # date:farm and of date:trt, which all have data: the mean of d2:B over both
+  # farms can be estimated, as the mean of d2:A.
   set.seed(11)
   d <- expand.grid(rep = 1:3, trt = factor(c("A", "B")), farm = factor(c("F1", "F2")), date = factor(c("d1", "d2")))
   d <- d[!(d$date == "d2" & d$farm == "F2" & d$trt == "B"), ]
   d$y <- 5 + as.integer(d$farm) * as.integer(d$date) + 0.5 * (d$trt == "B") + rnorm(nrow(d), 0, 0.3)
   fm <- lm(y ~ date/farm + date * trt, data = d)
-  expect_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE), "d2:B")
+  expect_no_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
   pr <- p$pairs
+  expect_null(pr$over)
   pred <- function(dt, f, t) unname(predict(fm, data.frame(date = dt, farm = f, trt = t)))
-  # treatments at d2: farm effects are shared, so matched (farm F1 only)
+  over_farms <- function(dt, t) mean(c(pred(dt, "F1", t), pred(dt, "F2", t)))
+  expect_equal(p$means$estimate, c(over_farms("d1", "A"), over_farms("d1", "B"), over_farms("d2", "A"),
+                                   over_farms("d2", "B")), tolerance = 1e-8)
+  # treatments at d2: the same difference on either farm
   r <- pr[pr$level1 == "d2:A" & pr$level2 == "d2:B", ]
-  expect_identical(r$over, "farm F1")
   expect_equal(r$estimate, pred("d2", "F1", "A") - pred("d2", "F1", "B"), tolerance = 1e-8)
-  # dates: each date has its own farm effects, nothing to match; the means as they are
   r <- pr[pr$level1 == "d1:B" & pr$level2 == "d2:B", ]
-  expect_true(is.na(r$over))
-  expect_equal(r$estimate, mean(c(pred("d1", "F1", "B"), pred("d1", "F2", "B"))) - pred("d2", "F1", "B"),
+  expect_equal(r$estimate, over_farms("d1", "B") - over_farms("d2", "B"), tolerance = 1e-8)
+  # with a farm x treatment interaction in the model it is an empty cell
+  fm3 <- lm(y ~ date/farm * trt, data = d)
+  expect_warning(p3 <- predictmeans(fm3, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE), "d2:F2:B")
+  expect_equal(p3$means$estimate[4], unname(predict(fm3, data.frame(date = "d2", farm = "F1", trt = "B"))),
                tolerance = 1e-8)
+  r <- p3$pairs[p3$pairs$level1 == "d2:A" & p3$pairs$level2 == "d2:B", ]
+  expect_identical(r$over, "farm F1")
 })
 
 test_that("the empty-cell warning names the means by their factor levels, once", {
@@ -112,7 +122,8 @@ test_that("the empty-cell warning names the means by their factor levels, once",
   d$x <- rnorm(nrow(d)); d$y <- as.numeric(d$B) + d$x + rnorm(nrow(d))
   e <- d[!(d$B == "b2" & d$C == "c1"), ]
   w <- character()
-  withCallingHandlers(invisible(pm_slopes(lm(y ~ x*B + C, data = e), "x", "B")),
+  # (B and C must interact for b2:c1 to be an empty cell)
+  withCallingHandlers(invisible(pm_slopes(lm(y ~ x*B + B*C, data = e), "x", "B")),
                       warning = function(x) { w <<- c(w, conditionMessage(x)); invokeRestart("muffleWarning") })
   expect_length(w, 1)
   expect_match(w, "The mean of B = b2 averages", fixed = TRUE)

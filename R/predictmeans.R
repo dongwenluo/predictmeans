@@ -29,8 +29,11 @@
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 #'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.
-#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-#'   The \code{modelterm} must be factors and given exactly as it appears in the printed model, e.g. "A" or "A:B".
+#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
+#'   factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
+#'   model can be asked for too (e.g. "A:B" for \code{y ~ A + B}): its means are the sums of the factors' effects
+#'   that the model implies (a note says so), which gives a table of predictions for every combination, also
+#'   those without data. Covariates are set with \code{covariate}.
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some 
 #'   variable trnasformation in the model.
 #' @param pairwise An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.
@@ -59,8 +62,10 @@
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
 #' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
-#' @param covariate A numerical vector to specify values of covariates for calculating predicted means. The default 
-#'   values are the means of the associated covariates.
+#' @param covariate The values of covariates at which the means are predicted: a named list or vector, e.g.
+#'   \code{list(x = 2, z = 0.3)} (covariates not named are at their means), or an unnamed numerical vector with one
+#'   value for each covariate of the model, in their order. The default values are the means of the covariates
+#'   (see \code{cov_reduce}). For means along the values of a covariate use \code{\link{covariatemeans}}.
 #' @param meandecr A logical variable to indicate whether to print letters for multiple comparisons by decreasing order of means in the mean_table. 
 #'   The default is NULL which indicates the mean order follows the associated factor levels.
 #' @param letterCI A logical variable to indicate printed letters for multiple comparisons by whether or not CI overlap in the mean_table. 

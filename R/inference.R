@@ -110,9 +110,9 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     L <- rbind(L)
     n <- nrow(L)
     if (!is.null(one_df)) {
-      d <- one_df[intersect(terms, names(one_df))]
-      if (!length(d)) stop("'", paste(terms, collapse = "', '"), "' is not a term of the model")
-      return(rep(min(unname(d)), n))
+      d <- pm_term_df(one_df, terms)                    # (R/checks.R)
+      if (is.null(d)) stop("'", paste(terms, collapse = "', '"), "' is not a term of the model")
+      return(rep(d, n))
     }
     if (!is.null(io)) {
       # contrasts: the smallest df of the coefficients a row uses; means (rows

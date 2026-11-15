@@ -35,6 +35,50 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`Kmatrix()` reviewed** (the 52-call snapshot of `predictmeans()` is
+  unchanged; 549 of 592 `Kmatrix()` cases are identical, the others are the
+  changes below).
+  * *Covariate values by name.* `covariate = list(x = c(-1, 0, 1), z = 0.3)`:
+    several values give rows, one value fixes the covariate, the others stay
+    at their means; a data frame gives joint points. Before, the names of
+    `covariate = c(z = 0.2, x = 0.5)` and of a `covariateV` list were ignored
+    (values went by position, without a warning) and one value was recycled
+    to every covariate; unnamed values must now be one per covariate.
+  * *Any combination of variables.* `modelterm` need not be a term of the
+    model: `"A:B"` for `y ~ A + B`, and a covariate may be in it (`"A:x"`).
+    `predictmeans()` accepts combinations of factors that are not a term
+    (with a note: such means are sums of the factors' effects), shows a
+    combination without data when its mean can be estimated, and uses the
+    smallest df of the terms of its factors where df go by term. The
+    factors of a term in another order (`"Variety:nitro"`) now give the
+    means in that order instead of an error.
+  * *Faster for factors that do not interact.* Each group of variables that
+    share a model term is averaged on its own grid: `y ~ Line + Block + Site
+    + Year` with 300, 90, 4 and 3 levels took 3.6 s (324,000 grid rows) and
+    takes 0.14 s; `cov_reduce = "average"` with 200,000 observations 20 s ->
+    1.1 s. The model matrix of the data is no longer built to read the
+    coefficient names. `refgrid = TRUE` returns the grid of all combinations
+    (`$refgrid` is otherwise `NULL` unless it was needed).
+  * *Empty cells are those of each interaction term.* Before, the cells were
+    the combinations of all factors that interact with anything, so in
+    `y ~ date/farm + date*trt` a date-farm-treatment combination without data
+    made the mean of that date and treatment an average over its observed
+    farms (with a warning), though farm and treatment do not interact and the
+    mean over all farms can be estimated. Now it is that mean. The same for a
+    factor that interacts only with a covariate. The exception "every cell
+    has 0 or 1 observation" is gone: unreplicated interacting factors with an
+    empty cell get the average of the observed cells and the warning, as
+    replicated ones.
+  * *Nested factors* declared in the formula (`G/T`) are also left out of
+    the averages with `weights = "proportional"` and `"outer"` (gave NA).
+    Nesting that is only in the data (`y ~ G + T`) still gives NA (the
+    effects cannot be told apart), now with a note that says so and how to
+    get the means (`G/T` or `weights = "cells"`).
+  * `Kmatrix()` accepts `aov` models with `Error()`; an `aov` fit with
+    aliased coefficients gets the estimability check; clearer errors for
+    unknown variables and covariates. New adapter generic `pm_contrasts()`
+    (a new model class needs `coef()`, `vcov()` and `terms()` only).
+
 * **Several hundred means** (e.g. the lines of a breeding trial). With more
   than 100 means and no comparison asked for, `predictmeans()` gives the
   means, their SEs and the SED and LSD summaries (maximum, minimum, average;

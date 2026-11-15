@@ -10,7 +10,7 @@
 #'
 #' @description
 #' \code{\link{Kmatrix}}, \code{\link{predictmeans}}, \code{\link{contrastmeans}} and \code{\link{covariatemeans}} get
-#' everything they need from a model through these six generics. Their default methods work for any model class with
+#' everything they need from a model through these seven generics. Their default methods work for any model class with
 #' the usual methods (\code{coef}, \code{vcov}, \code{terms}, \code{df.residual}, \code{family}), so many classes need
 #' no extra code. For a class that lacks one of these, or needs something special, write a method for the
 #' corresponding generic only; nothing inside predictmeans needs to change.
@@ -30,6 +30,9 @@
 #'   there is none. Kenward-Roger df for \code{lmer} and the rules of \pkg{nlme} for \code{lme} are built in.}
 #'   \item{\code{pm_linkinv(model)}}{Inverse link function used to back-transform the means, or \code{NULL} for
 #'   none. Default: the inverse link of \code{family(model)} unless it is the identity.}
+#'   \item{\code{pm_contrasts(model)}}{The contrasts of the factors used in the fit, as for the
+#'   \code{contrasts.arg} argument of \code{model.matrix()}. Default: those of \code{model.matrix(model)}, else
+#'   \code{model$contrasts}; a method is only needed for a class that has neither.}
 #' }
 #' The model also needs a \code{terms()} method for its fixed effects (used to find the variables in the model), and
 #' its call (\code{getCall()}) or a \code{pm_data()} method so that the data can be found.
@@ -40,6 +43,7 @@
 #' pm_data(model, ...)
 #' pm_df(model, L, ...)
 #' pm_linkinv(model, ...)
+#' pm_contrasts(model, ...)
 #' @param model A fitted model.
 #' @param newdata A data frame of predictor values (the reference grid).
 #' @param L A matrix of linear functions of the coefficients, one row per contrast or mean.
@@ -69,7 +73,7 @@
 #'   pm_df.mymodel <- function(model, L, ...) rep(Inf, nrow(L))
 #'   predictmeans(m, "nitro", plot = FALSE)$means
 #' @name pm_coef
-#' @aliases pm_vcov pm_basis pm_data pm_df pm_linkinv
+#' @aliases pm_vcov pm_basis pm_data pm_df pm_linkinv pm_contrasts
 NULL
 
 ## Fixed-effect estimates (named; NA for aliased coefficients).
@@ -133,12 +137,24 @@ pm_link_trans <- function(model) {
   if (isTRUE(all.equal(y, x))) NULL else f
 }
 
-## Contrasts used to build the model matrix (internal).
-pm_contrasts <- function(model) {
-  if (inherits(model, "lme") || inherits(model, "gls")) return(model$contrasts)
+## Contrasts used to build the model matrix: the stored ones where the model
+## keeps them (no model matrix is rebuilt), else those of model.matrix().
+pm_contrasts <- function(model, ...) UseMethod("pm_contrasts")
+pm_contrasts.default <- function(model, ...) {
   ctr <- tryCatch(attr(stats::model.matrix(model), "contrasts"), error = function(e) NULL)
   if (is.null(ctr)) ctr <- tryCatch(model$contrasts, error = function(e) NULL)
   ctr
+}
+pm_contrasts.lme <- function(model, ...) model$contrasts
+pm_contrasts.gls <- function(model, ...) model$contrasts
+pm_contrasts.lm <- function(model, ...) model$contrasts
+
+## Names of the columns of the fixed-effects design, in its order: the names
+## of pm_coef(). (glmmTMB: the columns of its model matrix, which include
+## those dropped from a rank-deficient fit.)
+pm_coef_names <- function(model, coef_vals = pm_coef(model)) {
+  if (inherits(model, "glmmTMB")) return(colnames(stats::model.matrix(model)))
+  names(coef_vals)
 }
 
 ## Residual degrees of freedom of a model class predictmeans has no rule for:
