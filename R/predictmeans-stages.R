@@ -150,9 +150,10 @@ pm_code_setup <- quote({
   if (is.null(level)){
     slevel <- level <- 0.05
   }
-  # 'level' and 'slevel' are the user's level everywhere; the printed LSD of
-  # adj = "bonferroni" uses 'lsd_level' (compare stage) and the mean table
-  # with a permlist (limits +- 2 SE) 'ci_level' (mean_table stage)
+  # 'level' and 'slevel' are the user's level everywhere; the printed LSDs
+  # take the critical value of 'adj' at this level (pm_lsd_crit(), compare
+  # stage) and the mean table with a permlist (limits +- 2 SE) 'ci_level'
+  # (mean_table stage)
   slevel <- level
 
   if (!is.null(plotord) && !unique(plotord%in%c("NULL", ""))) {
@@ -333,10 +334,6 @@ pm_code_compare <- quote({
       list2env(pm_compare_df(inf, modelterm, K, rK, mt, Df), envir = environment())
       bkmt <- mt  # update bkmt
     }
-    # the printed LSDs: with adj = "bonferroni" at level/m over all pairs (1.x)
-    lsd_level <- if (adj == "bonferroni") level/(nK*(nK - 1)/2) else level
-    LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd_level, Df, slevel, ndecimal, perm)
-
     if (tab_pairs) {
       # every statistic of the pairs, once (the pairs table, the printed
       # matrices and the letters read it)
@@ -346,10 +343,16 @@ pm_code_compare <- quote({
       pair_tab <- pm_pair_table(label, if (no_atvar) NULL else atvar, rK, cm, dses, if (perm) NULL else Df_diff,
                                 t.p.values, adj, perm, level, pair_cor, perm_T)
     }
+    # The printed LSDs are the SEDs times the critical value that goes with
+    # the p-values shown (pm_lsd_crit(), R/p-adjust.R): the half-width of the
+    # limits that agree with them, with the same family of pairs.
+    lsd <- if (perm) list(crit = NA_real_, note = NULL) else
+      pm_lsd_crit(adj, level, Df, if (tab_pairs) attr(pair_tab, "families"), if (tab_pairs) pair_cor)
+    LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd$crit, Df, slevel, ndecimal, perm, lsd$note)
     if (pairwise) {
       p_valueMatrix <- NULL
       if (no_atvar) {
-        list2env(pm_pairs_overall(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
+        list2env(pm_pairs_overall(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd$crit, slevel,
                                   meandecr), envir = environment())
       } else {
         list2env(pm_pairs_atvar(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pair_tab, slevel),
@@ -527,20 +530,22 @@ pm_compare_df <- function(inf, modelterm, K, rK, mt, Df) {
   list(Df = Df, mt = mt, pm_df_raw = pm_df_raw, Df_diff = Df_diff, pairDf = pairDf)
 }
 
-## LSDs from the SEDs: t quantile with the df, or 2 x SED with permutation tests.
-pm_compare_lsd <- function(SED.out, dses.m, vars, level, Df, slevel, ndecimal, perm) {
+## LSDs from the SEDs: SED x 'crit' (pm_lsd_crit(): the critical value that
+## goes with the p-values), or 2 x SED with permutation tests.
+pm_compare_lsd <- function(SED.out, dses.m, vars, crit, Df, slevel, ndecimal, perm, note = NULL) {
   if (!perm) {
-    LSD <- round(qt(1 - level/2, df = Df) * SED.out, ndecimal+1)
+    LSD <- round(crit * SED.out, ndecimal+1)
     names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
     attr(LSD, "For the Same Level of Factor") <- NULL
 
     if (length(vars) > 1) {
       rownames(dses.m) <- c("Aveg.LSD", "Min.LSD", "Max.LSD")
-      attr(LSD, "For the Same Level of Factor") <- round(qt(1 - level/2, df = Df) * dses.m, ndecimal+1)
+      attr(LSD, "For the Same Level of Factor") <- round(crit * dses.m, ndecimal+1)
     }
 
     attr(LSD, "Significant level") <- slevel
     attr(LSD, "Degree of freedom") <- round(Df, 2)
+    if (!is.null(note)) attr(LSD, "Note") <- note
   }else{
     LSD <- round(2 * SED.out[1:3], ndecimal+1)
     names(LSD) <- c("Max.LSD", "Min.LSD", "Aveg.LSD")
@@ -613,12 +618,13 @@ pm_pair_table <- function(label, atvar, rK, cm, dses, Df_diff, p, adj, perm, lev
   crit_adj <- if (!perm || !is.null(perm_T)) pm_adjust_crit(adj, level, pdf, fams, R = pair_cor, T = perm_T$T)
   if (!is.null(crit_adj)) out$crit_adj <- crit_adj
   out$ci_se <- if (!is.null(perm_T$se)) perm_T$se else dses
+  attr(out, "families") <- fams
   out
 }
 
 ## Overall pairwise tables, from the pair table: p-values (t value above
 ## the diagonal), LSDs and the matrix used for letter groups.
-pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_level, slevel,
+pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm, nsim, lsd_crit, slevel,
                              meandecr) {
   tvm <- t.p.valuem <- LSDm <- Diffm <- matrix(0, ncol = nK, nrow = nK)
   rownames(tvm) <- colnames(tvm) <- rownames(t.p.valuem) <- colnames(t.p.valuem) <- rownames(LSDm) <- colnames(LSDm) <- rnK
@@ -639,7 +645,7 @@ pm_pairs_overall <- function(model, rnK, mt, pair_tab, nK, Df, pairDf, adj, perm
 
 		      attr(t.p.valuem, "Note") <- paste("The matrix has t-value above the diagonal, p-value (adjusted by '",
                                             adj, "' method) below the diagonal", sep="")
-          LSDm.up <- qt(1-lsd_level/2, df = Df)*pair_tab$std.error
+          LSDm.up <- lsd_crit*pair_tab$std.error
           LSDm[upper.tri(LSDm)] <- LSDm.up
           Diffm[upper.tri(Diffm)] <- pair_tab$estimate
           LSDm <- t(LSDm)+Diffm

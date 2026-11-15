@@ -35,6 +35,22 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **The printed LSDs go with the adjusted p-values.** `predictmeans()` printed
+  the unadjusted LSD (t x SED) with every adjustment except Bonferroni, so
+  with `adj = "tukey"` a difference could be larger than the LSD and have an
+  adjusted p-value above 0.05 (oats, nitrogen: LSD 10.65, but 14.08 is the
+  value that matches the Tukey p-values). Now the LSD is the SED times the
+  critical value of the method: t (`"none"`), the studentized range over
+  sqrt(2) (`"tukey"`, the HSD), t at the adjusted level (`"bonferroni"`,
+  `"sidak"`), and the Scheffe and multivariate t values (`"scheffe"`,
+  `"mvt"`), so a difference is beyond its LSD exactly when its adjusted
+  p-value is below the level. The family is that of the p-values: with
+  `atvar`, the pairs within a level (Bonferroni used all pairs: oats,
+  `atvar = "Variety"`: 32.8, now 25.2). The step-wise methods (`"holm"`,
+  `"hochberg"`, `"hommel"`, `"BH"`, `"BY"`) have no critical value for all
+  pairs: their LSDs stay unadjusted, and a note printed with the LSDs says
+  so. The LSD bar of the mean plot follows. `adj = "none"` is unchanged.
+
 * **`Kmatrix()` reviewed** (the 52-call snapshot of `predictmeans()` is
   unchanged; 549 of 592 `Kmatrix()` cases are identical, the others are the
   changes below).

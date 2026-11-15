@@ -39,12 +39,46 @@ test_that("compare: SEDs and nested factors drop atvar", {
   expect_null(r$atvar)                     # no pairs within a level of B
 })
 
-test_that("LSDs: t quantile, or 2 x SED with permutation", {
+test_that("LSDs: SED x the critical value, or 2 x SED with permutation", {
   sed <- c(Max.SED = 2, Min.SED = 1, Aveg.SED = 1.5)
-  l <- predictmeans:::pm_compare_lsd(sed, NULL, "A", 0.05, 10, 0.05, 4, perm = FALSE)
+  l <- predictmeans:::pm_compare_lsd(sed, NULL, "A", qt(0.975, 10), 10, 0.05, 4, perm = FALSE)
   expect_equal(as.vector(l), round(qt(0.975, 10) * c(2, 1, 1.5), 5))
-  lp <- predictmeans:::pm_compare_lsd(sed, NULL, "A", 0.05, NULL, 0.05, 4, perm = TRUE)
+  lp <- predictmeans:::pm_compare_lsd(sed, NULL, "A", NA, NULL, 0.05, 4, perm = TRUE)
   expect_equal(as.vector(lp), c(4, 2, 3))
+})
+
+test_that("the printed LSDs go with the adjusted p-values: the critical value of 'adj' and its family", {
+  O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
+  fm <- lm(yield ~ Block + nitro*Variety, data = O)
+  df <- df.residual(fm)
+  q <- function(...) predictmeans(fm, ..., plot = FALSE, prtnum = FALSE)
+  sed <- q("nitro")[["Standard Error of Differences"]][["Aveg.SED"]]
+  lsd <- function(a) q("nitro", adj = a)$LSD[["Aveg.LSD"]]
+  expect_equal(lsd("none"), round(qt(0.975, df)*sed, 5))
+  expect_equal(lsd("tukey"), round(qtukey(0.95, 4, df)/sqrt(2)*sed, 5))            # the HSD: 4 means
+  expect_equal(lsd("bonferroni"), round(qt(1 - 0.05/(2*6), df)*sed, 5))            # 6 pairs
+  expect_equal(lsd("sidak"), round(qt(1 - (1 - 0.95^(1/6))/2, df)*sed, 5))
+  expect_equal(lsd("scheffe"), round(sqrt(3*qf(0.95, 3, df))*sed, 5))
+  # step-wise methods have no critical value: not adjusted, and a note says so
+  expect_equal(lsd("holm"), lsd("none"))
+  expect_match(attr(q("nitro", adj = "holm")$LSD, "Note"), "not adjusted")
+  expect_match(attr(q("nitro", adj = "tukey")$LSD, "Note"), "adjusted by the 'tukey' method")
+  expect_null(attr(q("nitro")$LSD, "Note"))
+  # a difference is beyond the LSD exactly when its adjusted p-value is below the level (equal SEDs)
+  for (a in c("tukey", "bonferroni", "sidak", "scheffe")) {
+    r <- q("nitro", adj = a)
+    expect_identical(abs(r$pairs$estimate) > r$LSD[["Aveg.LSD"]], r$pairs$p.adj < 0.05, label = a)
+    expect_equal(r$LSD[["Aveg.LSD"]], round((r$pairs$adj.conf.high[1] - r$pairs$adj.conf.low[1])/2, 5), label = a)
+  }
+  # with 'atvar' the family is the pairs within a level, as for the p-values (was: all 66 pairs)
+  ra <- q("nitro:Variety", atvar = "Variety", adj = "bonferroni")
+  sed_a <- ra[["Standard Error of Differences"]][["Aveg.SED"]]
+  expect_equal(ra$LSD[["Aveg.LSD"]], round(qt(1 - 0.05/(2*6), df)*sed_a, 5))
+  rt <- q("nitro:Variety", atvar = "Variety", adj = "tukey")
+  expect_equal(rt$LSD[["Aveg.LSD"]], round(qtukey(0.95, 4, df)/sqrt(2)*sed_a, 5))
+  # the matrix of pairwise LSDs uses the same value
+  rb <- q("nitro", adj = "bonferroni")
+  expect_equal(rb[["Pairwise LSDs"]][2, 1], round(qt(1 - 0.05/12, df)*rb$pairs$std.error[1], 5))
 })
 
 test_that("means that cannot be estimated are NA; estimable differences kept", {

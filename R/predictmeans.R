@@ -57,8 +57,14 @@
 #'   powerful; both use the correlation between the comparisons. "westfall" needs \code{permlist}; "scheffe" is not
 #'   available with it. 
 #'   The default method is "none"; letter case does not matter ("Tukey" works). Confidence limits that agree with
-#'   the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}. The
-#'   printed LSD is adjusted only by "bonferroni".
+#'   the adjusted p-values are in the columns \code{adj.conf.low} and \code{adj.conf.high} of \code{pairs}.
+#'   The printed LSDs go with the p-values: the SED times the critical value of the method, for the same family
+#'   of pairs (all pairs, or the pairs within a level of \code{atvar}): \emph{t} for "none", the studentized range
+#'   divided by \eqn{\sqrt{2}} for "tukey" (the HSD), \emph{t} at the adjusted level for "bonferroni" and "sidak",
+#'   and the Scheffe and multivariate \emph{t} values. So a difference is beyond its LSD exactly when its adjusted
+#'   p-value is below \code{level}. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
+#'   critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
+#'   "bonferroni" adjusted the LSDs, with all the pairs as family also with \code{atvar}.)
 #' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
 #' @param lsd_bar A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.
 #' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
@@ -210,7 +216,9 @@
 #' \item{Predicted Means}{A table of predicted means.}
 #'  \item{Standard Error of Means}{A table of standard errors of predicted means.}
 #'  \item{Standard Error of Differences}{Standard errors of differences between predicted means.}
-#'  \item{LSD}{Least significant differences between predicted means.}
+#'  \item{LSD}{Least significant differences between predicted means (maximum, minimum and average), with the
+#'  critical value that goes with \code{adj} (see there); attribute \code{"Note"} says when they are adjusted,
+#'  or why not.}
 #'  \item{Pairwise p-value}{A matrix with t-values above the diagonal and p-values below the diagonal, or 
 #'  matrix of pairwise comparison p-values for each level of \code{atvar}.}
 #'  \item{mean_table}{A summary of predicted means result including 'Predicted means', 'Standard error', 'Df' 
