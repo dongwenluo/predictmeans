@@ -5,7 +5,7 @@ test_that("pm_wrap_title() breaks long titles at spaces and keeps the line break
   w <- pm_wrap_title(long, 12)
   lines <- strsplit(w, "\n")[[1]]
   expect_gt(length(lines), 1)
-  expect_true(all(nchar(lines) <= floor(800/(12*1.2))))
+  expect_true(all(nchar(lines) <= floor(900/(12*1.2))))
   expect_identical(gsub("\n", " ", w), long)                    # nothing lost
   expect_identical(pm_wrap_title("short"), "short")
   expect_identical(pm_wrap_title("a\nb\n"), "a\nb\n")           # given breaks, also the one at the end

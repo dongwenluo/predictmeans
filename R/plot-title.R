@@ -9,12 +9,12 @@
 pm_wrap_title <- function(x, basesz = 12, rel = 1.2, panels = 1, width = NULL) {
   if (is.null(x) || !is.character(x) || !length(x)) return(x)
   if (is.null(width)) width <- getOption("predictmeans.title_width", NULL)
-  if (is.null(width)) width <- max(20, floor(800 / (basesz * rel) / panels))
+  if (is.null(width)) width <- max(20, floor(900 / (basesz * rel) / panels))
   vapply(x, function(s) {
     if (is.na(s) || !nzchar(s)) return(s)
     tail_nl <- regmatches(s, regexpr("\n*$", s))
     parts <- strsplit(sub("\n*$", "", s), "\n", fixed = TRUE)[[1]]
-    paste0(paste(vapply(parts, function(p) paste(strwrap(p, width), collapse = "\n"), character(1)),
+    paste0(paste(vapply(parts, function(p) paste(strwrap(p, width + 1), collapse = "\n"), character(1)),
                  collapse = "\n"), tail_nl)
   }, character(1), USE.NAMES = FALSE)
 }
