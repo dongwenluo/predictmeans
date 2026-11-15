@@ -72,7 +72,7 @@ test_that("PMplot() and autoplot(type = 'pvalue') draw the same square level plo
   expect_equal(nrow(b$data[[1]]), 28)                          # one tile per pair
   expect_equal(range(b$data[[1]]$x), c(1, 7))                  # the empty last column and first row are left out
   expect_equal(sort(unique(b$data[[1]]$y)), -(8:2))            # (reversed y axis: first level at the top)
-  expect_s3_class(g$coordinates, "CoordFixed")                 # square tiles
+  expect_equal(g$coordinates$ratio, 1)                 # square tiles
   expect_equal(nrow(ggplot2::ggplot_build(PMplot(pmatrix, values = TRUE))$data[[2]]), 28)
   expect_equal(nlevels(PMplot(pmatrix, level = 0.1)$data$band), 2)
   expect_equal(nlevels(g$data$band), 4)
