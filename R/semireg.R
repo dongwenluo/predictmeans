@@ -198,7 +198,7 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     info <- pm_sr_info(getME(semer, "X"), Z, getME(semer, "Lambda"), w, unlist(ranef(semer)), u_ind,
                        names(st$Zt), st$smoothZm)
   }
-  pm_sr_result(semer, st, mc, info, list(lmerc = lmerc))
+  pm_sr_result(semer, st, mc, info, list(lmerc = lmerc, devfun0 = fit$devfun0))
 }
 
 ## A semireg() lmer fit that remembers its smooth bases (see update below).

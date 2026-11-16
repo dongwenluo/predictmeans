@@ -3,7 +3,8 @@
 ## with covariates at their means or at the values in 'covariate' (a named
 ## numeric vector), and pairwise comparisons. Tests are normal-based, as in
 ## semipred(). Returns the stable tables (means, pairs, settings).
-pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL) {
+pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL,
+                             unconditional = getOption("predictmeans.semi_unconditional")) {
   adj <- pm_match_adj(adj)
   mod_df <- semireg$data
   cov_names <- covV <- NULL
@@ -22,7 +23,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     }
     covV <- if (length(covV) == 1) unname(covV) else matrix(covV, nrow = 1, dimnames = list(NULL, cov_names))
   }
-  des <- pm_semi_design(semireg, modelterm, cov_names, covV, NULL, mod_df)
+  des <- pm_semi_design(semireg, modelterm, cov_names, covV, NULL, mod_df, unconditional = unconditional)
   vars <- unlist(strsplit(modelterm, ":"))
   lab <- des$pred_df[vars]
   rownames(lab) <- NULL

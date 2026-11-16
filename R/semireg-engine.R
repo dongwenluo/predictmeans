@@ -156,9 +156,14 @@ pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, ngbinomial, control, start, 
     Y <- stats::model.response(stats::model.frame(semer1))
     mu <- stats::na.omit(stats::fitted(semer1))
     theta_v <- MASS::theta.ml(Y, mu, weights = semer1@resp$weights, limit = 20)
-    return(list(semer = glmm_fit(MASS::negative.binomial(theta = theta_v)), devfun = NULL))
+    fam <- MASS::negative.binomial(theta = theta_v)
+    return(list(semer = glmm_fit(fam), devfun = NULL, devfun0 = function() do.call(lme4::mkGlmerDevfun,
+                                                                                    c(dfl, list(family = fam)))))
   }
-  if (!gaus) return(list(semer = glmm_fit(family), devfun = NULL))
+  # GLMMs: a builder of the stage-1 deviance (a function of theta, with beta
+  # and u by PIRLS) for the smoothing-parameter correction (pm_sr_uncond())
+  if (!gaus) return(list(semer = glmm_fit(family), devfun = NULL,
+                         devfun0 = function() do.call(lme4::mkGlmerDevfun, c(dfl, list(family = family)))))
   dfl$REML <- lf$REML
   devfun <- do.call(lme4::mkLmerDevfun, dfl)
   opt <- lme4::optimizeLmer(devfun, start = start, verbose = verbose, optimizer = control$optimizer,
@@ -242,4 +247,58 @@ pm_sr_result <- function(semer, st, mc, info, extra) {
                 smoothZ_call = mc$smoothZ), info, extra, list(smooths = st$smooths))
   class(ans) <- c("semireg", "list")
   ans
+}
+
+## ---- Uncertainty of the smoothing parameters ----
+##
+## The covariance of the coefficients from pm_sr_info() is conditional on the
+## variance parameters theta (the smoothing parameters): bands made from it
+## covered the true curves too rarely in GLMMs (dev/sim-curve-difference.R).
+## The first-order correction (Kass and Steffey 1989; Wood, Pya and Saefken
+## 2016, mgcv's unconditional = TRUE) adds J V_theta J', with J the
+## derivative of the estimated coefficients (beta, b) in theta and V_theta
+## the covariance of theta-hat:
+##   lmer     beta and b from the fit's deviance function (profiled, as
+##            REML); V_theta from its Hessian (pm_lmer_varpar())
+##   glmer    beta and b from the stage-1 deviance (theta only; beta and u
+##            by PIRLS), V_theta from its Hessian
+##   glmmTMB  the joint covariance of (beta, b) from TMB's joint precision of
+##            all parameters, which includes theta's uncertainty
+## Returns the matrix to add to CovMat (relative to sigma^2, as CovMat), or
+## NULL with a message when it cannot be computed.
+pm_sr_uncond <- function(semireg) {
+  semer <- semireg$semer
+  s2 <- stats::sigma(semer)^2
+  if (inherits(semer, "glmmTMB")) {
+    pm_need("TMB", "unconditional = TRUE for glmmTMB fits")
+    sdr <- TMB::sdreport(semer$obj, getJointPrecision = TRUE)
+    P <- sdr$jointPrecision
+    nm <- rownames(P)
+    ib <- which(nm == "beta")[seq_len(length(glmmTMB::fixef(semer)$cond))]
+    iu <- which(nm == "b")[seq_len(ncol(lme4::getME(semer, "Z")))]
+    Vj <- solve(P)[c(ib, iu), c(ib, iu)]
+    return((Vj - as.matrix(semireg$CovMat) * s2)/s2)
+  }
+  th0 <- lme4::getME(semer, "theta")
+  if (methods::is(semer, "semerLmerTest")) {
+    devfun <- semer@semireg_info$devfun
+    vp <- pm_lmer_varpar(semer)
+    Vth <- vp$vcov_varpar[seq_along(th0), seq_along(th0), drop = FALSE]
+  } else if (!is.null(semireg$devfun0)) {
+    devfun <- semireg$devfun0()
+    devfun(th0)
+    h <- numDeriv::hessian(devfun, th0)
+    Vth <- 2 * pm_vc_inv(h)
+  } else {
+    message("The smoothing-parameter correction is not available for this fit; the conditional covariance is used.")
+    return(NULL)
+  }
+  coefs <- function(th) {
+    devfun(th)
+    e <- environment(devfun)
+    c(e$pp$beta(1), as.vector(e$pp$b(1)))
+  }
+  J <- numDeriv::jacobian(coefs, th0)
+  devfun(th0)                                   # leave the deviance function at the optimum
+  (J %*% Vth %*% t(J))/s2
 }

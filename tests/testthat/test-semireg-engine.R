@@ -90,3 +90,39 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
                     data = subset(WarsawApts, surface > 30), prt = FALSE)
   expect_equal(as.numeric(logLik(t1$semer)), as.numeric(logLik(r$m$semer)), tolerance = 1e-3)
 })
+
+test_that("unconditional = TRUE: the smoothing-parameter correction, close to mgcv's; lme4 and glmmTMB agree", {
+  skip_on_cran()
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  set.seed(1)
+  n <- 200
+  d <- data.frame(x = runif(n, 0, 3), f = gl(2, n/2, labels = c("a", "b")))
+  d$y <- sin(2*d$x) + 0.6*(d$f == "b")*d$x + rnorm(n, 0, 0.4)
+  fit <- q(semireg(y ~ s(x, by = f), data = d, prt = FALSE))
+  g <- mgcv::gam(y ~ f + s(x, by = f), data = d, method = "REML")
+  xs <- c(0.2, 1.5, 2.8)
+  nd <- expand.grid(x = xs, f = levels(d$f))
+  a <- semipred(fit, "f", "x", covariateV = xs, prt = FALSE)$pred_df
+  b <- semipred(fit, "f", "x", covariateV = xs, prt = FALSE, unconditional = TRUE)$pred_df
+  a <- a[order(a$f, a$x), ]
+  b <- b[order(b$f, b$x), ]
+  pu <- as.numeric(predict(g, nd, se.fit = TRUE, unconditional = TRUE)$se.fit)
+  expect_true(all(b$SE >= a$SE))
+  # first-order correction (mgcv adds a second-order term too): within 1%
+  expect_equal(b$SE, unname(pu), tolerance = 0.01)
+  # the option turns it on for predictmeans() too
+  op <- options(predictmeans.semi_unconditional = TRUE)
+  on.exit(options(op))
+  pm <- predictmeans(fit, "f", covariate = c(x = 1.5))
+  expect_equal(pm$means$std.error, b$SE[c(2, 5)], tolerance = 1e-8)
+  options(op)
+  # Poisson: the lme4 correction (stage-1 deviance) and glmmTMB's joint precision agree
+  d$cnt <- rpois(n, exp(0.5 + sin(2*d$x)))
+  p <- q(semireg(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
+  t1 <- q(semireg_tmb(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
+  pb <- q(semipred(p, NULL, "x", covariateV = xs, prt = FALSE, unconditional = TRUE))$pred_df
+  tb <- q(semipred(t1, NULL, "x", covariateV = xs, prt = FALSE, unconditional = TRUE))$pred_df
+  pa <- semipred(p, NULL, "x", covariateV = xs, prt = FALSE)$pred_df
+  expect_true(all(pb$SE_mu >= pa$SE_mu))
+  expect_equal(pb$SE_mu, tb$SE_mu, tolerance = 0.01)
+})

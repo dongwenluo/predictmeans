@@ -8,7 +8,8 @@
 #' 		   scales=c("fixed", "free", "free_x", "free_y"),
 #' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 #' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
-#' 		   band=c("pointwise", "simultaneous"))
+#' 		   band=c("pointwise", "simultaneous"),
+#' 		   unconditional=getOption("predictmeans.semi_unconditional"))
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -36,6 +37,16 @@
 #'   standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
 #'   Wand and Carroll, 2003). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
 #'   model use Scheffe's critical value instead; for smooths that would be far too wide.
+#' @param unconditional If \code{TRUE}, the covariance of the coefficients includes the uncertainty of the
+#'   smoothing parameters (the variances of the smooth terms), as mgcv's \code{unconditional = TRUE}: the first-order
+#'   correction \eqn{J V_\theta J'} is added, \eqn{J} the derivative of the estimated coefficients in the variance
+#'   parameters and \eqn{V_\theta} the covariance of their estimates (from the Hessian of the deviance; for
+#'   \code{semireg_tmb()} fits TMB's joint precision of all parameters). The default (\code{NULL}) is \code{TRUE}
+#'   for generalized models and \code{FALSE} for gaussian ones: in a simulation of the difference between two curves
+#'   (\code{dev/sim-curve-difference.R}, 150 data sets, nominal 0.95) the bands without it covered 0.93 pointwise and
+#'   0.89-0.91 over the whole curve for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it; for gaussian
+#'   data 0.97 without it (0.98 with it). \code{options(predictmeans.semi_unconditional = TRUE)} (or \code{FALSE}) sets
+#'   it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.
 #' @param simultaneous \code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).
 #' @param contr_scale With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
 #'   on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;
@@ -119,7 +130,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
                      scales=c("fixed", "free", "free_x", "free_y"), 
                      plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
-                     contr_scale=c("model", "response"), band=c("pointwise", "simultaneous")) {
+                     contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
+                     unconditional=getOption("predictmeans.semi_unconditional")) {
   contr_scale <- match.arg(contr_scale)
   # band = "simultaneous" as in covariatemeans(); simultaneous = TRUE (1.x) still works
   band <- match.arg(band)
@@ -174,7 +186,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     }
   }
   
-  des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df)
+  des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = unconditional)
   semer <- des$semer; mod_df <- des$mod_df; pred_df <- des$pred_df
   response <- des$response; response0 <- des$response0
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
@@ -491,7 +503,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
 ## basis on the reference grid of 'modelterm' (and covariate values), the
 ## estimates (beta, u) and their covariance up to sigma^2. Also used by
 ## predictmeans() for semireg fits.
-pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df) {
+pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = NULL) {
   semer <- semireg$semer 
   vcov_indN <- semireg$Cov_indN
   cov_lst <- semireg$cov_lst
@@ -513,6 +525,26 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     response <- "response_y"
   }
   
+  # the rows of CovMat of the fixed effects and of the given smooth blocks, in
+  # the order of the fit (that of u_lst and of Z); with unconditional = TRUE
+  # the covariance includes the uncertainty of the smoothing parameters
+  # (pm_sr_uncond(), R/semireg-engine.R)
+  ci <- semireg$Cov_ind
+  # default: with the correction for generalized models (not gaussian ones),
+  # as the coverage simulation showed (dev/sim-curve-difference.R)
+  if (is.null(unconditional)) {
+    unconditional <- if (inherits(semer, "glmmTMB")) semer$modelInfo$family$family != "gaussian" else !lme4::isLMM(semer)
+  }
+  cov_of <- function(blocks) {
+    idx <- c(seq_len(length(betaHat)),
+             unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
+    V <- fullCovMat[idx, idx]
+    if (isTRUE(unconditional)) {
+      corr <- pm_sr_uncond(semireg)
+      if (!is.null(corr)) V <- as.matrix(V) + corr[idx, idx]
+    }
+    V
+  }
   if (!is.null(semireg$smooths)) {
     # smooths written in the formula: the blocks by name, their design for the
     # grid from the stored mgcv smooth objects (R/semireg-smooth.R)
@@ -521,10 +553,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     bad <- setdiff(sm_term, blk)
     if (length(bad)) stop("'sm_term' must be among the smooth blocks: ", paste(blk, collapse = ", "), call. = FALSE)
     blocks <- blk[blk %in% sm_term]
-    ci <- semireg$Cov_ind
-    idx <- c(seq_len(length(betaHat)),
-             unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
-    sm_Cov <- fullCovMat[idx, idx]
+    sm_Cov <- cov_of(blocks)
     smooth_basis <- function(nd) do.call(cbind, pm_sm_predict(semireg$smooths, nd, blocks))
     ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
     D_mx <- cbind(K, ZN)
@@ -533,30 +562,19 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
                 response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
                 sm_term = blocks))
   }
-  if (is.null(sm_term)) {
-    sm_term <- names(as.list(semireg$smoothZ_call))[-1]
-    sm_term <- intersect(names(vcov_indN), sm_term)
-    sm_Cov <- cov_lst$sm_Cov
-  }else{ 
-    if (length(sm_term)==1) {
-      sm_Cov <- cov_lst[[sm_term]] 
-    }else{
-      sm_term <- intersect(names(vcov_indN), sm_term)
-      sm_termInds <- seq_len(ncol(getME(semer, "X"))) 
-      for (i in sm_term) {
-        stmch_id <- match(i, names(vcov_indN))
-        sm_termInds <- c(sm_termInds, (vcov_indN[stmch_id-1]+1):vcov_indN[stmch_id])
-      }  
-      sm_Cov <- fullCovMat[sm_termInds, sm_termInds]
-    }   
-  }
-  
-  u_lst <- list()
-  for (i in sm_term) {
-    u_indx <- grep(i, names(semireg$u_lst))
-    u_lst <- c(u_lst, semireg$u_lst[u_indx])
-  }
-  
+  # the smoothZ form: terms are the names of the smoothZ list; a term with
+  # group = TRUE has a block per level (named term.level)
+  blk <- names(semireg$u_lst)
+  grp <- sub("\\..*", "", blk)
+  terms_all <- intersect(names(as.list(semireg$smoothZ_call))[-1], grp)
+  if (is.null(sm_term)) sm_term <- terms_all
+  bad <- setdiff(sm_term, c(terms_all, blk))
+  if (length(bad)) stop("'sm_term' must be among the smooth terms: ", paste(terms_all, collapse = ", "), call. = FALSE)
+  blocks <- blk[grp %in% sm_term | blk %in% sm_term]
+  sm_term <- intersect(terms_all, unique(sub("\\..*", "", blocks)))
+  sm_Cov <- cov_of(blocks)
+  u_lst <- semireg$u_lst[blocks]
+
   knots_lst <- semireg$knots_lst[sm_term]
   range_lst <- semireg$range_lst[sm_term] 
   type_lst <- semireg$type_lst[sm_term]  
@@ -585,7 +603,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
       if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
     }
 
-    Z_lstNN <- Z_lstNN[intersect(names(semireg$u_lst), names(Z_lstNN))]
+    Z_lstNN <- Z_lstNN[blocks]
     do.call("cbind", Z_lstNN)
   }
 
@@ -594,7 +612,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
   # factors of the smooths) are treated identically in both parts.
   ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
   D_mx <- cbind(K,ZN)
-  u_hat <- do.call("c", u_lst)
+  u_hat <- do.call("c", unname(u_lst))
   beta_u <- c(betaHat, u_hat)
   
   list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,

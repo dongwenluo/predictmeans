@@ -189,6 +189,22 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
    - prediction from the stored smooth objects;
    - the `unconditional` correction, with the coverage simulation;
    - KR/Satterthwaite df without lmerTest, then lmerTest out of Imports.
+   **Step 5 done (part).** Smoothing-parameter correction (`pm_sr_uncond()`):
+   first-order J V_theta J' (lmer: J by numerical derivative of the
+   profiled estimates from the fit's deviance function, V_theta from
+   `pm_lmer_varpar()`; glmer: the stage-1 deviance (theta only, beta and u by
+   PIRLS) for both; glmmTMB: TMB's joint precision). Within 1% of mgcv's
+   `unconditional = TRUE`; glmmTMB and lme4 agree. Coverage simulation
+   (`dev/sim-curve-difference.R`): Poisson 0.933 -> 0.957 pointwise, 0.907 ->
+   0.940 whole curve; binomial 0.936 -> 0.955, 0.893 -> 0.947; gaussian 0.968
+   -> 0.976, 0.973 -> 0.980. Default: on for generalized fits only. The
+   package's own Kenward-Roger df on a semireg fit equal those of the same
+   model fitted by `lme` (281.495 both), so lmerTest is not needed for the
+   tests; whether to drop it (it gives `anova()`, `summary()` p-values and
+   `ranova()` on `fit$semer`) is the maintainer's decision. The `smoothZ`
+   form still predicts by re-evaluating its `smZ()` call; it drops `k` and
+   uses the stored knots, so it does not depend on the caller's objects in
+   the usual case.
 6. **HRW reproduction** (`dev/hrw/`), with a results table added to this note.
 7. **Only-predictmeans cases**, as tests and as a vignette section.
 8. **Documentation**: `vignettes/smooth.Rmd`, help pages, `inst/llms-context.md`.

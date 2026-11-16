@@ -35,6 +35,20 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`semipred()` and `predictmeans()` on generalized `semireg()` /
+  `semireg_tmb()` fits include the uncertainty of the smoothing parameters**
+  (`unconditional`, as mgcv's): the first-order correction J V_theta J' is
+  added to the covariance of the coefficients (lme4: J from the deviance
+  function, V_theta from its Hessian; glmmTMB: TMB's joint precision of all
+  parameters). In a simulation of the difference between two curves
+  (`dev/sim-curve-difference.R`) the bands of Poisson and binary models
+  covered 0.93 pointwise and 0.89-0.91 over the whole curve without it,
+  0.955-0.957 and 0.94-0.95 with it. Gaussian bands already covered 0.97, so
+  they stay conditional by default. `unconditional = TRUE`/`FALSE` (or
+  `options(predictmeans.semi_unconditional =)`) chooses. The corrected SEs are
+  within 1% of mgcv's `unconditional = TRUE` (which adds a second-order term).
+  The prediction design of the `smoothZ` form now takes coefficients, columns
+  and covariance rows in one order (that of the fit's blocks).
 * **`semireg()` gaussian fits: `anova()` df and `varcomp()` SEs were
   wrong.** lmerTest's Satterthwaite df and `varcomp()` used the deviance
   function of the placeholder model (plain random intercepts where the spline
