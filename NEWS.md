@@ -789,8 +789,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `DDFM=SATTERTHWAITE` for estimates with random effects;
   `pm_sr_satt_ddf()`). In a split-plot design with curves over time the
   treatment means at a time get about 9 df and their differences about 17,
-  not infinity (`dev/sim-semireg-df.R`). For fixed effects alone the df
-  equal lmer's Satterthwaite df. Generalized fits keep normal-based tests.
+  not infinity. With no treatment effect these t tests rejected 4.6% at the
+  5% level, z tests 5.2-6.8% (`dev/sim-semireg-df.R`). For fixed effects
+  alone the df equal lmer's Satterthwaite df. Generalized fits keep
+  normal-based tests.
 * **Random curves `(s(x) | g)` in `semireg()`**: the group-specific curve
   model of Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section
   9.2): `(x | g)` (correlated intercept and slope per subject) plus a spline

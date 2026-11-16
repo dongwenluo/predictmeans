@@ -196,6 +196,34 @@ Findings:
    engine), with rate ratios between curves.
 6. `R2_model()` and `varcomp()`: the share of each smooth.
 
+### 5.1 Results (step 7)
+
+All six cases run on the current code (`tests/testthat/test-semireg-cases.R`,
+vignette `smooth.Rmd`, section "What predictmeans adds"). One gap was found
+and closed:
+
+- **Means at a covariate value had normal-based tests.** `predictmeans()` on
+  a `semireg()` fit gave z tests (df = Inf) even in a split-plot design,
+  where `anova()` gives Kenward-Roger df for the fixed effects. The means
+  include the smooths' random coefficients, so the df must be those of a
+  combination of fixed and random coefficients: `pm_sr_satt_ddf()`
+  (`R/semireg-engine.R`), Satterthwaite with the prediction error variance
+  L C(psi) L' as a function of psi = (theta, sigma), as SAS does for
+  estimates that involve random effects. For fixed effects alone it equals
+  lmer's Satterthwaite df. Gaussian lme4-engine fits only; generalized fits
+  keep z.
+- Type I error (`dev/sim-semireg-df.R`; 6 blocks, 3 treatments on whole
+  plots, 11 times, no treatment effect, a1 vs a2 at t = 5, 500 data sets,
+  Monte Carlo SE 0.010):
+
+  | plot SD | z (before) | Satterthwaite t | median df |
+  |---|---|---|---|
+  | 0.2 | 0.052 | 0.046 | 27 |
+  | 0.4 | 0.068 | 0.046 | 15 |
+
+- Still normal-based: `semipred()` bands of gaussian fits (a df per grid
+  point would cost one gradient per point; open).
+
 ## 6. Steps
 
 1. This note.
