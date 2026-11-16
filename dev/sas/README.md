@@ -201,3 +201,20 @@ limits of variances agree to the printed digits; the covariances' SEs of the
 unstructured model equal the delta method from predictmeans' observed
 information. SAS's limits for covariances and correlations are Wald on the
 natural scale; predictmeans' are on the Fisher z scale (not compared).
+
+## Tests of variance components (`pm-reference-vctest.sas`, written 2026-11-16, not yet run)
+
+Reference for `varcomp(test = TRUE)` (`R/vc-test.R`). PROC MIXED fits each
+model in full and reduced form (the LRT is the change in -2 Res Log
+Likelihood); PROC GLIMMIX's COVTEST gives the LRT with SAS's p-value
+(chi-bar-square on the boundary), the reference for the p-values of step 2.
+predictmeans' LRTs, to compare with the run:
+
+| case | test | predictmeans LRT |
+|---|---|---|
+| Orthodont `(age \| Subject)`, -2RLL 442.637 | drop the term | 66.5328 |
+| | drop the slope, `(1 \| Subject)` | 4.36583 |
+| | covariance 0, `(age \|\| Subject)` | 0.677894 |
+| Oats `(1 \| Block/Variety)`, -2RLL 529.029 | Block.Variety variance 0 | 7.66146 |
+| | Block variance 0 | 4.97820 |
+| cbpp, binomial, Laplace | herd variance 0 | 14.0053 |

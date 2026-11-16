@@ -136,3 +136,11 @@ The run itself (`genstat-results-2026-11-14-run3.txt`, parsed by
 `varcomp(information = "average")` in all 26 values: Genstat centres age for
 the random slope (lmer with `age - 11`), and its REML keeps the negative
 Dyestuff2 component (-1.32, s.e. 1.36), which is the `aov` estimate.
+
+## Tests of variance components (`pm-reference-4.gen`, written 2026-11-16, not yet run)
+
+REML deviances of full and reduced models for `varcomp(test = TRUE)`
+(`R/vc-test.R`); the change in deviance is the LRT. predictmeans' values:
+Oats (complete) Block.Variety 7.66146, Block 4.97820; Orthodont with an
+uncorrelated random slope (`age || Subject`): intercept variance 1.77110,
+slope variance 3.68794.

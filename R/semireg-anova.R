@@ -81,9 +81,11 @@ pm_sr_smooth_tests <- function(object) {
 }
 
 ## Refit a semireg fit without the smooth blocks 'drop' (same fixed effects,
-## the other smooth blocks and random terms kept): the fitted model (merMod,
-## glmmTMB, or lm/glm when no random term is left).
-pm_sr_refit <- function(object, drop) {
+## the other smooth blocks and random terms kept; 'random': other random
+## terms, as texts, instead of the fit's, for the tests of varcomp(),
+## R/vc-test.R): the fitted model (merMod, glmmTMB, or lm/glm when no random
+## term is left).
+pm_sr_refit <- function(object, drop = character(0), random = NULL) {
   r <- object$refit
   keep <- setdiff(names(r$smoothZ), drop)
   f <- r$formula
@@ -93,9 +95,10 @@ pm_sr_refit <- function(object, drop) {
   other <- bars[!grp %in% names(r$smoothZ)]
   fixed <- pm_nobars(f)
   e <- new.env(parent = asNamespace("predictmeans"))
-  rhs <- c(paste(deparse(fixed[[3]], width.cutoff = 500L), collapse = " "),
-           vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
-           vapply(specials, function(b) paste(deparse(b, width.cutoff = 500L), collapse = " "), ""))
+  other_txt <- c(vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
+                 vapply(specials, function(b) paste(deparse(b, width.cutoff = 500L), collapse = " "), ""))
+  if (!is.null(random)) other_txt <- random
+  rhs <- c(paste(deparse(fixed[[3]], width.cutoff = 500L), collapse = " "), other_txt)
   f_new <- stats::as.formula(paste(paste(deparse(f[[2]], width.cutoff = 500L), collapse = " "), "~",
                                    paste(rhs, collapse = " + ")), env = e)
   e$sr_data <- r$data
@@ -106,7 +109,7 @@ pm_sr_refit <- function(object, drop) {
   if (identical(r$engine, "glmmTMB")) {
     cl <- call("semireg_tmb", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), family = r$family,
                ziformula = r$ziformula, dispformula = r$dispformula, REML = r$REML, prt = FALSE, predict_info = FALSE)
-  } else if (!length(keep) && !length(other)) {
+  } else if (!length(keep) && !length(other_txt)) {
     # no random term left: lm / glm (REML log-likelihood for a gaussian REML fit)
     environment(fixed) <- e
     dd <- r$data
