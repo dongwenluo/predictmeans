@@ -148,3 +148,48 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
   expect_match(rr$plt$labels$y, "response scale")
   expect_equal(rr$pred_df, p, ignore_attr = TRUE)
 })
+
+test_that("the covariance behind semipred()'s bands is that of the fitted model, for every family", {
+  # sigma^2 CovMat is the covariance of (fixed, random - their true values)
+  # given the variance parameters: its fixed-effect block must equal the
+  # model's own vcov() (lme4's, from the penalised least squares fit)
+  set.seed(3)
+  n <- 400
+  d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")), id = gl(20, 1, n))
+  eta <- 0.3*sin(2*d$x) + 0.5*(d$g == "b")*d$x/3 + rnorm(20, 0, 0.3)[d$id]
+  d$yn <- eta + rnorm(n, 0, 0.5)
+  d$yp <- rpois(n, exp(0.5 + eta))
+  d$yb <- rbinom(n, 1, plogis(-1.5 + 2*eta))
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  fits <- list(
+    gaussian = q(semireg(yn ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
+                         prt = FALSE)),
+    poisson = q(semireg(yp ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
+                        family = poisson, prt = FALSE)),
+    # a 0/1 response: before 2.0 the weights were the constant 3/pi^2 and the SEs 15-25% too small
+    binary = q(semireg(yb ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
+                       family = binomial, prt = FALSE)))
+  for (nm in names(fits)) {
+    sm <- fits[[nm]]
+    p <- length(lme4::fixef(sm$semer))
+    V <- as.matrix(sigma(sm$semer)^2 * sm$CovMat[1:p, 1:p])
+    Vm <- if (lme4::isGLMM(sm$semer)) q(as.matrix(vcov(sm$semer, use.hessian = FALSE))) else as.matrix(vcov(sm$semer))
+    expect_equal(unname(V), unname(Vm), tolerance = 1e-4, label = nm)
+    # the SE of the difference of two curves: (D_a - D_b) V (D_a - D_b)' with that covariance,
+    # not a combination of the two curves' own SEs
+    xv <- c(0.5, 1.5, 2.5)                       # semireg() centres and scales the covariate
+    if (!is.null(attr(sm$data, "x_mean"))) xv <- xv - attr(sm$data, "x_mean")
+    if (!is.null(attr(sm$data, "x_sd"))) xv <- xv/attr(sm$data, "x_sd")
+    des <- predictmeans:::pm_semi_design(sm, "g", "x", xv, NULL, sm$data)
+    D <- as.matrix(des$D_mx)
+    lev <- des$pred_df$g
+    L <- D[lev == "b", , drop = FALSE] - D[lev == "a", , drop = FALSE]
+    r <- q(semipred(sm, "g", "x", contr = c("b", "a"), covariateV = c(0.5, 1.5, 2.5), prt = FALSE))$pred_df
+    se <- sqrt(diag(L %*% as.matrix(sigma(sm$semer)^2 * des$sm_Cov) %*% t(L)))
+    expect_equal(r$SE_contr, unname(se), tolerance = 1e-8, label = nm)
+    m <- q(semipred(sm, "g", "x", covariateV = c(0.5, 1.5, 2.5), prt = FALSE))$pred_df
+    sa <- sqrt(diag(D[lev == "a", ] %*% as.matrix(sigma(sm$semer)^2 * des$sm_Cov) %*% t(D[lev == "a", ])))
+    sb <- sqrt(diag(D[lev == "b", ] %*% as.matrix(sigma(sm$semer)^2 * des$sm_Cov) %*% t(D[lev == "b", ])))
+    expect_true(all(se <= sa + sb & se >= abs(sa - sb)), label = nm)
+  }
+})

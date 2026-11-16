@@ -321,3 +321,24 @@ test_that("covariatemeans(bias_adjust = ): the mean of the response, as predictm
            covariateV = 0.3, bias_adjust = TRUE)$pltdf$Mean
   expect_equal(ba, bl, tolerance = 1e-3)
 })
+
+test_that("covariatemeans(contr = ) for lmer: the Kenward-Roger covariance and df of the contrast, as emmeans", {
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("pbkrtest")
+  O <- as.data.frame(nlme::Oats)
+  fm <- lme4::lmer(yield ~ nitro*Variety + (1 | Block/Variety), O)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- c(0, 0.3, 0.6)
+  r <- suppressMessages(covariatemeans(fm, "Variety", covariate = "nitro", contr = c("Golden Rain", "Victory"),
+                                       covariateV = xs))$pltdf
+  e <- as.data.frame(pairs(emmeans::emmeans(fm, ~ Variety | nitro, at = list(nitro = xs))))
+  e <- e[e$contrast == "Golden Rain - Victory", ]
+  expect_equal(r$diff, e$estimate, tolerance = 1e-8)
+  expect_equal(r$ses, e$SE, tolerance = 1e-5)
+  expect_equal(r$Df, e$df, tolerance = 1e-3)
+  expect_equal(r$UL - r$diff, qt(0.975, r$Df)*r$ses, tolerance = 1e-10)
+  # the SE of the difference is not sqrt(SE_a^2 + SE_b^2): the lines share the block effects
+  m <- suppressMessages(covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs))$pltdf
+  sa <- m$ses[m$Variety == "Golden Rain"]; sb <- m$ses[m$Variety == "Victory"]
+  expect_true(all(r$ses < sqrt(sa^2 + sb^2)))
+})

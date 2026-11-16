@@ -83,6 +83,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - The ranges of the covariate where the curves differ are printed and
     kept in `attr(pred_df, "significant")`; with `simultaneous = TRUE` they
     hold for the whole curve.
+* **`semireg()` with a 0/1 response: standard errors were 15-25% too
+  small.** The covariance of the fixed and smooth coefficients used the
+  constant 3/pi^2 (logit; the latent variance that `R2_glmm()` uses for
+  variance shares) instead of the working weights of the fit. It now uses
+  the working weights for every family, and its fixed-effect block equals
+  `vcov(model, use.hessian = FALSE)` for gaussian, Poisson and binary fits
+  (tested). `semipred()` bands and `predictmeans()` on such fits are wider.
+  A simulation (`dev/sim-curve-difference.R`) gives the coverage of the
+  band of a difference of two curves: 0.96 pointwise and 0.96 simultaneous
+  for a linear model; 0.92-0.94 pointwise and 0.87-0.88 simultaneous for
+  Poisson and binary models (the covariance is conditional on the
+  estimated smoothing parameters).
 * `covariatemeans()` takes `aov` models with `Error()` that have a covariate
   (e.g. a baseline covariate per subject in repeated measures): analysed by
   strata, equal to the mixed model in balanced data (it failed before).

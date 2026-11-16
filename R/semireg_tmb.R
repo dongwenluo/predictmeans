@@ -203,22 +203,17 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     C <- cbind(getME(semer, "X"), getME(semer, "Z"))
     
     if (family_n != "gaussian"){
-      if (family_n =="binomial" && all(yobs%in%c(0,1))){
-        wVec <- switch(link_n,
-                       "logit" = 3/(pi^2),
-                       "probit" = 1,
-                       "cloglog" = 6/(pi^2))	
-      }else{
-        if (inherits(semer, "glmmTMB")) {
-          weight_fun <- function(eta, mod){
-            family_fun <- mod$modelInfo$family
-            family_fun$mu.eta(eta)^2/family_fun$variance(family_fun$linkinv(eta))
-          }
-          y_hat <- as.vector(C%*%c(beta, uHat))
-          wVec <- as.vector(weight_fun(y_hat, semer))*tmbf$data.tmb$weights 
-          if (length(tmbf$data.tmb$size) > 0) wVec <- wVec*tmbf$data.tmb$size
-        }else wVec <- semer@resp$sqrtWrkWt()^2 
-      }
+      # the working weights of the fit, for every family (a binary response
+      # too: see R/semireg.R)
+      if (inherits(semer, "glmmTMB")) {
+        weight_fun <- function(eta, mod){
+          family_fun <- mod$modelInfo$family
+          family_fun$mu.eta(eta)^2/family_fun$variance(family_fun$linkinv(eta))
+        }
+        y_hat <- as.vector(C%*%c(beta, uHat))
+        wVec <- as.vector(weight_fun(y_hat, semer))*tmbf$data.tmb$weights 
+        if (length(tmbf$data.tmb$size) > 0) wVec <- wVec*tmbf$data.tmb$size
+      }else wVec <- semer@resp$sqrtWrkWt()^2 
     }else wVec <- weights 
     
     if (isLMM(semer)) { 

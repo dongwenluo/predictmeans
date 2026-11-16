@@ -281,13 +281,12 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   }else{
  	family_n <- semer@resp$family$family
 	link_n <- semer@resp$family$link 
-    yobs <- unique(semer@resp$y)
-     if (family_n =="binomial" && all(yobs%in%c(0,1))){
-      wVec <- switch(link_n,
-                     "logit" = 3/(pi^2),
-                     "probit" = 1,
-                     "cloglog" = 6/(pi^2))	
-    }else wVec <- semer@resp$sqrtWrkWt()^2 
+    # the working weights of the fit, for every family. (Before 2.0 a
+    # binary response used the constant of its latent variance, 3/pi^2 for a
+    # logit, as R2_glmm() does for the variance shares: that is not the
+    # information about the coefficients and gave standard errors 15-25%
+    # too small.)
+    wVec <- semer@resp$sqrtWrkWt()^2
   
     CTC <- crossprod(C*wVec,C)
   }
