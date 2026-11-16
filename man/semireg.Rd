@@ -91,9 +91,10 @@ slopes:
   \code{s(x, by = f)} \tab a curve per level of \code{f}, a variance each (\code{id = 1}: one shared) \tab \code{f + f:x} \cr
   \code{s(x, by = z)}, \code{z} numeric \tab varying coefficient \eqn{f(x) z} \tab \code{z + z:x} \cr
   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
+  \code{(s(x, k = 10) | g)} \tab random curve per level of \code{g}: \code{(x | g)} (correlated intercepts and slopes) plus a spline deviation per level, one variance \tab none \cr
   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
-  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
-  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
+  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
   \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
@@ -106,11 +107,27 @@ by \code{f1}, by \code{f2} and by their interaction, and a variance of zero mean
 same shape (their levels still differ by the fixed terms). The pieces are set up without constraints between them:
 the mixed model separates them by their variances, as nested random effects. Each level's curve is the fixed part
 plus the common curve plus its deviations.
+
+A random curve \code{(s(x) | g)} (O'Sullivan basis unless \code{bs} is given) is the group-specific curve model of
+Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section 9.2): each level of \code{g} (a subject) has its
+own straight line, \code{(x | g)}, and its own spline deviation, all levels sharing one variance; e.g. heights of
+boys over age, \code{height ~ s(age, bs = "os", k = 20) + (s(age, k = 10) | id)}. Unlike \code{s(x, g, bs = "fs")},
+the intercepts and slopes are correlated, as \code{pdSymm(~ x)} in \code{nlme::lme}. The random curves are random
+effects: \code{semipred()} and \code{predictmeans()} give the population curves without them, and
+\code{anova()} tests whether they are needed (their variance is zero: each subject's curve is a straight line).
 The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
 \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
 \code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
-not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both.
+not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
+\code{s()} (e.g. \code{xt = list(knots = kn)}) are taken from the environment of the formula.
+
+The penalised-spline examples fitted by \code{nlme::lme} in Wand's course scripts and in \pkg{HRW} (additive
+models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
+give the same REML log-likelihood and fitted values with \code{semireg()} (data in
+\code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
+The optimizer is \code{bobyqa}, as in 1.x; \code{control = lmerControl(optimizer = "nloptwrap")} (lme4's own
+default) is 3-4 times faster on these examples with the same fits.
 }
 
 \examples{
@@ -160,6 +177,11 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 }
 }
 \references{
+Durban, M., Harezlak, J., Wand, M.P. and Carroll, R.J. (2005). Simple fitting of subject-specific curves for
+longitudinal data. \emph{Statistics in Medicine}, \bold{24}, 1153-1167.
+
+Harezlak, J., Ruppert, D. and Wand, M.P. (2018). \emph{Semiparametric Regression with R}. Springer, New York.
+
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.
 }
 \author{

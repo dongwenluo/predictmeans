@@ -34,11 +34,29 @@
 ## model separates them by their variances, as nested random effects.
 pm_sm_parse <- function(formula, data = NULL) {
   bars <- pm_findbars(formula)
+  deparse1l <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  # random curves (s(x) | g): (x | g), the straight lines per level with
+  # correlated intercepts and slopes, plus the wiggly part of the smooth per
+  # level with one variance (Durban et al., 2005; HRW section 9.2)
+  rcurves <- list()
+  for (i in seq_along(bars)) {
+    lhs <- bars[[i]][[2]]
+    if (!(is.call(lhs) && identical(as.character(lhs[[1]]), "s"))) next
+    if (!identical(as.character(bars[[i]][[1]]), "|")) stop("Write a random curve with '|': (s(x) | g).", call. = FALSE)
+    a <- as.list(lhs)[-1]
+    an <- if (is.null(names(a))) rep("", length(a)) else names(a)
+    if ("by" %in% an) stop("A random curve (s(x) | g) cannot have 'by'.", call. = FALSE)
+    covs <- vapply(a[an == ""], deparse1l, "")
+    if (is.null(lhs$bs)) lhs$bs <- "os"
+    rcurves[[length(rcurves) + 1L]] <- list(call = deparse1l(lhs), group = deparse1l(bars[[i]][[3]]),
+                                           vars = c(all.vars(lhs), all.vars(bars[[i]][[3]])))
+    bars[[i]] <- call("|", str2lang(paste(covs, collapse = " + ")), bars[[i]][[3]])
+  }
   f_fixed <- pm_nobars(formula)
   is_sm <- function(e) is.call(e) && as.character(e[[1]])[1] %in% c("s", "te", "t2", "ti")
   rhs_terms <- attr(stats::terms(f_fixed, specials = c("s", "te", "t2", "ti")), "variables")[-1]
   sm_calls <- Filter(is_sm, as.list(rhs_terms))
-  if (!length(sm_calls)) return(NULL)
+  if (!length(sm_calls) && !length(rcurves)) return(NULL)
   # a smooth may only enter as a main term (not s(x):A)
   labs <- attr(stats::terms(f_fixed), "term.labels")
   sm_lab <- vapply(sm_calls, function(e) paste(deparse(e, width.cutoff = 500L), collapse = " "), "")
@@ -51,7 +69,6 @@ pm_sm_parse <- function(formula, data = NULL) {
       (is.factor(data[[as.character(e)]]) || is.character(data[[as.character(e)]]) ||
          is.logical(data[[as.character(e)]]))
   }
-  deparse1l <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
   plain <- character(0)
   groups <- list()
   fixed <- character(0)
@@ -122,7 +139,9 @@ pm_sm_parse <- function(formula, data = NULL) {
                                    paste(rhs, collapse = " + ")), env = environment(formula))
   # the variables of the smooths (covariates, factors, 'by' variables): never
   # centred or scaled (a numeric 'by' multiplies the smooth)
-  list(formula = f_new, groups = groups, fixed = unique(fixed), derived = derived, vars = unique(vars))
+  vars <- c(vars, unlist(lapply(rcurves, `[[`, "vars")))
+  list(formula = f_new, groups = groups, fixed = unique(fixed), derived = derived, vars = unique(vars),
+       rcurves = rcurves)
 }
 
 ## The derived 'by' factors (cells of several factors) for data or new data.
@@ -147,7 +166,9 @@ pm_sm_build <- function(sp, data) {
   gd$.pm_y <- 0
   sms <- list()
   for (g in sp$groups) {
-    G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", paste(g, collapse = " + "))), data = gd, fit = FALSE)
+    # in the formula's environment: objects named in s() (xt = list(knots = kn)) are found there
+    G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", paste(g, collapse = " + ")), env = environment(sp$formula)),
+                   data = gd, fit = FALSE)
     sms <- c(sms, G$smooth)
   }
   blocks <- list()
@@ -165,7 +186,7 @@ pm_sm_build <- function(sp, data) {
       R <- as.matrix(r$rand[[j]])
       nm <- if (nb == 1) base else paste0(base, "_", j)
       blocks[[nm]] <- Matrix::Matrix(R, sparse = TRUE)
-      maps[[nm]] <- list(list(sm = i, A = qr.solve(Xd, R)))
+      maps[[nm]] <- list(list(sm = i, A = pm_sm_map(sm, Xd, R, r)))
       id_of[nm] <- if (!is.null(sm$id) && nb == 1) as.character(sm$id) else NA_character_
     }
     if (NCOL(r$Xf)) {
@@ -194,12 +215,34 @@ pm_sm_build <- function(sp, data) {
     blocks[[new_nm]] <- blk
     maps[[new_nm]] <- mp
   }
+  # random curves (s(x) | g): the wiggly part of the smooth, a copy per level
+  # of g, one variance; random effects, so not part of the population curves
+  rcurves <- list()
+  for (rc in sp$rcurves) {
+    G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", rc$call), env = environment(sp$formula)), data = gd, fit = FALSE)
+    sm <- G$smooth[[1]]
+    Xd <- mgcv::PredictMat(sm, gd)
+    sm$X <- Xd
+    r <- mgcv::smooth2random(sm, names(gd), type = 2)
+    if (length(r$rand) != 1) stop("A random curve (s(x) | g) needs a smooth with one penalty (e.g. bs = \"os\"): ",
+                                  rc$call, call. = FALSE)
+    R <- as.matrix(r$rand[[1]])
+    g <- droplevels(factor(eval(str2lang(rc$group), gd)))
+    n <- nrow(R)
+    q <- ncol(R)
+    blk <- Matrix::drop0(Matrix::sparseMatrix(i = rep(seq_len(n), q), j = (as.integer(g) - 1L)*q + rep(seq_len(q), each = n),
+                                              x = as.vector(R), dims = c(n, q*nlevels(g))))
+    nm <- pm_sm_name(paste0(sm$label, "|", rc$group), c(names(data), names(blocks)))
+    blocks[[nm]] <- blk
+    sm$X <- NULL
+    rcurves[[nm]] <- list(sm = sm, A = pm_sm_map(sm, Xd, R, r), group = rc$group, levels = levels(g))
+  }
   for (k in seq_along(sms)) sms[[k]]$X <- NULL
   vars <- unique(c(setdiff(unlist(lapply(sms, function(sm) c(sm$term, if (sm$by != "NA") sm$by))),
-                           names(sp$derived)), unlist(sp$derived)))
+                           names(sp$derived)), unlist(sp$derived), unlist(lapply(sp$rcurves, `[[`, "vars"))))
   list(blocks = blocks, fixed = unique(fixed), vars = vars,
        smooths = structure(list(sms = sms, maps = maps, labels = vapply(sms, `[[`, "", "label"),
-                                derived = sp$derived, levels = lev), class = "pm_smooths"))
+                                derived = sp$derived, levels = lev, rcurves = rcurves), class = "pm_smooths"))
 }
 
 ## A syntactic name for a smooth block, not a column of the data.
@@ -248,13 +291,45 @@ pm_sm_predict <- function(smooths, newdata, blocks = names(smooths$maps)) {
   stats::setNames(out, blocks)
 }
 
+## The linear map A from a smooth's design Xd (PredictMat() on the data) to
+## one of its random parts R (Xd A = R), used again for prediction. For a
+## smooth with one penalty it is smooth2random()'s own transformation (the
+## eigenvectors of the penalty times 1/sqrt(eigenvalues)), exact even when
+## Xd is not of full rank on the data (fewer distinct covariate values than
+## basis columns). Otherwise it is found by regression; a factor smooth (bs =
+## "fs") has a copy of its base design per level, and when a level has too
+## few distinct values the map is built from the base design (the same for
+## every level).
+pm_sm_map <- function(sm, Xd, R, r = NULL) {
+  ok <- function(A) max(abs(as.matrix(Xd %*% A) - R)) <= 1e-8*max(1, max(abs(R)))
+  if (!is.null(r$trans.U) && length(r$rand) == 1 && ncol(r$trans.U) == ncol(Xd)) {
+    A <- t(t(r$trans.U)*r$trans.D)[, seq_len(ncol(R)), drop = FALSE]
+    if (ok(A)) return(A)
+  }
+  A <- tryCatch(qr.solve(Xd, R), error = function(e) NULL)
+  if (!is.null(A)) return(A)
+  if (inherits(sm, "fs.interaction") && !is.null(sm$Xb)) {
+    nl <- length(sm$flev)
+    q <- ncol(R) %/% nl
+    Rb <- Reduce(`+`, lapply(seq_len(nl), function(j) R[, (j - 1)*q + seq_len(q), drop = FALSE]))
+    B <- tryCatch(qr.solve(sm$Xb, Rb), error = function(e) NULL)
+    if (!is.null(B)) {
+      A <- kronecker(diag(nl), B)
+      if (ok(A)) return(A)
+    }
+  }
+  stop("The smooth ", sm$label, " cannot be set up: its basis is not of full rank on the data ",
+       "(too few distinct covariate values for 'k'?).", call. = FALSE)
+}
+
 ## ---- The own bases as mgcv smooths ----
 ##
 ## bs = "os": the O'Sullivan penalised spline of Wand and Ormerod (2008),
 ## as smZ(x, k) and Harezlak, Ruppert and Wand (2018): k interior knots at
 ## quantiles of the unique x (default 6, as smZ()), the range widened by
-## 1%. bs = "ztps": the thin-plate basis of Ztps() for two covariates (k
-## knots per axis). Both give the design [1, x, Z] with the identity penalty
+## 1% (xt = list(knots = <interior knots>, range = c(lo, hi)) sets them).
+## bs = "ztps": the thin-plate basis of Ztps() for two covariates (k knots
+## per axis; xt = list(knots = <two-column matrix>) sets the knots). Both give the design [1, x, Z] with the identity penalty
 ## on Z and no constraint (the constant and x are the fixed part), so the
 ## random effects have exactly smZ()'s design. (Registered as S3 methods of
 ## mgcv's generics in NAMESPACE.)
@@ -263,9 +338,10 @@ smooth.construct.os.smooth.spec <- function(object, data, knots) {
   x <- data[[object$term]]
   k <- if (object$bs.dim < 0) 6 else object$bs.dim
   k <- min(k, length(unique(x)) - 2)
-  intKnots <- if (!is.null(knots[[object$term]])) knots[[object$term]] else
-    stats::quantile(unique(x), seq(0, 1, length = k + 2)[-c(1, k + 2)])
-  range.x <- c(1.01*min(x) - 0.01*max(x), 1.01*max(x) - 0.01*min(x))
+  xt <- if (is.list(object$xt)) object$xt else list()
+  intKnots <- if (!is.null(xt$knots)) sort(as.numeric(xt$knots)) else if (!is.null(knots[[object$term]]))
+    knots[[object$term]] else stats::quantile(unique(x), seq(0, 1, length = k + 2)[-c(1, k + 2)])
+  range.x <- if (!is.null(xt$range)) as.numeric(xt$range) else c(1.01*min(x) - 0.01*max(x), 1.01*max(x) - 0.01*min(x))
   Z <- ZOSull(x, intKnots = intKnots, range.x = range.x)
   q <- ncol(Z)
   object$X <- cbind(1, x, Z)
@@ -290,7 +366,8 @@ smooth.construct.ztps.smooth.spec <- function(object, data, knots) {
   if (length(object$term) != 2) stop("bs = \"ztps\" is for two covariates.", call. = FALSE)
   x <- as.matrix(as.data.frame(data[object$term]))
   k <- if (object$bs.dim < 0) 10 else object$bs.dim
-  Z <- Ztps(x, k = k)
+  kn0 <- if (is.list(object$xt) && !is.null(object$xt$knots)) as.matrix(object$xt$knots)
+  Z <- if (is.null(kn0)) Ztps(x, k = k) else Ztps(x, knots = kn0)
   kn <- attr(Z, "knots")
   Z <- unclass(as.matrix(Z))
   q <- ncol(Z)

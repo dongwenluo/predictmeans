@@ -546,8 +546,9 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
   }
   if (!is.null(semireg$smooths)) {
     # smooths written in the formula: the blocks by name, their design for the
-    # grid from the stored mgcv smooth objects (R/semireg-smooth.R)
-    blk <- names(semireg$u_lst)
+    # grid from the stored mgcv smooth objects (R/semireg-smooth.R); random
+    # curves (s(x) | g) are random effects, not part of the population curves
+    blk <- intersect(names(semireg$u_lst), names(semireg$smooths$maps))
     if (is.null(sm_term)) sm_term <- blk
     bad <- setdiff(sm_term, blk)
     if (length(bad)) stop("'sm_term' must be among the smooth blocks: ", paste(blk, collapse = ", "), call. = FALSE)

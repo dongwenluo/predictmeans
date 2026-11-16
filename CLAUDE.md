@@ -78,7 +78,10 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
 - `R/semireg-engine.R` (one fitting engine of `semireg()`/`semireg_tmb()`) and
   `R/semireg-smooth.R` (smooths in the formula via mgcv; own `os`/`ztps`
-  bases as mgcv smooth classes); plan in `dev/review-semireg.md`.
+  bases as mgcv smooth classes); plan in `dev/review-semireg.md`. Golden
+  examples (the maintainer's lme scripts, reference runs) in
+  `dev/semireg-golden/`, data in `inst/extdata/semireg/`, checked by
+  `tests/testthat/test-semireg-golden.R`.
 - Help pages: edit the roxygen2 block above each function (data sets in
   `R/data.R`, the package page in `R/predictmeans-package.R`), then
   `Rscript -e 'roxygen2::roxygenise(roclets = "rd")'`. NAMESPACE is

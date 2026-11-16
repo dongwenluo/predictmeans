@@ -161,3 +161,55 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
   expect_error(semireg(y ~ s(x, f1, by = f2), data = d, prt = FALSE), "cannot also have 'by'")
   expect_error(semireg(y ~ s(f1:f2), data = d, prt = FALSE), "needs a covariate")
 })
+
+test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level with one variance", {
+  d <- sf_data()
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  a <- q(semireg(y ~ s(x, bs = "os", k = 8) + (s(x, k = 5) | id), data = d, prt = FALSE))
+  b <- q(semireg(y ~ x + (x | id), smoothZ = list(sm = smZ(x, k = 8), sub = smZ(x, k = 5, by = id)), data = d,
+                 ncenter = FALSE, prt = FALSE))
+  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-6)
+  expect_equal(unname(fitted(a$semer)), unname(fitted(b$semer)), tolerance = 1e-5)
+  expect_true("s_x_id" %in% names(a$u_lst))
+  # population curve: the random curves are left out, as the smoothZ form without its 'sub' term
+  pa <- q(semipred(a, "x", "x", prt = FALSE))$pred_df
+  pb <- q(semipred(b, "x", "x", sm_term = "sm", prt = FALSE))$pred_df
+  expect_equal(pa[[3]], pb[[3]], tolerance = 1e-5)
+  expect_equal(pa$SE, pb$SE, tolerance = 1e-4)
+  expect_error(semipred(a, "x", "x", sm_term = "s_x_id", prt = FALSE), "smooth blocks")
+  expect_error(semireg(y ~ s(x) + (s(x, by = f) | id), data = d, prt = FALSE), "cannot have 'by'")
+})
+
+test_that("xt = list(knots, range) sets the knots and range of the own bases", {
+  d <- sf_data()
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  kn <- c(0.5, 1, 1.5, 2, 2.5)
+  a <- q(semireg(y ~ s(x, bs = "os", xt = list(knots = kn, range = c(0, 3))), data = d, prt = FALSE))
+  b <- q(semireg(y ~ x, smoothZ = list(sm = smZ(x, intKnots = kn, range.x = c(0, 3))), data = d, ncenter = FALSE,
+                 prt = FALSE))
+  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-8)
+  km <- as.matrix(expand.grid(x = c(0.5, 1.5, 2.5), z = c(0.25, 0.75)))
+  a <- q(semireg(y ~ s(x, z, bs = "ztps", xt = list(knots = km)), data = d, prt = FALSE))
+  b <- q(semireg(y ~ x + z, smoothZ = list(sm = smZ(cbind(x, z), intKnots = km, type = "Ztps")), data = d,
+                 ncenter = FALSE, prt = FALSE))
+  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-8)
+})
+
+test_that("smooths with fewer distinct covariate values than basis columns: exact map, as gam()", {
+  d <- sf_data()
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  d$xr <- round(d$x*2)/2                       # 7 distinct values, os basis of 14 columns
+  s1 <- q(semireg(y ~ s(xr, bs = "os", k = 10), data = d, prt = FALSE))
+  g1 <- mgcv::gam(y ~ s(xr, bs = "os", k = 10), data = d, method = "REML")
+  expect_equal(unname(fitted(s1$semer)), unname(fitted(g1)), tolerance = 1e-4)
+  nd <- data.frame(xr = seq(0, 3, by = 0.25))
+  p1 <- q(semipred(s1, "xr", "xr", prt = FALSE))$pred_df
+  i <- match(nd$xr, round(p1$xr, 8))
+  expect_gt(sum(!is.na(i)), 5)
+  expect_equal(p1$y[i][!is.na(i)], as.numeric(predict(g1, nd))[!is.na(i)], tolerance = 1e-3)
+  # a factor smooth with levels of three observations (fewer than the basis columns)
+  d2 <- d[!(d$id %in% c("3", "4")) | ave(seq_len(nrow(d)), d$id, FUN = seq_along) <= 3, ]
+  s2 <- q(semireg(y ~ s(x, id, bs = "fs", k = 5), data = droplevels(d2), prt = FALSE))
+  g2 <- mgcv::gam(y ~ s(x, id, bs = "fs", k = 5), data = droplevels(d2), method = "REML")
+  expect_equal(unname(fitted(s2$semer)), unname(fitted(g2)), tolerance = 1e-4)
+})

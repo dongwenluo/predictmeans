@@ -775,6 +775,29 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (refit without it; p-value halved for the boundary, Self and Liang 1987;
   `lmerTest::ranova()` used the full chi-square). For `s(x, f)` the
   deviation block tests whether the levels' curves have the same shape.
+* **Random curves `(s(x) | g)` in `semireg()`**: the group-specific curve
+  model of Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section
+  9.2): `(x | g)` (correlated intercept and slope per subject) plus a spline
+  deviation per subject, one variance for all subjects, e.g.
+  `height ~ s(age, bs = "os", k = 20) + (s(age, k = 10) | id)`. The curves
+  are random effects, so `semipred()` and `predictmeans()` give population
+  curves without them; `anova()` tests whether they are needed.
+  `s(x, bs = "os", xt = list(knots = , range = ))` and
+  `s(x1, x2, bs = "ztps", xt = list(knots = ))` set knots and range.
+* **Golden examples** (the maintainer's lme scripts of penalised splines;
+  data in `system.file("extdata", "semireg", package = "predictmeans")`):
+  additive models, an additive mixed model, thin-plate surfaces with given
+  knots, group-specific curves with a black-white contrast curve (as HRW's
+  `maleGrowthIndiananlme`). `semireg()` with formula smooths gives the same
+  REML log-likelihood and fitted values (to 2e-5 SD) as `nlme::lme`, and
+  equals `gam(method = "REML")` where the script used `gamm()` (whose `lme`
+  fit stopped short of the REML optimum) or `gam()`
+  (`tests/testthat/test-semireg-golden.R`, `dev/semireg-golden/`).
+* Formula smooths whose covariate has fewer distinct values than basis
+  columns (e.g. a depth measured every 5 m), and factor smooths (`bs = "fs"`)
+  with subjects of few observations, failed with "singular matrix"; the map
+  from the basis to the random effects is now `smooth2random()`'s own
+  transformation, exact in these cases.
 * **Smooths in the formula of `semireg()` and `semireg_tmb()`**, as for
   `mgcv::gam`, next to fixed and lme4 random terms:
   `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`. Each smooth is set

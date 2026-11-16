@@ -128,6 +128,59 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
 | `ozoneDisplayConvHull`, `SydneyDisplaySophis` | `gam` with a bivariate smooth | `s(longitude, latitude)` / `bs = "ztps"` | surface vs `gam` |
 | `BostMortFacByCurv` | `gam` binomial factor-by-curve | `s(dir, by = self)`, binomial | curves vs `gam` |
 
+### 4.1 Results (step 6)
+
+The maintainer supplied golden examples: Wand's course scripts fitting
+penalised splines with `nlme::lme` (and `glmmPQL`, `gamm`, `gam`), in
+`dev/semireg-golden/original/`; data in `inst/extdata/semireg/`.
+`make-reference.R` reruns each original model (its own `ZOSull.r` and
+`Ztps.r`) and stores the results in
+`tests/testthat/fixtures/semireg-golden.rds`; `compare.R` refits them with
+`semireg()`, smooths written in the formula. The bundled `ZOSull` differs
+from the package's by a rotation of the columns only (Z Z' equal to 1e-10),
+so the fits are the same.
+
+| Example | Model | semireg formula | logLik semireg / reference | max fitted diff (SD of y) | time semireg (bobyqa / nloptwrap) vs reference |
+|---|---|---|---|---|---|
+| addMix | spline + binary x + random intercept (lme) | `y ~ x + s(t, bs = "os", k = 15, xt = list(range = c(0, 1))) + (1 \| id)` | -234.098 / -234.098 | 1e-7 | 0.7 / 0.5 s vs 0.05 s |
+| copper | thin-plate (x, y) with given knots + O'Sullivan z (lme) | `s(xcoord, ycoord, bs = "ztps", xt = list(knots = kn)) + s(zcoord, bs = "os", xt = list(knots = zk, range = rz))` | -207.242 / -207.242 | 1e-6 | 0.3 / 0.2 s vs 0.04 s |
+| growthIndiana | black boys: mean curve + subject curves, `pdSymm(~age)` + `pdIdent` spline (lme) | `s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) + (s(age, k = 10, xt = ...) \| idnum)` | -935.745 / -935.745 | 2e-6 | 8.6 / 2.6 s vs 1.8 s |
+| growthIndianaCont | all boys: mean + black-white contrast curve + subject curves (lme; = HRW `maleGrowthIndiananlme`) | `s(age01, bs = "os", k = 20) + s(age01, by = black, bs = "os", k = 20) + (s(age01, k = 10) \| idnum)` | 6386.102 / 6386.102 | 2e-7 | 53 / 18 s vs 31 s |
+| ozoneCalifLMM | three O'Sullivan smooths (lme) | `s(x1, bs = "os", k = 15, xt = list(range = r1)) + ...` | -1017.000 / -1017.000 | 2e-5 | 0.4 / 0.4 s vs 0.09 s |
+| scallop | thin-plate surface of asinh(catch), given knots (lme) | `s(longitude, latitude, bs = "ztps", xt = list(knots = sk))` | -308.020 / -308.020 | 5e-6 | 0.07 / 0.07 s vs 0.02 s |
+| wageTUnion | binary, O'Sullivan (glmmPQL) | `s(wage, bs = "os", k = 15, xt = ...)`, `family = binomial` | Laplace vs PQL | 0.013 (probability) | 0.7 s vs 0.1 s |
+| SBMDfem | `gamm(s(age) + ethnicity, random = ~1 \| id)` | `s(age) + black + hispanic + white + (1 \| idnum)` | equals `gam(REML)` to 1e-7; gamm's `lme` 2.4e-3 SD away (stopped short) | | 0.1 s vs 0.1 s |
+| ozoneCalifGAM | `gam`, GCV | `s(x1) + s(x2) + s(x3)` | equals `gam(REML)` to 2e-7; GCV fit 0.11 SD away (other criterion) | | 0.1 s vs 0.02 s |
+
+Findings:
+
+- Every `lme` example is reproduced exactly (the REML optimum: lme and lmer
+  agree to 1e-7 in log-likelihood). The addMix script's streamlined SE of the
+  binary effect (0.0678) equals `vcov(fit$semer)`.
+- HRW's group-specific curves (`pdSymm(~ x)` per subject + a spline
+  deviation per subject with one variance) had no formula form: `bs = "fs"`
+  gives uncorrelated intercepts and slopes (log-likelihood 2731.8 vs
+  2747.1 with `(x | id)` added on top, which duplicates them). Added
+  `(s(x, k) | g)`: `(x | g)` + the wiggly part of the smooth per level, one
+  variance (`R/semireg-smooth.R`); population curves leave it out.
+- The map from a smooth's basis to its random part (for prediction) was
+  found by regression on the data, which fails when the covariate has fewer
+  distinct values than basis columns (copper depth every 5 m) or an `fs`
+  subject has few observations. It is now `smooth2random()`'s own
+  transformation (exact), with the regression and an `fs` per-level map as
+  fallbacks.
+- The script's ethnicity test (REML likelihood ratio between models with
+  different fixed effects) is not valid in general; `anova()` gives the
+  Kenward-Roger F test (p = 6.1e-7 here; the LRT gave 4.6e-7).
+- Speed: lmer's time is the optimizer. `bobyqa` (semireg's default since
+  1.x) needs 500-3000 deviance evaluations here because the smooth blocks'
+  theta lie far from the start (theta = 50-70 after mgcv's penalty scaling);
+  `nloptwrap` needs a third of them, with the same optimum. Open question
+  O10.
+- PQL (the script) and Laplace (`semireg()`, glmer) differ by up to 0.013 in
+  the fitted probabilities of the binary example: different
+  approximations, not an error.
+
 ## 5. Cases that only predictmeans handles (step 7; simulated data and HRW data)
 
 1. Marginal means and pairwise comparisons of factor levels at chosen
@@ -205,7 +258,7 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
    form still predicts by re-evaluating its `smZ()` call; it drops `k` and
    uses the stored knots, so it does not depend on the caller's objects in
    the usual case.
-6. **HRW reproduction** (`dev/hrw/`), with a results table added to this note.
+6. **HRW reproduction** — done with the maintainer's golden lme examples (`dev/semireg-golden/`); results in section 4.1.
 7. **Only-predictmeans cases**, as tests and as a vignette section.
 8. **Documentation**: `vignettes/smooth.Rmd`, help pages, `inst/llms-context.md`.
 9. R CMD check, then a pull request.
