@@ -302,3 +302,45 @@ pm_sr_uncond <- function(semireg) {
   devfun(th0)                                   # leave the deviance function at the optimum
   (J %*% Vth %*% t(J))/s2
 }
+
+## Satterthwaite df for linear combinations L of the fixed and random
+## coefficients (beta, u) of a gaussian semireg() fit (lme4 engine), e.g.
+## means at a covariate value, which include the smooths' random effects.
+## As for fixed effects (R/satterthwaite.R), with the prediction error
+## variance v(psi) = L C(psi) L' of (beta, u - u_hat) as a function of the
+## variance parameters psi = (theta, sigma): df = 2 v^2 / (g' A g), g the
+## gradient of v, A the covariance of psi (SAS: DDFM=SATTERTHWAITE for
+## estimates that involve random effects). For L without random effects the
+## df are those of pm_satt_ddf(). 'idx': the columns of (beta, u) that the
+## columns of L are. Inf for other fits (normal-based tests).
+pm_sr_satt_ddf <- function(semireg, L, idx) {
+  semer <- semireg$semer
+  L <- as.matrix(L)
+  if (!methods::is(semer, "semerMod") || !lme4::isLMM(semer)) return(rep(Inf, nrow(L)))
+  vp <- pm_lmer_varpar(semer)
+  X <- lme4::getME(semer, "X")
+  Z <- lme4::getME(semer, "Z")
+  Lt <- lme4::getME(semer, "Lambdat")
+  Lind <- lme4::getME(semer, "Lind")
+  w <- semer@resp$weights
+  p <- ncol(X)
+  q <- ncol(Z)
+  Lf <- matrix(0, nrow(L), p + q)
+  Lf[, idx] <- L
+  k <- length(vp$varpar)
+  v <- function(psi) {
+    Lt@x <- psi[-k][Lind]
+    Lam <- Matrix::t(Lt)
+    Ct <- cbind(X, Z %*% Lam)
+    M <- Matrix::forceSymmetric(Matrix::crossprod(Ct * w, Ct) +
+                                  Matrix::.bdiag(list(Matrix::Matrix(0, p, p), Matrix::Diagonal(q))))
+    B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
+    psi[k]^2 * colSums(as.matrix(Matrix::solve(M, Matrix::t(B))) * t(as.matrix(B)))
+  }
+  v0 <- v(vp$varpar)
+  G <- numDeriv::jacobian(v, vp$varpar)
+  denom <- rowSums((G %*% vp$vcov_varpar) * G)
+  df <- 2*v0^2/denom
+  df[!is.finite(df) | df <= 0] <- NA_real_
+  df
+}

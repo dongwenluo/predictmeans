@@ -781,6 +781,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (refit without it; p-value halved for the boundary, Self and Liang 1987;
   `lmerTest::ranova()` used the full chi-square). For `s(x, f)` the
   deviation block tests whether the levels' curves have the same shape.
+* **`predictmeans()` on gaussian `semireg()` fits: t tests with
+  Satterthwaite df** instead of normal-based tests. The means at a
+  covariate value include the smooths' random coefficients, so the df are
+  those of the combination of fixed and smooth coefficients: the prediction
+  error variance as a function of the variance parameters (as SAS
+  `DDFM=SATTERTHWAITE` for estimates with random effects;
+  `pm_sr_satt_ddf()`). In a split-plot design with curves over time the
+  treatment means at a time get about 9 df and their differences about 17,
+  not infinity (`dev/sim-semireg-df.R`). For fixed effects alone the df
+  equal lmer's Satterthwaite df. Generalized fits keep normal-based tests.
 * **Random curves `(s(x) | g)` in `semireg()`**: the group-specific curve
   model of Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section
   9.2): `(x | g)` (correlated intercept and slope per subject) plus a spline

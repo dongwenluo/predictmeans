@@ -26,7 +26,10 @@
 #'   all strata and is the better analysis when plots are missing. For a \code{semireg} fit the
 #'   means include the smooth terms (as \code{\link{semipred}}), at the covariates' means or at the values of
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
-#'   \code{means}, \code{pairs} and \code{settings} tables, with normal-based tests and any \code{adj}.
+#'   \code{means}, \code{pairs} and \code{settings} tables, with any \code{adj}. For gaussian fits the tests are t
+#'   tests with Satterthwaite df for the combination of fixed and smooth coefficients (the means include the smooths'
+#'   random effects; SAS gives such df to estimates that involve random effects); for generalized fits they are
+#'   normal-based.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
 #'   factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
 #'   model can be asked for too (e.g. "A:B" for \code{y ~ A + B}): its means are the sums of the factors' effects

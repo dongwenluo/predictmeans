@@ -534,9 +534,11 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
   if (is.null(unconditional)) {
     unconditional <- if (inherits(semer, "glmmTMB")) semer$modelInfo$family$family != "gaussian" else !lme4::isLMM(semer)
   }
+  cov_idx <- function(blocks) {
+    c(seq_len(length(betaHat)), unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
+  }
   cov_of <- function(blocks) {
-    idx <- c(seq_len(length(betaHat)),
-             unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
+    idx <- cov_idx(blocks)
     V <- fullCovMat[idx, idx]
     if (isTRUE(unconditional)) {
       corr <- pm_sr_uncond(semireg)
@@ -560,6 +562,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     beta_u <- c(betaHat, do.call("c", unname(semireg$u_lst[blocks])))
     return(list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
                 response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
+                cov_idx = cov_idx(blocks),
                 sm_term = blocks))
   }
   # the smoothZ form: terms are the names of the smoothZ list; a term with
@@ -617,5 +620,6 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
   
   list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
        response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
+                cov_idx = cov_idx(blocks),
        sm_term = sm_term)
 }

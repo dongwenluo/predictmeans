@@ -98,7 +98,91 @@ predictmeans(fm, "QB")
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 ```
 
-The tests are normal-based, as in `semipred()`.
+For gaussian fits the tests are t tests with Satterthwaite df (next section); for
+generalized fits they are normal-based, as in `semipred()`.
+
+## What predictmeans adds
+
+A smoothing program (`mgcv::gam()`, gamm4) fits these models too. predictmeans adds the
+mixed-model inference around them.
+
+**Means at a covariate value in a designed experiment.** Three treatments on the whole
+plots of six blocks, measured at eleven times; a curve over time for each treatment.
+The treatment means at time 5 include the curves' random coefficients, and their
+comparisons rest on the whole-plot variation, so they have far fewer degrees of freedom
+than the 180 residual df. predictmeans gives them Satterthwaite df for the combination of
+fixed and smooth coefficients (as SAS does for estimates that involve random effects);
+normal-based tests would reject a true null hypothesis too often
+(`dev/sim-semireg-df.R` in the package sources).
+
+```{r}
+set.seed(11)
+sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
+sp$y <- 2 + sin(sp$t/2) + c(0, 0.5, 1)[sp$A]*sp$t/10 + rnorm(6, 0, 0.5)[sp$Block] +
+  rnorm(18, 0, 0.4)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
+fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
+               data = sp, prt = FALSE)
+pm <- predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)
+pm$means
+pm$pairs[c("level1", "level2", "estimate", "std.error", "df", "p.value")]
+```
+
+The smooth terms are written in the formula: `s(t, by = A)` adds the fixed terms `A + A:t`
+(the straight lines) itself.
+
+**Which differences between curves are needed?** In `s(x, f1*f2)` the curves are a common
+curve plus deviation curves for `f1`, `f2` and `f1:f2`, each with its own variance.
+`anova()` tests each variance (the likelihood ratio, halved for the boundary) and
+`varcomp()` shows their sizes. Here the shapes differ by `f1` only:
+
+```{r}
+set.seed(3)
+dd <- expand.grid(x = seq(0, 1, length = 25), f1 = factor(c("p", "q")),
+                  f2 = factor(c("u", "v", "w")), rep = 1:4)
+dd$id <- interaction(dd$f1, dd$f2, dd$rep)
+dd$y <- sin(2*pi*dd$x) + (dd$f1 == "q")*1.5*sin(pi*dd$x)^2 +
+  rnorm(nlevels(dd$id), 0, 0.2)[dd$id] + rnorm(nrow(dd), 0, 0.25)
+fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd, prt = FALSE)
+anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
+```
+
+**Counts: rate ratios between curves.** `semireg_tmb()` fits the same smooths with
+glmmTMB, so a negative binomial with zero inflation is available. `contr` gives the
+difference of two curves on the log scale and as a ratio, with a simultaneous band and the
+ranges where the ratio differs from 1:
+
+```{r}
+set.seed(5)
+cn <- expand.grid(x = seq(0, 3, length = 30), trt = factor(c("ctl", "trt")), site = factor(1:8))
+cn$y <- rnbinom(nrow(cn), size = 3,
+                mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
+cn$y[runif(nrow(cn)) < 0.1] <- 0
+fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
+                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+attr(rr$pred_df, "significant")
+rr$plt
+```
+
+**Subject-specific curves.** `(s(age, k = 10) | idnum)` gives each subject a random
+straight line, `(age | idnum)`, and a random spline deviation with one variance for all
+subjects (Durban et al. 2005). The heights of 28 black boys of the Indiana growth study,
+in the package's data, fitted as in Harezlak, Ruppert and Wand (2018, section 9.2); the
+fit is the same as that of their `nlme::lme()` code:
+
+```{r}
+gi <- read.table(system.file("extdata", "semireg", "growthIndiana.txt", package = "predictmeans"),
+                 header = TRUE)
+gb <- subset(gi, male == 1 & black == 1)
+gb$idnum <- factor(gb$idnum)
+fg <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
+                (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb, prt = FALSE)
+logLik(fg$semer)
+semipred(fg, "age", "age", prt = FALSE)$plt
+```
+
+The population curve leaves out the subjects' curves; `anova(fg)` would test whether
+they are needed beyond straight lines.
 
 ## More
 
@@ -109,6 +193,12 @@ The tests are normal-based, as in `semipred()`.
   grades).
 
 ## References
+
+Durban, M., Harezlak, J., Wand, M. P. and Carroll, R. J. (2005). Simple fitting of
+subject-specific curves for longitudinal data. *Statistics in Medicine*, 24, 1153-1167.
+
+Harezlak, J., Ruppert, D. and Wand, M. P. (2018). *Semiparametric Regression with R*.
+Springer.
 
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003). *Semiparametric Regression*.
 Cambridge University Press.
