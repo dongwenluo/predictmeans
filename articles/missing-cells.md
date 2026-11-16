@@ -17,10 +17,19 @@ In short:
 - **Its comparisons** with other means are made on the cells both means
   have (column `over` of `pairs`), not as the difference of two averages
   over different cells.
-- **Means that the data cannot determine** (because factors are
-  confounded) are `NA`, with a message. Their pairwise differences are
-  still given when they can be estimated, and letters are given among
-  those.
+- **A cell** is a combination of the factors of one interaction term of
+  the model. Factors that do not interact do not make cells together: a
+  combination of them without data is not an empty cell, because an
+  additive model can estimate it.
+- **Confounded factors** (two factors that do not interact in the model
+  and do not occur in all combinations, so that their effects cannot be
+  told apart): the mean over all their combinations does not exist. The
+  means average over the combinations that exist, with a warning that
+  names the two factors and says how to state the structure in the
+  model.
+- **Means that still cannot be estimated** are `NA`, with a message.
+  Their pairwise differences are given when they can be estimated, and
+  letters among those.
 - The `means` table has an `estimable` column and the number of
   observations, `n`.
 
@@ -154,6 +163,38 @@ contrastmeans(fm, "N:Variety", ctrmatrix = cm)[[1]]
 #> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
 ```
 
+## What counts as a cell
+
+A cell is a combination of the factors of one interaction term. In
+`y ~ date/farm + date*trt` the cells are date × farm and date ×
+treatment; farm and treatment do not interact. Suppose treatment B has
+no data on farm F2 at date d2:
+
+``` r
+
+set.seed(11)
+dft <- expand.grid(rep = 1:3, trt = factor(c("A", "B")), farm = factor(c("F1", "F2")),
+                   date = factor(c("d1", "d2")))
+dft <- dft[!(dft$date == "d2" & dft$farm == "F2" & dft$trt == "B"), ]
+dft$y <- 5 + as.integer(dft$farm) * as.integer(dft$date) + 0.5 * (dft$trt == "B") +
+  rnorm(nrow(dft), 0, 0.3)
+fd <- lm(y ~ date/farm + date*trt, data = dft)
+predictmeans(fd, "date:trt", plot = FALSE, prtnum = FALSE)$means[, c("date", "trt", "estimate", "n")]
+#>   date trt estimate n
+#> 1   d1   A 6.491091 6
+#> 2   d1   B 6.835039 6
+#> 3   d2   A 7.756290 6
+#> 4   d2   B 8.618384 3
+```
+
+Every date × farm and every date × treatment cell has data, and the
+model says the treatment effect is the same on both farms, so the mean
+of B at d2 over both farms can be estimated: no empty cell, no warning.
+(An average over farm F1 only would make B look worse than A just
+because F1 is the poorer farm.) With a farm × treatment interaction in
+the model (`date/farm*trt`) the same combination is an empty cell, and
+the rule of the first section applies.
+
 ## Confounded factors
 
 In this spray trial the highest spray volume was used only with fine
@@ -177,62 +218,124 @@ with(spray, table(droplet, vol))
 
 In a model with `droplet` and `vol` as separate factors, the effect of
 volume 400 cannot be told apart from that of fine droplets. A volume
-mean averaged over both droplet sizes needs both, so none of the volume
-means can be estimated:
+mean averaged over both droplet sizes needs both, so it cannot be
+estimated.
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+then averages over the droplet–volume combinations that exist and says
+so:
 
 ``` r
 
 fs <- lm(y ~ droplet + conc + vol, data = spray)
 pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
-#> In the data 'vol' is nested in 'droplet' (each level of vol occurs with one level of droplet), and the model has them as separate effects, which cannot be told apart. To get the means, write droplet/vol in the model formula (or use weights = "cells").
-#> Means that cannot be estimated are shown as NA: 130, 200, 400. Their pairwise differences are shown when estimable. If factors are confounded or cells are empty, weights = "cells" averages over the observed cells only.
-pv$means[, c("vol", "estimate", "n", "estimable", "group")]
-#>   vol estimate  n estimable group
-#> 1 130       NA 20     FALSE     A
-#> 2 200       NA 20     FALSE     A
-#> 3 400       NA 10     FALSE  <NA>
-pv$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
-#>   level1 level2   estimate std.error    p.value
-#> 1    130    200 -0.2166482 0.1249636 0.08967159
-#> 2    130    400         NA        NA         NA
-#> 3    200    400         NA        NA         NA
+#> Warning: 'droplet' and 'vol' are confounded in the data (not all their
+#> combinations occur and the model has no term with both), so a mean over all
+#> their combinations cannot be estimated: the means average over the combinations
+#> that exist. To say this in the model, write the nesting in the formula
+#> (droplet/vol) or leave out the factor that adds nothing; weights = "cells"
+#> weights the combinations by their numbers of observations. No data for
+#> droplet:vol fine:130, fine:200, medium:400. The means of vol = 130, 200, 400
+#> average only their observed cells; comparisons with them use only the cells
+#> that the compared means all have (column 'over' of the pairs).
+pv$means[, c("vol", "estimate", "std.error", "n", "group")]
+#>   vol estimate  std.error  n group
+#> 1 130 5.030309 0.06844537 20    A 
+#> 2 200 5.246957 0.06844537 20    A 
+#> 3 400 4.731546 0.05588541 10     B
 ```
 
-The difference between volumes 130 and 200 (both with medium droplets)
-can still be estimated, and the letters compare those two only.
+Read these means with the warning in mind: “volume 400” is “volume 400
+with fine droplets”, and its difference from volume 130 is also a
+difference between droplet sizes. The data cannot separate the two.
 
-There are two ways to get means. `weights = "cells"` averages over the
-observed combinations only, weighting them by their numbers of
-observations; these means depend on how the data happen to be spread
-over the other factors:
+### Three ways to say what you want
 
-``` r
+The warning names three ways to get the means without relying on the
+fallback. They are not the same mean:
 
-predictmeans(fs, "vol", weights = "cells", plot = FALSE, prtnum = FALSE)$means[, c("vol", "estimate", "std.error")]
-#>   vol estimate  std.error
-#> 1 130 4.987406 0.03951695
-#> 2 200 5.289860 0.03951695
-#> 3 400 4.731546 0.05588541
-```
+| Way | What the mean is |
+|----|----|
+| Write the nesting in the formula (`droplet/vol`) | equal-weight average over the combinations that exist; the same numbers as the fallback, without the warning about confounding |
+| Leave out the factor that adds nothing (when one factor is determined by the other, as a farm by its pastures) | equal-weight average over the levels that remain; the same numbers again |
+| `weights = "cells"` | average over the observed combinations weighted by their numbers of observations; depends on how the data are spread over the other factors |
 
-Better, state the structure in the model: volume is nested in droplet
-size. The means of the observed droplet–volume combinations, averaged
-equally over `conc`, are then estimable (and equal to what emmeans gives
-after detecting the nesting):
+The first two change the formula, not the fit: the fitted values and the
+likelihood are the same. Stating the structure in the model is the
+better record of the design:
 
 ``` r
 
 fs2 <- lm(y ~ conc + droplet/vol, data = spray)
-pn <- predictmeans(fs2, "droplet:vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
-pn$means[, c("droplet", "vol", "estimate", "std.error", "n", "group")]
-#>   droplet vol estimate  std.error  n group
-#> 1  medium 130 5.030309 0.06844537 20    A 
-#> 2  medium 200 5.246957 0.06844537 20    A 
-#> 3    fine 400 4.731546 0.05588541 10     B
+pn <- predictmeans(fs2, "vol", plot = FALSE, prtnum = FALSE)
+#> 'vol' is not a term of the model: its factors do not interact there, so these means are the sums of their effects (the differences between the levels of one factor are the same at every level of the others).
+cbind(pn$means[, c("vol", "estimate")], fallback = pv$means$estimate,
+      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE, prtnum = FALSE)$means$estimate)
+#>   vol estimate fallback    cells
+#> 1 130 5.030309 5.030309 4.987406
+#> 2 200 5.246957 5.246957 5.289860
+#> 3 400 4.731546 4.731546 4.731546
 ```
 
-The warning about missing combinations refers to the three combinations
-that cannot occur in this design.
+### Confounded within another factor
+
+Confounding is not always nesting over the whole data set. In a grazing
+trial sampled on several dates, each pasture type is on one farm at a
+date, but a pasture type can be on another farm at a later date:
+
+``` r
+
+set.seed(5)
+past <- rbind(expand.grid(date = c("d1", "d2"), pasture = c("P1", "P2", "P3", "P4"),
+                          trt = c("A", "B"), rep = 1:3),
+              expand.grid(date = "d3", pasture = c("P1", "P4"), trt = c("A", "B"), rep = 1:3))
+past$farm <- ifelse(past$date == "d3", ifelse(past$pasture == "P1", "F3", "F4"),
+                    ifelse(past$pasture == "P4", "F2", "F1"))
+for (v in c("date", "pasture", "trt", "farm")) past[[v]] <- factor(past[[v]])
+past$y <- as.integer(past$date) + as.integer(past$pasture)/2 + 0.5*(past$trt == "B") +
+  rnorm(nrow(past), 0, 0.3)
+fp <- lm(y ~ date/farm + date/(trt + pasture)^2, data = past)
+pp <- predictmeans(fp, "date:trt", plot = FALSE, prtnum = FALSE)
+#> Warning: 'farm' and 'pasture' are confounded in the data (not all their
+#> combinations occur and the model has no term with both), so a mean over all
+#> their combinations cannot be estimated: the means average over the combinations
+#> that exist. To say this in the model, write the nesting in the formula
+#> (farm/pasture) or leave out the factor that adds nothing; weights = "cells"
+#> weights the combinations by their numbers of observations. No data for
+#> date:farm d3:F1, d3:F2, d1:F3, d2:F3, d1:F4, d2:F4; date:trt:pasture d3:A:P2,
+#> d3:B:P2, d3:A:P3, d3:B:P3; farm:pasture F2:P1, F4:P1, F2:P2, F3:P2, F4:P2,
+#> F2:P3, .... The means of date:trt = d1:A, d1:B, d2:A, d2:B, d3:A, d3:B average
+#> only their observed cells; comparisons with them use only the cells that the
+#> compared means all have (column 'over' of the pairs).
+```
+
+Farm and pasture do not interact in the model, and at each date the farm
+is known from the pasture: the farm terms add nothing to the fit (their
+coefficients are aliased). The package finds the pair of factors by
+trying: it leaves out the combinations without data of one pair at a
+time (first pairs among the factors averaged over) and keeps the first
+choice with which every mean can be estimated. The means equal those of
+the model without `farm`:
+
+``` r
+
+fp0 <- lm(y ~ date/(trt + pasture)^2, data = past)
+p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE, prtnum = FALSE))
+cbind(pp$means[, c("date", "trt", "estimate")], without_farm = p0$means$estimate)
+#>   date trt estimate without_farm
+#> 1   d1   A 2.301947     2.301947
+#> 2   d1   B 2.770451     2.770451
+#> 3   d2   A 3.236178     3.236178
+#> 4   d2   B 3.792431     3.792431
+#> 5   d3   A 4.263867     4.263867
+#> 6   d3   B 4.789150     4.789150
+```
+
+(The remaining warning for `fp0` is about date d3, where two pasture
+types were not sampled: an ordinary empty cell.)
+
+Before this rule (decided 2026-11-16) such means were `NA`; in
+predictmeans 1.x they were the same averages, without a warning that
+said why.
 
 ## Checklist
 
@@ -240,6 +343,8 @@ that cannot occur in this design.
   warnings and messages.
 - Compare means that average over the same cells; use `atvar` or
   contrasts within the observed cells when some are empty.
-- When factors are confounded, write the structure into the model
-  (nesting, or one factor for the observed combinations) rather than
-  averaging over combinations that do not exist.
+- When the warning says two factors are confounded, the means are over
+  the combinations that exist. Write the structure into the model
+  (nesting, or leave out the factor that adds nothing) so that the model
+  says what the means are; `weights = "cells"` gives a different,
+  frequency-weighted mean.

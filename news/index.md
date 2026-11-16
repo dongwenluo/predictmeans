@@ -54,7 +54,146 @@ MIXED, Genstat and emmeans are in the tests.
   levels of the term along the covariate with its confidence band (as
   [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   does): the two lines differ where the band leaves out zero, which the
-  overlap of the lines’ own bands does not show.
+  overlap of the lines’ own bands does not show. The band comes from the
+  contrast of the two lines.
+
+  - The test is on the model scale, and that is what is plotted
+    (`contr_scale = "model"`, the default): the difference, shown as the
+    ratio for a log link or log response and as the odds ratio for a
+    logit link (exact; a log axis with a line at 1).
+  - `contr_scale = "response"` plots the difference of the
+    back-transformed lines with a delta-method band (gradient h’(eta_a)
+    K_a - h’(eta_b) K_b): the size of the difference in the units of the
+    response, not a second test; the values where the lines differ on
+    the model scale are marked. Both scales equal emmeans for GLMs and
+    GLMMs ([`pairs()`](https://rdrr.io/r/graphics/pairs.html) and
+    `regrid()`). In a simulation with a Poisson GLMM the delta band
+    covered the true difference in 94% of data sets; the difference of
+    the two lines’ limits in 100% (far too wide).
+  - `band = "simultaneous"` gives Scheffe limits that hold for all
+    covariate values together (rank 2 for straight lines: the
+    Working-Hotelling band), for saying over which range the lines
+    differ; `"pointwise"` (default) is for one value chosen beforehand.
+  - The result has `test`, the joint F test that the two lines are the
+    same, and `significant`, the ranges of the covariate where the band
+    leaves out zero; both are printed. The table has an indicator column
+    for each set of limits: `includes0`, `ratio.includes1` or
+    `odds.ratio.includes1`, and `response.includes0`.
+    [`?covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+    section “Comparing two lines”, and
+    [`vignette("response-scale")`](https://dongwenluo.github.io/predictmeans/articles/response-scale.md)
+    give the reasoning.
+
+- `covariatemeans(bias_adjust = TRUE)` (also `"taylor"`, and `sigma`),
+  as in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and with the same code: the back-transformed lines are the mean of the
+  response, not its median (a transformed response) or the typical
+  cluster (a GLMM). Exact: the factor exp(sigma^2/2) for a log, +
+  sigma^2 for a square root. The default is unchanged. With `contr` the
+  response-scale difference is that of the adjusted lines; ratios and
+  tests do not change.
+
+- `semipred(contr = )` uses the same calculation as
+  `covariatemeans(contr = )` (one function, `pm_diff_table()`).
+
+  - Linear models: the same numbers as before; `pred_df` also has
+    `includes0` and `significant`.
+  - Generalized models: **the band was wrong** (the standard error of
+    the link-scale difference times a weight evaluated at the difference
+    of the means). Now the link-scale difference with its limits, the
+    ratio (log link) or odds ratio (logit link), and the response-scale
+    difference by the delta method, each with its indicator column. The
+    plot is the ratio or odds ratio; `contr_scale = "response"` plots
+    the response-scale difference.
+  - The ranges of the covariate where the curves differ are printed and
+    kept in `attr(pred_df, "significant")`; with `simultaneous = TRUE`
+    they hold for the whole curve.
+
+- [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  takes `lm`, `aov`, `glm` (gaussian, binomial, Poisson, Gamma,
+  [`MASS::glm.nb`](https://rdrr.io/pkg/MASS/man/glm.nb.html)), `gls`,
+  `lme` and `glmmTMB` models as well as `lmer` and `glmer`. Responses
+  are simulated from the model without its fixed effects (intercept,
+  offsets, the same random effects and covariance structure); `lme` and
+  `gls` responses from the null model’s covariance of the data (tested:
+  the simulated covariance is the fitted one). For `lm` the bootstrap
+  p-values approach the exact F tests (tested with 999 samples).
+  `glmmTMB` has no sequential tests: Type II is used, with a message.
+  Quasi families, `gam` and `aov` with `Error()` are refused with a
+  message that says what to use instead.
+
+- [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
+  takes `lm`, `aov`, `glm`, `glmer`, `glmmTMB` and `gam` models as well
+  as `lme`, `lmer` and `gls`. `lm` and `aov` use the exact closed form
+  ([`stats::cooks.distance()`](https://rdrr.io/r/stats/influence.measures.html));
+  other models are refitted for each deletion (exact also for `glm`,
+  where
+  [`cooks.distance()`](https://rdrr.io/r/stats/influence.measures.html)
+  is a one-step approximation; for a `gam` p is the effective df, as
+  mgcv). A deletion that leaves a coefficient without data gives NA.
+  `aov` with `Error()` is refused with a message.
+
+- New test `test-model-classes.R`: every main function on 13 model
+  classes (lm, aov, aov with `Error()`, Poisson and binomial glm, gls,
+  lme, lmer, Poisson and binomial glmer, Poisson and negative binomial
+  glmmTMB, gam); each works or refuses the class with a message. It
+  found that
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+  and
+  [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
+  could not find the data of a `gam` fitted inside a function (mgcv
+  records the global environment): fixed for every function that refits
+  or rereads the data.
+
+- [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  means of generalized models: the limits are the back-transformed
+  limits of the link scale, h(eta -+ c SE), as in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  (always inside the range of the response, not symmetric), and `SE_mu`
+  is the delta-method SE \|h’(eta)\| SE. Before, the limits were mean -+
+  c SE_mu, clipped to \[0, 1\] for binomial, with a weight that is
+  \|h’(eta)\| only for canonical links.
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  on a
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fit now gives the same means, SEs and limits as
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on it.
+
+- `semipred(band = "simultaneous")`, the argument of
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md);
+  `simultaneous = TRUE` still works. The difference of two surfaces (two
+  covariates, `contr`) uses the same calculation as one covariate.
+
+- `R2_model(method = "nakagawa")` for `lme` models (equal to `lmer`;
+  with a variance function the observation-level variance is the mean
+  residual variance).
+
+- **[`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  with a 0/1 response: standard errors were 15-25% too small.** The
+  covariance of the fixed and smooth coefficients used the constant
+  3/pi^2 (logit; the latent variance that
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  uses for variance shares) instead of the working weights of the fit.
+  It now uses the working weights for every family, and its fixed-effect
+  block equals `vcov(model, use.hessian = FALSE)` for gaussian, Poisson
+  and binary fits (tested).
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  bands and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on such fits are wider. A simulation (`dev/sim-curve-difference.R`)
+  gives the coverage of the band of a difference of two curves: 0.96
+  pointwise and 0.96 simultaneous for a linear model; 0.92-0.94
+  pointwise and 0.87-0.88 simultaneous for Poisson and binary models
+  (the covariance is conditional on the estimated smoothing parameters).
+
+- [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  takes `aov` models with `Error()` that have a covariate (e.g. a
+  baseline covariate per subject in repeated measures): analysed by
+  strata, equal to the mixed model in balanced data (it failed before).
 
 - **Fewer arguments in
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
@@ -220,9 +359,25 @@ MIXED, Genstat and emmeans are in the tests.
     average of the observed cells and the warning, as replicated ones.
   - *Nested factors* declared in the formula (`G/T`) are also left out
     of the averages with `weights = "proportional"` and `"outer"` (gave
-    NA). Nesting that is only in the data (`y ~ G + T`) still gives NA
-    (the effects cannot be told apart), now with a note that says so and
-    how to get the means (`G/T` or `weights = "cells"`).
+    NA). Nesting that is only in the data (`y ~ G + T`): see “Confounded
+    factors” below.
+  - *Confounded factors.* Two factors that do not interact in the model
+    and do not occur in all combinations (a factor nested in another
+    only in the data, `y ~ G + T`; a spray volume used with one droplet
+    size; each pasture type on one farm at a date) have no mean over all
+    their combinations. The means now average over the combinations that
+    exist, with a warning that names the two factors and the ways to say
+    it in the model: write the nesting (`G/T`) or leave out the factor
+    that adds nothing (the same means, equal weights), or
+    `weights = "cells"` (the combinations weighted by their numbers of
+    observations). The pair is found by trying, pairs among the factors
+    averaged over first. Without this the per-term cells above turned
+    such means into NA (the maintainer’s pasture trial: 9 of 12 date x
+    forest means and 60 of 66 pairs); 1.x gave the same averages without
+    saying why. Means and pairs that still cannot be estimated (no
+    common cell) are NA.
+    [`vignette("missing-cells")`](https://dongwenluo.github.io/predictmeans/articles/missing-cells.md)
+    has the examples and the table of the three ways.
   - [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
     accepts `aov` models with `Error()`; an `aov` fit with aliased
     coefficients gets the estimability check; clearer errors for unknown

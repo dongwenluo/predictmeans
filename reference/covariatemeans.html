@@ -62,7 +62,8 @@
 <span>  cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>  weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
 <span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>,</span>
-<span>  vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, contr<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<span>  vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, contr<span class="op">=</span><span class="cn">NULL</span>, contr_scale<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"model"</span>, <span class="st">"response"</span><span class="op">)</span>,</span>
+<span>  band<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pointwise"</span>, <span class="st">"simultaneous"</span><span class="op">)</span>, bias_adjust<span class="op">=</span><span class="cn">FALSE</span>, sigma<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -182,12 +183,37 @@ and, for <code>lme</code> and <code>gls</code>, <code>df_method = "containment"<
 
 
 <dt id="arg-contr">contr<a class="anchor" aria-label="anchor" href="#arg-contr"></a></dt>
-<dd><p>Two levels of <code>modelterm</code> (numbers or names, e.g. <code>c(1, 3)</code> or
-<code>c("Golden Rain", "Victory")</code>; for a term with several factors the combined labels such as
+<dd><p>Two levels of <code>modelterm</code>, by their names as in the data (e.g.
+<code>c("Golden Rain", "Victory")</code>) or by their numbers (<code>c(1, 3)</code>; for a term with several factors the combined labels such as
 <code>"a:x"</code>): the difference between the first and the second along the covariate, with its confidence
-band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
-band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
-model scale; with a log link or a log response the table also has the ratio.</p></dd>
+band, is returned and plotted instead of the lines. See ‘Comparing two lines’.</p></dd>
+
+
+<dt id="arg-contr-scale">contr_scale<a class="anchor" aria-label="anchor" href="#arg-contr-scale"></a></dt>
+<dd><p>With <code>contr</code>: what is plotted. <code>"model"</code> (the default) is the difference on
+the scale of the model, where the test is made; for a log link or a log response it is shown as the ratio
+of the two lines and for a logit link as the odds ratio (exact: exp of the difference and of its limits).
+<code>"response"</code> is the difference of the back-transformed lines, in the units of the response, with a
+delta-method band; it describes the size of the difference, the test stays on the model scale.</p></dd>
+
+
+<dt id="arg-band">band<a class="anchor" aria-label="anchor" href="#arg-band"></a></dt>
+<dd><p>With <code>contr</code>: <code>"pointwise"</code> (the default) gives limits at the level <code>level</code> for
+each covariate value on its own; <code>"simultaneous"</code> gives Scheffe limits that hold for all covariate
+values together, for saying over which range of the covariate the lines differ.</p></dd>
+
+
+<dt id="arg-bias-adjust-sigma">bias_adjust, sigma<a class="anchor" aria-label="anchor" href="#arg-bias-adjust-sigma"></a></dt>
+<dd><p>For back-transformed lines (a link, a transformed response or <code>trans</code>), as in
+<code><a href="predictmeans.html">predictmeans</a></code>. By default a line is the back-transformed fitted value: the median of the response
+for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
+at zero) for a generalized linear mixed model. <code>bias_adjust = TRUE</code> gives the mean of the response
+instead (for a mixed model: averaged over the clusters), computed over the variation on the model scale:
+the residual variance for a transformed response plus the variances of the random intercepts, or
+<code>sigma^2</code> when <code>sigma</code> is given (needed with random slopes). It is exact (for a log the factor
+\(exp(\sigma^2/2)\), for a square root \(+ \sigma^2\)); <code>"taylor"</code> is the second-order formula of
+emmeans. Use it for totals and expected amounts; ratios and tests do not need it. The limits treat the
+variance as known. With <code>contr</code> the response-scale difference is that of the adjusted lines.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -199,10 +225,51 @@ model scale; with a log link or a log response the table also has the ratio.</p>
 
 <dt>pltdf</dt>
 <dd><p>The data of the plot: the fitted values with their limits, or with <code>contr</code> the differences
-  (<code>diff</code>, <code>ses</code>, <code>Df</code>, <code>LL</code>, <code>UL</code>, and <code>ratio</code>, <code>ratio.LL</code>,
-  <code>ratio.UL</code> for a log).</p></dd>
+  on the model scale and, when there is a back-transformation, on the response scale.</p></dd>
+
+<dt>test, significant</dt>
+<dd><p>With <code>contr</code>: the joint F test that the two lines are the same (numerator and
+  denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.</p></dd>
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="comparing-two-lines">Comparing two lines<a class="anchor" aria-label="anchor" href="#comparing-two-lines"></a></h2>
+
+
+<p>Whether the bands of two lines overlap does not say whether the lines differ: the lines are estimated from
+the same model and are correlated. The band of their difference does, and it is computed from the contrast
+of the two lines, not from their limits.</p>
+<p><em>The scale of the test.</em> The difference is tested on the scale of the model (the link, or the
+transformed response): there the model is additive, the estimates are closest to normal and the standard
+error does not depend on the mean. \(d = (K_a - K_b)\hat\beta\), \(SE^2 = (K_a - K_b) V (K_a - K_b)'\),
+limits \(d \pm c\,SE\) (columns <code>diff</code>, <code>ses</code>, <code>Df</code>, <code>LL</code>, <code>UL</code>). With a log
+the difference back-transforms exactly to a ratio and with a logit to an odds ratio (columns <code>ratio</code>
+or <code>odds.ratio</code> with their limits): the limits leave out 1 exactly when those of <code>diff</code> leave out
+0, so nothing is approximated. For other transformations (square root, probit, a power) the
+back-transformed difference has no meaning and the model scale is shown.</p>
+<p><em>Why back-transform.</em> Only to read the size of the difference in the units of the response; it is not
+needed to decide whether the lines differ. The response-scale difference \(h(\eta_a) - h(\eta_b)\) is
+another quantity: its standard error is an approximation (the delta method, gradient
+\(h'(\eta_a) K_a - h'(\eta_b) K_b\); columns <code>response.diff</code>, <code>response.ses</code>,
+<code>response.LL</code>, <code>response.UL</code>), it depends on the values of the other variables of the model, and
+lines that are parallel on the model scale are not parallel on the response scale. Its band can disagree
+with the test near the boundary, so with <code>contr_scale = "response"</code> the covariate values where the
+lines differ are still those of the model scale (marked along the axis). For a generalized linear mixed
+model it is the difference for a typical cluster (random effects at zero), as the lines are.</p>
+<p><em>Significance at a level.</em> Three questions have three answers:</p><ol><li><p>At one covariate value chosen beforehand: the pointwise band (<code>band = "pointwise"</code>); the lines
+  differ at level <code>level</code> when it leaves out zero (one for a ratio).</p></li>
+<li><p>Over which range of the covariate: looking at many values needs wider limits. <code>band =
+  "simultaneous"</code> uses Scheffe's critical value \(c = \sqrt{r F_{1-\alpha;\,r,\,df}}\), \(r\) the rank
+  of the contrasts along the covariate (2 for straight lines: the Working-Hotelling band). It holds for
+  every covariate value at once and is slightly conservative over a limited range.</p></li>
+<li><p>Whether the lines differ anywhere: the joint F test that all the differences along the covariate
+  are zero (<code>test</code> in the result).</p></li>
+</ol><p>Each set of limits in <code>pltdf</code> has a column that says whether it includes the value of no difference:
+<code>includes0</code> for <code>diff</code>, <code>ratio.includes1</code> or <code>odds.ratio.includes1</code> (always equal to
+<code>includes0</code>) and <code>response.includes0</code> for the response-scale difference (which can differ from
+<code>includes0</code> near the boundary). Column <code>significant</code> (<code>!includes0</code>) and <code>significant</code> in
+the result (the ranges of the covariate) follow the band asked for, on the model scale.</p>
+    </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Dongwen Luo, Siva Ganesh and John Koolaard</p>
@@ -241,6 +308,15 @@ model scale; with a log link or a log response the table also has the ratio.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 19     Victory  0.4 7.887152 105.73333  87.97402 123.49265     Victory</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 20     Victory  0.5 8.150210 113.84167  95.81383 131.86950     Victory</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 21     Victory  0.6 8.570716 121.95000 103.41196 140.48804     Victory</span>
+<span class="r-in"><span><span class="co"># the difference between two varieties along nitro, with a simultaneous band</span></span></span>
+<span class="r-in"><span><span class="co"># (the two levels by name, or by number: contr=c(1, 3))</span></span></span>
+<span class="r-in"><span>  <span class="fu">covariatemeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, covariate<span class="op">=</span><span class="st">"nitro"</span>, contr<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Golden Rain"</span>, <span class="st">"Victory"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                 band<span class="op">=</span><span class="st">"simultaneous"</span><span class="op">)</span><span class="op">$</span><span class="va">test</span></span></span>
+<span class="r-plt img"><img src="covariatemeans-3.png" alt="" width="700" height="433"></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Lines equal along nitro: F(2, 21.6) = 0.515, p = 0.605.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The simultaneous band (level 0.05) includes no difference at every value of nitro shown.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      numDF      denDF          F    p.value </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2.0000000 21.5970538  0.5146026  0.6048849 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -36,11 +36,17 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   cells, with a warning (the maintainer’s decision of 2026-11-13,
   replacing an earlier “NA by default”). Combinations absent by design
   (nested factors) are not empty cells. Truly non-estimable means are
-  NA. Nesting must be said in the formula (`G/T`): nesting that is only
-  in the data (`y ~ G + T`, or a factor confounded with another as in
-  the spray trial) gives NA, with a note that says to write `G/T` or use
-  `weights = "cells"` (decision of 2026-11-15). The cells are those of
-  each interaction term of the model.
+  NA. The cells are those of each interaction term of the model. Factors
+  that do not interact but are confounded in the data (`y ~ G + T` with
+  T nested in G, the spray trial, each pasture on one farm) have no mean
+  over all their combinations: the means then average over the
+  combinations that exist, with a warning that names the two factors and
+  the three ways to say it (`G/T` in the formula, leave out the aliased
+  factor, `weights = "cells"`) (decision of 2026-11-16, replacing “NA
+  with a note” of 2026-11-15, after the maintainer’s pasture data went
+  from 0 to 60 NA pairs). The pair is found by trying
+  ([`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
+  `pm_confounded_pairs()`): pairs among the factors averaged over first.
 - `aov` models with `Error()` (aovlist) are analysed by strata, as
   Genstat: standard errors from the stratum mean squares, never by
   refitting as lmer. Missing values in an orthogonal design are

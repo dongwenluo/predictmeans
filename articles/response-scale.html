@@ -261,6 +261,70 @@ logit link, whatever the group sizes. For binary (0/1) data both use the
 same latent variance.</p>
 </div>
 <div class="section level2">
+<h2 id="comparing-two-lines-along-a-covariate">Comparing two lines along a covariate<a class="anchor" aria-label="anchor" href="#comparing-two-lines-along-a-covariate"></a>
+</h2>
+<p><code>covariatemeans(contr = )</code> gives the difference between
+two levels of a factor along a covariate. Three points decide how it is
+reported.</p>
+<p><strong>The test is on the model scale.</strong> On the link (or
+transformed) scale the model is additive, the estimates are closest to
+normal and the standard error does not depend on the mean. With a log
+the difference back-transforms exactly to a ratio, with a logit to an
+odds ratio: the limits leave out 1 exactly when those of the difference
+leave out 0. This is what is plotted by default.</p>
+<p><strong>Back-transforming is for reading the size, not for
+testing.</strong> The difference in the units of the response
+(<code>contr_scale = "response"</code>) is another quantity: its band is
+an approximation (the delta method), it depends on the values of the
+other variables, and lines that are parallel on the model scale are not
+parallel on the response scale. The values where the lines differ are
+still taken from the model scale, and marked.</p>
+<p><strong>“Significant at 0.05” has three meanings.</strong></p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>Question</th>
+<th>Answer</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Do the lines differ at one covariate value chosen beforehand?</td>
+<td>the pointwise band (<code>band = "pointwise"</code>)</td>
+</tr>
+<tr class="even">
+<td>Over which range of the covariate do they differ?</td>
+<td>the simultaneous band (<code>band = "simultaneous"</code>, Scheffé;
+for straight lines the Working–Hotelling band)</td>
+</tr>
+<tr class="odd">
+<td>Do they differ anywhere?</td>
+<td>the joint F test (<code>test</code> in the result)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">dose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/gl.html" class="external-link">gl</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">40</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span><span class="op">)</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">80</span>, <span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dose</span><span class="op">$</span><span class="va">count</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">80</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">0.2</span><span class="op">*</span><span class="va">dose</span><span class="op">$</span><span class="va">x</span> <span class="op">+</span> <span class="fl">0.6</span><span class="op">*</span><span class="va">dose</span><span class="op">$</span><span class="va">x</span><span class="op">*</span><span class="op">(</span><span class="va">dose</span><span class="op">$</span><span class="va">trt</span> <span class="op">==</span> <span class="st">"treated"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fm_dose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">count</span> <span class="op">~</span> <span class="va">trt</span><span class="op">*</span><span class="va">x</span>, family <span class="op">=</span> <span class="va">poisson</span>, data <span class="op">=</span> <span class="va">dose</span><span class="op">)</span></span>
+<span><span class="va">cmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fm_dose</span>, <span class="st">"trt"</span>, covariate <span class="op">=</span> <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treated"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
+<span>                      band <span class="op">=</span> <span class="st">"simultaneous"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="response-scale_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="576"></p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cmp</span><span class="op">$</span><span class="va">test</span></span>
+<span><span class="co">#&gt;        numDF        denDF            F      p.value </span></span>
+<span><span class="co">#&gt; 2.000000e+00          Inf 2.835273e+01 4.859206e-13</span></span>
+<span><span class="va">cmp</span><span class="op">$</span><span class="va">significant</span></span>
+<span><span class="co">#&gt;        from       to direction</span></span>
+<span><span class="co">#&gt; 1 0.5859325 1.983812         &gt;</span></span></code></pre></div>
+<p>The pointwise band is narrower and would call a longer range
+significant; it is right only for a single value of the covariate chosen
+before seeing the data.</p>
+</div>
+<div class="section level2">
 <h2 id="more">More<a class="anchor" aria-label="anchor" href="#more"></a>
 </h2>
 <ul>
@@ -272,7 +336,8 @@ R² for mixed models.</li>
 contrasts, joint tests and slopes; they are on the link scale too.</li>
 <li>
 <code><a href="../reference/predictmeans.html">?predictmeans</a></code> (arguments <code>trans</code>,
-<code>transOff</code>, <code>count</code>), <code><a href="../reference/R2_model.html">?R2_model</a></code>.</li>
+<code>transOff</code>, <code>count</code>), <code><a href="../reference/R2_model.html">?R2_model</a></code>,
+<code><a href="../reference/covariatemeans.html">?covariatemeans</a></code> (section “Comparing two lines”).</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

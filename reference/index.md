@@ -45,7 +45,7 @@
   : An adjusted coefficient of determination (R2) for generalized linear
   mixed models
 - [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
-  : R-squared for Mixed Models as Numbers
+  : R-squared of a Model as Numbers
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
   : Variance Components with Standard Errors and Confidence Intervals
 - [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
@@ -88,7 +88,7 @@
   : Combine Permutation Tests of Several Responses
 
 - [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
-  : Parametric Bootstrap Tests for Mixed Models
+  : Parametric Bootstrap Tests
 
 ## Semiparametric regression
 

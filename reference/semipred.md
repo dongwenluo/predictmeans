@@ -10,7 +10,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
        scales=c("fixed", "free", "free_x", "free_y"),
        plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
-       simultaneous=FALSE)
+       simultaneous=FALSE, contr_scale=c("model", "response"),
+       band=c("pointwise", "simultaneous"))
 ```
 
 ## Arguments
@@ -116,13 +117,31 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   A logical scalar to indicate whether to produce plots on the screen or
   not. The default value is TRUE.
 
+- band:
+
+  `"pointwise"` (the default) or `"simultaneous"`: simultaneous
+  confidence bands over the whole curve(s) instead of pointwise limits;
+  the critical value is the `1 - level` quantile of the largest
+  standardised deviation over the predicted points, from 10000 draws of
+  the estimates' distribution (Ruppert, Wand and Carroll, 2003). The
+  same argument as in
+  [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+  where lines of a parametric model use Scheffe's critical value
+  instead; for smooths that would be far too wide.
+
 - simultaneous:
 
-  If `TRUE`, simultaneous confidence bands over the whole curve(s)
-  instead of pointwise limits: the critical value is the `1 - level`
-  quantile of the largest standardised deviation over the predicted
-  points, from 10000 draws of the estimates' distribution (Ruppert, Wand
-  and Carroll, 2003). The default is FALSE.
+  `TRUE` is the same as `band = "simultaneous"` (the name before 2.0).
+
+- contr_scale:
+
+  With `contr` and a generalized model: `"model"` (the default) plots
+  the difference on the link scale, as the ratio (log link) or the odds
+  ratio (logit link) of the two curves; `"response"` the difference of
+  the back-transformed curves with a delta-method band. See ‘Comparing
+  two lines’ in
+  [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md):
+  the test is on the model scale.
 
 ## Value
 
@@ -133,6 +152,30 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 - pred_df:
 
   A data.frame with predcted data.
+
+## Details
+
+With `contr` the difference between two curves is computed as in
+[`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+from the contrast of the two curves and the covariance of the fixed and
+smooth coefficients. For a linear model `pred_df` has the difference (in
+the column of the response), `LL`, `UL`, `SE_contr` and the indicators
+`includes0` (the limits include zero) and `significant`. For a
+generalized model it has the columns of `covariatemeans(contr = )`:
+`diff`, `ses`, `LL`, `UL` and `includes0` on the link scale; the `ratio`
+or `odds.ratio` with its limits and `..includes1`; `response.diff`,
+`response.ses`, `response.LL`, `response.UL` and `response.includes0` on
+the response scale; and `significant` (the link scale). Before 2.0 the
+band of a generalized model's difference used the standard error of the
+link-scale difference multiplied by a weight evaluated at the difference
+of the means, which is not a standard error of any difference. The
+ranges of the covariate where the curves differ are printed and kept in
+`attr(pred_df, "significant")`; with `simultaneous = TRUE` they hold for
+the whole curve, and the curves differ somewhere at level `level` when
+there is such a range. (A joint F test, as
+[`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+gives, is not given: Wald tests of penalised smooth coefficients are not
+reliable.)
 
 ## References
 
@@ -283,14 +326,21 @@ str(ap_out1$pred_df)
 #>  $ LL      : num  0.685 1.026 1.364 1.699 2.032 ...
 #>  $ UL      : num  4.76 5.03 5.32 5.6 5.89 ...
 ap_out2 <- semipred(fm, "QB", "pressure", contr=c(1,2))
+#> 200 differs from 300 (pointwise band, level 0.05) for pressure: 1.01 to 3.03 (<).
 
 str(ap_out2$pred_df)
-#> 'data.frame':    115 obs. of  5 variables:
-#>  $ pressure: num  0.235 0.24 0.245 0.25 0.255 ...
-#>  $ rate    : num  1.045 1.03 1.015 1 0.984 ...
-#>  $ LL      : num  -1.95 -1.91 -1.88 -1.85 -1.83 ...
-#>  $ UL      : num  4.04 3.97 3.91 3.85 3.8 ...
-#>  $ SE_contr: num  1.53 1.5 1.48 1.46 1.44 ...
+#> 'data.frame':    115 obs. of  7 variables:
+#>  $ pressure   : num  0.235 0.24 0.245 0.25 0.255 ...
+#>  $ rate       : num  1.045 1.03 1.015 1 0.984 ...
+#>  $ LL         : num  -1.95 -1.91 -1.88 -1.85 -1.83 ...
+#>  $ UL         : num  4.04 3.97 3.91 3.85 3.8 ...
+#>  $ SE_contr   : num  1.53 1.5 1.48 1.46 1.44 ...
+#>  $ includes0  : logi  TRUE TRUE TRUE TRUE TRUE TRUE ...
+#>  $ significant: logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+#>  - attr(*, "significant")='data.frame':  1 obs. of  3 variables:
+#>   ..$ from     : num 1.01
+#>   ..$ to       : num 3.03
+#>   ..$ direction: chr "<"
 
 # \donttest{
 str(sleepstudy)
@@ -481,13 +531,20 @@ str(predout1$pred_df)
 #>  $ LL      : num  219 223 223 223 222 ...
 #>  $ UL      : num  284 282 281 280 279 ...
 predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
+#> 332 differs from 308 (pointwise band, level 0.05) for Days: 3.857 to 5.327 (<); 6.000 to 7.000 (>); 7.714 to 9.000 (<).
 
 str(predout2$pred_df)
-#> 'data.frame':    58 obs. of  5 variables:
-#>  $ Days    : num  0 0.184 0.367 0.551 0.735 ...
-#>  $ Reaction: num  -18.48 -17.43 -15.32 -12.42 -8.98 ...
-#>  $ LL      : num  -64.2 -58 -54.4 -50.8 -46.9 ...
-#>  $ UL      : num  27.2 23.1 23.8 26 28.9 ...
-#>  $ SE_contr: num  23.3 20.7 20 19.6 19.3 ...
+#> 'data.frame':    58 obs. of  7 variables:
+#>  $ Days       : num  0 0.184 0.367 0.551 0.735 ...
+#>  $ Reaction   : num  -18.48 -17.43 -15.32 -12.42 -8.98 ...
+#>  $ LL         : num  -64.2 -58 -54.4 -50.8 -46.9 ...
+#>  $ UL         : num  27.2 23.1 23.8 26 28.9 ...
+#>  $ SE_contr   : num  23.3 20.7 20 19.6 19.3 ...
+#>  $ includes0  : logi  TRUE TRUE TRUE TRUE TRUE TRUE ...
+#>  $ significant: logi  FALSE FALSE FALSE FALSE FALSE FALSE ...
+#>  - attr(*, "significant")='data.frame':  3 obs. of  3 variables:
+#>   ..$ from     : num [1:3] 3.86 6 7.71
+#>   ..$ to       : num [1:3] 5.33 7 9
+#>   ..$ direction: chr [1:3] "<" ">" "<"
 # }
 ```

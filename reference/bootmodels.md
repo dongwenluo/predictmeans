@@ -1,12 +1,12 @@
-# Parametric Bootstrap Tests for Mixed Models
+# Parametric Bootstrap Tests
 
-Parametric bootstrap p-values for the terms and coefficients of an
-`lmer` or `glmer` model. Responses are simulated from the model fitted
-without its fixed effects (only an intercept and the same random
-effects: the global null hypothesis), the full model is refitted to
-each, and a p-value is the proportion of simulated statistics at least
-as large as the observed one. Useful for GLMMs and small samples, where
-Wald or F tests can be poor.
+Parametric bootstrap p-values for the terms and coefficients of a model.
+Responses are simulated from the model fitted without its fixed effects
+(only an intercept, any offset, and the same random effects and
+covariance structure: the global null hypothesis), the full model is
+refitted to each, and a p-value is the proportion of simulated
+statistics at least as large as the observed one. Useful for GLMs and
+GLMMs and small samples, where Wald or F tests can be poor.
 
 ## Usage
 
@@ -19,7 +19,12 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 
 - model:
 
-  A model fitted by `lmer` or `glmer`.
+  A model fitted by `lm`, `aov` (without `Error()`), `glm` (a family
+  with a distribution: gaussian, binomial, Poisson, Gamma; also
+  [`MASS::glm.nb`](https://rdrr.io/pkg/MASS/man/glm.nb.html)), `gls`,
+  `lme`, `lmer`, `glmer` or `glmmTMB`. Responses of `lme` and `gls`
+  models are simulated from the null model's covariance of the data
+  (random effects, correlation and variance structures).
 
 - nsim:
 
@@ -29,8 +34,10 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 
   The type of ANOVA table (as in
   [`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)):
-  Type I gives sequential F statistics, Types II and III Wald chi-square
-  statistics.
+  Type I gives sequential F statistics (for a `glm` with a known
+  dispersion, the deviance; `glmmTMB` has none and uses Type II), Types
+  II and III Wald chi-square statistics (`lm`: F; `glm`: likelihood
+  ratio).
 
 - seed:
 

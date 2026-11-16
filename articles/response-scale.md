@@ -204,6 +204,60 @@ of the latent scale of a single yes/no response, π²/3 for the logit
 link, whatever the group sizes. For binary (0/1) data both use the same
 latent variance.
 
+## Comparing two lines along a covariate
+
+`covariatemeans(contr = )` gives the difference between two levels of a
+factor along a covariate. Three points decide how it is reported.
+
+**The test is on the model scale.** On the link (or transformed) scale
+the model is additive, the estimates are closest to normal and the
+standard error does not depend on the mean. With a log the difference
+back-transforms exactly to a ratio, with a logit to an odds ratio: the
+limits leave out 1 exactly when those of the difference leave out 0.
+This is what is plotted by default.
+
+**Back-transforming is for reading the size, not for testing.** The
+difference in the units of the response (`contr_scale = "response"`) is
+another quantity: its band is an approximation (the delta method), it
+depends on the values of the other variables, and lines that are
+parallel on the model scale are not parallel on the response scale. The
+values where the lines differ are still taken from the model scale, and
+marked.
+
+**“Significant at 0.05” has three meanings.**
+
+| Question | Answer |
+|----|----|
+| Do the lines differ at one covariate value chosen beforehand? | the pointwise band (`band = "pointwise"`) |
+| Over which range of the covariate do they differ? | the simultaneous band (`band = "simultaneous"`, Scheffé; for straight lines the Working–Hotelling band) |
+| Do they differ anywhere? | the joint F test (`test` in the result) |
+
+``` r
+
+set.seed(1)
+dose <- data.frame(trt = gl(2, 40, labels = c("control", "treated")), x = runif(80, 0, 2))
+dose$count <- rpois(80, exp(1 + 0.2*dose$x + 0.6*dose$x*(dose$trt == "treated")))
+fm_dose <- glm(count ~ trt*x, family = poisson, data = dose)
+cmp <- covariatemeans(fm_dose, "trt", covariate = "x", contr = c("treated", "control"),
+                      band = "simultaneous")
+```
+
+![](response-scale_files/figure-html/unnamed-chunk-11-1.png)
+
+``` r
+
+cmp$test
+#>        numDF        denDF            F      p.value 
+#> 2.000000e+00          Inf 2.835273e+01 4.859206e-13
+cmp$significant
+#>        from       to direction
+#> 1 0.5859325 1.983812         >
+```
+
+The pointwise band is narrower and would call a longer range
+significant; it is right only for a single value of the covariate chosen
+before seeing the data.
+
 ## More
 
 - [`vignette("R2_glmm", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/R2_glmm.md):
@@ -212,4 +266,6 @@ latent variance.
   contrasts, joint tests and slopes; they are on the link scale too.
 - [`?predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   (arguments `trans`, `transOff`, `count`),
-  [`?R2_model`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md).
+  [`?R2_model`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md),
+  [`?covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  (section “Comparing two lines”).

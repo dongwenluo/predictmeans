@@ -357,7 +357,19 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   and
   [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
-  do the same.
+  do the same. A cell is a combination of the factors of one interaction
+  term: factors that do not interact do not make cells together, and a
+  combination of them without data is estimated by the (additive) model.
+  Confounded factors (two factors that share no term and do not occur in
+  all combinations: a factor nested in another only in the data, a spray
+  volume used with one droplet size, each pasture on one farm) have no
+  mean over all their combinations; the means then average over the
+  combinations that exist, with a warning that names the two factors.
+  Three ways say what is wanted: the nesting in the formula (`G/T`) or
+  the model without the factor that adds nothing give the same means
+  (equal weights over the combinations that exist); `weights = "cells"`
+  weights the combinations by their numbers of observations. See
+  [`vignette("missing-cells", package = "predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/missing-cells.md).
 
 - df_method:
 

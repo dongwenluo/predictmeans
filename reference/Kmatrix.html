@@ -9,7 +9,13 @@ The predicted means are built on a reference grid: every combination of the fact
   modelterm. Combinations of nested factors that cannot exist (a term of the model holds both
   factors, e.g. G/T, and each level of one occurs with one level of the other) are left out of
   the averages; so are, with weights = &quot;equal&quot;, the empty cells of interaction terms (see
-  predictmeans). The design matrix of the grid is evaluated with the model's own stored basis
+  predictmeans). When a mean cannot be estimated because two factors that share no term of the
+  model are confounded in the data (not all their combinations occur: a factor nested in another only in the
+  data, each pasture on one farm), the combinations of those two factors without data are left out as well,
+  with a warning that names them: the mean is the average over the combinations that exist. The pair is found
+  by trying, pairs among the factors averaged over first. Writing the nesting in the formula (G/T) or
+  leaving out the aliased factor gives the same means; weights = &quot;cells&quot; weights the combinations by
+  their numbers of observations. The design matrix of the grid is evaluated with the model's own stored basis
   information, so covariates may enter the model through transformations such as
   poly(x, 2), ns(x, 3), bs(x), log(x), scale(x) or
   I(x^2), only through interactions (e.g. A:x without x, or x:z),
@@ -23,7 +29,13 @@ The predicted means are built on a reference grid: every combination of the fact
   modelterm. Combinations of nested factors that cannot exist (a term of the model holds both
   factors, e.g. G/T, and each level of one occurs with one level of the other) are left out of
   the averages; so are, with weights = &quot;equal&quot;, the empty cells of interaction terms (see
-  predictmeans). The design matrix of the grid is evaluated with the model's own stored basis
+  predictmeans). When a mean cannot be estimated because two factors that share no term of the
+  model are confounded in the data (not all their combinations occur: a factor nested in another only in the
+  data, each pasture on one farm), the combinations of those two factors without data are left out as well,
+  with a warning that names them: the mean is the average over the combinations that exist. The pair is found
+  by trying, pairs among the factors averaged over first. Writing the nesting in the formula (G/T) or
+  leaving out the aliased factor gives the same means; weights = &quot;cells&quot; weights the combinations by
+  their numbers of observations. The design matrix of the grid is evaluated with the model's own stored basis
   information, so covariates may enter the model through transformations such as
   poly(x, 2), ns(x, 3), bs(x), log(x), scale(x) or
   I(x^2), only through interactions (e.g. A:x without x, or x:z),
@@ -89,7 +101,13 @@ The predicted means are built on a reference grid: every combination of the fact
   <code>modelterm</code>. Combinations of nested factors that cannot exist (a term of the model holds both
   factors, e.g. <code>G/T</code>, and each level of one occurs with one level of the other) are left out of
   the averages; so are, with <code>weights = "equal"</code>, the empty cells of interaction terms (see
-  <code><a href="predictmeans.html">predictmeans</a></code>). The design matrix of the grid is evaluated with the model's own stored basis
+  <code><a href="predictmeans.html">predictmeans</a></code>). When a mean cannot be estimated because two factors that share no term of the
+  model are confounded in the data (not all their combinations occur: a factor nested in another only in the
+  data, each pasture on one farm), the combinations of those two factors without data are left out as well,
+  with a warning that names them: the mean is the average over the combinations that exist. The pair is found
+  by trying, pairs among the factors averaged over first. Writing the nesting in the formula (<code>G/T</code>) or
+  leaving out the aliased factor gives the same means; <code>weights = "cells"</code> weights the combinations by
+  their numbers of observations. The design matrix of the grid is evaluated with the model's own stored basis
   information, so covariates may enter the model through transformations such as
   <code>poly(x, 2)</code>, <code>ns(x, 3)</code>, <code>bs(x)</code>, <code>log(x)</code>, <code>scale(x)</code> or
   <code>I(x^2)</code>, only through interactions (e.g. <code>A:x</code> without <code>x</code>, or <code>x:z</code>),

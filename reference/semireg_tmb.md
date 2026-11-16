@@ -321,6 +321,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #>        construction.date:districtWola     construction.date:districtZoliborz  
 #>                              -0.39155                               -0.14576  
 
+#> Srodmiescie differs from Mokotow (pointwise band, level 0.05) for construction.date: 1930 to 2008 (>).
 
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")

@@ -1,7 +1,8 @@
 # Calculates and plots Cook's distances for a Linear (Mixed) Model
 
-This function produces Cook's distance plots for a linear model obtained
-from functions `aov`, `lm`, `glm`, `gls`, `lme`, or `lmer`.
+This function produces Cook's distance plots for a model obtained from
+functions `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`
+or [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html).
 
 ## Usage
 
@@ -13,7 +14,8 @@ CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
 
 - model:
 
-  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`.
+  Model object returned by `aov` (without `Error()`), `lm`, `glm`,
+  `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` or `gam`.
 
 - group:
 
@@ -36,6 +38,32 @@ CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
 
   A logical variable to indicate whether to print graph in a new window.
   The default value is FALSE.
+
+## Value
+
+Invisibly, the Cook's distances (named by observation or group).
+
+## Details
+
+Cook's distance of an observation (or of a group of observations,
+`group`) is \\D = (\hat\beta - \hat\beta\_{(-i)})' V^{-1} (\hat\beta -
+\hat\beta\_{(-i)}) / p\\, where \\\hat\beta\_{(-i)}\\ are the fixed
+effects of the model refitted without it, \\V\\ the covariance of
+\\\hat\beta\\ and \\p\\ their number (for a `gam`, the effective degrees
+of freedom, as `mgcv`'s
+[`cooks.distance()`](https://rdrr.io/r/stats/influence.measures.html);
+the smoothing parameters are re-estimated for each deletion). For `lm`
+and `aov` models and single observations this is the exact closed form
+of
+[`stats::cooks.distance()`](https://rdrr.io/r/stats/influence.measures.html).
+Other models are refitted for each deletion: exact also for `glm`
+([`stats::cooks.distance()`](https://rdrr.io/r/stats/influence.measures.html)
+for a `glm` is a one-step approximation), and for mixed models and `gls`
+fitted by maximum likelihood (the REML criterion changes with the fixed
+effects). A deletion that leaves a coefficient without data gives `NA`.
+Refitting a generalized linear mixed model for every observation takes
+time; `group` deletes whole clusters, usually the more useful check for
+mixed models.
 
 ## Author
 
