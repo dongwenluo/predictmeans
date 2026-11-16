@@ -62,6 +62,27 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     of limits: `includes0`, `ratio.includes1` or `odds.ratio.includes1`,
     and `response.includes0`. `?covariatemeans`, section "Comparing two
     lines", and `vignette("response-scale")` give the reasoning.
+* `covariatemeans(bias_adjust = TRUE)` (also `"taylor"`, and `sigma`), as in
+  `predictmeans()` and with the same code: the back-transformed lines are
+  the mean of the response, not its median (a transformed response) or the
+  typical cluster (a GLMM). Exact: the factor exp(sigma^2/2) for a log, +
+  sigma^2 for a square root. The default is unchanged. With `contr` the
+  response-scale difference is that of the adjusted lines; ratios and tests
+  do not change.
+* `semipred(contr = )` uses the same calculation as
+  `covariatemeans(contr = )` (one function, `pm_diff_table()`).
+  - Linear models: the same numbers as before; `pred_df` also has
+    `includes0` and `significant`.
+  - Generalized models: **the band was wrong** (the standard error of the
+    link-scale difference times a weight evaluated at the difference of the
+    means). Now the link-scale difference with its limits, the ratio (log
+    link) or odds ratio (logit link), and the response-scale difference by
+    the delta method, each with its indicator column. The plot is the ratio
+    or odds ratio; `contr_scale = "response"` plots the response-scale
+    difference.
+  - The ranges of the covariate where the curves differ are printed and
+    kept in `attr(pred_df, "significant")`; with `simultaneous = TRUE` they
+    hold for the whole curve.
 * `covariatemeans()` takes `aov` models with `Error()` that have a covariate
   (e.g. a baseline covariate per subject in repeated measures): analysed by
   strata, equal to the mixed model in balanced data (it failed before).

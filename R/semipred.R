@@ -7,7 +7,7 @@
 #'            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 #' 		   scales=c("fixed", "free", "free_x", "free_y"),
 #' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
-#' 		   simultaneous=FALSE)
+#' 		   simultaneous=FALSE, contr_scale=c("model", "response"))
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -34,6 +34,25 @@
 #'   limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
 #'   predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
 #'   FALSE.
+#' @param contr_scale With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
+#'   on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;
+#'   \code{"response"} the difference of the back-transformed curves with a delta-method band. See
+#'   \sQuote{Comparing two lines} in \code{\link{covariatemeans}}: the test is on the model scale.
+#' @details
+#' With \code{contr} the difference between two curves is computed as in \code{\link{covariatemeans}}, from the
+#' contrast of the two curves and the covariance of the fixed and smooth coefficients. For a linear model
+#' \code{pred_df} has the difference (in the column of the response), \code{LL}, \code{UL}, \code{SE_contr} and
+#' the indicators \code{includes0} (the limits include zero) and \code{significant}. For a generalized model it
+#' has the columns of \code{covariatemeans(contr = )}: \code{diff}, \code{ses}, \code{LL}, \code{UL} and
+#' \code{includes0} on the link scale; the \code{ratio} or \code{odds.ratio} with its limits and
+#' \code{..includes1}; \code{response.diff}, \code{response.ses}, \code{response.LL}, \code{response.UL} and
+#' \code{response.includes0} on the response scale; and \code{significant} (the link scale). Before 2.0 the band of
+#' a generalized model's difference used the standard error of the link-scale difference multiplied by a weight
+#' evaluated at the difference of the means, which is not a standard error of any difference. The ranges of the
+#' covariate where the curves differ are printed and kept in \code{attr(pred_df, "significant")}; with
+#' \code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
+#' when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
+#' penalised smooth coefficients are not reliable.)
 #' @return
 #' \item{plt}{A ggplot object.}
 #' \item{pred_df}{A data.frame with predcted data.}
@@ -96,7 +115,9 @@ NULL
 semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
                      covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
                      scales=c("fixed", "free", "free_x", "free_y"), 
-                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE) {
+                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
+                     contr_scale=c("model", "response")) {
+  contr_scale <- match.arg(contr_scale)
   
   stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))  
   scales <- as.character(scales)
@@ -297,36 +318,46 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           diff_covarn <- setdiff(names(plt_df_contr), c("SE", response, "LL", "UL"))
           plt_df_contr[,diff_covarn] <- plt_df_lst[[grp_fct_levl[contr[1]]]][, diff_covarn]
           
+          # the difference between the two curves: the one calculation of
+          # covariatemeans(contr = ) (pm_diff_table(), R/covariatemeans.R),
+          # with the covariance of the fixed and smooth coefficients
           D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
-          D_contr <- D_mx_lst[[grp_fct_levl[contr[1]]]] - D_mx_lst[[grp_fct_levl[contr[2]]]]
-          crit_c <- crit_of(D_contr)
-          
-          if (!isLMM(semer)) {
-            stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))*weight_fun(plt_df_contr[[response]], semer)
-          }else{
-            stderr_contr <- sig.epsHat*sqrt(diag(D_contr%*%sm_Cov%*%t(D_contr)))
+          D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
+          D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
+          crit_c <- crit_of(D_a - D_b)
+          glmm <- !isLMM(semer)
+          fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
+          res <- pm_diff_table(plt_df_contr[[covariate]], D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), Inf, crit_c,
+                               h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
+                               kind = if (glmm) switch(fam$link, log = "ratio", logit = "odds.ratio", "none") else "none")
+          # semireg() may have standardised the response of a linear model
+          y_sd <- attr(mod_df, paste(response, "sd", sep = "_"))
+          if (!glmm && !is.null(y_sd)) {
+            for (cn in c("diff", "ses", "LL", "UL")) res$table[[cn]] <- res$table[[cn]]*y_sd
           }
-          if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr*attr(mod_df, paste(response, "sd", sep="_")) 
-          }else{
-            plt_df_contr$LL <- plt_df_contr[[response]] - crit_c*stderr_contr
-            plt_df_contr$UL <- plt_df_contr[[response]] + crit_c*stderr_contr
-          }          
-          
-          plt <- ggplot(plt_df_contr, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))))+
-            geom_line(linewidth=1, col="blue") +
-            geom_hline(yintercept=0, linetype="dashed", color = "red") +
-            geom_ribbon(aes(ymin = LL, ymax = UL), alpha = 0.6, stat="identity", fill="chartreuse3", col="chartreuse3") +
-            ggtitle(pm_wrap_title(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI"), 11)) +
-            labs(x=covariate, y=paste("The difference of ", response, "\n", sep="")) +
-            theme_bw() +
-            theme(plot.title = element_text(hjust = 0.5)) 
-          if (response == "response_y") plt <- plt + labs(y=paste("The difference of ", response0, "\n", sep=""))
-          pred_df <- plt_df_contr
-          pred_df$SE_contr <- stderr_contr
-          pred_df$SE <- NULL
-          pred_df$SE_mu <- NULL
+          band_c <- if (simultaneous) "simultaneous" else "pointwise"
+          plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
+                              typical = glmm)
+          if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
+          if (prt) pm_diff_report(res, covariate, grp_fct_levl[contr], level, band_c)
+          tab <- res$table
+          if (glmm) {
+            # a GLMM: the columns of covariatemeans(contr = ); SE_contr on the model scale
+            pred_df <- cbind(plt_df_contr[setdiff(diff_covarn, "SE_mu")], tab[setdiff(names(tab), c("xvar", "Df"))])
+            pred_df$SE_contr <- tab$ses
+          } else {
+            # a linear model: the 1.x columns, then the indicator columns
+            plt_df_contr[[response]] <- tab$diff
+            plt_df_contr$LL <- tab$LL
+            plt_df_contr$UL <- tab$UL
+            pred_df <- plt_df_contr
+            pred_df$SE_contr <- tab$ses
+            pred_df$SE <- NULL
+            pred_df$SE_mu <- NULL
+            pred_df$includes0 <- tab$includes0
+            pred_df$significant <- tab$significant
+          }
+          attr(pred_df, "significant") <- res$significant
         }
       }else if(length(covariate)==2) {
         if (is.null(contr)) {

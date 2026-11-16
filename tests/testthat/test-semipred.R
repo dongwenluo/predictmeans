@@ -96,3 +96,55 @@ test_that("semipred(): two-sided limits; simultaneous bands are wider, repeat, a
   s2 <- semipred(sm, covariate = "construction.date", prt = FALSE, simultaneous = TRUE)$pred_df
   expect_identical(s$UL, s2$UL)
 })
+
+test_that("semipred(contr = ): the difference of two curves as covariatemeans(contr = ); GLMMs on both scales", {
+  skip_if_not_installed("HRW")
+  data("WarsawApts", package = "HRW", envir = environment())
+  W <- WarsawApts
+  W$district <- factor(W$district)
+  sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
+                                 smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
+                                 data = W, prt = FALSE))
+  # a linear model: the 1.x columns and the indicators; level names in contr
+  r <- semipred(sm, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$pred_df
+  lv <- levels(W$district)
+  r2 <- semipred(sm, "district", "construction.date", contr = match(c("Srodmiescie", "Mokotow"), lv), prt = FALSE)$pred_df
+  expect_equal(r, r2)
+  expect_equal(r$UL - r$areaPerMzloty, qnorm(0.975)*r$SE_contr, tolerance = 1e-10)
+  expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
+  expect_equal(r$significant, !r$includes0)
+  m <- semipred(sm, "district", "construction.date", prt = FALSE)$pred_df
+  expect_equal(r$areaPerMzloty, m$areaPerMzloty[m$district == "Srodmiescie"] - m$areaPerMzloty[m$district == "Mokotow"],
+               tolerance = 1e-8)
+  rs <- semipred(sm, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE,
+                 simultaneous = TRUE)$pred_df
+  expect_true(all(rs$UL - rs$LL > r$UL - r$LL))
+  expect_lte(sum(rs$significant), sum(r$significant))
+  sg <- attr(rs, "significant")
+  expect_equal(nrow(sg), sum(rle(rs$significant)$values))
+  expect_message(semipred(sm, "district", "construction.date", contr = c(2, 1), prt = TRUE), "band, level 0.05")
+  # a Poisson model: link-scale difference, ratio, and the response-scale difference by the delta method
+  set.seed(3)
+  n <- 300
+  d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")))
+  d$y <- rpois(n, exp(0.5 + sin(d$x) + 0.5*(d$g == "b")*d$x/3))
+  sp <- suppressWarnings(semireg(y ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
+                                 family = poisson, prt = FALSE))
+  rg <- semipred(sp, "g", "x", contr = c("b", "a"), prt = FALSE)
+  p <- rg$pred_df
+  m <- semipred(sp, "g", "x", prt = FALSE)$pred_df
+  ma <- m$y[m$g == "a"]; mb <- m$y[m$g == "b"]
+  expect_equal(p$response.diff, mb - ma, tolerance = 1e-8)
+  expect_equal(p$ratio, mb/ma, tolerance = 1e-8)
+  expect_equal(p$diff, log(mb/ma), tolerance = 1e-8)
+  expect_equal(p$ratio.UL, exp(p$diff + qnorm(0.975)*p$ses), tolerance = 1e-8)
+  expect_equal(p$ratio.includes1, p$includes0)
+  expect_equal(p$SE_contr, p$ses)
+  # the delta-method SE of a difference of two means: between |SE_b - SE_a| and SE_b + SE_a
+  sa <- m$SE_mu[m$g == "a"]; sb <- m$SE_mu[m$g == "b"]
+  expect_true(all(p$response.ses <= sa + sb + 1e-8 & p$response.ses >= abs(sb - sa) - 1e-8))
+  expect_match(rg$plt$labels$y, "Ratio")
+  rr <- semipred(sp, "g", "x", contr = c("b", "a"), contr_scale = "response", prt = FALSE)
+  expect_match(rr$plt$labels$y, "response scale")
+  expect_equal(rr$pred_df, p, ignore_attr = TRUE)
+})

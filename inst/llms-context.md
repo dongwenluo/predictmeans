@@ -203,6 +203,14 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
   `simultaneous = TRUE` gives simultaneous bands. `predictmeans()` on a `semireg()` fit
   gives means with the smooth included and normal-based tests.
+- `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
+  `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
+  the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link
+  `odds.ratio` (with `.includes1`); `response.diff` etc. are the delta-method difference on the response
+  scale (`contr_scale = "response"` plots it). `band = "simultaneous"` (`simultaneous = TRUE` in
+  `semipred()`) for "over which range do the curves differ"; `$test` is the joint F test
+  (`covariatemeans()` only), `$significant` the ranges. `covariatemeans(bias_adjust = TRUE)` draws the
+  mean of the response instead of the median / typical cluster.
 - `marginaleffects::hypotheses()` works on `predictmeans()` results after
   `options(marginaleffects_model_classes = "predictmeans")`.
 - Data must be available when `predictmeans()` runs: it re-reads the model's `data`

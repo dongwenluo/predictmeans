@@ -11,7 +11,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-  band=c("pointwise", "simultaneous"))
+  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -96,6 +96,17 @@ delta-method band; it describes the size of the difference, the test stays on th
 \item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the level \code{level} for
 each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
 values together, for saying over which range of the covariate the lines differ.}
+
+\item{bias_adjust, sigma}{For back-transformed lines (a link, a transformed response or \code{trans}), as in
+\code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
+for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
+at zero) for a generalized linear mixed model. \code{bias_adjust = TRUE} gives the mean of the response
+instead (for a mixed model: averaged over the clusters), computed over the variation on the model scale:
+the residual variance for a transformed response plus the variances of the random intercepts, or
+\code{sigma^2} when \code{sigma} is given (needed with random slopes). It is exact (for a log the factor
+\eqn{exp(\sigma^2/2)}, for a square root \eqn{+ \sigma^2}); \code{"taylor"} is the second-order formula of
+emmeans. Use it for totals and expected amounts; ratios and tests do not need it. The limits treat the
+variance as known. With \code{contr} the response-scale difference is that of the adjusted lines.}
 }
 \value{
 \item{plt}{The plot (a \code{ggplot}).}
