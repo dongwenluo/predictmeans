@@ -10,7 +10,8 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-  vcov_adjust=TRUE, contr=NULL)
+  vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
+  band=c("pointwise", "simultaneous"))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -81,35 +82,71 @@ has its own) and adjusted standard errors for models fitted by REML (\code{lmer}
 predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
 and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.}
 
-\item{contr}{Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
-\code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
+\item{contr}{Two levels of \code{modelterm}, by their names as in the data (e.g.
+\code{c("Golden Rain", "Victory")}) or by their numbers (\code{c(1, 3)}; for a term with several factors the combined labels such as
 \code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
-band, is returned and plotted instead of the lines. Whether the bands of the two lines overlap does not say
-whether the lines differ (they are estimated from the same model and are correlated); the band of the
-difference does. It is computed from the contrast of the two lines, not from their limits:
-\itemize{
-\item On the model (link) scale: \eqn{d = (K_a - K_b)\hat\beta} with
-  \eqn{SE^2 = (K_a - K_b) V (K_a - K_b)'} and limits \eqn{d \pm t\,SE} at the contrast's df (columns
-  \code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}). This is the scale of the test: the lines
-  differ at a covariate value when this band leaves out zero. For a log link or a log response the table
-  also has the \code{ratio} (exp of \code{diff} and of its limits), for a logit link the
-  \code{odds.ratio}.
-\item On the response scale (models with a link, a transformed response or \code{trans}): the difference
-  of the back-transformed lines, \eqn{h(\eta_a) - h(\eta_b)}, with the delta-method standard error from
-  the gradient \eqn{h'(\eta_a) K_a - h'(\eta_b) K_b} (columns \code{response.diff},
-  \code{response.ses}, \code{response.LL}, \code{response.UL}). This is what is plotted, as the lines are
-  drawn on that scale; \code{trans = I} keeps the model scale. For a generalized linear mixed model it is the
-  difference for a typical cluster (random effects at zero), as the lines are.
-}}
+band, is returned and plotted instead of the lines. See \sQuote{Comparing two lines}.}
+
+\item{contr_scale}{With \code{contr}: what is plotted. \code{"model"} (the default) is the difference on
+the scale of the model, where the test is made; for a log link or a log response it is shown as the ratio
+of the two lines and for a logit link as the odds ratio (exact: exp of the difference and of its limits).
+\code{"response"} is the difference of the back-transformed lines, in the units of the response, with a
+delta-method band; it describes the size of the difference, the test stays on the model scale.}
+
+\item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the level \code{level} for
+each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
+values together, for saying over which range of the covariate the lines differ.}
 }
 \value{
 \item{plt}{The plot (a \code{ggplot}).}
 \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-  on the model scale and, when back-transformed, on the response scale (see \code{contr}).}
+  on the model scale and, when there is a back-transformation, on the response scale.}
+\item{test, significant}{With \code{contr}: the joint F test that the two lines are the same (numerator and
+  denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.}
 }
 \description{
 This function obtains predicted means with graph for a new set of covariate values.
 }
+\section{Comparing two lines}{
+
+Whether the bands of two lines overlap does not say whether the lines differ: the lines are estimated from
+the same model and are correlated. The band of their difference does, and it is computed from the contrast
+of the two lines, not from their limits.
+
+\emph{The scale of the test.} The difference is tested on the scale of the model (the link, or the
+transformed response): there the model is additive, the estimates are closest to normal and the standard
+error does not depend on the mean. \eqn{d = (K_a - K_b)\hat\beta}, \eqn{SE^2 = (K_a - K_b) V (K_a - K_b)'},
+limits \eqn{d \pm c\,SE} (columns \code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}). With a log
+the difference back-transforms exactly to a ratio and with a logit to an odds ratio (columns \code{ratio}
+or \code{odds.ratio} with their limits): the limits leave out 1 exactly when those of \code{diff} leave out
+0, so nothing is approximated. For other transformations (square root, probit, a power) the
+back-transformed difference has no meaning and the model scale is shown.
+
+\emph{Why back-transform.} Only to read the size of the difference in the units of the response; it is not
+needed to decide whether the lines differ. The response-scale difference \eqn{h(\eta_a) - h(\eta_b)} is
+another quantity: its standard error is an approximation (the delta method, gradient
+\eqn{h'(\eta_a) K_a - h'(\eta_b) K_b}; columns \code{response.diff}, \code{response.ses},
+\code{response.LL}, \code{response.UL}), it depends on the values of the other variables of the model, and
+lines that are parallel on the model scale are not parallel on the response scale. Its band can disagree
+with the test near the boundary, so with \code{contr_scale = "response"} the covariate values where the
+lines differ are still those of the model scale (marked along the axis). For a generalized linear mixed
+model it is the difference for a typical cluster (random effects at zero), as the lines are.
+
+\emph{Significance at a level.} Three questions have three answers:
+\enumerate{
+\item At one covariate value chosen beforehand: the pointwise band (\code{band = "pointwise"}); the lines
+  differ at level \code{level} when it leaves out zero (one for a ratio).
+\item Over which range of the covariate: looking at many values needs wider limits. \code{band =
+  "simultaneous"} uses Scheffe's critical value \eqn{c = \sqrt{r F_{1-\alpha;\,r,\,df}}}, \eqn{r} the rank
+  of the contrasts along the covariate (2 for straight lines: the Working-Hotelling band). It holds for
+  every covariate value at once and is slightly conservative over a limited range.
+\item Whether the lines differ anywhere: the joint F test that all the differences along the covariate
+  are zero (\code{test} in the result).
+}
+Column \code{significant} of \code{pltdf} and \code{significant} in the result (the ranges of the covariate)
+follow the band asked for, on the model scale.
+}
+
 \examples{
   library(predictmeans)
   data(Oats, package="nlme")
@@ -118,6 +155,10 @@ This function obtains predicted means with graph for a new set of covariate valu
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   covariatemeans(fm, "Variety", covariate="nitro")
   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
+# the difference between two varieties along nitro, with a simultaneous band
+# (the two levels by name, or by number: contr=c(1, 3))
+  covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
+                 band="simultaneous")$test
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

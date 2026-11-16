@@ -39,22 +39,27 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   of the term along the covariate with its confidence band (as `semipred()`
   does): the two lines differ where the band leaves out zero, which the
   overlap of the lines' own bands does not show. The band comes from the
-  contrast of the two lines, on two scales: the model (link) scale, where
-  the test is made (with the ratio for a log link and the odds ratio for a
-  logit link), and, for models with a link or a transformed response, the
-  response scale by the delta method (gradient h'(eta_a) K_a - h'(eta_b)
-  K_b), which is what is plotted. Both equal emmeans for GLMs and GLMMs
-  (`pairs()` and `regrid()`). In a simulation with a Poisson GLMM the delta
-  band covered the true difference in 94% of data sets; the difference of
-  the two lines' limits in 100% (far too wide).
-* `R2_model()` takes every model class `predictmeans()` handles: `lm`, `aov`
-  (also with `Error()`), `glm`, `gls`, `lme`, `gam` and `semireg` fits as
-  well as `lmer`, `glmer` and `glmmTMB`. It is Piepho's adjusted R-squared
-  for all of them, one calculation: for `lm` and `aov` the usual adjusted
-  R-squared; `lme` and `aov` with `Error()` equal `lmer`; a `glm` equals the
-  `glmmTMB` fit without random effects; `gls` and `lme` with any correlation
-  and variance structure; a random-effect smooth of a `gam` equals the
-  `lmer` random effect. `R2_glmm()` is unchanged.
+  contrast of the two lines.
+  - The test is on the model scale, and that is what is plotted
+    (`contr_scale = "model"`, the default): the difference, shown as the
+    ratio for a log link or log response and as the odds ratio for a logit
+    link (exact; a log axis with a line at 1).
+  - `contr_scale = "response"` plots the difference of the back-transformed
+    lines with a delta-method band (gradient h'(eta_a) K_a - h'(eta_b) K_b):
+    the size of the difference in the units of the response, not a second
+    test; the values where the lines differ on the model scale are marked.
+    Both scales equal emmeans for GLMs and GLMMs (`pairs()` and `regrid()`).
+    In a simulation with a Poisson GLMM the delta band covered the true
+    difference in 94% of data sets; the difference of the two lines' limits
+    in 100% (far too wide).
+  - `band = "simultaneous"` gives Scheffe limits that hold for all covariate
+    values together (rank 2 for straight lines: the Working-Hotelling band),
+    for saying over which range the lines differ; `"pointwise"` (default) is
+    for one value chosen beforehand.
+  - The result has `test`, the joint F test that the two lines are the same,
+    and `significant`, the ranges of the covariate where the band leaves out
+    zero; both are printed. `?covariatemeans`, section "Comparing two
+    lines", and `vignette("response-scale")` give the reasoning.
 * `covariatemeans()` takes `aov` models with `Error()` that have a covariate
   (e.g. a baseline covariate per subject in repeated measures): analysed by
   strata, equal to the mixed model in balanced data (it failed before).

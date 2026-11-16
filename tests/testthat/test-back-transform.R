@@ -182,6 +182,8 @@ test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmean
   for (m in mods) {
     r <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs))
     p <- r$pltdf
+    p$significant <- NULL
+    rownames(p) <- NULL
     eg <- emmeans::emmeans(m, ~ A | x, at = list(x = xs), data = d)
     el <- as.data.frame(pairs(eg)); el <- el[el$contrast == "a1 - a3", ]
     er <- as.data.frame(pairs(emmeans::regrid(eg, transform = "response"))); er <- er[er$contrast == "a1 - a3", ]
@@ -193,7 +195,11 @@ test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmean
     expect_equal(p$response.UL - p$response.diff, qt(0.975, p$Df)*p$response.ses, tolerance = 1e-10)
     # a log link: ratios; a logit link: odds ratios; never the back-transformed limits of the difference
     if (stats::family(m)$link == "log") expect_equal(p$ratio.UL, exp(p$UL)) else expect_equal(p$odds.ratio, exp(p$diff))
-    expect_equal(ggplot2::layer_data(r$plt, 3)$y, p$response.diff)       # the plot: the response scale
+    # the plot: the model scale as a ratio or an odds ratio (default); the response scale when asked
+    expect_equal(ggplot2::layer_data(r$plt, 3)$y, log10(exp(p$diff)))
+    rr <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs, contr_scale = "response"))
+    expect_equal(ggplot2::layer_data(rr$plt, 3)$y, p$response.diff)
+    expect_equal(rr$pltdf[names(p)], p, ignore_attr = TRUE)
   }
   # trans = I: the model scale only
   pI <- suppressMessages(covariatemeans(mods[[3]], "A", covariate = "x", contr = c(1, 3), covariateV = xs, trans = I))
@@ -223,4 +229,41 @@ test_that("an aov model with Error() and a covariate: covariatemeans() by strata
   pa <- suppressMessages(predictmeans(ma, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
   pl <- suppressMessages(predictmeans(ml, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
   expect_equal(pa[c("estimate", "std.error")], pl[c("estimate", "std.error")], tolerance = 1e-4)
+})
+
+test_that("covariatemeans(contr = ): simultaneous band, joint test and the range where the lines differ", {
+  set.seed(1)
+  d <- data.frame(A = gl(3, 40, labels = c("a1", "a2", "a3")), x = runif(120, 0, 2))
+  d$cnt <- rpois(120, exp(1 + 0.6*d$x*(d$A == "a3") + 0.2*d$x))
+  g <- glm(cnt ~ A*x, poisson, d)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- seq(0, 2, 0.02)
+  expect_message(rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs), "a3 differs from a1")
+  rs <- suppressMessages(covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs, band = "simultaneous"))
+  # pointwise: z; simultaneous: Scheffe with rank 2 (Working-Hotelling), wider
+  expect_equal((rp$pltdf$UL - rp$pltdf$diff)/rp$pltdf$ses, rep(qnorm(0.975), length(xs)), tolerance = 1e-8)
+  expect_equal((rs$pltdf$UL - rs$pltdf$diff)/rs$pltdf$ses, rep(sqrt(qchisq(0.95, 2)), length(xs)), tolerance = 1e-8)
+  # the significant values are those whose band leaves out zero; fewer with the simultaneous band
+  expect_equal(rs$pltdf$significant, rs$pltdf$LL > 0 | rs$pltdf$UL < 0)
+  expect_true(all(rp$pltdf$significant[rs$pltdf$significant]))
+  expect_lt(sum(rs$pltdf$significant), sum(rp$pltdf$significant))
+  expect_equal(rs$significant$from, min(xs[rs$pltdf$significant]))
+  expect_equal(rs$significant$direction, ">")
+  # the ratio limits leave out 1 exactly where the difference's leave out 0
+  expect_equal(rs$pltdf$ratio.LL > 1 | rs$pltdf$ratio.UL < 1, rs$pltdf$significant)
+  # the joint test: the Wald test that level and slope differences are both zero
+  b <- coef(g); L <- rbind(c(0, 0, 1, 0, 0, 0), c(0, 0, 0, 0, 0, 1))
+  w <- drop(t(L %*% b) %*% solve(L %*% vcov(g) %*% t(L)) %*% (L %*% b))
+  expect_equal(rp$test[["F"]], w/2, tolerance = 1e-8)
+  expect_equal(rp$test[["numDF"]], 2)
+  expect_equal(rp$test[["p.value"]], pchisq(w, 2, lower.tail = FALSE), tolerance = 1e-6)
+  # the Scheffe band and the joint test agree: no significant value when the test is not significant
+  O <- as.data.frame(nlme::Oats)
+  fm <- lm(yield ~ Block + nitro*Variety, data = O)
+  expect_message(ro <- covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 3), band = "simultaneous"),
+                 "includes no difference")
+  expect_gt(ro$test[["p.value"]], 0.05)
+  expect_equal(nrow(ro$significant), 0)
+  expect_equal(anova(lm(yield ~ Block + nitro + I(Variety == "Marvellous") + I(Variety == "Marvellous"):nitro, O), fm)$F[2],
+               ro$test[["F"]], tolerance = 1e-8)
 })
