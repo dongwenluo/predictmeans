@@ -781,6 +781,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (refit without it; p-value halved for the boundary, Self and Liang 1987;
   `lmerTest::ranova()` used the full chi-square). For `s(x, f)` the
   deviation block tests whether the levels' curves have the same shape.
+* **Formula smooths: each smooth block is scaled as a random intercept**
+  before the fit (the same model; only the reported variance of a smooth
+  block is on another scale). lme4 then starts near the optimum: an
+  `s(x, by = f, id = 1)` fit had stopped at a worse local optimum, and fits
+  are faster (growth curves of 2257 rows: 8 s; `lme` takes 31 s).
+* **`vignette("smooth")`** is written with the smooths in the formula, with
+  a table of the forms, a section on what predictmeans adds (means with
+  Satterthwaite df, tests of smooth variances, rate ratios between count
+  curves, subject-specific curves) and a table for moving from the
+  `smoothZ = list(smZ())` form, which still runs.
 * **`predictmeans()` on gaussian `semireg()` fits: t tests with
   Satterthwaite df** instead of normal-based tests. The means at a
   covariate value include the smooths' random coefficients, so the df are

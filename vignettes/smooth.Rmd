@@ -16,9 +16,10 @@ When a response changes with a covariate along a curve whose shape is not known,
 `semireg()` fits it as a penalized spline inside a linear or generalized linear mixed
 model (Ruppert, Wand and Carroll 2003). The spline's wiggly part is a random effect, so
 the amount of smoothing is estimated by REML along with the other variance components,
-and the usual mixed-model tools apply. `semipred()` predicts the curves with confidence
-bands; `predictmeans()` gives means and comparisons of factor levels with the smooth
-included.
+and the usual mixed-model tools apply. Smooths are written in the model formula, as for
+`mgcv::gam()`, next to fixed and lme4 random terms. `semipred()` predicts the curves with
+confidence bands; `predictmeans()` gives means and comparisons of factor levels with the
+smooth included.
 
 ## Data and model
 
@@ -31,17 +32,31 @@ data(Dialyzer, package = "nlme")
 Dialyzer <- as.data.frame(Dialyzer)
 ```
 
-The rate rises with pressure and levels off. The model has a linear trend for each blood
-flow rate, a smooth departure from it for each rate (`smZ(..., by = QB, group = TRUE)`),
-and a random intercept and slope for each dialyzer:
+The rate rises with pressure and levels off. The model has a curve for each blood flow
+rate, `s(pressure, by = QB)`, and a random intercept and slope for each dialyzer:
 
 ```{r}
-fm <- semireg(rate ~ pressure * QB + (pressure | Subject),
-              smoothZ = list(qb = smZ(pressure, k = 4, by = QB, group = TRUE)),
+fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
               data = Dialyzer, prt = FALSE)
 ```
 
-`k` is the number of interior knots of the spline. `anova(fm)` gives the tests of the
+`bs = "os"` is the O'Sullivan penalized spline (Wand and Ormerod 2008) with `k` interior
+knots; any mgcv basis can be used instead (the default is a thin plate spline). Each curve
+is split into a straight line, whose terms (`QB + QB:pressure`) are added to the fixed
+effects automatically, and a smooth departure from it, a block of random effects with its
+own variance.
+
+| Written | Meaning |
+|---|---|
+| `s(x)` | one curve |
+| `s(x, by = f)` | a curve per level of `f`, a variance each (`id = 1`: one shared) |
+| `s(x, by = z)`, `z` numeric | varying coefficient |
+| `s(x, f)` | common curve + a deviation curve per level of `f` |
+| `s(x, f1*f2)` | common curve + deviations for `f1`, `f2`, `f1:f2`, a variance each |
+| `s(x1, x2)`, `s(x1, x2, bs = "ztps")` | surface |
+| `(s(x, k = 10) \| g)` | random curve per subject: `(x \| g)` + a spline deviation |
+
+`?semireg` has the full table. `anova(fm)` gives the tests of the
 fixed effects (Type III, Kenward-Roger df) and, for each smooth term, the likelihood ratio
 test of its variance being zero: a significant smooth term means the curve is not a
 straight line.
@@ -189,6 +204,25 @@ semipred(fg, "age", "age", prt = FALSE)$plt
 The population curve leaves out the subjects' curves; `anova(fg)` would test whether
 they are needed beyond straight lines.
 
+## From the `smoothZ` form
+
+Code written for 1.x, with the smooths in `smoothZ = list(smZ(...))` and their straight
+lines written in the formula, still runs and gives the same fits. The formula form gives
+the same model and adds the fixed terms itself:
+
+| 1.x | 2.0 |
+|---|---|
+| `y ~ x, smoothZ = list(sm = smZ(x, k = 10))` | `y ~ s(x, bs = "os", k = 10)` |
+| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f, group = TRUE))` | `y ~ s(x, by = f, bs = "os", k = 10)` |
+| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))` | `y ~ s(x, by = f, bs = "os", k = 10, id = 1)` |
+| `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps")` |
+| `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
+
+Smooths are given either in the formula or in `smoothZ`, not both. Other changes since
+1.x: the optimizer is `nloptwrap` (`control = lmerControl(optimizer = "bobyqa")` gives
+1.x's), `semipred()` limits are 95% (1.x: 90%), `anova(fit)` replaces lmerTest, and
+generalized fits include the uncertainty of the smoothing parameters in their bands.
+
 ## More
 
 - `?semireg`, `?semipred`, `?smZ`; `semireg_tmb()` fits the same models with
@@ -207,3 +241,6 @@ Springer.
 
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003). *Semiparametric Regression*.
 Cambridge University Press.
+
+Wand, M. P. and Ormerod, J. T. (2008). On semiparametric regression with O'Sullivan
+penalized splines. *Australian and New Zealand Journal of Statistics*, 50, 179-198.

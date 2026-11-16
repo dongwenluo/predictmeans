@@ -140,13 +140,13 @@ penalised splines with `nlme::lme` (and `glmmPQL`, `gamm`, `gam`), in
 from the package's by a rotation of the columns only (Z Z' equal to 1e-10),
 so the fits are the same.
 
-| Example | Model | semireg formula | logLik semireg / reference | max fitted diff (SD of y) | time semireg (bobyqa / nloptwrap) vs reference |
+| Example | Model | semireg formula | logLik semireg / reference | max fitted diff (SD of y) | time semireg (nloptwrap / bobyqa) vs reference |
 |---|---|---|---|---|---|
-| addMix | spline + binary x + random intercept (lme) | `y ~ x + s(t, bs = "os", k = 15, xt = list(range = c(0, 1))) + (1 \| id)` | -234.098 / -234.098 | 1e-7 | 0.7 / 0.5 s vs 0.05 s |
-| copper | thin-plate (x, y) with given knots + O'Sullivan z (lme) | `s(xcoord, ycoord, bs = "ztps", xt = list(knots = kn)) + s(zcoord, bs = "os", xt = list(knots = zk, range = rz))` | -207.242 / -207.242 | 1e-6 | 0.3 / 0.2 s vs 0.04 s |
-| growthIndiana | black boys: mean curve + subject curves, `pdSymm(~age)` + `pdIdent` spline (lme) | `s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) + (s(age, k = 10, xt = ...) \| idnum)` | -935.745 / -935.745 | 2e-6 | 8.6 / 2.6 s vs 1.8 s |
-| growthIndianaCont | all boys: mean + black-white contrast curve + subject curves (lme; = HRW `maleGrowthIndiananlme`) | `s(age01, bs = "os", k = 20) + s(age01, by = black, bs = "os", k = 20) + (s(age01, k = 10) \| idnum)` | 6386.102 / 6386.102 | 2e-7 | 53 / 18 s vs 31 s |
-| ozoneCalifLMM | three O'Sullivan smooths (lme) | `s(x1, bs = "os", k = 15, xt = list(range = r1)) + ...` | -1017.000 / -1017.000 | 2e-5 | 0.4 / 0.4 s vs 0.09 s |
+| addMix | spline + binary x + random intercept (lme) | `y ~ x + s(t, bs = "os", k = 15, xt = list(range = c(0, 1))) + (1 \| id)` | -234.098 / -234.098 | 1e-7 | 0.3 / 0.6 s vs 0.08 s |
+| copper | thin-plate (x, y) with given knots + O'Sullivan z (lme) | `s(xcoord, ycoord, bs = "ztps", xt = list(knots = kn)) + s(zcoord, bs = "os", xt = list(knots = zk, range = rz))` | -207.242 / -207.242 | 1e-6 | 0.3 / 0.3 s vs 0.07 s |
+| growthIndiana | black boys: mean curve + subject curves, `pdSymm(~age)` + `pdIdent` spline (lme) | `s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) + (s(age, k = 10, xt = ...) \| idnum)` | -935.745 / -935.745 | 2e-6 | 1.4 / 2.9 s vs 2.1 s |
+| growthIndianaCont | all boys: mean + black-white contrast curve + subject curves (lme; = HRW `maleGrowthIndiananlme`) | `s(age01, bs = "os", k = 20) + s(age01, by = black, bs = "os", k = 20) + (s(age01, k = 10) \| idnum)` | 6386.102 / 6386.102 | 2e-7 | 8.1 / 11.2 s vs 31 s |
+| ozoneCalifLMM | three O'Sullivan smooths (lme) | `s(x1, bs = "os", k = 15, xt = list(range = r1)) + ...` | -1017.000 / -1017.000 | 2e-5 | 0.5 / 0.6 s vs 0.10 s |
 | scallop | thin-plate surface of asinh(catch), given knots (lme) | `s(longitude, latitude, bs = "ztps", xt = list(knots = sk))` | -308.020 / -308.020 | 5e-6 | 0.07 / 0.07 s vs 0.02 s |
 | wageTUnion | binary, O'Sullivan (glmmPQL) | `s(wage, bs = "os", k = 15, xt = ...)`, `family = binomial` | Laplace vs PQL | 0.013 (probability) | 0.7 s vs 0.1 s |
 | SBMDfem | `gamm(s(age) + ethnicity, random = ~1 \| id)` | `s(age) + black + hispanic + white + (1 \| idnum)` | equals `gam(REML)` to 1e-7; gamm's `lme` 2.4e-3 SD away (stopped short) | | 0.1 s vs 0.1 s |
@@ -178,6 +178,13 @@ Findings:
   `nloptwrap` needs a third of them, with the same optimum. O10, decided by
   the maintainer: `nloptwrap` is `semireg()`'s default (also for GLMMs, where
   binomial and Poisson fits reached the same optimum 1.3-4 times faster).
+- Step 8: each smooth block is scaled as a random intercept (sum of squares
+  n) before the fit. The model is the same (the block's variance is free),
+  but lme4's start (theta = 1) is then near the optimum whatever the
+  covariate's units. mgcv's own penalty scaling had left
+  `s(x, by = f, id = 1)` on Dialyzer at a worse local optimum (-362.5 vs
+  -355.6, the `smZ(by = f)` fit), and the fits got faster (times above,
+  after the change; growth curves 18 s -> 8 s).
 - PQL (the script) and Laplace (`semireg()`, glmer) differ by up to 0.013 in
   the fitted probabilities of the binary example: different
   approximations, not an error.

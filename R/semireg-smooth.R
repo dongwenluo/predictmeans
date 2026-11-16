@@ -237,6 +237,19 @@ pm_sm_build <- function(sp, data) {
     sm$X <- NULL
     rcurves[[nm]] <- list(sm = sm, A = pm_sm_map(sm, Xd, R, r), group = rc$group, levels = levels(g))
   }
+  # each block scaled as a random intercept (sum of squares n): the variance
+  # is free, so the model is the same, but lme4's start (theta = 1: the block
+  # adds a variance like the residual's) is then near the optimum whatever the
+  # covariate's units (mgcv's own scaling left some fits at a worse local
+  # optimum)
+  n_obs <- nrow(data)
+  for (nm in names(blocks)) {
+    sc <- sqrt(sum(blocks[[nm]]^2)/n_obs)
+    if (!is.finite(sc) || sc <= 0) next
+    blocks[[nm]] <- blocks[[nm]]/sc
+    if (!is.null(maps[[nm]])) maps[[nm]] <- lapply(maps[[nm]], function(m) { m$A <- m$A/sc; m })
+    if (!is.null(rcurves[[nm]])) rcurves[[nm]]$A <- rcurves[[nm]]$A/sc
+  }
   for (k in seq_along(sms)) sms[[k]]$X <- NULL
   vars <- unique(c(setdiff(unlist(lapply(sms, function(sm) c(sm$term, if (sm$by != "NA") sm$by))),
                            names(sp$derived)), unlist(sp$derived), unlist(lapply(sp$rcurves, `[[`, "vars"))))

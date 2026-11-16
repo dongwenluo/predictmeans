@@ -53,8 +53,16 @@
 #' give the same REML log-likelihood and fitted values with \code{semireg()} (data in
 #' \code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
 #' The optimizer is \code{nloptwrap} (lme4's default for \code{lmer}) since 2.0: on these examples it reached the
-#' same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) 3-4 times
-#' faster, also for binomial and Poisson fits.
+#' same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) faster, also
+#' for binomial and Poisson fits. Each smooth block of a formula smooth is scaled as a random intercept (sum of
+#' squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
+#' smooth block reported by \code{VarCorr()} or \code{varcomp()} is on that scale.
+#'
+#' Moving from the \code{smoothZ} form: \code{y ~ x, smoothZ = list(sm = smZ(x, k = 10))} is
+#' \code{y ~ s(x, bs = "os", k = 10)}; \code{smZ(x, by = f, group = TRUE)} is \code{s(x, by = f, bs = "os")};
+#' \code{smZ(x, by = f)} (one variance) is \code{s(x, by = f, bs = "os", id = 1)}; \code{smZ(cbind(x1, x2),
+#' type = "Ztps")} is \code{s(x1, x2, bs = "ztps")}; \code{smZ(x, intKnots = kn, range.x = r)} is
+#' \code{s(x, bs = "os", xt = list(knots = kn, range = r))}. The fits are the same (\code{vignette("smooth")}).
 #' @usage
 #' semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
 #'         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
