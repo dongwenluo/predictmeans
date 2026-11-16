@@ -473,6 +473,22 @@ part-time person).
 | D7 (decided 2026-11-13) | ggplot2 in Imports or Suggests | Imports for 2.0; reconsider once plots are built only by `autoplot()` |
 | D8 (decided 2026-11-13) | Version numbering | The next release is 2.0.0 (not 1.2.0). Development stays `1.1.1.9000` until the release; the maintainer decides when (more improvements first) |
 
+### 10.1 Open questions (kept 2026-11-16)
+
+Not decided yet; each needs the maintainer's answer or waits for the step named.
+
+| # | Question | State |
+|---|---|---|
+| O1 | Empty cells are those of each interaction term (`y ~ date/farm + date*trt`: a date-farm-treatment combination without data is not an empty cell when farm and treatment do not interact; the mean is over all farms). Changed the Sample_date/Farm result on the maintainer's pasture data. | Explained to the maintainer 2026-11-16; to confirm |
+| O2 | `covariatemeans()` back-transforms a log response as exp(fitted), not 1.x's exp(fitted + SE/2); `bias_adjust = TRUE` gives the mean. | Explained 2026-11-16; `bias_adjust` added; restoring the 1.x curve as an option not asked for |
+| O3 | `semipred()` means of a generalized model: symmetric limits mean ± c·SE on the response scale (clipped for binomial), with a weight that is the delta-method one only for canonical links. Back-transformed limits would be better; changes output. | To decide |
+| O4 | `semireg()` centres every numeric variable except the first of the response: `cbind(successes, failures)` responses fail ("Response is constant"). | For the `semireg()` upgrade |
+| O5 | GLMM bands of `semipred()` are conditional on the smoothing parameters (coverage 0.92-0.94 pointwise, 0.87 simultaneous in `dev/sim-curve-difference.R`); a correction as mgcv's `unconditional = TRUE` would raise it. | For the `semireg()` upgrade |
+| O6 | `covariatemeans(band = "simultaneous")` uses Scheffe (slightly conservative over a limited range); an exact sup-t band (as `pm_sim_crit()` for `semipred()`, with t instead of normal draws) is possible. | To decide |
+| O7 | `semipred()` says `simultaneous = TRUE`, `covariatemeans()` says `band = "simultaneous"`. | To decide (one name) |
+| O8 | `R2_model(method = "nakagawa")` only for lmer, glmer, glmmTMB. | To decide |
+| O9 | Class gaps: `CookD()` (only lme, lmer, gls), `bootmodels()` (only lmer, glmer), `permmodels()` (no aov with `Error()`); the 13-class check is not yet a test. | Next steps |
+
 ---
 
 ## 11. Appendix: Kmatrix v2 (done)
