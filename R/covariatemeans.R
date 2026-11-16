@@ -9,7 +9,8 @@
 #'   cov_reduce=mean, exclude=NULL,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-#'   vcov_adjust=TRUE, contr=NULL)
+#'   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
+#'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -56,17 +57,74 @@
 #'   has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
 #'   predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
 #'   and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.
-#' @param contr Two levels of \code{modelterm} (numbers or names, e.g. \code{c(1, 3)} or
-#'   \code{c("Golden Rain", "Victory")}; for a term with several factors the combined labels such as
+#' @param contr Two levels of \code{modelterm}, by their names as in the data (e.g.
+#'   \code{c("Golden Rain", "Victory")}) or by their numbers (\code{c(1, 3)}; for a term with several factors the combined labels such as
 #'   \code{"a:x"}): the difference between the first and the second along the covariate, with its confidence
-#'   band, is returned and plotted instead of the lines. The two lines differ at a covariate value when this
-#'   band leaves out zero; whether the bands of the two lines overlap does not say so. The difference is on the
-#'   model scale; with a log link or a log response the table also has the ratio.
+#'   band, is returned and plotted instead of the lines. See \sQuote{Comparing two lines}.
+#' @param contr_scale With \code{contr}: what is plotted. \code{"model"} (the default) is the difference on
+#'   the scale of the model, where the test is made; for a log link or a log response it is shown as the ratio
+#'   of the two lines and for a logit link as the odds ratio (exact: exp of the difference and of its limits).
+#'   \code{"response"} is the difference of the back-transformed lines, in the units of the response, with a
+#'   delta-method band; it describes the size of the difference, the test stays on the model scale.
+#' @param band With \code{contr}: \code{"pointwise"} (the default) gives limits at the level \code{level} for
+#'   each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
+#'   values together, for saying over which range of the covariate the lines differ.
+#' @param bias_adjust,sigma For back-transformed lines (a link, a transformed response or \code{trans}), as in
+#'   \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
+#'   for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
+#'   at zero) for a generalized linear mixed model. \code{bias_adjust = TRUE} gives the mean of the response
+#'   instead (for a mixed model: averaged over the clusters), computed over the variation on the model scale:
+#'   the residual variance for a transformed response plus the variances of the random intercepts, or
+#'   \code{sigma^2} when \code{sigma} is given (needed with random slopes). It is exact (for a log the factor
+#'   \eqn{exp(\sigma^2/2)}, for a square root \eqn{+ \sigma^2}); \code{"taylor"} is the second-order formula of
+#'   emmeans. Use it for totals and expected amounts; ratios and tests do not need it. The limits treat the
+#'   variance as known. With \code{contr} the response-scale difference is that of the adjusted lines.
+#' @section Comparing two lines:
+#' Whether the bands of two lines overlap does not say whether the lines differ: the lines are estimated from
+#' the same model and are correlated. The band of their difference does, and it is computed from the contrast
+#' of the two lines, not from their limits.
+#'
+#' \emph{The scale of the test.} The difference is tested on the scale of the model (the link, or the
+#' transformed response): there the model is additive, the estimates are closest to normal and the standard
+#' error does not depend on the mean. \eqn{d = (K_a - K_b)\hat\beta}, \eqn{SE^2 = (K_a - K_b) V (K_a - K_b)'},
+#' limits \eqn{d \pm c\,SE} (columns \code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}). With a log
+#' the difference back-transforms exactly to a ratio and with a logit to an odds ratio (columns \code{ratio}
+#' or \code{odds.ratio} with their limits): the limits leave out 1 exactly when those of \code{diff} leave out
+#' 0, so nothing is approximated. For other transformations (square root, probit, a power) the
+#' back-transformed difference has no meaning and the model scale is shown.
+#'
+#' \emph{Why back-transform.} Only to read the size of the difference in the units of the response; it is not
+#' needed to decide whether the lines differ. The response-scale difference \eqn{h(\eta_a) - h(\eta_b)} is
+#' another quantity: its standard error is an approximation (the delta method, gradient
+#' \eqn{h'(\eta_a) K_a - h'(\eta_b) K_b}; columns \code{response.diff}, \code{response.ses},
+#' \code{response.LL}, \code{response.UL}), it depends on the values of the other variables of the model, and
+#' lines that are parallel on the model scale are not parallel on the response scale. Its band can disagree
+#' with the test near the boundary, so with \code{contr_scale = "response"} the covariate values where the
+#' lines differ are still those of the model scale (marked along the axis). For a generalized linear mixed
+#' model it is the difference for a typical cluster (random effects at zero), as the lines are.
+#'
+#' \emph{Significance at a level.} Three questions have three answers:
+#' \enumerate{
+#' \item At one covariate value chosen beforehand: the pointwise band (\code{band = "pointwise"}); the lines
+#'   differ at level \code{level} when it leaves out zero (one for a ratio).
+#' \item Over which range of the covariate: looking at many values needs wider limits. \code{band =
+#'   "simultaneous"} uses Scheffe's critical value \eqn{c = \sqrt{r F_{1-\alpha;\,r,\,df}}}, \eqn{r} the rank
+#'   of the contrasts along the covariate (2 for straight lines: the Working-Hotelling band). It holds for
+#'   every covariate value at once and is slightly conservative over a limited range.
+#' \item Whether the lines differ anywhere: the joint F test that all the differences along the covariate
+#'   are zero (\code{test} in the result).
+#' }
+#' Each set of limits in \code{pltdf} has a column that says whether it includes the value of no difference:
+#' \code{includes0} for \code{diff}, \code{ratio.includes1} or \code{odds.ratio.includes1} (always equal to
+#' \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
+#' \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
+#' the result (the ranges of the covariate) follow the band asked for, on the model scale.
 #' @return
 #' \item{plt}{The plot (a \code{ggplot}).}
 #' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-#'   (\code{diff}, \code{ses}, \code{Df}, \code{LL}, \code{UL}, and \code{ratio}, \code{ratio.LL},
-#'   \code{ratio.UL} for a log).}
+#'   on the model scale and, when there is a back-transformation, on the response scale.}
+#' \item{test, significant}{With \code{contr}: the joint F test that the two lines are the same (numerator and
+#'   denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -77,15 +135,21 @@
 #' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #'   covariatemeans(fm, "Variety", covariate="nitro")
 #'   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
+#' # the difference between two varieties along nitro, with a simultaneous band
+#' # (the two levels by name, or by number: contr=c(1, 3))
+#'   covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
+#'                  band="simultaneous")$test
 #' @name covariatemeans
 NULL
 
 covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE, cov_reduce=mean, exclude=NULL,
                             weights=c("equal", "proportional", "outer", "cells", "flat"),
                             df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
-                            vcov_adjust=TRUE, contr=NULL) {
+                            vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
+                            band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
+  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -124,7 +188,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   # the difference between two levels along the covariate, with its own band
   if (!is.null(contr)) {
     return(pm_cov_difference(contr, KK[, mp$estimable, drop = FALSE], pltdf, vars, covariate, modelterm, mp, inf,
-                             level, Df, model, trans, mtitle, newwd))
+                             level, Df, model, trans, mtitle, newwd, match.arg(contr_scale), match.arg(band),
+                             bias_adjust, sigma))
   }
 
   if (!setequal(modelterm, covariate) & as.is) {
@@ -150,6 +215,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     }
   }
 
+  trans_arg <- trans
   if (is.null(trans)) {
     trans <- pm_link_trans(model)   # NULL for an identity link
     # a transformed response in the formula (log(y), ...; R/back-transform.R)
@@ -165,15 +231,21 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
   if (is.null(trans)) {
+    if (!isFALSE(bias_adjust)) pm_cov_back(model, NULL, bias_adjust, sigma)     # warns: nothing to adjust
     pltdf$Mean <- pltdf$yhat
     pltdf$LL <- pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses
     pltdf$UL <- pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses
   } else {
     # (1.x added half the SE of the fitted value inside exp() for a log:
     # not a bias adjustment, and the line then depended on its own precision)
-    pltdf$Mean <- trans(pltdf$yhat)-transOff
-    pltdf$LL <- trans(pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses)-transOff
-    pltdf$UL <- trans(pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses)-transOff
+    # bias_adjust: the mean of the back-transformed response, not its median
+    # (or the typical cluster of a GLMM); the same code as predictmeans()
+    hb <- pm_cov_back(model, trans_arg, bias_adjust, sigma)$h
+    if (is.null(hb)) hb <- trans
+    lim <- cbind(hb(pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses), hb(pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses))
+    pltdf$Mean <- hb(pltdf$yhat)-transOff
+    pltdf$LL <- pmin(lim[, 1], lim[, 2])-transOff
+    pltdf$UL <- pmax(lim[, 1], lim[, 2])-transOff
   }
 
   # pltdf$yhat <- pltdf$ses <- NULL
@@ -366,8 +438,23 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 ## The difference between two levels of the term along the covariate, with
 ## its confidence band (covariatemeans(contr = )). KK: the rows of K of the
 ## grid 'pltdf' (the levels of 'vars' by the covariate values).
+##
+## The band of a difference is not made from the bands of the two lines: the
+## lines come from the same model and are correlated. Two bands are right:
+##  * model (link) scale: d = (Ka - Kb) b, SE^2 = (Ka - Kb) V (Ka - Kb)',
+##    limits d +- t SE with the df of the contrast. This is the scale of the
+##    test. Back-transformed it is a ratio for a log link (exp of d and of its
+##    limits) and an odds ratio for a logit link. For other links the
+##    back-transformed limits of d mean nothing.
+##  * response scale: h(eta_a) - h(eta_b), h the inverse link or the back-
+##    transformation. Not h of the limits of d, and not a difference of the
+##    lines' limits: by the delta method, with gradient
+##    g = h'(eta_a) Ka - h'(eta_b) Kb, SE^2 = g V g', limits +- t SE. In a
+##    GLMM this is the difference for a typical cluster (random effects at
+##    zero), as the lines of covariatemeans() are.
 pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, inf, level, Df, model, trans,
-                              mtitle, newwd) {
+                              mtitle, newwd, contr_scale = "model", band = "pointwise", bias_adjust = FALSE,
+                              sigma = NULL) {
   if (length(covariate) != 1 || setequal(modelterm, covariate)) {
     stop("'contr' compares two levels of 'modelterm' along one covariate.", call. = FALSE)
   }
@@ -382,33 +469,182 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   a <- which(lab == levs[k[1]])
   b <- which(lab == levs[k[2]])
   b <- b[match(x[a], x[b])]
-  L <- KK[a, , drop = FALSE] - KK[b, , drop = FALSE]
-  out <- data.frame(xvar = x[a], diff = as.numeric(L %*% mp$coef), ses = sqrt(rowSums((L %*% mp$vcov) * L)))
-  out$Df <- if (is.null(Df) || all(Df %in% c("NULL", ""))) inf$df(L, modelterm) else Df
-  crit <- stats::qt(1 - level/2, df = out$Df)
-  out$LL <- out$diff - crit*out$ses
-  out$UL <- out$diff + crit*out$ses
-  # a log link or a log response: the difference is the log of a ratio
-  if (is.null(trans)) trans <- pm_link_trans(model)
-  if (is.null(trans)) trans <- pm_response_trans(model)$fun
-  if (identical(trans, exp) || identical(trans, stats::make.link("log")$linkinv)) {
-    out$ratio <- exp(out$diff)
-    out$ratio.LL <- exp(out$LL)
-    out$ratio.UL <- exp(out$UL)
-  }
-  names(out)[1] <- covariate
-  if (is.null(mtitle) || mtitle %in% c("NULL", "")) {
-    mtitle <- paste0("Difference between '", modelterm, "' ", levs[k[1]], " and ", levs[k[2]], " along ", covariate,
-                     " with ", (1 - level)*100, "% CI")
-  }
-  plt <- ggplot2::ggplot(out, ggplot2::aes(x = .data[[covariate]], y = .data$diff)) +
-    ggplot2::geom_hline(yintercept = 0, linetype = 2, colour = "grey40") +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$LL, ymax = .data$UL), alpha = 0.2) +
-    ggplot2::geom_line() +
-    ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate,
-                  y = paste0("Difference (", levs[k[1]], " - ", levs[k[2]], ")")) +
-    ggplot2::theme_bw()
+  Ka <- KK[a, , drop = FALSE]
+  Kb <- KK[b, , drop = FALSE]
+  L <- Ka - Kb
+  df <- if (is.null(Df) || all(Df %in% c("NULL", ""))) inf$df(L, modelterm) else rep_len(Df, nrow(L))
+  # the lines differ anywhere? the joint F test of the differences (a basis of L)
+  qL <- qr(t(L))
+  r <- qL$rank
+  test <- tryCatch(stats::setNames(inf$ftest(L[qL$pivot[seq_len(r)], , drop = FALSE], modelterm),
+                                   c("numDF", "denDF", "F", "p.value")), error = function(e) NULL)
+  # pointwise: t; simultaneous over the covariate: Scheffe with the rank of L
+  # (straight lines: Working-Hotelling), from pm_adjust_crit() (R/p-adjust.R)
+  crit <- if (band == "simultaneous") {
+    pm_adjust_crit("scheffe", level, df, list(list(idx = seq_len(nrow(L)), ok = seq_len(nrow(L)),
+                                                     m = nrow(L), k = 2, r = r)))
+  } else stats::qt(1 - level/2, df = df)
+
+  # the back-transformation: the inverse link, the response transformation
+  # in the formula, or 'trans' (trans = I: the model scale only)
+  bt <- pm_cov_back(model, trans, bias_adjust, sigma)
+  res <- pm_diff_table(x[a], Ka, Kb, mp$coef, mp$vcov, df, crit, h = bt$h, d1 = bt$d, kind = bt$kind)
+  plt <- pm_diff_plot(res, covariate, levs[k], modelterm, level, band, contr_scale, test, mtitle,
+                      typical = inherits(model, c("merMod", "glmmTMB", "lme")) && !bt$adjusted, adjusted = bt$adjusted)
   if (newwd) grDevices::dev.new()
   print(plt)
-  invisible(list(plt = plt, pltdf = out))
+  pm_diff_report(res, covariate, levs[k], level, band, test)
+  out <- res$table
+  names(out)[1] <- covariate
+  invisible(list(plt = plt, pltdf = out, test = test, significant = res$significant))
+}
+
+## The back-transformation of the fitted lines of a model: the inverse link,
+## the response transformation in the formula, or 'trans' (I: none), with
+## the mean of the back-transformed response when bias_adjust is asked
+## (pm_bias_funs(); the variance of pm_bias_sigma2() or 'sigma').
+## Returns list(h, d (NULL: no back-transformation), kind ("ratio",
+## "odds.ratio" or "none": what exp of a difference is), link_scale, adjusted).
+pm_cov_back <- function(model, trans, bias_adjust = FALSE, sigma = NULL) {
+  ba <- isTRUE(bias_adjust) || identical(bias_adjust, "taylor")
+  if (!ba && !isFALSE(bias_adjust)) stop("'bias_adjust' must be TRUE, FALSE or \"taylor\".", call. = FALSE)
+  link <- pm_link_trans(model)
+  if (is.null(trans)) trans <- link
+  if (is.null(trans)) trans <- pm_response_trans(model)$fun
+  if (is.null(trans) || identical(trans, I)) {
+    if (ba) warning("'bias_adjust' applies to back-transformed lines (a link or a transformed response); ignored.",
+                    call. = FALSE)
+    return(list(h = NULL, d = NULL, kind = "none", link_scale = FALSE, adjusted = FALSE))
+  }
+  link_scale <- !is.null(link) && identical(trans, link)
+  link_name <- if (link_scale) tryCatch(stats::family(model)$link, error = function(e) NA_character_) else NA_character_
+  kind <- if (identical(trans, exp) || identical(link_name, "log")) "ratio" else
+    if (identical(trans, stats::plogis) || identical(link_name, "logit")) "odds.ratio" else "none"
+  bf <- pm_back_funs(trans, trans, model, link_scale)
+  h <- bf$h
+  d <- bf$d1
+  if (ba) {
+    s2 <- if (!is.null(sigma)) sigma^2 else if (inherits(model, "pm_aovlist")) {
+      # aov with Error(): the stratum variance components (negative estimates as zero)
+      sum(pmax(suppressMessages(varcomp(attr(model, "aovlist")))$vcov, 0))
+    } else pm_bias_sigma2(model, link_scale)
+    bias <- pm_bias_funs(bf, s2, if (identical(bias_adjust, "taylor")) "taylor" else "exact")
+    h <- bias$h
+    d <- bias$d
+  }
+  list(h = h, d = d, kind = kind, link_scale = link_scale, adjusted = ba)
+}
+
+## The difference between two curves a and b at the values x, the one
+## calculation of covariatemeans(contr = ) and semipred(contr = ).
+## Ka, Kb: the rows that give the curves from the coefficients (covariance V);
+## df, crit: of each difference; h, d1: the back-transformation and its
+## derivative (NULL: none); kind: "ratio" / "odds.ratio" when exp of the
+## difference is one.
+##  * model scale: d = (Ka - Kb) b, SE^2 = (Ka - Kb) V (Ka - Kb)', limits
+##    d +- crit SE: the scale of the test. Exp of d and of its limits is a
+##    ratio (log) or an odds ratio (logit).
+##  * response scale: h(eta_a) - h(eta_b) with the delta-method SE from the
+##    gradient h'(eta_a) Ka - h'(eta_b) Kb: not h of the limits of d, and not
+##    a difference of the curves' limits (the curves are correlated).
+## Each set of limits has a column that says whether it includes no
+## difference; 'significant' is that of the model scale.
+## Returns list(table, significant (the ranges of x), kind, back).
+pm_diff_table <- function(x, Ka, Kb, coef, V, df, crit, h = NULL, d1 = NULL, kind = "none") {
+  Ka <- as.matrix(Ka)
+  Kb <- as.matrix(Kb)
+  V <- as.matrix(V)
+  coef <- as.numeric(coef)
+  L <- Ka - Kb
+  out <- data.frame(xvar = x, diff = as.numeric(L %*% coef), ses = sqrt(rowSums((L %*% V) * L)))
+  out$Df <- df
+  out$LL <- out$diff - crit*out$ses
+  out$UL <- out$diff + crit*out$ses
+  out$includes0 <- out$LL <= 0 & out$UL >= 0
+  back <- !is.null(h)
+  if (back) {
+    if (kind %in% c("ratio", "odds.ratio")) {
+      out[[kind]] <- exp(out$diff)
+      out[[paste0(kind, ".LL")]] <- exp(out$LL)
+      out[[paste0(kind, ".UL")]] <- exp(out$UL)
+      out[[paste0(kind, ".includes1")]] <- out$includes0
+    }
+    eta_a <- as.numeric(Ka %*% coef)
+    eta_b <- as.numeric(Kb %*% coef)
+    G <- d1(eta_a) * Ka - d1(eta_b) * Kb
+    out$response.diff <- as.numeric(h(eta_a)) - as.numeric(h(eta_b))
+    out$response.ses <- sqrt(rowSums((G %*% V) * G))
+    out$response.LL <- out$response.diff - crit*out$response.ses
+    out$response.UL <- out$response.diff + crit*out$response.ses
+    out$response.includes0 <- out$response.LL <= 0 & out$response.UL >= 0
+  }
+  out$significant <- !out$includes0
+  runs <- rle(out$significant)
+  end <- cumsum(runs$lengths)
+  start <- end - runs$lengths + 1L
+  sig <- data.frame(from = out$xvar[start[runs$values]], to = out$xvar[end[runs$values]],
+                    direction = ifelse(out$diff[start[runs$values]] > 0, ">", "<"))
+  list(table = out, significant = sig, kind = if (back) kind else "none", back = back)
+}
+
+## The plot of pm_diff_table(): contr_scale "model" draws the difference, as
+## the ratio or odds ratio when there is one (log axis, line at 1);
+## "response" the response-scale difference, with marks where the curves
+## differ on the model scale.
+pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_scale = "model", test = NULL,
+                         mtitle = NULL, typical = FALSE, adjusted = FALSE) {
+  out <- res$table
+  ratio <- if (res$kind %in% c("ratio", "odds.ratio")) res$kind else character(0)
+  what <- if (res$back && contr_scale == "response") "response" else if (length(ratio)) ratio else "diff"
+  pd <- switch(what,
+    response = data.frame(y = out$response.diff, lo = out$response.LL, hi = out$response.UL),
+    diff = data.frame(y = out$diff, lo = out$LL, hi = out$UL),
+    data.frame(y = out[[what]], lo = out[[paste0(what, ".LL")]], hi = out[[paste0(what, ".UL")]]))
+  pd$x <- out$xvar
+  pair <- paste0(levs[1], if (what %in% c("ratio", "odds.ratio")) " / " else " - ", levs[2])
+  ylab <- switch(what, response = paste0("Difference (", pair, "), response scale"),
+                 diff = paste0("Difference (", pair, ")", if (res$back) ", model scale" else ""),
+                 ratio = paste0("Ratio (", pair, ")"), odds.ratio = paste0("Odds ratio (", pair, ")"))
+  if (is.null(mtitle) || mtitle %in% c("NULL", "")) {
+    mtitle <- paste0(switch(what, ratio = "Ratio of '", odds.ratio = "Odds ratio of '", "Difference between '"),
+                     modelterm, "' ", levs[1], if (what %in% c("ratio", "odds.ratio")) " to " else " and ", levs[2],
+                     " along ", covariate, " with ", (1 - level)*100, "% ",
+                     if (band == "simultaneous") "simultaneous " else "", "CI")
+  }
+  sub <- c(if (!is.null(test) && is.finite(test[["p.value"]])) paste0(
+             "Lines equal: F(", test[["numDF"]], ", ", format(round(test[["denDF"]], 1)), ") = ",
+             format(round(test[["F"]], 2)), ", p ", if (test[["p.value"]] < 0.001) "< 0.001" else
+               paste("=", format(round(test[["p.value"]], 3)))),
+           if (what == "response") paste0(
+             "delta-method band", if (adjusted) " (bias-adjusted means)" else if (typical) " (random effects at zero)" else "",
+             "; marks: where the lines differ on the model scale"))
+  ref <- if (what %in% c("ratio", "odds.ratio")) 1 else 0
+  plt <- ggplot2::ggplot(pd, ggplot2::aes(x = .data$x, y = .data$y)) +
+    ggplot2::geom_hline(yintercept = ref, linetype = 2, colour = "grey40") +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), alpha = 0.2) +
+    ggplot2::geom_line() +
+    ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate, y = ylab,
+                  subtitle = if (length(sub)) pm_wrap_title(paste(sub, collapse = "; "), 11, rel = 1)) +
+    ggplot2::theme_bw()
+  if (ref == 1) plt <- plt + ggplot2::scale_y_log10()            # ratios: a log axis
+  if (what == "response" && any(out$significant)) {
+    plt <- plt + ggplot2::geom_rug(data = pd[out$significant, , drop = FALSE], sides = "b", colour = "red3")
+  }
+  plt
+}
+
+## The printed summary: the joint test (when there is one) and the ranges of
+## the covariate where the band leaves out no difference.
+pm_diff_report <- function(res, covariate, levs, level, band, test = NULL) {
+  sig <- res$significant
+  if (!is.null(test)) {
+    message("Lines equal along ", covariate, ": F(", test[["numDF"]], ", ", format(round(test[["denDF"]], 1)), ") = ",
+            format(round(test[["F"]], 3)), ", p = ", format.pval(test[["p.value"]], digits = 3), ".")
+  }
+  message(if (!nrow(sig)) paste0("The ", band, " band (level ", level, ") includes no difference at every value of ",
+                                  covariate, " shown.") else
+    paste0(levs[1], " differs from ", levs[2], " (", band, " band, level ", level, ") for ", covariate, ": ",
+           paste0(format(sig$from, digits = 4), " to ", format(sig$to, digits = 4), " (", sig$direction, ")",
+                  collapse = "; "), "."))
+  invisible(NULL)
 }

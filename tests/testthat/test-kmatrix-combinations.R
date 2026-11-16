@@ -77,7 +77,9 @@ test_that("each group of interacting variables is averaged on its own grid: the 
   g <- expand.grid(Line = factor(sprintf("L%03d", 1:200)), Rep = factor(1:3)); g$Block <- factor(paste(g$Rep, sample(rep(1:20, 10))))
   g$Site <- factor(sample(1:4, nrow(g), TRUE)); g$y <- rnorm(nrow(g))
   mg <- lm(y ~ Line + Block + Site, g)                        # 200 x 60 x 4 = 48,000 combinations
-  tm <- system.time(k <- Kmatrix(mg, "Line"))[["elapsed"]]
+  # (in these data the lines of a block are the same in every replicate, so Line and Block are
+  # confounded: the means are over the combinations that exist, with a warning)
+  tm <- system.time(k <- suppressWarnings(Kmatrix(mg, "Line")))[["elapsed"]]
   expect_lt(tm, 3)
   expect_equal(unname(k$K[2, "LineL002"]), 1)
   expect_equal(unname(k$K[1, grep("^Site", colnames(k$K))]), rep(0.25, 3))
@@ -113,7 +115,7 @@ test_that("predictmeans(): a combination that is not a term, its df, and combina
   expect_error(predictmeans(mx, "A", covariate = list(x = c(0, 1)), prtnum = FALSE), "one mean for each combination")
 })
 
-test_that("nesting the formula does not say (confounded factors) stays not estimable, with a note", {
+test_that("nesting the formula does not say (confounded factors): the combinations that exist, with a warning", {
   set.seed(1)
   dn <- data.frame(G = factor(rep(c("ctl", "trt"), c(4, 12))), T = factor(rep(c("c", "t1", "t2", "t3"), each = 4)))
   dn$y <- rnorm(16) + as.numeric(dn$T)
@@ -121,9 +123,15 @@ test_that("nesting the formula does not say (confounded factors) stays not estim
   # declared (G/T): the means of the combinations that exist
   pg <- suppressMessages(predictmeans(lm(y ~ G/T, dn), "G", prtnum = FALSE))
   expect_equal(pg$means$estimate, c(cell[["c"]], mean(cell[c("t1", "t2", "t3")])), tolerance = 1e-10)
-  # not declared (G + T): G and T cannot be told apart; NA, and a note says how to get the means
-  expect_message(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE), "write G/T in the model formula \\(or use weights = \"cells\"\\)")
-  expect_true(all(is.na(pa$means$estimate)))
+  # not declared (G + T): G and T cannot be told apart, so the mean over all their combinations does
+  # not exist; the means are those of the combinations that exist (as G/T), and a warning says so
+  # (decision of 2026-11-16; NA before)
+  expect_warning(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE),
+                 "'G' and 'T' are confounded in the data.*write the nesting in the formula \\(G/T\\)")
+  expect_equal(pa$means$estimate, as.vector(cell), tolerance = 1e-10)
+  pa2 <- suppressWarnings(predictmeans(lm(y ~ G + T, dn), "G", prtnum = FALSE))
+  expect_equal(pa2$means$estimate, pg$means$estimate, tolerance = 1e-10)
+  expect_equal(pa2$means$std.error, pg$means$std.error, tolerance = 1e-10)
   pc <- suppressMessages(predictmeans(lm(y ~ G + T, dn), "T", weights = "cells", prtnum = FALSE))
   expect_equal(pc$means$estimate, as.vector(cell), tolerance = 1e-10)
   # declared nesting also with weights other than "equal"

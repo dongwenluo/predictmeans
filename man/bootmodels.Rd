@@ -2,18 +2,22 @@
 % Please edit documentation in R/bootmodels.R
 \name{bootmodels}
 \alias{bootmodels}
-\title{Parametric Bootstrap Tests for Mixed Models}
+\title{Parametric Bootstrap Tests}
 \usage{
 bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
            ncore = 1, prt = TRUE)
 }
 \arguments{
-\item{model}{A model fitted by \code{lmer} or \code{glmer}.}
+\item{model}{A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
+distribution: gaussian, binomial, Poisson, Gamma; also \code{MASS::glm.nb}), \code{gls}, \code{lme},
+\code{lmer}, \code{glmer} or \code{glmmTMB}. Responses of \code{lme} and \code{gls} models are simulated from
+the null model's covariance of the data (random effects, correlation and variance structures).}
 
 \item{nsim}{Number of simulated data sets, the default is 999.}
 
-\item{type}{The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics, Types II
-and III Wald chi-square statistics.}
+\item{type}{The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics (for a
+\code{glm} with a known dispersion, the deviance; \code{glmmTMB} has none and uses Type II), Types II and III
+Wald chi-square statistics (\code{lm}: F; \code{glm}: likelihood ratio).}
 
 \item{seed}{Optional random number seed, for reproducible results; the user's random number stream is left as it was.}
 
@@ -27,10 +31,11 @@ Invisibly, a list with \code{permlist} (the coefficients and covariance matrices
 \code{"resampling"} is \code{"parametric bootstrap"}.
 }
 \description{
-Parametric bootstrap p-values for the terms and coefficients of an \code{lmer} or \code{glmer} model. Responses are
-simulated from the model fitted without its fixed effects (only an intercept and the same random effects: the
-global null hypothesis), the full model is refitted to each, and a p-value is the proportion of simulated statistics
-at least as large as the observed one. Useful for GLMMs and small samples, where Wald or F tests can be poor.
+Parametric bootstrap p-values for the terms and coefficients of a model. Responses are simulated from the model
+fitted without its fixed effects (only an intercept, any offset, and the same random effects and covariance
+structure: the global null hypothesis), the full model is refitted to each, and a p-value is the proportion of
+simulated statistics at least as large as the observed one. Useful for GLMs and GLMMs and small samples, where
+Wald or F tests can be poor.
 }
 \details{
 The result has the same form as that of \code{\link{permmodels}}: its \code{permlist} can be given to

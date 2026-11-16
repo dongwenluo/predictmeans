@@ -12,7 +12,13 @@
 #'   \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
 #'   factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
 #'   the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
-#'   \code{\link{predictmeans}}). The design matrix of the grid is evaluated with the model's own stored basis
+#'   \code{\link{predictmeans}}). When a mean cannot be estimated because two factors that share no term of the
+#'   model are confounded in the data (not all their combinations occur: a factor nested in another only in the
+#'   data, each pasture on one farm), the combinations of those two factors without data are left out as well,
+#'   with a warning that names them: the mean is the average over the combinations that exist. The pair is found
+#'   by trying, pairs among the factors averaged over first. Writing the nesting in the formula (\code{G/T}) or
+#'   leaving out the aliased factor gives the same means; \code{weights = "cells"} weights the combinations by
+#'   their numbers of observations. The design matrix of the grid is evaluated with the model's own stored basis
 #'   information, so covariates may enter the model through transformations such as
 #'   \code{poly(x, 2)}, \code{ns(x, 3)}, \code{bs(x)}, \code{log(x)}, \code{scale(x)} or
 #'   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
@@ -179,25 +185,13 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   # Nested factors: combinations that cannot exist are left out of the
   # averages. The formula says which factors are nested (a term with both, as
   # G/T or G:T). Nesting that is only in the data (y ~ droplet + vol, each vol
-  # with one droplet) is confounding: those effects cannot be separated and
-  # the means stay not estimable (a note says how to get them).
+  # with one droplet) is confounding: see the fallback after assemble().
   nested_data <- pm_nested_pairs(X, factor_names)
   declared <- vapply(nested_data, function(p) any(vapply(pm_term_sets(Terms), function(s) all(c(p$a, p$b) %in% s),
                                                          logical(1))), logical(1))
   nested <- nested_data[declared]
-  # empty cells of the interaction terms (R/empty-cells.R): with equal
-  # weights, means average over the observed cells only
-  empty_rule <- if (weights == "equal") pm_empty_rule(Terms, factor_names, X, facs, nested, apply_rule = by_factor)
   cw <- pm_cell_weights(weights, X, factor_names, setdiff(factor_names, facs))
-  present <- NULL
-  if (length(nested) || !is.null(empty_rule) || !is.null(cw$fun)) {
-    present <- function(grid) {
-      w <- if (is.null(cw$fun)) rep(1, nrow(grid)) else as.numeric(cw$fun(grid))
-      if (length(nested)) w <- w * !pm_absent_by_design(grid, nested)
-      if (!is.null(empty_rule)) w <- w * empty_rule$present(grid)
-      w
-    }
-  }
+  Terms_rule <- Terms
 
   ## 4. The basis of the fixed effects for rows of predictor values,
   ## through pm_basis() (see ?pm_coef), with the covariates' values beside it
@@ -211,29 +205,102 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
                                                  dimnames = list(NULL, paste0("\rcov:", cov_report))))
     B
   }
-
-  ## 5. K: the basis averaged over the reference grid. The grid of all
-  ## combinations is built only when it is needed ('refgrid', semireg fits,
-  ## comparisons on common cells); otherwise each group of interacting
-  ## variables is averaged on its own grid (pm_average_by_groups()).
   dims <- pm_grid_dims(baselevs, cv$joint, profiles, prof_w)
-  need_grid <- isTRUE(refgrid) || isTRUE(info$semireg) || length(empty_rule$missing) > 0
-  groups <- if (!need_grid) pm_dim_groups(dims, c(pm_basis_sets(info, Terms), cw$sets,
-                                                 lapply(nested, function(p) c(p$a, p$b))))
-  rg <- NULL
-  if (need_grid || length(groups) < 2) {
-    rg <- pm_make_refgrid(facs, dims, pv$matdat, present)
-    Kc <- as.matrix(pm_refgrid_average(rg, basis_cov))
-    target <- rg$target
-    empty <- rg$empty
-  } else {
-    av <- pm_average_by_groups(facs, dims, pv$matdat, present, groups, pm_ref_positions(dims, X), basis_cov)
-    Kc <- av$K
-    target <- av$target
-    empty <- av$empty
+  # the null space of the design matrix of the fit (rank-deficient fits only:
+  # aliased or dropped coefficients), for the estimability check
+  null_space <- NULL
+  if (info$builder != "gam" && info$rank_deficient(colnames(basis(model_data[1, , drop = FALSE])))) {
+    Xfit <- basis(model_data)
+    ev <- eigen(crossprod(Xfit), symmetric = TRUE)
+    tol <- max(dim(Xfit)) * max(ev$values) * .Machine$double.eps * 100
+    N <- ev$vectors[, ev$values <= tol, drop = FALSE]
+    if (ncol(N)) {
+      null_space <- N
+      rownames(null_space) <- colnames(Xfit)
+    }
   }
-  is_cov <- startsWith(colnames(Kc), "\rcov:")
-  K <- Kc[, !is_cov, drop = FALSE]
+
+  ## 5. K: the basis averaged over the reference grid, and 6. estimability.
+  ## 'confounded': pairs of factors whose combinations without data are left
+  ## out of the averages as empty cells are (see below).
+  assemble <- function(confounded = list()) {
+    # empty cells of the interaction terms (R/empty-cells.R): with equal
+    # weights, means average over the observed cells only
+    empty_rule <- if (weights == "equal") pm_empty_rule(Terms_rule, factor_names, X, facs, nested, apply_rule = by_factor,
+                                                        confounded = confounded)
+    present <- NULL
+    if (length(nested) || !is.null(empty_rule) || !is.null(cw$fun)) {
+      present <- function(grid) {
+        w <- if (is.null(cw$fun)) rep(1, nrow(grid)) else as.numeric(cw$fun(grid))
+        if (length(nested)) w <- w * !pm_absent_by_design(grid, nested)
+        if (!is.null(empty_rule)) w <- w * empty_rule$present(grid)
+        w
+      }
+    }
+    # The grid of all combinations is built only when it is needed
+    # ('refgrid', semireg fits, comparisons on common cells); otherwise each
+    # group of interacting variables is averaged on its own grid
+    # (pm_average_by_groups()).
+    need_grid <- isTRUE(refgrid) || isTRUE(info$semireg) || length(empty_rule$missing) > 0
+    groups <- if (!need_grid) pm_dim_groups(dims, c(pm_basis_sets(info, Terms), cw$sets,
+                                                   lapply(nested, function(p) c(p$a, p$b))))
+    rg <- NULL
+    if (need_grid || length(groups) < 2) {
+      rg <- pm_make_refgrid(facs, dims, pv$matdat, present)
+      Kc <- as.matrix(pm_refgrid_average(rg, basis_cov))
+      target <- rg$target
+      empty <- rg$empty
+    } else {
+      av <- pm_average_by_groups(facs, dims, pv$matdat, present, groups, pm_ref_positions(dims, X), basis_cov)
+      Kc <- av$K
+      target <- av$target
+      empty <- av$empty
+    }
+    is_cov <- startsWith(colnames(Kc), "\rcov:")
+    K <- Kc[, !is_cov, drop = FALSE]
+    # a row of K is estimable if it is orthogonal to the null space
+    estimable <- rep(TRUE, nrow(K))
+    null_proj <- NULL
+    if (!is.null(null_space)) {
+      Kfull <- K[, rownames(null_space), drop = FALSE]
+      null_proj <- Kfull %*% null_space
+      estimable <- apply(abs(null_proj), 1, max) <= 1e-6 * pmax(1, apply(abs(Kfull), 1, max))
+    }
+    estimable[is.na(estimable) | empty] <- FALSE
+    list(empty_rule = empty_rule, rg = rg, Kc = Kc, K = K, is_cov = is_cov, target = target, empty = empty,
+         estimable = estimable, null_proj = null_proj, n_na = sum(!estimable & !empty))
+  }
+  out <- assemble()
+  # Means that cannot be estimated because factors that do not interact in
+  # the model are confounded in the data (not all their combinations occur:
+  # each pasture on one farm; a spray volume used with one droplet size
+  # only): the mean over all their combinations does not exist. As for empty
+  # cells, the mean is then the average over the combinations that exist,
+  # with a warning that names the factors (the maintainer's decision of
+  # 2026-11-16). The pairs are found by trying, in the order below, and the
+  # first choice that leaves no mean without an estimate is used.
+  if (out$n_na > 0 && weights == "equal" && by_factor) {
+    cand <- pm_confounded_pairs(X, factor_names, Terms_rule, nested)
+    # first the pairs among the factors averaged over (the mean keeps its
+    # meaning: only the averaging changes), then those with a factor of the
+    # term (its levels then stand for different levels of the other factor)
+    own <- vapply(cand, function(p) any(p %in% facs), logical(1))
+    nu <- cand[!own]
+    ow <- cand[own]
+    tries <- c(lapply(nu, list), if (length(nu) > 1) list(nu), lapply(ow, list),
+               if (length(ow) && length(cand) > 1) list(c(nu, ow)))
+    best <- out
+    for (tr in tries) {
+      o <- tryCatch(assemble(tr), error = function(e) NULL)
+      if (!is.null(o) && o$n_na < best$n_na) {
+        best <- o
+        if (o$n_na == 0) break
+      }
+    }
+    out <- best
+  }
+  empty_rule <- out$empty_rule; rg <- out$rg; Kc <- out$Kc; K <- out$K; is_cov <- out$is_cov
+  target <- out$target; empty <- out$empty; estimable <- out$estimable; null_proj <- out$null_proj
 
   fctnames <- target
   names(fctnames)[seq_along(term_vars)] <- term_labels
@@ -242,30 +309,6 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   if (length(setdiff(info$coef_names, colnames(K))) != 0) {
     stop(paste("You may need drop empty levels in factor", modelterm))
   }
-
-  ## 6. Estimability: a row of K is estimable if it is orthogonal to the null
-  ## space of the design matrix used in the fit. Only rank-deficient fits
-  ## (aliased or dropped coefficients) have a null space, so the check costs
-  ## nothing for full-rank models.
-  estimable <- rep(TRUE, nrow(K))
-  null_proj <- NULL
-  null_space <- NULL
-  if (info$builder != "gam" && info$rank_deficient(colnames(K))) {
-    Xfit <- basis(model_data)
-    XtX <- crossprod(Xfit)
-    ev <- eigen(XtX, symmetric = TRUE)
-    tol <- max(dim(Xfit)) * max(ev$values) * .Machine$double.eps * 100
-    N <- ev$vectors[, ev$values <= tol, drop = FALSE]
-    if (ncol(N)) {
-      null_space <- N
-      rownames(null_space) <- colnames(Xfit)
-      Kfull <- K[, colnames(Xfit), drop = FALSE]
-      null_proj <- Kfull %*% N
-      nonest <- abs(null_proj)
-      estimable <- apply(nonest, 1, max) <= 1e-6 * pmax(1, apply(abs(Kfull), 1, max))
-    }
-  }
-  estimable[is.na(estimable) | empty] <- FALSE
   names(estimable) <- rnK
   if (any(!estimable & !empty)) pm_note_nesting(nested_data[!declared], facs, weights)
 

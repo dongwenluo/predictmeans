@@ -39,27 +39,29 @@ pm_refit <- function(model, data = NULL, ..., check = FALSE) {
 }
 
 ## Environment the model was fitted in. Most model classes record it in their
-## terms (lm, glm, lme, merMod, glmmTMB, gam). gls models don't, so look up
-## the call stack, innermost first and skipping this package's own functions,
-## for the frame in which the 'data' argument of the call exists.
+## terms (lm, glm, lme, merMod, glmmTMB). gls models don't, and mgcv's gam
+## records the global environment whatever it was fitted in; so when the
+## recorded environment does not hold the 'data' of the call, look up the
+## call stack, innermost first and skipping this package's own functions, for
+## the frame in which it exists.
 pm_fit_env <- function(model) {
   env <- tryCatch(attr(model$terms, ".Environment"), error = function(e) NULL)
   if (!is.environment(env) && !inherits(model, "gls")) {
     env <- tryCatch(attr(terms(model), ".Environment"), error = function(e) NULL)
   }
-  if (is.environment(env)) return(env)
   data_expr <- tryCatch(stats::getCall(model)$data, error = function(e) NULL)
+  has_data <- function(e) is.data.frame(tryCatch(eval(data_expr, e), error = function(err) NULL))
+  if (is.environment(env) && (is.null(data_expr) || has_data(env))) return(env)
   if (!is.null(data_expr)) {
     own <- asNamespace("predictmeans")
     for (i in rev(seq_len(sys.nframe()))) {
       fn_env <- environment(sys.function(i))
       if (is.environment(fn_env) && identical(topenv(fn_env), own)) next
       f <- sys.frame(i)
-      d <- tryCatch(eval(data_expr, f), error = function(e) NULL)
-      if (is.data.frame(d)) return(f)
+      if (has_data(f)) return(f)
     }
   }
-  globalenv()
+  if (is.environment(env)) env else globalenv()
 }
 
 ## The data used to fit a gls or lme model. nlme::getData() looks for the data

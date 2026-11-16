@@ -130,3 +130,36 @@ test_that("the empty-cell warning names the means by their factor levels, once",
   expect_warning(covariatemeans(lm(y ~ x + B*C, data = e), "B", covariate = "x", plot = FALSE),
                  "The mean of B = b2 averages", fixed = TRUE)
 })
+
+test_that("factors confounded within another factor (each pasture on one farm): the combinations that exist", {
+  # dates x farms, each pasture on one farm at a date; Farm and Pasture do not
+  # interact in the model and are not nested over the whole data (pasture P1
+  # is on farm F1 early and on F3 late), so the mean over the Farm x Pasture
+  # cross cannot be estimated. The means average over the combinations that
+  # exist, with a warning naming the two factors, and equal those of the model
+  # without the aliased factor and of the model with the nesting written.
+  set.seed(5)
+  d <- rbind(expand.grid(date = c("d1", "d2"), past = c("P1", "P2", "P3", "P4"), trt = c("A", "B"), rep = 1:3),
+             expand.grid(date = "d3", past = c("P1", "P4"), trt = c("A", "B"), rep = 1:3))
+  d$farm <- ifelse(d$date == "d3", ifelse(d$past == "P1", "F3", "F4"), ifelse(d$past == "P4", "F2", "F1"))
+  for (v in c("date", "past", "trt", "farm")) d[[v]] <- factor(d[[v]])
+  d$y <- as.integer(d$date) + as.integer(d$past)/2 + 0.5*(d$trt == "B") + rnorm(nrow(d), 0, 0.3)
+  fm <- lm(y ~ date/farm + date/(trt + past)^2, data = d)
+  expect_true(anyNA(coef(fm)))
+  expect_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE),
+                 "'farm' and 'past' are confounded in the data.*farm/past")
+  expect_false(anyNA(p$means$estimate))
+  f0 <- lm(y ~ date/(trt + past)^2, data = d)                    # without the aliased factor
+  p0 <- suppressWarnings(predictmeans(f0, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  expect_equal(p$means$estimate, p0$means$estimate, tolerance = 1e-8)
+  expect_equal(p$means$std.error, p0$means$std.error, tolerance = 1e-8)
+  ok <- !is.na(p0$pairs$estimate)
+  expect_equal(p$pairs$estimate[ok], p0$pairs$estimate[ok], tolerance = 1e-8)
+  # the cell means averaged with equal weights over the pastures at each date
+  cm <- aggregate(y ~ date + trt + past, d, mean)
+  expect_equal(p$means$estimate, aggregate(y ~ date + trt, cm, mean)$y[order(rep(1:3, 2), rep(1:2, each = 3))],
+               tolerance = 1e-8)
+  # weights = "cells": no warning, the combinations weighted by their numbers
+  expect_no_warning(pw <- suppressMessages(predictmeans(fm, "date:trt", weights = "cells", plot = FALSE, prtnum = FALSE)))
+  expect_false(anyNA(pw$means$estimate))
+})

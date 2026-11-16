@@ -8,7 +8,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 		   scales=c("fixed", "free", "free_x", "free_y"),
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
-		   simultaneous=FALSE)
+		   simultaneous=FALSE, contr_scale=c("model", "response"),
+		   band=c("pointwise", "simultaneous"))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -50,10 +51,18 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 
 \item{prt}{A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.}
 
-\item{simultaneous}{If \code{TRUE}, simultaneous confidence bands over the whole curve(s) instead of pointwise
-limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
-predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
-FALSE.}
+\item{band}{\code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
+whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
+standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
+Wand and Carroll, 2003). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
+model use Scheffe's critical value instead; for smooths that would be far too wide.}
+
+\item{simultaneous}{\code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).}
+
+\item{contr_scale}{With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
+on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;
+\code{"response"} the difference of the back-transformed curves with a delta-method band. See
+\sQuote{Comparing two lines} in \code{\link{covariatemeans}}: the test is on the model scale.}
 }
 \value{
 \item{plt}{A ggplot object.}
@@ -61,6 +70,22 @@ FALSE.}
 }
 \description{
 This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
+}
+\details{
+With \code{contr} the difference between two curves is computed as in \code{\link{covariatemeans}}, from the
+contrast of the two curves and the covariance of the fixed and smooth coefficients. For a linear model
+\code{pred_df} has the difference (in the column of the response), \code{LL}, \code{UL}, \code{SE_contr} and
+the indicators \code{includes0} (the limits include zero) and \code{significant}. For a generalized model it
+has the columns of \code{covariatemeans(contr = )}: \code{diff}, \code{ses}, \code{LL}, \code{UL} and
+\code{includes0} on the link scale; the \code{ratio} or \code{odds.ratio} with its limits and
+\code{..includes1}; \code{response.diff}, \code{response.ses}, \code{response.LL}, \code{response.UL} and
+\code{response.includes0} on the response scale; and \code{significant} (the link scale). Before 2.0 the band of
+a generalized model's difference used the standard error of the link-scale difference multiplied by a weight
+evaluated at the difference of the means, which is not a standard error of any difference. The ranges of the
+covariate where the curves differ are printed and kept in \code{attr(pred_df, "significant")}; with
+\code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
+when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
+penalised smooth coefficients are not reliable.)
 }
 \examples{
 library(predictmeans)

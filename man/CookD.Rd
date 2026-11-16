@@ -7,7 +7,8 @@
 CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
+\item{model}{Model object returned by \code{aov} (without \code{Error()}), \code{lm}, \code{glm}, \code{gls},
+\code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{gam}.}
 
 \item{group}{Name (in "quotes") for indicating how observations are deleted for Cook's distance calculation. If \code{group!=NULL} then deletions will be along levels of \code{group} variable, otherwise, will be along individual observations.}
 
@@ -17,9 +18,25 @@ CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
 
 \item{newwd}{A logical variable to indicate whether to print graph in a new window. The default value is FALSE.}
 }
+\value{
+Invisibly, the Cook's distances (named by observation or group).
+}
 \description{
-This function produces Cook's distance plots for a linear model obtained from functions \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, 
-  or \code{lmer}.
+This function produces Cook's distance plots for a model obtained from functions \code{aov}, \code{lm},
+  \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{mgcv::gam}.
+}
+\details{
+Cook's distance of an observation (or of a group of observations, \code{group}) is
+\eqn{D = (\hat\beta - \hat\beta_{(-i)})' V^{-1} (\hat\beta - \hat\beta_{(-i)}) / p}, where
+\eqn{\hat\beta_{(-i)}} are the fixed effects of the model refitted without it, \eqn{V} the covariance of
+\eqn{\hat\beta} and \eqn{p} their number (for a \code{gam}, the effective degrees of freedom, as
+\code{mgcv}'s \code{cooks.distance()}; the smoothing parameters are re-estimated for each deletion). For \code{lm} and \code{aov} models and single observations this is
+the exact closed form of \code{stats::cooks.distance()}. Other models are refitted for each deletion: exact also
+for \code{glm} (\code{stats::cooks.distance()} for a \code{glm} is a one-step approximation), and for
+mixed models and \code{gls} fitted by maximum likelihood (the REML criterion changes with the fixed effects).
+A deletion that leaves a coefficient without data gives \code{NA}. Refitting a generalized linear mixed model
+for every observation takes time; \code{group} deletes whole clusters, usually the more useful check for
+mixed models.
 }
 \examples{
 library(predictmeans)

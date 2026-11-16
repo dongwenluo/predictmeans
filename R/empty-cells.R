@@ -73,9 +73,12 @@ pm_absent_by_design <- function(grid, pairs) {
 ## nested in or nesting the term's factors), missing (labels of the empty
 ## cells), missing_term (the term of each)). apply_rule: FALSE when the rows
 ## of K are not defined by a factor.
-pm_empty_rule <- function(Terms, factor_names, preddf, facs, nested = list(), apply_rule = TRUE) {
+pm_empty_rule <- function(Terms, factor_names, preddf, facs, nested = list(), apply_rule = TRUE,
+                          confounded = list()) {
   if (!apply_rule) return(NULL)
-  sets <- unique(lapply(pm_term_sets(Terms), function(s) intersect(factor_names, s)))
+  # 'confounded': pairs of factors that share no term but are confounded in
+  # the data (Kmatrix()): their combinations make cells as a term's do
+  sets <- unique(c(lapply(pm_term_sets(Terms), function(s) intersect(factor_names, s)), confounded))
   sets <- sets[lengths(sets) > 1]
   sets <- sets[!vapply(seq_along(sets), function(i) any(vapply(sets[-i], function(o) all(sets[[i]] %in% o) &&
                                                                  length(o) > length(sets[[i]]), logical(1))), logical(1))]
@@ -107,7 +110,7 @@ pm_empty_rule <- function(Terms, factor_names, preddf, facs, nested = list(), ap
        factors = if (length(fac_mat)) fac_mat,
        design = function(grid) !pm_absent_by_design(grid, inter_pairs),
        unmatched = pm_unmatched_factors(preddf, setdiff(inter_vars, facs), intersect(facs, factor_names)),
-       missing = missing, missing_term = missing_term)
+       missing = missing, missing_term = missing_term, confounded = confounded)
 }
 
 ## The means over empty cells of a reference grid, with a warning naming them,
@@ -243,7 +246,16 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
     rep(paste(inter_vars, collapse = ":"), length(rule$missing))
   miss_lab <- paste(vapply(unique(mt), function(tm) paste(tm, short(rule$missing[mt == tm])), character(1)),
                     collapse = "; ")
-  warning("No data for ", miss_lab, ". ",
+  # factors confounded in the data: say so first, and how to say it in the model
+  conf <- if (length(rule$confounded)) paste0(
+    paste(vapply(rule$confounded, function(p) paste0("'", p[1], "' and '", p[2], "'"), character(1)), collapse = "; "),
+    if (length(rule$confounded) == 1) " are" else ": each pair is", " confounded in the data (not all their combinations ",
+    "occur and the model has no term with both), so a mean over all their combinations cannot be estimated: ",
+    "the means average over the combinations that exist. To say this in the model, write the nesting in the formula (",
+    paste(vapply(rule$confounded, function(p) paste0(p[1], "/", p[2]), character(1)), collapse = ", "),
+    ") or leave out the factor that adds nothing; weights = \"cells\" weights the combinations by their numbers of ",
+    "observations. ")
+  warning(conf, "No data for ", miss_lab, ". ",
           if (one) "The mean of " else "The means of ", modelterm, " = ", short(aff_lab),
           if (one) " averages only its observed cells; comparisons with it" else
             " average only their observed cells; comparisons with them",
@@ -276,4 +288,31 @@ pm_common_rows <- function(cells, C, L, cols, together = FALSE) {
   if (any(ok)) L[ok, ] <- cc$L[ok, cols, drop = FALSE]
   na <- cc$na | (cc$sub & !cc$estimable)
   list(L = L, sub = cc$sub, na = na, over = cc$over)
+}
+
+## Pairs of factors that may be confounded in the data: they share no term
+## of the model (and are not declared nested) and not all their combinations
+## occur. Returns a list of character vectors c(a, b). Whether a pair is the
+## reason a mean cannot be estimated is found by trying (Kmatrix()).
+pm_confounded_pairs <- function(data, factor_names, Terms, nested = list()) {
+  out <- list()
+  if (length(factor_names) < 2) return(out)
+  sets <- pm_term_sets(Terms)
+  together <- function(a, b) any(vapply(sets, function(s) all(c(a, b) %in% s), logical(1))) ||
+    any(vapply(nested, function(p) setequal(c(p$a, p$b), c(a, b)), logical(1)))
+  for (i in seq_len(length(factor_names) - 1)) for (j in (i + 1):length(factor_names)) {
+    a <- factor_names[i]
+    b <- factor_names[j]
+    if (together(a, b)) next
+    fa <- factor(data[[a]])
+    fb <- factor(data[[b]])
+    if (length(unique(paste(as.integer(fa), as.integer(fb)))) < nlevels(fa) * nlevels(fb)) {
+      # outer factor first (for the hint "write a/b"): the levels of the inner
+      # one occur with fewer levels of the other
+      per_b <- mean(tapply(as.integer(fa), fb, function(v) length(unique(v))), na.rm = TRUE)
+      per_a <- mean(tapply(as.integer(fb), fa, function(v) length(unique(v))), na.rm = TRUE)
+      out[[length(out) + 1]] <- if (per_a < per_b) c(b, a) else c(a, b)
+    }
+  }
+  out
 }

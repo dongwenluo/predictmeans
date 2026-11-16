@@ -71,6 +71,12 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
     a <- strip_ci(new[[nm]]); b <- ref[[nm]]
     a <- lsd_core(a, b, nm)
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
+    # Since 2.0 semipred(contr = ) also has indicator columns and the
+    # significant ranges; the 1.1.1 columns are compared.
+    if (nm == "semi_2_contr") {
+      a <- a[setdiff(names(a), c("includes0", "significant"))]
+      attr(a, "significant") <- NULL
+    }
     if (nm %in% vc_cases) { a <- vc_core(a); b <- vc_core(b) }
     if (nm %in% type3) {
       a$ANOVA <- a$ANOVA[grepl(":", rownames(a$ANOVA)), , drop = FALSE]

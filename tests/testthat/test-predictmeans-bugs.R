@@ -108,7 +108,7 @@ test_that("deprecated bar = TRUE keeps the other plots (mean plot not NULL)", {
   expect_null(pm2$predictmeansBarPlot)
 })
 
-test_that("confounded factors: non-estimable means and differences are NA, no error", {
+test_that("confounded factors: means over the combinations that exist, with a warning; no error", {
   # vol 400 occurs only with droplet fine (as in a spray trial)
   set.seed(3)
   d <- data.frame(droplet = factor(rep(c("medium", "fine"), c(40, 10)), levels = c("medium", "fine")),
@@ -116,17 +116,23 @@ test_that("confounded factors: non-estimable means and differences are NA, no er
                   conc = factor(rep(c("none", "half"), 25)))
   d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
   fm <- lm(y ~ droplet + conc + vol, data = d)
-  pv <- suppressMessages(predictmeans(fm, "vol", adj = "BH", plot = FALSE, prtnum = FALSE))
-  expect_true(all(is.na(pv$means$estimate)))
-  pr <- pv$pairs
-  expect_false(is.na(pr$estimate[pr$level1 == "130" & pr$level2 == "200"]))
-  expect_true(all(is.na(pr$estimate[pr$level2 == "400" | pr$level1 == "400"])))
-  expect_equal(sum(!is.na(pv$mean_table$Table$LetterGrp)), 2)
-  pd <- suppressMessages(predictmeans(fm, "droplet", adj = "BH", plot = FALSE, prtnum = FALSE))
-  expect_true(is.na(pd$pairs$estimate))
-  pc <- suppressMessages(predictmeans(fm, "conc", adj = "BH", plot = FALSE, prtnum = FALSE))
-  expect_false(anyNA(pc$pairs$estimate))
-  # weights = "cells" averages over the observed cells only
+  expect_warning(pv <- predictmeans(fm, "vol", adj = "BH", plot = FALSE, prtnum = FALSE),
+                 "'droplet' and 'vol' are confounded in the data.*droplet/vol.*weights = \"cells\"")
+  # as the model with the nesting in the formula
+  fn <- lm(y ~ conc + droplet/vol, data = d)
+  pn <- suppressWarnings(predictmeans(fn, "vol", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_equal(pv$means$estimate, pn$means$estimate, tolerance = 1e-8)
+  expect_equal(pv$means$std.error, pn$means$std.error, tolerance = 1e-8)
+  expect_equal(pv$pairs$estimate, pn$pairs$estimate, tolerance = 1e-8)
+  expect_equal(sum(!is.na(pv$mean_table$Table$LetterGrp)), 3)
+  pd <- suppressWarnings(predictmeans(fm, "droplet", adj = "BH", plot = FALSE, prtnum = FALSE))
+  expect_false(anyNA(pd$pairs$estimate))
+  # another factor: its means average over droplet and vol, so they have the warning too;
+  # its differences never depended on it
+  expect_warning(pc <- predictmeans(fm, "conc", adj = "BH", plot = FALSE, prtnum = FALSE), "'droplet' and 'vol' are confounded")
+  expect_false(anyNA(pc$means$estimate))
+  expect_equal(pc$pairs$estimate, unname(coef(fm)[["concnone"]])*-1, tolerance = 1e-8)
+  # weights = "cells": the combinations weighted by their numbers of observations
   pw <- suppressMessages(predictmeans(fm, "vol", weights = "cells", plot = FALSE, prtnum = FALSE))
   expect_false(anyNA(pw$means$estimate))
 })
@@ -141,19 +147,19 @@ test_that("letters: one helper handles NA p-values overall and within atvar grou
   P2 <- matrix(c(1, NA, NA, 1), 2, dimnames = list(c("a", "b"), c("a", "b")))
   expect_true(all(is.na(predictmeans:::pm_letter_groups(P2, c(TRUE, TRUE), 0.05))))
 
-  # within atvar groups: vol 400 is confounded with droplet fine, so within
-  # each conc group the 400 comparisons are not estimable but 130 vs 200 is
+  # within atvar groups: vol 400 is confounded with droplet fine; the means are
+  # over the combinations that exist, so every mean gets a letter
   set.seed(3)
   d <- data.frame(droplet = factor(rep(c("medium", "fine"), c(40, 10)), levels = c("medium", "fine")),
                   vol = factor(c(rep(c("130", "200"), 20), rep("400", 10))),
                   conc = factor(c(rep(c("none", "none", "half", "half"), 10), rep(c("none", "half"), 5))))
   d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
   fm <- lm(y ~ droplet + conc * vol, data = d)
-  pm <- suppressMessages(predictmeans(fm, "conc:vol", atvar = "conc", adj = "BH", plot = FALSE, prtnum = FALSE))
+  pm <- suppressWarnings(suppressMessages(predictmeans(fm, "conc:vol", atvar = "conc", adj = "BH", plot = FALSE,
+                                                         prtnum = FALSE)))
   tab <- pm$mean_table$Table
   expect_equal(nrow(tab), 6)
-  expect_true(all(is.na(tab$LetterGrp[tab$vol == "400"])))
-  expect_false(anyNA(tab$LetterGrp[tab$vol != "400"]))
+  expect_false(anyNA(tab$LetterGrp))
 })
 
 test_that("trans is used for identity-link models (gaussian glm and glmmTMB)", {

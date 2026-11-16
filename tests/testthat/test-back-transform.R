@@ -163,3 +163,182 @@ test_that("covariatemeans(contr = ): the difference between two lines with its o
   expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 1)), "two different levels")
   expect_error(covariatemeans(fm, "Variety", covariate = "nitro", contr = "Golden"), "two levels")
 })
+
+test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmeans; no aov with Error()", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  set.seed(1)
+  d <- expand.grid(A = factor(c("a1", "a2", "a3")), Blk = factor(1:8), r = 1:4)
+  d$x <- runif(nrow(d), 0, 2); u <- rnorm(8, sd = 0.5)
+  d$cnt <- rpois(nrow(d), exp(0.2 + 0.3*as.numeric(d$A) + 0.4*d$x + u[d$Blk]))
+  d$bin <- rbinom(nrow(d), 1, plogis(-1 + 0.5*as.numeric(d$A) + 0.6*d$x + u[d$Blk]))
+  d$y <- rnorm(nrow(d)) + u[d$Blk]
+  xs <- c(0.2, 1, 1.8)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  mods <- list(glm(cnt ~ A * x, poisson, d), glm(bin ~ A * x, binomial, d),
+               suppressMessages(lme4::glmer(cnt ~ A * x + (1 | Blk), d, family = poisson)),
+               suppressMessages(lme4::glmer(bin ~ A * x + (1 | Blk), d, family = binomial)),
+               glmmTMB::glmmTMB(cnt ~ A * x + (1 | Blk), d, family = glmmTMB::nbinom2))
+  for (m in mods) {
+    r <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs))
+    p <- r$pltdf
+    rownames(p) <- NULL
+    eg <- emmeans::emmeans(m, ~ A | x, at = list(x = xs), data = d)
+    el <- as.data.frame(pairs(eg)); el <- el[el$contrast == "a1 - a3", ]
+    er <- as.data.frame(pairs(emmeans::regrid(eg, transform = "response"))); er <- er[er$contrast == "a1 - a3", ]
+    lab <- class(m)[1]
+    expect_equal(p$diff, el$estimate, tolerance = 1e-8, label = lab)
+    expect_equal(p$ses, el$SE, tolerance = 1e-6, label = lab)
+    expect_equal(p$response.diff, er$estimate, tolerance = 1e-8, label = lab)
+    expect_equal(p$response.ses, er$SE, tolerance = 1e-6, label = lab)
+    expect_equal(p$response.UL - p$response.diff, qt(0.975, p$Df)*p$response.ses, tolerance = 1e-10)
+    # a log link: ratios; a logit link: odds ratios; never the back-transformed limits of the difference
+    if (stats::family(m)$link == "log") expect_equal(p$ratio.UL, exp(p$UL)) else expect_equal(p$odds.ratio, exp(p$diff))
+    # the plot: the model scale as a ratio or an odds ratio (default); the response scale when asked
+    expect_equal(ggplot2::layer_data(r$plt, 3)$y, log10(exp(p$diff)))
+    rr <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs, contr_scale = "response"))
+    expect_equal(ggplot2::layer_data(rr$plt, 3)$y, p$response.diff)
+    expect_equal(rr$pltdf[names(p)], p, ignore_attr = TRUE)
+  }
+  # trans = I: the model scale only
+  pI <- suppressMessages(covariatemeans(mods[[3]], "A", covariate = "x", contr = c(1, 3), covariateV = xs, trans = I))
+  expect_null(pI$pltdf$response.diff)
+  expect_equal(ggplot2::layer_data(pI$plt, 3)$y, pI$pltdf$diff)
+})
+
+test_that("an aov model with Error() and a covariate: covariatemeans() by strata equals the mixed model", {
+  skip_on_cran()
+  # repeated measures over time, one baseline covariate per subject
+  set.seed(4)
+  my <- expand.grid(time = factor(1:4), subject = factor(1:24))
+  my$group <- factor(rep(c("ctl", "trt"), each = 48))
+  my$baseline <- rnorm(24, 10, 2)[my$subject]
+  my$y <- 5 + 0.6*my$baseline + (my$group == "trt")*as.numeric(my$time)*0.4 + rnorm(24)[my$subject] + rnorm(96, sd = 0.7)
+  ma <- aov(y ~ baseline + group * time + Error(subject / time), data = my)
+  ml <- lme4::lmer(y ~ baseline + group * time + (1 | subject), data = my)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- c(8, 10, 12)
+  f <- function(m, ...) suppressWarnings(suppressMessages(covariatemeans(m, "group", covariate = "baseline", covariateV = xs, ...)))$pltdf
+  a <- f(ma); l <- f(ml)
+  expect_equal(a[c("Mean", "ses", "LL", "UL")], l[c("Mean", "ses", "LL", "UL")], tolerance = 1e-4)
+  ac <- f(ma, contr = c(1, 2)); lc <- f(ml, contr = c(1, 2))
+  expect_equal(ac[c("diff", "ses", "Df", "LL", "UL")], lc[c("diff", "ses", "Df", "LL", "UL")], tolerance = 1e-4)
+  expect_equal(unique(round(ac$Df)), 21)                       # the subject stratum: 24 - 2 groups - 1 covariate
+  # predictmeans() at a chosen baseline
+  pa <- suppressMessages(predictmeans(ma, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
+  pl <- suppressMessages(predictmeans(ml, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
+  expect_equal(pa[c("estimate", "std.error")], pl[c("estimate", "std.error")], tolerance = 1e-4)
+})
+
+test_that("covariatemeans(contr = ): simultaneous band, joint test and the range where the lines differ", {
+  set.seed(1)
+  d <- data.frame(A = gl(3, 40, labels = c("a1", "a2", "a3")), x = runif(120, 0, 2))
+  d$cnt <- rpois(120, exp(1 + 0.6*d$x*(d$A == "a3") + 0.2*d$x))
+  g <- glm(cnt ~ A*x, poisson, d)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- seq(0, 2, 0.02)
+  expect_message(rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs), "a3 differs from a1")
+  rs <- suppressMessages(covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs, band = "simultaneous"))
+  # pointwise: z; simultaneous: Scheffe with rank 2 (Working-Hotelling), wider
+  expect_equal((rp$pltdf$UL - rp$pltdf$diff)/rp$pltdf$ses, rep(qnorm(0.975), length(xs)), tolerance = 1e-8)
+  expect_equal((rs$pltdf$UL - rs$pltdf$diff)/rs$pltdf$ses, rep(sqrt(qchisq(0.95, 2)), length(xs)), tolerance = 1e-8)
+  # the significant values are those whose band leaves out zero; fewer with the simultaneous band
+  expect_equal(rs$pltdf$significant, rs$pltdf$LL > 0 | rs$pltdf$UL < 0)
+  expect_true(all(rp$pltdf$significant[rs$pltdf$significant]))
+  expect_lt(sum(rs$pltdf$significant), sum(rp$pltdf$significant))
+  expect_equal(rs$significant$from, min(xs[rs$pltdf$significant]))
+  expect_equal(rs$significant$direction, ">")
+  # the ratio limits leave out 1 exactly where the difference's leave out 0
+  expect_equal(rs$pltdf$ratio.LL > 1 | rs$pltdf$ratio.UL < 1, rs$pltdf$significant)
+  # indicator columns: each set of limits includes no difference (0, or 1 for a ratio) or not
+  expect_equal(rs$pltdf$includes0, rs$pltdf$LL <= 0 & rs$pltdf$UL >= 0)
+  expect_equal(rs$pltdf$ratio.includes1, rs$pltdf$ratio.LL <= 1 & rs$pltdf$ratio.UL >= 1)
+  expect_equal(rs$pltdf$response.includes0, rs$pltdf$response.LL <= 0 & rs$pltdf$response.UL >= 0)
+  expect_equal(rs$pltdf$significant, !rs$pltdf$includes0)
+  # the joint test: the Wald test that level and slope differences are both zero
+  b <- coef(g); L <- rbind(c(0, 0, 1, 0, 0, 0), c(0, 0, 0, 0, 0, 1))
+  w <- drop(t(L %*% b) %*% solve(L %*% vcov(g) %*% t(L)) %*% (L %*% b))
+  expect_equal(rp$test[["F"]], w/2, tolerance = 1e-8)
+  expect_equal(rp$test[["numDF"]], 2)
+  expect_equal(rp$test[["p.value"]], pchisq(w, 2, lower.tail = FALSE), tolerance = 1e-6)
+  # the Scheffe band and the joint test agree: no significant value when the test is not significant
+  O <- as.data.frame(nlme::Oats)
+  fm <- lm(yield ~ Block + nitro*Variety, data = O)
+  expect_message(ro <- covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 3), band = "simultaneous"),
+                 "includes no difference")
+  expect_gt(ro$test[["p.value"]], 0.05)
+  expect_equal(nrow(ro$significant), 0)
+  expect_equal(anova(lm(yield ~ Block + nitro + I(Variety == "Marvellous") + I(Variety == "Marvellous"):nitro, O), fm)$F[2],
+               ro$test[["F"]], tolerance = 1e-8)
+})
+
+test_that("covariatemeans(bias_adjust = ): the mean of the response, as predictmeans()", {
+  O <- as.data.frame(nlme::Oats)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  cm <- function(...) suppressMessages(covariatemeans(...))
+  # a log response: the factor exp(sigma^2/2), on the line and on its limits
+  ml <- lm(log(yield) ~ Block + nitro*Variety, O)
+  a <- cm(ml, "Variety", covariate = "nitro", covariateV = c(0, 0.3))$pltdf
+  b <- cm(ml, "Variety", covariate = "nitro", covariateV = c(0, 0.3), bias_adjust = TRUE)$pltdf
+  f <- exp(sigma(ml)^2/2)
+  expect_equal(b$Mean, a$Mean*f, tolerance = 1e-8)
+  expect_equal(b$LL, a$LL*f, tolerance = 1e-8)
+  pm <- suppressMessages(predictmeans(ml, "Variety", covariate = c(nitro = 0.3), bias_adjust = TRUE, plot = FALSE,
+                                      prtnum = FALSE))
+  expect_equal(b$Mean[b$xvar == 0.3], pm$means$response, tolerance = 1e-8)
+  # a square root in a mixed model: + the total variance; "taylor" is exact for a square
+  mm <- lme4::lmer(sqrt(yield) ~ nitro*Variety + (1 | Block), O)
+  a <- cm(mm, "Variety", covariate = "nitro", covariateV = 0.3)$pltdf
+  b <- cm(mm, "Variety", covariate = "nitro", covariateV = 0.3, bias_adjust = TRUE)$pltdf
+  v <- sum(as.data.frame(lme4::VarCorr(mm))$vcov)
+  expect_equal(b$Mean - a$Mean, rep(v, 3), tolerance = 1e-6)
+  expect_equal(cm(mm, "Variety", covariate = "nitro", covariateV = 0.3, bias_adjust = "taylor")$pltdf$Mean, b$Mean,
+               tolerance = 1e-5)
+  # 'sigma' given
+  expect_equal(cm(ml, "Variety", covariate = "nitro", covariateV = 0.3, bias_adjust = TRUE, sigma = 0.5)$pltdf$Mean,
+               a0 <- cm(ml, "Variety", covariate = "nitro", covariateV = 0.3)$pltdf$Mean*exp(0.125), tolerance = 1e-8)
+  # a Poisson GLMM: the population mean, exp(random-intercept variance/2) above the typical cluster;
+  # the response-scale difference of contr is that of the adjusted lines
+  set.seed(2)
+  d <- data.frame(A = gl(2, 60), x = runif(120, 0, 2), g = gl(12, 10))
+  d$y <- rpois(120, exp(1 + 0.4*d$x*(d$A == 2) + rnorm(12, 0, 0.5)[d$g]))
+  gm <- lme4::glmer(y ~ A*x + (1 | g), d, family = poisson)
+  a <- cm(gm, "A", covariate = "x", covariateV = c(0.5, 1))$pltdf
+  b <- cm(gm, "A", covariate = "x", covariateV = c(0.5, 1), bias_adjust = TRUE)$pltdf
+  expect_equal(b$Mean/a$Mean, rep(exp(as.data.frame(lme4::VarCorr(gm))$vcov/2), 4), tolerance = 1e-6)
+  r <- cm(gm, "A", covariate = "x", covariateV = c(0.5, 1), contr = c(2, 1), bias_adjust = TRUE)$pltdf
+  expect_equal(r$response.diff, b$Mean[3:4] - b$Mean[1:2], tolerance = 1e-8)
+  r0 <- cm(gm, "A", covariate = "x", covariateV = c(0.5, 1), contr = c(2, 1))$pltdf
+  expect_equal(r$ratio, r0$ratio)                       # the ratio and the test do not change
+  expect_equal(r$significant, r0$significant)
+  # nothing to adjust: a warning; a wrong value: an error
+  expect_warning(cm(lm(yield ~ nitro*Variety, O), "Variety", covariate = "nitro", bias_adjust = TRUE), "ignored")
+  expect_error(cm(ml, "Variety", covariate = "nitro", bias_adjust = "yes"), "TRUE, FALSE")
+  # aov with Error(): the stratum variance components
+  fa <- aov(log(yield) ~ nitro*Variety + Error(Block/Variety), O)
+  ba <- cm(fa, "Variety", covariate = "nitro", covariateV = 0.3, bias_adjust = TRUE)$pltdf$Mean
+  bl <- cm(lme4::lmer(log(yield) ~ nitro*Variety + (1 | Block/Variety), O), "Variety", covariate = "nitro",
+           covariateV = 0.3, bias_adjust = TRUE)$pltdf$Mean
+  expect_equal(ba, bl, tolerance = 1e-3)
+})
+
+test_that("covariatemeans(contr = ) for lmer: the Kenward-Roger covariance and df of the contrast, as emmeans", {
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("pbkrtest")
+  O <- as.data.frame(nlme::Oats)
+  fm <- lme4::lmer(yield ~ nitro*Variety + (1 | Block/Variety), O)
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  xs <- c(0, 0.3, 0.6)
+  r <- suppressMessages(covariatemeans(fm, "Variety", covariate = "nitro", contr = c("Golden Rain", "Victory"),
+                                       covariateV = xs))$pltdf
+  e <- as.data.frame(pairs(emmeans::emmeans(fm, ~ Variety | nitro, at = list(nitro = xs))))
+  e <- e[e$contrast == "Golden Rain - Victory", ]
+  expect_equal(r$diff, e$estimate, tolerance = 1e-8)
+  expect_equal(r$ses, e$SE, tolerance = 1e-5)
+  expect_equal(r$Df, e$df, tolerance = 1e-3)
+  expect_equal(r$UL - r$diff, qt(0.975, r$Df)*r$ses, tolerance = 1e-10)
+  # the SE of the difference is not sqrt(SE_a^2 + SE_b^2): the lines share the block effects
+  m <- suppressMessages(covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs))$pltdf
+  sa <- m$ses[m$Variety == "Golden Rain"]; sb <- m$ses[m$Variety == "Victory"]
+  expect_true(all(r$ses < sqrt(sa^2 + sb^2)))
+})

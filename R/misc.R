@@ -870,6 +870,9 @@ ci_mcp <- function(LL, UL, trt_n=NULL) {
 pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
 }
+pm_nobars <- function(f) {
+  if (requireNamespace("reformulas", quietly = TRUE)) reformulas::nobars(f) else lme4::nobars(f)
+}
 
 ## Singular fit of a mixed model (a variance component estimated as zero, or
 ## a correlation as +-1), as lme4::isSingular(): TRUE or FALSE for lmer and

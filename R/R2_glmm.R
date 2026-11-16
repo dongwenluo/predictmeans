@@ -162,23 +162,37 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
   c(Total=Omega_beta_u_percent, Fixed=Omega_beta_percent, Random=Omega_u_percent,  unlist(Omega_u_list)*100)
 }
 
-#' R-squared for Mixed Models as Numbers
+#' R-squared of a Model as Numbers
 #'
 #' @description
-#' The R-squared of a mixed model as a numeric result. \code{method = "piepho"} (the default) gives the same values as
+#' The R-squared of a model as a numeric result, for every model class of \code{\link{predictmeans}}. \code{method = "piepho"} (the default) gives the same values as
 #' \code{\link{R2_glmm}} (Piepho, 2023), as proportions: total, fixed, random and each random-effect component.
 #' \code{method = "nakagawa"} gives the marginal (fixed effects) and conditional (fixed and random effects) R-squared of
 #' Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014): the variance of each random-effect term is the
 #' mean of \eqn{z_i' \Sigma z_i} over the observations.
 #' @details
+#' Piepho's R-squared is one definition for every class: the variance of the fixed part of the model (less the bias from
+#' estimating the coefficients) and of the random effects, as shares of the average variance of the data. For models
+#' without random effects (\code{lm}, \code{aov}, \code{glm}, \code{gls}) \code{Total} equals \code{Fixed} and
+#' \code{Random} is 0; for \code{lm} and \code{aov} it is the usual adjusted R-squared. \code{glm} models are
+#' measured on the link scale (working variances; the latent distribution for a binary response); \code{gls} and
+#' \code{lme} models with any correlation and variance structure; \code{aov} models with \code{Error()} from the
+#' stratum variance components of \code{\link{varcomp}}. In \code{gam} models the smooths are part of the fixed share,
+#' except random-effect smooths (\code{bs = "re"}).
+#'
 #' For \code{"nakagawa"} the observation-level variance is the residual variance for gaussian models and the variance
 #' of the latent distribution for binomial models: \eqn{\pi^2/3} (logit), 1 (probit) or \eqn{\pi^2/6} (cloglog). Other
 #' families have several competing approximations; use \code{method = "piepho"} for them.
 #' @usage
 #' R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
-#' @param model A model fitted by \code{lmer}, \code{glmer} or \code{glmmTMB}.
-#' @param method \code{"piepho"} or \code{"nakagawa"}.
-#' @param over_disp For \code{"piepho"}: as in \code{\link{R2_glmm}}.
+#' @param model A model of any class \code{\link{predictmeans}} handles: \code{lm}, \code{aov} (also with
+#' \code{Error()}), \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB}, \code{gam} or a
+#' \code{\link{semireg}} fit.
+#' @param method \code{"piepho"} (every class) or \code{"nakagawa"} (\code{lmer}, \code{glmer}, \code{glmmTMB} and
+#'   \code{lme}; for \code{lme} with a variance or correlation structure the observation-level variance is the mean
+#'   residual variance).
+#' @param over_disp For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: as in
+#' \code{\link{R2_glmm}}.
 #' @return
 #' A named numeric vector of proportions (class \code{"pm_r2"}, printed as percentages). For \code{"nakagawa"},
 #' \code{Marginal} and \code{Conditional}, with attribute \code{"variances"}: the fixed-effect, random-effect and
@@ -199,13 +213,22 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
 #'   fm <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 #'   R2_model(fm)
 #'   R2_model(fm, "nakagawa")
+#'   R2_model(lm(Reaction ~ Days, data = sleepstudy))   # the adjusted R-squared
+#'   R2_model(glm(breaks ~ wool*tension, family = poisson, data = warpbreaks))
 #' @name R2_model
 NULL
 
 R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE) {
   method <- match.arg(method)
-  stopifnot("R2_model() needs a model fitted by lmer, glmer or glmmTMB" =
-              inherits(model, c("lmerMod", "glmerMod", "glmmTMB")))
+  if (inherits(model, "semireg")) model <- model$semer
+  if (method == "nakagawa" && inherits(model, "lme")) return(pm_r2_nakagawa_lme(model))
+  if (!inherits(model, c("lmerMod", "glmerMod", "glmmTMB"))) {
+    if (method == "nakagawa") {
+      stop("method = \"nakagawa\" is for lmer, glmer, glmmTMB and lme models; use method = \"piepho\".", call. = FALSE)
+    }
+    if (over_disp) stop("'over_disp = TRUE' is for lmer, glmer and glmmTMB models.", call. = FALSE)
+    return(structure(pm_r2_shares(pm_r2_parts(model)), class = "pm_r2", method = "piepho"))
+  }
   if (method == "piepho") {
     return(structure(pm_r2_piepho(model, over_disp)/100, class = "pm_r2", method = "piepho"))
   }
@@ -235,7 +258,31 @@ R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 print.pm_r2 <- function(x, digits = 2, ...) {
   m <- attr(x, "method")
   cat(if (identical(m, "nakagawa")) "# R2 for mixed models (Nakagawa and Schielzeth)\n" else
-    "# Adjusted R2 for mixed models (Piepho)\n")
+    if (length(x) == 3 && x[["Random"]] == 0) "# Adjusted R2 (Piepho)\n" else "# Adjusted R2 for mixed models (Piepho)\n")
   print(stats::setNames(paste0(format(round(100*unclass(x), digits), nsmall = digits), "%"), names(x)), quote = FALSE)
   invisible(x)
+}
+
+## Nakagawa and Schielzeth's R2 for an lme fit (random slopes as Johnson,
+## 2014): the variance of each random-effect level is the mean of z_i' G z_i
+## over the observations; the observation-level variance is the mean of the
+## residual variances (sigma^2 times the variance function, when there is one).
+pm_r2_nakagawa_lme <- function(model) {
+  dat <- pm_get_data(model)
+  b <- nlme::fixef(model)
+  X <- stats::model.matrix(stats::formula(model), dat)[, names(b), drop = FALSE]
+  var_fixed <- stats::var(drop(X %*% b))
+  Srel <- pm_nlme_sigma(model)
+  s2 <- model$sigma^2
+  Zs <- attr(Srel, "Zs")
+  D <- nlme::pdMatrix(model$modelStruct$reStruct)
+  var_random <- sum(vapply(names(Zs), function(lv) {
+    Z <- Zs[[lv]]$Z
+    G <- Matrix::kronecker(Zs[[lv]]$I, Matrix::Matrix(s2*as.matrix(D[[lv]])))
+    mean(Matrix::rowSums((Z %*% G) * Z))
+  }, numeric(1)))
+  var_obs <- mean(s2*Matrix::diag(Srel(stats::coef(model$modelStruct)))) - var_random
+  tot <- var_fixed + var_random + var_obs
+  structure(c(Marginal = var_fixed/tot, Conditional = (var_fixed + var_random)/tot), class = "pm_r2",
+            method = "nakagawa", variances = c(fixed = var_fixed, random = var_random, observation = var_obs))
 }
