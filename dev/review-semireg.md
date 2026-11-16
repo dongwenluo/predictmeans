@@ -172,6 +172,19 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
    the formula form covers what it lacked (numeric `by`, crossed factors via
    `by = interaction(f1, f2)`).
 4. **Crossed-factor syntax**.
+   **Step 4 done.** `pm_sm_parse()` expands a factor term among the arguments
+   of `s()`: a common piece `s(x)` and, per term of the factor formula, a
+   piece `s(x, by = <term>)` whose level curves share one variance (merged
+   into one block, named `s_x_f1`, `s_x_f1_f2`, ...); cells of several
+   factors get a derived `by` factor, rebuilt for new data. Each piece is set
+   up in its own `gam(fit = FALSE)` call, so mgcv puts no side constraints
+   between them. Fixed terms are written with the original factors
+   (`x + f1*f2 + f1:x + f2:x + f1:f2:x`) and checked to span each piece's
+   unpenalised columns. Checks: `s(x, f)` equals the HRW-style `lme` with one
+   `pdIdent` block for the common curve and one for the deviations (same
+   log-likelihood); `s(x, f1:f2)` equals `s(x, cell)`; with data whose curve
+   shape depends on `f1` only, the `f1:f2` deviation variance is 0 and the
+   `f2` one small.
 5. **Prediction and inference**:
    - prediction from the stored smooth objects;
    - the `unconditional` correction, with the coverage simulation;

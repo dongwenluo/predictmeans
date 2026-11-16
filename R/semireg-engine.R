@@ -25,7 +25,7 @@
 pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE, resp_scale = FALSE) {
   formula <- mc$formula
   # smooths written in the formula (R/semireg-smooth.R)
-  sm_f <- pm_sm_parse(formula)
+  sm_f <- pm_sm_parse(formula, data)
   fomul_vars <- all.vars(stats::terms(if (is.null(sm_f)) formula else sm_f$formula))
   sm_vars <- intersect(all.vars(smoothZ), names(data))
   if (any(unlist(lapply(data[, setdiff(sm_vars, fomul_vars), drop = FALSE], is.factor)))) {
@@ -58,7 +58,7 @@ pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE,
   if (!is.null(sm_f)) {
     # the smooths of the formula: random blocks, and their fixed terms added
     # to the formula (those already there are not doubled)
-    b <- pm_sm_build(sm_f$smooths, data)
+    b <- pm_sm_build(sm_f, data)
     smoothZm <- c(smoothZm, b$blocks)
     smooths <- b$smooths
     sm_vars <- union(sm_vars, b$vars)

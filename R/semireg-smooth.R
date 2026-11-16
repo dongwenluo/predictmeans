@@ -14,16 +14,52 @@
 ## each block on the data.
 
 ## The smooth terms of a formula: list(formula (fixed part, with the lme4
-## random terms and without the smooths), smooths (character: the smooth
-## calls), vars (their variables)) or NULL when there is none.
-pm_sm_parse <- function(formula) {
+## random terms and without the smooths), groups (character vectors of
+## smooth calls, each group set up by one gam(fit = FALSE) call), fixed
+## (fixed terms of expanded smooths), derived (by-factors made from several
+## factors), vars (variables of the smooths, never centred)) or NULL when
+## there is none. 'data' tells factors from covariates.
+##
+## A factor (or a factor term) among the arguments of s() is expanded as an
+## ANOVA-like split (dev/review-semireg.md, decision 2):
+##   s(x, f)       common curve s(x) + a deviation curve per level of f, one
+##                 variance for all of them
+##   s(x, f1:f2)   the same with the cells of f1:f2
+##   s(x, f1*f2)   common curve + deviations for f1, f2 and f1:f2, a
+##                 variance each
+##   s(x1, x2, f)  the same with surfaces
+## The fixed part: x + f + f:x (with the factor terms of the formula: x +
+## f1*f2 + f1:x + f2:x + f1:f2:x). Each piece is set up on its own, so no
+## constraint is put between the common curve and the deviations: the mixed
+## model separates them by their variances, as nested random effects.
+pm_sm_parse <- function(formula, data = NULL) {
   bars <- pm_findbars(formula)
   f_fixed <- pm_nobars(formula)
   is_sm <- function(e) is.call(e) && as.character(e[[1]])[1] %in% c("s", "te", "t2", "ti")
   rhs_terms <- attr(stats::terms(f_fixed, specials = c("s", "te", "t2", "ti")), "variables")[-1]
   sm_calls <- Filter(is_sm, as.list(rhs_terms))
   if (!length(sm_calls)) return(NULL)
-  sm_txt <- vapply(sm_calls, function(e) {
+  # a smooth may only enter as a main term (not s(x):A)
+  labs <- attr(stats::terms(f_fixed), "term.labels")
+  sm_lab <- vapply(sm_calls, function(e) paste(deparse(e, width.cutoff = 500L), collapse = " "), "")
+  bad <- labs[!labs %in% sm_lab & vapply(labs, function(l) any(vapply(sm_lab, grepl, logical(1), x = l,
+                                                                         fixed = TRUE)), logical(1))]
+  if (length(bad)) stop("A smooth can only be a term of its own: ", paste(bad, collapse = ", "), call. = FALSE)
+  is_factor <- function(e) {
+    if (is.call(e)) return(as.character(e[[1]]) %in% c(":", "*"))
+    is.name(e) && !is.null(data) && as.character(e) %in% names(data) &&
+      (is.factor(data[[as.character(e)]]) || is.character(data[[as.character(e)]]) ||
+         is.logical(data[[as.character(e)]]))
+  }
+  deparse1l <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  plain <- character(0)
+  groups <- list()
+  fixed <- character(0)
+  derived <- list()
+  vars <- character(0)
+  taken <- names(data)
+  used <- character(0)
+  for (e in sm_calls) {
     # tensor products: mgcv's pre-fit design of t2() is not in the span of its
     # prediction matrix (mgcv 1.9-1), so its split into fixed and random parts
     # cannot be checked yet (dev/review-semireg.md); te() and ti() cannot be
@@ -32,42 +68,91 @@ pm_sm_parse <- function(formula) {
       stop("Tensor-product smooths (te(), t2(), ti()) are not available in semireg() yet; use s(x1, x2) ",
            "(isotropic thin plate) or s(x1, x2, bs = \"ztps\").", call. = FALSE)
     }
-    paste(deparse(e, width.cutoff = 500L), collapse = " ")
-  }, "")
-  # a smooth may only enter as a main term (not s(x):A)
-  labs <- attr(stats::terms(f_fixed), "term.labels")
-  sm_lab <- vapply(sm_calls, function(e) paste(deparse(e, width.cutoff = 500L), collapse = " "), "")
-  bad <- labs[!labs %in% sm_lab & vapply(labs, function(l) any(vapply(sm_lab, grepl, logical(1), x = l,
-                                                                         fixed = TRUE)), logical(1))]
-  if (length(bad)) stop("A smooth can only be a term of its own: ", paste(bad, collapse = ", "), call. = FALSE)
+    args <- as.list(e)[-1]
+    nms <- if (is.null(names(args))) rep("", length(args)) else names(args)
+    bs <- if ("bs" %in% nms) eval(args[["bs"]]) else "tp"
+    unnamed <- args[nms == ""]
+    fac <- if (any(bs %in% c("fs", "re", "sz", "mrf"))) logical(length(unnamed)) else
+      vapply(unnamed, is_factor, logical(1))
+    vars <- c(vars, unlist(lapply(unnamed, all.vars)), if ("by" %in% nms) all.vars(args[["by"]]))
+    if (!any(fac)) {
+      plain <- c(plain, deparse1l(e))
+      next
+    }
+    if (sum(fac) > 1) stop("Give the factors of a smooth as one term, e.g. s(x, f1*f2) or s(x, f1:f2): ",
+                           deparse1l(e), call. = FALSE)
+    if ("by" %in% nms) stop("A smooth with a factor term cannot also have 'by': ", deparse1l(e), call. = FALSE)
+    covs <- vapply(unnamed[!fac], deparse1l, "")
+    if (!length(covs)) stop("A smooth needs a covariate besides its factor term: ", deparse1l(e), call. = FALSE)
+    fterm <- unnamed[fac][[1]]
+    tl <- attr(stats::terms(stats::as.formula(paste("~", deparse1l(fterm)))), "term.labels")
+    other <- args[nms != "" & nms != "id"]
+    opt <- if (length(other)) paste0(", ", paste(names(other), "=", vapply(other, deparse1l, ""), collapse = ", ")) else ""
+    cov_txt <- paste(covs, collapse = ", ")
+    # each piece gets its own id "pm:<block name>" (unique): the pieces are
+    # found by it, and it names their block
+    uniq <- function(nm) {
+      while (nm %in% used) nm <- paste0(nm, "_2")
+      used <<- c(used, nm)
+      nm
+    }
+    common <- paste0("s(", cov_txt, opt, ", id = \"pm:", uniq(pm_sm_name(paste0("s(", cov_txt, ")"), character(0))), "\")")
+    groups <- c(groups, list(common))
+    fixed <- c(fixed, covs)
+    for (t in tl) {
+      fs <- strsplit(t, ":", fixed = TRUE)[[1]]
+      byv <- if (length(fs) == 1) fs else {
+        nm <- paste(fs, collapse = "_")
+        while (nm %in% taken) nm <- paste0(nm, "_by")
+        taken <- c(taken, nm)
+        derived[[nm]] <- fs
+        nm
+      }
+      blk <- uniq(pm_sm_name(paste0("s(", cov_txt, "|", t, ")"), character(0)))
+      groups <- c(groups, list(paste0("s(", cov_txt, ", by = ", byv, opt, ", id = \"pm:", blk, "\")")))
+      fixed <- c(fixed, t, paste0(t, ":", covs))
+    }
+  }
+  if (length(plain)) groups <- c(list(plain), groups)
   ig <- mgcv::interpret.gam(f_fixed)
   pf <- ig$pf
-  # the variables of the smooths (covariates and 'by' variables): never
-  # centred or scaled (a numeric 'by' multiplies the smooth)
-  vars <- unique(unlist(lapply(ig$smooth.spec, function(sp) c(sp$term, if (sp$by != "NA") sp$by))))
   rhs <- c(paste(deparse(pf[[3]], width.cutoff = 500L), collapse = " "),
            vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""))
   f_new <- stats::as.formula(paste(paste(deparse(formula[[2]], width.cutoff = 500L), collapse = " "), "~",
                                    paste(rhs, collapse = " + ")), env = environment(formula))
-  list(formula = f_new, smooths = sm_txt, vars = vars)
+  # the variables of the smooths (covariates, factors, 'by' variables): never
+  # centred or scaled (a numeric 'by' multiplies the smooth)
+  list(formula = f_new, groups = groups, fixed = unique(fixed), derived = derived, vars = unique(vars))
+}
+
+## The derived 'by' factors (cells of several factors) for data or new data.
+pm_sm_derive <- function(data, derived, levels = NULL) {
+  for (nm in names(derived)) {
+    lab <- do.call(paste, c(lapply(data[derived[[nm]]], as.character), sep = ":"))
+    data[[nm]] <- factor(lab, levels = if (is.null(levels[[nm]])) sort(unique(lab)) else levels[[nm]])
+  }
+  data
 }
 
 ## Set up the smooths on 'data' and split them into fixed and random parts.
-## Returns list(blocks (named list of sparse n x q matrices, one variance
-## each), fixed (character: fixed terms to add), smooths (what prediction
-## needs: the mgcv smooth objects without their data, and for each block
-## the smooths it comes from with the linear maps), vars (variables of the
-## smooths)).
-pm_sm_build <- function(smooths, data) {
-  gd <- data
+## 'sp': pm_sm_parse(). Returns list(blocks (named list of sparse n x q
+## matrices, one variance each), fixed (character: fixed terms to add),
+## smooths (what prediction needs: the mgcv smooth objects without their
+## data, for each block the smooths it comes from with the linear maps, the
+## derived 'by' factors), vars (variables of the smooths)).
+pm_sm_build <- function(sp, data) {
+  gd <- pm_sm_derive(data, sp$derived)
+  lev <- lapply(sp$derived, function(x) NULL)
+  for (nm in names(sp$derived)) lev[[nm]] <- levels(gd[[nm]])
   gd$.pm_y <- 0
-  fg <- stats::as.formula(paste(".pm_y ~", paste(smooths, collapse = " + ")))
-  G <- mgcv::gam(fg, data = gd, fit = FALSE)
-  sms <- G$smooth
-  vars <- unique(unlist(lapply(sms, function(sm) c(sm$term, if (sm$by != "NA") sm$by))))
+  sms <- list()
+  for (g in sp$groups) {
+    G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", paste(g, collapse = " + "))), data = gd, fit = FALSE)
+    sms <- c(sms, G$smooth)
+  }
   blocks <- list()
   maps <- list()
-  fixed <- character(0)
+  fixed <- sp$fixed
   id_of <- character(0)
   for (i in seq_along(sms)) {
     sm <- sms[[i]]
@@ -83,22 +168,38 @@ pm_sm_build <- function(smooths, data) {
       maps[[nm]] <- list(list(sm = i, A = qr.solve(Xd, R)))
       id_of[nm] <- if (!is.null(sm$id) && nb == 1) as.character(sm$id) else NA_character_
     }
-    if (NCOL(r$Xf)) fixed <- union(fixed, pm_sm_fixed_terms(sm, as.matrix(r$Xf), data))
+    if (NCOL(r$Xf)) {
+      if (!is.null(sm$id) && startsWith(as.character(sm$id), "pm:")) {
+        # pieces of an expanded smooth: the fixed terms of the expansion must span them
+        M <- stats::model.matrix(stats::as.formula(paste("~", paste(sp$fixed, collapse = " + "))), data)
+        if (max(abs(qr.resid(qr(M), as.matrix(r$Xf)))) > 1e-8 * max(1, max(abs(r$Xf)))) {
+          stop("The fixed part of the smooth ", sm$label, " is not spanned by its fixed terms.", call. = FALSE)
+        }
+      } else {
+        fixed <- union(fixed, pm_sm_fixed_terms(sm, as.matrix(r$Xf), data))
+      }
+    }
   }
-  # smooths with the same id share one variance: one block
+  # smooths with the same id share one variance: one block (the deviation
+  # curves of an expanded smooth: named by it)
   for (id in unique(stats::na.omit(id_of))) {
     nms <- names(id_of)[!is.na(id_of) & id_of == id]
-    if (length(nms) < 2) next
-    new_nm <- paste0(nms[1], "_id")
-    blocks[[new_nm]] <- do.call(cbind, blocks[nms])
-    maps[[new_nm]] <- unlist(maps[nms], recursive = FALSE)
+    own <- startsWith(id, "pm:")
+    if (length(nms) < 2 && !own) next
+    new_nm <- if (own) sub("^pm:", "", id) else paste0(nms[1], "_id")
+    blk <- if (length(nms) > 1) do.call(cbind, blocks[nms]) else blocks[[nms]]
+    mp <- unlist(maps[nms], recursive = FALSE)
     blocks[nms] <- NULL
     maps[nms] <- NULL
+    blocks[[new_nm]] <- blk
+    maps[[new_nm]] <- mp
   }
   for (k in seq_along(sms)) sms[[k]]$X <- NULL
-  list(blocks = blocks, fixed = fixed, vars = vars,
-       smooths = structure(list(sms = sms, maps = maps, labels = vapply(sms, `[[`, "", "label")),
-                           class = "pm_smooths"))
+  vars <- unique(c(setdiff(unlist(lapply(sms, function(sm) c(sm$term, if (sm$by != "NA") sm$by))),
+                           names(sp$derived)), unlist(sp$derived)))
+  list(blocks = blocks, fixed = unique(fixed), vars = vars,
+       smooths = structure(list(sms = sms, maps = maps, labels = vapply(sms, `[[`, "", "label"),
+                                derived = sp$derived, levels = lev), class = "pm_smooths"))
 }
 
 ## A syntactic name for a smooth block, not a column of the data.
@@ -134,6 +235,7 @@ pm_sm_fixed_terms <- function(sm, Xf, data) {
 ## The random-effect design of the smooth blocks for new data (a named list
 ## of sparse matrices, in the order of the blocks).
 pm_sm_predict <- function(smooths, newdata, blocks = names(smooths$maps)) {
+  if (length(smooths$derived)) newdata <- pm_sm_derive(newdata, smooths$derived, smooths$levels)
   P <- list()
   out <- lapply(blocks, function(b) {
     parts <- lapply(smooths$maps[[b]], function(m) {

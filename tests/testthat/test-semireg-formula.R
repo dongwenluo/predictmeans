@@ -109,3 +109,55 @@ test_that("formula smooths: refusals with a message", {
   expect_error(semireg(y ~ s(x), smoothZ = list(sm = smZ(z)), data = d, prt = FALSE), "not both")
   expect_error(semireg(y ~ s(x):f, data = d, prt = FALSE), "term of its own")
 })
+
+test_that("s(x, f): common curve + deviation curves with one variance, as the same model in lme", {
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  set.seed(7)
+  n <- 480
+  d <- data.frame(x = runif(n, 0, 3), f1 = gl(2, n/2, labels = c("a", "b")), f2 = gl(3, 1, n, labels = c("p", "q", "r")))
+  d$y <- sin(2*d$x) + 0.5*(d$f1 == "b")*sin(3*d$x) + 0.3*(d$f2 == "r") + rnorm(n, 0, 0.3)
+  fit <- q(semireg(y ~ s(x, f1, k = 8), data = d, prt = FALSE))
+  expect_setequal(names(fit$u_lst), c("s_x", "s_x_f1"))
+  fx <- attr(stats::terms(lme4::nobars(stats::formula(fit$semer))), "term.labels")
+  expect_setequal(fx, c("x", "f1", "x:f1"))
+  # Harezlak, Ruppert and Wand's form: one pdIdent block for the common curve, one for the deviations
+  dd <- fit$data
+  bl <- lme4::getME(fit$semer, "Ztlist")
+  dd$Zc <- as.matrix(t(bl[["s_x.(Intercept)"]]))
+  dd$Zd <- as.matrix(t(bl[["s_x_f1.(Intercept)"]]))
+  dd$one <- factor(1)
+  fl <- nlme::lme(y ~ x*f1, random = list(one = nlme::pdIdent(~ -1 + Zc), one = nlme::pdIdent(~ -1 + Zd)), data = dd,
+                  method = "REML")
+  expect_equal(as.numeric(logLik(fit$semer)), as.numeric(logLik(fl)), tolerance = 1e-6)
+  # each level's curve is fixed part + common curve + its deviation
+  sp <- semipred(fit, "f1", "x", covariateV = 1.5, prt = FALSE)$pred_df
+  b <- lme4::fixef(fit$semer)
+  Zn <- predictmeans:::pm_sm_predict(fit$smooths, data.frame(x = 1.5, f1 = factor(c("a", "b"), levels = c("a", "b"))))
+  by_hand <- b[1] + b["x"]*1.5 + c(0, b["f1b"] + b["x:f1b"]*1.5) +
+    as.numeric(Zn$s_x %*% fit$u_lst$s_x) + as.numeric(Zn$s_x_f1 %*% fit$u_lst$s_x_f1)
+  expect_equal(sp$y[order(sp$f1)], unname(by_hand), tolerance = 1e-8)
+  # s(x, f1*f2): a deviation term per factor term, each with its variance; no f1:f2 deviation in these data
+  f2 <- q(semireg(y ~ s(x, f1*f2, k = 8), data = d, prt = FALSE))
+  expect_setequal(names(f2$u_lst), c("s_x", "s_x_f1", "s_x_f2", "s_x_f1_f2"))
+  fx2 <- attr(stats::terms(lme4::nobars(stats::formula(f2$semer))), "term.labels")
+  expect_setequal(fx2, c("x", "f1", "f2", "x:f1", "x:f2", "f1:f2", "x:f1:f2"))
+  v <- varcomp(f2)
+  expect_lt(v["s_x_f1_f2.(Intercept)", "vcov"], 0.1*v["s_x_f1.(Intercept)", "vcov"])
+  expect_equal(nrow(predictmeans(f2, "f1:f2", covariate = c(x = 1.5))$means), 6)
+  # s(x, f1:f2) is s(x, cell) with the cells as one factor
+  f3 <- q(semireg(y ~ s(x, f1:f2, k = 8), data = d, prt = FALSE))
+  d$cell <- interaction(d$f1, d$f2, sep = ":")
+  f3b <- q(semireg(y ~ s(x, cell, k = 8), data = d, prt = FALSE))
+  expect_equal(as.numeric(logLik(f3$semer)), as.numeric(logLik(f3b$semer)), tolerance = 1e-8)
+  expect_equal(nrow(semipred(f3, "f1:f2", "x", covariateV = c(1, 2), prt = FALSE)$pred_df), 12)
+  # surfaces: s(x, z, f)
+  d$z <- runif(n)
+  f4 <- q(semireg(y ~ s(x, z, f1, k = 12), data = d, prt = FALSE))
+  expect_setequal(names(f4$u_lst), c("s_x_z", "s_x_z_f1"))
+  expect_setequal(attr(stats::terms(lme4::nobars(stats::formula(f4$semer))), "term.labels"),
+                  c("x", "z", "f1", "x:f1", "z:f1"))
+  # refusals
+  expect_error(semireg(y ~ s(x, f1, f2), data = d, prt = FALSE), "one term")
+  expect_error(semireg(y ~ s(x, f1, by = f2), data = d, prt = FALSE), "cannot also have 'by'")
+  expect_error(semireg(y ~ s(f1:f2), data = d, prt = FALSE), "needs a covariate")
+})

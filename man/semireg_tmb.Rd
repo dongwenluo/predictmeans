@@ -101,7 +101,17 @@ slopes:
   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
+  \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
+  \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
+  \code{s(x, f1*f2)} \tab common curve + deviation curves for \code{f1}, \code{f2} and \code{f1:f2}, a variance each \tab \code{x + f1*f2 + f1:x + f2:x + f1:f2:x} \cr
+  \code{s(x1, x2, f)} \tab common surface + a deviation surface per level \tab \code{x1 + x2 + f + f:x1 + f:x2} \cr
 }
+A factor term among the arguments of \code{s()} gives this ANOVA-like split (not an mgcv form): the deviation
+curves of a factor term are random effects with one variance, so \code{varcomp()} shows how much the curves differ
+by \code{f1}, by \code{f2} and by their interaction, and a variance of zero means the curves of that term have the
+same shape (their levels still differ by the fixed terms). The pieces are set up without constraints between them:
+the mixed model separates them by their variances, as nested random effects. Each level's curve is the fixed part
+plus the common curve plus its deviations.
 The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
 \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and

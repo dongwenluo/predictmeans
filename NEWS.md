@@ -748,6 +748,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - Types: any one-penalty mgcv basis (`tp`, `cr`, `ps`, shrinkage `cs`/`ts`),
     `by` factors (`id =` for one shared variance) and numeric `by`, factor
     smooths `bs = "fs"`, isotropic `s(x1, x2)`.
+  - Factor terms inside `s()` give an ANOVA-like split of the curves:
+    `s(x, f)` is a common curve plus a deviation curve per level of `f` (one
+    variance for the deviations); `s(x, f1*f2)` adds deviation curves for
+    `f1`, `f2` and `f1:f2`, a variance each, so `varcomp()` shows which factor
+    terms change the shape of the curves; `s(x, f1:f2)` uses the cells;
+    `s(x1, x2, f)` does the same for surfaces. Fixed terms `x + f1*f2 + f1:x
+    + f2:x + f1:f2:x` are added. `s(x, f)` equals the same model written for
+    `lme` with `pdIdent` blocks (Harezlak, Ruppert and Wand).
   - The package's own bases as `bs = "os"` (O'Sullivan, `k` interior knots)
     and `bs = "ztps"`: the same fits as `smZ()` in `smoothZ`.
   - Fits equal `gam(method = "REML")` (fitted values within 3e-5 in 11
