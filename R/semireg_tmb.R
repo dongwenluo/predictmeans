@@ -139,6 +139,11 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   env <- parent.frame()
   environment(formula) <- env
   mc$formula <- formula
+  # a family named without glmmTMB attached (family = nbinom1): found in
+  # glmmTMB, as 1.x did (the call is evaluated in the caller's environment)
+  if (!is.null(mc$family)) {
+    mc$family <- tryCatch(eval(mc$family, env), error = function(e) eval(mc$family, asNamespace("glmmTMB")))
+  }
   # data, smooth designs and the formula with placeholders (R/semireg-engine.R);
   # no centring for glmmTMB fits
   st <- pm_sr_setup(mc, data, substitute(smoothZ), env)

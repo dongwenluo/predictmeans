@@ -823,6 +823,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   equals `gam(method = "REML")` where the script used `gamm()` (whose `lme`
   fit stopped short of the REML optimum) or `gam()`
   (`tests/testthat/test-semireg-golden.R`, `dev/semireg-golden/`).
+* `semireg_tmb(family = nbinom1)` (a glmmTMB family named without glmmTMB
+  attached) failed with "object 'nbinom1' not found" after the engine
+  change; the family is found in glmmTMB again, as in 1.x.
 * Formula smooths whose covariate has fewer distinct values than basis
   columns (e.g. a depth measured every 5 m), and factor smooths (`bs = "fs"`)
   with subjects of few observations, failed with "singular matrix"; the map

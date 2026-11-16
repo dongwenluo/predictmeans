@@ -154,3 +154,16 @@ test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zer
                tolerance = 1e-6)
   expect_output(print(anova(f1)), "Smooth terms")
 })
+
+test_that("semireg_tmb(): a glmmTMB family named without glmmTMB attached (family = nbinom1), as in 1.x", {
+  set.seed(4)
+  d <- data.frame(x = runif(120, 0, 3), g = gl(6, 20))
+  d$y <- rnbinom(120, mu = exp(1 + sin(d$x)), size = 3)
+  # stats and the packages after it on the search path, not glmmTMB (load_all() puts imports earlier on it)
+  e <- new.env(parent = as.environment("package:stats"))
+  e$d <- d
+  fit <- suppressWarnings(suppressMessages(evalq(
+    predictmeans::semireg_tmb(y ~ x + (1 | g), smoothZ = list(sm = predictmeans::smZ(x, k = 5)), family = nbinom1,
+                              data = d, prt = FALSE), e)))
+  expect_equal(fit$semer$modelInfo$family$family, "nbinom1")
+})
