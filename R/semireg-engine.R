@@ -202,7 +202,14 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
   q <- ncol(Z)
   Tm <- Matrix::.bdiag(list(Matrix::Diagonal(n_beta), Lambda))
   M <- Matrix::crossprod(Ct * w, Ct) + Matrix::.bdiag(list(Matrix::Matrix(0, n_beta, n_beta), Matrix::Diagonal(q)))
-  fullCovMat <- Tm %*% Matrix::solve(M, Matrix::t(Tm))
+  # solved with M scaled to unit diagonal: a random term whose variance is
+  # much larger than the residual one (glmmTMB ar1() with the nugget
+  # variance near 0) makes M badly scaled, not singular
+  dM <- sqrt(Matrix::diag(M))
+  dM[!is.finite(dM) | dM <= 0] <- 1
+  Dm <- Matrix::Diagonal(x = 1/dM)
+  Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
+  fullCovMat <- Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm)))
   fullCovMat <- Matrix::forceSymmetric(methods::as(fullCovMat, "generalMatrix"))
   df <- sum(Matrix::diag(fullCovMat %*% CTC))              # effective degrees of freedom
 

@@ -823,6 +823,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   equals `gam(method = "REML")` where the script used `gamm()` (whose `lme`
   fit stopped short of the REML optimum) or `gam()`
   (`tests/testthat/test-semireg-golden.R`, `dev/semireg-golden/`).
+* **`semireg_tmb()` with glmmTMB covariance structures** (`ar1()`, `ou()`,
+  `cs()`, `toep()`, `diag()`, `exp()`, ...) next to formula smooths: the
+  formula was rebuilt from `findbars()`, which keeps only the bar inside
+  such a term, so `ar1(tf + 0 | id)` was fitted as an unstructured
+  covariance without a message (78 parameters instead of 2 for 12 times).
+  The terms are now kept as written, also in `anova()`'s refits and in
+  `bootmodels()`' null model for glmmTMB fits. The covariance of the
+  coefficients is computed with the matrix scaled to unit diagonal, so AR1
+  residuals with `dispformula = ~0` (or a nugget variance near 0) no longer
+  fail as "computationally singular". `semireg()` (lme4, which has no such
+  structures) refuses them with a message.
 * `semireg_tmb(family = nbinom1)` (a glmmTMB family named without glmmTMB
   attached) failed with "object 'nbinom1' not found" after the engine
   change; the family is found in glmmTMB again, as in 1.x.

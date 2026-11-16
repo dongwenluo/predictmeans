@@ -15,9 +15,8 @@ pm_boot_parts <- function(model) {
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
   ff <- stats::formula(model)
   lhs <- paste(deparse(ff[[2]]), collapse = "")
-  bars <- if (inherits(model, c("merMod", "glmmTMB"))) {
-    vapply(pm_findbars(ff), function(b) paste0("(", paste(deparse(b), collapse = ""), ")"), "")
-  } else character(0)
+  # random terms as written (a glmmTMB ar1() term stays ar1(), not unstructured)
+  bars <- if (inherits(model, c("merMod", "glmmTMB"))) pm_random_terms(ff) else character(0)
   # offsets in the formula stay in the null model (an offset argument stays in the call)
   tt <- stats::terms(stats::delete.response(stats::terms(pm_nobars(ff))))
   offs <- if (is.null(attr(tt, "offset"))) character(0) else

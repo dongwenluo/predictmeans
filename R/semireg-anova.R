@@ -87,13 +87,15 @@ pm_sr_refit <- function(object, drop) {
   r <- object$refit
   keep <- setdiff(names(r$smoothZ), drop)
   f <- r$formula
-  bars <- pm_findbars(f)
+  specials <- pm_special_terms(f)        # glmmTMB ar1(), ou(), ...: kept as written
+  bars <- pm_plain_bars(f, specials)
   grp <- vapply(bars, function(b) paste(all.vars(b[[3]]), collapse = ":"), "")
   other <- bars[!grp %in% names(r$smoothZ)]
   fixed <- pm_nobars(f)
   e <- new.env(parent = asNamespace("predictmeans"))
   rhs <- c(paste(deparse(fixed[[3]], width.cutoff = 500L), collapse = " "),
-           vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""))
+           vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
+           vapply(specials, function(b) paste(deparse(b, width.cutoff = 500L), collapse = " "), ""))
   f_new <- stats::as.formula(paste(paste(deparse(f[[2]], width.cutoff = 500L), collapse = " "), "~",
                                    paste(rhs, collapse = " + ")), env = e)
   e$sr_data <- r$data

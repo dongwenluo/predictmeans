@@ -175,6 +175,12 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   env <- parent.frame()
   environment(formula) <- env
   mc$formula <- formula
+  # lme4 has no covariance structures: lmer would fit ar1(t + 0 | id) as an
+  # unstructured term
+  if (length(pm_special_terms(formula))) {
+    stop("Covariance structures such as ar1(), ou() or cs() are glmmTMB terms; fit the model with semireg_tmb().",
+         call. = FALSE)
+  }
   # data, smooth designs and the formula with placeholders (R/semireg-engine.R)
   st <- pm_sr_setup(mc, data, substitute(smoothZ), env, ncenter = ncenter, nscale = nscale, resp_scale = resp_scale)
 

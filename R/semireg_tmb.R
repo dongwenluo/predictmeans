@@ -4,6 +4,15 @@
 #' Fit a semi parametric model based on glmmTMB.
 #' @details
 #' A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg_tmb} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
+#' @section Correlation structures:
+#' glmmTMB's covariance structures can be written next to the smooths and are kept as written: \code{ar1()},
+#' \code{ou()} (unequally spaced times, with \code{glmmTMB::numFactor()}), \code{cs()}, \code{toep()},
+#' \code{diag()}, and the spatial \code{exp()}, \code{gau()}, \code{mat()}. Residuals correlated in time within
+#' subjects are written as \code{ar1(time_factor + 0 | subject)} with \code{dispformula = ~0} (the structure is
+#' then the residual covariance; with a residual variance as well it is AR1 plus a nugget, and \code{cs()} plus a
+#' residual variance is not identified), e.g.
+#' \code{semireg_tmb(y ~ s(time, by = trt) + ar1(tf + 0 | id), dispformula = ~0, data = d)}. \code{semireg()}
+#' (lme4) has no such structures and refuses them.
 #' @section Smooth terms in the formula:
 #' Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
 #' \code{y ~ A + s(x, by = A) + (1 | Block)}. Each smooth is set up by mgcv (bases, knots, identifiability

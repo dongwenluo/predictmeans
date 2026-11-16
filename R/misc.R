@@ -817,7 +817,53 @@ pm_findbars <- function(f) {
   if (requireNamespace("reformulas", quietly = TRUE)) reformulas::findbars(f) else lme4::findbars(f)
 }
 pm_nobars <- function(f) {
-  if (requireNamespace("reformulas", quietly = TRUE)) reformulas::nobars(f) else lme4::nobars(f)
+  g <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::nobars(f) else lme4::nobars(f)
+  # a covariance-structure term (ar1(x | g)) that nobars() left: dropped too
+  if (inherits(g, "formula")) {
+    tt <- stats::terms(g)
+    bad <- grepl("|", attr(tt, "term.labels"), fixed = TRUE)
+    if (any(bad)) {
+      g2 <- stats::formula(stats::drop.terms(tt, which(bad), keep.response = length(g) == 3))
+      environment(g2) <- environment(g)
+      g <- g2
+    }
+  }
+  g
+}
+
+## glmmTMB's covariance-structure terms: ar1(time + 0 | id), ou(), cs(),
+## toep(), exp(), ... findbars() returns only the bar inside such a term, so
+## a formula rebuilt from findbars() alone turns ar1() into an unstructured
+## term. pm_special_terms(): these terms whole, as written;
+## pm_plain_bars(): the other bars; pm_random_terms(): all random terms as
+## text ("(1 | g)", "ar1(time + 0 | id)"), for rebuilding a formula.
+pm_cov_structs <- c("diag", "us", "cs", "ar1", "ou", "exp", "gau", "mat", "toep", "rr", "homdiag", "hetar1",
+                    "propto", "equalto")
+pm_special_terms <- function(f) {
+  out <- list()
+  walk <- function(e) {
+    if (!is.call(e)) return(invisible())
+    h <- as.character(e[[1]])[1]
+    if (h %in% pm_cov_structs && length(e) >= 2 && is.call(e[[2]]) && as.character(e[[2]][[1]])[1] %in% c("|", "||")) {
+      out[[length(out) + 1L]] <<- e
+      return(invisible())
+    }
+    for (a in as.list(e)[-1]) walk(a)
+  }
+  walk(f[[length(f)]])
+  out
+}
+pm_plain_bars <- function(f, specials = pm_special_terms(f)) {
+  bars <- pm_findbars(f)
+  if (!length(specials) || !length(bars)) return(bars)
+  dp <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  drop <- c(vapply(specials, function(s) dp(s[[2]]), ""), vapply(specials, dp, ""))
+  bars[!vapply(bars, dp, "") %in% drop]
+}
+pm_random_terms <- function(f) {
+  dp <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  sp <- pm_special_terms(f)
+  c(vapply(pm_plain_bars(f, sp), function(b) paste0("(", dp(b), ")"), ""), vapply(sp, dp, ""))
 }
 
 ## Singular fit of a mixed model (a variance component estimated as zero, or

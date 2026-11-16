@@ -33,7 +33,9 @@
 ## constraint is put between the common curve and the deviations: the mixed
 ## model separates them by their variances, as nested random effects.
 pm_sm_parse <- function(formula, data = NULL) {
-  bars <- pm_findbars(formula)
+  # glmmTMB covariance-structure terms (ar1(), ou(), ...) are kept as written
+  specials <- pm_special_terms(formula)
+  bars <- pm_plain_bars(formula, specials)
   deparse1l <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
   # random curves (s(x) | g): (x | g), the straight lines per level with
   # correlated intercepts and slopes, plus the wiggly part of the smooth per
@@ -134,7 +136,8 @@ pm_sm_parse <- function(formula, data = NULL) {
   ig <- mgcv::interpret.gam(f_fixed)
   pf <- ig$pf
   rhs <- c(paste(deparse(pf[[3]], width.cutoff = 500L), collapse = " "),
-           vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""))
+           vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
+           vapply(specials, deparse1l, ""))
   f_new <- stats::as.formula(paste(paste(deparse(formula[[2]], width.cutoff = 500L), collapse = " "), "~",
                                    paste(rhs, collapse = " + ")), env = environment(formula))
   # the variables of the smooths (covariates, factors, 'by' variables): never
