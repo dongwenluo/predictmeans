@@ -145,7 +145,7 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
 ## 6. Steps
 
 1. This note.
-2. **One engine** (`R/semireg-engine.R`). `semireg()` and `semireg_tmb()` run on
+2. **One engine** (`R/semireg-engine.R`) — **done**. Result check: 12 example fits (gaussian, ML, binomial, Poisson, `bs` basis, by-factor and group smooths, Dialyzer, indonRespir, glmmTMB Poisson and negative binomial) give the same coefficients, covariance matrices and `semipred()` output as before (log-likelihoods within 1e-7); total time 19 s -> 14 s. Found and fixed on the way: lmerTest's Satterthwaite df and `varcomp()` used the deviance of the placeholder model (now equal to `lme`); a zero smoothing variance stopped the fit; `cbind()` responses; data written into the caller's frame. Was: `semireg()` and `semireg_tmb()` run on
    it with the existing `smoothZ` form only, and must reproduce current
    results: the `semi_*` reference cases, `test-semipred.R` and
    `test-glmmtmb.R` pass unchanged. One fit instead of two (timed).

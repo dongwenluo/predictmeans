@@ -35,6 +35,28 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`semireg()` gaussian fits: `anova()` df and `varcomp()` SEs were
+  wrong.** lmerTest's Satterthwaite df and `varcomp()` used the deviance
+  function of the placeholder model (plain random intercepts where the spline
+  design goes), not of the fitted one. Now they equal the same model fitted
+  by `nlme::lme()` (Warsaw apartments: 150 df instead of 1871 for the linear
+  term; SE of the smoothing variance 1.45 instead of 7.7, with a sensible
+  upper limit instead of 5e45). Fitted values, coefficients and `semipred()`
+  results are unchanged.
+* `semireg()` and `semireg_tmb()` share one fitting engine
+  (`R/semireg-engine.R`):
+  - The model structure is built without fitting (`lme4::lFormula()`,
+    `glFormula()`, `glmmTMB(doFit = FALSE)`) and fitted once; before, a full
+    preliminary fit was made first. 13 example fits: 19 s -> 14 s.
+  - The data are no longer written into the caller's workspace, and `data`
+    can be an expression (`data = subset(d, x > 0)`).
+  - `cbind(successes, failures)` responses work (the second column was
+    centred as a covariate: "Response is constant").
+  - A smooth whose variance is estimated as zero (a straight line) no longer
+    stops the fit ("Matrix seems negative semi-definite"): the covariance of
+    the coefficients is computed without inverting Lambda (the same matrix
+    otherwise), and those coefficients get zero covariance.
+  - Weighted gaussian fits use their prior weights in that covariance.
 * `covariatemeans(contr = c(1, 3))` gives the difference between two levels
   of the term along the covariate with its confidence band (as `semipred()`
   does): the two lines differ where the band leaves out zero, which the

@@ -273,11 +273,16 @@ pm_vc_mer_fun <- function(model, residual) {
 ## from the observed information of its REML (ML) deviance; also used for the
 ## Satterthwaite df (R/satterthwaite.R).
 pm_lmer_varpar <- function(model) {
-  cl <- stats::getCall(model)
-  cl[[1]] <- quote(lme4::lmer)
-  cl$devFunOnly <- TRUE
-  if (is.null(cl$control)) cl$control <- lme4::lmerControl(check.rankX = "silent.drop.cols")
-  devfun <- eval(cl, pm_fit_env(model))
+  # a semireg() fit keeps its own deviance function (with the smooth designs:
+  # a refit from its call would have plain random intercepts in their place)
+  devfun <- if (methods::is(model, "semerLmerTest")) model@semireg_info$devfun
+  if (is.null(devfun)) {
+    cl <- stats::getCall(model)
+    cl[[1]] <- quote(lme4::lmer)
+    cl$devFunOnly <- TRUE
+    if (is.null(cl$control)) cl$control <- lme4::lmerControl(check.rankX = "silent.drop.cols")
+    devfun <- eval(cl, pm_fit_env(model))
+  }
   is_reml <- lme4::getME(model, "is_REML")
   varpar <- unname(c(lme4::getME(model, "theta"), stats::sigma(model)))
   h <- numDeriv::hessian(func = devfun_vp, x = varpar, devfun = devfun, reml = is_reml)
