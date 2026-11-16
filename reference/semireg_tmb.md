@@ -42,13 +42,14 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 - smoothZ:
 
-  A list includes a set of smooth Z matrixs (called 'smooth term') used
-  in the mixed effects model, the name of 'smooth term' should be
-  different any variables in the model, each 'smooth term' is the result
-  of function `smZ`. e.g. smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1),
-  sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be
-  new variable names in the `data`, and x1 to x3 are covariates, and f1,
-  f2 are factors.
+  The older form of the smooths (see ‘Smooth terms in the formula’ for
+  the newer one): a list includes a set of smooth Z matrixs (called
+  'smooth term') used in the mixed effects model, the name of 'smooth
+  term' should be different any variables in the model, each 'smooth
+  term' is the result of function `smZ`. e.g. smoothZ=list(sm1=smZ(x1),
+  sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1'
+  to 'sm3' should be new variable names in the `data`, and x1 to x3 are
+  covariates, and f1, f2 are factors.
 
 - ziformula:
 
@@ -236,6 +237,55 @@ some covariates (named \<e2\>\<80\>\<98\>smooth term\<e2\>\<80\>\<99\>).
 `semireg_tmb` follows the approach suggested by Wand and Ormerod (2008)
 and represents the 'smooth term' using O'Sullivan-type of Z.
 
+## Smooth terms in the formula
+
+Smooths can be written in the model formula, as for
+[`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html), next to fixed and
+lme4 random terms: `y ~ A + s(x, by = A) + (1 | Block)`. Each smooth is
+set up by mgcv (bases, knots, identifiability constraints) and split, as
+in gamm4, into an unpenalised part, which is added to the fixed effects
+as ordinary terms, and penalised parts, each a block of random effects
+with one variance. The fixed terms are added automatically (terms
+already written are not doubled), so a smooth by a factor cannot lose
+its group slopes:
+
+|  |  |  |
+|----|----|----|
+| **Written** | **Meaning** | **Fixed terms added** |
+| `s(x)`, `s(x, bs = "cr", k = 12)` | one curve | `x` |
+| `s(x, by = f)` | a curve per level of `f`, a variance each (`id = 1`: one shared) | `f + f:x` |
+| `s(x, by = z)`, `z` numeric | varying coefficient \\f(x) z\\ | `z + z:x` |
+| `s(x, f, bs = "fs")` | random curves per level, one variance | none |
+| `s(x1, x2)` | isotropic surface (thin plate) | `x1 + x2` |
+| `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots, as `smZ(x, k = 10)` | `x` |
+| `s(x1, x2, bs = "ztps", k = 6)` | thin plate of `Ztps()`, as `smZ(cbind(x1, x2), type = "Ztps")` | `x1 + x2` |
+| `s(x, bs = "cs")`, `"ts"` | shrinkage smooths (no unpenalised part) | none |
+| `s(x, f)` | common curve + a deviation curve per level of `f`, one variance for the deviations | `x + f + f:x` |
+| `s(x, f1:f2)` | the same with the cells of `f1:f2` | `x + f1:f2 + f1:f2:x` |
+| `s(x, f1*f2)` | common curve + deviation curves for `f1`, `f2` and `f1:f2`, a variance each | `x + f1*f2 + f1:x + f2:x + f1:f2:x` |
+| `s(x1, x2, f)` | common surface + a deviation surface per level | `x1 + x2 + f + f:x1 + f:x2` |
+
+A factor term among the arguments of `s()` gives this ANOVA-like split
+(not an mgcv form): the deviation curves of a factor term are random
+effects with one variance, so
+[`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+shows how much the curves differ by `f1`, by `f2` and by their
+interaction, and a variance of zero means the curves of that term have
+the same shape (their levels still differ by the fixed terms). The
+pieces are set up without constraints between them: the mixed model
+separates them by their variances, as nested random effects. Each
+level's curve is the fixed part plus the common curve plus its
+deviations. The fits equal `gam(..., method = "REML")` for gaussian
+models (with `s(g, bs = "re")` for a random intercept), and
+[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+and
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+give the curves, means and their standard errors of `predict.gam()`. The
+variables of formula smooths are not centred or scaled (`ncenter` and
+`nscale` apply to the other numeric covariates). Tensor products
+(`te()`, `t2()`, `ti()`) are not available yet. Smooths are given either
+in the formula or in `smoothZ`, not both.
+
 ## References
 
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with
@@ -268,7 +318,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
 }
 #> Formula:          areaPerMzloty ~ construction.date + (1 | grp)
-#> Data: WarsawApts
+#> Data: .pm_sr_data
 #>       AIC       BIC    logLik -2*log(L)  df.resid 
 #>  3550.889  3566.944 -1771.445  3542.889       405 
 #> Random-effects (co)variances:
@@ -292,7 +342,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #> Formula:          
 #> areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  
 #>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)
-#> Data: WarsawApts
+#> Data: .pm_sr_data
 #>       AIC       BIC    logLik -2*log(L)  df.resid 
 #>        NA        NA        NA        NA       396 
 #> Random-effects (co)variances:
@@ -321,7 +371,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #>        construction.date:districtWola     construction.date:districtZoliborz  
 #>                              -0.39155                               -0.14576  
 
-#> Srodmiescie differs from Mokotow (pointwise band, level 0.05) for construction.date: 1930 to 2008 (>).
+#> Srodmiescie differs from Mokotow (pointwise band, level 0.05) for construction.date: 1956 to 2000 (<).
 
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
@@ -342,7 +392,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 #> Formula:          
 #> respirInfec ~ age + vitAdefic + female + height + stunted + visit2 +  
 #>     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp)
-#> Data: indonRespir
+#> Data: .pm_sr_data
 #>       AIC       BIC    logLik -2*log(L)  df.resid 
 #>  673.9676  740.1386 -323.9838  647.9676      1187 
 #> Random-effects (co)variances:

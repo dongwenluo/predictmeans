@@ -58,7 +58,7 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">semireg</span><span class="op">(</span><span class="va">formula</span>, <span class="va">data</span>, family <span class="op">=</span> <span class="cn">NULL</span>, ngbinomial<span class="op">=</span><span class="cn">FALSE</span>, REML <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>        smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, ncenter<span class="op">=</span><span class="cn">TRUE</span>, nscale<span class="op">=</span><span class="cn">FALSE</span>, resp_scale<span class="op">=</span><span class="cn">FALSE</span>, </span>
-<span>        control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmerControl.html" class="external-link">lmerControl</a></span><span class="op">(</span>optimizer<span class="op">=</span><span class="st">"bobyqa"</span><span class="op">)</span>, start <span class="op">=</span> <span class="cn">NULL</span>, </span>
+<span>        control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmerControl.html" class="external-link">lmerControl</a></span><span class="op">(</span>optimizer<span class="op">=</span><span class="st">"nloptwrap"</span><span class="op">)</span>, start <span class="op">=</span> <span class="cn">NULL</span>, </span>
 <span>        verbose <span class="op">=</span> <span class="cn">FALSE</span>, drop.unused.levels<span class="op">=</span><span class="cn">TRUE</span>, <span class="va">subset</span>, <span class="va">weights</span>, </span>
 <span>        <span class="va">offset</span>, contrasts <span class="op">=</span> <span class="cn">NULL</span>,  prt<span class="op">=</span><span class="cn">TRUE</span>, predict_info<span class="op">=</span><span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -88,7 +88,7 @@
 
 
 <dt id="arg-smoothz">smoothZ<a class="anchor" aria-label="anchor" href="#arg-smoothz"></a></dt>
-<dd><p>A list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function <code>smZ</code>. e.g.
+<dd><p>The older form of the smooths (see ‘Smooth terms in the formula’ for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function <code>smZ</code>. e.g.
 smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the <code>data</code>, and x1 to x3 are covariates, and f1, f2 are factors.</p></dd>
 
 
@@ -105,7 +105,7 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details.</p></dd>
+<dd><p>A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is <code>lmerControl(optimizer = "nloptwrap")</code> (<code>"bobyqa"</code> in 1.x), also used for generalized fits.</p></dd>
 
 
 <dt id="arg-start">start<a class="anchor" aria-label="anchor" href="#arg-start"></a></dt>
@@ -197,14 +197,64 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 <dt>lmerc</dt>
 <dd><p>Call used in the mer model in the fitting.</p></dd>
 
+<dt>smooths</dt>
+<dd><p>For smooths written in the formula: the mgcv smooth objects and the maps that give the random-effect
+  design of each block for new data (used by <code><a href="semipred.html">semipred()</a></code> and <code><a href="predictmeans.html">predictmeans()</a></code>).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named &lt;e2&gt;&lt;80&gt;&lt;98&gt;smooth term&lt;e2&gt;&lt;80&gt;&lt;99&gt;). <code>semireg</code> follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.</p>
     </div>
     <div class="section level2">
+    <h2 id="smooth-terms-in-the-formula">Smooth terms in the formula<a class="anchor" aria-label="anchor" href="#smooth-terms-in-the-formula"></a></h2>
+
+
+<p>Smooths can be written in the model formula, as for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam</a></code>, next to fixed and lme4 random terms:
+<code>y ~ A + s(x, by = A) + (1 | Block)</code>. Each smooth is set up by mgcv (bases, knots, identifiability
+constraints) and split, as in <span class="pkg">gamm4</span>, into an unpenalised part, which is added to the fixed effects as
+ordinary terms, and penalised parts, each a block of random effects with one variance. The fixed terms are
+added automatically (terms already written are not doubled), so a smooth by a factor cannot lose its group
+slopes:</p><table class="table table"><tr><td><strong>Written</strong></td><td><strong>Meaning</strong></td><td><strong>Fixed terms added</strong></td></tr><tr><td><code>s(x)</code>, <code>s(x, bs = "cr", k = 12)</code></td><td>one curve</td><td><code>x</code></td></tr><tr><td><code>s(x, by = f)</code></td><td>a curve per level of <code>f</code>, a variance each (<code>id = 1</code>: one shared)</td><td><code>f + f:x</code></td></tr><tr><td><code>s(x, by = z)</code>, <code>z</code> numeric</td><td>varying coefficient \(f(x) z\)</td><td><code>z + z:x</code></td></tr><tr><td><code>s(x, f, bs = "fs")</code></td><td>random curves per level, one variance</td><td>none</td></tr><tr><td><code>(s(x, k = 10) | g)</code></td><td>random curve per level of <code>g</code>: <code>(x | g)</code> (correlated intercepts and slopes) plus a spline deviation per level, one variance</td><td>none</td></tr><tr><td><code>s(x1, x2)</code></td><td>isotropic surface (thin plate)</td><td><code>x1 + x2</code></td></tr><tr><td><code>s(x, bs = "os", k = 10)</code></td><td>O'Sullivan spline with <code>k</code> interior knots, as <code>smZ(x, k = 10)</code>; <code>xt = list(knots = , range = )</code> sets the interior knots and the range</td><td><code>x</code></td></tr><tr><td><code>s(x1, x2, bs = "ztps", k = 6)</code></td><td>thin plate of <code>Ztps()</code>, as <code>smZ(cbind(x1, x2), type = "Ztps")</code>; <code>xt = list(knots = )</code> sets the knots (a two-column matrix)</td><td><code>x1 + x2</code></td></tr><tr><td><code>s(x, bs = "cs")</code>, <code>"ts"</code></td><td>shrinkage smooths (no unpenalised part)</td><td>none</td></tr><tr><td><code>s(x, f)</code></td><td>common curve + a deviation curve per level of <code>f</code>, one variance for the deviations</td><td><code>x + f + f:x</code></td></tr><tr><td><code>s(x, f1:f2)</code></td><td>the same with the cells of <code>f1:f2</code></td><td><code>x + f1:f2 + f1:f2:x</code></td></tr><tr><td><code>s(x, f1*f2)</code></td><td>common curve + deviation curves for <code>f1</code>, <code>f2</code> and <code>f1:f2</code>, a variance each</td><td><code>x + f1*f2 + f1:x + f2:x + f1:f2:x</code></td></tr><tr><td><code>s(x1, x2, f)</code></td><td>common surface + a deviation surface per level</td><td><code>x1 + x2 + f + f:x1 + f:x2</code></td></tr></table><p>A factor term among the arguments of <code>s()</code> gives this ANOVA-like split (not an mgcv form): the deviation
+curves of a factor term are random effects with one variance, so <code><a href="varcomp.html">varcomp()</a></code> shows how much the curves differ
+by <code>f1</code>, by <code>f2</code> and by their interaction, and a variance of zero means the curves of that term have the
+same shape (their levels still differ by the fixed terms). The pieces are set up without constraints between them:
+the mixed model separates them by their variances, as nested random effects. Each level's curve is the fixed part
+plus the common curve plus its deviations.</p>
+<p>A random curve <code>(s(x) | g)</code> (O'Sullivan basis unless <code>bs</code> is given) is the group-specific curve model of
+Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section 9.2): each level of <code>g</code> (a subject) has its
+own straight line, <code>(x | g)</code>, and its own spline deviation, all levels sharing one variance; e.g. heights of
+boys over age, <code>height ~ s(age, bs = "os", k = 20) + (s(age, k = 10) | id)</code>. Unlike <code>s(x, g, bs = "fs")</code>,
+the intercepts and slopes are correlated, as <code>pdSymm(~ x)</code> in <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme</a></code>. The random curves are random
+effects: <code><a href="semipred.html">semipred()</a></code> and <code><a href="predictmeans.html">predictmeans()</a></code> give the population curves without them, and
+<code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> tests whether they are needed (their variance is zero: each subject's curve is a straight line).
+The fits equal <code>gam(..., method = "REML")</code> for gaussian models (with <code>s(g, bs = "re")</code> for a random
+intercept), and <code><a href="semipred.html">semipred()</a></code> and <code><a href="predictmeans.html">predictmeans()</a></code> give the curves, means and their standard errors of
+<code>predict.gam()</code>. The variables of formula smooths are not centred or scaled (<code>ncenter</code> and
+<code>nscale</code> apply to the other numeric covariates). Tensor products (<code>te()</code>, <code>t2()</code>, <code>ti()</code>) are
+not available yet. Smooths are given either in the formula or in <code>smoothZ</code>, not both. Objects named in
+<code>s()</code> (e.g. <code>xt = list(knots = kn)</code>) are taken from the environment of the formula.</p>
+<p>The penalised-spline examples fitted by <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme</a></code> in Wand's course scripts and in <span class="pkg">HRW</span> (additive
+models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
+give the same REML log-likelihood and fitted values with <code>semireg()</code> (data in
+<code>system.file("extdata", "semireg", package = "predictmeans")</code>; <code>tests/testthat/test-semireg-golden.R</code>).
+The optimizer is <code>nloptwrap</code> (lme4's default for <code>lmer</code>) since 2.0: on these examples it reached the
+same optimum as <code>bobyqa</code> (1.x's default; <code>control = lmerControl(optimizer = "bobyqa")</code>) faster, also
+for binomial and Poisson fits. Each smooth block of a formula smooth is scaled as a random intercept (sum of
+squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
+smooth block reported by <code><a href="https://rdrr.io/pkg/nlme/man/VarCorr.html" class="external-link">VarCorr()</a></code> or <code><a href="varcomp.html">varcomp()</a></code> is on that scale.</p>
+<p>Moving from the <code>smoothZ</code> form: <code>y ~ x, smoothZ = list(sm = smZ(x, k = 10))</code> is
+<code>y ~ s(x, bs = "os", k = 10)</code>; <code>smZ(x, by = f, group = TRUE)</code> is <code>s(x, by = f, bs = "os")</code>;
+<code>smZ(x, by = f)</code> (one variance) is <code>s(x, by = f, bs = "os", id = 1)</code>; <code>smZ(cbind(x1, x2),
+type = "Ztps")</code> is <code>s(x1, x2, bs = "ztps")</code>; <code>smZ(x, intKnots = kn, range.x = r)</code> is
+<code>s(x, bs = "os", xt = list(knots = kn, range = r))</code>. The fits are the same (<code><a href="../articles/smooth.html">vignette("smooth")</a></code>).</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. <em>Australian and New Zealand Journal of Statistics.</em> <b>50</b>, 179-198.</p>
+    <p>Durban, M., Harezlak, J., Wand, M.P. and Carroll, R.J. (2005). Simple fitting of subject-specific curves for
+longitudinal data. <em>Statistics in Medicine</em>, <b>24</b>, 1153-1167.</p>
+<p>Harezlak, J., Ruppert, D. and Wand, M.P. (2018). <em>Semiparametric Regression with R</em>. Springer, New York.</p>
+<p>Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. <em>Australian and New Zealand Journal of Statistics.</em> <b>50</b>, 179-198.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -214,6 +264,19 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"HRW"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">WarsawApts</span>, package <span class="op">=</span> <span class="st">"HRW"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">WarsawApts</span><span class="op">$</span><span class="va">district</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">WarsawApts</span><span class="op">$</span><span class="va">district</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># smooths in the formula: a curve per district; district and its slopes are added as fixed terms</span></span></span>
+<span class="r-in"><span>  <span class="va">fit0</span> <span class="op">&lt;-</span> <span class="fu">semireg</span><span class="op">(</span><span class="va">areaPerMzloty</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">construction.date</span>, by <span class="op">=</span> <span class="va">district</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">WarsawApts</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit0</span>, <span class="st">"district"</span>, <span class="st">"construction.date"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Srodmiescie"</span>, <span class="st">"Mokotow"</span><span class="op">)</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit0</span>, <span class="st">"district"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>construction.date <span class="op">=</span> <span class="fl">1980</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      district estimate std.error        df conf.low conf.high group</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     Mokotow 131.5985  3.327568 15.395491 124.5218  138.6752    A </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Srodmiescie 120.0818  6.036074  7.781159 106.0941  134.0694    AB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        Wola 118.8170  3.473279 10.389220 111.1172  126.5169     B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    Zoliborz 131.4446  6.091278 34.210731 119.0684  143.8207    AB</span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"HRW"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">WarsawApts</span>, package <span class="op">=</span> <span class="st">"HRW"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">semireg</span><span class="op">(</span><span class="va">areaPerMzloty</span> <span class="op">~</span> <span class="va">construction.date</span>,</span></span>
@@ -231,8 +294,7 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 <span class="r-in"><span>  <span class="va">sp_out2_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit2</span>, <span class="st">"district"</span>, <span class="st">"construction.date"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">sp_out2_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit2</span>, <span class="st">"district"</span>, <span class="st">"construction.date"</span>, contr<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> boundary (singular) fit: see help('isSingular')</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerLmerTest']</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerMod']</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: areaPerMzloty ~ construction.date + (1 | grp)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    Data: WarsawApts</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 3544.905</span>
@@ -245,32 +307,29 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 <span class="r-out co"><span class="r-pr">#&gt;</span>       (Intercept)  construction.date  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         109.38694            0.06692  </span>
 <span class="r-plt img"><img src="semireg-1.png" alt="" width="700" height="433"></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>unable to evaluate scaled gradient</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model failed to converge: degenerate  Hessian with 3 negative eigenvalues</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   See ?lme4::convergence and ?lme4::troubleshooting.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerLmerTest']</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear mixed model fit by REML ['semerMod']</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    Data: WarsawApts</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> REML criterion at convergence: 3501.211</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Groups            Name        Std.Dev.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Mokotow     (Intercept)  1.0341 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Srodmiescie (Intercept)  2.9071 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Mokotow     (Intercept)  1.0336 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Srodmiescie (Intercept)  2.9070 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  group.Wola        (Intercept)  0.1686 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Zoliborz    (Intercept)  0.5913 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                      16.4101 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  group.Zoliborz    (Intercept)  0.5914 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Residual                      16.4102 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 409, groups:  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> group.Mokotow, 17; group.Srodmiescie, 17; group.Wola, 17; group.Zoliborz, 17</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                           (Intercept)                      construction.date  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                               1.02680                                0.09596  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                               1.02674                                0.09594  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   districtSrodmiescie                           districtWola  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                              -9.67371                                2.89971  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                              -9.67368                                2.89944  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                      districtZoliborz  construction.date:districtSrodmiescie  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                              -5.35943                               -0.21369  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                              -5.35968                               -0.21367  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        construction.date:districtWola     construction.date:districtZoliborz  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                              -0.35515                               -0.17735  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                              -0.35512                               -0.17735  </span>
 <span class="r-plt img"><img src="semireg-2.png" alt="" width="700" height="433"></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Srodmiescie differs from Mokotow (pointwise band, level 0.05) for construction.date: 1944 to 1951 (&lt;); 1960 to 1975 (&lt;); 1990 to 1998 (&lt;); 2003 to 2007 (&lt;).</span>
 <span class="r-plt img"><img src="semireg-3.png" alt="" width="700" height="433"></span>
@@ -291,8 +350,6 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 <span class="r-in"><span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_rug.html" class="external-link">geom_rug</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">indonRespir</span>, <span class="va">respirInfec</span><span class="op">==</span><span class="fl">1</span><span class="op">)</span>, sides <span class="op">=</span> <span class="st">"t"</span>, col<span class="op">=</span><span class="st">"deeppink"</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model failed to converge with max|grad| = 0.0987173 (tol = 0.002, component 1)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   See ?lme4::convergence and ?lme4::troubleshooting.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Generalized linear mixed model fit by maximum likelihood (Laplace</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Approximation) [glmerMod]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: binomial  ( logit )</span>
@@ -303,14 +360,14 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 <span class="r-out co"><span class="r-pr">#&gt;</span>  673.9676  740.1386 -323.9838  647.9676      1187 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Random effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Groups Name        Std.Dev.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  idnum  (Intercept) 0.7939  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  grp    (Intercept) 0.4285  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  idnum  (Intercept) 0.7937  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  grp    (Intercept) 0.4288  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Number of obs: 1200, groups:  idnum, 275; grp, 8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fixed Effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)          age    vitAdefic       female       height      stunted  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    -3.15760     -0.50026      0.66618     -0.50590     -0.03300      0.45481  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   -3.157550    -0.500128     0.666216    -0.505965    -0.033001     0.454787  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      visit2       visit3       visit4       visit5       visit6  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    -1.10721     -0.57260     -1.27579      0.47302     -0.00467  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   -1.107518    -0.573018    -1.276192     0.472608    -0.005654  </span>
 <span class="r-plt img"><img src="semireg-4.png" alt="" width="700" height="433"></span>
 <span class="r-plt img"><img src="semireg-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>

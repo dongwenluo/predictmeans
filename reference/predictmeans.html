@@ -92,7 +92,10 @@ a message says that REML (<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html"
 all strata and is the better analysis when plots are missing. For a <code>semireg</code> fit the
 means include the smooth terms (as <code><a href="semipred.html">semipred</a></code>), at the covariates' means or at the values of
 <code>covariate</code> (a named vector, e.g. <code>c(construction.date = 1980)</code>); the result holds only the
-<code>means</code>, <code>pairs</code> and <code>settings</code> tables, with normal-based tests and any <code>adj</code>.</p></dd>
+<code>means</code>, <code>pairs</code> and <code>settings</code> tables, with any <code>adj</code>. For gaussian fits the tests are t
+tests with Satterthwaite df for the combination of fixed and smooth coefficients (the means include the smooths'
+random effects; SAS gives such df to estimates that involve random effects); for generalized fits they are
+normal-based.</p></dd>
 
 
 <dt id="arg-modelterm">modelterm<a class="anchor" aria-label="anchor" href="#arg-modelterm"></a></dt>

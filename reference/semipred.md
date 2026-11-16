@@ -11,7 +11,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
        scales=c("fixed", "free", "free_x", "free_y"),
        plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
        simultaneous=FALSE, contr_scale=c("model", "response"),
-       band=c("pointwise", "simultaneous"))
+       band=c("pointwise", "simultaneous"),
+       unconditional=getOption("predictmeans.semi_unconditional"))
 ```
 
 ## Arguments
@@ -129,6 +130,27 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   where lines of a parametric model use Scheffe's critical value
   instead; for smooths that would be far too wide.
 
+- unconditional:
+
+  If `TRUE`, the covariance of the coefficients includes the uncertainty
+  of the smoothing parameters (the variances of the smooth terms), as
+  mgcv's `unconditional = TRUE`: the first-order correction \\J
+  V\_\theta J'\\ is added, \\J\\ the derivative of the estimated
+  coefficients in the variance parameters and \\V\_\theta\\ the
+  covariance of their estimates (from the Hessian of the deviance; for
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits TMB's joint precision of all parameters). The default (`NULL`) is
+  `TRUE` for generalized models and `FALSE` for gaussian ones: in a
+  simulation of the difference between two curves
+  (`dev/sim-curve-difference.R`, 150 data sets, nominal 0.95) the bands
+  without it covered 0.93 pointwise and 0.89-0.91 over the whole curve
+  for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it;
+  for gaussian data 0.97 without it (0.98 with it).
+  `options(predictmeans.semi_unconditional = TRUE)` (or `FALSE`) sets it
+  for `semipred()` and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on `semireg` fits.
+
 - simultaneous:
 
   `TRUE` is the same as `band = "simultaneous"` (the name before 2.0).
@@ -223,8 +245,7 @@ fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
                 qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)
               ),
               data=Dialyzer)
-#> boundary (singular) fit: see help('isSingular')
-#> Linear mixed model fit by REML ['semerLmerTest']
+#> Linear mixed model fit by REML ['semerMod']
 #> Formula: rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) +  
 #>     (1 | qb_grp.300)
 #>    Data: Dialyzer
@@ -234,7 +255,7 @@ fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
 #>  Subject    (Intercept)  2.583        
 #>             pressure     1.554   0.56 
 #>  qb_grp.200 (Intercept) 27.493        
-#>  qb_grp.300 (Intercept) 25.482        
+#>  qb_grp.300 (Intercept) 25.483        
 #>  Residual                2.197        
 #> Number of obs: 140, groups:  Subject, 20; qb_grp.200, 6; qb_grp.300, 6
 #> Fixed Effects:
@@ -252,8 +273,7 @@ str(fm$data)
 #>   ..- attr(*, "names")= chr "pressure"
 #>  - attr(*, "numeric_var")= chr "pressure"
 summary(fm$semer)
-#> Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-#> semerLmerTest]
+#> Linear mixed model fit by REML ['semerMod']
 #> Formula: rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) +  
 #>     (1 | qb_grp.300)
 #>    Data: Dialyzer
@@ -262,25 +282,23 @@ summary(fm$semer)
 #> 
 #> Scaled residuals: 
 #>      Min       1Q   Median       3Q      Max 
-#> -2.51549 -0.47839 -0.00357  0.46801  2.60037 
+#> -2.51549 -0.47841 -0.00357  0.46800  2.60038 
 #> 
 #> Random effects:
 #>  Groups     Name        Variance Std.Dev. Corr 
 #>  Subject    (Intercept)   6.670   2.583        
 #>             pressure      2.414   1.554   0.56 
-#>  qb_grp.200 (Intercept) 755.857  27.493        
-#>  qb_grp.300 (Intercept) 649.313  25.482        
+#>  qb_grp.200 (Intercept) 755.888  27.493        
+#>  qb_grp.300 (Intercept) 649.389  25.483        
 #>  Residual                 4.828   2.197        
 #> Number of obs: 140, groups:  Subject, 20; qb_grp.200, 6; qb_grp.300, 6
 #> 
 #> Fixed effects:
-#>                Estimate Std. Error       df t value Pr(>|t|)    
-#> (Intercept)    30.90817    0.86537  0.03268  35.717    0.823    
-#> pressure       12.82922    0.57208 23.30987  22.426  < 2e-16 ***
-#> QB300           7.42374    1.22522 18.41492   6.059 9.06e-06 ***
-#> pressure:QB300  7.13124    0.81170 23.61651   8.786 6.63e-09 ***
-#> ---
-#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#>                Estimate Std. Error t value
+#> (Intercept)     30.9082     0.8654  35.717
+#> pressure        12.8292     0.5721  22.425
+#> QB300            7.4237     1.2252   6.059
+#> pressure:QB300   7.1312     0.8117   8.786
 #> 
 #> Correlation of Fixed Effects:
 #>             (Intr) pressr QB300 
@@ -289,26 +307,23 @@ summary(fm$semer)
 #> prssr:QB300 -0.325 -0.705  0.455
 residplot(fm$semer, group="QB")
 
-anova(fm$semer)
-#> Type III Analysis of Variance Table with Satterthwaite's method
-#>             Sum Sq Mean Sq NumDF  DenDF  F value    Pr(>F)    
-#> pressure    7878.1  7878.1     1 23.617 1631.860 < 2.2e-16 ***
-#> QB           177.2   177.2     1 18.415   36.713 9.057e-06 ***
-#> pressure:QB  372.6   372.6     1 23.616   77.186 6.629e-09 ***
-#> ---
-#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-lmerTest::ranova(fm$semer)
-#> ANOVA-like table for random-effects: Single term deletions
+anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
+#> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
-#> Model:
-#> rate ~ pressure * QB + (pressure | Subject) + (1 | qb_grp.200) + (1 | qb_grp.300)
-#>                                  npar  logLik     AIC    LRT Df Pr(>Chisq)    
-#> <none>                             10 -355.62  731.25                         
-#> pressure in (pressure | Subject)    8 -505.22 1026.45 299.20  2  < 2.2e-16 ***
-#> (1 | qb_grp.200)                    9 -476.39  970.78 241.53  1  < 2.2e-16 ***
-#> (1 | qb_grp.300)                    9 -468.27  954.54 225.29  1  < 2.2e-16 ***
+#> Response: rate
+#>                    F Df Df.res    Pr(>F)    
+#> (Intercept) 3190.734  1 18.708 < 2.2e-16 ***
+#> pressure    1628.834  1 19.142 < 2.2e-16 ***
+#> QB            36.679  1 18.708 8.514e-06 ***
+#> pressure:QB   77.043  1 19.142 3.873e-08 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#> 
+#> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);
+#> p-values halved for the boundary (chi-square 0:1)
+#>        term variance logLik logLik.without   LRT p.value
+#>  qb_grp.200    755.9 -355.6         -476.4 241.5  <2e-16
+#>  qb_grp.300    649.4 -355.6         -468.3 225.3  <2e-16
 R2_glmm(fm$semer)
 #> # Adjusted R2 for Mixed Models
 #>            Total            Fixed           Random          Subject 
@@ -360,8 +375,7 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
                         sub_grp=smZ(Days, by=Subject, group=TRUE)
                       ),
                       data=sleepstudy)
-#> boundary (singular) fit: see help('isSingular')
-#> Linear mixed model fit by REML ['semerLmerTest']
+#> Linear mixed model fit by REML ['semerMod']
 #> Formula: Reaction ~ Days * Subject + (1 | sub_grp.308) + (1 | sub_grp.309) +  
 #>     (1 | sub_grp.310) + (1 | sub_grp.330) + (1 | sub_grp.331) +  
 #>     (1 | sub_grp.332) + (1 | sub_grp.333) + (1 | sub_grp.334) +  
@@ -372,39 +386,39 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
 #>    Data: sleepstudy
 #> REML criterion at convergence: 1402.094
 #> Random effects:
-#>  Groups      Name        Std.Dev.
-#>  sub_grp.308 (Intercept) 87.687  
-#>  sub_grp.309 (Intercept)  1.953  
-#>  sub_grp.310 (Intercept)  0.000  
-#>  sub_grp.330 (Intercept)  8.867  
-#>  sub_grp.331 (Intercept)  8.598  
-#>  sub_grp.332 (Intercept) 53.207  
-#>  sub_grp.333 (Intercept)  0.000  
-#>  sub_grp.334 (Intercept)  8.332  
-#>  sub_grp.335 (Intercept)  0.000  
-#>  sub_grp.337 (Intercept)  0.000  
-#>  sub_grp.349 (Intercept)  5.746  
-#>  sub_grp.350 (Intercept) 17.727  
-#>  sub_grp.351 (Intercept)  7.290  
-#>  sub_grp.352 (Intercept) 16.550  
-#>  sub_grp.369 (Intercept)  0.000  
-#>  sub_grp.370 (Intercept)  0.000  
-#>  sub_grp.371 (Intercept) 12.659  
-#>  sub_grp.372 (Intercept)  0.000  
-#>  Residual                17.081  
+#>  Groups      Name        Std.Dev. 
+#>  sub_grp.308 (Intercept) 8.770e+01
+#>  sub_grp.309 (Intercept) 1.953e+00
+#>  sub_grp.310 (Intercept) 0.000e+00
+#>  sub_grp.330 (Intercept) 8.867e+00
+#>  sub_grp.331 (Intercept) 8.600e+00
+#>  sub_grp.332 (Intercept) 5.321e+01
+#>  sub_grp.333 (Intercept) 0.000e+00
+#>  sub_grp.334 (Intercept) 8.331e+00
+#>  sub_grp.335 (Intercept) 0.000e+00
+#>  sub_grp.337 (Intercept) 0.000e+00
+#>  sub_grp.349 (Intercept) 5.746e+00
+#>  sub_grp.350 (Intercept) 1.773e+01
+#>  sub_grp.351 (Intercept) 7.290e+00
+#>  sub_grp.352 (Intercept) 1.655e+01
+#>  sub_grp.369 (Intercept) 6.125e-04
+#>  sub_grp.370 (Intercept) 0.000e+00
+#>  sub_grp.371 (Intercept) 1.266e+01
+#>  sub_grp.372 (Intercept) 0.000e+00
+#>  Residual                1.708e+01
 #> Number of obs: 180, groups:  
 #> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8
 #> Fixed Effects:
 #>     (Intercept)             Days       Subject309       Subject310  
-#>         343.816           22.748         -128.226         -112.815  
+#>         343.817           22.748         -128.226         -112.815  
 #>      Subject330       Subject331       Subject332       Subject333  
-#>         -36.740          -33.231          -47.494          -27.658  
+#>         -36.741          -33.231          -47.494          -27.658  
 #>      Subject334       Subject335       Subject337       Subject349  
-#>         -45.052          -93.746           31.905          -65.836  
+#>         -45.052          -93.747           31.904          -65.837  
 #>      Subject350       Subject351       Subject352       Subject369  
-#>         -28.624          -52.067          -10.448          -37.782  
+#>         -28.624          -52.067          -10.449          -37.782  
 #>      Subject370       Subject371       Subject372  Days:Subject309  
-#>         -52.115          -44.565          -25.930          -20.490  
+#>         -52.115          -44.565          -25.931          -20.490  
 #> Days:Subject310  Days:Subject330  Days:Subject331  Days:Subject332  
 #>         -16.633          -19.741          -17.181          -14.881  
 #> Days:Subject333  Days:Subject334  Days:Subject335  Days:Subject337  
@@ -416,8 +430,7 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
 residplot(sleep.semi$semer)
 
 summary(sleep.semi$semer)
-#> Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-#> semerLmerTest]
+#> Linear mixed model fit by REML ['semerMod']
 #> Formula: Reaction ~ Days * Subject + (1 | sub_grp.308) + (1 | sub_grp.309) +  
 #>     (1 | sub_grp.310) + (1 | sub_grp.330) + (1 | sub_grp.331) +  
 #>     (1 | sub_grp.332) + (1 | sub_grp.333) + (1 | sub_grp.334) +  
@@ -431,88 +444,111 @@ summary(sleep.semi$semer)
 #> 
 #> Scaled residuals: 
 #>     Min      1Q  Median      3Q     Max 
-#> -2.5308 -0.3655  0.0058  0.4992  3.3329 
+#> -2.5307 -0.3655  0.0058  0.4992  3.3329 
 #> 
 #> Random effects:
-#>  Groups      Name        Variance Std.Dev.
-#>  sub_grp.308 (Intercept) 7689.043 87.687  
-#>  sub_grp.309 (Intercept)    3.814  1.953  
-#>  sub_grp.310 (Intercept)    0.000  0.000  
-#>  sub_grp.330 (Intercept)   78.629  8.867  
-#>  sub_grp.331 (Intercept)   73.933  8.598  
-#>  sub_grp.332 (Intercept) 2830.981 53.207  
-#>  sub_grp.333 (Intercept)    0.000  0.000  
-#>  sub_grp.334 (Intercept)   69.422  8.332  
-#>  sub_grp.335 (Intercept)    0.000  0.000  
-#>  sub_grp.337 (Intercept)    0.000  0.000  
-#>  sub_grp.349 (Intercept)   33.017  5.746  
-#>  sub_grp.350 (Intercept)  314.229 17.727  
-#>  sub_grp.351 (Intercept)   53.139  7.290  
-#>  sub_grp.352 (Intercept)  273.919 16.550  
-#>  sub_grp.369 (Intercept)    0.000  0.000  
-#>  sub_grp.370 (Intercept)    0.000  0.000  
-#>  sub_grp.371 (Intercept)  160.240 12.659  
-#>  sub_grp.372 (Intercept)    0.000  0.000  
-#>  Residual                 291.754 17.081  
+#>  Groups      Name        Variance  Std.Dev. 
+#>  sub_grp.308 (Intercept) 7.691e+03 8.770e+01
+#>  sub_grp.309 (Intercept) 3.815e+00 1.953e+00
+#>  sub_grp.310 (Intercept) 0.000e+00 0.000e+00
+#>  sub_grp.330 (Intercept) 7.862e+01 8.867e+00
+#>  sub_grp.331 (Intercept) 7.395e+01 8.600e+00
+#>  sub_grp.332 (Intercept) 2.831e+03 5.321e+01
+#>  sub_grp.333 (Intercept) 0.000e+00 0.000e+00
+#>  sub_grp.334 (Intercept) 6.941e+01 8.331e+00
+#>  sub_grp.335 (Intercept) 0.000e+00 0.000e+00
+#>  sub_grp.337 (Intercept) 0.000e+00 0.000e+00
+#>  sub_grp.349 (Intercept) 3.301e+01 5.746e+00
+#>  sub_grp.350 (Intercept) 3.142e+02 1.773e+01
+#>  sub_grp.351 (Intercept) 5.315e+01 7.290e+00
+#>  sub_grp.352 (Intercept) 2.739e+02 1.655e+01
+#>  sub_grp.369 (Intercept) 3.751e-07 6.125e-04
+#>  sub_grp.370 (Intercept) 0.000e+00 0.000e+00
+#>  sub_grp.371 (Intercept) 1.602e+02 1.266e+01
+#>  sub_grp.372 (Intercept) 0.000e+00 0.000e+00
+#>  Residual                2.918e+02 1.708e+01
 #> Number of obs: 180, groups:  
 #> sub_grp.308, 8; sub_grp.309, 8; sub_grp.310, 8; sub_grp.330, 8; sub_grp.331, 8; sub_grp.332, 8; sub_grp.333, 8; sub_grp.334, 8; sub_grp.335, 8; sub_grp.337, 8; sub_grp.349, 8; sub_grp.350, 8; sub_grp.351, 8; sub_grp.352, 8; sub_grp.369, 8; sub_grp.370, 8; sub_grp.371, 8; sub_grp.372, 8
 #> 
 #> Fixed effects:
-#>                  Estimate Std. Error        df t value Pr(>|t|)    
-#> (Intercept)      343.8165     5.6885    0.1911  60.440 0.346110    
-#> Days              22.7478     1.9581  457.2032  11.617  < 2e-16 ***
-#> Subject309      -128.2262     7.8715  440.5474 -16.290  < 2e-16 ***
-#> Subject310      -112.8152     7.8444  434.0055 -14.382  < 2e-16 ***
-#> Subject330       -36.7402     7.9577  460.0049  -4.617 5.06e-06 ***
-#> Subject331       -33.2308     7.9565  468.6447  -4.177 3.53e-05 ***
-#> Subject332       -47.4940     8.0120  472.8517  -5.928 5.92e-09 ***
-#> Subject333       -27.6582     7.8444  434.0055  -3.526 0.000467 ***
-#> Subject334       -45.0516     7.9552  459.4251  -5.663 2.62e-08 ***
-#> Subject335       -93.7464     7.8444  442.7847 -11.951  < 2e-16 ***
-#> Subject337        31.9045     7.8444  434.5138   4.067 5.65e-05 ***
-#> Subject349       -65.8362     7.9366  454.7672  -8.295 1.24e-15 ***
-#> Subject350       -28.6239     7.9774  464.5713  -3.588 0.000368 ***
-#> Subject351       -52.0672     7.9493  466.9359  -6.550 1.52e-10 ***
-#> Subject352       -10.4484     7.9759  464.3778  -1.310 0.190843    
-#> Subject369       -37.7818     7.8444  434.0055  -4.816 2.02e-06 ***
-#> Subject370       -52.1147     7.8444  434.3553  -6.644 9.19e-11 ***
-#> Subject371       -44.5647     7.9693  471.6558  -5.592 3.81e-08 ***
-#> Subject372       -25.9304     7.8444  434.5138  -3.306 0.001026 ** 
-#> Days:Subject309  -20.4897     2.7156  424.2914  -7.545 2.78e-13 ***
-#> Days:Subject310  -16.6329     2.7149  415.7123  -6.127 2.08e-09 ***
-#> Days:Subject330  -19.7413     2.7249  430.1178  -7.245 2.02e-12 ***
-#> Days:Subject331  -17.1810     2.7245  438.5644  -6.306 7.00e-10 ***
-#> Days:Subject332  -14.8812     2.7522  447.6079  -5.407 1.04e-07 ***
-#> Days:Subject333  -13.6057     2.7149  415.7123  -5.012 8.00e-07 ***
-#> Days:Subject334  -10.5976     2.7242  429.6362  -3.890 0.000116 ***
-#> Days:Subject335  -25.6288     2.7149  432.3662  -9.440  < 2e-16 ***
-#> Days:Subject337   -3.7218     2.7149  423.8083  -1.371 0.171134    
-#> Days:Subject349   -9.2473     2.7203  419.0528  -3.399 0.000740 ***
-#> Days:Subject350   -4.0931     2.7343  436.0363  -1.497 0.135123    
-#> Days:Subject351  -16.1188     2.7226  437.3312  -5.920 6.50e-09 ***
-#> Days:Subject352   -8.5054     2.7333  435.4522  -3.112 0.001982 ** 
-#> Days:Subject369  -11.3997     2.7149  415.7123  -4.199 3.28e-05 ***
-#> Days:Subject370   -4.6916     2.7149  423.8020  -1.728 0.084695 .  
-#> Days:Subject371  -13.1288     2.7297  441.8648  -4.810 2.08e-06 ***
-#> Days:Subject372  -11.4497     2.7149  423.8083  -4.217 3.02e-05 ***
-#> ---
-#> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#>                 Estimate Std. Error t value
+#> (Intercept)      343.817      5.689  60.440
+#> Days              22.748      1.958  11.617
+#> Subject309      -128.226      7.871 -16.290
+#> Subject310      -112.815      7.844 -14.382
+#> Subject330       -36.741      7.958  -4.617
+#> Subject331       -33.231      7.957  -4.177
+#> Subject332       -47.494      8.012  -5.928
+#> Subject333       -27.658      7.844  -3.526
+#> Subject334       -45.052      7.955  -5.663
+#> Subject335       -93.747      7.844 -11.951
+#> Subject337        31.904      7.844   4.067
+#> Subject349       -65.837      7.937  -8.295
+#> Subject350       -28.624      7.977  -3.588
+#> Subject351       -52.067      7.949  -6.550
+#> Subject352       -10.449      7.976  -1.310
+#> Subject369       -37.782      7.844  -4.816
+#> Subject370       -52.115      7.844  -6.644
+#> Subject371       -44.565      7.969  -5.592
+#> Subject372       -25.931      7.844  -3.306
+#> Days:Subject309  -20.490      2.716  -7.545
+#> Days:Subject310  -16.633      2.715  -6.127
+#> Days:Subject330  -19.741      2.725  -7.245
+#> Days:Subject331  -17.181      2.725  -6.306
+#> Days:Subject332  -14.881      2.752  -5.407
+#> Days:Subject333  -13.606      2.715  -5.012
+#> Days:Subject334  -10.598      2.724  -3.890
+#> Days:Subject335  -25.629      2.715  -9.440
+#> Days:Subject337   -3.722      2.715  -1.371
+#> Days:Subject349   -9.247      2.720  -3.399
+#> Days:Subject350   -4.093      2.734  -1.497
+#> Days:Subject351  -16.119      2.723  -5.920
+#> Days:Subject352   -8.505      2.733  -3.112
+#> Days:Subject369  -11.400      2.715  -4.199
+#> Days:Subject370   -4.692      2.715  -1.728
+#> Days:Subject371  -13.129      2.730  -4.810
+#> Days:Subject372  -11.450      2.715  -4.217
 #> 
 #> Correlation matrix not shown by default, as p = 36 > 12.
 #> Use print(x, correlation=TRUE)  or
 #>     vcov(x)        if you need it
-anova(sleep.semi$semer)
-#> Type III Analysis of Variance Table with Satterthwaite's method
-#>              Sum Sq Mean Sq NumDF  DenDF F value    Pr(>F)    
-#> Days         160019  160019     1 385.67 548.472 < 2.2e-16 ***
-#> Subject      243328   14313    17 422.34  49.060 < 2.2e-16 ***
-#> Days:Subject  60104    3536    17 401.98  12.118 < 2.2e-16 ***
+anova(sleep.semi)
+#> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
+#> 
+#> Response: Reaction
+#>                      F Df Df.res    Pr(>F)    
+#> (Intercept)  51325.067  1 97.685 < 2.2e-16 ***
+#> Days           543.003  1 97.468 < 2.2e-16 ***
+#> Subject         46.915 17 96.801 < 2.2e-16 ***
+#> Days:Subject    12.033 17 97.065 < 2.2e-16 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#> 
+#> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);
+#> p-values halved for the boundary (chi-square 0:1)
+#>         term  variance logLik logLik.without       LRT  p.value
+#>  sub_grp.308 7.691e+03   -701         -710.8 1.942e+01 5.24e-06
+#>  sub_grp.309 3.815e+00   -701         -701.1 3.592e-02  0.42484
+#>  sub_grp.310 0.000e+00   -701         -701.0 1.906e-06  0.49945
+#>  sub_grp.330 7.862e+01   -701         -703.8 5.544e+00  0.00927
+#>  sub_grp.331 7.395e+01   -701         -701.2 2.815e-01  0.29787
+#>  sub_grp.332 2.831e+03   -701         -723.5 4.489e+01 1.04e-11
+#>  sub_grp.333 0.000e+00   -701         -701.0 1.550e-08  0.49995
+#>  sub_grp.334 6.941e+01   -701         -703.3 4.463e+00  0.01732
+#>  sub_grp.335 0.000e+00   -701         -701.0 1.317e-07  0.49986
+#>  sub_grp.337 0.000e+00   -701         -701.0 7.133e-07  0.49966
+#>  sub_grp.349 3.301e+01   -701         -701.9 1.639e+00  0.10024
+#>  sub_grp.350 3.142e+02   -701         -702.9 3.632e+00  0.02834
+#>  sub_grp.351 5.315e+01   -701         -701.4 7.358e-01  0.19551
+#>  sub_grp.352 2.739e+02   -701         -705.1 8.012e+00  0.00232
+#>  sub_grp.369 3.751e-07   -701         -701.0 0.000e+00  0.50000
+#>  sub_grp.370 0.000e+00   -701         -701.0 3.327e-07  0.49977
+#>  sub_grp.371 1.602e+02   -701         -704.7 7.277e+00  0.00349
+#>  sub_grp.372 0.000e+00   -701         -701.0 2.723e-07  0.49979
 R2_glmm(sleep.semi$semer)
 #> # Adjusted R2 for Mixed Models
 #>       Total       Fixed      Random sub_grp.308 sub_grp.309 sub_grp.310 
-#>    "93.42%"    "58.07%"    "35.36%"    "23.48%"     "0.01%"        "0%" 
+#>    "93.43%"    "58.06%"    "35.36%"    "23.48%"     "0.01%"        "0%" 
 #> sub_grp.330 sub_grp.331 sub_grp.332 sub_grp.333 sub_grp.334 sub_grp.335 
 #>     "0.24%"     "0.23%"     "8.64%"        "0%"     "0.21%"        "0%" 
 #> sub_grp.337 sub_grp.349 sub_grp.350 sub_grp.351 sub_grp.352 sub_grp.369 

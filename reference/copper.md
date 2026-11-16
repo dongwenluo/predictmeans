@@ -39,21 +39,27 @@ mod <- semireg(log(grade) ~ (xcoord + ycoord + zcoord)^2,
                smoothZ = list(grp_z = smZ(zcoord),
                               grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
                data = copper, prt = FALSE)
-#> Warning: Some predictor variables are on very different scales: consider rescaling. 
-#> You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
-#> boundary (singular) fit: see help('isSingular')
-lmerTest::ranova(mod$semer)
-#> Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
-#>   Consider formula(paste(x, collapse = " ")) instead.
-#> ANOVA-like table for random-effects: Single term deletions
+anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
+#> Warning: NaNs produced
+#> Warning: NaNs produced
+#> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
-#> Model:
-#> log ~ (xcoord + ycoord + zcoord)^2 + (1 | grp_z) + (1 | grp_geo)
-#>               npar  logLik    AIC    LRT Df Pr(>Chisq)    
-#> <none>          10 -159.20 338.41                         
-#> (1 | grp_z)      9 -199.65 417.30 80.899  1  < 2.2e-16 ***
-#> (1 | grp_geo)    9 -207.68 433.36 96.951  1  < 2.2e-16 ***
+#> Response: log(grade)
+#>                     F Df  Df.res    Pr(>F)    
+#> (Intercept)    0.0000  1    12.6   0.99676    
+#> xcoord         0.1862  1    12.6   0.67340    
+#> ycoord         0.0000  1    12.6   0.99523    
+#> zcoord         5.8288  1 -3789.6       NaN    
+#> xcoord:ycoord  0.2840  1    15.4   0.60167    
+#> xcoord:zcoord  4.0104  1   428.9   0.04585 *  
+#> ycoord:zcoord 26.3669  1   424.5 4.309e-07 ***
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#> 
+#> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);
+#> p-values halved for the boundary (chi-square 0:1)
+#>     term  variance logLik logLik.without   LRT p.value
+#>    grp_z 4.170e-03 -163.9         -199.7 71.41  <2e-16
+#>  grp_geo 1.295e-06 -163.9         -207.7 87.46  <2e-16
 # }
 ```

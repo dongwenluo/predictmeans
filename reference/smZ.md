@@ -1,7 +1,10 @@
 # Generate Sparse Matrix Z for penalized spline smoothing
 
 Constructs a sparse matrix (Z) of a spline function with for a covariate
-with(out) group.
+with(out) group. Since 2.0 smooths can be written in the formula of
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+instead (`s(x, by = f)`), which adds their fixed terms automatically;
+`s(x, bs = "os", k = 10)` gives the basis of `smZ(x, k = 10)`.
 
 ## Usage
 

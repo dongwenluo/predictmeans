@@ -82,9 +82,11 @@ not known, <code><a href="../reference/semireg.html">semireg()</a></code> fits i
 linear or generalized linear mixed model (Ruppert, Wand and Carroll
 2003). The spline’s wiggly part is a random effect, so the amount of
 smoothing is estimated by REML along with the other variance components,
-and the usual mixed-model tools apply. <code><a href="../reference/semipred.html">semipred()</a></code> predicts
-the curves with confidence bands; <code><a href="../reference/predictmeans.html">predictmeans()</a></code> gives
-means and comparisons of factor levels with the smooth included.</p>
+and the usual mixed-model tools apply. Smooths are written in the model
+formula, as for <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>, next to fixed and lme4 random
+terms. <code><a href="../reference/semipred.html">semipred()</a></code> predicts the curves with confidence
+bands; <code><a href="../reference/predictmeans.html">predictmeans()</a></code> gives means and comparisons of factor
+levels with the smooth included.</p>
 <div class="section level2">
 <h2 id="data-and-model">Data and model<a class="anchor" aria-label="anchor" href="#data-and-model"></a>
 </h2>
@@ -95,32 +97,87 @@ at two blood flow rates (<code>QB</code>, 200 or 300 dl/min).</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Dialyzer</span>, package <span class="op">=</span> <span class="st">"nlme"</span><span class="op">)</span></span>
 <span><span class="va">Dialyzer</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">Dialyzer</span><span class="op">)</span></span></code></pre></div>
-<p>The rate rises with pressure and levels off. The model has a linear
-trend for each blood flow rate, a smooth departure from it for each rate
-(<code>smZ(..., by = QB, group = TRUE)</code>), and a random intercept
-and slope for each dialyzer:</p>
+<p>The rate rises with pressure and levels off. The model has a curve
+for each blood flow rate, <code>s(pressure, by = QB)</code>, and a
+random intercept and slope for each dialyzer:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="va">pressure</span> <span class="op">*</span> <span class="va">QB</span> <span class="op">+</span> <span class="op">(</span><span class="va">pressure</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>,</span>
-<span>              smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>qb <span class="op">=</span> <span class="fu"><a href="../reference/smZ.html">smZ</a></span><span class="op">(</span><span class="va">pressure</span>, k <span class="op">=</span> <span class="fl">4</span>, by <span class="op">=</span> <span class="va">QB</span>, group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">pressure</span>, by <span class="op">=</span> <span class="va">QB</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">pressure</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>,</span>
 <span>              data <span class="op">=</span> <span class="va">Dialyzer</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><code>k</code> is the number of interior knots of the spline.
-<code>fm$semer</code> is the fitted mixed model, so the usual tests
-apply. <code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">lmerTest::ranova()</a></code> tests the random terms, including
-the smooth: a significant smooth term means the curve is not a straight
+<p><code>bs = "os"</code> is the O’Sullivan penalized spline (Wand and
+Ormerod 2008) with <code>k</code> interior knots; any mgcv basis can be
+used instead (the default is a thin plate spline). Each curve is split
+into a straight line, whose terms (<code>QB + QB:pressure</code>) are
+added to the fixed effects automatically, and a smooth departure from
+it, a block of random effects with its own variance.</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>Written</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>s(x)</code></td>
+<td>one curve</td>
+</tr>
+<tr class="even">
+<td><code>s(x, by = f)</code></td>
+<td>a curve per level of <code>f</code>, a variance each
+(<code>id = 1</code>: one shared)</td>
+</tr>
+<tr class="odd">
+<td>
+<code>s(x, by = z)</code>, <code>z</code> numeric</td>
+<td>varying coefficient</td>
+</tr>
+<tr class="even">
+<td><code>s(x, f)</code></td>
+<td>common curve + a deviation curve per level of <code>f</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>s(x, f1*f2)</code></td>
+<td>common curve + deviations for <code>f1</code>, <code>f2</code>,
+<code>f1:f2</code>, a variance each</td>
+</tr>
+<tr class="even">
+<td>
+<code>s(x1, x2)</code>, <code>s(x1, x2, bs = "ztps")</code>
+</td>
+<td>surface</td>
+</tr>
+<tr class="odd">
+<td><code>(s(x, k = 10) \| g)</code></td>
+<td>random curve per subject: <code>(x \| g)</code> + a spline
+deviation</td>
+</tr>
+</tbody>
+</table>
+<p><code><a href="../reference/semireg.html">?semireg</a></code> has the full table. <code>anova(fm)</code>
+gives the tests of the fixed effects (Type III, Kenward-Roger df) and,
+for each smooth term, the likelihood ratio test of its variance being
+zero: a significant smooth term means the curve is not a straight
 line.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">lmerTest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">ranova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ANOVA-like table for random-effects: Single term deletions</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Model:</span></span>
-<span><span class="co">#&gt; rate ~ pressure * QB + (pressure | Subject) + (1 | qb.200) + (1 | qb.300)</span></span>
-<span><span class="co">#&gt;                                  npar  logLik     AIC    LRT Df Pr(&gt;Chisq)    </span></span>
-<span><span class="co">#&gt; &lt;none&gt;                             10 -355.62  731.25                         </span></span>
-<span><span class="co">#&gt; pressure in (pressure | Subject)    8 -505.22 1026.45 299.20  2  &lt; 2.2e-16 ***</span></span>
-<span><span class="co">#&gt; (1 | qb.200)                        9 -476.39  970.78 241.53  1  &lt; 2.2e-16 ***</span></span>
-<span><span class="co">#&gt; (1 | qb.300)                        9 -468.27  954.54 225.29  1  &lt; 2.2e-16 ***</span></span>
+<span><span class="co">#&gt; Response: rate</span></span>
+<span><span class="co">#&gt;                    F Df Df.res    Pr(&gt;F)    </span></span>
+<span><span class="co">#&gt; (Intercept) 212.0332  1 19.128 8.354e-12 ***</span></span>
+<span><span class="co">#&gt; QB            7.4995  1 19.128     0.013 *  </span></span>
+<span><span class="co">#&gt; QB:pressure 850.3842  2 19.129 &lt; 2.2e-16 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
-<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);</span></span>
+<span><span class="co">#&gt; p-values halved for the boundary (chi-square 0:1)</span></span>
+<span><span class="co">#&gt;              term variance logLik logLik.without   LRT p.value</span></span>
+<span><span class="co">#&gt;  s_pressure_QB200    28.92 -355.6         -476.4 241.5  &lt;2e-16</span></span>
+<span><span class="co">#&gt;  s_pressure_QB300    24.53 -355.6         -468.3 225.3  &lt;2e-16</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="curves-with-confidence-bands">Curves with confidence bands<a class="anchor" aria-label="anchor" href="#curves-with-confidence-bands"></a>
@@ -129,12 +186,12 @@ line.</p>
 <code class="sourceCode R"><span><span class="va">cur</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cur</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    QB pressure        SE     rate        LL       UL</span></span>
-<span><span class="co">#&gt; 1 200    0.235 1.0383106 2.720145 0.6850933 4.755196</span></span>
-<span><span class="co">#&gt; 2 200    0.240 1.0224196 3.029840 1.0259346 5.033746</span></span>
-<span><span class="co">#&gt; 3 200    0.245 1.0080356 3.339669 1.3639559 5.315383</span></span>
-<span><span class="co">#&gt; 4 200    0.250 0.9950326 3.649588 1.6993598 5.599816</span></span>
-<span><span class="co">#&gt; 5 200    0.255 0.9832890 3.959551 2.0323399 5.886762</span></span>
-<span><span class="co">#&gt; 6 200    0.260 0.9726889 4.269514 2.3630792 6.175950</span></span>
+<span><span class="co">#&gt; 1 200    0.235 1.0383074 2.720144 0.6850986 4.755189</span></span>
+<span><span class="co">#&gt; 2 200    0.240 1.0224163 3.029839 1.0259401 5.033738</span></span>
+<span><span class="co">#&gt; 3 200    0.245 1.0080322 3.339669 1.3639617 5.315375</span></span>
+<span><span class="co">#&gt; 4 200    0.250 0.9950291 3.649587 1.6993659 5.599808</span></span>
+<span><span class="co">#&gt; 5 200    0.255 0.9832854 3.959550 2.0323462 5.886754</span></span>
+<span><span class="co">#&gt; 6 200    0.260 0.9726852 4.269514 2.3630858 6.175942</span></span>
 <span><span class="va">cur</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>
 <p>The band is pointwise: at each pressure it covers the true curve with
@@ -148,7 +205,7 @@ curve over its whole range:</p>
 <span><span class="va">crit</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">UL</span> <span class="op">-</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">rate</span><span class="op">)</span> <span class="op">/</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span>, simultaneous <span class="op">=</span> <span class="va">crit</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    pointwise simultaneous </span></span>
-<span><span class="co">#&gt;     1.959964     2.957617</span></span>
+<span><span class="co">#&gt;     1.959964     2.953853</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
 <p>The critical value comes from 10,000 draws of the estimates’
@@ -178,19 +235,171 @@ pressure or at values given by name:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Predicted means of 'QB' from a semireg model (smooth terms included)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   QB estimate std.error  df conf.low conf.high group</span></span>
-<span><span class="co">#&gt;  200    44.66    0.9740 Inf    42.75     46.56    A </span></span>
-<span><span class="co">#&gt;  300    51.21    0.9723 Inf    49.31     53.12     B</span></span>
+<span><span class="co">#&gt;   QB estimate std.error    df conf.low conf.high group</span></span>
+<span><span class="co">#&gt;  200    44.66    0.9740 29.44    42.66     46.65    A </span></span>
+<span><span class="co">#&gt;  300    51.21    0.9723 29.24    49.22     53.20     B</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Pairwise comparisons (normal-based; p.adj: none)</span></span>
+<span><span class="co">#&gt; Pairwise comparisons (t tests, Satterthwaite df; p.adj: none)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  level1 level2 estimate std.error  df statistic   p.value     p.adj p.method</span></span>
-<span><span class="co">#&gt;     200    300   -6.557     1.376 Inf    -4.764 1.894e-06 1.894e-06        z</span></span>
+<span><span class="co">#&gt;  level1 level2 estimate std.error    df statistic   p.value     p.adj p.method</span></span>
+<span><span class="co">#&gt;     200    300   -6.557     1.376 29.36    -4.764 4.749e-05 4.749e-05        t</span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
-<span><span class="co">#&gt;    QB estimate std.error  df conf.low conf.high group</span></span>
-<span><span class="co">#&gt; 1 200 36.30263 0.9244857 Inf 34.49067  38.11459     A</span></span>
-<span><span class="co">#&gt; 2 300 38.81293 0.9262721 Inf 36.99747  40.62839     A</span></span></code></pre></div>
-<p>The tests are normal-based, as in <code><a href="../reference/semipred.html">semipred()</a></code>.</p>
+<span><span class="co">#&gt;    QB estimate std.error       df conf.low conf.high group</span></span>
+<span><span class="co">#&gt; 1 200 36.30263 0.9244804 36.51477 34.42861  38.17664     A</span></span>
+<span><span class="co">#&gt; 2 300 38.81293 0.9262667 36.68683 36.93559  40.69026     A</span></span></code></pre></div>
+<p>For gaussian fits the tests are t tests with Satterthwaite df (next
+section); for generalized fits they are normal-based, as in
+<code><a href="../reference/semipred.html">semipred()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="what-predictmeans-adds">What predictmeans adds<a class="anchor" aria-label="anchor" href="#what-predictmeans-adds"></a>
+</h2>
+<p>A smoothing program (<code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>, gamm4) fits these
+models too. predictmeans adds the mixed-model inference around them.</p>
+<p><strong>Means at a covariate value in a designed experiment.</strong>
+Three treatments on the whole plots of six blocks, measured at eleven
+times; a curve over time for each treatment. The treatment means at time
+5 include the curves’ random coefficients, and their comparisons rest on
+the whole-plot variation, so they have far fewer degrees of freedom than
+the 180 residual df. predictmeans gives them Satterthwaite df for the
+combination of fixed and smooth coefficients (as SAS does for estimates
+that involve random effects); normal-based tests would reject a true
+null hypothesis too often (<code>dev/sim-semireg-df.R</code> in the
+package sources).</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
+<span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">10</span>, A <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a1"</span>, <span class="st">"a2"</span>, <span class="st">"a3"</span><span class="op">)</span><span class="op">)</span>, Block <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sp</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">sp</span><span class="op">$</span><span class="va">t</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="fl">1</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">A</span><span class="op">]</span><span class="op">*</span><span class="va">sp</span><span class="op">$</span><span class="va">t</span><span class="op">/</span><span class="fl">10</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">Block</span><span class="op">]</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">18</span>, <span class="fl">0</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/interaction.html" class="external-link">interaction</a></span><span class="op">(</span><span class="va">sp</span><span class="op">$</span><span class="va">Block</span>, <span class="va">sp</span><span class="op">$</span><span class="va">A</span><span class="op">)</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sp</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span>
+<span><span class="va">fsp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">t</span>, by <span class="op">=</span> <span class="va">A</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">:</span><span class="va">A</span><span class="op">)</span>,</span>
+<span>               data <span class="op">=</span> <span class="va">sp</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fsp</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">pm</span><span class="op">$</span><span class="va">means</span></span>
+<span><span class="co">#&gt;    A estimate std.error       df conf.low conf.high group</span></span>
+<span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.655220 1.802361  2.905306     A</span></span>
+<span><span class="co">#&gt; 2 a2 2.415646 0.2431558 8.777611 1.863457  2.967834     A</span></span>
+<span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.699969 2.143604  3.247064     A</span></span>
+<span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2    estimate std.error       df   p.value</span></span>
+<span><span class="co">#&gt; 1     a1     a2 -0.06181205 0.1991743 17.56558 0.7599533</span></span>
+<span><span class="co">#&gt; 2     a1     a3 -0.34150024 0.1985129 17.33696 0.1031776</span></span>
+<span><span class="co">#&gt; 3     a2     a3 -0.27968819 0.1995537 17.69918 0.1783368</span></span></code></pre></div>
+<p>The smooth terms are written in the formula:
+<code>s(t, by = A)</code> adds the fixed terms <code>A + A:t</code> (the
+straight lines) itself.</p>
+<p><strong>Which differences between curves are needed?</strong> In
+<code>s(x, f1*f2)</code> the curves are a common curve plus deviation
+curves for <code>f1</code>, <code>f2</code> and <code>f1:f2</code>, each
+with its own variance. <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> tests each variance (the
+likelihood ratio, halved for the boundary) and <code><a href="../reference/varcomp.html">varcomp()</a></code>
+shows their sizes. Here the shapes differ by <code>f1</code> only:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">dd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>, f1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"p"</span>, <span class="st">"q"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                  f2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"u"</span>, <span class="st">"v"</span>, <span class="st">"w"</span><span class="op">)</span><span class="op">)</span>, rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">dd</span><span class="op">$</span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/interaction.html" class="external-link">interaction</a></span><span class="op">(</span><span class="va">dd</span><span class="op">$</span><span class="va">f1</span>, <span class="va">dd</span><span class="op">$</span><span class="va">f2</span>, <span class="va">dd</span><span class="op">$</span><span class="va">rep</span><span class="op">)</span></span>
+<span><span class="va">dd</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">dd</span><span class="op">$</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">dd</span><span class="op">$</span><span class="va">f1</span> <span class="op">==</span> <span class="st">"q"</span><span class="op">)</span><span class="op">*</span><span class="fl">1.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">pi</span><span class="op">*</span><span class="va">dd</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">dd</span><span class="op">$</span><span class="va">id</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">[</span><span class="va">dd</span><span class="op">$</span><span class="va">id</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dd</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.25</span><span class="op">)</span></span>
+<span><span class="va">fx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, <span class="va">f1</span><span class="op">*</span><span class="va">f2</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dd</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fx</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"variance"</span>, <span class="st">"LRT"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;        term     variance        LRT      p.value</span></span>
+<span><span class="co">#&gt; 1       s_x 0.3163539389  5.7060123 8.453451e-03</span></span>
+<span><span class="co">#&gt; 2    s_x_f1 0.0927799765 26.9861474 1.024594e-07</span></span>
+<span><span class="co">#&gt; 3    s_x_f2 0.0000000000  0.0000000 5.000000e-01</span></span>
+<span><span class="co">#&gt; 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01</span></span></code></pre></div>
+<p>The test is conservative: in 200 simulated data sets like these, with
+no <code>f2</code> or <code>f1:f2</code> differences, it rejected at the
+5% level in 1-3% of them, and it found the <code>f1</code> difference in
+all (<code>dev/sim-semireg-lrt.R</code>). <code><a href="../reference/permlmer.html">permlmer()</a></code> on
+<code>fx$semer</code> gives a permutation test when a level closer to 5%
+matters.</p>
+<p><strong>Counts: rate ratios between curves.</strong>
+<code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code> fits the same smooths with glmmTMB, so a
+negative binomial with zero inflation is available. <code>contr</code>
+gives the difference of two curves on the log scale and as a ratio, with
+a simultaneous band and the ranges where the ratio differs from 1:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="va">cn</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">3</span>, length <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>, trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ctl"</span>, <span class="st">"trt"</span><span class="op">)</span><span class="op">)</span>, site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cn</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/NegBinomial.html" class="external-link">rnbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cn</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>                mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">cn</span><span class="op">$</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">cn</span><span class="op">$</span><span class="va">trt</span> <span class="op">==</span> <span class="st">"trt"</span><span class="op">)</span><span class="op">*</span><span class="fl">0.5</span><span class="op">*</span><span class="va">cn</span><span class="op">$</span><span class="va">x</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span><span class="op">[</span><span class="va">cn</span><span class="op">$</span><span class="va">site</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cn</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cn</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">0.1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">trt</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">site</span><span class="op">)</span>, ziformula <span class="op">=</span> <span class="op">~</span> <span class="fl">1</span>,</span>
+<span>                  family <span class="op">=</span> <span class="fu">glmmTMB</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/glmmTMB/man/nbinom2.html" class="external-link">nbinom2</a></span>, data <span class="op">=</span> <span class="va">cn</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fc</span>, <span class="st">"trt"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"trt"</span>, <span class="st">"ctl"</span><span class="op">)</span>, band <span class="op">=</span> <span class="st">"simultaneous"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">pred_df</span>, <span class="st">"significant"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        from to direction</span></span>
+<span><span class="co">#&gt; 1 0.7241379  3         &gt;</span></span>
+<span><span class="va">rr</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="672"></p>
+<p><strong>Subject-specific curves.</strong>
+<code>(s(age, k = 10) | idnum)</code> gives each subject a random
+straight line, <code>(age | idnum)</code>, and a random spline deviation
+with one variance for all subjects (Durban et al. 2005). The heights of
+28 black boys of the Indiana growth study, in the package’s data, fitted
+as in Harezlak, Ruppert and Wand (2018, section 9.2); the fit is the
+same as that of their <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> code:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"semireg"</span>, <span class="st">"growthIndiana.txt"</span>, package <span class="op">=</span> <span class="st">"predictmeans"</span><span class="op">)</span>,</span>
+<span>                 header <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">gb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gi</span>, <span class="va">male</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">black</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">gb</span><span class="op">$</span><span class="va">idnum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">gb</span><span class="op">$</span><span class="va">idnum</span><span class="op">)</span></span>
+<span><span class="va">fg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">height</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">age</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">20</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.5</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>                <span class="op">(</span><span class="fu">s</span><span class="op">(</span><span class="va">age</span>, k <span class="op">=</span> <span class="fl">10</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.5</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">gb</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik</a></span><span class="op">(</span><span class="va">fg</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 'log Lik.' -935.7451 (df=8)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fg</span>, <span class="st">"age"</span>, <span class="st">"age"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="672"></p>
+<p>The population curve leaves out the subjects’ curves;
+<code>anova(fg)</code> would test whether they are needed beyond
+straight lines.</p>
+</div>
+<div class="section level2">
+<h2 id="from-the-smoothz-form">From the <code>smoothZ</code> form<a class="anchor" aria-label="anchor" href="#from-the-smoothz-form"></a>
+</h2>
+<p>Code written for 1.x, with the smooths in
+<code>smoothZ = list(smZ(...))</code> and their straight lines written
+in the formula, still runs and gives the same fits. The formula form
+gives the same model and adds the fixed terms itself:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>1.x</th>
+<th>2.0</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>y ~ x, smoothZ = list(sm = smZ(x, k = 10))</code></td>
+<td><code>y ~ s(x, bs = "os", k = 10)</code></td>
+</tr>
+<tr class="even">
+<td><code>y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f, group = TRUE))</code></td>
+<td><code>y ~ s(x, by = f, bs = "os", k = 10)</code></td>
+</tr>
+<tr class="odd">
+<td><code>y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))</code></td>
+<td><code>y ~ s(x, by = f, bs = "os", k = 10, id = 1)</code></td>
+</tr>
+<tr class="even">
+<td><code>y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))</code></td>
+<td><code>y ~ s(x1, x2, bs = "ztps")</code></td>
+</tr>
+<tr class="odd">
+<td><code>smZ(x, intKnots = kn, range.x = r)</code></td>
+<td><code>s(x, bs = "os", xt = list(knots = kn, range = r))</code></td>
+</tr>
+</tbody>
+</table>
+<p>Smooths are given either in the formula or in <code>smoothZ</code>,
+not both. Other changes since 1.x: the optimizer is
+<code>nloptwrap</code>
+(<code>control = lmerControl(optimizer = "bobyqa")</code> gives 1.x’s),
+<code><a href="../reference/semipred.html">semipred()</a></code> limits are 95% (1.x: 90%),
+<code>anova(fit)</code> replaces lmerTest, and generalized fits include
+the uncertainty of the smoothing parameters in their bands.</p>
 </div>
 <div class="section level2">
 <h2 id="more">More<a class="anchor" aria-label="anchor" href="#more"></a>
@@ -208,8 +417,16 @@ and a spatial smooth of copper grades).</li>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
+<p>Durban, M., Harezlak, J., Wand, M. P. and Carroll, R. J. (2005).
+Simple fitting of subject-specific curves for longitudinal data.
+<em>Statistics in Medicine</em>, 24, 1153-1167.</p>
+<p>Harezlak, J., Ruppert, D. and Wand, M. P. (2018). <em>Semiparametric
+Regression with R</em>. Springer.</p>
 <p>Ruppert, D., Wand, M. P. and Carroll, R. J. (2003).
 <em>Semiparametric Regression</em>. Cambridge University Press.</p>
+<p>Wand, M. P. and Ormerod, J. T. (2008). On semiparametric regression
+with O’Sullivan penalized splines. <em>Australian and New Zealand
+Journal of Statistics</em>, 50, 179-198.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

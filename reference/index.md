@@ -38,6 +38,8 @@
 
 ## Degrees of freedom, tests and diagnostics
 
+- [`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+  : ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df
 - [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   : Calculate degree of freedom of a modelterm (contrast) for a lmer
   model
@@ -96,6 +98,8 @@
   : Fitting Semi Parametric Models Using lme4 Ecosystem
 - [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   : Fitting Semi Parametric Models Using glmmTMB
+- [`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md)
+  : Tests for a Semi-Parametric Model
 - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   : Predicted Means of a Semi Paramatric Model with Covariate
   Variable(s)

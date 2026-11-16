@@ -43,8 +43,11 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   [`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)),
   at the covariates' means or at the values of `covariate` (a named
   vector, e.g. `c(construction.date = 1980)`); the result holds only the
-  `means`, `pairs` and `settings` tables, with normal-based tests and
-  any `adj`.
+  `means`, `pairs` and `settings` tables, with any `adj`. For gaussian
+  fits the tests are t tests with Satterthwaite df for the combination
+  of fixed and smooth coefficients (the means include the smooths'
+  random effects; SAS gives such df to estimates that involve random
+  effects); for generalized fits they are normal-based.
 
 - modelterm:
 

@@ -4,7 +4,7 @@
 
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
+library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
 library(HRW)
 library(gridExtra)
 library(car)
@@ -538,7 +538,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  19.490   0.066  19.502
+    ##  20.381   0.072  20.397
 
 ``` r
 
@@ -1746,7 +1746,7 @@ mod1 <- semireg(apartment.price ~ construction.date,
                 data = WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['semerLmerTest']
+    ## Linear mixed model fit by REML ['semerMod']
     ## Formula: apartment.price ~ construction.date + (1 | grp)
     ##    Data: WarsawApts
     ## REML criterion at convergence: 3544.905
@@ -1775,21 +1775,21 @@ residplot(mod1$semer)
 kable(anova(mod1$semer))
 ```
 
-|                   |   Sum Sq |  Mean Sq | NumDF |    DenDF |  F value |   Pr(\>F) |
-|:------------------|---------:|---------:|------:|---------:|---------:|----------:|
-| construction.date | 500.9997 | 500.9997 |     1 | 1871.012 | 1.579118 | 0.2090447 |
+|                   |           F |  Df |   Df.res |   Pr(\>F) |
+|:------------------|------------:|----:|---------:|----------:|
+| (Intercept)       | 9266.058795 |   1 | 175.2759 | 0.0000000 |
+| construction.date |    1.456952 |   1 | 149.7415 | 0.2293189 |
 
-- **RANOVA**
+- **Tests of the smooth terms**
 
 ``` r
 
-kable(lmerTest::ranova(mod1$semer))
+kable(anova(mod1)$smooth)
 ```
 
-|            | npar |    logLik |      AIC |     LRT |  Df | Pr(\>Chisq) |
-|:-----------|-----:|----------:|---------:|--------:|----:|------------:|
-|            |    4 | -1772.452 | 3552.905 |      NA |  NA |          NA |
-| (1 \| grp) |    3 | -1844.882 | 3695.763 | 144.859 |   1 |           0 |
+| term | variance |    logLik | logLik.without |     LRT | p.value |
+|:-----|---------:|----------:|---------------:|--------:|--------:|
+| grp  | 1.419026 | -1772.452 |      -1844.882 | 144.859 |       0 |
 
 - **$`R^2`$**
 
@@ -1837,29 +1837,29 @@ mod2 <- semireg(apartment.price ~ construction.date*district,
                 data=WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['semerLmerTest']
+    ## Linear mixed model fit by REML ['semerMod']
     ## Formula: apartment.price ~ construction.date * district + (1 | grp.Mokotow) +  
     ##     (1 | grp.Srodmiescie) + (1 | grp.Wola) + (1 | grp.Zoliborz)
     ##    Data: WarsawApts
     ## REML criterion at convergence: 3503.051
     ## Random effects:
     ##  Groups          Name        Std.Dev.
-    ##  grp.Mokotow     (Intercept)  1.0611 
-    ##  grp.Srodmiescie (Intercept)  1.9011 
-    ##  grp.Wola        (Intercept)  0.1683 
-    ##  grp.Zoliborz    (Intercept)  0.5886 
-    ##  Residual                    16.6236 
+    ##  grp.Mokotow     (Intercept)  1.0608 
+    ##  grp.Srodmiescie (Intercept)  1.9026 
+    ##  grp.Wola        (Intercept)  0.1682 
+    ##  grp.Zoliborz    (Intercept)  0.5889 
+    ##  Residual                    16.6234 
     ## Number of obs: 409, groups:  
     ## grp.Mokotow, 12; grp.Srodmiescie, 12; grp.Wola, 12; grp.Zoliborz, 12
     ## Fixed Effects:
     ##                           (Intercept)                      construction.date  
-    ##                             110.32765                                0.09294  
+    ##                             110.32764                                0.09293  
     ##                   districtSrodmiescie                           districtWola  
-    ##                              -9.57830                                3.41275  
+    ##                              -9.57778                                3.41474  
     ##                      districtZoliborz  construction.date:districtSrodmiescie  
-    ##                              -5.32032                               -0.23493  
+    ##                              -5.32125                               -0.23491  
     ##        construction.date:districtWola     construction.date:districtZoliborz  
-    ##                              -0.34619                               -0.18149
+    ##                              -0.34627                               -0.18153
 
 ``` r
 
@@ -1877,26 +1877,26 @@ residplot(mod2$semer, group="district")
 kable(anova(mod2$semer))
 ```
 
-|  | Sum Sq | Mean Sq | NumDF | DenDF | F value | Pr(\>F) |
-|:---|---:|---:|---:|---:|---:|---:|
-| construction.date | 448.0819 | 448.0819 | 1 | 2331.885 | 1.621461 | 0.2030151 |
-| district | 4444.3128 | 1481.4376 | 3 | 2832.228 | 5.360835 | 0.0011129 |
-| construction.date:district | 1582.3869 | 527.4623 | 3 | 1983.797 | 1.908713 | 0.1260932 |
+|                            |           F |  Df |   Df.res |   Pr(\>F) |
+|:---------------------------|------------:|----:|---------:|----------:|
+| (Intercept)                | 3896.137431 |   1 | 29.47737 | 0.0000000 |
+| construction.date          |    1.402695 |   1 | 15.89182 | 0.2536845 |
+| district                   |    4.351173 |   3 | 24.12287 | 0.0138515 |
+| construction.date:district |    1.597233 |   3 | 19.44538 | 0.2223950 |
 
-- **RANOVA**
+- **Tests of the smooth terms**
 
 ``` r
 
-kable(lmerTest::ranova(mod2$semer))
+kable(anova(mod2)$smooth)
 ```
 
-|                        | npar |    logLik |      AIC |       LRT |  Df | Pr(\>Chisq) |
-|:-----------------------|-----:|----------:|---------:|----------:|----:|------------:|
-|                        |   13 | -1751.525 | 3529.051 |        NA |  NA |          NA |
-| (1 \| grp.Mokotow)     |   12 | -1800.940 | 3625.880 | 98.829583 |   1 |   0.0000000 |
-| (1 \| grp.Srodmiescie) |   12 | -1761.894 | 3547.788 | 20.737475 |   1 |   0.0000053 |
-| (1 \| grp.Wola)        |   12 | -1752.495 | 3528.990 |  1.939841 |   1 |   0.1636858 |
-| (1 \| grp.Zoliborz)    |   12 | -1760.028 | 3544.055 | 17.004627 |   1 |   0.0000373 |
+| term            |  variance |    logLik | logLik.without |       LRT |   p.value |
+|:----------------|----------:|----------:|---------------:|----------:|----------:|
+| grp.Mokotow     | 1.1252662 | -1751.525 |      -1800.940 | 98.829673 | 0.0000000 |
+| grp.Srodmiescie | 3.6198554 | -1751.525 |      -1761.894 | 20.737486 | 0.0000026 |
+| grp.Wola        | 0.0282768 | -1751.525 |      -1752.495 |  1.939838 | 0.0818431 |
+| grp.Zoliborz    | 0.3467569 | -1751.525 |      -1760.028 | 17.004645 | 0.0000186 |
 
 - **$`R^2`$**
 
@@ -1908,9 +1908,9 @@ R2_glmm(mod2$semer)
     ## # Adjusted R2 for Mixed Models
 
     ##           Total           Fixed          Random     grp.Mokotow grp.Srodmiescie 
-    ##        "89.98%"         "0.69%"        "89.29%"        "31.79%"        "55.41%" 
+    ##        "89.99%"         "0.69%"         "89.3%"        "31.75%"        "55.46%" 
     ##        grp.Wola    grp.Zoliborz 
-    ##         "0.27%"         "1.81%"
+    ##         "0.27%"         "1.82%"
 
 ### Prediction with Group
 
@@ -2022,7 +2022,7 @@ mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
     ## Formula:          
     ## mathscr ~ calwpct + log.avginc + compstu + (1 | county) + (1 |  
     ##     grspan) + (1 | cal_grp) + (1 | avg_grp) + (1 | comp_grp)
-    ## Data: Caschool
+    ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
     ##  3233.449  3273.851 -1606.724  3213.449       410 
     ## Random-effects (co)variances:
@@ -2220,7 +2220,7 @@ mod1 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted +
     ## Formula:          
     ## respirInfec ~ age + vitAdefic + sex + height + stunted + visit2 +  
     ##     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp)
-    ## Data: indonRespir
+    ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
     ##  673.0182  739.1892 -323.5091  647.0182      1187 
     ## Random-effects (co)variances:
@@ -2323,7 +2323,7 @@ mod2 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted +
     ## respirInfec ~ age + vitAdefic + sex + height + stunted + visit2 +  
     ##     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp.male) +  
     ##     (1 | grp.female)
-    ## Data: indonRespir
+    ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
     ##  673.6117  744.8728 -322.8058  645.6117      1186 
     ## Random-effects (co)variances:
@@ -2494,7 +2494,7 @@ mod <- semireg_tmb(pollenCount ~ rain+year+temperatureResidual+dayInSeason+windS
     ## pollenCount ~ rain + year + temperatureResidual + dayInSeason +  
     ##     windSpeed + (1 | s_day.1991) + (1 | s_day.1992) + (1 | s_day.1993) +  
     ##     (1 | s_day.1994) + (1 | s_temp) + (1 | s_wind)
-    ## Data: ragweed
+    ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
     ##  2367.406  2424.574 -1168.703  2337.406       319 
     ## Random-effects (co)variances:
@@ -2634,22 +2634,22 @@ mod <- semireg(log(grade) ~ (xcoord+ycoord+zcoord)^2,
                 data=copper)
 ```
 
-    ## Linear mixed model fit by REML ['semerLmerTest']
+    ## Linear mixed model fit by REML ['semerMod']
     ## Formula: log(grade) ~ (xcoord + ycoord + zcoord)^2 + (1 | grp_z) + (1 |  
     ##     grp_geo)
     ##    Data: copper
-    ## REML criterion at convergence: 318.4061
+    ## REML criterion at convergence: 327.8956
     ## Random effects:
     ##  Groups   Name        Std.Dev.
-    ##  grp_geo  (Intercept) 0.001134
-    ##  grp_z    (Intercept) 0.016245
-    ##  Residual             0.289394
+    ##  grp_geo  (Intercept) 0.001138
+    ##  grp_z    (Intercept) 0.064577
+    ##  Residual             0.287157
     ## Number of obs: 439, groups:  grp_geo, 36; grp_z, 8
     ## Fixed Effects:
     ##   (Intercept)         xcoord         ycoord         zcoord  xcoord:ycoord  
-    ##     3.085e-03     -1.736e-03     -2.446e-05      2.503e-03     -2.455e-06  
+    ##     3.472e-03     -1.738e-03     -2.455e-05      2.705e-03     -2.470e-06  
     ## xcoord:zcoord  ycoord:zcoord  
-    ##    -1.394e-05     -4.048e-05  
+    ##    -1.400e-05     -4.049e-05  
     ## fit warnings:
     ## Some predictor variables are on very different scales: consider rescaling. 
     ## You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
@@ -2670,27 +2670,27 @@ residplot(mod$semer)
 kable(anova(mod$semer))
 ```
 
-|               |    Sum Sq |   Mean Sq | NumDF |        DenDF |    F value |   Pr(\>F) |
-|:--------------|----------:|----------:|------:|-------------:|-----------:|----------:|
-| xcoord        | 0.0156795 | 0.0156795 |     1 | 2.470303e+09 |  0.1872198 | 0.6652407 |
-| ycoord        | 0.0000031 | 0.0000031 |     1 | 1.562428e+09 |  0.0000373 | 0.9951299 |
-| zcoord        | 0.4661559 | 0.4661559 |     1 | 1.058437e+03 |  5.5661063 | 0.0184923 |
-| xcoord:ycoord | 0.0238179 | 0.0238179 |     1 | 1.185521e+06 |  0.2843957 | 0.5938346 |
-| xcoord:zcoord | 0.3288001 | 0.3288001 |     1 | 9.410343e+02 |  3.9260182 | 0.0478351 |
-| ycoord:zcoord | 2.1794256 | 2.1794256 |     1 | 8.707645e+02 | 26.0233012 | 0.0000004 |
+|               |          F |  Df |      Df.res |   Pr(\>F) |
+|:--------------|-----------:|----:|------------:|----------:|
+| (Intercept)   |  0.0000171 |   1 |    12.61068 | 0.9967612 |
+| xcoord        |  0.1861696 |   1 |    12.61863 | 0.6734040 |
+| ycoord        |  0.0000373 |   1 |    12.62189 | 0.9952252 |
+| zcoord        |  5.8288453 |   1 | -3789.58126 |       NaN |
+| xcoord:ycoord |  0.2840352 |   1 |    15.41602 | 0.6016675 |
+| xcoord:zcoord |  4.0103748 |   1 |   428.88169 | 0.0458501 |
+| ycoord:zcoord | 26.3669225 |   1 |   424.53685 | 0.0000004 |
 
-- **RANOVA**
+- **Tests of the smooth terms**
 
 ``` r
 
-kable(lmerTest::ranova(mod$semer))
+kable(anova(mod)$smooth)
 ```
 
-|                | npar |    logLik |      AIC |      LRT |  Df | Pr(\>Chisq) |
-|:---------------|-----:|----------:|---------:|---------:|----:|------------:|
-|                |   10 | -159.2031 | 338.4061 |       NA |  NA |          NA |
-| (1 \| grp_z)   |    9 | -199.6525 | 417.3050 | 80.89885 |   1 |           0 |
-| (1 \| grp_geo) |    9 | -207.6783 | 433.3567 | 96.95054 |   1 |           0 |
+| term    |  variance |    logLik | logLik.without |      LRT | p.value |
+|:--------|----------:|----------:|---------------:|---------:|--------:|
+| grp_z   | 0.0041702 | -163.9478 |      -199.6525 | 71.40941 |       0 |
+| grp_geo | 0.0000013 | -163.9478 |      -207.6783 | 87.46111 |       0 |
 
 - **$`R^2`$**
 
@@ -2701,8 +2701,8 @@ R2_glmm(mod$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##      Total      Fixed     Random    grp_geo      grp_z 
-    ##    "79.2%" "-135.63%"  "214.83%"  "196.83%"      "18%"
+    ##     Total     Fixed    Random   grp_geo     grp_z 
+    ##  "94.41%" "-37.27%" "131.68%"  "54.09%"   "77.6%"
 
 The negative $`R^2`$ indictates we may fit the model with intercept
 only.
@@ -2717,19 +2717,19 @@ mod <- semireg(log(grade) ~ 1,
                 data=copper)
 ```
 
-    ## Linear mixed model fit by REML ['semerLmerTest']
+    ## Linear mixed model fit by REML ['semerMod']
     ## Formula: log(grade) ~ 1 + (1 | grp_z) + (1 | grp_geo)
     ##    Data: copper
-    ## REML criterion at convergence: 255.1183
+    ## REML criterion at convergence: 264.0244
     ## Random effects:
     ##  Groups   Name        Std.Dev. 
-    ##  grp_geo  (Intercept) 0.0009664
-    ##  grp_z    (Intercept) 0.0159936
-    ##  Residual             0.3009139
+    ##  grp_geo  (Intercept) 0.0009715
+    ##  grp_z    (Intercept) 0.0612618
+    ##  Residual             0.2985738
     ## Number of obs: 439, groups:  grp_geo, 36; grp_z, 8
     ## Fixed Effects:
     ## (Intercept)  
-    ##      0.1598
+    ##      0.1596
 
 ``` r
 
@@ -2739,7 +2739,7 @@ R2_glmm(mod$semer)
     ## # Adjusted R2 for Mixed Models
 
     ##    Total    Fixed   Random  grp_geo    grp_z 
-    ## "87.71%"     "0%" "87.71%" "78.17%"  "9.54%"
+    ## "94.76%"     "0%" "94.76%"  "34.2%" "60.56%"
 
 ### Semiparametric prediction
 

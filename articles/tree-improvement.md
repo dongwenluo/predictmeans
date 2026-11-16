@@ -4,7 +4,7 @@
 
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
+library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
 library(eda4treeR)
 library(gridExtra)
 library(car)
