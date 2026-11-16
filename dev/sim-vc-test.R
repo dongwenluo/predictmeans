@@ -4,6 +4,10 @@
 ## (a) semireg s(x, f1*f2): the f2 and f1:f2 deviation curves (the shapes
 ##     differ by f1 only); the mixture rejected 1-3% (dev/sim-semireg-lrt.R)
 ## (b) lmer, crossed random effects (1 | a) + (1 | b), b's variance 0
+## Result (2026-11-17, 300 data sets each, MC SE 0.013): (a) exact 0.007 and
+## 0.037, mixture 0.000 and 0.020; (b) exact 0.073, mixture 0.050. The exact
+## distribution is used only when the tested term is the only random effect
+## (there it rejected 4.3%, the mixture 2-3%).
 ##   Rscript dev/sim-vc-test.R [nsim] [out.rds] [log]
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 args <- commandArgs(TRUE)

@@ -137,12 +137,15 @@ test_that("p-values: mixtures equal SAS GLIMMIX COVTEST; the exact restricted LR
   pb <- stats::setNames(b$p.value, b$row)
   expect_equal(pb[["Block.(Intercept)"]], 0.0128, tolerance = 6e-5/0.0128)
   expect_equal(pb[["Variety:Block.(Intercept)"]], 0.0028, tolerance = 6e-5/0.0028)
-  # the exact restricted LRT for one variance of an LMM (default): reproducible, near the mixture here
-  e1 <- q(pm_vc_test(m))
-  e2 <- q(pm_vc_test(m))
+  # with two random effects the default is the mixture (the exact distribution is exact only for one)
+  expect_equal(q(pm_vc_test(m))$p.value, b$p.value)
+  # one random effect: the exact restricted LRT, reproducible (fixed seed)
+  m1 <- q(lme4::lmer(yield ~ Variety*N + (1 | Block), Oa))
+  e1 <- q(pm_vc_test(m1))
+  e2 <- q(pm_vc_test(m1))
   expect_identical(e1$p.value, e2$p.value)
-  expect_true(all(grepl("exact restricted LRT", e1$test[e1$kind == "drop"])))
-  expect_true(all(abs(e1$p.value[e1$kind == "drop"] - b$p.value[b$kind == "drop"]) < 0.01))
+  expect_match(e1$test[1], "exact restricted LRT")
+  expect_true(e1$p.value[1] > 0 && e1$p.value[1] < 1)
   # balanced one-way design: P(RLRT = 0) = P(F(K - 1, K(J - 1)) < 1) under the null
   K <- 10; J <- 5
   Z <- stats::model.matrix(~ g - 1, data.frame(g = factor(rep(1:K, each = J))))

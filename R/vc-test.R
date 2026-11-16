@@ -235,7 +235,7 @@ pm_vc_loglik <- function(m) {
 ## reduced model) and likelihood ratio statistics. A data frame with one row
 ## per varcomp() row: row, hypothesis, kind, npar, logLik (full),
 ## logLik.null (reduced model), LRT.
-pm_vc_test <- function(model, rows = NULL, method = c("exact", "mixture"), nsim = 10000L, seed = 2026L) {
+pm_vc_test <- function(model, rows = NULL, method = c("auto", "mixture"), nsim = 10000L, seed = 2026L) {
   method <- match.arg(method)
   if (is.null(pm_vc_engine(model))) {
     stop("Tests of variance components are available for lmer, glmer, glmmTMB and semireg fits.", call. = FALSE)
@@ -272,35 +272,55 @@ pm_vc_test <- function(model, rows = NULL, method = c("exact", "mixture"), nsim 
 ##
 ## Each row's reference distribution (Self and Liang 1987; Stram and Lee
 ## 1994; Crainiceanu and Ruppert 2004):
-##   drop       one variance: for a gaussian lme4 REML fit the exact null
-##              distribution of the restricted LRT (simulated; other random
-##              effects as in Greven et al. 2008: the distribution in the
-##              model with only the tested term); otherwise 0.5 chi2(0) +
-##              0.5 chi2(1)
+##   drop       one variance: when it is the only random effect of a gaussian
+##              lme4 REML fit, the exact null distribution of the restricted
+##              LRT (simulated); otherwise 0.5 chi2(0) + 0.5 chi2(1). With
+##              other random effects the exact distribution is not exact:
+##              taken in the model with only the tested term (Greven et al.
+##              2008) or with the other variances at their null estimates, it
+##              rejected 7% in a crossed design and 0.5-4% for deviation curves
+##              of s(x, f1*f2), where the mixture gave 5% and 0-2%; alone it
+##              rejected 4.3%, the mixture 2-3% (dev/sim-vc-test.R)
 ##   reduce     a slope of a k-component term: 0.5 chi2(k-1) + 0.5 chi2(k)
 ##   drop_term  a whole multi-parameter term: chi2(npar), conservative (SAS
 ##              also reports a plain chi-square here)
 ##   zero_cov,  covariances / a correlation 0 (not on the boundary):
 ##   zero_cor   chi2(npar)
 ## Adds columns p.value and test (the distribution used).
-pm_vc_pvalues <- function(tab, info, method = "exact", nsim = 10000L, seed = 2026L) {
+pm_vc_pvalues <- function(tab, info, method = "auto", nsim = 10000L, seed = 2026L) {
   fit <- info$fit
-  exact_ok <- identical(method, "exact") && inherits(fit, "lmerMod") && isTRUE(lme4::getME(fit, "is_REML"))
-  re <- if (exact_ok) pm_re_terms(fit)
+  re <- if (inherits(fit, "lmerMod")) pm_re_terms(fit)
+  exact_ok <- identical(method, "auto") && inherits(fit, "lmerMod") && isTRUE(lme4::getME(fit, "is_REML")) &&
+    length(re) == 1
   pchi <- function(x, df) if (df == 0) as.numeric(x <= 0) else stats::pchisq(x, df, lower.tail = FALSE)
   mix <- function(x, d1, d2) 0.5*pchi(x, d1) + 0.5*pchi(x, d2)
   tab$p.value <- NA_real_
   tab$test <- NA_character_
+  tab$note <- ""
+  # where the reference distribution may be inaccurate (too liberal or too
+  # conservative): few levels of the tested term; binary data in small
+  # clusters (Laplace approximation)
+  re_all <- tryCatch(pm_re_terms(fit), error = function(e) NULL)
+  nobs <- tryCatch(stats::nobs(fit), error = function(e) NA_real_)
+  fam <- tryCatch(stats::family(fit), error = function(e) NULL)
+  binary <- !is.null(fam) && fam$family == "binomial" &&
+    tryCatch(all(stats::model.response(stats::model.frame(fit)) %in% c(0, 1)), error = function(e) FALSE)
   for (i in seq_len(nrow(tab))) {
     x <- tab$LRT[i]
     k <- tab$kind[i]
     np <- tab$npar[i]
     if (is.na(x) || k == "none") next
+    j <- tab$term[i]
+    smooth <- !is.na(j) && isTRUE(info$terms[[j]]$smooth)
+    nl <- if (!is.na(j) && !is.null(re_all)) re_all[[j]]$nl else NA
+    notes <- c(if (!smooth && !is.na(nl) && nl < 6) sprintf("%d levels: asymptotic reference", nl),
+               if (binary && !smooth && !is.na(nl) && nobs/nl < 5) "binary data, small clusters (Laplace)")
     if (k == "drop" && exact_ok && !is.na(tab$term[i])) {
       Zt <- lme4::getME(fit, "Z")[, re[[tab$term[i]]]$cols, drop = FALSE]
       null <- pm_rlrt_null(lme4::getME(fit, "X"), Zt, w = stats::weights(fit), nsim = nsim, seed = seed)
-      tab$p.value[i] <- mean(null >= x - 1e-8)
+      tab$p.value[i] <- (sum(null >= x - 1e-8) + 1)/(length(null) + 1)     # never 0
       tab$test[i] <- paste0("exact restricted LRT (", nsim, " simulations)")
+      notes <- character(0)                         # exact whatever the number of levels
     } else if (k == "drop") {
       tab$p.value[i] <- mix(x, 0, 1)
       tab$test[i] <- "0.5 chi2(0) + 0.5 chi2(1)"
@@ -315,6 +335,7 @@ pm_vc_pvalues <- function(tab, info, method = "exact", nsim = 10000L, seed = 202
       tab$p.value[i] <- pchi(x, np)
       tab$test[i] <- sprintf("chi2(%d)", np)
     }
+    tab$note[i] <- paste(notes, collapse = "; ")
   }
   tab
 }
