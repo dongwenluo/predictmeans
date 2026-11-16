@@ -119,3 +119,38 @@ test_that("likelihood ratio statistics equal SAS PROC MIXED / GLIMMIX and Gensta
   gs <- lr(q(lme4::lmer(distance ~ age + (1 | Subject) + (0 + agec | Subject), O)))
   expect_equal(gs[["Subject.agec"]], 252.19 - 250.17, tolerance = 5e-3)
 })
+
+test_that("p-values: mixtures equal SAS GLIMMIX COVTEST; the exact restricted LRT has the known mass at 0", {
+  # dev/sas/sas-results-2026-11-17-vctest.txt (4 decimals)
+  data(Orthodont, package = "nlme", envir = environment())
+  O <- as.data.frame(Orthodont)
+  a <- q(pm_vc_test(lme4::lmer(distance ~ age + (age | Subject), O)))
+  pa <- stats::setNames(a$p.value, a$row)
+  expect_equal(pa[["Subject.age"]], 0.0747, tolerance = 6e-5/0.0747)          # 0.5 chi2(1) + 0.5 chi2(2)
+  expect_equal(a$test[a$row == "Subject.age"], "0.5 chi2(1) + 0.5 chi2(2)")
+  expect_equal(a$test[a$row == "Subject.(Intercept)"], "chi2(3), conservative")
+  data(Oats, package = "nlme", envir = environment())
+  Oa <- as.data.frame(Oats)
+  Oa$N <- factor(Oa$nitro)
+  m <- q(lme4::lmer(yield ~ Variety*N + (1 | Block/Variety), Oa))
+  b <- q(pm_vc_test(m, method = "mixture"))
+  pb <- stats::setNames(b$p.value, b$row)
+  expect_equal(pb[["Block.(Intercept)"]], 0.0128, tolerance = 6e-5/0.0128)
+  expect_equal(pb[["Variety:Block.(Intercept)"]], 0.0028, tolerance = 6e-5/0.0028)
+  # the exact restricted LRT for one variance of an LMM (default): reproducible, near the mixture here
+  e1 <- q(pm_vc_test(m))
+  e2 <- q(pm_vc_test(m))
+  expect_identical(e1$p.value, e2$p.value)
+  expect_true(all(grepl("exact restricted LRT", e1$test[e1$kind == "drop"])))
+  expect_true(all(abs(e1$p.value[e1$kind == "drop"] - b$p.value[b$kind == "drop"]) < 0.01))
+  # balanced one-way design: P(RLRT = 0) = P(F(K - 1, K(J - 1)) < 1) under the null
+  K <- 10; J <- 5
+  Z <- stats::model.matrix(~ g - 1, data.frame(g = factor(rep(1:K, each = J))))
+  null <- pm_rlrt_null(matrix(1, K*J, 1), Z, nsim = 20000)
+  expect_equal(mean(null < 1e-8), stats::pf(1, K - 1, K*(J - 1)), tolerance = 4*sqrt(0.25/20000)/0.54)
+  # GLMMs: the mixture
+  data(cbpp, package = "lme4", envir = environment())
+  g <- q(pm_vc_test(lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial, data = cbpp)))
+  expect_equal(g$test, "0.5 chi2(0) + 0.5 chi2(1)")
+  expect_lt(g$p.value, 1e-4)
+})

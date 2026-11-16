@@ -94,11 +94,13 @@ pm_vc_hypotheses <- function(model) {
   info <- pm_vc_terms(model)
   tmb <- inherits(info$fit, "glmmTMB")
   out <- list()
+  cur <- NA_integer_                      # the random term being worked on
   add <- function(row, label, kind, npar = NA, change = NULL, block = NULL) {
     out[[length(out) + 1L]] <<- list(row = row, label = label, kind = kind, npar = npar, change = change,
-                                      block = block)
+                                      block = block, term = cur)
   }
-  for (tm in info$terms) {
+  for (cur in seq_along(info$terms)) {
+    tm <- info$terms[[cur]]
     g <- tm$group
     k <- tm$k
     ft <- tm$term
@@ -172,6 +174,7 @@ pm_vc_hypotheses <- function(model) {
       }
     }
   }
+  cur <- NA_integer_
   fam <- tryCatch(stats::family(info$fit)$family, error = function(e) "gaussian")
   if (identical(fam, "gaussian")) add("residual", "no test (the residual variance)", "none")
   structure(out, info = info)
@@ -232,7 +235,8 @@ pm_vc_loglik <- function(m) {
 ## reduced model) and likelihood ratio statistics. A data frame with one row
 ## per varcomp() row: row, hypothesis, kind, npar, logLik (full),
 ## logLik.null (reduced model), LRT.
-pm_vc_test <- function(model, rows = NULL) {
+pm_vc_test <- function(model, rows = NULL, method = c("exact", "mixture"), nsim = 10000L, seed = 2026L) {
+  method <- match.arg(method)
   if (is.null(pm_vc_engine(model))) {
     stop("Tests of variance components are available for lmer, glmer, glmmTMB and semireg fits.", call. = FALSE)
   }
@@ -255,11 +259,104 @@ pm_vc_test <- function(model, rows = NULL) {
       }
       ll0 <- cache[[key]]
     }
-    data.frame(row = h$row, hypothesis = h$label, kind = h$kind, npar = h$npar, logLik = ll_full,
+    data.frame(row = h$row, hypothesis = h$label, kind = h$kind, npar = h$npar, term = h$term, logLik = ll_full,
                logLik.null = ll0, LRT = if (is.na(ll0)) NA_real_ else max(0, 2*(ll_full - ll0)),
                stringsAsFactors = FALSE)
   })
   out <- do.call(rbind, rows_out)
   rownames(out) <- NULL
-  out
+  pm_vc_pvalues(out, info, method = method, nsim = nsim, seed = seed)
+}
+
+## ---- step 2: p-values ----
+##
+## Each row's reference distribution (Self and Liang 1987; Stram and Lee
+## 1994; Crainiceanu and Ruppert 2004):
+##   drop       one variance: for a gaussian lme4 REML fit the exact null
+##              distribution of the restricted LRT (simulated; other random
+##              effects as in Greven et al. 2008: the distribution in the
+##              model with only the tested term); otherwise 0.5 chi2(0) +
+##              0.5 chi2(1)
+##   reduce     a slope of a k-component term: 0.5 chi2(k-1) + 0.5 chi2(k)
+##   drop_term  a whole multi-parameter term: chi2(npar), conservative (SAS
+##              also reports a plain chi-square here)
+##   zero_cov,  covariances / a correlation 0 (not on the boundary):
+##   zero_cor   chi2(npar)
+## Adds columns p.value and test (the distribution used).
+pm_vc_pvalues <- function(tab, info, method = "exact", nsim = 10000L, seed = 2026L) {
+  fit <- info$fit
+  exact_ok <- identical(method, "exact") && inherits(fit, "lmerMod") && isTRUE(lme4::getME(fit, "is_REML"))
+  re <- if (exact_ok) pm_re_terms(fit)
+  pchi <- function(x, df) if (df == 0) as.numeric(x <= 0) else stats::pchisq(x, df, lower.tail = FALSE)
+  mix <- function(x, d1, d2) 0.5*pchi(x, d1) + 0.5*pchi(x, d2)
+  tab$p.value <- NA_real_
+  tab$test <- NA_character_
+  for (i in seq_len(nrow(tab))) {
+    x <- tab$LRT[i]
+    k <- tab$kind[i]
+    np <- tab$npar[i]
+    if (is.na(x) || k == "none") next
+    if (k == "drop" && exact_ok && !is.na(tab$term[i])) {
+      Zt <- lme4::getME(fit, "Z")[, re[[tab$term[i]]]$cols, drop = FALSE]
+      null <- pm_rlrt_null(lme4::getME(fit, "X"), Zt, w = stats::weights(fit), nsim = nsim, seed = seed)
+      tab$p.value[i] <- mean(null >= x - 1e-8)
+      tab$test[i] <- paste0("exact restricted LRT (", nsim, " simulations)")
+    } else if (k == "drop") {
+      tab$p.value[i] <- mix(x, 0, 1)
+      tab$test[i] <- "0.5 chi2(0) + 0.5 chi2(1)"
+    } else if (k == "reduce") {
+      tab$p.value[i] <- mix(x, np - 1, np)
+      tab$test[i] <- sprintf("0.5 chi2(%d) + 0.5 chi2(%d)", np - 1, np)
+    } else if (k == "drop_term") {
+      if (is.na(np)) next
+      tab$p.value[i] <- pchi(x, np)
+      tab$test[i] <- sprintf("chi2(%d), conservative", np)
+    } else if (k %in% c("zero_cov", "zero_cor")) {
+      tab$p.value[i] <- pchi(x, np)
+      tab$test[i] <- sprintf("chi2(%d)", np)
+    }
+  }
+  tab
+}
+
+## The exact null distribution of the restricted likelihood ratio statistic
+## for one variance component in a linear mixed model y = X b + Z u + e,
+## u ~ N(0, lambda sigma^2 I) (Crainiceanu and Ruppert 2004, Theorem 1):
+##   RLRT = sup_lambda (n - p) log(1 + N(lambda)/D(lambda)) - sum_s log(1 + lambda mu_s)
+##   N = sum_s lambda mu_s/(1 + lambda mu_s) w_s^2,
+##   D = sum_s w_s^2/(1 + lambda mu_s) + sum_{s > K} w_s^2,
+## mu_s the eigenvalues of Z' P0 Z (P0 = I - X (X'X)^- X'), w_s iid N(0, 1).
+## The supremum over a grid of lambda (log scale, by the range of mu), as
+## RLRsim. Prior weights w: X and Z scaled by sqrt(w). nsim draws.
+pm_rlrt_null <- function(X, Z, w = NULL, nsim = 10000L, seed = 2026L, ngrid = 200L) {
+  X <- as.matrix(X)
+  Z <- as.matrix(Z)
+  if (!is.null(w) && length(w) == nrow(X)) {
+    X <- X*sqrt(w)
+    Z <- Z*sqrt(w)
+  }
+  qx <- qr(X)
+  n <- nrow(X)
+  p <- qx$rank
+  R <- qr.resid(qx, Z)
+  mu <- eigen(crossprod(R), symmetric = TRUE, only.values = TRUE)$values
+  mu <- mu[mu > 1e-10*max(mu)]
+  K <- length(mu)
+  if (!K) return(rep(0, nsim))
+  lam <- c(0, exp(seq(log(1e-5/max(mu)), log(1e5/min(mu)), length.out = ngrid)))
+  # keep the caller's random numbers as they were
+  old <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) get(".Random.seed", envir = globalenv())
+  on.exit(if (is.null(old)) rm(".Random.seed", envir = globalenv()) else assign(".Random.seed", old, envir = globalenv()))
+  set.seed(seed)
+  W <- matrix(stats::rchisq(nsim*K, 1), nsim, K)
+  rest <- if (n - p - K > 0) stats::rchisq(nsim, n - p - K) else rep(0, nsim)
+  best <- rep(0, nsim)
+  for (l in lam[-1]) {
+    a <- l*mu/(1 + l*mu)
+    Nn <- drop(W %*% a)
+    Dn <- drop(W %*% (1/(1 + l*mu))) + rest
+    val <- (n - p)*log1p(Nn/Dn) - sum(log1p(l*mu))
+    best <- pmax(best, val)
+  }
+  best
 }
