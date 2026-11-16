@@ -43,6 +43,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   term; SE of the smoothing variance 1.45 instead of 7.7, with a sensible
   upper limit instead of 5e45). Fitted values, coefficients and `semipred()`
   results are unchanged.
+* **`semireg_tmb()` with families whose `sigma()` is not a residual SD
+  (negative binomial: theta; beta: phi): `semipred()` standard errors were
+  scaled by it.** The covariance now uses the information weights of the
+  working model (`pm_working_tmb()`), so negative binomial SEs from
+  `semireg_tmb()` agree with those of `semireg(ngbinomial = TRUE)`; with
+  nearly Poisson data (large theta) they were up to 10^6 times too large.
+  Poisson and binomial fits are unchanged.
 * `semireg()` and `semireg_tmb()` share one fitting engine
   (`R/semireg-engine.R`):
   - The model structure is built without fitting (`lme4::lFormula()`,
@@ -731,6 +738,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **Smooths in the formula of `semireg()` and `semireg_tmb()`**, as for
+  `mgcv::gam`, next to fixed and lme4 random terms:
+  `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`. Each smooth is set
+  up by mgcv and split, as in gamm4, into fixed terms and blocks of random
+  effects. The fixed terms are added automatically (`x` for `s(x)`,
+  `f + f:x` for `s(x, by = f)`, `z + z:x` for a numeric `by`), so they cannot
+  be forgotten; terms already written are not doubled.
+  - Types: any one-penalty mgcv basis (`tp`, `cr`, `ps`, shrinkage `cs`/`ts`),
+    `by` factors (`id =` for one shared variance) and numeric `by`, factor
+    smooths `bs = "fs"`, isotropic `s(x1, x2)`.
+  - The package's own bases as `bs = "os"` (O'Sullivan, `k` interior knots)
+    and `bs = "ztps"`: the same fits as `smZ()` in `smoothZ`.
+  - Fits equal `gam(method = "REML")` (fitted values within 3e-5 in 11
+    cases), and `semipred()` / `predictmeans()` give `predict.gam()`'s curves,
+    means, SEs and curve differences (to 1e-5).
+  - Tensor products (`te()`, `t2()`) are not available yet: mgcv's `t2()`
+    design could not be split reliably (`dev/review-semireg.md`).
+  - mgcv moves from Suggests to Imports.
 * New vignette "Checking the model" (`vignette("checking")`): `pm_check()`
   and `residplot()` on a split plot and on overdispersed counts (Poisson, then
   negative binomial), with what the checks do and do not decide. The main

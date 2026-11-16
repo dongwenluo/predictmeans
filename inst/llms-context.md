@@ -205,6 +205,10 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   the data). `permcombine()` combines tests of several responses made with the same
   permutations (Fisher or Tippett) and gives min-p adjusted p-values over the responses.
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
+- `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
+  terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis; numeric `by`,
+  `bs = "fs"`, `s(x1, x2)`; no `te()`/`t2()` yet). Equal to `gam(method = "REML")`; then `semipred()`,
+  `predictmeans()`, `varcomp()`, `R2_model()` as for the `smoothZ = list(smZ())` form.
   `simultaneous = TRUE` gives simultaneous bands. `predictmeans()` on a `semireg()` fit
   gives means with the smooth included and normal-based tests.
 - `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and

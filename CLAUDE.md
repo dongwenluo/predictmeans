@@ -19,7 +19,7 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
-- glmmTMB and lmerTest in Imports (lmerTest only for `semireg()` fits; not
+- glmmTMB, mgcv and lmerTest in Imports (lmerTest only for `semireg()` fits; not
   attached since 2.0; its removal is reconsidered when `semireg()` is
   upgraded); car and pbkrtest in Suggests (own code in `R/anova.R`,
   `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
@@ -71,6 +71,9 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   settings go through `plot_args` (`pm_plot_args()`).
 - `R/Kmatrix.R` + `R/refgrid.R`: reference grid and K matrix.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
+- `R/semireg-engine.R` (one fitting engine of `semireg()`/`semireg_tmb()`) and
+  `R/semireg-smooth.R` (smooths in the formula via mgcv; own `os`/`ztps`
+  bases as mgcv smooth classes); plan in `dev/review-semireg.md`.
 - Help pages: edit the roxygen2 block above each function (data sets in
   `R/data.R`, the package page in `R/predictmeans-package.R`), then
   `Rscript -e 'roxygen2::roxygenise(roclets = "rd")'`. NAMESPACE is

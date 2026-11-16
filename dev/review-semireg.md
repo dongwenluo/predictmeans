@@ -152,6 +152,25 @@ fitted by `lme`, but the shipped code does that once. The reproduction set
 3. **Formula smooths**: `s()`, `by`, `fs`, `t2`/`te`, `os`, `ztps`, with
    automatic fixed terms; mgcv to Imports. Checked against
    `mgcv::gam(method = "REML")`.
+   **Done.** `R/semireg-smooth.R`. Set-up by `gam(fit = FALSE)` (bases,
+   knots, identifiability constraints as a gam), each smooth given the design
+   `PredictMat()` produces (so that prediction uses the same columns), then
+   `smooth2random()`; each random block's map from `PredictMat()` columns is
+   kept for prediction. Fixed terms are found by checking which candidate
+   terms span the smooth's unpenalised columns (the variables, then their
+   interaction, then squares; times the `by` variable). Results: fitted values
+   equal `gam(method = "REML")` in 11 cases (`s(x)`, `cr`, `ps`, `cs`,
+   `by` factor, `id`, numeric `by`, `fs`, `s(x) + s(z)`, `s(x, z)`, with a
+   random intercept); `semipred()`/`predictmeans()` equal `predict.gam()`;
+   `bs = "os"`/`"ztps"` equal the `smZ()` fits exactly. Found on the way:
+   variables of a smooth must not be centred (a numeric `by` multiplies the
+   smooth); `semireg_tmb()` scaled the covariance by `sigma()`, which is theta
+   for a negative binomial (fixed). **Open:** for `t2()` the design of
+   `gam(fit = FALSE)` and `smoothCon()` is not in the span of `PredictMat()`
+   (mgcv 1.9-1; a fitted gam is consistent), so its split cannot be checked;
+   `te()`/`t2()`/`ti()` stop with a message. `smZ()`'s own tidy-up is left:
+   the formula form covers what it lacked (numeric `by`, crossed factors via
+   `by = interaction(f1, f2)`).
 4. **Crossed-factor syntax**.
 5. **Prediction and inference**:
    - prediction from the stored smooth objects;

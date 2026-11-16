@@ -17,7 +17,7 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 \item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.}
 
-\item{smoothZ}{A list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+\item{smoothZ}{The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.}
 
 \item{ziformula}{a \emph{one-sided} (i.e., no response variable) formula for zero-inflation combining fixed and random effects: the default \code{~0} specifies no zero-inflation. Specifying \code{~.} sets the zero-inflation formula identical to the right-hand side of \code{formula} (i.e., the conditional effects formula); terms can also be added or subtracted. \strong{When using \code{~.} as the zero-inflation formula in models where the conditional effects formula contains an offset term, the offset term will automatically be dropped}. The zero-inflation model uses a logit link.}
@@ -83,6 +83,32 @@ Fit a semi parametric model based on glmmTMB.
 \details{
 A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg_tmb} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
 }
+\section{Smooth terms in the formula}{
+
+Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
+\code{y ~ A + s(x, by = A) + (1 | Block)}. Each smooth is set up by mgcv (bases, knots, identifiability
+constraints) and split, as in \pkg{gamm4}, into an unpenalised part, which is added to the fixed effects as
+ordinary terms, and penalised parts, each a block of random effects with one variance. The fixed terms are
+added automatically (terms already written are not doubled), so a smooth by a factor cannot lose its group
+slopes:
+\tabular{lll}{
+  \strong{Written} \tab \strong{Meaning} \tab \strong{Fixed terms added} \cr
+  \code{s(x)}, \code{s(x, bs = "cr", k = 12)} \tab one curve \tab \code{x} \cr
+  \code{s(x, by = f)} \tab a curve per level of \code{f}, a variance each (\code{id = 1}: one shared) \tab \code{f + f:x} \cr
+  \code{s(x, by = z)}, \code{z} numeric \tab varying coefficient \eqn{f(x) z} \tab \code{z + z:x} \cr
+  \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
+  \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
+  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
+}
+The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
+intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
+\code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
+\code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
+not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both.
+}
+
 \examples{
 library(predictmeans)
 if (requireNamespace("HRW", quietly = TRUE)) {

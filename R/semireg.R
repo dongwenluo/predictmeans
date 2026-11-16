@@ -4,6 +4,29 @@
 #' Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code{glmer} and \code{glmer.nb}.
 #' @details
 #' A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
+#' @section Smooth terms in the formula:
+#' Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
+#' \code{y ~ A + s(x, by = A) + (1 | Block)}. Each smooth is set up by mgcv (bases, knots, identifiability
+#' constraints) and split, as in \pkg{gamm4}, into an unpenalised part, which is added to the fixed effects as
+#' ordinary terms, and penalised parts, each a block of random effects with one variance. The fixed terms are
+#' added automatically (terms already written are not doubled), so a smooth by a factor cannot lose its group
+#' slopes:
+#' \tabular{lll}{
+#'   \strong{Written} \tab \strong{Meaning} \tab \strong{Fixed terms added} \cr
+#'   \code{s(x)}, \code{s(x, bs = "cr", k = 12)} \tab one curve \tab \code{x} \cr
+#'   \code{s(x, by = f)} \tab a curve per level of \code{f}, a variance each (\code{id = 1}: one shared) \tab \code{f + f:x} \cr
+#'   \code{s(x, by = z)}, \code{z} numeric \tab varying coefficient \eqn{f(x) z} \tab \code{z + z:x} \cr
+#'   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
+#'   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
+#'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
+#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
+#'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
+#' }
+#' The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
+#' intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
+#' \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
+#' \code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
+#' not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both.
 #' @usage
 #' semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
 #'         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
@@ -15,7 +38,7 @@
 #' @param family A GLM family, see glm and family.
 #' @param ngbinomial Logical scalar - Should a negative binomial GLMMs be used?                  .
 #' @param REML Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?
-#' @param smoothZ A list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+#' @param smoothZ The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 #' smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.
 #' @param ncenter Logical scalar - Should the numeric predictors to be centered or not?
 #' @param nscale Logical scalar - Should the numeric predictors to be scaled or not?
@@ -47,12 +70,22 @@
 #' \item{Cov_indN}{Covariance matrix index for each smooth term when \code{group=TRUE} in \code{smoothZ} argument.}
 #' \item{df}{Degree of freedom of all random terms.}
 #' \item{lmerc}{Call used in the mer model in the fitting.}
+#' \item{smooths}{For smooths written in the formula: the mgcv smooth objects and the maps that give the random-effect
+#'   design of each block for new data (used by \code{semipred()} and \code{predictmeans()}).}
 #' @references
 #' Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
+#' if (requireNamespace("HRW", quietly = TRUE)) {
+#'   data(WarsawApts, package = "HRW")
+#'   WarsawApts$district <- factor(WarsawApts$district)
+#'   # smooths in the formula: a curve per district; district and its slopes are added as fixed terms
+#'   fit0 <- semireg(areaPerMzloty ~ s(construction.date, by = district), data = WarsawApts, prt = FALSE)
+#'   semipred(fit0, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
+#'   predictmeans(fit0, "district", covariate = c(construction.date = 1980))$means
+#' }
 #' if (requireNamespace("HRW", quietly = TRUE)) {
 #'   data(WarsawApts, package = "HRW")
 #'   fit1 <- semireg(areaPerMzloty ~ construction.date,

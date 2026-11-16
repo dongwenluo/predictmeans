@@ -2,6 +2,8 @@
 #'
 #' @description
 #' Constructs a sparse matrix (Z) of a spline function with for a covariate with(out) group.
+#' Since 2.0 smooths can be written in the formula of \code{\link{semireg}} instead (\code{s(x, by = f)}), which
+#' adds their fixed terms automatically; \code{s(x, bs = "os", k = 10)} gives the basis of \code{smZ(x, k = 10)}.
 #' @usage
 #' smZ(x, k=6, intKnots=NULL, range.x=NULL, degree=3, 
 #'     type=c("ZOSull", "Ztps", "ns", "bs", "bernstein", "bSpline",

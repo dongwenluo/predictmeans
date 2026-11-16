@@ -24,7 +24,9 @@
 ## smooths)).
 pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE, resp_scale = FALSE) {
   formula <- mc$formula
-  fomul_vars <- all.vars(stats::terms(formula))
+  # smooths written in the formula (R/semireg-smooth.R)
+  sm_f <- pm_sm_parse(formula)
+  fomul_vars <- all.vars(stats::terms(if (is.null(sm_f)) formula else sm_f$formula))
   sm_vars <- intersect(all.vars(smoothZ), names(data))
   if (any(unlist(lapply(data[, setdiff(sm_vars, fomul_vars), drop = FALSE], is.factor)))) {
     stop("Any factor in 'smoothZ' list must be in the formula!")
@@ -36,6 +38,7 @@ pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE,
   data <- droplevels(as.data.frame(stats::na.omit(data[, intersect(all.vars(mc), names(data)), drop = FALSE])))
   numeric_n <- names(data)[vapply(data, is.numeric, logical(1))]
   if (!resp_scale) numeric_n <- setdiff(numeric_n, response_vars)
+  if (!is.null(sm_f)) numeric_n <- setdiff(numeric_n, sm_f$vars)   # variables of formula smooths: as they are
   if (any(ncenter, nscale)) {
     for (i in numeric_n) {
       if (!is.matrix(data[, i])) {
@@ -48,6 +51,25 @@ pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE,
     attr(data, "numeric_var") <- numeric_n
   }
   smoothZm <- eval(smoothZ, data, env)
+  smooths <- NULL
+  if (!is.null(sm_f) && length(smoothZm)) {
+    stop("Give the smooths either in the formula (s(), t2()) or in 'smoothZ', not both.", call. = FALSE)
+  }
+  if (!is.null(sm_f)) {
+    # the smooths of the formula: random blocks, and their fixed terms added
+    # to the formula (those already there are not doubled)
+    b <- pm_sm_build(sm_f$smooths, data)
+    smoothZm <- c(smoothZm, b$blocks)
+    smooths <- b$smooths
+    sm_vars <- union(sm_vars, b$vars)
+    lab <- attr(stats::terms(sm_f$formula), "term.labels")
+    add <- setdiff(b$fixed, lab)
+    formula <- if (length(add)) {
+      stats::as.formula(paste(paste(deparse(sm_f$formula, width.cutoff = 500L), collapse = " "), "+",
+                              paste(add, collapse = " + ")), env = environment(formula))
+    } else sm_f$formula
+    fomul_vars <- all.vars(stats::terms(formula))[-1]
+  }
   smoothZN <- list()
   for (i in names(smoothZm)) {
     smoothZN <- c(smoothZN, if (is.list(smoothZm[[i]])) unlist(smoothZm[i], recursive = FALSE) else smoothZm[i])
@@ -64,7 +86,7 @@ pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE,
     f_new <- stats::as.formula(rhs, env = environment(formula))
   }
   list(data = data, fomul_vars = fomul_vars, sm_vars = sm_vars, smoothZm = smoothZm, smoothZN = smoothZN, Zt = Zt,
-       formula = f_new)
+       formula = f_new, smooths = smooths)
 }
 
 ## Evaluate a builder call with the semireg data, in an environment of its
@@ -217,7 +239,7 @@ pm_sr_result <- function(semer, st, mc, info, extra) {
   if (is.null(info)) info <- list(knots_lst = NULL, range_lst = NULL, type_lst = NULL, cov_lst = NULL, u_lst = NULL,
                                   CovMat = NULL, Cov_ind = NULL, Cov_indN = NULL, df = NULL)
   ans <- c(list(semer = semer, data = st$data, fomul_vars = st$fomul_vars, sm_vars = st$sm_vars,
-                smoothZ_call = mc$smoothZ), info, extra)
+                smoothZ_call = mc$smoothZ), info, extra, list(smooths = st$smooths))
   class(ans) <- c("semireg", "list")
   ans
 }

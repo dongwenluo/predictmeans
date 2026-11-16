@@ -513,6 +513,26 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     response <- "response_y"
   }
   
+  if (!is.null(semireg$smooths)) {
+    # smooths written in the formula: the blocks by name, their design for the
+    # grid from the stored mgcv smooth objects (R/semireg-smooth.R)
+    blk <- names(semireg$u_lst)
+    if (is.null(sm_term)) sm_term <- blk
+    bad <- setdiff(sm_term, blk)
+    if (length(bad)) stop("'sm_term' must be among the smooth blocks: ", paste(blk, collapse = ", "), call. = FALSE)
+    blocks <- blk[blk %in% sm_term]
+    ci <- semireg$Cov_ind
+    idx <- c(seq_len(length(betaHat)),
+             unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
+    sm_Cov <- fullCovMat[idx, idx]
+    smooth_basis <- function(nd) do.call(cbind, pm_sm_predict(semireg$smooths, nd, blocks))
+    ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
+    D_mx <- cbind(K, ZN)
+    beta_u <- c(betaHat, do.call("c", unname(semireg$u_lst[blocks])))
+    return(list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
+                response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
+                sm_term = blocks))
+  }
   if (is.null(sm_term)) {
     sm_term <- names(as.list(semireg$smoothZ_call))[-1]
     sm_term <- intersect(names(vcov_indN), sm_term)
