@@ -193,3 +193,41 @@ test_that("the covariance behind semipred()'s bands is that of the fitted model,
     expect_true(all(se <= sa + sb & se >= abs(sa - sb)), label = nm)
   }
 })
+
+test_that("semipred(): generalized models back-transform the limits, as predictmeans(); band = as covariatemeans()", {
+  set.seed(3)
+  n <- 300
+  d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")))
+  d$y <- rpois(n, exp(0.5 + sin(d$x) + 0.5*(d$g == "b")*d$x/3))
+  sp <- suppressWarnings(semireg(y ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
+                                 family = poisson, prt = FALSE))
+  m <- semipred(sp, "g", "x", covariateV = 1.5, prt = FALSE)$pred_df
+  pm <- suppressMessages(predictmeans(sp, "g", covariate = c(x = 1.5)))$means
+  expect_equal(m$y, pm$response, tolerance = 1e-8)
+  expect_equal(m$SE_mu, pm$response.std.error, tolerance = 1e-8)
+  expect_equal(m$LL, pm$response.conf.low, tolerance = 1e-6)
+  expect_equal(m$UL, pm$response.conf.high, tolerance = 1e-6)
+  # limits are exp of the link-scale limits: positive, and not symmetric about the mean
+  expect_true(all(m$LL > 0) && all(m$UL - m$y > m$y - m$LL))
+  # band = "simultaneous" is simultaneous = TRUE
+  expect_equal(semipred(sp, "g", "x", prt = FALSE, band = "simultaneous")$pred_df,
+               semipred(sp, "g", "x", prt = FALSE, simultaneous = TRUE)$pred_df)
+})
+
+test_that("semipred(contr = ) with two covariates: the difference of two surfaces from the contrast", {
+  set.seed(3)
+  s2 <- data.frame(u = runif(200), v = runif(200), g = gl(2, 100, labels = c("a", "b")))
+  s2$w <- sin(3*s2$u) + cos(3*s2$v) + 0.4*(s2$g == "b") + rnorm(200, sd = 0.2)
+  sm <- semireg(w ~ u + v + g, smoothZ = list(s = smZ(cbind(u, v), k = 6, type = "Ztps")), data = s2, prt = FALSE)
+  pts <- cbind(u = c(0.2, 0.5, 0.8), v = c(0.3, 0.5, 0.7))
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  r <- semipred(sm, "g", c("u", "v"), contr = c("b", "a"), covariateV = pts, prt = FALSE)$pred_df
+  # the surfaces differ by the g effect only: the same difference and SE at every point
+  b <- lme4::fixef(sm$semer)[["gb"]]
+  se <- sqrt(vcov(sm$semer)["gb", "gb"])
+  expect_equal(r$w, rep(b, 3), tolerance = 1e-6)
+  expect_equal(r$SE_contr, rep(se, 3), tolerance = 1e-4)
+  expect_equal(r$UL - r$w, qnorm(0.975)*r$SE_contr, tolerance = 1e-8)
+  expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
+  expect_equal(r$significant, !r$includes0)
+})

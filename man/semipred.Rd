@@ -8,7 +8,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 		   scales=c("fixed", "free", "free_x", "free_y"),
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
-		   simultaneous=FALSE, contr_scale=c("model", "response"))
+		   simultaneous=FALSE, contr_scale=c("model", "response"),
+		   band=c("pointwise", "simultaneous"))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -50,10 +51,13 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 
 \item{prt}{A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.}
 
-\item{simultaneous}{If \code{TRUE}, simultaneous confidence bands over the whole curve(s) instead of pointwise
-limits: the critical value is the \code{1 - level} quantile of the largest standardised deviation over the
-predicted points, from 10000 draws of the estimates' distribution (Ruppert, Wand and Carroll, 2003). The default is
-FALSE.}
+\item{band}{\code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
+whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
+standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
+Wand and Carroll, 2003). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
+model use Scheffe's critical value instead; for smooths that would be far too wide.}
+
+\item{simultaneous}{\code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).}
 
 \item{contr_scale}{With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
 on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;

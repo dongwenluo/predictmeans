@@ -83,6 +83,20 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - The ranges of the covariate where the curves differ are printed and
     kept in `attr(pred_df, "significant")`; with `simultaneous = TRUE` they
     hold for the whole curve.
+* `semipred()` means of generalized models: the limits are the
+  back-transformed limits of the link scale, h(eta -+ c SE), as in
+  `predictmeans()` and `covariatemeans()` (always inside the range of the
+  response, not symmetric), and `SE_mu` is the delta-method SE |h'(eta)| SE.
+  Before, the limits were mean -+ c SE_mu, clipped to [0, 1] for binomial,
+  with a weight that is |h'(eta)| only for canonical links. `semipred()` on
+  a `semireg()` fit now gives the same means, SEs and limits as
+  `predictmeans()` on it.
+* `semipred(band = "simultaneous")`, the argument of `covariatemeans()`;
+  `simultaneous = TRUE` still works. The difference of two surfaces (two
+  covariates, `contr`) uses the same calculation as one covariate.
+* `R2_model(method = "nakagawa")` for `lme` models (equal to `lmer`; with a
+  variance function the observation-level variance is the mean residual
+  variance).
 * **`semireg()` with a 0/1 response: standard errors were 15-25% too
   small.** The covariance of the fixed and smooth coefficients used the
   constant 3/pi^2 (logit; the latent variance that `R2_glmm()` uses for

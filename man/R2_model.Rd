@@ -11,7 +11,9 @@ R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 \code{Error()}), \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB}, \code{gam} or a
 \code{\link{semireg}} fit.}
 
-\item{method}{\code{"piepho"} (every class) or \code{"nakagawa"} (\code{lmer}, \code{glmer} and \code{glmmTMB}).}
+\item{method}{\code{"piepho"} (every class) or \code{"nakagawa"} (\code{lmer}, \code{glmer}, \code{glmmTMB} and
+\code{lme}; for \code{lme} with a variance or correlation structure the observation-level variance is the mean
+residual variance).}
 
 \item{over_disp}{For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: as in
 \code{\link{R2_glmm}}.}
