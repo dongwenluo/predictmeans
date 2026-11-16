@@ -83,6 +83,30 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - The ranges of the covariate where the curves differ are printed and
     kept in `attr(pred_df, "significant")`; with `simultaneous = TRUE` they
     hold for the whole curve.
+* `bootmodels()` takes `lm`, `aov`, `glm` (gaussian, binomial, Poisson,
+  Gamma, `MASS::glm.nb`), `gls`, `lme` and `glmmTMB` models as well as
+  `lmer` and `glmer`. Responses are simulated from the model without its
+  fixed effects (intercept, offsets, the same random effects and
+  covariance structure); `lme` and `gls` responses from the null model's
+  covariance of the data (tested: the simulated covariance is the fitted
+  one). For `lm` the bootstrap p-values approach the exact F tests (tested
+  with 999 samples). `glmmTMB` has no sequential tests: Type II is used, with
+  a message. Quasi families, `gam` and `aov` with `Error()` are refused with
+  a message that says what to use instead.
+* `CookD()` takes `lm`, `aov`, `glm`, `glmer`, `glmmTMB` and `gam` models as
+  well as `lme`, `lmer` and `gls`. `lm` and `aov` use the exact closed form
+  (`stats::cooks.distance()`); other models are refitted for each deletion
+  (exact also for `glm`, where `cooks.distance()` is a one-step
+  approximation; for a `gam` p is the effective df, as mgcv). A deletion that
+  leaves a coefficient without data gives NA. `aov` with `Error()` is refused
+  with a message.
+* New test `test-model-classes.R`: every main function on 13 model classes
+  (lm, aov, aov with `Error()`, Poisson and binomial glm, gls, lme, lmer,
+  Poisson and binomial glmer, Poisson and negative binomial glmmTMB, gam);
+  each works or refuses the class with a message. It found that
+  `pm_slopes()` and `CookD()` could not find the data of a `gam` fitted
+  inside a function (mgcv records the global environment): fixed for every
+  function that refits or rereads the data.
 * `semipred()` means of generalized models: the limits are the
   back-transformed limits of the link scale, h(eta -+ c SE), as in
   `predictmeans()` and `covariatemeans()` (always inside the range of the

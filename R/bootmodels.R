@@ -1,10 +1,11 @@
-#' Parametric Bootstrap Tests for Mixed Models
+#' Parametric Bootstrap Tests
 #'
 #' @description
-#' Parametric bootstrap p-values for the terms and coefficients of an \code{lmer} or \code{glmer} model. Responses are
-#' simulated from the model fitted without its fixed effects (only an intercept and the same random effects: the
-#' global null hypothesis), the full model is refitted to each, and a p-value is the proportion of simulated statistics
-#' at least as large as the observed one. Useful for GLMMs and small samples, where Wald or F tests can be poor.
+#' Parametric bootstrap p-values for the terms and coefficients of a model. Responses are simulated from the model
+#' fitted without its fixed effects (only an intercept, any offset, and the same random effects and covariance
+#' structure: the global null hypothesis), the full model is refitted to each, and a p-value is the proportion of
+#' simulated statistics at least as large as the observed one. Useful for GLMs and GLMMs and small samples, where
+#' Wald or F tests can be poor.
 #' @details
 #' The result has the same form as that of \code{\link{permmodels}}: its \code{permlist} can be given to
 #' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for bootstrap p-values of
@@ -18,10 +19,14 @@
 #' @usage
 #' bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
 #'            ncore = 1, prt = TRUE)
-#' @param model A model fitted by \code{lmer} or \code{glmer}.
+#' @param model A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
+#'   distribution: gaussian, binomial, Poisson, Gamma; also \code{MASS::glm.nb}), \code{gls}, \code{lme},
+#'   \code{lmer}, \code{glmer} or \code{glmmTMB}. Responses of \code{lme} and \code{gls} models are simulated from
+#'   the null model's covariance of the data (random effects, correlation and variance structures).
 #' @param nsim Number of simulated data sets, the default is 999.
-#' @param type The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics, Types II
-#'   and III Wald chi-square statistics.
+#' @param type The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics (for a
+#'   \code{glm} with a known dispersion, the deviance; \code{glmmTMB} has none and uses Type II), Types II and III
+#'   Wald chi-square statistics (\code{lm}: F; \code{glm}: likelihood ratio).
 #' @param seed Optional random number seed, for reproducible results; the user's random number stream is left as it was.
 #' @param ncore Number of cores for refitting, the default is 1.
 #' @param prt Logical: print the tables? The default is TRUE.
@@ -45,32 +50,38 @@ NULL
 bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL, ncore = 1,
                        prt = TRUE) {
   type <- match.arg(as.character(type)[1], c("I", "II", "III", "1", "2", "3"))
-  if (!inherits(model, c("lmerMod", "glmerMod"))) stop("bootmodels() needs a model fitted by lmer or glmer.")
+  if (inherits(model, "aovlist")) {
+    stop("bootmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
+         "lme) instead.", call. = FALSE)
+  }
+  if (inherits(model, "gam")) {
+    stop("bootmodels() does not handle gam models (a null model for the smooths is not defined); use permmodels().",
+         call. = FALSE)
+  }
+  if (!inherits(model, c("lm", "lme", "gls", "lmerMod", "glmerMod", "glmmTMB"))) {
+    stop("bootmodels() handles lm, aov, glm, gls, lme, lmer, glmer and glmmTMB models.", call. = FALSE)
+  }
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
   plain <- function(m) if (inherits(m, "lmerModLmerTest")) methods::as(m, "lmerMod") else m
   model <- plain(model)
-  ff <- stats::formula(model)
-  bars <- pm_findbars(ff)
-  if (length(bars) == 0) stop("The model has no random effects.")
-  null_f <- stats::as.formula(paste(deparse(ff[[2]]), "~ 1 +",
-                                    paste0("(", vapply(bars, function(b) paste(deparse(b), collapse = ""), ""), ")",
-                                           collapse = " + ")),
-                              env = environment(ff))
-  null_fit <- suppressMessages(suppressWarnings(pm_refit(model, formula = null_f)))
-  ysim <- if (is.null(seed)) stats::simulate(null_fit, nsim = nsim) else
-    pm_with_seed(seed, stats::simulate(null_fit, nsim = nsim))
+  if (inherits(model, "glmmTMB") && type %in% c("I", "1")) {
+    message("glmmTMB models have no sequential (Type I) tests; Type II Wald tests are used.")
+    type <- "II"
+  }
+  # the null model, simulation and refits of this class (R/boot-parts.R)
+  bp <- pm_boot_parts(model)
+  ysim <- if (is.null(seed)) bp$simulate(nsim) else pm_with_seed(seed, bp$simulate(nsim))
 
   stats_of <- function(m) {
     mp <- mymodelparm(m, df = 0)[1:2]
-    aT <- if (type %in% c("I", "1")) stats::anova(m) else pm_anova(m, type = type, test.statistic = "Chisq")
-    list(mp, aT)
+    list(mp, pm_boot_anova(m, type))
   }
   one <- function(y) {
-    rf <- tryCatch(suppressMessages(suppressWarnings(lme4::refit(model, newresp = y))), error = function(e) NULL)
+    rf <- tryCatch(bp$refit(y), error = function(e) NULL)
     if (is.null(rf)) NULL else stats_of(rf)
   }
-  res <- pm_perm_drop(pm_perm_map(ysim, one, ncore, packages = "lme4"))
+  res <- pm_perm_drop(pm_perm_map(ysim, one, ncore, packages = bp$packages))
   failures <- res$failures
   res <- res$res
   B <- length(res)
@@ -80,16 +91,16 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
   # coefficients: |t|
   t_obs <- abs(obs[[1]]$coef/sqrt(diag(obs[[1]]$vcov)))
   t_sim <- vapply(res, function(r) abs(r[[1]]$coef/sqrt(diag(r[[1]]$vcov))), numeric(length(t_obs)))
-  ctab <- stats::coef(summary(model))
+  ctab <- pm_coef_table(model)
   bp <- pm_perm_p(t_obs, t_sim)
   if ("(Intercept)" %in% rownames(ctab)) bp[rownames(ctab) == "(Intercept)"] <- NA
   COEF <- round(cbind(ctab, Boot_p_value = bp), 4)
   # terms
   aT <- obs[[2]]
-  scol <- if (type %in% c("I", "1")) "F value" else "Chisq"
+  scol <- pm_boot_stat_col(aT)
   s_sim <- vapply(res, function(r) r[[2]][, scol], numeric(nrow(aT)))
   ap <- pm_perm_p(aT[, scol], s_sim)
-  ap[rownames(aT) == "(Intercept)"] <- NA            # the null model keeps the intercept
+  ap[rownames(aT) %in% c("(Intercept)", "Residuals")] <- NA     # the null model keeps the intercept
   ANOVA <- round(cbind(aT, Boot_p_value = ap), 4)
   attr(ANOVA, "heading") <- attr(aT, "heading")
   if (prt) {

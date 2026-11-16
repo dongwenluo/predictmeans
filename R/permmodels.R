@@ -198,13 +198,15 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     return(invisible(pm_perm_fl_robust(model, nperm, type, exact, seed, prt, perms)))
   }
   if (method == "freedman-lane") {
-    if (class(model)[1] == "aovlist") stop("Plese use model 'lme' instead of 'aov'!")
+    if (class(model)[1] == "aovlist") stop("permmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
+                                                 "lme) instead.", call. = FALSE)
     return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt, perms, refit, if (is.null(fo)) ncore else 1)))
   }
   if (inherits(model, "glm") && !(test.statistic %in% c("LR", "Wald", "F"))) test.statistic <- "LR"
   if (any(inherits(model, "gls"), inherits(model, "lme"))) test.statistic <- "Chisq"
   if (type %in% c("I", "1")) test.statistic <- "F"	  
-  if (class(model)[1]=="aovlist") stop("Plese use model 'lme' instead of 'aov'!")
+  if (class(model)[1]=="aovlist") stop("permmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
+                                                 "lme) instead.", call. = FALSE)
   if (inherits(model, c("glmerMod", "glmmTMB"))) {
     stop("For glmer and glmmTMB models use method = \"freedman-lane\" (permutations on the working scale).",
          call. = FALSE)

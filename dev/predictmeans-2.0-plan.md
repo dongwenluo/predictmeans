@@ -487,7 +487,7 @@ Not decided yet; each needs the maintainer's answer or waits for the step named.
 | O6 | `covariatemeans(band = "simultaneous")` uses Scheffe (slightly conservative over a limited range); an exact sup-t band (as `pm_sim_crit()` for `semipred()`, with t instead of normal draws) is possible. | **Decided 2026-11-17: keep both** (Working-Hotelling for parametric lines, simulation for smooths) |
 | O7 | `semipred()` says `simultaneous = TRUE`, `covariatemeans()` says `band = "simultaneous"`. | **Decided 2026-11-17, done**: `band =` in both, `simultaneous = TRUE` kept in `semipred()` |
 | O8 | `R2_model(method = "nakagawa")` only for lmer, glmer, glmmTMB. | **Decided 2026-11-17, done**: added for `lme` (= lmer); not for models without random effects |
-| O9 | Class gaps: `CookD()` (only lme, lmer, gls), `bootmodels()` (only lmer, glmer), `permmodels()` (no aov with `Error()`); the 13-class check is not yet a test. | Next steps |
+| O9 | Class gaps: `CookD()` (only lme, lmer, gls), `bootmodels()` (only lmer, glmer), `permmodels()` (no aov with `Error()`); the 13-class check is not yet a test. | **Done 2026-11-17**: `CookD()` and `bootmodels()` for every class (refused with a message: `aov` with `Error()`; `bootmodels()` also quasi families and `gam`, `permmodels()` covers those); `tests/testthat/test-model-classes.R` runs 15 functions on 13 classes; `pm_fit_env()` finds the data of a `gam` fitted in a function |
 
 ---
 
