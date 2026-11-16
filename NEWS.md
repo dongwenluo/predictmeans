@@ -802,7 +802,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   residuals (`ar1(tf + 0 | id)`, `dispformula = ~0`). The df equal those of
   the lme4 engine on the same model (to 1e-4). In a repeated-measures
   simulation with AR(1) residuals and no treatment effect, t tests rejected
-  4.8% at the 5% level, z tests 5.5% (`dev/sim-semireg-tmb-df.R`). In both
+  5.0% at the 5% level (df 18-49), z tests 5.5% (`dev/sim-semireg-tmb-df.R`). In both
   engines, variance components estimated at zero are left out of the
   Satterthwaite df, as in Kenward-Roger (a log-SD far out on a flat
   likelihood had given df below 1).
