@@ -170,8 +170,12 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
 - Empty cells: cell means of unobserved combinations are not shown; a mean averaging over
   an empty cell follows the 1.x rule (average of the observed cells, with a warning naming
   it), and its pairs are compared on the cells both means have (column `over`), not as
-  the difference of the two averages (since 2.0). Means that cannot be estimated (confounded
-  factors) are NA, with their estimable differences kept. Check `estimable` and `n`.
+  the difference of the two averages (since 2.0). A cell is a combination of the factors of one
+  interaction term. Factors that do not interact but are confounded in the data (each pasture on one
+  farm; a spray volume with one droplet size): the means average over the combinations that exist,
+  with a warning naming the two factors; write the nesting (`A/B`) or drop the aliased factor for the
+  same means without it, `weights = "cells"` for frequency-weighted means. Means that still cannot be
+  estimated are NA, with their estimable differences kept. Check `estimable` and `n`.
 - `pm_check(model)`: a table of model checks (outliers, normality, equal variances, overdispersion,
   interactions, straight line for numeric-level factors); `residplot(model)`: ggplot2 diagnostic plots
   (`interactive = TRUE`: plotly); see `vignette("checking")`.

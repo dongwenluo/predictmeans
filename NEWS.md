@@ -225,9 +225,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     replicated ones.
   * *Nested factors* declared in the formula (`G/T`) are also left out of
     the averages with `weights = "proportional"` and `"outer"` (gave NA).
-    Nesting that is only in the data (`y ~ G + T`) still gives NA (the
-    effects cannot be told apart), now with a note that says so and how to
-    get the means (`G/T` or `weights = "cells"`).
+    Nesting that is only in the data (`y ~ G + T`): see "Confounded
+    factors" below.
+  * *Confounded factors.* Two factors that do not interact in the model and
+    do not occur in all combinations (a factor nested in another only in the
+    data, `y ~ G + T`; a spray volume used with one droplet size; each
+    pasture type on one farm at a date) have no mean over all their
+    combinations. The means now average over the combinations that exist,
+    with a warning that names the two factors and the ways to say it in the
+    model: write the nesting (`G/T`) or leave out the factor that adds
+    nothing (the same means, equal weights), or `weights = "cells"` (the
+    combinations weighted by their numbers of observations). The pair is
+    found by trying, pairs among the factors averaged over first. Without
+    this the per-term cells above turned such means into NA (the
+    maintainer's pasture trial: 9 of 12 date x forest means and 60 of 66
+    pairs); 1.x gave the same averages without saying why. Means and pairs
+    that still cannot be estimated (no common cell) are NA.
+    `vignette("missing-cells")` has the examples and the table of the three
+    ways.
   * `Kmatrix()` accepts `aov` models with `Error()`; an `aov` fit with
     aliased coefficients gets the estimability check; clearer errors for
     unknown variables and covariates. New adapter generic `pm_contrasts()`

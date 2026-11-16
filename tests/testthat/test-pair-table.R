@@ -2,7 +2,7 @@
 ## table, the printed p-value matrices and the letters, so they agree.
 
 conf_fit <- function() {
-  # drop "fine" only and always with v3: the v3 means cannot be estimated
+  # drop "fine" only and always with v3: drop and vol are confounded
   set.seed(9)
   dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
   dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))
@@ -20,13 +20,15 @@ test_that("the printed p-value matrix and the pairs table hold the same adjusted
   }
 })
 
-test_that("with means that cannot be estimated, the matrices, pairs and limits agree", {
+test_that("with confounded factors, the matrices, pairs and limits agree", {
   fm <- conf_fit()
   pa <- suppressWarnings(predictmeans(fm, "C:vol", atvar = "C", adj = "tukey", plot = FALSE, prtnum = FALSE))
   pr <- pa$pairs
-  # within each level of C three means take part in the estimable pairs (v3 cannot be estimated): k = 3
+  # drop and vol are confounded: the means are over the combinations that exist, so within each
+  # level of C all four means take part in the pairs: k = 4 (before 2.0's fallback v3 was NA: k = 3)
   w <- which(pr$by == "c1" & !is.na(pr$estimate))
-  expect_equal(pr$p.adj[w], ptukey(sqrt(2)*abs(pr$statistic[w]), 3, pr$df[w], lower.tail = FALSE))
+  expect_length(w, 6)
+  expect_equal(pr$p.adj[w], ptukey(sqrt(2)*abs(pr$statistic[w]), 4, pr$df[w], lower.tail = FALSE))
   M <- pa$p_valueMatrix[[1]]
   l1 <- sub("^c1:", "", pr$level1[w]); l2 <- sub("^c1:", "", pr$level2[w])
   expect_equal(M[cbind(l2, l1)], pr$p.adj[w])

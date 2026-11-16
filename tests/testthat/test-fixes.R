@@ -195,18 +195,37 @@ test_that("ci_mcp() accepts LL = UL; model.matrix() of an lme model takes 'data'
   expect_equal(predictmeans:::model.matrix.lme(fm, data = nlme::Orthodont[rows, ]), X[rows, ], ignore_attr = TRUE)
 })
 
-test_that("pairs that cannot be estimated do not stop predictmeans with per-pair df (confounded factors)", {
-  # volume 400 only with fine droplets: its pairs cannot be estimated; the
-  # mean df of the pairs used to be NA and stopped predictmeans()
+test_that("pairs that cannot be estimated do not stop predictmeans with per-pair df", {
+  # level a3 of A only with b3, the others with b1 and b2, in a model with
+  # A:B: a3 has no cell in common with a1 or a2, so its pairs cannot be
+  # estimated; the mean df of the pairs used to be NA and stopped predictmeans()
+  set.seed(3)
+  sp <- data.frame(blk = factor(rep(1:10, each = 5)),
+                   A = factor(rep(c("a1", "a1", "a2", "a2", "a3"), 10)),
+                   B = factor(rep(c("b1", "b2", "b1", "b2", "b3"), 10)))
+  sp$y <- 5 + 0.3 * (sp$A == "a2") + rnorm(10)[sp$blk] + rnorm(50, sd = 0.3)
+  fm <- suppressMessages(lme4::lmer(y ~ A * B + (1 | blk), data = sp))
+  p <- suppressWarnings(suppressMessages(predictmeans(fm, "A", pairwise = TRUE, plot = FALSE, prtnum = FALSE)))
+  ok <- p$pairs$level1 == "a1" & p$pairs$level2 == "a2"
+  expect_true(is.finite(p$pairs$estimate[ok]) && is.finite(p$pairs$df[ok]))
+  expect_true(all(is.na(p$pairs$estimate[!ok]) & is.na(p$pairs$df[!ok])))
+  expect_true(is.finite(attr(p$LSD, "Degree of freedom")))
+})
+
+test_that("confounded factors in a mixed model: means over the combinations that exist, per-pair df", {
+  # volume 400 only with fine droplets (the model has droplet + vol)
   set.seed(3)
   sp <- data.frame(blk = factor(rep(1:10, each = 5)),
                    droplet = factor(rep(c("medium", "medium", "medium", "medium", "fine"), 10), levels = c("medium", "fine")),
                    vol = factor(rep(c("130", "200", "130", "200", "400"), 10)))
   sp$y <- 5 + 0.3 * (sp$vol == "200") + rnorm(10)[sp$blk] + rnorm(50, sd = 0.3)
   fm <- lme4::lmer(y ~ droplet + vol + (1 | blk), data = sp)
-  p <- suppressMessages(predictmeans(fm, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
-  ok <- p$pairs$level1 == "130" & p$pairs$level2 == "200"
-  expect_true(is.finite(p$pairs$estimate[ok]) && is.finite(p$pairs$df[ok]))
-  expect_true(all(is.na(p$pairs$estimate[!ok]) & is.na(p$pairs$df[!ok])))
-  expect_true(is.finite(attr(p$LSD, "Degree of freedom")))
+  expect_warning(p <- suppressMessages(predictmeans(fm, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)),
+                 "'droplet' and 'vol' are confounded in the data")
+  expect_true(all(is.finite(p$means$estimate)) && all(is.finite(p$pairs$estimate)) && all(is.finite(p$pairs$df)))
+  # as the model that says the nesting
+  fn <- lme4::lmer(y ~ droplet/vol + (1 | blk), data = sp)
+  pn <- suppressWarnings(suppressMessages(predictmeans(fn, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)))
+  expect_equal(p$means$estimate, pn$means$estimate, tolerance = 1e-6)
+  expect_equal(p$pairs$estimate, pn$pairs$estimate, tolerance = 1e-6)
 })

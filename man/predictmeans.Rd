@@ -181,7 +181,16 @@ with such a mean is therefore compared on the cells both means have (column \cod
 \code{Sample_date/Farm} in the model, two dates are not matched on farms (each date has its own farm effects),
 but two treatments at one date are. In simulations comparing the averages rejected 8-78\% of true
 null hypotheses at the 5\% level when the other factor had an effect, the common cells 4-6\%
-(\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.}
+(\code{dev/review-defaults.md} in the package sources). \code{contrastmeans()} and \code{pm_joint()} do the same.
+A cell is a combination of the factors of one interaction term: factors that do not interact do not make cells
+together, and a combination of them without data is estimated by the (additive) model.
+Confounded factors (two factors that share no term and do not occur in all combinations: a factor nested in
+another only in the data, a spray volume used with one droplet size, each pasture on one farm) have no mean
+over all their combinations; the means then average over the combinations that exist, with a warning that
+names the two factors. Three ways say what is wanted: the nesting in the formula (\code{G/T}) or the model
+without the factor that adds nothing give the same means (equal weights over the combinations that exist);
+\code{weights = "cells"} weights the combinations by their numbers of observations. See
+\code{vignette("missing-cells", package = "predictmeans")}.}
 
 \item{df_method}{Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
 REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance

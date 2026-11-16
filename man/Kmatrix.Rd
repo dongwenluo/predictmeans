@@ -97,7 +97,13 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
   \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
   factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
   the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
-  \code{\link{predictmeans}}). The design matrix of the grid is evaluated with the model's own stored basis
+  \code{\link{predictmeans}}). When a mean cannot be estimated because two factors that share no term of the
+  model are confounded in the data (not all their combinations occur: a factor nested in another only in the
+  data, each pasture on one farm), the combinations of those two factors without data are left out as well,
+  with a warning that names them: the mean is the average over the combinations that exist. The pair is found
+  by trying, pairs among the factors averaged over first. Writing the nesting in the formula (\code{G/T}) or
+  leaving out the aliased factor gives the same means; \code{weights = "cells"} weights the combinations by
+  their numbers of observations. The design matrix of the grid is evaluated with the model's own stored basis
   information, so covariates may enter the model through transformations such as
   \code{poly(x, 2)}, \code{ns(x, 3)}, \code{bs(x)}, \code{log(x)}, \code{scale(x)} or
   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
