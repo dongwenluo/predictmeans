@@ -5,7 +5,8 @@
 predictmeans 2.0 keeps the 1.x functions and printed output, and changes
 defaults where simulations or the literature showed a more reliable method.
 Plots are drawn only when asked for (`plot = TRUE` or `autoplot()`), and
-lmerTest is no longer attached.
+lmerTest is no longer needed (`anova()` of `lmer` fits has F tests with
+Kenward-Roger df from the package's own code).
 Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 * **Degrees of freedom** are chosen by the model in one place (`df_method =
@@ -35,6 +36,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Kenward-Roger df with a variance component estimated as zero** (a
+  singular fit): the component is left out of the adjustment, as in SAS
+  PROC MIXED. Its near-singular information gave nonsense df before (in a
+  `semireg()` fit whose deviation curves had variance 0: 0.54 and 0.04 df
+  for the factor terms; now 33 and 114, those of the model without the
+  component). Fits without a zero variance are unchanged.
 * **`semipred()` and `predictmeans()` on generalized `semireg()` /
   `semireg_tmb()` fits include the uncertainty of the smoothing parameters**
   (`unconditional`, as mgcv's): the first-order correction J V_theta J' is
@@ -391,13 +398,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   session, draws the 1.x plots; so does asking for plots by name
   (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
   `bkplot`).
-* **lmerTest is no longer attached** by `library(predictmeans)`: it moved
-  from Depends to Imports. predictmeans' own df and tests do not use it.
-  Scripts that relied on lmerTest's `lmer()` (df and p-values in
-  `summary()`, `anova(..., ddf =)`, `ranova()`) need `library(lmerTest)`.
-  It is still installed with predictmeans, for the `semireg()` fits (their
-  `summary()` and `lmerTest::ranova()`); whether it is needed at all will be
-  decided when `semireg()` is upgraded.
+* **lmerTest is no longer needed**: it moved from Depends to Suggests (used
+  only in the tests, to compare against). predictmeans' own df and tests
+  never used it. `anova()` of an `lmer` fit now gives F tests with df by the
+  package's own code (see "New features"); `summary()` with t tests and
+  `ranova()` need `library(lmerTest)`. Gaussian `semireg()` fits are class
+  `semerMod` (an `lmerMod`), not lmerTest's: `anova(fit)` tests their fixed
+  effects and smooth terms (replacing `lmerTest::ranova(fit$semer)`).
 * **Adjusted confidence limits of the pairs.** With `adj` "tukey",
   "bonferroni", "sidak", "scheffe" or "mvt", `pairs` has the columns
   `adj.conf.low` and `adj.conf.high`: simultaneous limits within each family
@@ -752,6 +759,22 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`anova()` of `lmer` fits with df and p-values, without lmerTest**: Type
+  III F tests with Kenward-Roger df by default (as SAS `DDFM=KR`),
+  `ddf = "Satterthwaite"` (lmerTest's numbers), `type = "II"` or `"I"`
+  (sequential, lmerTest's), `ddf = "lme4"` for lme4's own table.
+  `anova(m1, m2)` is lme4's likelihood ratio comparison, unchanged. Also for
+  gaussian `semireg()` fits (`anova(fit$semer)`). With lmerTest attached as
+  well there is no conflict: `lmerTest::lmer()` fits keep lmerTest's
+  `anova()` and `summary()`, `lme4::lmer()` fits get this method, and
+  `lmerTest::ranova(fit$semer)` still refits a `semireg()` fit with its
+  smooth bases (tested).
+* **`anova()` of `semireg()` / `semireg_tmb()` fits**: the fixed effects
+  (Kenward-Roger F for gaussian, Wald chi-square for generalized fits) and,
+  for each smooth term, the likelihood ratio test of its variance being zero
+  (refit without it; p-value halved for the boundary, Self and Liang 1987;
+  `lmerTest::ranova()` used the full chi-square). For `s(x, f)` the
+  deviation block tests whether the levels' curves have the same shape.
 * **Smooths in the formula of `semireg()` and `semireg_tmb()`**, as for
   `mgcv::gam`, next to fixed and lme4 random terms:
   `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`. Each smooth is set

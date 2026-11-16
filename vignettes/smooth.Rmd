@@ -41,12 +41,13 @@ fm <- semireg(rate ~ pressure * QB + (pressure | Subject),
               data = Dialyzer, prt = FALSE)
 ```
 
-`k` is the number of interior knots of the spline. `fm$semer` is the fitted mixed
-model, so the usual tests apply. `lmerTest::ranova()` tests the random terms, including the
-smooth: a significant smooth term means the curve is not a straight line.
+`k` is the number of interior knots of the spline. `anova(fm)` gives the tests of the
+fixed effects (Type III, Kenward-Roger df) and, for each smooth term, the likelihood ratio
+test of its variance being zero: a significant smooth term means the curve is not a
+straight line.
 
 ```{r}
-lmerTest::ranova(fm$semer)
+anova(fm)
 ```
 
 ## Curves with confidence bands

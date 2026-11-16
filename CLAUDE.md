@@ -19,10 +19,15 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
-- glmmTMB, mgcv and lmerTest in Imports (lmerTest only for `semireg()` fits; not
-  attached since 2.0; its removal is reconsidered when `semireg()` is
-  upgraded); car and pbkrtest in Suggests (own code in `R/anova.R`,
-  `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
+- glmmTMB and mgcv in Imports; lmerTest, car, pbkrtest and TMB in Suggests
+  (own code in `R/anova.R`, `R/kr.R`, `R/satterthwaite.R`,
+  `R/df-containment.R`; lmerTest dropped from Imports on 2026-11-17, the
+  maintainer's decision: `anova.lmerMod()` gives F tests with KR df for lmer
+  fits, `anova.semireg()` tests fixed effects and smooth terms; gaussian
+  `semireg()` fits are class `semerMod`). Internal code that needs lme4's own
+  sequential table calls `pm_anova_seq()`, not `anova()`.
+- Kenward-Roger leaves variance components estimated at zero out of the
+  adjustment (as SAS); `R/kr.R`.
 - `predictmeans()` draws plots only when asked (`plot = FALSE` default since
   2.0; `which.plots` etc. turn plotting on); `autoplot()` draws from results.
 - Means over empty cells keep the 1.x rule: the average of the observed

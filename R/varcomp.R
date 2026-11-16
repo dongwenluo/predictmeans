@@ -275,7 +275,7 @@ pm_vc_mer_fun <- function(model, residual) {
 pm_lmer_varpar <- function(model) {
   # a semireg() fit keeps its own deviance function (with the smooth designs:
   # a refit from its call would have plain random intercepts in their place)
-  devfun <- if (methods::is(model, "semerLmerTest")) model@semireg_info$devfun
+  devfun <- if (methods::is(model, "semerMod")) model@semireg_info$devfun
   if (is.null(devfun)) {
     cl <- stats::getCall(model)
     cl[[1]] <- quote(lme4::lmer)

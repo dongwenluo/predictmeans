@@ -186,5 +186,9 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     names(u_ind) <- vapply(re, `[[`, "", "group")
     info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), st$smoothZm)
   }
-  pm_sr_result(semer, st, mc, info, list(tmbf = tmbf))
+  mi <- semer$modelInfo
+  refit <- list(engine = "glmmTMB", formula = st$formula, data = st$data, smoothZ = st$smoothZN,
+                family = mi$family, ziformula = mi$allForm$ziformula, dispformula = mi$allForm$dispformula,
+                REML = isTRUE(mi$REML))
+  pm_sr_result(semer, st, mc, info, list(tmbf = tmbf, refit = refit))
 }

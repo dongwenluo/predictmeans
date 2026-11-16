@@ -205,6 +205,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   the data). `permcombine()` combines tests of several responses made with the same
   permutations (Fisher or Tippett) and gives min-p adjusted p-values over the responses.
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
+- `anova(lmer_fit)`: Type III F tests with Kenward-Roger df (package's own code, no lmerTest needed);
+  `ddf = "Satterthwaite"`, `type = "I"`/`"II"`; `anova(m1, m2)` is lme4's comparison. `anova(semireg_fit)`:
+  fixed effects + likelihood ratio test of each smooth term (variance = 0).
 - `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
   terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis; numeric `by`,
   `bs = "fs"`, `s(x1, x2)`; no `te()`/`t2()` yet). Equal to `gam(method = "REML")`; then `semipred()`,

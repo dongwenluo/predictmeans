@@ -177,15 +177,13 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   fit <- pm_sr_fit_lme4(lmerc, st, gaus, family, ngbinomial, control, start, verbose, drop.unused.levels, mc, env, ...)
   semer <- fit$semer
   if (gaus) {
-    # lmerTest's class (Satterthwaite df), with the deviance function of the
-    # fitted model (with the smooth designs, not the placeholder terms)
-    semer <- suppressWarnings(as_lmerModLT(semer, fit$devfun))
+    # an lmerMod that keeps the deviance function of the fitted model (with
+    # the smooth designs, not the placeholder terms): Satterthwaite df and
+    # varcomp() need it, a refit from the call would not have the smooths
     semer@call <- lmerc
-    # what a refit needs, so that update() (used by lmerTest::ranova) refits
-    # through semireg() with the same smooth bases
-    semer <- methods::new("semerLmerTest", semer,
-                          semireg_info = list(data = st$data, smoothZ = st$smoothZN, formula = st$formula,
-                                              REML = isTRUE(REML), control = control, devfun = fit$devfun))
+    semer <- methods::new("semerMod", semer,
+                          semireg_info = list(devfun = fit$devfun, data = st$data, smoothZ = st$smoothZN,
+                                              formula = st$formula, REML = isTRUE(REML), control = control))
   }
   if (prt) print(semer)
 
@@ -198,46 +196,49 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     info <- pm_sr_info(getME(semer, "X"), Z, getME(semer, "Lambda"), w, unlist(ranef(semer)), u_ind,
                        names(st$Zt), st$smoothZm)
   }
-  pm_sr_result(semer, st, mc, info, list(lmerc = lmerc, devfun0 = fit$devfun0))
+  # what a refit needs (tests of the smooth terms, anova.semireg())
+  refit <- list(engine = "lme4", formula = st$formula, data = st$data, smoothZ = st$smoothZN,
+                family = if (gaus || ngbinomial) NULL else family, ngbinomial = ngbinomial, REML = REML,
+                control = control, weights = semer@resp$weights,
+                offset = if (any(semer@resp$offset != 0)) semer@resp$offset)
+  pm_sr_result(semer, st, mc, info, list(lmerc = lmerc, devfun0 = fit$devfun0, refit = refit))
 }
 
-## A semireg() lmer fit that remembers its smooth bases (see update below).
-methods::setClass("semerLmerTest", contains = "lmerModLmerTest",
-                  slots = c(semireg_info = "list"))
+## A gaussian semireg() fit: an lmerMod that keeps the deviance function of
+## the fitted model (lmerTest is no longer needed since 2.0).
+methods::setClass("semerMod", contains = "lmerMod", slots = c(semireg_info = "list"))
 
-## Refit of a semireg() fit with a new formula (as lmerTest::ranova() does):
-## the smooth terms (1 | name) still in the formula keep their spline bases,
-## instead of being refitted as ordinary random intercepts.
-update.semerLmerTest <- function(object, formula = NULL, ...) {
+## Refit of a gaussian semireg() fit with a new random part (as
+## lmerTest::ranova() does): the smooth terms (1 | name) still in the formula
+## keep their spline bases, instead of being refitted as plain random
+## intercepts. anova(fit) tests the smooth terms without it.
+update.semerMod <- function(object, formula = NULL, ...) {
   info <- object@semireg_info
   if (is.null(formula) || length(list(...))) {
-    upd <- utils::getS3method("update", "lmerModLmerTest", envir = asNamespace("lmerTest"))
-    return(upd(object, formula = formula, ...))
+    stop("update() of a semireg() fit only takes a new random part (as lmerTest::ranova()); refit with semireg().",
+         call. = FALSE)
   }
-  # ranova() only drops random terms: take the response and the fixed part
-  # from the original formula (newer R/lmerTest can pass a reduced formula
-  # whose response is damaged, e.g. 'log' for 'log(grade)'), and only the
-  # random terms from the new one
   if (is.character(formula))
     formula <- stats::as.formula(if (length(formula) == 3) paste(formula[2], formula[1], formula[3])
                                  else paste(formula, collapse = " "))
+  # the response and the fixed part from the original formula, only the
+  # random terms from the new one
   f <- info$formula
   bars <- pm_findbars(formula)
   bar_grp <- vapply(bars, function(b) paste(all.vars(b[[3]]), collapse = ":"), character(1))
   sm_names <- names(info$smoothZ)
   keep <- intersect(sm_names, bar_grp)
   other <- bars[!bar_grp %in% sm_names]
-  fixed <- if (requireNamespace("reformulas", quietly = TRUE)) reformulas::nobars(f) else lme4::nobars(f)
+  fixed <- pm_nobars(f)
+  e <- new.env(parent = asNamespace("predictmeans"))
   rhs <- paste(c(paste(deparse(fixed[[3]], width.cutoff = 500L), collapse = " "),
                  vapply(other, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"),
                         character(1))), collapse = " + ")
-  f_new <- stats::as.formula(paste(paste(deparse(f[[2]]), collapse = ""), "~", rhs),
-                             env = environment(stats::formula(object)))
-  e <- new.env(parent = asNamespace("predictmeans"))
+  f_new <- stats::as.formula(paste(paste(deparse(f[[2]]), collapse = ""), "~", rhs), env = e)
   e$sr_data <- info$data
   e$sr_Z <- info$smoothZ[keep]
-  cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z),
-             REML = info$REML, ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE)
+  cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = info$REML,
+             ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE)
   fit <- suppressMessages(suppressWarnings(eval(cl, e)))
   if (is.list(fit) && !is.null(fit$semer)) fit$semer else fit
 }

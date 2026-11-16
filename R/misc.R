@@ -473,60 +473,6 @@ df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=N
 }
 
 ##########
-as_lmerModLT <- function(model, devfun, tol=1e-8) {
-  is_reml <- getME(model, "is_REML")
-  # Coerce 'lme4-model' to 'lmerModLmerTest':
-  res <- as(model, "lmerModLmerTest")
-  # Set relevant slots of the new model object:
-  res@sigma <- sigma(model)
-  res@vcov_beta <- as.matrix(vcov(model))
-  varpar_opt <- unname(c(res@theta, res@sigma))
-  # Compute Hessian:
-  h <- numDeriv::hessian(func=devfun_vp, x=varpar_opt, devfun=devfun,
-                         reml=is_reml)
-  # Eigen decompose the Hessian:
-  eig_h <- eigen(h, symmetric=TRUE)
-  evals <- eig_h$values
-  neg <- evals < -tol
-  pos <- evals > tol
-  zero <- evals > -tol & evals < tol
-  if(sum(neg) > 0) { # negative eigenvalues
-    eval_chr <- if(sum(neg) > 1) {
-      "eigenvalues"
-    } else {
-      "eigenvalue"
-    }
-    evals_num <- paste(sprintf("%1.1e", evals[neg]), collapse = " ")
-    warning(sprintf("Model failed to converge with %d negative %s: %s",
-                    sum(neg), eval_chr, evals_num), call.=FALSE)
-  }
-  # Note: we warn about negative AND zero eigenvalues:
-  if(sum(zero) > 0) { # some eigenvalues are zero
-    eval_chr <- if(sum(zero) > 1) {
-      "eigenvalues"
-    } else {
-      "eigenvalue"
-    }
-    evals_num <- paste(sprintf("%1.1e", evals[zero]), collapse = " ")
-    warning(sprintf("Model may not have converged with %d %s close to zero: %s",
-                    sum(zero), eval_chr, evals_num))
-  }
-  # Compute vcov(varpar):
-  pos <- eig_h$values > tol
-  q <- sum(pos)
-  # Using the Moore-Penrose generalized inverse for h:
-  h_inv <- with(eig_h, {
-    vectors[, pos, drop=FALSE] %*% diag(1/values[pos], nrow=q) %*%
-      t(vectors[, pos, drop=FALSE]) })
-  res@vcov_varpar <- 2 * h_inv # vcov(varpar)
-  # Compute Jacobian of cov(beta) for each varpar and save in list:
-  Jac <- numDeriv::jacobian(func=get_covbeta, x=varpar_opt, devfun=devfun)
-  res@Jac_list <- lapply(seq_len(ncol(Jac)), function(i)
-    array(Jac[, i], dim=rep(length(res@beta), 2))) # k-list of jacobian matrices
-  res
-}
-
-##########
 devfun_vp <- function(varpar, devfun, reml) {
   nvarpar <- length(varpar)
   sigma2 <- varpar[nvarpar]^2

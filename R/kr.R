@@ -75,6 +75,20 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
     c(i, j)
   }
   E <- list()
+  # a variance estimated as zero (a singular fit): its parameter, and the
+  # covariances that involve it, are left out of the adjustment (treated as
+  # known, as SAS PROC MIXED); their near-singular information otherwise gave
+  # nonsense df (e.g. 0.04 or 485371)
+  vc <- lme4::VarCorr(model)
+  boundary <- logical(0)
+  for (ss in seq_along(n_comp)) {
+    S_ss <- as.matrix(vc[[ss]])
+    tol_ss <- 1e-8 * max(1, max(abs(diag(S_ss))), s2)
+    for (rr in seq_len((n_comp[ss] + 1) * n_comp[ss]/2)) {
+      ij <- unique(upper_entry(rr, n_comp[ss]))
+      boundary <- c(boundary, any(diag(S_ss)[ij] <= tol_ss))
+    }
+  }
   for (ss in seq_along(n_comp)) {
     nc <- n_comp[ss]
     n_lev <- (Gp[ss + 1] - Gp[ss])/nc
@@ -138,12 +152,14 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
     Yq <- matrix(NA, n_g, n_g)
     for (r in seq_len(n_g)) for (s in r:n_g) Yq[r, s] <- Yq[s, r] <- sum(a[[r]] * Pa[[s]])
     IO <- if (information == "observed") Yq - IE2/2 else Yq/2
-    condi <- min(abs(eigen(IO, only.values = TRUE)$values))
-    WW <- pm_upper_sym(if (condi > 1e-10) solve(IO) else MASS::ginv(IO))
   } else {
-    condi <- min(abs(eigen(IE2, only.values = TRUE)$values))
-    WW <- pm_upper_sym(if (condi > 1e-10) 2 * solve(IE2) else 2 * MASS::ginv(IE2))
+    IO <- IE2/2
   }
+  keep <- c(!boundary, TRUE)                   # the residual variance is always kept
+  IOk <- IO[keep, keep, drop = FALSE]
+  condi <- min(abs(eigen(IOk, only.values = TRUE)$values))
+  WW <- matrix(0, n_g, n_g)
+  WW[keep, keep] <- pm_upper_sym(if (condi > 1e-10) solve(IOk) else MASS::ginv(IOk))
   UU <- matrix(0, ncol(X), ncol(X))
   if (n_g > 1) {
     for (ii in 1:(n_g - 1)) for (jj in (ii + 1):n_g) {
@@ -159,6 +175,7 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
   attr(PhiA, "W") <- WW
   attr(PhiA, "condi") <- condi
   attr(PhiA, "information") <- information
+  attr(PhiA, "boundary") <- boundary
   PhiA
 }
 

@@ -123,7 +123,7 @@ pm_sr_call_for <- function(cl, fn, drop = character(0)) {
 ## lme4: the structure (lFormula()/glFormula()), the smooth designs put into
 ## Zt, one fit. 'lmerc' is the [g]lmer call of the front end (formula with
 ## placeholders). Returns the merMod and, for a gaussian fit, the deviance
-## function that goes with it (lmerTest needs it for Satterthwaite df).
+## function that goes with it (Satterthwaite df and varcomp() need it).
 pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, ngbinomial, control, start, verbose, drop.unused.levels, mc, env,
                            ...) {
   fc <- lmerc
@@ -280,7 +280,7 @@ pm_sr_uncond <- function(semireg) {
     return((Vj - as.matrix(semireg$CovMat) * s2)/s2)
   }
   th0 <- lme4::getME(semer, "theta")
-  if (methods::is(semer, "semerLmerTest")) {
+  if (methods::is(semer, "semerMod")) {
     devfun <- semer@semireg_info$devfun
     vp <- pm_lmer_varpar(semer)
     Vth <- vp$vcov_varpar[seq_along(th0), seq_along(th0), drop = FALSE]

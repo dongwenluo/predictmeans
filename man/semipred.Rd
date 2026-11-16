@@ -117,8 +117,7 @@ fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
 str(fm$data)
 summary(fm$semer)
 residplot(fm$semer, group="QB")
-anova(fm$semer)
-lmerTest::ranova(fm$semer)
+anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 R2_glmm(fm$semer)
 ap_out1 <- semipred(fm, "QB", "pressure")
 str(ap_out1$pred_df)
@@ -140,7 +139,7 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
                       data=sleepstudy)
 residplot(sleep.semi$semer)
 summary(sleep.semi$semer)
-anova(sleep.semi$semer)
+anova(sleep.semi)
 R2_glmm(sleep.semi$semer)
 
 predout1 <- semipred(sleep.semi, "Subject", "Days")

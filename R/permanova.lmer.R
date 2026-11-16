@@ -51,7 +51,7 @@ permanova.lmer <- function(model, nperm = 999, ncore=1, type = c("I", "II", "III
     type <- as.character(as.integer(as.roman(type)))
   }
 
-  aTable <- if (inherits(model, "lmerModLmerTest")) anova(model, type=type) else suppressWarnings(anova(model))
+  aTable <- if (inherits(model, "lmerModLmerTest")) anova(model, type=type) else suppressWarnings(pm_anova_seq(model))
   Perm.p <- numeric(nrow(aTable))
   termlabel1 <- termlabel2 <- row.names(aTable)
   names(Perm.p) <- termlabel1

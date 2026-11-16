@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align =
 #| label: setup
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # lmer() with Satterthwaite tests in anova() and summary() (not attached by predictmeans 2.0)
+library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
 library(HRW)
 library(gridExtra)
 library(car)
@@ -642,10 +642,10 @@ residplot(mod1$semer)
 kable(anova(mod1$semer))
 ```
 
--   **RANOVA**
+-   **Tests of the smooth terms**
 
 ```{r}
-kable(lmerTest::ranova(mod1$semer))
+kable(anova(mod1)$smooth)
 ```
 
 -   **$R^2$**
@@ -701,10 +701,10 @@ residplot(mod2$semer, group="district")
 kable(anova(mod2$semer))
 ```
 
--   **RANOVA**
+-   **Tests of the smooth terms**
 
 ```{r}
-kable(lmerTest::ranova(mod2$semer))
+kable(anova(mod2)$smooth)
 ```
 
 -   **$R^2$**
@@ -1136,10 +1136,10 @@ residplot(mod$semer)
 kable(anova(mod$semer))
 ```
 
--   **RANOVA**
+-   **Tests of the smooth terms**
 
 ```{r}
-kable(lmerTest::ranova(mod$semer))
+kable(anova(mod)$smooth)
 ```
 
 -   **$R^2$**

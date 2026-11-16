@@ -14,10 +14,13 @@ test_that("semireg(): Satterthwaite df and variance components equal the same mo
   fl <- nlme::lme(areaPerMzloty ~ construction.date, random = list(one = nlme::pdIdent(~ -1 + Z)), data = d,
                   method = "REML")
   expect_equal(as.numeric(logLik(fit$semer)), as.numeric(logLik(fl)), tolerance = 1e-6)
-  # anova(): lmerTest's Satterthwaite df with the deviance of the fitted model
-  # (before 2.0 that of the placeholder model: 1871 df instead of 150)
-  ddf_lme <- pm_inference(fl, df_method = "Satterthwaite", vcov_adjust = FALSE)$df(matrix(c(0, 1), 1), "construction.date")
-  expect_equal(anova(fit$semer)["construction.date", "DenDF"], ddf_lme, tolerance = 1e-3)
+  # Satterthwaite and Kenward-Roger df with the deviance of the fitted model
+  # (before 2.0 lmerTest's used that of the placeholder model: 1871 df instead of 150)
+  L1 <- matrix(c(0, 1), 1)
+  ddf_lme <- pm_inference(fl, df_method = "Satterthwaite", vcov_adjust = FALSE)$df(L1, "construction.date")
+  expect_equal(anova(fit$semer, ddf = "Satterthwaite")["construction.date", "Df.res"], ddf_lme, tolerance = 1e-3)
+  kr_lme <- pm_inference(fl, df_method = "Kenward-Roger")$df(L1, "construction.date")
+  expect_equal(anova(fit$semer)["construction.date", "Df.res"], kr_lme, tolerance = 1e-3)
   # varcomp(): the SEs of the variance components (before 2.0: SE 7.7 for 1.45)
   v1 <- varcomp(fit)
   v2 <- varcomp(fl)
@@ -125,4 +128,29 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
   pa <- semipred(p, NULL, "x", covariateV = xs, prt = FALSE)$pred_df
   expect_true(all(pb$SE_mu >= pa$SE_mu))
   expect_equal(pb$SE_mu, tb$SE_mu, tolerance = 0.01)
+})
+
+test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zero, smooth LRTs, no lmerTest", {
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  data(Dialyzer, package = "nlme", envir = environment())
+  fit <- q(semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, prt = FALSE))
+  expect_false(methods::is(fit$semer, "lmerModLmerTest"))
+  a <- q(anova(fit))
+  expect_equal(a$smooth$variance[a$smooth$term == "s_pressure_QB"], 0, tolerance = 1e-8)
+  # the deviation block is estimated at zero: KR leaves it out, so the df are those of the
+  # model without it (before: 0.54 and 0.04 df for QB and pressure:QB)
+  b <- q(semireg(rate ~ s(pressure, k = 6) + QB + pressure:QB + (1 | Subject), data = Dialyzer, prt = FALSE))
+  ab <- anova(b$semer)
+  expect_equal(a$fixed["QB", "Df.res"], ab["QB", "Df.res"], tolerance = 1e-4)
+  expect_equal(a$fixed["pressure:QB", "Df.res"], ab["QB:pressure", "Df.res"], tolerance = 1e-4)
+  expect_gt(a$fixed["QB", "Df.res"], 10)
+  # no random term left: the REML log-likelihood of the linear model
+  set.seed(7)
+  d <- data.frame(x = runif(200, 0, 3), f = gl(2, 100))
+  d$y <- sin(2*d$x) + rnorm(200, 0, 0.3)
+  f1 <- q(semireg(y ~ f + s(x, k = 8), data = d, prt = FALSE))
+  s1 <- anova(f1)$smooth
+  expect_equal(s1$LRT, 2*(as.numeric(logLik(f1$semer)) - as.numeric(logLik(lm(y ~ f + x, d), REML = TRUE))),
+               tolerance = 1e-6)
+  expect_output(print(anova(f1)), "Smooth terms")
 })

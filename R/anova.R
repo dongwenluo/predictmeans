@@ -13,7 +13,8 @@
 
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
                      test.statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
-                     type3_map = NULL) {
+                     type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite")) {
+  ddf <- match.arg(ddf)
   type <- as.character(type)
   type <- match.arg(type)
   type <- c("2" = "II", "3" = "III", II = "II", III = "III")[[type]]
@@ -31,7 +32,7 @@ pm_anova <- function(model, type = c("II", "III", "2", "3"),
   if (inherits(model, "merMod")) {
     test <- if (test.statistic == "F") "F" else "Chisq"
     return(pm_anova_wald(model, type, layout = "mer", test = test, kr_information = kr_information,
-                         type3_map = type3_map))
+                         type3_map = type3_map, ddf = ddf))
   }
   pm_anova_wald(model, type, layout = "default", type3_map = type3_map)
 }
@@ -80,7 +81,7 @@ pm_anova_result <- function(df, row_names, col_names, heading) {
 
 ## Wald tests: lme (Chisq, Df, Pr), mer (Chisq or KR F), others (Df, Chisq, Pr).
 pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test = "Chisq",
-                          kr_information = "observed", type3_map = NULL) {
+                          kr_information = "observed", type3_map = NULL, ddf = "Kenward-Roger") {
   layout <- match.arg(layout)
   tt <- stats::terms(model)
   fac <- attr(tt, "factors")
@@ -95,10 +96,21 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
     pm_vcov(model)
   }
   PhiA <- NULL
-  if (layout == "mer" && test == "F") {
+  satt <- layout == "mer" && test == "F" && ddf == "Satterthwaite"
+  if (layout == "mer" && test == "F" && !satt) {
     PhiA <- pm_vcov_kr(model, kr_information)   # "expected": as car::Anova() (pbkrtest)
     V <- as.matrix(PhiA)
     attributes(V) <- attributes(V)[c("dim", "dimnames")]
+  }
+  # Satterthwaite: the unadjusted covariance, df by lmerTest's rule (pm_inference())
+  inf_s <- if (satt) pm_inference(model, df_method = "Satterthwaite", vcov_adjust = FALSE)
+  ftest <- function(H, term) {
+    if (satt) {
+      r <- inf_s$ftest(H, term)
+      return(c(stat = r[[3]], ddf = r[[2]]))
+    }
+    kr <- pm_kr_ftest(model, H, PhiA)
+    c(stat = kr[["stat"]], ddf = kr[["ddf"]])
   }
   mm <- stats::model.matrix(model)
   assign <- attr(mm, "assign")
@@ -124,7 +136,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
         next
       }
       if (test == "F") {
-        kr <- pm_kr_ftest(model, H, PhiA)
+        kr <- ftest(H, names[i])
         stat[i] <- kr[["stat"]]; res_df[i] <- kr[["ddf"]]
       } else {
         stat[i] <- pm_wald_chisq(H, b, V)
@@ -142,7 +154,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
         next
       }
       if (test == "F") {
-        kr <- pm_kr_ftest(model, H, PhiA)
+        kr <- ftest(H, names[term])
         stat[term] <- kr[["stat"]]; res_df[term] <- kr[["ddf"]]
       } else {
         stat[term] <- pm_wald_chisq(H, b, V)
@@ -154,7 +166,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   resp <- paste("Response:", pm_response_name(model))
 
   if (layout == "mer") {
-    kind <- if (test == "F") "Wald F tests with Kenward-Roger df" else "Wald chisquare tests"
+    kind <- if (test == "F") paste0("Wald F tests with ", ddf, " df") else "Wald chisquare tests"
     heading <- c(paste0("Analysis of Deviance Table (Type ", type, " ", kind, ")\n"), resp)
     if (test == "F") {
       return(pm_anova_result(data.frame(stat, df, res_df, pval), names, c("F", "Df", "Df.res", "Pr(>F)"), heading))
@@ -412,4 +424,57 @@ pm_type3_map <- function(model, coef_names) {
 pm_type3_hyp <- function(map, j) {
   H <- map$B[map$assign == j, , drop = FALSE]
   H[apply(abs(H), 1, max) > 1e-12, , drop = FALSE]
+}
+
+#' ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df
+#'
+#' @description
+#' \code{anova()} of a single \code{lmer} fit (and of a gaussian \code{\link{semireg}} fit, \code{fit$semer}) gives
+#' F tests with denominator degrees of freedom, computed by the package's own code: Type III tests with
+#' Kenward-Roger df by default, as SAS PROC MIXED \code{DDFM=KR}. This replaces the tables of \pkg{lmerTest}, which
+#' predictmeans attached before 2.0. With several models, \code{anova(m1, m2)} is lme4's likelihood ratio comparison,
+#' unchanged.
+#' @details
+#' Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3);
+#' Type II are those of \code{car::Anova()}; Type I (sequential) are lmerTest's, always with Satterthwaite df.
+#' Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
+#' a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
+#' own table (sums of squares and F values without df or p-values).
+#'
+#' With \pkg{lmerTest} attached, \code{lmer()} is lmerTest's and its fits are of class \code{lmerModLmerTest}: their
+#' \code{anova()} and \code{summary()} are lmerTest's (Satterthwaite by default), and this method applies to fits of
+#' \code{lme4::lmer()}. Everything else in predictmeans works the same with either class.
+#' @param object An \code{lmer} fit (class \code{lmerMod}).
+#' @param ... Other fitted models: then lme4's comparison of the models.
+#' @param type \code{"III"} (default), \code{"II"} or \code{"I"}.
+#' @param ddf \code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.
+#' @return An \code{anova} table.
+#' @examples
+#' library(predictmeans)
+#' Oats$nitro <- factor(Oats$nitro)
+#' fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
+#' anova(fm)
+#' anova(fm, ddf = "Satterthwaite")
+#' anova(fm, type = "I")
+#' @name anova.lmerMod
+NULL
+
+anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
+                          ddf = c("Kenward-Roger", "Satterthwaite", "lme4")) {
+  # several models: lme4's comparison, by NextMethod() so that lme4 sees the
+  # original call (model names), also when lmerTest's anova() hands on to here
+  if (length(list(...))) return(NextMethod())
+  type <- match.arg(as.character(type)[1], c("III", "II", "I"))
+  ddf <- match.arg(ddf)
+  if (ddf == "lme4") return(utils::getS3method("anova", "merMod", envir = asNamespace("lme4"))(object))
+  if (type == "I") return(pm_lmer_tables(object)$anova)
+  pm_anova(object, type = type, test.statistic = "F", ddf = ddf)
+}
+
+## lme4's own table for one model (sequential sums of squares and F values,
+## no df), whatever anova.lmerMod() gives: the permutation and bootstrap code
+## compare these F values. Other models: stats::anova().
+pm_anova_seq <- function(model, ...) {
+  if (inherits(model, "merMod")) return(utils::getS3method("anova", "merMod", envir = asNamespace("lme4"))(model, ...))
+  stats::anova(model, ...)
 }

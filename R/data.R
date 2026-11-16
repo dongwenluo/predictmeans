@@ -144,7 +144,7 @@ NULL
 #'                smoothZ = list(grp_z = smZ(zcoord),
 #'                               grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
 #'                data = copper, prt = FALSE)
-#' lmerTest::ranova(mod$semer)
+#' anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
 #' }
 #' @name copper
 #' @docType data
