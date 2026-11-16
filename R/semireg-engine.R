@@ -323,6 +323,7 @@ pm_sr_uncond <- function(semireg) {
 pm_sr_satt_ddf <- function(semireg, L, idx) {
   semer <- semireg$semer
   L <- as.matrix(L)
+  if (inherits(semer, "glmmTMB")) return(pm_sr_satt_ddf_tmb(semer, L, idx))
   if (!methods::is(semer, "semerMod") || !lme4::isLMM(semer)) return(rep(Inf, nrow(L)))
   vp <- pm_lmer_varpar(semer)
   X <- lme4::getME(semer, "X")
@@ -345,8 +346,98 @@ pm_sr_satt_ddf <- function(semireg, L, idx) {
     psi[k]^2 * colSums(as.matrix(Matrix::solve(M, Matrix::t(B))) * t(as.matrix(B)))
   }
   v0 <- v(vp$varpar)
-  G <- numDeriv::jacobian(v, vp$varpar)
-  denom <- rowSums((G %*% vp$vcov_varpar) * G)
+  # variance components estimated at zero are left out (as Kenward-Roger,
+  # R/kr.R): their derivative and variance at the boundary are not defined
+  th <- lme4::getME(semer, "theta")
+  bnd <- which(lme4::getME(semer, "lower") == 0 & th < 1e-6*max(1, max(abs(th))))
+  free <- setdiff(seq_len(k), bnd)
+  vfree <- function(x) { y <- vp$varpar; y[free] <- x; v(y) }
+  G <- numDeriv::jacobian(vfree, vp$varpar[free])
+  denom <- rowSums((G %*% pm_cov_given(vp$vcov_varpar, free)) * G)
+  df <- 2*v0^2/denom
+  df[!is.finite(df) | df <= 0] <- NA_real_
+  df
+}
+
+## The covariance of the parameters 'keep' given the others (fixed at their
+## estimates): V_kk - V_kb V_bb^-1 V_bk.
+pm_cov_given <- function(V, keep) {
+  b <- setdiff(seq_len(nrow(V)), keep)
+  if (!length(b)) return(V[keep, keep, drop = FALSE])
+  V[keep, keep, drop = FALSE] - V[keep, b, drop = FALSE] %*% pm_vc_inv(V[b, b, drop = FALSE]) %*% V[b, keep, drop = FALSE]
+}
+
+## The same for a gaussian semireg_tmb() fit (glmmTMB engine; dispformula ~1,
+## or ~0 with a residual covariance structure such as ar1()): psi is
+## glmmTMB's own vector (theta, and the log residual SD unless dispformula =
+## ~0), its covariance from vcov(full = TRUE); the covariances of the random
+## terms at a psi from VarCorr(), as pm_tmb_varcomp() does. (The df do not
+## depend on the parameterisation.) Inf for other families, zero inflation
+## or a dispersion model with covariates.
+pm_sr_satt_ddf_tmb <- function(m, L, idx) {
+  L <- as.matrix(L)
+  inf <- rep(Inf, nrow(L))
+  dp <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  if (stats::family(m)$family != "gaussian") return(inf)
+  if (!dp(m$modelInfo$allForm$dispformula) %in% c("~1", "~0")) return(inf)
+  if (!identical(dp(m$modelInfo$allForm$ziformula), "~0")) return(inf)
+  pf <- m$fit$parfull
+  keep <- !names(pf) %in% c("b", "bzi")
+  pn <- names(pf)[keep]
+  V <- tryCatch(stats::vcov(m, full = TRUE), error = function(e) NULL)
+  if (is.null(V) || nrow(V) != length(pn)) return(inf)
+  use <- pn %in% c("theta", "betad", "betadisp")
+  pos <- which(keep)[use]
+  on.exit(m$obj$env$report(m$fit$parfull))   # leave the TMB object as it was
+  X <- glmmTMB::getME(m, "X")
+  Z <- glmmTMB::getME(m, "Z")
+  w <- tryCatch(as.numeric(stats::weights(m)), error = function(e) NULL)
+  if (length(w) != nrow(X)) w <- rep(1, nrow(X))
+  re <- pm_re_terms(m)
+  p <- ncol(X)
+  q <- ncol(Z)
+  Lf <- matrix(0, nrow(L), p + q)
+  Lf[, idx] <- L
+  at <- function(x) {
+    mm <- m
+    mm$fit$parfull[pos] <- x
+    for (nm in unique(pn[use])) mm$fit$par[names(mm$fit$par) == nm] <- x[pn[use] == nm]
+    mm
+  }
+  v <- function(x) {
+    mm <- at(x)
+    vc <- glmmTMB::VarCorr(mm)$cond
+    s <- stats::sigma(mm)
+    Lam <- Matrix::bdiag(lapply(seq_along(re), function(j) {
+      G <- matrix(as.numeric(vc[[j]]), nrow(vc[[j]]))
+      kronecker(Matrix::Diagonal(re[[j]]$nl), Matrix::Matrix(pm_chol_lower(G), sparse = TRUE))
+    }))
+    Ct <- cbind(X, Z %*% Lam)
+    M <- Matrix::crossprod(Ct * (w/s^2), Ct) + Matrix::.bdiag(list(Matrix::Matrix(0, p, p), Matrix::Diagonal(q)))
+    dM <- sqrt(Matrix::diag(M))
+    dM[!is.finite(dM) | dM <= 0] <- 1
+    Dm <- Matrix::Diagonal(x = 1/dM)
+    Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
+    B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
+    Y <- Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(B))
+    colSums(as.matrix(Y) * t(as.matrix(B)))
+  }
+  x0 <- pf[pos]
+  v0 <- v(x0)
+  # random terms with their variances estimated at zero are left out (their
+  # log-SD parameters sit far out on a flat likelihood)
+  pu <- pn[use]
+  th_pos <- which(pu == "theta")
+  nth <- vapply(m$modelInfo$reStruc$condReStruc, function(r) as.numeric(r$blockNumTheta), numeric(1))
+  vc0 <- glmmTMB::VarCorr(m)$cond
+  sds <- lapply(vc0, function(x) attr(x, "stddev"))
+  ref <- max(unlist(sds), if (dp(m$modelInfo$allForm$dispformula) == "~1") stats::sigma(m))
+  at0 <- vapply(sds, function(x) max(x) < 1e-3*ref, logical(1))
+  bnd <- th_pos[rep(at0, nth)]
+  free <- setdiff(seq_along(x0), bnd)
+  vfree <- function(x) { y <- x0; y[free] <- x; v(y) }
+  G <- numDeriv::jacobian(vfree, x0[free])
+  denom <- rowSums((G %*% pm_cov_given(V[use, use, drop = FALSE], free)) * G)
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
   df

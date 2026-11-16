@@ -791,6 +791,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   Satterthwaite df, tests of smooth variances, rate ratios between count
   curves, subject-specific curves) and a table for moving from the
   `smoothZ = list(smZ())` form, which still runs.
+* **`semireg_tmb()` gaussian fits are REML, as documented.** The default
+  `REML = TRUE` never reached glmmTMB (the call passed only the arguments
+  given), so since 1.x gaussian `semireg_tmb()` fits were maximum
+  likelihood, with variance components biased downwards. They are now REML
+  and equal `semireg()` (lme4) on the same model. Other families keep
+  maximum likelihood (Laplace), as `glmer`, unless `REML = TRUE` is given.
+* **`predictmeans()` on gaussian `semireg_tmb()` fits: Satterthwaite df**,
+  as for `semireg()`, also with glmmTMB covariance structures such as AR(1)
+  residuals (`ar1(tf + 0 | id)`, `dispformula = ~0`). The df equal those of
+  the lme4 engine on the same model (to 1e-4). In a repeated-measures
+  simulation with AR(1) residuals and no treatment effect, t tests rejected
+  4.8% at the 5% level, z tests 5.5% (`dev/sim-semireg-tmb-df.R`). In both
+  engines, variance components estimated at zero are left out of the
+  Satterthwaite df, as in Kenward-Roger (a log-SD far out on a flat
+  likelihood had given df below 1).
 * **`predictmeans()` on gaussian `semireg()` fits: t tests with
   Satterthwaite df** instead of normal-based tests. The means at a
   covariate value include the smooths' random coefficients, so the df are

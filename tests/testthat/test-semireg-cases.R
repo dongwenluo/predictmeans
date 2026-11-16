@@ -71,3 +71,38 @@ test_that("counts with a negative binomial and zero inflation (glmmTMB engine): 
   expect_true(any(out$significant[out$x > 2]))
   expect_false(is.null(attr(out, "significant")))
 })
+
+test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Satterthwaite df as the lme4 engine", {
+  d <- split_plot()
+  f <- y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A)
+  a <- q(semireg(f, data = d, prt = FALSE))
+  b <- q(semireg_tmb(f, data = d, prt = FALSE))
+  expect_true(b$semer$modelInfo$REML)
+  expect_equal(-b$semer$fit$objective, as.numeric(logLik(a$semer)), tolerance = 1e-6)
+  pa <- q(predictmeans(a, "A", covariate = c(t = 5), pairwise = TRUE))
+  pb <- q(predictmeans(b, "A", covariate = c(t = 5), pairwise = TRUE))
+  expect_equal(pb$settings$df_method, "Satterthwaite (fixed + smooth coefficients)")
+  expect_equal(pb$means$df, pa$means$df, tolerance = 1e-3)
+  expect_equal(pb$pairs$df, pa$pairs$df, tolerance = 1e-3)
+  expect_equal(pb$pairs$p.value, pa$pairs$p.value, tolerance = 1e-4)
+  # other families: maximum likelihood (Laplace) and normal-based tests, as before
+  d$cnt <- rpois(nrow(d), exp(d$y/2))
+  g <- q(semireg_tmb(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
+  expect_false(g$semer$modelInfo$REML)
+  expect_true(all(is.infinite(q(predictmeans(g, "A", covariate = c(t = 5)))$means$df)))
+})
+
+test_that("semireg_tmb() with AR(1) residuals: means at a time with Satterthwaite df", {
+  set.seed(9)
+  d <- expand.grid(t = 1:8, id = factor(1:12))
+  d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
+  d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
+    unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
+  d$tf <- factor(d$t)
+  fit <- q(semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id), dispformula = ~0, data = d,
+                       prt = FALSE))
+  pm <- q(predictmeans(fit, "A", covariate = c(t = 4), pairwise = TRUE))
+  expect_true(all(is.finite(pm$means$df) & pm$means$df > 2 & pm$means$df < 60))
+  expect_true(all(is.finite(pm$pairs$df) & pm$pairs$df > 2 & pm$pairs$df < 60))
+  expect_equal(pm$pairs$p.value, 2*pt(-abs(pm$pairs$estimate/pm$pairs$std.error), pm$pairs$df))
+})

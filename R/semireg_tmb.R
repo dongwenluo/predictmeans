@@ -75,7 +75,7 @@
 #' @param verbose whether progress indication should be printed to the console.
 #' @param doFit whether to fit the full model, or (if FALSE) return the preprocessed data and parameter objects, without fitting the model.
 #' @param control control parameters, see \code{\link{glmmTMBControl}}.
-#' @param REML whether to use REML estimation rather than maximum likelihood.
+#' @param REML whether to use REML estimation rather than maximum likelihood. Gaussian fits use REML by default; for other families the default is maximum likelihood (Laplace), as \code{glmer}, unless \code{REML = TRUE} is given. (Before 2.0 the default never reached glmmTMB, so gaussian fits were maximum likelihood.)
 #' @param start starting values, expressed as a list with possible components \code{beta}, \code{betazi}, \code{betad} (fixed-effect parameters for conditional, zero-inflation, dispersion models); \code{b}, \code{bzi} (conditional modes for conditional and zero-inflation models); \code{theta}, \code{thetazi} (random-effect parameters, on the standard deviation/Cholesky scale, for conditional and z-i models); \code{psi} (extra family parameters, e.g., shape for Tweedie models).
 #' @param map a list specifying which parameter values should be fixed to a constant value rather than estimated. \code{map} should be a named list containing factors corresponding to a subset of the internal parameter names (see \code{start} parameter). Distinct factor values are fitted as separate parameter values, \code{NA} values are held fixed: e.g., \code{map=list(beta=factor(c(1,2,3,NA)))} would fit the first three fixed-effect parameters of the conditional model and fix the fourth parameter to its starting value. In general, users will probably want to use \code{start} to specify non-default starting values for fixed parameters. See \code{\link[TMB]{MakeADFun}} for more details.
 #' @param sparseX a named logical vector containing (possibly) elements named "cond", "zi", "disp" to indicate whether fixed-effect model matrices for particular model components should be generated as sparse matrices, e.g. \code{c(cond=TRUE)}. Default is all \code{FALSE}
@@ -160,6 +160,16 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   glmmTMBcall <- mc 
   glmmTMBcall[[1]] <- quote(glmmTMB::glmmTMB)
   glmmTMBcall <- glmmTMBcall[!names(glmmTMBcall) %in% c("smoothZ", "prt", "predict_info")]
+  # REML: the call has only the arguments given, so the default REML = TRUE
+  # never reached glmmTMB (1.x too): gaussian fits were ML. REML for
+  # gaussian families, as documented and as semireg(); other families keep
+  # glmmTMB's ML (Laplace), as glmer, unless REML = TRUE is given
+  if (is.null(mc$REML)) {
+    fam <- if (is.null(mc$family)) stats::gaussian() else mc$family
+    if (is.character(fam)) fam <- get(fam, mode = "function", envir = env)
+    if (is.function(fam)) fam <- fam()
+    if (is.list(fam) && identical(fam$family, "gaussian")) glmmTMBcall$REML <- TRUE
+  }
   if (!length(st$Zt)) return(eval.parent(glmmTMBcall))
 
   # the structure without fitting, the smooth designs in Z, one fit

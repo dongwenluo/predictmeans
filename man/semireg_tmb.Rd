@@ -48,7 +48,7 @@ because of missingness.}
 
 \item{control}{control parameters, see \code{\link{glmmTMBControl}}.}
 
-\item{REML}{whether to use REML estimation rather than maximum likelihood.}
+\item{REML}{whether to use REML estimation rather than maximum likelihood. Gaussian fits use REML by default; for other families the default is maximum likelihood (Laplace), as \code{glmer}, unless \code{REML = TRUE} is given. (Before 2.0 the default never reached glmmTMB, so gaussian fits were maximum likelihood.)}
 
 \item{start}{starting values, expressed as a list with possible components \code{beta}, \code{betazi}, \code{betad} (fixed-effect parameters for conditional, zero-inflation, dispersion models); \code{b}, \code{bzi} (conditional modes for conditional and zero-inflation models); \code{theta}, \code{thetazi} (random-effect parameters, on the standard deviation/Cholesky scale, for conditional and z-i models); \code{psi} (extra family parameters, e.g., shape for Tweedie models).}
 
