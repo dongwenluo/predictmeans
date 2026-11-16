@@ -1,6 +1,9 @@
 ## Type I error of the tests of single variance components (pm_vc_test()):
-## the exact restricted LRT (default for gaussian lme4 REML fits) vs the
-## 0.5 chi2(0) + 0.5 chi2(1) mixture, data with the tested variance 0.
+## the exact restricted LRT vs the 0.5 chi2(0) + 0.5 chi2(1) mixture, data
+## with the tested variance 0. Run with commit 872707b, where method =
+## "exact" applied the exact distribution with other random effects present
+## (Greven et al. 2008); since then method = "auto" uses it only for the only
+## random effect, so this script needs that commit to reproduce the result.
 ## (a) semireg s(x, f1*f2): the f2 and f1:f2 deviation curves (the shapes
 ##     differ by f1 only); the mixture rejected 1-3% (dev/sim-semireg-lrt.R)
 ## (b) lmer, crossed random effects (1 | a) + (1 | b), b's variance 0
