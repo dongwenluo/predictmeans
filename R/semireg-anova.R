@@ -110,12 +110,16 @@ pm_sr_refit <- function(object, drop) {
     dd <- r$data
     dd$.pm_w <- if (is.null(r$weights)) rep(1, nrow(dd)) else r$weights
     dd$.pm_off <- if (is.null(r$offset)) rep(0, nrow(dd)) else r$offset
+    # the weights and offset as columns of the data (found there by the fitting function)
+    w <- as.name(".pm_w")
+    off <- as.name(".pm_off")
     if (is.null(r$family) && !isTRUE(r$ngbinomial)) {
-      fit <- stats::lm(fixed, data = dd, weights = .pm_w, offset = .pm_off)
+      fit <- eval(call("lm", fixed, data = quote(dd), weights = w, offset = off))
       return(structure(list(fit = fit), class = "pm_lm_reml", REML = isTRUE(r$REML)))
     }
-    return(if (isTRUE(r$ngbinomial)) MASS::glm.nb(fixed, data = dd, weights = .pm_w) else
-      stats::glm(fixed, family = r$family, data = dd, weights = .pm_w, offset = .pm_off))
+    return(if (isTRUE(r$ngbinomial)) eval(call("glm.nb", fixed, data = quote(dd), weights = w),
+                                          list(glm.nb = MASS::glm.nb, dd = dd)) else
+      eval(call("glm", fixed, family = r$family, data = quote(dd), weights = w, offset = off)))
   } else {
     cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = r$REML,
                ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE, control = r$control)
