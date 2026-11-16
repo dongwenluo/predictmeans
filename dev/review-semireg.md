@@ -223,6 +223,19 @@ and closed:
 
 - Still normal-based: `semipred()` bands of gaussian fits (a df per grid
   point would cost one gradient per point; open).
+- `anova()`'s likelihood ratio tests of the smooth variances (halved
+  p-values, chi-square 0:1) are conservative (`dev/sim-semireg-lrt.R`;
+  `s(x, f1*f2)`, 200 data sets per scenario, Monte Carlo SE 0.015):
+
+  | true shapes | reject f1 | reject f2 | reject f1:f2 |
+  |---|---|---|---|
+  | one shape | 0.010 | 0.015 | 0.010 |
+  | differ by f1 | 1.000 | 0.025 | 0.030 |
+
+  The variance was estimated at zero in about 40% of the null data sets.
+  The exact null distribution of the restricted LRT (Crainiceanu and
+  Ruppert, 2004) or a permutation test (`permlmer()`) would bring the level
+  closer to 5%; open.
 
 ## 6. Steps
 

@@ -36,7 +36,7 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
 })
 
 test_that("s(x, f1*f2): a variance per deviation term; anova() tests which deviation curves are needed", {
-  set.seed(3)
+  set.seed(1)
   d <- expand.grid(x = seq(0, 1, length = 25), f1 = factor(c("p", "q")), f2 = factor(c("u", "v", "w")), rep = 1:4)
   d$id <- interaction(d$f1, d$f2, d$rep)
   # the shape differs by f1 only
@@ -46,6 +46,7 @@ test_that("s(x, f1*f2): a variance per deviation term; anova() tests which devia
   sm <- anova(fit)$smooth
   expect_setequal(sm$term, c("s_x", "s_x_f1", "s_x_f2", "s_x_f1_f2"))
   expect_lt(sm$p.value[sm$term == "s_x_f1"], 0.01)
+  expect_gt(sm$p.value[sm$term == "s_x_f2"], 0.05)
   expect_gt(sm$p.value[sm$term == "s_x_f1_f2"], 0.05)
   vc <- varcomp(fit)
   expect_true(all(c("s_x_f1.(Intercept)", "s_x_f2.(Intercept)", "s_x_f1_f2.(Intercept)") %in% rownames(vc)))

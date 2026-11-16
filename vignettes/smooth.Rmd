@@ -136,7 +136,7 @@ curve plus deviation curves for `f1`, `f2` and `f1:f2`, each with its own varian
 `varcomp()` shows their sizes. Here the shapes differ by `f1` only:
 
 ```{r}
-set.seed(3)
+set.seed(1)
 dd <- expand.grid(x = seq(0, 1, length = 25), f1 = factor(c("p", "q")),
                   f2 = factor(c("u", "v", "w")), rep = 1:4)
 dd$id <- interaction(dd$f1, dd$f2, dd$rep)
@@ -145,6 +145,11 @@ dd$y <- sin(2*pi*dd$x) + (dd$f1 == "q")*1.5*sin(pi*dd$x)^2 +
 fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd, prt = FALSE)
 anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 ```
+
+The test is conservative: in 200 simulated data sets like these, with no `f2` or `f1:f2`
+differences, it rejected at the 5% level in 1-3% of them, and it found the `f1` difference
+in all (`dev/sim-semireg-lrt.R`). `permlmer()` on `fx$semer` gives a permutation test
+when a level closer to 5% matters.
 
 **Counts: rate ratios between curves.** `semireg_tmb()` fits the same smooths with
 glmmTMB, so a negative binomial with zero inflation is available. `contr` gives the

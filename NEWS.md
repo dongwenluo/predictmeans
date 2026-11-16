@@ -792,7 +792,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   not infinity. With no treatment effect these t tests rejected 4.6% at the
   5% level, z tests 5.2-6.8% (`dev/sim-semireg-df.R`). For fixed effects
   alone the df equal lmer's Satterthwaite df. Generalized fits keep
-  normal-based tests.
+  normal-based tests. `anova()`'s tests of the smooth variances are
+  conservative: 1-3% rejections at the 5% level with no difference in
+  shape (`dev/sim-semireg-lrt.R`).
 * **Random curves `(s(x) | g)` in `semireg()`**: the group-specific curve
   model of Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section
   9.2): `(x | g)` (correlated intercept and slope per subject) plus a spline
