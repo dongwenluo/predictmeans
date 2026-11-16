@@ -1,0 +1,1061 @@
+11/17/26, 12:11 PM                                                                  Results: Program 1
+
+                                       vctest 1a: Orthodont, (age | Subject) unstructured (full)
+                                                                 The Mixed Procedure
+
+                                                                   Model Information
+                                               Data Set                              WORK.ORTHODONT
+                                               Dependent Variable                    distance
+                                               Covariance Structure                  Unstructured
+                                               Subject Effect                        Subject
+
+                                               Estimation Method                     REML
+                                               Residual Variance Method              Profile
+                                               Fixed Effects SE Method               Model-Based
+                                               Degrees of Freedom Method             Containment
+
+
+                                                                Class Level Information
+      Class     Levels    Values
+
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                      Dimensions
+                                                           Covariance Parameters                4
+                                                           Columns in X                         2
+                                                           Columns in Z per Subject             2
+                                                           Subjects                            27
+                                                           Max Obs per Subject                  4
+
+
+                                                                Number of Observations
+                                                     Number of Observations Read                    108
+                                                     Number of Observations Used                    108
+
+                                                     Number of Observations Not Used                  0
+
+
+                                                                    Iteration History
+                                              Iteration   Evaluations      -2 Res Log Like            Criterion
+                                                     0                1      509.16949644
+                                                     1                1      442.63668588           0.00000000
+
+
+                                                                Convergence criteria met.
+
+
+                                                          Covariance Parameter Estimates
+
+                                                          Cov Parm        Subject      Estimate
+                                                          UN(1,1)         Subject         5.4151
+                                                          UN(2,1)         Subject        -0.3211
+
+                                                          UN(2,2)         Subject        0.05127
+                                                          Residual                        1.7162
+
+
+                                                                      Fit Statistics
+                                                          -2 Res Log Likelihood            442.6
+
+                                                          AIC (Smaller is Better)          450.6
+                                                          AICC (Smaller is Better)         451.0
+                                                          BIC (Smaller is Better)          455.8
+
+
+
+                                                          Null Model Likelihood Ratio Test
+                                                          DF      Chi-Square         Pr > ChiSq
+                                                            3             66.53           <.0001
+
+
+
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                             Type 3 Tests of Fixed Effects
+                                                  Effect    Num DF            Den DF       F Value       Pr > F
+
+                                                  age                 1           26        85.85        <.0001
+
+
+
+
+                                   vctest 1b: Orthodont, (1 | Subject): slope and covariance dropped
+                                                                 The Mixed Procedure
+
+                                                                  Model Information
+                                               Data Set                                  WORK.ORTHODONT
+
+                                               Dependent Variable                        distance
+                                               Covariance Structure                      Variance Components
+                                               Subject Effect                            Subject
+                                               Estimation Method                         REML
+                                               Residual Variance Method                  Profile
+                                               Fixed Effects SE Method                   Model-Based
+
+                                               Degrees of Freedom Method                 Containment
+
+
+                                                                Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+
+                                                                          Dimensions
+                                                            Covariance Parameters                    2
+                                                            Columns in X                             2
+
+                                                            Columns in Z per Subject                 1
+                                                            Subjects                               27
+                                                            Max Obs per Subject                      4
+
+
+
+                                                               Number of Observations
+                                                     Number of Observations Read                         108
+                                                     Number of Observations Used                         108
+                                                     Number of Observations Not Used                       0
+
+
+
+                                                                   Iteration History
+                                              Iteration    Evaluations         -2 Res Log Like             Criterion
+                                                     0                    1      509.16949644
+
+                                                     1                    1      447.00251560            0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+                                                           Covariance Parameter Estimates
+
+                                                           Cov Parm           Subject       Estimate
+                                                           Intercept          Subject         4.4721
+                                                           Residual                           2.0495
+
+
+                                                                          Fit Statistics
+
+                                                           -2 Res Log Likelihood               447.0
+                                                           AIC (Smaller is Better)             451.0
+                                                           AICC (Smaller is Better)            451.1
+
+                                                           BIC (Smaller is Better)             453.6
+
+
+
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                             Type 3 Tests of Fixed Effects
+                                                  Effect    Num DF            Den DF       F Value       Pr > F
+
+                                                  age                 1           80        114.84       <.0001
+
+
+
+
+                                         vctest 1c: Orthodont, (age || Subject): covariance 0
+                                                                  The Mixed Procedure
+
+                                                                    Model Information
+                                               Data Set                                  WORK.ORTHODONT
+
+                                               Dependent Variable                        distance
+                                               Covariance Structure                      Variance Components
+                                               Subject Effect                            Subject
+
+                                               Estimation Method                         REML
+                                               Residual Variance Method                  Profile
+                                               Fixed Effects SE Method                   Model-Based
+
+                                               Degrees of Freedom Method                 Containment
+
+
+                                                                 Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+
+                                                                          Dimensions
+                                                            Covariance Parameters                    3
+                                                            Columns in X                             2
+
+                                                            Columns in Z per Subject                 2
+                                                            Subjects                               27
+                                                            Max Obs per Subject                      4
+
+
+
+                                                                 Number of Observations
+                                                     Number of Observations Read                         108
+                                                     Number of Observations Used                         108
+                                                     Number of Observations Not Used                       0
+
+
+
+                                                                     Iteration History
+                                              Iteration    Evaluations         -2 Res Log Like             Criterion
+                                                     0                    1      509.16949644
+
+                                                     1                    2      443.31462630            0.00000037
+                                                     2                    1      443.31458017            0.00000000
+
+
+                                                                 Convergence criteria met.
+
+
+
+                                                           Covariance Parameter Estimates
+                                                           Cov Parm           Subject       Estimate
+                                                           Intercept          Subject         1.9211
+                                                           age                Subject        0.02228
+
+                                                           Residual                           1.8787
+
+
+                                                                          Fit Statistics
+                                                           -2 Res Log Likelihood               443.3
+                                                           AIC (Smaller is Better)             449.3
+                                                           AICC (Smaller is Better)            449.5
+
+
+
+
+11/17/26, 12:11 PM                                                                     Results: Program 1
+                                                                          Fit Statistics
+                                                           BIC (Smaller is Better)            453.2
+
+
+
+                                                            Type 3 Tests of Fixed Effects
+                                                  Effect    Num DF          Den DF         F Value      Pr > F
+                                                  age                 1           26       101.26       <.0001
+
+
+
+
+                                                vctest 1d: Orthodont, no random term
+                                                                The Mixed Procedure
+
+                                                                 Model Information
+                                               Data Set                                 WORK.ORTHODONT
+                                               Dependent Variable                       distance
+                                               Covariance Structure                     Diagonal
+                                               Estimation Method                        REML
+                                               Residual Variance Method                 Profile
+
+                                               Fixed Effects SE Method                  Model-Based
+                                               Degrees of Freedom Method                Residual
+
+
+                                                               Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                          Dimensions
+                                                            Covariance Parameters                   1
+                                                            Columns in X                            2
+                                                            Columns in Z                            0
+                                                            Subjects                                1
+
+                                                            Max Obs per Subject                   108
+
+
+                                                              Number of Observations
+                                                    Number of Observations Read                         108
+                                                    Number of Observations Used                         108
+                                                    Number of Observations Not Used                       0
+
+
+                                                           Covariance Parameter Estimates
+                                                           Cov Parm                         Estimate
+                                                           Residual                           6.4371
+
+
+                                                                          Fit Statistics
+                                                           -2 Res Log Likelihood              509.2
+                                                           AIC (Smaller is Better)             511.2
+                                                           AICC (Smaller is Better)            511.2
+                                                           BIC (Smaller is Better)            513.8
+
+
+                                                            Type 3 Tests of Fixed Effects
+
+                                                  Effect    Num DF          Den DF         F Value      Pr > F
+                                                  age                 1          106        36.56       <.0001
+
+
+
+
+                vctest 1e: Orthodont in GLIMMIX with COVTEST (covparms UN(1,1) UN(2,1) UN(2,2) Residual)
+                                                              The GLIMMIX Procedure
+
+11/17/26, 12:11 PM                                                                 Results: Program 1
+
+                                                                     Model Information
+                                            Data Set                            WORK.ORTHODONT
+                                            Response Variable                   distance
+                                            Response Distribution               Gaussian
+                                            Link Function                       Identity
+                                            Variance Function                   Default
+                                            Variance Matrix Blocked By          Subject
+                                            Estimation Technique                Restricted Maximum Likelihood
+                                            Degrees of Freedom Method           Containment
+
+
+
+                                                                  Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+
+                                                         Number of Observations Read               108
+                                                         Number of Observations Used               108
+
+
+                                                                         Dimensions
+                                                               G-side Cov. Parameters              3
+
+                                                               R-side Cov. Parameters              1
+                                                               Columns in X                        2
+                                                               Columns in Z per Subject            2
+                                                               Subjects (Blocks in V)          27
+                                                               Max Obs per Subject                 4
+
+
+                                                                  Optimization Information
+                                                   Optimization Technique               Dual Quasi-Newton
+                                                   Parameters in Optimization           3
+                                                   Lower Boundaries                     2
+                                                   Upper Boundaries                     0
+                                                   Fixed Effects                        Profiled
+                                                   Residual Variance                    Profiled
+                                                   Starting From                        Data
+
+
+
+                                                                      Iteration History
+                                                                                    Objective                       Max
+                                      Iteration    Restarts     Evaluations         Function           Change   Gradient
+
+                                             0            0                 4   442.63668588                .   2.88E-11
+
+
+                                                  Convergence criterion (ABSGCONV=0.00001) satisfied.
+
+
+                                                                        Fit Statistics
+                                                              -2 Res Log Likelihood         442.64
+                                                              AIC (smaller is better)       450.64
+                                                              AICC (smaller is better)      451.03
+                                                              BIC (smaller is better)       455.82
+
+                                                              CAIC (smaller is better)      459.82
+                                                              HQIC (smaller is better)      452.18
+                                                              Generalized Chi-Square        181.92
+                                                              Gener. Chi-Square / DF           1.72
+
+
+
+                                                              Covariance Parameter Estimates
+                                                                                               Standard
+                                                       Cov Parm      Subject    Estimate           Error
+
+
+11/17/26, 12:11 PM                                                                       Results: Program 1
+                                                             Covariance Parameter Estimates
+                                                                                                    Standard
+                                                    Cov Parm        Subject         Estimate            Error
+                                                    UN(1,1)         Subject            5.4151              4.9583
+                                                    UN(2,1)         Subject           -0.3211              0.4244
+                                                    UN(2,2)         Subject          0.05127           0.04145
+                                                    Residual                           1.7162              0.3303
+
+
+                                                              Type III Tests of Fixed Effects
+                                                   Effect      Num DF        Den DF        F Value          Pr > F
+
+                                                   age                  1           26         85.85        <.0001
+
+
+                                                             Tests of Covariance Parameters
+                                                            Based on the Restricted Likelihood
+                                Label                               DF        -2 Res Log Like          ChiSq         Pr > ChiSq   Note
+                                no random term (zero G)                 3                 509.17           66.53        <.0001    --
+                                no slope: UN(2,1) = UN(2,2) = 0         2                 447.00            4.37        0.0747    MI
+                                covariance 0: UN(2,1) = 0               3                 509.17           66.53        <.0001    --
+
+                                                   MI: P-value based on a mixture of chi-squares.
+                                                    --: Standard test with unadjusted p-values.
+
+
+
+
+                                        vctest 2a: Oats, random Block + Block*Variety (full)
+                                                                  The Mixed Procedure
+
+                                                                    Model Information
+                                                Data Set                                  WORK.OATS
+                                                Dependent Variable                        Yield
+                                                Covariance Structure                      Variance Components
+                                                Subject Effect                            Block
+                                                Estimation Method                         REML
+                                                Residual Variance Method                  Profile
+                                                Fixed Effects SE Method                   Model-Based
+                                                Degrees of Freedom Method                 Containment
+
+
+                                                                 Class Level Information
+                                                  Class        Levels       Values
+                                                  Block             6       I II III IV V VI
+                                                  Variety           3       GoldenRain Marvellous Victory
+                                                  Nitro             4       0.0 0.2 0.4 0.6
+
+
+                                                                            Dimensions
+                                                              Covariance Parameters                    3
+                                                              Columns in X                          20
+                                                              Columns in Z per Subject                 4
+                                                              Subjects                                 6
+                                                              Max Obs per Subject                   12
+
+
+
+                                                                 Number of Observations
+                                                      Number of Observations Read                           72
+                                                      Number of Observations Used                           72
+                                                      Number of Observations Not Used                         0
+
+
+
+
+11/17/26, 12:11 PM                                                                    Results: Program 1
+                                                                     Iteration History
+                                             Iteration     Evaluations           -2 Res Log Like          Criterion
+                                                       0                 1         564.36420957
+                                                       1                 1         529.02850701         0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+                                                           Covariance Parameter Estimates
+
+                                                           Cov Parm          Subject         Estimate
+                                                           Intercept         Block             214.48
+                                                           Variety           Block             106.06
+                                                           Residual                            177.08
+
+
+                                                                         Fit Statistics
+                                                           -2 Res Log Likelihood               529.0
+                                                           AIC (Smaller is Better)             535.0
+                                                           AICC (Smaller is Better)            535.5
+                                                           BIC (Smaller is Better)             534.4
+
+
+                                                             Type 3 Tests of Fixed Effects
+
+                                              Effect            Num DF            Den DF       F Value     Pr > F
+                                              Variety                        2         10         1.49     0.2724
+                                              Nitro                          3         45        37.69     <.0001
+                                              Variety*Nitro                  6         45         0.30     0.9322
+
+
+
+
+                                               vctest 2b: Oats, Block*Variety dropped
+                                                                 The Mixed Procedure
+
+                                                                     Model Information
+                                               Data Set                                WORK.OATS
+                                               Dependent Variable                      Yield
+                                               Covariance Structure                    Variance Components
+                                               Subject Effect                          Block
+                                               Estimation Method                       REML
+                                               Residual Variance Method                Profile
+                                               Fixed Effects SE Method                 Model-Based
+                                               Degrees of Freedom Method               Containment
+
+
+                                                                Class Level Information
+                                                 Class       Levels       Values
+
+                                                 Block               6    I II III IV V VI
+                                                 Variety             3    GoldenRain Marvellous Victory
+                                                 Nitro               4    0.0 0.2 0.4 0.6
+
+
+                                                                         Dimensions
+                                                            Covariance Parameters                  2
+                                                            Columns in X                         20
+                                                            Columns in Z per Subject               1
+                                                            Subjects                               6
+                                                            Max Obs per Subject                  12
+
+
+                                                               Number of Observations
+
+
+11/17/26, 12:11 PM                                                                  Results: Program 1
+                                                               Number of Observations
+                                                       Number of Observations Read                     72
+                                                       Number of Observations Used                     72
+                                                       Number of Observations Not Used                  0
+
+
+                                                                   Iteration History
+                                             Iteration     Evaluations         -2 Res Log Like          Criterion
+                                                       0               1         564.36420957
+                                                       1               1         536.68996670         0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+
+                                                           Covariance Parameter Estimates
+                                                           Cov Parm        Subject         Estimate
+                                                           Intercept       Block             243.40
+
+                                                           Residual                          254.22
+
+
+                                                                       Fit Statistics
+                                                           -2 Res Log Likelihood             536.7
+                                                           AIC (Smaller is Better)           540.7
+                                                           AICC (Smaller is Better)          540.9
+                                                           BIC (Smaller is Better)           540.3
+
+
+                                                             Type 3 Tests of Fixed Effects
+
+                                              Effect            Num DF          Den DF       F Value        Pr > F
+                                              Variety                      2         55         3.51        0.0366
+                                              Nitro                        3         55        26.25        <.0001
+
+                                              Variety*Nitro                6         55         0.21        0.9719
+
+
+
+
+                                                       vctest 2c: Oats, Block dropped
+                                                                The Mixed Procedure
+
+                                                                  Model Information
+                                               Data Set                              WORK.OATS
+
+                                               Dependent Variable                    Yield
+                                               Covariance Structure                  Variance Components
+                                               Estimation Method                     REML
+                                               Residual Variance Method              Profile
+                                               Fixed Effects SE Method               Model-Based
+                                               Degrees of Freedom Method             Containment
+
+
+                                                               Class Level Information
+                                                Class        Levels     Values
+                                                Block             6     I II III IV V VI
+                                                Variety           3     GoldenRain Marvellous Victory
+                                                Nitro             4     0.0 0.2 0.4 0.6
+
+
+                                                                       Dimensions
+                                                             Covariance Parameters              2
+                                                             Columns in X                      20
+                                                             Columns in Z                      18
+                                                             Subjects                           1
+
+
+11/17/26, 12:11 PM                                                                  Results: Program 1
+                                                                       Dimensions
+                                                              Max Obs per Subject             72
+
+
+                                                               Number of Observations
+                                                       Number of Observations Read                     72
+                                                       Number of Observations Used                     72
+                                                       Number of Observations Not Used                  0
+
+
+
+                                                                    Iteration History
+                                             Iteration      Evaluations        -2 Res Log Like          Criterion
+                                                       0               1         564.36420957
+
+                                                       1               1         534.00671108         0.00000000
+
+
+                                                                Convergence criteria met.
+
+
+                                                            Covariance Parameter Estimates
+                                                            Cov Parm                       Estimate
+                                                            Block*Variety                    320.54
+                                                            Residual                         177.08
+
+
+                                                                       Fit Statistics
+                                                            -2 Res Log Likelihood            534.0
+                                                            AIC (Smaller is Better)          538.0
+                                                            AICC (Smaller is Better)         538.2
+                                                            BIC (Smaller is Better)          539.8
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                              Effect             Num DF         Den DF       F Value        Pr > F
+                                              Variety                      2         15         0.61        0.5552
+                                              Nitro                        3         45       37.69         <.0001
+                                              Variety*Nitro                6         45         0.30        0.9322
+
+
+
+
+                     vctest 2d: Oats in GLIMMIX with COVTEST (covparms Block, Block*Variety, Residual)
+                                                                The GLIMMIX Procedure
+
+                                                                   Model Information
+                                           Data Set                              WORK.OATS
+                                           Response Variable                     Yield
+                                           Response Distribution                 Gaussian
+                                           Link Function                         Identity
+                                           Variance Function                     Default
+
+                                           Variance Matrix                       Not blocked
+                                           Estimation Technique                  Restricted Maximum Likelihood
+                                           Degrees of Freedom Method             Containment
+
+
+                                                                Class Level Information
+                                                 Class        Levels    Values
+                                                 Block             6    I II III IV V VI
+                                                 Variety           3    GoldenRain Marvellous Victory
+                                                 Nitro             4    0.0 0.2 0.4 0.6
+
+
+                                                           Number of Observations Read             72
+
+
+11/17/26, 12:11 PM                                                                   Results: Program 1
+                                                           Number of Observations Used                72
+
+
+                                                                          Dimensions
+                                                                G-side Cov. Parameters            2
+                                                                R-side Cov. Parameters            1
+                                                                Columns in X                   20
+                                                                Columns in Z                   24
+                                                                Subjects (Blocks in V)            1
+
+                                                                Max Obs per Subject            72
+
+
+                                                                   Optimization Information
+                                                   Optimization Technique              Dual Quasi-Newton
+                                                   Parameters in Optimization          2
+                                                   Lower Boundaries                    2
+                                                   Upper Boundaries                    0
+                                                   Fixed Effects                       Profiled
+                                                   Residual Variance                   Profiled
+                                                   Starting From                       Data
+
+
+                                                                        Iteration History
+
+                                                                                      Objective                         Max
+                                     Iteration    Restarts       Evaluations          Function         Change       Gradient
+                                            0              0                 4    529.02850701                .     2.31E-14
+
+
+                                                 Convergence criterion (ABSGCONV=0.00001) satisfied.
+
+
+                                                                         Fit Statistics
+                                                           -2 Res Log Likelihood              529.03
+                                                           AIC (smaller is better)            535.03
+
+                                                           AICC (smaller is better)           535.46
+                                                           BIC (smaller is better)            534.40
+                                                           CAIC (smaller is better)           537.40
+                                                           HQIC (smaller is better)           532.53
+                                                           Generalized Chi-Square           10625.00
+                                                           Gener. Chi-Square / DF             177.08
+
+
+                                                               Covariance Parameter Estimates
+                                                                                            Standard
+                                                           Cov Parm             Estimate        Error
+                                                           Block                  214.48       168.83
+
+                                                           Block*Variety          106.06      67.8755
+                                                           Residual               177.08      37.3324
+
+
+                                                                Type III Tests of Fixed Effects
+                                                 Effect             Num DF       Den DF     F Value        Pr > F
+                                                 Variety                    2         10          1.49     0.2724
+                                                 Nitro                      3         45       37.69       <.0001
+                                                 Variety*Nitro              6         45          0.30     0.9322
+
+
+                                                            Tests of Covariance Parameters
+                                                           Based on the Restricted Likelihood
+                                   Label                          DF    -2 Res Log Like       ChiSq        Pr > ChiSq    Note
+                                   Block variance 0                 1              534.01         4.98        0.0128     MI
+                                   Block*Variety variance 0         1              536.69         7.66        0.0028     MI
+
+
+
+11/17/26, 12:11 PM                                                                  Results: Program 1
+                                                   MI: P-value based on a mixture of chi-squares.
+
+
+
+
+                 vctest 3: cbpp, incidence/size = period, random herd (Laplace), COVTEST herd variance 0
+                                                                  The GLIMMIX Procedure
+
+                                                                        Model Information
+                                                 Data Set                              WORK.CBPP
+                                                 Response Variable (Events)            incidence
+                                                 Response Variable (Trials)            size
+                                                 Response Distribution                 Binomial
+                                                 Link Function                         Logit
+                                                 Variance Function                     Default
+
+                                                 Variance Matrix Blocked By            herd
+                                                 Estimation Technique                  Maximum Likelihood
+                                                 Likelihood Approximation              Laplace
+                                                 Degrees of Freedom Method             Containment
+
+
+                                                                   Class Level Information
+                                                 Class        Levels     Values
+                                                 herd             15     1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+                                                 period             4    1234
+
+
+                                                             Number of Observations Read              56
+                                                             Number of Observations Used              56
+                                                             Number of Events                         99
+                                                             Number of Trials                     842
+
+
+                                                                          Dimensions
+
+                                                               G-side Cov. Parameters             1
+                                                               Columns in X                       5
+                                                               Columns in Z per Subject           1
+                                                               Subjects (Blocks in V)            15
+
+                                                               Max Obs per Subject                4
+
+
+                                                                  Optimization Information
+                                                  Optimization Technique              Dual Quasi-Newton
+
+                                                  Parameters in Optimization          5
+                                                  Lower Boundaries                    1
+                                                  Upper Boundaries                    0
+                                                  Fixed Effects                       Not Profiled
+                                                  Starting From                       GLM estimates
+
+
+                                                                        Iteration History
+                                                                                   Objective                            Max
+                                    Iteration   Restarts       Evaluations         Function                Change   Gradient
+                                           0             0                 4    184.81303421                    .   8.084491
+                                           1             0                 3    184.14621903       0.66681518       1.645327
+
+                                           2             0                 3    184.09452246       0.05169657       0.947924
+                                           3             0                 3    184.07532671       0.01919575        0.68964
+                                           4             0                 2    184.05634698       0.01897973       0.422077
+                                           5             0                 3    184.05530144       0.00104554       0.311149
+
+                                           6             0                 4    184.05259239       0.00270905       0.031532
+                                           7             0                 3    184.05256377       0.00002862       0.001173
+
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                                     Iteration History
+                                                                                    Objective                             Max
+                                    Iteration   Restarts     Evaluations            Function               Change     Gradient
+                                           8           0                   3     184.05256373           0.00000004    0.000015
+
+
+                                                    Convergence criterion (GCONV=1E-8) satisfied.
+
+
+                                                                         Fit Statistics
+                                                             -2 Log Likelihood                   184.05
+                                                             AIC (smaller is better)             194.05
+                                                             AICC (smaller is better)            195.25
+
+                                                             BIC (smaller is better)             197.59
+                                                             CAIC (smaller is better)            202.59
+                                                             HQIC (smaller is better)            194.01
+
+
+                                                      Fit Statistics for Conditional Distribution
+                                                      -2 log L(incidence | r. effects)              157.43
+                                                      Pearson Chi-Square                                63.08
+                                                      Pearson Chi-Square / DF                            1.13
+
+
+                                                             Covariance Parameter Estimates
+                                                                                                   Standard
+                                                     Cov Parm       Subject        Estimate            Error
+
+                                                     Intercept      herd                0.4125          0.2294
+
+
+                                                              Type III Tests of Fixed Effects
+                                                   Effect      Num DF          Den DF      F Value        Pr > F
+
+                                                   period             3            38            8.32     0.0002
+
+
+                                                             Tests of Covariance Parameters
+                                                                Based on the Likelihood
+                                          Label               DF    -2 Log Like          ChiSq      Pr > ChiSq       Note
+
+                                          herd variance 0       1          198.06         14.01           <.0001     MI
+
+                                                   MI: P-value based on a mixture of chi-squares.
+
+
+
+
+                                       vctest 3b: cbpp, no random term (logistic regression)
+                                                                 The GLIMMIX Procedure
+
+                                                                    Model Information
+                                                  Data Set                                WORK.CBPP
+                                                  Response Variable (Events)              incidence
+
+                                                  Response Variable (Trials)              size
+                                                  Response Distribution                   Binomial
+                                                  Link Function                           Logit
+                                                  Variance Function                       Default
+
+                                                  Variance Matrix                         Diagonal
+                                                  Estimation Technique                    Maximum Likelihood
+                                                  Degrees of Freedom Method               Residual
+
+
+                                                                 Class Level Information
+                                                                 Class         Levels     Values
+                                                                 period            4      1234
+
+
+
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                           Number of Observations Read                 56
+                                                           Number of Observations Used                 56
+                                                           Number of Events                            99
+                                                           Number of Trials                           842
+
+
+                                                                          Dimensions
+                                                               Columns in X                      5
+
+                                                               Columns in Z                      0
+                                                               Subjects (Blocks in V)            1
+                                                               Max Obs per Subject              56
+
+
+                                                                Optimization Information
+                                                   Optimization Technique                 Newton-Raphson
+                                                   Parameters in Optimization             4
+
+                                                   Lower Boundaries                       0
+                                                   Upper Boundaries                       0
+                                                   Fixed Effects                          Not Profiled
+
+
+                                                                     Iteration History
+                                                                                    Objective                            Max
+                                    Iteration   Restarts     Evaluations            Function                Change   Gradient
+                                           0          0                   4    102.84306044                      .   25.95164
+                                           1          0                   3    99.079360921           3.76369952     2.262883
+                                           2          0                   3    99.029237858           0.05012306       0.0399
+                                           3          0                   3    99.029199489           0.00003837     0.000033
+
+                                           4          0                   3    99.029199489           0.00000000     3.38E-11
+
+
+                                                    Convergence criterion (GCONV=1E-8) satisfied.
+
+
+                                                                       Fit Statistics
+                                                            -2 Log Likelihood                  198.06
+
+                                                            AIC (smaller is better)            206.06
+                                                            AICC (smaller is better)           206.84
+                                                            BIC (smaller is better)            214.16
+
+                                                            CAIC (smaller is better)           218.16
+                                                            HQIC (smaller is better)           209.20
+                                                            Pearson Chi-Square                 113.89
+                                                            Pearson Chi-Square / DF              2.03
+
+
+                                                              Type III Tests of Fixed Effects
+                                                   Effect     Num DF          Den DF      F Value       Pr > F
+                                                   period             3           52          12.63    <.0001
+
+
+
+
+                                 vctest 4a: Orthodont, random intercept + AR(1) residuals (full)
+                                                                  The Mixed Procedure
+
+                                                                    Model Information
+                                        Data Set                              WORK.ORTHODONT
+
+                                        Dependent Variable                    distance
+                                        Covariance Structures                 Variance Components, Autoregressive
+                                        Subject Effects                       Subject, Subject
+                                        Estimation Method                     REML
+
+                                        Residual Variance Method              Profile
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                                    Model Information
+                                         Fixed Effects SE Method               Model-Based
+                                         Degrees of Freedom Method             Containment
+
+
+                                                                 Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                          Dimensions
+                                                            Covariance Parameters                    3
+                                                            Columns in X                             2
+                                                            Columns in Z per Subject                 1
+                                                            Subjects                               27
+                                                            Max Obs per Subject                      4
+
+
+
+                                                               Number of Observations
+                                                     Number of Observations Read                         108
+                                                     Number of Observations Used                         108
+                                                     Number of Observations Not Used                       0
+
+
+                                                                     Iteration History
+                                              Iteration    Evaluations         -2 Res Log Like             Criterion
+                                                     0                    1      509.16949644
+
+                                                     1                    2      446.92582808            0.00000256
+                                                     2                    1      446.92550572            0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+
+                                                           Covariance Parameter Estimates
+                                                           Cov Parm           Subject       Estimate
+                                                           Intercept          Subject         4.4252
+                                                           AR(1)              Subject        0.04720
+
+                                                           Residual                           2.1012
+
+
+                                                                          Fit Statistics
+                                                           -2 Res Log Likelihood              446.9
+
+                                                           AIC (Smaller is Better)            452.9
+                                                           AICC (Smaller is Better)           453.2
+                                                           BIC (Smaller is Better)            456.8
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                                  Effect    Num DF            Den DF       F Value       Pr > F
+                                                  age                 1           80       109.43        <.0001
+
+
+
+
+                      vctest 4b: Orthodont, random intercept, independent residuals (AR(1) correlation 0)
+                                                                   The Mixed Procedure
+
+                                                                    Model Information
+                                                Data Set                                 WORK.ORTHODONT
+                                                Dependent Variable                       distance
+                                                Covariance Structure                     Variance Components
+                                                Subject Effect                           Subject
+
+
+11/17/26, 12:11 PM                                                                      Results: Program 1
+                                                                  Model Information
+                                               Estimation Method                         REML
+
+                                               Residual Variance Method                  Profile
+                                               Fixed Effects SE Method                   Model-Based
+                                               Degrees of Freedom Method                 Containment
+
+
+                                                               Class Level Information
+      Class     Levels    Values
+      Subject        27   F01 F02 F03 F04 F05 F06 F07 F08 F09 F10 F11 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16
+
+
+                                                                          Dimensions
+
+                                                            Covariance Parameters                    2
+                                                            Columns in X                             2
+                                                            Columns in Z per Subject                 1
+                                                            Subjects                               27
+                                                            Max Obs per Subject                      4
+
+
+                                                               Number of Observations
+                                                     Number of Observations Read                         108
+
+                                                     Number of Observations Used                         108
+                                                     Number of Observations Not Used                       0
+
+
+                                                                   Iteration History
+
+                                              Iteration    Evaluations         -2 Res Log Like             Criterion
+                                                     0                    1      509.16949644
+                                                     1                    1      447.00251560            0.00000000
+
+
+                                                               Convergence criteria met.
+
+
+                                                           Covariance Parameter Estimates
+                                                           Cov Parm           Subject       Estimate
+                                                           Intercept          Subject         4.4721
+
+                                                           Residual                           2.0495
+
+
+                                                                          Fit Statistics
+                                                           -2 Res Log Likelihood               447.0
+                                                           AIC (Smaller is Better)             451.0
+                                                           AICC (Smaller is Better)            451.1
+                                                           BIC (Smaller is Better)             453.6
+
+
+                                                             Type 3 Tests of Fixed Effects
+                                                  Effect    Num DF            Den DF       F Value       Pr > F
+                                                  age                 1           80        114.84       <.0001
+
+
+
+
+

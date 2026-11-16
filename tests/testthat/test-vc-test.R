@@ -87,3 +87,35 @@ test_that("semireg: smooth blocks as anova(), other random terms by refit; semir
   expect_true(is.finite(t2$LRT[t2$row == "cor.Subject"]))
   expect_error(pm_vc_test(lm(Reaction ~ Days, d)), "lmer, glmer, glmmTMB and semireg")
 })
+
+test_that("likelihood ratio statistics equal SAS PROC MIXED / GLIMMIX and Genstat REML (real runs, 2026-11-17)", {
+  # dev/sas/sas-results-2026-11-17-vctest.txt (pm-reference-vctest.sas),
+  # dev/genstat/genstat-results-2026-11-17-run4.txt (pm-reference-4.gen):
+  # differences of -2 (restricted) log-likelihoods of full and reduced fits
+  data(Orthodont, package = "nlme", envir = environment())
+  O <- as.data.frame(Orthodont)
+  O$occ <- factor(O$age)
+  O$agec <- O$age - 11                       # Genstat centres covariates
+  lr <- function(m) { t <- q(pm_vc_test(m)); stats::setNames(t$LRT, t$row) }
+  a <- lr(q(lme4::lmer(distance ~ age + (age | Subject), O)))
+  expect_equal(a[["Subject.(Intercept)"]], 509.16949644 - 442.63668588, tolerance = 1e-6)
+  expect_equal(a[["Subject.age"]], 447.00251560 - 442.63668588, tolerance = 1e-6)
+  expect_equal(a[["Subject.age.(Intercept)"]], 443.31458017 - 442.63668588, tolerance = 1e-5)
+  data(Oats, package = "nlme", envir = environment())
+  Oa <- as.data.frame(Oats)
+  Oa$N <- factor(Oa$nitro)
+  b <- lr(q(lme4::lmer(yield ~ Variety*N + (1 | Block/Variety), Oa)))
+  expect_equal(b[["Variety:Block.(Intercept)"]], 536.68996670 - 529.02850701, tolerance = 1e-6)
+  expect_equal(b[["Block.(Intercept)"]], 534.00671108 - 529.02850701, tolerance = 1e-6)
+  expect_equal(b[["Variety:Block.(Intercept)"]], 426.42 - 418.76, tolerance = 2e-3)   # Genstat, 2 decimals
+  data(cbpp, package = "lme4", envir = environment())
+  g <- lr(q(lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial, data = cbpp)))
+  expect_equal(g[["herd.(Intercept)"]], 2*99.029199489 - 184.05256373, tolerance = 1e-4)   # Laplace, GLIMMIX
+  # random intercept + AR(1) residuals; the AR(1) correlation 0
+  ar <- lr(q(glmmTMB::glmmTMB(distance ~ age + (1 | Subject) + ar1(occ + 0 | Subject), dispformula = ~0, data = O,
+                              REML = TRUE)))
+  expect_equal(ar[["cor.Subject.1"]], 447.00251560 - 446.92550572, tolerance = 1e-4)
+  # Genstat: intercept + uncorrelated slope of centred age; the slope variance 0
+  gs <- lr(q(lme4::lmer(distance ~ age + (1 | Subject) + (0 + agec | Subject), O)))
+  expect_equal(gs[["Subject.agec"]], 252.19 - 250.17, tolerance = 5e-3)
+})

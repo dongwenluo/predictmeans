@@ -1,0 +1,316 @@
+   2  \ Fourth Genstat reference program for predictmeans: likelihood ratio tests
+   3  \ of variance components for varcomp(test = TRUE) (R/vc-test.R). Each model is
+   4  \ fitted in full and reduced form; the change in REML deviance is the LRT.
+   5  \ Please save the whole Output window (File > Save) and send that file; the
+   6  \ first run may need small syntax fixes. Cases: (1) Oats split plot, complete
+   7  \ (72 plots): Block and Block.Variety variances; (2) Orthodont: random
+   8  \ intercept and uncorrelated random slope of age; (3) Orthodont: random
+   9  \ intercept with AR(1) between the four ages of each child, and without.
+  10
+  11  \ ---- 1. Oats: 6 blocks x 3 varieties x 4 nitrogen levels, complete ----
+  12  UNITS [NVALUES=72]
+  13  FACTOR [LEVELS=6] Block
+  14  FACTOR [LABELS=!t(GoldenRain, Marvellous, Victory)] Variety
+  15  FACTOR [LEVELS=!(0, 0.2, 0.4, 0.6)] Nitro
+  16  VARIATE Yield
+  17  READ Block, Variety, Nitro, Yield
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	Yield	 53.00	 104.0	 174.0	 72	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	Block	 72	 0	 6
+	Variety	 72	 0	 3
+	Nitro	 72	 0	 4
+ 
+  36  :
+  37  \ (1a) full: random Block and Block.Variety
+  38  VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block/Variety
+  39  REML [PRINT=model, components, deviance; METHOD=AI] Yield
+ 
+REML variance components analysis
+ 
+Response variate:	Yield
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block + Block.Variety
+Number of units:	72
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Block	 214.5	 168.8
+Block.Variety	 106.1	 67.9
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	177.1	 37.3
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 418.76	 57
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  40  \ (1b) Block.Variety dropped
+  41  VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block
+  42  REML [PRINT=model, components, deviance; METHOD=AI] Yield
+ 
+REML variance components analysis
+ 
+Response variate:	Yield
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block
+Number of units:	72
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Block	 243.4	 167.4
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	254.2	 48.5
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 426.42	 58
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  43  \ (1c) Block dropped
+  44  VCOMPONENTS [FIXED=Variety*Nitro] RANDOM=Block.Variety
+  45  REML [PRINT=model, components, deviance; METHOD=AI] Yield
+ 
+REML variance components analysis
+ 
+Response variate:	Yield
+Fixed model:	Constant + Variety + Nitro + Variety.Nitro
+Random model:	Block.Variety
+Number of units:	72
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Block.Variety	 320.5	 133.5
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	177.1	 37.3
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 423.73	 58
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  46
+  47  \ ---- 2 and 3. Orthodont: 27 children x 4 ages (8, 10, 12, 14) ----
+  48  UNITS [NVALUES=108]
+  49  FACTOR [LEVELS=27] Subject
+  50  FACTOR [LEVELS=4] Occ
+  51  VARIATE age, distance
+  52  READ Subject, Occ, age, distance
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	age	 8.000	 11.00	 14.00	 108	 0	 
+	distance	 16.50	 24.02	 31.50	 108	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	Subject	 108	 0	 27
+	Occ	 108	 0	 4
+ 
+  80  :
+  81  \ (2a) random intercept and uncorrelated random slope (lmer: age || Subject)
+  82  VCOMPONENTS [FIXED=age] RANDOM=Subject + Subject.age
+  83  REML [PRINT=model, components, deviance; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject + Subject.age
+Number of units:	108
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject	 4.555	 1.385
+Subject.age	 0.051	 0.041
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	1.716	 0.330
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 250.17	 103
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  84  \ (2b) slope dropped
+  85  VCOMPONENTS [FIXED=age] RANDOM=Subject
+  86  REML [PRINT=model, components, deviance; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject
+Number of units:	108
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject	 4.472	 1.385
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	2.049	 0.324
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 252.19	 104
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  87  \ (2c) intercept dropped, slope kept
+  88  VCOMPONENTS [FIXED=age] RANDOM=Subject.age
+  89  REML [PRINT=model, components, deviance; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject.age
+Number of units:	108
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject.age	 -0.245	 0.071
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	7.638	 1.208
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 305.85	 104
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  90  \ (3a) random intercept; AR(1) between the ages of each child
+  91  VCOMPONENTS [FIXED=age] RANDOM=Subject + Subject.Occ
+  92  VSTRUCTURE [TERMS=Subject.Occ] FACTOR=Occ; MODEL=AR; ORDER=1
+  93  REML [PRINT=model, components, deviance; METHOD=AI] distance
+ 
+REML variance components analysis
+ 
+Response variate:	distance
+Fixed model:	Constant + age
+Random model:	Subject + Subject.Occ
+Number of units:	108
+ 
+Subject.Occ used as residual term with covariance structure as below
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+Subject.Occ	Subject	Identity	1	27
+	Occ	Auto-regressive	1	4
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+Subject	 4.425	 1.398
+ 
+ 
+Residual variance model
+ 
+Term	Factor	Model(order)	Parameter	Estimate	s.e.
+Subject.Occ	 		Sigma2	2.101	 0.387
+	Subject	Identity	-        	-	-
+	Occ	AR(1)	phi_1	 0.04721	 0.15900
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 252.11	 103
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+  94  \ (3b) the same with the AR(1) correlation 0 (independent residuals): (2b)
+  95  STOP
+ 
+End of job.
+ 
+Genstat 64-bit Release 23.1 ( PC/Windows 11) 17 November 2026 12:16:25
+Copyright 2023, VSN International Ltd.  
+ 

@@ -202,7 +202,7 @@ unstructured model equal the delta method from predictmeans' observed
 information. SAS's limits for covariances and correlations are Wald on the
 natural scale; predictmeans' are on the Fisher z scale (not compared).
 
-## Tests of variance components (`pm-reference-vctest.sas`, written 2026-11-16, not yet run)
+## Tests of variance components (`pm-reference-vctest.sas`, run 2026-11-17: `sas-results-2026-11-17-vctest.txt`)
 
 Reference for `varcomp(test = TRUE)` (`R/vc-test.R`). PROC MIXED fits each
 model in full and reduced form (the LRT is the change in -2 Res Log
@@ -218,3 +218,28 @@ predictmeans' LRTs, to compare with the run:
 | Oats `(1 \| Block/Variety)`, -2RLL 529.029 | Block.Variety variance 0 | 7.66146 |
 | | Block variance 0 | 4.97820 |
 | cbpp, binomial, Laplace | herd variance 0 | 14.0053 |
+
+Run of 2026-11-17 (SAS OnDemand; the results page as text). Every LRT agrees
+(differences of the -2 Res Log Likelihood in the iteration histories;
+`tests/testthat/test-vc-test.R`):
+
+| case | SAS | predictmeans |
+|---|---|---|
+| Orthodont: drop `(age \| Subject)` | 509.16950 − 442.63669 = 66.53281 | 66.53281 |
+| drop the slope | 447.00252 − 442.63669 = 4.36583 | 4.36583 |
+| covariance 0 (`type=vc`) | 443.31458 − 442.63669 = 0.67789 | 0.67789 |
+| Oats: Block×Variety | 536.68997 − 529.02851 = 7.66146 | 7.66146 |
+| Oats: Block | 534.00671 − 529.02851 = 4.97820 | 4.97820 |
+| cbpp: herd (Laplace) | 198.05840 − 184.05256 = 14.00584 | 14.0053 |
+| Orthodont: random intercept + AR(1), ρ = 0 | 447.00252 − 446.92551 = 0.07701 (ρ̂ 0.0472) | 0.07701 (glmmTMB, `dispformula = ~0`) |
+
+The AR(1) case is the residual AR(1) of PROC MIXED's `REPEATED`; in glmmTMB
+that is `ar1()` with `dispformula = ~0` (with a separate residual variance it
+is another model).
+
+GLIMMIX COVTEST p-values, the reference for the p-values of step 2:
+Orthodont no slope (UN(2,1) = UN(2,2) = 0, mixture ½χ²₁ + ½χ²₂) 0.0747;
+Oats Block 0.0128 and Block×Variety 0.0028 (½χ²₀ + ½χ²₁); cbpp herd < .0001.
+`zerog` (drop the whole term, 3 df) is reported as a standard test (unadjusted
+χ²₃). `covtest indep` did not test the covariance: it gave the zero-G test
+again (66.53, 3 df); the covariance reference is PROC MIXED's `type=vc` fit.
