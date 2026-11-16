@@ -64,8 +64,7 @@ test_that("golden example growthIndiana: mean curve + subject curves (s(age) | i
   d <- gi[gi$male == 1 & gi$black == 1, ]
   d$idnum <- factor(match(d$idnum, unique(d$idnum)))
   fm <- q(semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-                    (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = d, prt = FALSE,
-                  control = lme4::lmerControl(optimizer = "nloptwrap")))
+                    (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = d, prt = FALSE))
   expect_same_fit(fm, ref$growthIndiana, d$height, "growthIndiana")
   # (age | idnum) is a correlated intercept and slope per boy, as pdSymm(~age)
   vc <- as.data.frame(lme4::VarCorr(fm$semer))

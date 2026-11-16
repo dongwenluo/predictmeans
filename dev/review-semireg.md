@@ -175,8 +175,9 @@ Findings:
 - Speed: lmer's time is the optimizer. `bobyqa` (semireg's default since
   1.x) needs 500-3000 deviance evaluations here because the smooth blocks'
   theta lie far from the start (theta = 50-70 after mgcv's penalty scaling);
-  `nloptwrap` needs a third of them, with the same optimum. Open question
-  O10.
+  `nloptwrap` needs a third of them, with the same optimum. O10, decided by
+  the maintainer: `nloptwrap` is `semireg()`'s default (also for GLMMs, where
+  binomial and Poisson fits reached the same optimum 1.3-4 times faster).
 - PQL (the script) and Laplace (`semireg()`, glmer) differ by up to 0.013 in
   the fitted probabilities of the binary example: different
   approximations, not an error.

@@ -8,15 +8,15 @@ suppressMessages(pkgload::load_all(".", quiet = TRUE))
 ref <- readRDS("tests/testthat/fixtures/semireg-golden.rds")
 dat <- function(f, ...) read.table(file.path("inst/extdata/semireg", f), ...)
 tm <- function(expr) { t0 <- proc.time()[["elapsed"]]; v <- expr; attr(v, "time") <- proc.time()[["elapsed"]] - t0; v }
-## a gaussian fit, with semireg()'s default optimizer (bobyqa, as 1.x) and
-## again with lme4's default nloptwrap (time and log-likelihood kept)
+## a gaussian fit, with semireg()'s default optimizer (nloptwrap since 2.0)
+## and again with 1.x's bobyqa (time and log-likelihood kept)
 tm2 <- function(expr) {
   cl <- substitute(expr)
   fit <- tm(eval(cl, parent.frame()))
-  cl$control <- quote(lme4::lmerControl(optimizer = "nloptwrap"))
+  cl$control <- quote(lme4::lmerControl(optimizer = "bobyqa"))
   fit2 <- tm(eval(cl, parent.frame()))
-  attr(fit, "time_nlopt") <- attr(fit2, "time")
-  attr(fit, "logLik_nlopt") <- as.numeric(logLik(fit2$semer))
+  attr(fit, "time_bobyqa") <- attr(fit2, "time")
+  attr(fit, "logLik_bobyqa") <- as.numeric(logLik(fit2$semer))
   fit
 }
 row <- function(case, fm, r, y, note = "") {
@@ -24,8 +24,8 @@ row <- function(case, fm, r, y, note = "") {
   data.frame(case = case, logLik = as.numeric(logLik(m)), logLik_ref = if (is.null(r$logLik)) NA else r$logLik,
              sigma_ratio = if (is.null(r$sigma)) NA else sigma(m)/r$sigma,
              fitted_diff = max(abs(fitted(m) - r$fitted))/sd(y), time = attr(fm, "time"),
-             time_nlopt = if (is.null(attr(fm, "time_nlopt"))) NA else attr(fm, "time_nlopt"),
-             dlogLik_nlopt = if (is.null(attr(fm, "logLik_nlopt"))) NA else attr(fm, "logLik_nlopt") - as.numeric(logLik(m)),
+             time_bobyqa = if (is.null(attr(fm, "time_bobyqa"))) NA else attr(fm, "time_bobyqa"),
+             dlogLik_bobyqa = if (is.null(attr(fm, "logLik_bobyqa"))) NA else attr(fm, "logLik_bobyqa") - as.numeric(logLik(m)),
              time_ref = r$time, note = note)
 }
 res <- list()
@@ -80,7 +80,7 @@ fm <- tm(semireg(unionMember ~ s(wage, bs = "os", k = 15, xt = list(range = rw))
                  prt = FALSE))
 res$wageTUnion <- data.frame(case = "wageTUnion", logLik = as.numeric(logLik(fm$semer)), logLik_ref = NA,
                              sigma_ratio = NA, fitted_diff = max(abs(fitted(fm$semer) - ref$wageTUnion$fitted_prob)),
-                             time = attr(fm, "time"), time_nlopt = NA, dlogLik_nlopt = NA,
+                             time = attr(fm, "time"), time_bobyqa = NA, dlogLik_bobyqa = NA,
                              time_ref = ref$wageTUnion$time,
                              note = "Laplace vs PQL; fitted_diff on the probability scale")
 
@@ -100,8 +100,8 @@ fm <- tm2(semireg(ozone ~ s(inversion.base.height) + s(daggett.pressure.gradient
 res$ozoneCalifGAM <- data.frame(case = "ozoneCalifGAM", logLik = as.numeric(logLik(fm$semer)), logLik_ref = NA,
                                 sigma_ratio = NA,
                                 fitted_diff = max(abs(fitted(fm$semer) - ref$ozoneCalifGAM$fitted_reml))/sd(oz$ozone),
-                                time = attr(fm, "time"), time_nlopt = attr(fm, "time_nlopt"),
-                                dlogLik_nlopt = attr(fm, "logLik_nlopt") - as.numeric(logLik(fm$semer)),
+                                time = attr(fm, "time"), time_bobyqa = attr(fm, "time_bobyqa"),
+                                dlogLik_bobyqa = attr(fm, "logLik_bobyqa") - as.numeric(logLik(fm$semer)),
                                 time_ref = ref$ozoneCalifGAM$time,
                                 note = sprintf("vs gam REML; vs gam GCV: %.3f",
                                                max(abs(fitted(fm$semer) - ref$ozoneCalifGAM$fitted_gcv))/sd(oz$ozone)))

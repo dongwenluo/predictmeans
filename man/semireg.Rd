@@ -6,7 +6,7 @@
 \usage{
 semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-        control = lmerControl(optimizer="bobyqa"), start = NULL, 
+        control = lmerControl(optimizer="nloptwrap"), start = NULL, 
         verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
         offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
 }
@@ -30,7 +30,7 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 
 \item{resp_scale}{Logical scalar - Should the response be involved in the scaling action or not?}
 
-\item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details.}
+\item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.}
 
 \item{start}{Starting value list as used by lmer or glmer.}
 
@@ -126,8 +126,9 @@ The penalised-spline examples fitted by \code{nlme::lme} in Wand's course script
 models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
 give the same REML log-likelihood and fitted values with \code{semireg()} (data in
 \code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
-The optimizer is \code{bobyqa}, as in 1.x; \code{control = lmerControl(optimizer = "nloptwrap")} (lme4's own
-default) is 3-4 times faster on these examples with the same fits.
+The optimizer is \code{nloptwrap} (lme4's default for \code{lmer}) since 2.0: on these examples it reached the
+same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) 3-4 times
+faster, also for binomial and Poisson fits.
 }
 
 \examples{

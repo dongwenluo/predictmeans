@@ -42,6 +42,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `semireg()` fit whose deviation curves had variance 0: 0.54 and 0.04 df
   for the factor terms; now 33 and 114, those of the model without the
   component). Fits without a zero variance are unchanged.
+* **`semireg()` uses the optimizer `nloptwrap`** (lme4's default for `lmer`)
+  instead of `bobyqa`: the same optimum (log-likelihoods equal to 4e-6 on
+  the golden examples and on binomial and Poisson fits) 1.3-4 times faster
+  (growth curves of 2257 rows: 53 s -> 18 s; `lme` takes 31 s). Estimates
+  move by optimizer tolerance only. `control = lmerControl(optimizer =
+  "bobyqa")` gives the 1.x optimizer.
 * **`semipred()` and `predictmeans()` on generalized `semireg()` /
   `semireg_tmb()` fits include the uncertainty of the smoothing parameters**
   (`unconditional`, as mgcv's): the first-order correction J V_theta J' is

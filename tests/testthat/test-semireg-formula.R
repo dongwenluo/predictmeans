@@ -165,9 +165,11 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
 test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level with one variance", {
   d <- sf_data()
   q <- function(e) suppressWarnings(suppressMessages(e))
-  a <- q(semireg(y ~ s(x, bs = "os", k = 8) + (s(x, k = 5) | id), data = d, prt = FALSE))
+  # the same model in two forms: compared at the optimum (bobyqa converges more tightly than nloptwrap)
+  ctl <- lme4::lmerControl(optimizer = "bobyqa")
+  a <- q(semireg(y ~ s(x, bs = "os", k = 8) + (s(x, k = 5) | id), data = d, prt = FALSE, control = ctl))
   b <- q(semireg(y ~ x + (x | id), smoothZ = list(sm = smZ(x, k = 8), sub = smZ(x, k = 5, by = id)), data = d,
-                 ncenter = FALSE, prt = FALSE))
+                 ncenter = FALSE, prt = FALSE, control = ctl))
   expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-6)
   expect_equal(unname(fitted(a$semer)), unname(fitted(b$semer)), tolerance = 1e-5)
   expect_true("s_x_id" %in% names(a$u_lst))

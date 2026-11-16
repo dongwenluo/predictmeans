@@ -52,12 +52,13 @@
 #' models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
 #' give the same REML log-likelihood and fitted values with \code{semireg()} (data in
 #' \code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
-#' The optimizer is \code{bobyqa}, as in 1.x; \code{control = lmerControl(optimizer = "nloptwrap")} (lme4's own
-#' default) is 3-4 times faster on these examples with the same fits.
+#' The optimizer is \code{nloptwrap} (lme4's default for \code{lmer}) since 2.0: on these examples it reached the
+#' same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) 3-4 times
+#' faster, also for binomial and Poisson fits.
 #' @usage
 #' semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
 #'         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-#'         control = lmerControl(optimizer="bobyqa"), start = NULL, 
+#'         control = lmerControl(optimizer="nloptwrap"), start = NULL, 
 #'         verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
 #'         offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
@@ -70,7 +71,7 @@
 #' @param ncenter Logical scalar - Should the numeric predictors to be centered or not?
 #' @param nscale Logical scalar - Should the numeric predictors to be scaled or not?
 #' @param resp_scale Logical scalar - Should the response be involved in the scaling action or not?
-#' @param control A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details.
+#' @param control A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.
 #' @param start Starting value list as used by lmer or glmer.
 #' @param verbose Passed on to fitting lme4 fitting routines.
 #' @param drop.unused.levels By default unused levels are dropped from factors before fitting. For some smooths involving factor variables you might want to turn this off. Only do so if you know what you are doing.
@@ -158,7 +159,7 @@ NULL
 
 semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
                      smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-                     control = lmerControl(optimizer="bobyqa"), start = NULL, 
+                     control = lmerControl(optimizer="nloptwrap"), start = NULL, 
                      verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
                      offset, contrasts = NULL, prt=TRUE, predict_info=TRUE, ...)
 {
