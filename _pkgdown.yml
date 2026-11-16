@@ -50,6 +50,7 @@ reference:
   - ci_mcp
 - title: Degrees of freedom, tests and diagnostics
   contents:
+  - anova.lmerMod
   - df_term
   - R2_glmm
   - R2_model
@@ -72,6 +73,7 @@ reference:
   contents:
   - semireg
   - semireg_tmb
+  - anova.semireg
   - semipred
   - smZ
 - title: Extending to new model classes

@@ -25,7 +25,7 @@ pm_perm_df2 <- function(model, nms, Ls, df_res) {
     return(vapply(Ls, function(L) tryCatch(pm_satt_Fddf(L, parts), error = function(e) NA_real_), numeric(1)))
   }
   if (inherits(model, "lme")) {
-    aT <- stats::anova(model)
+    aT <- pm_anova_seq(model)
     tT <- summary(model)$tTable
     return(vapply(nms, function(k) {
       out <- if (startsWith(k, "coef:")) tT[sub("^coef:", "", k), "DF"] else aT[k, "denDF"]

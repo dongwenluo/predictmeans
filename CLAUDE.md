@@ -19,10 +19,15 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
 ## Decisions already made
 - Kenward–Roger adjusted SEs are the default for REML lmer fits;
   `vcov_adjust = FALSE` reproduces 1.x numbers.
-- glmmTMB and lmerTest in Imports (lmerTest only for `semireg()` fits; not
-  attached since 2.0; its removal is reconsidered when `semireg()` is
-  upgraded); car and pbkrtest in Suggests (own code in `R/anova.R`,
-  `R/kr.R`, `R/satterthwaite.R`, `R/df-containment.R`).
+- glmmTMB and mgcv in Imports; lmerTest, car, pbkrtest and TMB in Suggests
+  (own code in `R/anova.R`, `R/kr.R`, `R/satterthwaite.R`,
+  `R/df-containment.R`; lmerTest dropped from Imports on 2026-11-17, the
+  maintainer's decision: `anova.lmerMod()` gives F tests with KR df for lmer
+  fits, `anova.semireg()` tests fixed effects and smooth terms; gaussian
+  `semireg()` fits are class `semerMod`). Internal code that needs lme4's own
+  sequential table calls `pm_anova_seq()`, not `anova()`.
+- Kenward-Roger leaves variance components estimated at zero out of the
+  adjustment (as SAS); `R/kr.R`.
 - `predictmeans()` draws plots only when asked (`plot = FALSE` default since
   2.0; `which.plots` etc. turn plotting on); `autoplot()` draws from results.
 - Means over empty cells keep the 1.x rule: the average of the observed
@@ -71,6 +76,12 @@ table; the row marked "Next" is the current task) and `NEWS.md`.
   settings go through `plot_args` (`pm_plot_args()`).
 - `R/Kmatrix.R` + `R/refgrid.R`: reference grid and K matrix.
 - `R/tidy.R`, `R/autoplot.R`: stable `means`/`pairs`/`settings` tables.
+- `R/semireg-engine.R` (one fitting engine of `semireg()`/`semireg_tmb()`) and
+  `R/semireg-smooth.R` (smooths in the formula via mgcv; own `os`/`ztps`
+  bases as mgcv smooth classes); plan in `dev/review-semireg.md`. Golden
+  examples (the maintainer's lme scripts, reference runs) in
+  `dev/semireg-golden/`, data in `inst/extdata/semireg/`, checked by
+  `tests/testthat/test-semireg-golden.R`.
 - Help pages: edit the roxygen2 block above each function (data sets in
   `R/data.R`, the package page in `R/predictmeans-package.R`), then
   `Rscript -e 'roxygen2::roxygenise(roclets = "rd")'`. NAMESPACE is

@@ -9,7 +9,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 		   scales=c("fixed", "free", "free_x", "free_y"),
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 		   simultaneous=FALSE, contr_scale=c("model", "response"),
-		   band=c("pointwise", "simultaneous"))
+		   band=c("pointwise", "simultaneous"),
+		   unconditional=getOption("predictmeans.semi_unconditional"))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -56,6 +57,17 @@ whole curve(s) instead of pointwise limits; the critical value is the \code{1 - 
 standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
 Wand and Carroll, 2003). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
 model use Scheffe's critical value instead; for smooths that would be far too wide.}
+
+\item{unconditional}{If \code{TRUE}, the covariance of the coefficients includes the uncertainty of the
+smoothing parameters (the variances of the smooth terms), as mgcv's \code{unconditional = TRUE}: the first-order
+correction \eqn{J V_\theta J'} is added, \eqn{J} the derivative of the estimated coefficients in the variance
+parameters and \eqn{V_\theta} the covariance of their estimates (from the Hessian of the deviance; for
+\code{semireg_tmb()} fits TMB's joint precision of all parameters). The default (\code{NULL}) is \code{TRUE}
+for generalized models and \code{FALSE} for gaussian ones: in a simulation of the difference between two curves
+(\code{dev/sim-curve-difference.R}, 150 data sets, nominal 0.95) the bands without it covered 0.93 pointwise and
+0.89-0.91 over the whole curve for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it; for gaussian
+data 0.97 without it (0.98 with it). \code{options(predictmeans.semi_unconditional = TRUE)} (or \code{FALSE}) sets
+it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.}
 
 \item{simultaneous}{\code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).}
 
@@ -105,8 +117,7 @@ fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
 str(fm$data)
 summary(fm$semer)
 residplot(fm$semer, group="QB")
-anova(fm$semer)
-lmerTest::ranova(fm$semer)
+anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 R2_glmm(fm$semer)
 ap_out1 <- semipred(fm, "QB", "pressure")
 str(ap_out1$pred_df)
@@ -128,7 +139,7 @@ sleep.semi <- semireg(Reaction ~ Days*Subject,
                       data=sleepstudy)
 residplot(sleep.semi$semer)
 summary(sleep.semi$semer)
-anova(sleep.semi$semer)
+anova(sleep.semi)
 R2_glmm(sleep.semi$semer)
 
 predout1 <- semipred(sleep.semi, "Subject", "Days")

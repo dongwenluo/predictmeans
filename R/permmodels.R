@@ -170,7 +170,7 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL, map3 = NUL
   mp <- mymodelparm(rfitmodel, df = 0)[1:2]
   if (type %in% c("I", "1")) {
     # lmer: lmerTest's type I F (Wald tests of the hypotheses Ls), as in the observed table
-    aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else anova(rfitmodel)
+    aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else pm_anova_seq(rfitmodel)
   } else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic, type3_map=map3)
   if (inherits(rfitmodel, "lmerMod")) {
     se <- sqrt(diag(mp$vcov))
@@ -331,7 +331,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   }else COEFFICENTS <- NULL
   
   if (type %in% c("I", "1")) {
-    key_anova <- if (!is.null(lt)) lt$anova else anova(model)
+    key_anova <- if (!is.null(lt)) lt$anova else pm_anova_seq(model)
     stats_value <- colnames(key_anova)[grep("F.value",colnames(key_anova))]
     if (class(model)[1] %in% c("glm")) stats_value <- "Deviance"
   }else{

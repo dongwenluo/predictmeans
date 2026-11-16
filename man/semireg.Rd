@@ -6,7 +6,7 @@
 \usage{
 semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-        control = lmerControl(optimizer="bobyqa"), start = NULL, 
+        control = lmerControl(optimizer="nloptwrap"), start = NULL, 
         verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
         offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
 }
@@ -21,7 +21,7 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 
 \item{REML}{Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?}
 
-\item{smoothZ}{A list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+\item{smoothZ}{The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.}
 
 \item{ncenter}{Logical scalar - Should the numeric predictors to be centered or not?}
@@ -30,7 +30,7 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 
 \item{resp_scale}{Logical scalar - Should the response be involved in the scaling action or not?}
 
-\item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details.}
+\item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.}
 
 \item{start}{Starting value list as used by lmer or glmer.}
 
@@ -68,6 +68,8 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 \item{Cov_indN}{Covariance matrix index for each smooth term when \code{group=TRUE} in \code{smoothZ} argument.}
 \item{df}{Degree of freedom of all random terms.}
 \item{lmerc}{Call used in the mer model in the fitting.}
+\item{smooths}{For smooths written in the formula: the mgcv smooth objects and the maps that give the random-effect
+  design of each block for new data (used by \code{semipred()} and \code{predictmeans()}).}
 }
 \description{
 Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code{glmer} and \code{glmer.nb}.
@@ -75,8 +77,78 @@ Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code
 \details{
 A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
 }
+\section{Smooth terms in the formula}{
+
+Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
+\code{y ~ A + s(x, by = A) + (1 | Block)}. Each smooth is set up by mgcv (bases, knots, identifiability
+constraints) and split, as in \pkg{gamm4}, into an unpenalised part, which is added to the fixed effects as
+ordinary terms, and penalised parts, each a block of random effects with one variance. The fixed terms are
+added automatically (terms already written are not doubled), so a smooth by a factor cannot lose its group
+slopes:
+\tabular{lll}{
+  \strong{Written} \tab \strong{Meaning} \tab \strong{Fixed terms added} \cr
+  \code{s(x)}, \code{s(x, bs = "cr", k = 12)} \tab one curve \tab \code{x} \cr
+  \code{s(x, by = f)} \tab a curve per level of \code{f}, a variance each (\code{id = 1}: one shared) \tab \code{f + f:x} \cr
+  \code{s(x, by = z)}, \code{z} numeric \tab varying coefficient \eqn{f(x) z} \tab \code{z + z:x} \cr
+  \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
+  \code{(s(x, k = 10) | g)} \tab random curve per level of \code{g}: \code{(x | g)} (correlated intercepts and slopes) plus a spline deviation per level, one variance \tab none \cr
+  \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
+  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
+  \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
+  \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
+  \code{s(x, f1*f2)} \tab common curve + deviation curves for \code{f1}, \code{f2} and \code{f1:f2}, a variance each \tab \code{x + f1*f2 + f1:x + f2:x + f1:f2:x} \cr
+  \code{s(x1, x2, f)} \tab common surface + a deviation surface per level \tab \code{x1 + x2 + f + f:x1 + f:x2} \cr
+}
+A factor term among the arguments of \code{s()} gives this ANOVA-like split (not an mgcv form): the deviation
+curves of a factor term are random effects with one variance, so \code{varcomp()} shows how much the curves differ
+by \code{f1}, by \code{f2} and by their interaction, and a variance of zero means the curves of that term have the
+same shape (their levels still differ by the fixed terms). The pieces are set up without constraints between them:
+the mixed model separates them by their variances, as nested random effects. Each level's curve is the fixed part
+plus the common curve plus its deviations.
+
+A random curve \code{(s(x) | g)} (O'Sullivan basis unless \code{bs} is given) is the group-specific curve model of
+Durban et al. (2005) and Harezlak, Ruppert and Wand (2018, section 9.2): each level of \code{g} (a subject) has its
+own straight line, \code{(x | g)}, and its own spline deviation, all levels sharing one variance; e.g. heights of
+boys over age, \code{height ~ s(age, bs = "os", k = 20) + (s(age, k = 10) | id)}. Unlike \code{s(x, g, bs = "fs")},
+the intercepts and slopes are correlated, as \code{pdSymm(~ x)} in \code{nlme::lme}. The random curves are random
+effects: \code{semipred()} and \code{predictmeans()} give the population curves without them, and
+\code{anova()} tests whether they are needed (their variance is zero: each subject's curve is a straight line).
+The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
+intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
+\code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
+\code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
+not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
+\code{s()} (e.g. \code{xt = list(knots = kn)}) are taken from the environment of the formula.
+
+The penalised-spline examples fitted by \code{nlme::lme} in Wand's course scripts and in \pkg{HRW} (additive
+models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
+give the same REML log-likelihood and fitted values with \code{semireg()} (data in
+\code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
+The optimizer is \code{nloptwrap} (lme4's default for \code{lmer}) since 2.0: on these examples it reached the
+same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) faster, also
+for binomial and Poisson fits. Each smooth block of a formula smooth is scaled as a random intercept (sum of
+squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
+smooth block reported by \code{VarCorr()} or \code{varcomp()} is on that scale.
+
+Moving from the \code{smoothZ} form: \code{y ~ x, smoothZ = list(sm = smZ(x, k = 10))} is
+\code{y ~ s(x, bs = "os", k = 10)}; \code{smZ(x, by = f, group = TRUE)} is \code{s(x, by = f, bs = "os")};
+\code{smZ(x, by = f)} (one variance) is \code{s(x, by = f, bs = "os", id = 1)}; \code{smZ(cbind(x1, x2),
+type = "Ztps")} is \code{s(x1, x2, bs = "ztps")}; \code{smZ(x, intKnots = kn, range.x = r)} is
+\code{s(x, bs = "os", xt = list(knots = kn, range = r))}. The fits are the same (\code{vignette("smooth")}).
+}
+
 \examples{
 library(predictmeans)
+if (requireNamespace("HRW", quietly = TRUE)) {
+  data(WarsawApts, package = "HRW")
+  WarsawApts$district <- factor(WarsawApts$district)
+  # smooths in the formula: a curve per district; district and its slopes are added as fixed terms
+  fit0 <- semireg(areaPerMzloty ~ s(construction.date, by = district), data = WarsawApts, prt = FALSE)
+  semipred(fit0, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
+  predictmeans(fit0, "district", covariate = c(construction.date = 1980))$means
+}
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(WarsawApts, package = "HRW")
   fit1 <- semireg(areaPerMzloty ~ construction.date,
@@ -114,6 +186,11 @@ if (requireNamespace("HRW", quietly = TRUE)) {
 }
 }
 \references{
+Durban, M., Harezlak, J., Wand, M.P. and Carroll, R.J. (2005). Simple fitting of subject-specific curves for
+longitudinal data. \emph{Statistics in Medicine}, \bold{24}, 1153-1167.
+
+Harezlak, J., Ruppert, D. and Wand, M.P. (2018). \emph{Semiparametric Regression with R}. Springer, New York.
+
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.
 }
 \author{

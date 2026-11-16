@@ -205,8 +205,20 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   the data). `permcombine()` combines tests of several responses made with the same
   permutations (Fisher or Tippett) and gives min-p adjusted p-values over the responses.
 - `semipred()` limits are two-sided at `level` (95% by default) since 2.0; 1.x gave 90%.
-  `simultaneous = TRUE` gives simultaneous bands. `predictmeans()` on a `semireg()` fit
-  gives means with the smooth included and normal-based tests.
+- `anova(lmer_fit)`: Type III F tests with Kenward-Roger df (package's own code, no lmerTest needed);
+  `ddf = "Satterthwaite"`, `type = "I"`/`"II"`; `anova(m1, m2)` is lme4's comparison. `anova(semireg_fit)`:
+  fixed effects + likelihood ratio test of each smooth term (variance = 0).
+- `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
+  terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis, `xt = list(knots =,
+  range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `s(x, f)` / `s(x, f1*f2)` = common
+  curve + deviation curves, a variance per factor term; `(s(x, k = 10) | id)` = subject curves
+  `(x | id)` + spline deviation (HRW's group-specific curves); no `te()`/`t2()` yet). Equal to
+  `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
+  `varcomp()`, `R2_model()`. The older `smoothZ = list(smZ())` form still runs (table in
+  `vignette("smooth")`). Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
+  simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
+  included and t tests with Satterthwaite df for fixed + smooth coefficients (generalized: z);
+  `anova(fit)` tests each smooth variance (conservative, 1-3% at 5%).
 - `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
   `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
   the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link

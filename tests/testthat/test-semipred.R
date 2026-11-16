@@ -38,20 +38,24 @@ test_that("a numeric variable that is not in the prediction (here the grouping i
                semipred(plain, covariate = "u", prt = FALSE)$pred_df, tolerance = 1e-6)
 })
 
-test_that("ranova() on a semireg fit refits with the smooth bases (copper)", {
+test_that("anova() of a semireg fit tests each smooth by refitting without it (copper)", {
   skip_on_cran()
   data(copper)
   full <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
     smoothZ = list(grp_z = smZ(zcoord), grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
     data = copper, prt = FALSE, predict_info = FALSE))
-  expect_s4_class(full$semer, "semerLmerTest")
-  rt <- suppressWarnings(lmerTest::ranova(full$semer))
-  expect_equal(nrow(rt), 3)
-  # dropping grp_geo must equal fitting with the grp_z smooth only
+  expect_s4_class(full$semer, "semerMod")
+  a <- anova(full)
+  expect_equal(a$smooth$term, c("grp_z", "grp_geo"))
+  # dropping grp_geo must equal fitting with the grp_z smooth only (REML, same fixed effects)
   only_z <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
     smoothZ = list(grp_z = smZ(zcoord)), data = copper, prt = FALSE, predict_info = FALSE))
-  expect_equal(rt$logLik[rownames(rt) == "(1 | grp_geo)"], as.numeric(logLik(only_z$semer)),
+  expect_equal(a$smooth$logLik.without[a$smooth$term == "grp_geo"], as.numeric(logLik(only_z$semer)),
                tolerance = 1e-6)
+  r <- a$smooth[a$smooth$term == "grp_geo", ]
+  expect_equal(r$LRT, 2*(as.numeric(logLik(full$semer)) - as.numeric(logLik(only_z$semer))), tolerance = 1e-6)
+  expect_equal(r$p.value, 0.5*pchisq(r$LRT, 1, lower.tail = FALSE))
+  expect_true(all(c("xcoord", "ycoord", "zcoord") %in% rownames(a$fixed)))
 })
 
 test_that("predictmeans() on a semireg fit: means with the smooth, as semipred(); pairs as semipred(contr =)", {

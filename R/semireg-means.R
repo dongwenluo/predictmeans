@@ -1,9 +1,12 @@
 ## predictmeans() for semireg() fits: means of a factor term including the
 ## smooth terms (fixed part plus the smooth's random effects, as semipred()),
 ## with covariates at their means or at the values in 'covariate' (a named
-## numeric vector), and pairwise comparisons. Tests are normal-based, as in
+## numeric vector), and pairwise comparisons. Gaussian fits (lme4 engine):
+## t tests with Satterthwaite df for the combinations of fixed and smooth
+## coefficients (pm_sr_satt_ddf()); other fits: normal-based tests, as in
 ## semipred(). Returns the stable tables (means, pairs, settings).
-pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL) {
+pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL,
+                             unconditional = getOption("predictmeans.semi_unconditional")) {
   adj <- pm_match_adj(adj)
   mod_df <- semireg$data
   cov_names <- covV <- NULL
@@ -22,7 +25,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     }
     covV <- if (length(covV) == 1) unname(covV) else matrix(covV, nrow = 1, dimnames = list(NULL, cov_names))
   }
-  des <- pm_semi_design(semireg, modelterm, cov_names, covV, NULL, mod_df)
+  des <- pm_semi_design(semireg, modelterm, cov_names, covV, NULL, mod_df, unconditional = unconditional)
   vars <- unlist(strsplit(modelterm, ":"))
   lab <- des$pred_df[vars]
   rownames(lab) <- NULL
@@ -33,8 +36,16 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   V <- D %*% C %*% t(D)
   dimnames(V) <- list(levs, levs)
   se <- sqrt(diag(V))
-  z <- stats::qnorm(1 - level/2)
-  means <- cbind(lab, estimate = est, std.error = se, df = Inf, conf.low = est - z*se, conf.high = est + z*se)
+  n <- length(est)
+  CM <- if (n > 1) pm_pair_matrix(n)
+  # df of the means and of their differences (one computation for both)
+  dfs <- if (!is.null(des$cov_idx)) pm_sr_satt_ddf(semireg, rbind(D, if (n > 1) CM %*% D), des$cov_idx) else
+    rep(Inf, n + if (n > 1) nrow(CM) else 0)
+  dfs[is.na(dfs)] <- Inf
+  satt <- any(is.finite(dfs))
+  df_m <- dfs[seq_len(n)]
+  tq <- stats::qt(1 - level/2, df_m)
+  means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se)
   rownames(means) <- NULL
 
   semer <- des$semer
@@ -47,15 +58,14 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   }
 
   pairs <- NULL
-  n <- length(est)
   if (n > 1) {
     pp <- pm_pair_index(n)
-    CM <- pm_pair_matrix(n)
+    df_p <- dfs[-seq_len(n)]
     pe <- drop(CM %*% est)
     pV <- CM %*% V %*% t(CM)
     pse <- sqrt(diag(pV))
     stat <- pe/pse
-    p <- 2*stats::pnorm(-abs(stat))
+    p <- 2*stats::pt(-abs(stat), df_p)
     pairs <- data.frame(level1 = levs[pp$j], level2 = levs[pp$i], stringsAsFactors = FALSE)
     by <- rep(NA_character_, length(p))
     if (!is.null(atvar)) {
@@ -67,22 +77,22 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     }
     pairs$estimate <- pe
     pairs$std.error <- pse
-    pairs$df <- Inf
+    pairs$df <- df_p
     pairs$statistic <- stat
     pairs$p.value <- p
     # all the pairs, or the pairs within each level of atvar (R/p-adjust.R)
     fams <- pm_families(if (is.null(atvar)) rep("all", length(p)) else by, est = !is.na(stat),
                         ij = cbind(pp$j, pp$i), L = CM %*% D)
-    p_adj <- pm_adjust_p(adj, stat, p, Inf, fams, R = if (adj == "mvt") stats::cov2cor(pV))
+    p_adj <- pm_adjust_p(adj, stat, p, df_p, fams, R = if (adj == "mvt") stats::cov2cor(pV))
     pairs$p.adj <- p_adj
-    pairs$p.method <- if (adj == "tukey") "tukey" else "z"
+    pairs$p.method <- if (adj == "tukey") "tukey" else if (satt) "t" else "z"
     if (is.null(atvar)) {             # letters among all means
       P <- matrix(1, n, n, dimnames = list(levs, levs))
       P[cbind(pp$j, pp$i)] <- P[cbind(pp$i, pp$j)] <- p_adj
       means$group <- unname(pm_letter_groups(P, rep(TRUE, n), level))
     }
   }
-  settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = "normal (semireg)",
+  settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = if (satt) "Satterthwaite (fixed + smooth coefficients)" else "normal (semireg)",
                    vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
   structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
@@ -93,7 +103,8 @@ print.pm_semimeans <- function(x, digits = 4, ...) {
   cat("Predicted means of", sQuote(x$settings$modelterm), "from a semireg model (smooth terms included)\n\n")
   print(x$means, digits = digits, row.names = FALSE)
   if (!is.null(x$pairs)) {
-    cat("\nPairwise comparisons (normal-based; p.adj: ", x$settings$adjust, ")\n\n", sep = "")
+    cat("\nPairwise comparisons (", if (any(is.finite(x$pairs$df))) "t tests, Satterthwaite df" else "normal-based",
+        "; p.adj: ", x$settings$adjust, ")\n\n", sep = "")
     print(x$pairs, digits = digits, row.names = FALSE)
   }
   invisible(x)

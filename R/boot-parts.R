@@ -100,7 +100,7 @@ pm_boot_anova <- function(m, type) {
       aT <- suppressWarnings(stats::anova(m, test = if (known) "Chisq" else "F"))
       return(aT[rownames(aT) != "NULL", , drop = FALSE])
     }
-    return(stats::anova(m))
+    return(pm_anova_seq(m))
   }
   pm_anova(m, type = type, test.statistic = "Chisq")
 }
