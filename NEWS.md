@@ -58,7 +58,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     for one value chosen beforehand.
   - The result has `test`, the joint F test that the two lines are the same,
     and `significant`, the ranges of the covariate where the band leaves out
-    zero; both are printed. `?covariatemeans`, section "Comparing two
+    zero; both are printed. The table has an indicator column for each set
+    of limits: `includes0`, `ratio.includes1` or `odds.ratio.includes1`,
+    and `response.includes0`. `?covariatemeans`, section "Comparing two
     lines", and `vignette("response-scale")` give the reasoning.
 * `covariatemeans()` takes `aov` models with `Error()` that have a covariate
   (e.g. a baseline covariate per subject in repeated measures): analysed by

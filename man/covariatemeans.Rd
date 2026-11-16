@@ -143,8 +143,11 @@ model it is the difference for a typical cluster (random effects at zero), as th
 \item Whether the lines differ anywhere: the joint F test that all the differences along the covariate
   are zero (\code{test} in the result).
 }
-Column \code{significant} of \code{pltdf} and \code{significant} in the result (the ranges of the covariate)
-follow the band asked for, on the model scale.
+Each set of limits in \code{pltdf} has a column that says whether it includes the value of no difference:
+\code{includes0} for \code{diff}, \code{ratio.includes1} or \code{odds.ratio.includes1} (always equal to
+\code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
+\code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
+the result (the ranges of the covariate) follow the band asked for, on the model scale.
 }
 
 \examples{

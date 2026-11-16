@@ -182,7 +182,6 @@ test_that("covariatemeans(contr = ) for GLMs and GLMMs: both scales equal emmean
   for (m in mods) {
     r <- suppressMessages(covariatemeans(m, "A", covariate = "x", contr = c(1, 3), covariateV = xs))
     p <- r$pltdf
-    p$significant <- NULL
     rownames(p) <- NULL
     eg <- emmeans::emmeans(m, ~ A | x, at = list(x = xs), data = d)
     el <- as.data.frame(pairs(eg)); el <- el[el$contrast == "a1 - a3", ]
@@ -251,6 +250,11 @@ test_that("covariatemeans(contr = ): simultaneous band, joint test and the range
   expect_equal(rs$significant$direction, ">")
   # the ratio limits leave out 1 exactly where the difference's leave out 0
   expect_equal(rs$pltdf$ratio.LL > 1 | rs$pltdf$ratio.UL < 1, rs$pltdf$significant)
+  # indicator columns: each set of limits includes no difference (0, or 1 for a ratio) or not
+  expect_equal(rs$pltdf$includes0, rs$pltdf$LL <= 0 & rs$pltdf$UL >= 0)
+  expect_equal(rs$pltdf$ratio.includes1, rs$pltdf$ratio.LL <= 1 & rs$pltdf$ratio.UL >= 1)
+  expect_equal(rs$pltdf$response.includes0, rs$pltdf$response.LL <= 0 & rs$pltdf$response.UL >= 0)
+  expect_equal(rs$pltdf$significant, !rs$pltdf$includes0)
   # the joint test: the Wald test that level and slope differences are both zero
   b <- coef(g); L <- rbind(c(0, 0, 1, 0, 0, 0), c(0, 0, 0, 0, 0, 1))
   w <- drop(t(L %*% b) %*% solve(L %*% vcov(g) %*% t(L)) %*% (L %*% b))

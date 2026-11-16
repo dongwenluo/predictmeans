@@ -104,8 +104,11 @@
 #' \item Whether the lines differ anywhere: the joint F test that all the differences along the covariate
 #'   are zero (\code{test} in the result).
 #' }
-#' Column \code{significant} of \code{pltdf} and \code{significant} in the result (the ranges of the covariate)
-#' follow the band asked for, on the model scale.
+#' Each set of limits in \code{pltdf} has a column that says whether it includes the value of no difference:
+#' \code{includes0} for \code{diff}, \code{ratio.includes1} or \code{odds.ratio.includes1} (always equal to
+#' \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
+#' \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
+#' the result (the ranges of the covariate) follow the band asked for, on the model scale.
 #' @return
 #' \item{plt}{The plot (a \code{ggplot}).}
 #' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
@@ -466,6 +469,7 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   } else stats::qt(1 - level/2, df = out$Df)
   out$LL <- out$diff - crit*out$ses
   out$UL <- out$diff + crit*out$ses
+  out$includes0 <- out$LL <= 0 & out$UL >= 0          # the limits of the difference include zero
 
   # the back-transformation: the inverse link, the response transformation
   # in the formula, or 'trans' (trans = I: the model scale only)
@@ -480,8 +484,10 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
     # a log: the difference is the log of a ratio; a logit: of an odds ratio
     if (identical(trans, exp) || identical(link_name, "log")) {
       out$ratio <- exp(out$diff); out$ratio.LL <- exp(out$LL); out$ratio.UL <- exp(out$UL)
+      out$ratio.includes1 <- out$includes0
     } else if (identical(trans, stats::plogis) || identical(link_name, "logit")) {
       out$odds.ratio <- exp(out$diff); out$odds.ratio.LL <- exp(out$LL); out$odds.ratio.UL <- exp(out$UL)
+      out$odds.ratio.includes1 <- out$includes0
     }
     # the difference on the response scale, by the delta method
     eta_a <- as.numeric(Ka %*% mp$coef)
@@ -492,9 +498,10 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
     out$response.ses <- sqrt(rowSums((G %*% V) * G))
     out$response.LL <- out$response.diff - crit*out$response.ses
     out$response.UL <- out$response.diff + crit*out$response.ses
+    out$response.includes0 <- out$response.LL <= 0 & out$response.UL >= 0
   }
   # significance: where the model-scale band leaves out zero
-  out$significant <- out$LL > 0 | out$UL < 0
+  out$significant <- !out$includes0
   runs <- rle(out$significant)
   end <- cumsum(runs$lengths)
   start <- end - runs$lengths + 1L
