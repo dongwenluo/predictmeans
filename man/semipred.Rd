@@ -29,7 +29,8 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 \item{boundary}{A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.}
 
 \item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
-version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%).}
+version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
+with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits normal limits.}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
 
@@ -55,7 +56,7 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 \item{band}{\code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
 whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
 standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
-Wand and Carroll, 2003). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
+Wand and Carroll, 2003); for gaussian fits a multivariate t with the df of each point (Details). The same argument as in \code{\link{covariatemeans}}, where lines of a parametric
 model use Scheffe's critical value instead; for smooths that would be far too wide.}
 
 \item{unconditional}{If \code{TRUE}, the covariance of the coefficients includes the uncertainty of the
@@ -78,12 +79,24 @@ on the link scale, as the ratio (log link) or the odds ratio (logit link) of the
 }
 \value{
 \item{plt}{A ggplot object.}
-\item{pred_df}{A data.frame with predcted data.}
+\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL} and (gaussian fits)
+  \code{SE} and \code{df}; with \code{contr} the columns described in Details.}
 }
 \description{
 This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
 }
 \details{
+Degrees of freedom (gaussian fits, both engines): a point of a curve, or of a difference of curves, is a
+combination of fixed and smooth (random) coefficients, so its variance depends on all variance components. Its
+df are Satterthwaite's for that combination (as \code{\link{predictmeans}} on the fit and SAS for estimates
+that involve random effects; variance components estimated at zero left out): close to the residual df where
+the residual variance dominates, few where a design stratum does (curves of treatments applied to whole plots).
+Pointwise limits use \code{qt(1 - level/2, df)} at each point. Simultaneous bands use a multivariate t: the
+simulated deviations are divided by variance estimates that move together over the points (each point with its
+own df), the points are put on one scale by their t probabilities, and each point gets the t quantile of its
+df at the simulated \code{1 - level} quantile (with one df for all points: the exact multivariate t).
+Generalized fits keep normal limits.
+
 With \code{contr} the difference between two curves is computed as in \code{\link{covariatemeans}}, from the
 contrast of the two curves and the covariance of the fixed and smooth coefficients. For a linear model
 \code{pred_df} has the difference (in the column of the response), \code{LL}, \code{UL}, \code{SE_contr} and

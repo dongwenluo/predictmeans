@@ -167,3 +167,25 @@ test_that("semireg_tmb(): a glmmTMB family named without glmmTMB attached (famil
                               data = d, prt = FALSE), e)))
   expect_equal(fit$semer$modelInfo$family$family, "nbinom1")
 })
+
+test_that("semireg(): the deviance function cannot move the fitted model (df, varcomp() repeat)", {
+  # lme4 maps the model's theta into the deviance function; before the fix,
+  # each Satterthwaite or varcomp() call left the fit at the last point of
+  # its numerical derivative (Block's theta 1.66 -> 1.60 -> 1.56)
+  set.seed(11)
+  sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
+  sp$y <- 2 + sin(sp$t/2) + rnorm(6, 0, 0.5)[sp$Block] + rnorm(18, 0, 0.4)[interaction(sp$Block, sp$A)] +
+    rnorm(nrow(sp), 0, 0.3)
+  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = sp,
+                                prt = FALSE))
+  th <- lme4::getME(f$semer, "theta")
+  V <- as.matrix(vcov(f$semer))
+  d1 <- predictmeans(f, "A", covariate = c(t = 5))$means$df
+  v1 <- varcomp(f)
+  p1 <- semipred(f, "A", "t", prt = FALSE)$pred_df$df
+  expect_equal(predictmeans(f, "A", covariate = c(t = 5))$means$df, d1)
+  expect_equal(varcomp(f), v1)
+  expect_equal(semipred(f, "A", "t", prt = FALSE)$pred_df$df, p1)
+  expect_equal(lme4::getME(f$semer, "theta"), th)
+  expect_equal(as.matrix(vcov(f$semer)), V)
+})

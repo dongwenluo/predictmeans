@@ -409,7 +409,7 @@ pm_lmer_varpar <- function(model) {
   is_reml <- lme4::getME(model, "is_REML")
   varpar <- unname(c(lme4::getME(model, "theta"), stats::sigma(model)))
   h <- numDeriv::hessian(func = devfun_vp, x = varpar, devfun = devfun, reml = is_reml)
-  devfun(lme4::getME(model, "theta"))         # leave the deviance function at the optimum
+  devfun(varpar[-length(varpar)])             # leave the deviance function at the optimum
   list(devfun = devfun, varpar = varpar, vcov_varpar = 2 * pm_vc_inv(h))
 }
 

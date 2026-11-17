@@ -228,8 +228,11 @@ and closed:
   | 0.2 | 0.052 | 0.046 | 27 |
   | 0.4 | 0.068 | 0.046 | 15 |
 
-- Still normal-based: `semipred()` bands of gaussian fits (a df per grid
-  point would cost one gradient per point; open).
+- `semipred()` bands of gaussian fits were still normal-based; since
+  2026-11-17 they are t limits with these df at each point (one gradient
+  for all points: `pm_sr_satt_ddf()` takes many rows at once) and, for
+  simultaneous bands, a multivariate t (`pm_sim_crit(df = )`);
+  `dev/sim-semipred-df.R`.
 - `anova()`'s likelihood ratio tests of the smooth variances (halved
   p-values, chi-square 0:1) are conservative (`dev/sim-semireg-lrt.R`;
   `s(x, f1*f2)`, 200 data sets per scenario, Monte Carlo SE 0.015):
@@ -242,7 +245,12 @@ and closed:
   The variance was estimated at zero in about 40% of the null data sets.
   The exact null distribution of the restricted LRT (Crainiceanu and
   Ruppert, 2004) or a permutation test (`permlmer()`) would bring the level
-  closer to 5%; open.
+  closer to 5%. Closed by the tests of variance components (plan row O12):
+  `anova()` and `varcomp(test = TRUE)` use the exact restricted LRT where
+  it is exact (the only random effect) and the mixture otherwise;
+  `test_method = "bootstrap"` gives a parametric bootstrap. For these
+  deviation curves every reference stays conservative (0% at 5% in
+  `dev/sim-vc-defaults.R`, scenario G), with full power.
 
 ## 6. Steps
 

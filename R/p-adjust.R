@@ -188,18 +188,40 @@ pm_with_seed <- function(seed, expr) {
 ## Critical value for simultaneous bands over the rows of D (Ruppert, Wand
 ## and Carroll): the (1 - level) quantile of max_g |D_g theta| / se_g for
 ## theta ~ N(0, C), from 10000 draws.
-pm_sim_crit <- function(D, C, level, nsim = 10000) {
+## With finite df (one per row, e.g. Satterthwaite df of a gaussian semireg
+## fit): a multivariate t, T_g = Z_g / sqrt(W_g/df_g), whose variance
+## estimates W_g move together (one draw per simulated set: they all come
+## from the same few variance parameters; with one df this is the exact
+## multivariate t). The rows are put on one scale by their probabilities,
+## max_g P(|t_df_g| < |T_g|), and the band of row g uses the t quantile of
+## its own df at the simulated (1 - level) quantile of that maximum. Returns
+## one value per row then; one value when every df is infinite.
+pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf) {
   D <- as.matrix(D)
   C <- as.matrix(C)
   se <- sqrt(rowSums((D %*% C) * D))
   ok <- is.finite(se) & se > 0
-  if (!any(ok)) return(stats::qnorm(1 - level/2))
+  df <- rep_len(df, nrow(D))
+  df[is.na(df)] <- Inf
+  tdist <- any(is.finite(df[ok]))
+  if (!any(ok)) return(if (tdist) stats::qt(1 - level/2, df) else stats::qnorm(1 - level/2))
   e <- eigen(C, symmetric = TRUE)
   A <- e$vectors %*% diag(sqrt(pmax(e$values, 0)), nrow = length(e$values))
   DA <- D[ok, , drop = FALSE] %*% A
   M <- pm_with_seed(20240403, {
     Z <- matrix(stats::rnorm(ncol(A)*nsim), ncol(A))
-    apply(abs(DA %*% Z)/se[ok], 2, max)
+    if (!tdist) return(as.numeric(stats::quantile(apply(abs(DA %*% Z)/se[ok], 2, max), 1 - level)))
+    # W_g/df_g by the Wilson-Hilferty cube-root approximation, one normal
+    # deviate per draw for all rows; in batches of 1000 draws (memory)
+    zu <- stats::rnorm(nsim)
+    d <- df[ok]
+    a <- 2/(9*pmin(d, 1e8))
+    unlist(lapply(split(seq_len(nsim), ceiling(seq_len(nsim)/1000)), function(j) {
+      T <- abs(DA %*% Z[, j, drop = FALSE])/se[ok]
+      r <- pmax(outer(1 - a, rep(1, length(j))) + outer(sqrt(a), zu[j]), 1e-3)^3
+      apply(matrix(stats::pt(T/sqrt(r), rep(d, length(j))), nrow(T)), 2, max)
+    }))
   })
-  as.numeric(stats::quantile(M, 1 - level))
+  if (!tdist) return(M)
+  stats::qt(as.numeric(stats::quantile(M, 1 - level)), df)
 }

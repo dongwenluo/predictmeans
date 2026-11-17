@@ -82,21 +82,24 @@ test_that("predictmeans() on a semireg fit: means with the smooth, as semipred()
   expect_equal(r0$means$estimate, sp0$areaPerMzloty, tolerance = 1e-8)
 })
 
-test_that("semipred(): two-sided limits; simultaneous bands are wider, repeat, and keep the user's RNG", {
+test_that("semipred(): two-sided t limits with Satterthwaite df; simultaneous bands are wider, repeat, and keep the user's RNG", {
   skip_on_cran()
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
                                  smoothZ = list(grp = smZ(construction.date, k = 25)), data = WarsawApts, prt = FALSE))
   p <- semipred(sm, covariate = "construction.date", prt = FALSE)$pred_df
-  expect_equal((p$UL - p$areaPerMzloty)/p$SE, rep(qnorm(0.975), nrow(p)), tolerance = 1e-10)
+  expect_true(all(is.finite(p$df) & p$df > 1))
+  expect_equal((p$UL - p$areaPerMzloty)/p$SE, qt(0.975, p$df), tolerance = 1e-10)
   set.seed(9); u1 <- runif(1); set.seed(9)
   s <- semipred(sm, covariate = "construction.date", prt = FALSE, simultaneous = TRUE)$pred_df
   expect_identical(runif(1), u1)
-  crit <- unique(round((s$UL - s$areaPerMzloty)/s$SE, 8))
-  expect_length(crit, 1)
-  expect_gt(crit, qnorm(0.975))
-  expect_lt(crit, qnorm(1 - 0.05/(2*nrow(s))))      # below the Bonferroni bound
+  expect_equal(s$df, p$df)
+  crit <- (s$UL - s$areaPerMzloty)/s$SE
+  # one probability for all points, each point at the t quantile of its df
+  expect_lt(diff(range(pt(crit, s$df))), 1e-10)
+  expect_true(all(crit > qt(0.975, s$df)))
+  expect_true(all(crit < qt(1 - 0.05/(2*nrow(s)), s$df)))      # below the Bonferroni bound
   s2 <- semipred(sm, covariate = "construction.date", prt = FALSE, simultaneous = TRUE)$pred_df
   expect_identical(s$UL, s2$UL)
 })
@@ -114,7 +117,7 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
   lv <- levels(W$district)
   r2 <- semipred(sm, "district", "construction.date", contr = match(c("Srodmiescie", "Mokotow"), lv), prt = FALSE)$pred_df
   expect_equal(r, r2)
-  expect_equal(r$UL - r$areaPerMzloty, qnorm(0.975)*r$SE_contr, tolerance = 1e-10)
+  expect_equal(r$UL - r$areaPerMzloty, qt(0.975, r$df)*r$SE_contr, tolerance = 1e-10)
   expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
   expect_equal(r$significant, !r$includes0)
   m <- semipred(sm, "district", "construction.date", prt = FALSE)$pred_df
@@ -231,7 +234,10 @@ test_that("semipred(contr = ) with two covariates: the difference of two surface
   se <- sqrt(vcov(sm$semer)["gb", "gb"])
   expect_equal(r$w, rep(b, 3), tolerance = 1e-6)
   expect_equal(r$SE_contr, rep(se, 3), tolerance = 1e-4)
-  expect_equal(r$UL - r$w, qnorm(0.975)*r$SE_contr, tolerance = 1e-8)
+  expect_equal(r$UL - r$w, qt(0.975, r$df)*r$SE_contr, tolerance = 1e-8)
+  # a difference of fixed effects only: the Satterthwaite df of that coefficient
+  L <- matrix(as.numeric(names(lme4::fixef(sm$semer)) == "gb"), 1)
+  expect_equal(r$df, rep(unname(pm_satt_ddf(L, pm_satt_parts(sm$semer))), 3), tolerance = 1e-4)
   expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
   expect_equal(r$significant, !r$includes0)
 })

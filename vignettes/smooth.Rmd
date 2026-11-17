@@ -113,8 +113,9 @@ predictmeans(fm, "QB")
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 ```
 
-For gaussian fits the tests are t tests with Satterthwaite df (next section); for
-generalized fits they are normal-based, as in `semipred()`.
+For gaussian fits the tests are t tests with Satterthwaite df (next section), and
+`semipred()` uses the same df for its bands (column `df`); for generalized fits both are
+normal-based.
 
 ## What predictmeans adds
 

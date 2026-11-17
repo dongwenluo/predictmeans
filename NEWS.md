@@ -1315,6 +1315,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Bug fixes
 
+* **Gaussian `semireg()` fits moved a little each time their df or
+  variance components were computed.** lme4 maps the fitted model's theta
+  into the deviance function that the fit keeps; the Satterthwaite df
+  (`predictmeans()` on the fit, `anova()`), `varcomp()` and `unconditional
+  = TRUE` evaluate that function at nearby points and then reset it to the
+  model's theta, which by then was the last of those points. Each call
+  moved the variance parameters by about 1-3% (Block's theta 1.66 -> 1.60
+  -> 1.56 in a split-plot example) and with them `vcov()` of the fit, so
+  the second `predictmeans()` call gave other df than the first. The fit
+  now keeps its own copy of theta and the deviance function is reset from
+  copies made before it is evaluated; repeated calls give the same results
+  (tested). The first call on a fit was right before too.
 * Refits inside `permmodels()`, `permlmer()` and the other functions that
   refit a model failed for models fitted inside a function with the formula
   or family given as a variable (e.g. `fit <- function(f, d) lmer(f, data =

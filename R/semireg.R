@@ -218,6 +218,10 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     # the smooth designs, not the placeholder terms): Satterthwaite df and
     # varcomp() need it, a refit from the call would not have the smooths
     semer@call <- lmerc
+    # the model's theta is the vector the deviance function writes into (lme4
+    # maps it in C++): a copy of its own, so that evaluating the deviance
+    # function (Satterthwaite df, varcomp()) cannot move the fitted model
+    semer@theta <- semer@theta + 0
     semer <- methods::new("semerMod", semer,
                           semireg_info = list(devfun = fit$devfun, data = st$data, smoothZ = st$smoothZN,
                                               formula = st$formula, REML = isTRUE(REML), control = control))
