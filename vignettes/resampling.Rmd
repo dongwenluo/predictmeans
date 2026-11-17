@@ -132,6 +132,34 @@ fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
 perm_clin <- permmodels(fm_clin, nperm = 199, seed = 1, ncore = 1)
 ```
 
+## Testing random effects: `varcomp(test = TRUE)`
+
+The quickest way to ask whether each random effect is needed is `varcomp(test = TRUE)`
+(`lmer`, `glmer`, `glmmTMB` and `semireg()` fits). Each row of the variance-component
+table is tested by refitting the model one would fit without it: a term dropped, a
+random slope removed (`(Days | Subject)` to `(1 | Subject)`), or a covariance set to
+zero. A variance is tested on the boundary of its range, so its likelihood ratio is
+referred to the mixtures of Self and Liang (1987) and Stram and Lee (1994), as SAS PROC
+GLIMMIX does, not to the chi-square, which is conservative. When the tested variance is
+the model's only random effect in a gaussian REML fit, the exact null distribution of
+Crainiceanu and Ruppert (2004) is used.
+
+```{r}
+varcomp(fm1 <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy), test = TRUE)
+```
+
+Where the reference distribution may be inaccurate (a term with fewer than six levels,
+binary data with fewer than five observations per level), a warning names the rows and
+points to the parametric bootstrap, which simulates from the model without the
+component and refits both models to each simulated data set:
+
+```{r, eval = FALSE}
+varcomp(fm1, test = TRUE, test_method = "bootstrap", ncore = 4)
+```
+
+A clearly non-significant test stops after 20 simulated statistics reach the observed
+one; a significant one uses all `nboot` (999) refits of both models.
+
 ## Testing random effects: `permlmer()`
 
 `permlmer()` compares two nested mixed models with a permutation likelihood-ratio test
@@ -140,7 +168,6 @@ reference distribution is wrong because the null value of a variance lies on the
 boundary. Does the slope for `Days` vary between subjects?
 
 ```{r}
-fm1 <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 fm0 <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
 permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 ```
@@ -248,8 +275,8 @@ max-statistic (step-down max-|t|) adjustment over the time points.
 |---|---|---|
 | `lm`, `aov` | `permmodels()` (Freedman–Lane) | — |
 | `glm` | `permmodels()` (Freedman–Lane on the working scale) | — |
-| `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane with refits); or the Kenward–Roger F test | `permlmer()` |
-| `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale, with refits) | `permlmer()`: working scale; quantile residuals for 0/1 responses |
+| `lmer`, `lme`, `gls` | `permmodels()` (Freedman–Lane with refits); or the Kenward–Roger F test | `varcomp(test = TRUE)` (`lmer`); `test_method = "bootstrap"` for small data; `permlmer()` |
+| `glmer`, `glmmTMB` | `permmodels()` (Freedman–Lane on the working scale, with refits) | `varcomp(test = TRUE)`, `test_method = "bootstrap"` for small data; `permlmer()`: working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test | |
 | `lm`, `glm` with unequal variances | `permmodels(robust = TRUE)` (HC3 statistics, sign flips) | |
 | several responses, same units | `permcombine()` of `permmodels()` results with the same `seed` | |
@@ -286,3 +313,13 @@ Lee, O. E. and Braun, T. M. (2012). Permutation tests for random effects in line
 models. *Biometrics* 68, 486–493.
 
 Westfall, P. H. and Young, S. S. (1993). *Resampling-Based Multiple Testing*. Wiley.
+
+Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models
+with one variance component. *Journal of the Royal Statistical Society B* 66, 165–185.
+
+Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood
+estimators and likelihood ratio tests under nonstandard conditions. *Journal of the
+American Statistical Association* 82, 605–610.
+
+Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed
+effects model. *Biometrics* 50, 1171–1177.
