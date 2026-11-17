@@ -88,13 +88,15 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   intercept <- attr(tt, "intercept") == 1
   b_all <- pm_coef(model)
   not_aliased <- !is.na(b_all)
-  if (type == "III" && !all(not_aliased)) stop("there are aliased coefficients in the model")
   b <- b_all[not_aliased]
+  map <- NULL
   V <- if (layout == "default" && inherits(model, "glm")) {
     as.matrix(stats::vcov(model))
   } else {
     pm_vcov(model)
   }
+  V <- as.matrix(V)
+  if (nrow(V) == length(b_all) && length(b) < length(b_all)) V <- V[not_aliased, not_aliased, drop = FALSE]
   PhiA <- NULL
   satt <- layout == "mer" && test == "F" && ddf == "Satterthwaite"
   if (layout == "mer" && test == "F" && !satt) {
@@ -144,11 +146,12 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
       df[i] <- nrow(H)
     }
   } else {
-    names <- names_all
-    stat <- df <- res_df <- pval <- rep(0, length(names))
     map <- if (is.null(type3_map)) pm_type3_map(model, names(b)) else type3_map
+    off <- intercept && !isTRUE(map$cells)               # empty cells: no intercept test
+    names <- if (off) names_all else term_names
+    stat <- df <- res_df <- pval <- rep(0, length(names))
     for (term in seq_along(names)) {
-      H <- pm_type3_hyp(map, term - intercept)       # sum-to-zero coding, whatever the model's
+      H <- pm_type3_hyp(map, term - off)       # sum-to-zero coding, whatever the model's
       if (nrow(H) == 0) {
         stat[term] <- NA; df[term] <- 0
         next
@@ -167,13 +170,13 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
 
   if (layout == "mer") {
     kind <- if (test == "F") paste0("Wald F tests with ", ddf, " df") else "Wald chisquare tests"
-    heading <- c(paste0("Analysis of Deviance Table (Type ", type, " ", kind, ")\n"), resp)
+    heading <- c(paste0("Analysis of Deviance Table (Type ", type, " ", kind, ")\n"), resp, pm_cells_note(map))
     if (test == "F") {
       return(pm_anova_result(data.frame(stat, df, res_df, pval), names, c("F", "Df", "Df.res", "Pr(>F)"), heading))
     }
     return(pm_anova_result(data.frame(stat, df, pval), names, c("Chisq", "Df", "Pr(>Chisq)"), heading))
   }
-  heading <- c(paste0("Analysis of Deviance Table (Type ", type, " tests)\n"), resp)
+  heading <- c(paste0("Analysis of Deviance Table (Type ", type, " tests)\n"), resp, pm_cells_note(map))
   if (layout == "lme") {
     return(pm_anova_result(data.frame(stat, df, pval), names, c("Chisq", "Df", "Pr(>Chisq)"), heading))
   }
@@ -196,10 +199,11 @@ pm_anova_lm <- function(model, type, type3_map = NULL) {
   intercept <- attr(tt, "intercept") == 1
   b_all <- stats::coef(model)
   not_aliased <- !is.na(b_all)
-  if (type == "III" && !all(not_aliased)) stop("there are aliased coefficients in the model")
   b <- b_all[not_aliased]
   V <- as.matrix(stats::vcov(model))
+  if (nrow(V) == length(b_all)) V <- V[not_aliased, not_aliased, drop = FALSE]
   s2 <- summary(model)$sigma^2
+  map <- NULL
   if (type == "III") map <- if (is.null(type3_map)) pm_type3_map(model, names(b)) else type3_map
   assign <- model$assign
   assign[!not_aliased] <- NA
@@ -218,10 +222,11 @@ pm_anova_lm <- function(model, type, type3_map = NULL) {
     }
     error_SS <- s2 * error_df
   } else {
-    names <- if (intercept) c("(Intercept)", term_names) else term_names
+    off <- intercept && !isTRUE(map$cells)               # empty cells: no intercept test
+    names <- if (off) c("(Intercept)", term_names) else term_names
     SS <- df <- rep(0, length(names))
     for (term in seq_along(names)) {
-      H <- pm_type3_hyp(map, term - intercept)       # sum-to-zero coding, whatever the model's
+      H <- pm_type3_hyp(map, term - off)       # sum-to-zero coding, whatever the model's
       if (nrow(H) == 0) { SS[term] <- NA; df[term] <- 0; next }
       SS[term] <- s2 * pm_wald_chisq(H, b, V)
       df[term] <- nrow(H)
@@ -231,7 +236,8 @@ pm_anova_lm <- function(model, type, type3_map = NULL) {
   pval <- stats::pf(f, df, error_df, lower.tail = FALSE)
   res <- data.frame(c(SS, error_SS), c(df, error_df), c(f, NA), c(pval, NA))
   pm_anova_result(res, c(names, "Residuals"), c("Sum Sq", "Df", "F value", "Pr(>F)"),
-                  c(paste0("Anova Table (Type ", type, " tests)\n"), paste("Response:", pm_response_name(model))))
+                  c(paste0("Anova Table (Type ", type, " tests)\n"), paste("Response:", pm_response_name(model)),
+                    pm_cells_note(map)))
 }
 
 ## Pieces of a glm (or lm treated as a gaussian glm) needed for refits.
@@ -304,7 +310,10 @@ pm_anova_glm_II <- function(model, test = c("LR", "F")) {
 ## so the tests do not depend on the model's contrasts.
 pm_anova_glm_III <- function(model, test = c("LR", "F"), type3_map = NULL) {
   test <- match.arg(test)
-  if (any(is.na(stats::coef(model)))) stop("there are aliased coefficients in the model")
+  if (any(is.na(stats::coef(model)))) {
+    stop("Type III likelihood ratio tests need a complete design; with empty cells (aliased coefficients) use ",
+         "test.statistic = \"Wald\" (the hypotheses on the cells with data) or type = \"II\".", call. = FALSE)
+  }
   Source <- labels(stats::terms(model))
   n <- length(Source)
   stat <- df <- rep(0, n)
@@ -413,7 +422,9 @@ pm_type3_map <- function(model, coef_names) {
   X <- X[, coef_names, drop = FALSE]
   Xs <- stats::model.matrix(tt, mf, contrasts.arg = if (length(facs)) stats::setNames(rep(list("contr.sum"), length(facs)), facs))
   qs <- qr(Xs)
-  if (qs$rank < ncol(Xs) || qr(X)$rank < ncol(Xs)) stop("there are aliased coefficients in the model")
+  # empty cells (aliased coefficients): no sum-to-zero map; the hypotheses
+  # on the cells with data instead
+  if (qs$rank < ncol(Xs) || qr(X)$rank < ncol(Xs)) return(pm_type3_map_cells(model, coef_names))
   B <- qr.coef(qs, X)
   if (max(abs(Xs %*% B - X)) > 1e-8 * max(1, abs(X))) stop("cannot map the model's coefficients to sum-to-zero contrasts")
   dimnames(B) <- list(colnames(Xs), coef_names)
@@ -422,8 +433,87 @@ pm_type3_map <- function(model, coef_names) {
 
 ## The Type III hypothesis matrix of term j (0 = intercept), from pm_type3_map().
 pm_type3_hyp <- function(map, j) {
+  if (isTRUE(map$cells)) return(if (j == 0) matrix(0, 0, length(map$coef)) else map$hyp[[j]])
   H <- map$B[map$assign == j, , drop = FALSE]
   H[apply(abs(H), 1, max) > 1e-12, , drop = FALSE]
+}
+
+## The heading line of a Type III table on the cells with data.
+pm_cells_note <- function(map) {
+  if (!isTRUE(map$cells)) return(character(0))
+  o <- map$over[!is.na(map$over)]
+  paste0("\nEmpty cells: each term is tested on the cells with data (interactions: the contrasts that use no empty ",
+         "cell; main effects", if (length(o)) paste0(" ", paste(names(o), collapse = ", ")), ": on the cells their means ",
+         "share, as pm_joint())")
+}
+
+## Type III hypotheses when cells are empty (aliased coefficients), where the
+## sum-to-zero map does not exist. Each term's hypothesis is written on its
+## means (Kmatrix(), equal weights), as for complete data:
+##  * its contrasts: for each factor of the term the differences of
+##    consecutive levels, multiplied across the factors (main effects: the
+##    differences among the term's means; interactions: the interaction
+##    contrasts of the cells);
+##  * those of them that use no empty cell of the term (an interaction with
+##    an empty cell loses one df per independent empty cell, as SAS Type III
+##    and IV);
+##  * means that average over empty cells of other factors: compared on the
+##    cells all the means have (pm_common_rows(), R/empty-cells.R), the
+##    hypotheses of pm_joint().
+## A term that is not made of factors, or whose means have no cell in common,
+## is not tested (NA). Returns list(cells = TRUE, hyp (per term, in the
+## columns 'coef_names'), coef, over (the common cells, per term)).
+pm_type3_map_cells <- function(model, coef_names) {
+  tt <- if (inherits(model, "merMod")) stats::terms(model, fixed.only = TRUE) else stats::terms(model)
+  labs <- labels(tt)
+  dat <- tryCatch(pm_get_data(model), error = function(e) stats::model.frame(model))
+  over <- stats::setNames(rep(NA_character_, length(labs)), labs)
+  hyp <- lapply(labs, function(term) {
+    none <- matrix(0, 0, length(coef_names), dimnames = list(NULL, coef_names))
+    vars <- unlist(strsplit(term, ":"))
+    if (!all(vars %in% names(dat)) || !all(vapply(dat[vars], function(v) is.factor(v) || is.character(v), logical(1)))) {
+      return(none)
+    }
+    km <- suppressWarnings(suppressMessages(Kmatrix(model, term)))
+    K <- km$K
+    if (!all(coef_names %in% colnames(K))) return(none)
+    K <- K[, coef_names, drop = FALSE]
+    est <- attr(km$K, "estimable")
+    if (is.null(est)) est <- rep(TRUE, nrow(K))
+    est <- est & !apply(K, 1, function(r) any(is.na(r)))
+    K[!est, ] <- 0
+    fct <- km$fctnames[vars]
+    # the term's contrasts: differences of consecutive levels, multiplied
+    D <- lapply(vars, function(v) {
+      lv <- levels(factor(fct[[v]]))
+      m <- matrix(0, length(lv) - 1, length(lv))
+      if (length(lv) > 1) for (k in seq_len(length(lv) - 1)) m[k, c(k, k + 1)] <- c(1, -1)
+      list(m = m, idx = match(as.character(fct[[v]]), lv))
+    })
+    combos <- expand.grid(lapply(D, function(d) seq_len(nrow(d$m))))
+    if (!nrow(combos)) return(none)
+    C <- t(vapply(seq_len(nrow(combos)), function(r) {
+      Reduce(`*`, lapply(seq_along(D), function(f) D[[f]]$m[combos[r, f], D[[f]]$idx]))
+    }, numeric(nrow(K))))
+    if (nrow(K) == 1) C <- matrix(C, ncol = 1)
+    # only the contrasts that use no empty cell of the term
+    if (any(!est)) {
+      W <- MASS::Null(C[, !est, drop = FALSE])
+      if (!ncol(W)) return(none)
+      C <- t(W) %*% C
+    }
+    # means over empty cells of other factors: on the cells all of them have
+    cr <- pm_common_rows(km$empty_cells, C, C %*% K, coef_names, together = TRUE)
+    if (any(cr$na)) {
+      over[term] <<- "none"
+      return(none)
+    }
+    if (any(cr$sub)) over[term] <<- cr$over[which(cr$sub)[1]]
+    H <- cr$L
+    q <- qr(t(H))
+    H[q$pivot[seq_len(q$rank)], , drop = FALSE]
+  })
+  list(cells = TRUE, hyp = hyp, coef = coef_names, over = over)
 }
 
 #' ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df
@@ -435,7 +525,10 @@ pm_type3_hyp <- function(map, j) {
 #' predictmeans attached before 2.0. With several models, \code{anova(m1, m2)} is lme4's likelihood ratio comparison,
 #' unchanged.
 #' @details
-#' Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3);
+#' Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3).
+#' With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
+#' contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
+#' cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
 #' Type II are those of \code{car::Anova()}; Type I (sequential) are lmerTest's, always with Satterthwaite df.
 #' Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 #' a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's

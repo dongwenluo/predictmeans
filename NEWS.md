@@ -36,6 +36,19 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`anova()` with empty cells.** Type III tests of `lmer`, `lm` and other
+  fits (and `permmodels(type = "III")`) stopped with "there are aliased
+  coefficients in the model" when a cell had no data. Each term is now
+  tested on the cells with data (`pm_type3_map_cells()`): an interaction by
+  its contrasts that use no empty cell (one df fewer per empty cell; for
+  `lm` its sum of squares equals the comparison of the models with and
+  without it), a main effect whose means average over empty cells on the
+  cells its means share, the test of `pm_joint()`; the heading says so and
+  the intercept is not tested. With no empty cell the hypotheses are the
+  sum-to-zero ones (equal F and df). `glm` Type III likelihood ratio tests
+  need a complete design and say so (`test.statistic = "Wald"` works).
+  A SAS script with the same contrasts is in
+  `dev/sas/pm-reference-emptycells.sas`, for a reference run.
 * **Means over empty cells: nothing read off them contradicts their tests.**
   Their pairs are compared on the cells both means have, so the difference
   of the shown means is not the difference tested. Before, `letterCI = TRUE`

@@ -94,7 +94,13 @@ package sources) comparing averages over different cells rejected 8–78% of tru
 hypotheses when the other factor had an effect; comparing on the common cells 4–6%. When
 two means have no cell in common their difference is NA (`over = "none"`). `pm_joint()`
 tests a term on the cells common to all its means, and `contrastmeans()` compares on the
-cells the means of each contrast have in common.
+cells the means of each contrast have in common. `anova()` does the same for its Type III
+tests: the interaction keeps the contrasts that use no empty cell (5 df here, not 6), and
+the main effects are the `pm_joint()` tests:
+
+```{r}
+anova(fm)
+```
 
 The mean of N = 0.6 stays in the table, labelled by `over`, because it is the honest
 estimate of its own quantity (the average over the varieties that have it). A table of
