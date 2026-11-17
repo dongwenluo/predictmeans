@@ -74,3 +74,36 @@ test_that("lm with an empty cell: Type III interaction = the model comparison; p
   expect_equal(pm_anova(g, "III", test.statistic = "Wald")$Df, c(3, 2, 5))
   expect_error(pm_anova(g, "III"), "complete design")
 })
+
+test_that("empty cell: equal to the SAS run (dev/sas/sas-results-2026-11-18-emptycells.txt)", {
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  e <- oats_empty()$empty
+  # PROC GLM, Block fixed (= SAS Type IV for the factorial model)
+  a <- pm_anova(lm(yield ~ Block + N * Variety, data = e), "III")
+  expect_equal(a[c("Variety", "N", "N:Variety"), "Sum Sq"], c(1628.11111, 12077.72917, 296.22917), tolerance = 1e-8)
+  expect_equal(a["Residuals", "Sum Sq"], 11955.75758, tolerance = 1e-8)
+  expect_equal(round(a[c("Variety", "N", "N:Variety"), "F value"], 2), c(3.40, 16.84, 0.25))
+  # PROC MIXED, DDFM=KR and Satterthwaite (the same values at SAS's printed
+  # digits); mixed-model references to 2%: lme4's optimum (Block 205.14,
+  # Block:Variety 79.84, residual 179.80) and SAS's (205.18, 79.76, 179.82)
+  # have the same -2 REML log-likelihood, 484.539
+  fm <- q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = e))
+  for (ddf in c("Kenward-Roger", "Satterthwaite")) {
+    m <- anova(fm, ddf = ddf)
+    expect_equal(m[c("Variety", "N", "N:Variety"), "F"], c(1.94, 22.39, 0.33), tolerance = 0.02)
+    expect_equal(m[c("Variety", "N", "N:Variety"), "Df.res"], c(11.9, 40.1, 40.1), tolerance = 0.02)
+    expect_equal(m[c("Variety", "N:Variety"), "Pr(>F)"], c(0.1864, 0.8922), tolerance = 0.02)
+  }
+})
+
+test_that("empty cell: the interaction test equals Genstat's REML Wald test (dev/genstat run 2, pattern B)", {
+  e <- oats_empty()$empty
+  fm <- suppressWarnings(suppressMessages(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = e)))
+  m <- anova(fm)
+  # Genstat: Variety.Nitro F 0.33 on 5 and 40.0 df, p 0.892 (dropping it from the full model); Genstat gives
+  # only sequential tests for the main effects (marginality), so SAS is the reference for those
+  expect_equal(m["N:Variety", "F"], 0.33, tolerance = 0.02)
+  expect_equal(m["N:Variety", "Df"], 5)
+  expect_equal(m["N:Variety", "Df.res"], 40.0, tolerance = 0.02)
+  expect_equal(m["N:Variety", "Pr(>F)"], 0.892, tolerance = 0.02)
+})

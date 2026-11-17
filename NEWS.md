@@ -47,8 +47,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the intercept is not tested. With no empty cell the hypotheses are the
   sum-to-zero ones (equal F and df). `glm` Type III likelihood ratio tests
   need a complete design and say so (`test.statistic = "Wald"` works).
-  A SAS script with the same contrasts is in
-  `dev/sas/pm-reference-emptycells.sas`, for a reference run.
+  Checked against a SAS run (`dev/sas/pm-reference-emptycells.sas`,
+  2026-11-18: PROC GLM contrasts, equal to SAS Type IV here, and PROC MIXED
+  KR and Satterthwaite agree to the printed digits) and Genstat's REML Wald
+  test of the interaction (run of 2026-11-14).
 * **Means over empty cells: nothing read off them contradicts their tests.**
   Their pairs are compared on the cells both means have, so the difference
   of the shown means is not the difference tested. Before, `letterCI = TRUE`

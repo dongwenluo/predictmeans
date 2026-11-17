@@ -1,6 +1,6 @@
 # SAS reference output for df methods
 
-`pm-reference-emptycells.sas` (2026-11-17, not run yet): Type III F tests
+`pm-reference-emptycells.sas` (run 2026-11-18, `sas-results-2026-11-18-emptycells.txt`; every value agrees, and the hypotheses equal SAS Type IV here): Type III F tests
 with an empty cell (oats without Victory x 0.6), written as contrasts on the
 cell means, for `anova()` (`R/anova.R`, `pm_type3_map_cells()`; the same
 contrasts are in `tests/testthat/test-anova-empty.R`).
