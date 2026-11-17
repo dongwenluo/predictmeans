@@ -1688,6 +1688,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* `smZ()`: the code that puts back rows with a missing covariate (7
+  copies) and splits a basis by the levels of `by` (4 copies) is one helper
+  each (`pm_smz_na()`, `pm_smz_by()`); the results of 114 argument
+  combinations (every type, `by`, `group`, missing values, knots) are
+  identical to before.
+
 * The permutation and bootstrap tests share one engine (`R/perm-engine.R`):
   permutation indices, refits (in parallel if asked), failure counts and
   p-values from statistics rounded before they are compared. `permmodels()`,
