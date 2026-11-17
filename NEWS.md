@@ -796,6 +796,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **Clearer colours in `semipred()` plots, set in one place, and
+  `semipred(plot_args = )` to change them.** Each band is drawn first and
+  its line on top in a darker shade of the same hue (1.x drew the band over
+  the line, which dimmed it): one curve and its slopes in blue, the
+  difference of two curves (`contr`) in green as in 1.x, the reference line
+  at 0 (1 for ratios) dashed red. Under a difference, and under one slope,
+  red bars mark the stretches where the band leaves out the reference.
+  Curves by group take a palette that colour-blind readers can tell apart
+  (Okabe and Ito; ggplot2's own beyond eight groups); the data are grey and
+  half transparent. `plot_args` holds any of `line`, `band`, `diff_line`,
+  `diff_band`, `ref`, `alpha`, `linewidth`, `points`, `point_alpha`,
+  `point_size`, `palette`, `surface_points`. The difference plots of
+  `covariatemeans(contr = )` use the same colours. `ci = FALSE` now also
+  leaves out the band of a single curve.
+
 * **`semiboundary()`: the region covered by two-dimensional data** (such as
   longitude and latitude), for `semipred(boundary = )`; and
   `semipred(boundary = TRUE)` uses it on the model's data. The region is

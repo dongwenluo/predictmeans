@@ -304,3 +304,22 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
   tt <- unique(gp$t)
   expect_equal(gp$cnt, (eta(tt + 1e-4) - eta(tt - 1e-4))/2e-4, tolerance = 1e-5)
 })
+
+test_that("plot_args sets the colours: band under its line, reference line, bars where a difference is clear", {
+  data(Dialyzer, package = "nlme", envir = environment())
+  fm <- suppressMessages(semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
+                                 data = Dialyzer, prt = FALSE))
+  geoms <- function(p) vapply(p$layers, function(l) class(l$geom)[1], "")
+  p1 <- semipred(fm, "QB", "pressure", prt = FALSE, plot_args = list(palette = c("black", "grey50")))$plt
+  g <- geoms(p1)
+  expect_lt(match("GeomRibbon", g), match("GeomLine", g))         # the band first, the line on top
+  b <- ggplot2::ggplot_build(p1)
+  expect_setequal(unique(b$data[[match("GeomLine", g)]]$colour), c("black", "grey50"))
+  pc <- semipred(fm, "QB", "pressure", contr = c("300", "200"), prt = FALSE,
+                 plot_args = list(diff_line = "navy", ref = "orange"))$plt
+  gc <- geoms(pc)
+  expect_identical(pc$layers[[match("GeomLine", gc)]]$aes_params$colour, "navy")
+  expect_identical(pc$layers[[match("GeomHline", gc)]]$aes_params$colour, "orange")
+  expect_true("GeomSegment" %in% gc)                               # 300 and 200 differ at high pressure
+  expect_error(semipred(fm, "QB", "pressure", prt = FALSE, plot_args = list(colour = "red")), "can hold")
+})

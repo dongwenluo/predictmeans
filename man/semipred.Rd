@@ -53,6 +53,16 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 
 \item{point}{A logical scalar to indicate whether to print raw data points. The default value is TRUE.}
 
+\item{plot_args}{A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
+dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
+difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
+(1), \code{points}, \code{point_alpha}, \code{point_size} (the data: grey, 0.6, 1.3), \code{palette} (curves
+by group: eight colours that colour-blind readers can tell apart; ggplot2's own beyond eight groups),
+\code{surface_points} (the data on surfaces: red). Bands are drawn first and their lines on top. For
+example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
+be added to it.}
+
 \item{jitterv}{A degree of jitter in x and y direction in the graph. The default is zero.}
 
 \item{threeD}{A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.}

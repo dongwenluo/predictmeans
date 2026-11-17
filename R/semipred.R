@@ -36,6 +36,15 @@
 #'   The defaults are \code{c(1, 2)} for two way interactions.
 #' @param ci A logical scalar to indicate whether to print confidence interval. The default value is TRUE.
 #' @param point A logical scalar to indicate whether to print raw data points. The default value is TRUE.
+#' @param plot_args A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+#'   curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
+#'   dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
+#'   difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
+#'   (1), \code{points}, \code{point_alpha}, \code{point_size} (the data: grey, 0.6, 1.3), \code{palette} (curves
+#'   by group: eight colours that colour-blind readers can tell apart; ggplot2's own beyond eight groups),
+#'   \code{surface_points} (the data on surfaces: red). Bands are drawn first and their lines on top. For
+#'   example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
+#'   be added to it.
 #' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
 #' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
 #' @param prt A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.
@@ -178,8 +187,9 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      scales=c("fixed", "free", "free_x", "free_y"), 
                      plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
                      contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
-                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0) {
+                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list()) {
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
+  sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
   if (deriv > 0) {
     if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
     if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)
@@ -357,12 +367,15 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   
   if (setequal(modelterm, covariate)) {
     if (length(covariate)==1) {
-      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))))+  
-        geom_line(linewidth=1, col="red") +
-        geom_ribbon(aes(ymin = LL, ymax = UL), alpha = 0.6, stat="identity", fill="#00FFFF", col="#00FFFF")+
-        labs(x=covariate, y=response)+
+      # the data underneath, then the band, then the line on top
+      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)))) +
+        labs(x=covariate, y=response) +
         theme_bw()
-      if (point) plt <- plt + geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))), col="DeepPink", position = position_jitter(width = jitterv, height = jitterv))
+      if (point) plt <- plt + geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))),
+                                         colour = sty$points, alpha = sty$point_alpha, size = sty$point_size,
+                                         position = position_jitter(width = jitterv, height = jitterv))
+      if (ci) plt <- plt + geom_ribbon(aes(ymin = LL, ymax = UL), fill = sty$band, alpha = sty$alpha, colour = NA)
+      plt <- plt + geom_line(colour = sty$line, linewidth = sty$linewidth)
       if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
     }else if(length(covariate)==2) {
       if (!is.null(boundary)){
@@ -381,12 +394,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
         
         if (point) plt <- plotly::add_trace(plt, x = mod_df[[covariate[1]]], y = mod_df[[covariate[2]]], 
                                             z = mod_df[[response]], mode = "markers", type = "scatter3d", 
-                                            marker = list(size = 2.5, color = "red", symbol = 104))						
+                                            marker = list(size = 2.5, color = sty$surface_points, symbol = 104))						
       }else{		
         plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) +
           geom_contour_filled() +
           labs(x=covariate[1], y=covariate[2], z=response)
-        if (point) plt <- plt + geom_point(data=mod_df, col="red", size=1.5)   
+        if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)   
         if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))		
       }
       
@@ -397,15 +410,16 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       if (length(covariate)==1) {
         if (is.null(contr)) {
           plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))))+
-            geom_line(aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))), linewidth=1) +
             labs(x=covariate, y=response, col=modelterm) +
             theme_bw()	
-          if (ci) plt <- plt + 
-              geom_ribbon(aes(ymin = LL, ymax = UL, fill=eval(parse(text = modelterm))), alpha = 0.3, stat="identity")+
-              labs(fill=modelterm)
           if (point) plt <- plt + 
-              geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))), position = position_jitter(width = jitterv, height = jitterv))+
+              geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))),
+                         alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))+
               labs(col=modelterm)
+          if (ci) plt <- plt + 
+              geom_ribbon(aes(ymin = LL, ymax = UL, fill=eval(parse(text = modelterm))), alpha = sty$alpha, colour = NA)+
+              labs(fill=modelterm)
+          plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[modelterm]])))
           if (trellis)  plt <- plt + 
               facet_wrap(formula(paste("~", modelterm)), scales=scales) 
           if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))  
@@ -437,7 +451,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           }
           band_c <- if (simultaneous) "simultaneous" else "pointwise"
           plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
-                              typical = glmm)
+                              typical = glmm, style = sty)
           if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
           lv_c <- grp_fct_levl[contr]
           if (deriv > 0) lv_c <- c(paste("The", if (deriv == 1) "slope" else "curvature", "of", lv_c[1]),
@@ -488,7 +502,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
               for (i in names(mod_df_lst)) {
                 plt[[i]] <- plotly::add_trace(plt[[i]], x = mod_df_lst[[i]][[covariate[1]]], y = mod_df_lst[[i]][[covariate[2]]], 
                                               z = mod_df_lst[[i]][[response]], mode = "markers", type = "scatter3d", 
-                                              marker = list(size = 2.5, color = "red", symbol = 104)) 
+                                              marker = list(size = 2.5, color = sty$surface_points, symbol = 104)) 
                 
               }
             }
@@ -497,7 +511,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
               geom_contour_filled()+
               facet_wrap(formula(paste("~", modelterm)), scales=scales)+
               labs(x=covariate[1], y=covariate[2], z=response) 
-            if (point) plt <- plt + geom_point(data=mod_df, col="red", size=1.5)
+            if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)
             if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))			
           }          
         }else{
@@ -542,7 +556,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           plt <- ggplot(plt_df_contrN, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) + 
             geom_contour_filled() +
-            geom_point(data=plt_df_contrSub, col="red", size=2.5, shape=22) +
+            geom_point(data=plt_df_contrSub, col=sty$surface_points, size=2.5, shape=22) +
             ggtitle(pm_wrap_title(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with Points at the Area out of", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI"), 11)) +
             labs(x=covariate[1], y=paste("The difference of ", response, "\n", sep=""), z=response) +
             theme_bw() +
@@ -567,16 +581,17 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       fact1 <- (vars[plotord])[1]
       fact2 <- (vars[plotord])[2]
       plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))))+         	  
-        geom_line(aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))), linewidth=1) +
         labs(x=covariate, y=response, col=fact1) + 
         facet_wrap(formula(paste("~", fact2)), scales=scales)+		
         theme_bw()
       if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
-      if (ci) plt <- plt +
-        geom_ribbon(data=pred_df, aes(ymin = LL, ymax = UL, fill=eval(parse(text = fact1))), alpha = 0.3, stat="identity") +
-        labs(fill=fact1)
       if (point) plt <- plt + 
-        geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))), position = position_jitter(width = jitterv, height = jitterv))
+        geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))),
+                   alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))
+      if (ci) plt <- plt +
+        geom_ribbon(data=pred_df, aes(ymin = LL, ymax = UL, fill=eval(parse(text = fact1))), alpha = sty$alpha, colour = NA) +
+        labs(fill=fact1)
+      plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[fact1]])))
     }
   }
   #     facet_grid(formula(paste(Variable1, "~", Variable2)))
@@ -598,7 +613,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                  paste0(ifelse(nzchar(sig$level), paste0(sig$level, ": "), ""), format(sig$from, digits = 4), " to ",
                         format(sig$to, digits = 4), " (", sig$direction, ")", collapse = "; "), "."))
       }
-      if (inherits(plt, "ggplot")) plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = "grey40") + labs(y = ylab)
+      if (inherits(plt, "ggplot")) {
+        plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = sty$ref) + labs(y = ylab)
+        # one slope: bars where its band leaves out 0
+        if (!length(by)) plt <- plt + pm_sig_bars(sig, pred_df[[covariate]], sty)
+      }
     } else if (inherits(plt, "ggplot")) {
       plt <- plt + labs(y = paste0("The difference of the ", tolower(substr(ylab, 1, 1)), substring(ylab, 2)))
       if (!is.null(plt$labels$title))

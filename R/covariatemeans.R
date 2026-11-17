@@ -592,7 +592,7 @@ pm_diff_table <- function(x, Ka, Kb, coef, V, df, crit, h = NULL, d1 = NULL, kin
 ## "response" the response-scale difference, with marks where the curves
 ## differ on the model scale.
 pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_scale = "model", test = NULL,
-                         mtitle = NULL, typical = FALSE, adjusted = FALSE) {
+                         mtitle = NULL, typical = FALSE, adjusted = FALSE, style = pm_curve_style()) {
   out <- res$table
   ratio <- if (res$kind %in% c("ratio", "odds.ratio")) res$kind else character(0)
   what <- if (res$back && contr_scale == "response") "response" else if (length(ratio)) ratio else "diff"
@@ -617,19 +617,23 @@ pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_sca
                paste("=", format(round(test[["p.value"]], 3)))),
            if (what == "response") paste0(
              "delta-method band", if (adjusted) " (bias-adjusted means)" else if (typical) " (random effects at zero)" else "",
-             "; marks: where the lines differ on the model scale"))
+             "; marks: where the lines differ on the model scale"),
+           if (what != "response" && any(out$significant, na.rm = TRUE))
+             paste0("marks: where the band leaves out ", if (what %in% c("ratio", "odds.ratio")) 1 else 0))
   ref <- if (what %in% c("ratio", "odds.ratio")) 1 else 0
+  # the band, the reference line, then the difference on top (R/plot-style.R)
   plt <- ggplot2::ggplot(pd, ggplot2::aes(x = .data$x, y = .data$y)) +
-    ggplot2::geom_hline(yintercept = ref, linetype = 2, colour = "grey40") +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), alpha = 0.2) +
-    ggplot2::geom_line() +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), fill = style$diff_band, alpha = style$alpha,
+                         colour = NA) +
+    ggplot2::geom_hline(yintercept = ref, linetype = 2, colour = style$ref) +
+    ggplot2::geom_line(colour = style$diff_line, linewidth = style$linewidth) +
     ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate, y = ylab,
                   subtitle = if (length(sub)) pm_wrap_title(paste(sub, collapse = "; "), 11, rel = 1)) +
     ggplot2::theme_bw()
   if (ref == 1) plt <- plt + ggplot2::scale_y_log10()            # ratios: a log axis
-  if (what == "response" && any(out$significant)) {
-    plt <- plt + ggplot2::geom_rug(data = pd[out$significant, , drop = FALSE], sides = "b", colour = "red3")
-  }
+  # marks under the curve where the band leaves out the reference (on the
+  # model scale for response-scale plots)
+  plt <- plt + pm_sig_bars(res$significant, pd$x, style)
   plt
 }
 
