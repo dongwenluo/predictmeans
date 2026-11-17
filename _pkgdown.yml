@@ -45,6 +45,7 @@ reference:
 - title: Results
   contents:
   - tidy.predictmeans
+  - tidy.pm_curves
   - autoplot.predictmeans
   - PMplot
   - ci_mcp
