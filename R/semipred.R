@@ -1,16 +1,19 @@
 #' Predicted Means of a Semi Paramatric Model with Covariate Variable(s)
 #'
 #' @description
-#' This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
+#' Predicted curves (or surfaces) of a semiparametric model along a covariate, with pointwise or simultaneous
+#' bands; their slopes (\code{deriv}), or the difference between two curves (\code{contr}). The result holds the
+#' tables in the layout of \code{\link{predictmeans}} (see \code{\link{tidy.pm_curves}}) and the plot, which
+#' \code{autoplot()} returns.
 #' @usage
 #' semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 #'            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 #' 		   scales=c("fixed", "free", "free_x", "free_y"),
-#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
 #' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 #' 		   band=c("pointwise", "simultaneous"),
 #' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-#' 		   mean_type=c("conditional", "overall"))
+#' 		   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -54,7 +57,11 @@
 #'   be added to it.
 #' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
 #' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
-#' @param prt A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.
+#' @param prt The name of \code{plot} before 2.0: \code{TRUE} draws the plot, \code{FALSE} does not (whatever
+#'   \code{plot} says). The default \code{NULL} leaves it to \code{plot}.
+#' @param plot Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
+#'   (\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
+#'   session, draws it; so does \code{plotord}.
 #' @param band \code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
 #'   whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
 #'   standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
@@ -86,8 +93,10 @@
 #' to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
 #' models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
 #' response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
-#' below zero (the curve rises or falls) are printed and kept in \code{attr(pred_df, "significant")}. A covariate
-#' scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. In a simulation
+#' below zero (the curve rises or falls) are printed with the result and kept in \code{attr(pred_df, "significant")}. A covariate
+#' scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. The table \code{slopes} of the
+#' result has the slopes with \code{statistic} and \code{p.value} of slope = 0 (and \code{p.adj} with a
+#' simultaneous band), and \code{significant} the ranges. In a simulation
 #' (\file{dev/sim-semipred-deriv.R}; \eqn{y = \sin(x/1.5)} plus noise, 150 points, 500 data sets) the bands covered
 #' the true slope 0.97 pointwise and over the whole range with the default 6 knots, 0.99-1.00 with 15; the
 #' curvature 0.98-1.00.
@@ -127,8 +136,10 @@
 #' \code{..includes1}; \code{response.diff}, \code{response.ses}, \code{response.LL}, \code{response.UL} and
 #' \code{response.includes0} on the response scale; and \code{significant} (the link scale). Before 2.0 the band of
 #' a generalized model's difference used the standard error of the link-scale difference multiplied by a weight
-#' evaluated at the difference of the means, which is not a standard error of any difference. The ranges of the
-#' covariate where the curves differ are printed and kept in \code{attr(pred_df, "significant")}; with
+#' evaluated at the difference of the means, which is not a standard error of any difference. The same difference
+#' is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
+#' covariate where the curves differ are printed with the result and kept in \code{significant} and
+#' \code{attr(pred_df, "significant")}; with
 #' \code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
 #' when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 #' penalised smooth coefficients are not reliable.)
@@ -141,8 +152,25 @@
 #' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
 #' means and their ratios.
 #' @return
-#' \item{plt}{A ggplot object.}
-#' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+#' An object of class \code{c("semipred", "pm_curves")}, a list. \code{tidy()} and \code{as.data.frame()} return its
+#' table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}).
+#' \item{means}{The curves: the factor columns of \code{modelterm}, the covariate(s), \code{estimate},
+#'   \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} on the model scale (pointwise limits), with a
+#'   simultaneous band \code{adj.conf.low}, \code{adj.conf.high}; for generalized fits and with \code{trans} also
+#'   \code{response}, \code{response.std.error}, \code{response.conf.low}, \code{response.conf.high} (and
+#'   \code{response.adj.conf.*}). \code{NULL} with \code{contr} or \code{deriv}.}
+#' \item{slopes}{With \code{deriv = 1} (\code{2}): the slopes (curvatures) in the same columns, with
+#'   \code{statistic}, \code{p.value} and, with a simultaneous band, \code{p.adj}.}
+#' \item{pairs}{With \code{contr}: the difference of the two curves, as \code{covariatemeans()$pairs}; with a
+#'   simultaneous band \code{p.adj} is the share of the simulated maxima at least as large (below 0.05 exactly where
+#'   the band leaves out zero; the smallest value is 1/10000).}
+#' \item{settings}{The options: \code{df_method}, \code{band}, \code{deriv}, \code{unconditional},
+#'   \code{back_transform}, ...}
+#' \item{significant}{With \code{contr} or \code{deriv}: the ranges of the covariate where the band asked for
+#'   leaves out zero.}
+#' \item{plt}{A ggplot object (a list of plotly plots for \code{threeD} surfaces by group); drawn only when
+#'   \code{plot = TRUE}.}
+#' \item{pred_df}{The 1.x table: a data.frame with the predicted values, their limits \code{LL} and \code{UL} (the band asked for), \code{SE} and
 #'   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
 #'   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
 #'   are t; with \code{contr} the columns described in Details.}
@@ -166,25 +194,27 @@
 #'
 #' # the curves with pointwise bands (t limits with Satterthwaite df), then simultaneous ones
 #' out <- semipred(fm, "QB", "pressure")
-#' head(out$pred_df)
-#' semipred(fm, "QB", "pressure", band = "simultaneous")
+#' out
+#' autoplot(out)
+#' autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 #' # at given pressures
-#' semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2), prt = FALSE)$pred_df
+#' semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
 #'
 #' # the difference of the two curves, and where they differ
 #' dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
-#' attr(dif$pred_df, "significant")
+#' dif$significant
+#' head(as.data.frame(dif))
 #'
 #' # slopes of the curves, and where they differ from zero over the whole range
 #' slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
-#' attr(slp$pred_df, "significant")
+#' slp$significant
 #' \donttest{
 #' # a surface: copper grade over the plane and a smooth in depth (data(copper))
 #' data(copper)
 #' fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
 #'                data = copper, prt = FALSE)
-#' semipred(fcu, covariate = "zcoord", trans = exp, prt = FALSE)$plt
-#' semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+#' autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
+#' autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 #'
 #' # a binary response: the probability scale, and the odds ratio of two curves
 #' set.seed(4)
@@ -193,8 +223,8 @@
 #'                                      rnorm(12, 0, 0.5)[db$cl]))
 #' fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
 #'                 prt = FALSE)
-#' semipred(fbin, "g", "x", prt = FALSE)$plt
-#' head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df)
+#' autoplot(semipred(fbin, "g", "x"))
+#' head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
 #' }
 #' @name semipred
 NULL
@@ -202,10 +232,10 @@ NULL
 semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
                      covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
                      scales=c("fixed", "free", "free_x", "free_y"), 
-                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
+                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL, simultaneous=FALSE,
                      contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
                      unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-                     mean_type=c("conditional", "overall")) {
+                     mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE)) {
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
   sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
   mean_type <- pm_zi_check(semireg, match.arg(mean_type), deriv)      # R/zero-inflation.R
@@ -220,6 +250,10 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   band <- match.arg(band)
   if (isTRUE(simultaneous)) band <- "simultaneous"
   simultaneous <- band == "simultaneous"
+  # draw the plot now? only when asked, as predictmeans(): plot = TRUE (or
+  # prt = TRUE, the name before 2.0) or a plot order; the plot is in the
+  # result either way
+  draw <- if (!is.null(prt)) isTRUE(prt) else isTRUE(plot) || (!is.null(plotord) && !all(plotord %in% c("NULL", "")))
   
   stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))  
   scales <- as.character(scales)
@@ -307,21 +341,31 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   # Satterthwaite at each point, generalized fits the inner-outer df of the
   # design's strata (normal without strata)
   sr_terms <- if (!is.null(modelterm) && !setequal(modelterm, covariate)) modelterm
+  df_label <- "normal (semireg)"
   df_of <- function(D) {
     D <- D[, seq_len(ncond), drop = FALSE]         # the count model's columns (mean_type = "overall")
     df <- if (is.null(des$cov_idx)) rep(Inf, nrow(D)) else pm_sr_ddf(semireg, D, des$cov_idx, sr_terms)
+    if (!is.null(attr(df, "method"))) df_label <<- attr(df, "method")
+    df <- as.numeric(df)
     df[is.na(df)] <- Inf
-    as.numeric(df)
+    df
   }
-  crit_of <- function(D, df) {
-    if (simultaneous) pm_sim_crit(D, sm_Cov, level, df = df) else stats::qt(1 - level/2, df)
+  # the critical values: pointwise t, or the simultaneous band simulated by
+  # pm_sim_crit() (R/p-adjust.R), whose draws also give the adjusted p-values
+  sim_of <- function(D, df) {
+    if (simultaneous) pm_sim_crit(D, sm_Cov, level, df = df, draws = TRUE) else list(crit = stats::qt(1 - level/2, df))
   }
   # (with contr only the difference of two curves is reported: its own df
   # and critical value below)
   df_mx <- if (is.null(contr)) df_of(D_mx) else rep(Inf, nrow(D_mx))
-  crit <- if (is.null(contr)) crit_of(D_mx, df_mx) else stats::qnorm(1 - level/2)
+  sim_m <- if (is.null(contr)) sim_of(D_mx, df_mx)
+  crit <- if (is.null(contr)) sim_m$crit else stats::qnorm(1 - level/2)
   stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
+  eta_hat <- y_hat                                 # the model scale, for the stable tables
+  unc <- if (is.null(unconditional)) {
+    if (inherits(semer, "glmmTMB")) semer$modelInfo$family$family != "gaussian" else !lme4::isLMM(semer)
+  } else isTRUE(unconditional)
   LL <- y_hat - crit*stderr
   UL <- y_hat + crit*stderr
   
@@ -361,6 +405,17 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     mod_df[["Trans_y"]] <- trans(mod_df[[response]])
     response <- "Trans_y"
   }
+  # the back-transformation of the stable tables: 'trans', or the inverse
+  # link of a generalized fit (curves only; slopes stay on the link scale)
+  glm_back <- is.null(trans) && !isLMM(semer) && deriv == 0
+  fam_b <- if (glm_back) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
+  h_tab <- if (!is.null(trans)) trans else if (glm_back) fam_b$linkinv
+  d_tab <- if (!is.null(trans)) function(e) pm_back_deriv(trans, e, semer, FALSE) else if (glm_back) fam_b$mu.eta
+  back_info <- if (!is.null(h_tab)) list(
+    by = if (!is.null(trans)) "trans" else "the inverse link",
+    estimate = if (!is.null(trans)) "the back-transformed fitted value" else if (pm_sr_design_re(semireg))
+      "typical cluster (random effects at zero)" else "mean",
+    average = "link")
   
   pred_df[[response]] <- y_hat
   pred_df$LL <- LL
@@ -399,6 +454,22 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   
   for (i in names(pred_df)){
     if (is(pred_df[,i], "AsIs")) pred_df[,i] <- as.numeric(pred_df[,i])
+  }
+
+  # the stable table of the curves or slopes (R/curves.R): model-scale
+  # values, pointwise limits, the simultaneous band in adj.conf.*, the
+  # covariates in their own units
+  vars_tab <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
+  curve_tab <- pairs_tab <- significant <- contr_lev <- NULL
+  if (is.null(contr)) {
+    curve_tab <- pm_curve_means(pred_df[, c(vars_tab, covariate), drop = FALSE], eta_hat, stderr, df_mx,
+                                stats::qt(1 - level/2, df_mx), h = h_tab, d = d_tab,
+                                crit_s = if (simultaneous) sim_m$crit, test = deriv > 0,
+                                p_adj = if (simultaneous && deriv > 0) pm_sim_padj(sim_m, eta_hat/stderr, df_mx))
+    if (length(covariate) == 2 && !is.null(boundary)) {
+      curve_tab <- curve_tab[pm_points_in_poly(curve_tab[, covariate], boundary), , drop = FALSE]
+      rownames(curve_tab) <- NULL
+    }
   }
   
   if (setequal(modelterm, covariate)) {
@@ -474,7 +545,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
           D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
           df_c <- df_of(D_a - D_b)
-          crit_c <- crit_of(D_a - D_b, df_c)
+          sim_c <- sim_of(D_a - D_b, df_c)
+          crit_c <- sim_c$crit
           glmm <- !isLMM(semer) && deriv == 0
           fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
           res <- pm_diff_table(plt_df_contr[[covariate]], D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
@@ -489,10 +561,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
                               typical = glmm, style = sty)
           if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
-          lv_c <- grp_fct_levl[contr]
-          if (deriv > 0) lv_c <- c(paste("The", if (deriv == 1) "slope" else "curvature", "of", lv_c[1]),
-                                   paste("that of", lv_c[2]))
-          if (prt) pm_diff_report(res, covariate, lv_c, level, band_c)
+          pairs_tab <- pm_diff_pairs(res$table, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
+                                     crit_s = if (simultaneous) crit_c,
+                                     p_adj = if (simultaneous) pm_sim_padj(sim_c, res$table$diff/res$table$ses, df_c),
+                                     x = plt_df_contr[, covariate, drop = FALSE])
+          contr_lev <- grp_fct_levl[contr]
+          significant <- res$significant
           tab <- res$table
           if (glmm) {
             # a GLMM: the columns of covariatemeans(contr = ); SE_contr on the model scale
@@ -566,7 +640,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
           D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
           df_c <- df_of(D_a - D_b)
-          crit_c <- crit_of(D_a - D_b, df_c)
+          sim_c <- sim_of(D_a - D_b, df_c)
+          crit_c <- sim_c$crit
           glmm <- !isLMM(semer)
           fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
           res <- pm_diff_table(seq_len(nrow(D_a)), D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
@@ -576,6 +651,15 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           y_sd <- attr(mod_df, paste(response, "sd", sep = "_"))
           if (!glmm && !is.null(y_sd)) {
             for (cn in c("diff", "ses", "LL", "UL")) tab[[cn]] <- tab[[cn]]*y_sd
+          }
+          pairs_tab <- pm_diff_pairs(tab, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
+                                     crit_s = if (simultaneous) crit_c,
+                                     p_adj = if (simultaneous) pm_sim_padj(sim_c, tab$diff/tab$ses, df_c),
+                                     x = plt_df_contr[, covariate, drop = FALSE])
+          contr_lev <- grp_fct_levl[contr]
+          if (!is.null(boundary)) {
+            pairs_tab <- pairs_tab[pm_points_in_poly(pairs_tab[, covariate], boundary), , drop = FALSE]
+            rownames(pairs_tab) <- NULL
           }
           resp_sc <- glmm && contr_scale == "response"
           plt_df_contr[[response]] <- if (resp_sc) tab$response.diff else tab$diff
@@ -641,14 +725,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       by <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
       sig <- pm_deriv_ranges(pred_df, by, covariate)
       attr(pred_df, "significant") <- sig
-      if (prt) {
-        bandw <- if (simultaneous) "simultaneous" else "pointwise"
-        message(if (is.null(sig)) paste0("The ", bandw, " band (level ", level, ") of the ", tolower(sub(" .*", "", ylab)),
-                                          " includes 0 at every value of ", covariate, " shown.") else
-          paste0(sub(" \\(.*", "", ylab), " (", bandw, " band, level ", level, "): ",
-                 paste0(ifelse(nzchar(sig$level), paste0(sig$level, ": "), ""), format(sig$from, digits = 4), " to ",
-                        format(sig$to, digits = 4), " (", sig$direction, ")", collapse = "; "), "."))
-      }
+      significant <- if (is.null(sig)) data.frame(level = character(0), from = numeric(0), to = numeric(0),
+                                                  direction = character(0), stringsAsFactors = FALSE) else sig
       if (inherits(plt, "ggplot")) {
         plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = sty$ref) + labs(y = ylab)
         # one slope: bars where its band leaves out 0
@@ -662,15 +740,28 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     }
   }
   
-  if (prt) {
-    options(warn = -1)	  
+  if (draw) {
     if (length(covariate)==2 && threeD && !setequal(modelterm, covariate)) {
-      for (i in names(plt)) print(plt[[i]])
-    }else print(plt)
-    options(warn = 0) 
+      for (i in names(plt)) suppressWarnings(print(plt[[i]]))
+    }else suppressWarnings(print(plt))
   }
   rownames(pred_df) <- NULL
-  return(invisible(list(plt=plt, pred_df=pred_df)))
+  settings <- pm_curve_settings(semireg, modelterm, covariate, level, df_label, mean_type, back_info,
+                                contr = contr_lev, band = band,
+                                vcov = if (unc) "unconditional (smoothing-parameter uncertainty included)" else
+                                  "conditional on the smoothing parameters",
+                                deriv = deriv, unconditional = unc, boundary = !is.null(boundary))
+  pm_curve_result(means = if (deriv == 0) curve_tab, slopes = if (deriv > 0) curve_tab, pairs = pairs_tab,
+                  settings = settings, legacy = list(plt = plt, pred_df = pred_df, significant = significant),
+                  fun = "semipred")
+}
+
+## Has a semireg fit random terms besides its smooths (blocks, plots, ...)?
+pm_sr_design_re <- function(semireg) {
+  semer <- semireg$semer
+  cn <- tryCatch(if (inherits(semer, "glmmTMB")) semer$modelInfo$reTrms$cond$cnms else lme4::getME(semer, "cnms"),
+                 error = function(e) NULL)
+  length(setdiff(names(cn), names(semireg$refit$smoothZ))) > 0
 }
 
 

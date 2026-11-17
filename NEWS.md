@@ -36,6 +36,22 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`semipred()` returns a classed result and draws its plot only when
+  asked** (`plot = TRUE`, `options(predictmeans.plot = TRUE)`, `plotord`,
+  or `prt = TRUE`, the 1.x name; `prt = FALSE` still never draws). The
+  result (class `c("semipred", "pm_curves")`) has the layout of
+  `covariatemeans()` and `predictmeans()`: `means` (curves or surfaces),
+  `slopes` (`deriv = 1, 2`, with the t test of slope = 0) or `pairs`
+  (`contr`), with `estimate`, `std.error`, `df`, pointwise `conf.low`/
+  `conf.high` and, with `band = "simultaneous"`, the simulated band in
+  `adj.conf.low`/`adj.conf.high` with adjusted p-values `p.adj` (the
+  share of the simulated maxima at least as large, so `p.adj < 0.05`
+  exactly where the band leaves out zero); `response` columns for
+  generalized fits and `trans`; `settings` (df method, band, `deriv`,
+  `unconditional`, `boundary`, back-transformation); `significant`.
+  `tidy()`, `as.data.frame()`, `autoplot()` and `print()` work on it. The
+  1.x `pred_df` and `plt` are unchanged. The ranges where curves or slopes
+  differ are printed with the result instead of as messages.
 * **`covariatemeans()` returns a classed result and draws its plot only
   when asked** (`plot = TRUE`, `options(predictmeans.plot = TRUE)`,
   `plotord` or `newwd = TRUE`), as `predictmeans()`. The result (class
@@ -1137,9 +1153,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   methods; recent marginaleffects versions also need
   `options(marginaleffects_model_classes = "predictmeans")`).
 
-* `covariatemeans()` results have the same layout: `means`, `pairs` (with
-  `contr`) and `settings`, with `tidy()`, `as.data.frame()`, `autoplot()`
-  and `print()` methods (`?tidy.pm_curves`).
+* `covariatemeans()` and `semipred()` results have the same layout:
+  `means`, `slopes` (`semipred(deriv = )`), `pairs` (with `contr`) and
+  `settings`, with `tidy()`, `as.data.frame()`, `autoplot()` and `print()`
+  methods (`?tidy.pm_curves`). In all of them `conf.low`/`conf.high` are
+  pointwise and a simultaneous band is in `adj.conf.low`/`adj.conf.high`,
+  as the adjusted limits of `predictmeans()$pairs`; a simultaneous
+  `covariatemeans(contr = )` band also gives the response-scale
+  `response.adj.conf.*`.
 
 ## Plots and summaries from the result tables
 

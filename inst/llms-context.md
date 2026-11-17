@@ -253,9 +253,18 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `p.adj`, `adj.conf.low`, `adj.conf.high` (Scheffé over the covariate values, "over which range do the
   curves differ"); `ratio` (log) or `odds.ratio` (logit) with limits; `response`, ... the delta-method
   difference on the response scale. `cm$settings$test` is the joint F test, `cm$significant` the ranges
-  where the band asked for leaves out 0. `semipred(..., contr = )` still returns 1.x-style `diff`, `LL`,
-  `UL`, `includes0`, `ratio`, `response.diff` columns (`simultaneous = TRUE` for the band).
+  where the band asked for leaves out 0.
   `covariatemeans(bias_adjust = TRUE)`: the mean of the response instead of the median / typical cluster.
+- `semipred(fit, "A", "x")` returns class `c("semipred", "pm_curves")` with the same tables and methods and
+  draws nothing (`plot = TRUE`; `prt = TRUE`, the 1.x name, also draws, `prt = FALSE` never): `$means` (the
+  curves or surfaces; `NULL` with `contr` or `deriv`), `$slopes` (`deriv = 1, 2`: the same columns plus
+  `statistic`, `p.value` of slope = 0), `$pairs` (`contr`: the difference of two curves). In every table
+  `conf.low`/`conf.high` are pointwise t limits; with `band = "simultaneous"` the simulated band is
+  `adj.conf.low`/`adj.conf.high` (and `response.adj.conf.*`), with `p.adj` = share of simulated maxima
+  >= |t| (agrees with the band; smallest 1e-4). Generalized fits and `trans` add `response` columns (the
+  curves at random effects zero; `settings$back_transform`). `$settings` adds `deriv`, `unconditional`,
+  `boundary`; `$significant` the ranges. The 1.x `$pred_df` (`LL`/`UL` = the band asked for, `SE`,
+  `SE_mu`, `diff`, `ratio`, `response.diff`, ...) and `$plt` are still there.
 - `marginaleffects::hypotheses()` works on `predictmeans()` results after
   `options(marginaleffects_model_classes = "predictmeans")`.
 - Data must be available when `predictmeans()` runs: it re-reads the model's `data`

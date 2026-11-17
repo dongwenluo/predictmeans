@@ -239,7 +239,7 @@ test_that("covariatemeans(contr = ): simultaneous band, joint test and the range
   xs <- seq(0, 2, 0.02)
   rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs)
   expect_output(print(rp), "Difference a3 - a1")
-  expect_output(print(rp), "They differ for x: ")
+  expect_output(print(rp), "They differ (pointwise limits) for x: ", fixed = TRUE)
   rs <- suppressMessages(covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs, band = "simultaneous"))
   # pointwise: z; simultaneous: Scheffe with rank 2 (Working-Hotelling), wider
   expect_equal((rp$pltdf$UL - rp$pltdf$diff)/rp$pltdf$ses, rep(qnorm(0.975), length(xs)), tolerance = 1e-8)
@@ -267,7 +267,7 @@ test_that("covariatemeans(contr = ): simultaneous band, joint test and the range
   O <- as.data.frame(nlme::Oats)
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
   ro <- covariatemeans(fm, "Variety", covariate = "nitro", contr = c(1, 3), band = "simultaneous")
-  expect_output(print(ro), "includes no difference")
+  expect_output(print(ro), "simultaneous band include no difference")
   expect_gt(ro$test[["p.value"]], 0.05)
   expect_equal(nrow(ro$significant), 0)
   expect_equal(anova(lm(yield ~ Block + nitro + I(Variety == "Marvellous") + I(Variety == "Marvellous"):nitro, O), fm)$F[2],

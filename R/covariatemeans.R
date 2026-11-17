@@ -498,8 +498,9 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     }
   }
 
-  settings <- pm_curve_settings(model, modelterm, covariate, level, inf, Df_arg, mean_type,
-                                pm_curve_back_label(model, trans_arg, bt))
+  settings <- pm_curve_settings(model, modelterm, covariate, level, pm_cov_df_label(inf, Df_arg), mean_type,
+                                pm_curve_back_label(model, trans_arg, bt), vcov_adjust = isTRUE(inf$vcov_adjust),
+                                vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label)
   pm_curve_result(means = means_tab, settings = settings, legacy = list(plt = plt, pltdf = pltdf))
 }
 
@@ -565,15 +566,25 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   }
   # the stable table (R/curves.R): pointwise limits, and with a simultaneous
   # band the Scheffe p-values and limits
+  simult <- band == "simultaneous"
+  tt <- res$table$diff/res$table$ses
+  p_adj <- if (simult) pm_adjust_p("scheffe", tt, 2*stats::pt(abs(tt), df, lower.tail = FALSE), df,
+                                   list(list(idx = seq_along(tt), ok = which(is.finite(tt)), m = length(tt), k = 2, r = r)))
   pairs <- pm_diff_pairs(res$table, covariate, levs[k], level, kind = res$kind, back = res$back,
-                         r = if (band == "simultaneous") r, crit_s = if (band == "simultaneous") crit)
+                         crit_s = if (simult) crit, p_adj = p_adj)
   out <- res$table
   names(out)[1] <- covariate
-  settings <- pm_curve_settings(model, modelterm, covariate, level, inf, Df, mean_type,
-                                pm_curve_back_label(model, trans, bt),
-                                contr = levs[k], band = band, test = test)
+  settings <- pm_curve_settings(model, modelterm, covariate, level, pm_cov_df_label(inf, Df), mean_type,
+                                pm_curve_back_label(model, trans, bt), contr = levs[k], band = band, test = test,
+                                vcov_adjust = isTRUE(inf$vcov_adjust),
+                                vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label)
   pm_curve_result(pairs = pairs, settings = settings,
                   legacy = list(plt = plt, pltdf = out, test = test, significant = res$significant))
+}
+
+## The df label of covariatemeans() settings: "user" when Df is given.
+pm_cov_df_label <- function(inf, Df) {
+  if (!is.null(Df) && !all(Df %in% c("NULL", ""))) "user" else inf$label
 }
 
 ## The back-transformation of the fitted lines of a model: the inverse link,
@@ -712,20 +723,4 @@ pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_sca
   # model scale for response-scale plots)
   plt <- plt + pm_sig_bars(res$significant, pd$x, style)
   plt
-}
-
-## The printed summary: the joint test (when there is one) and the ranges of
-## the covariate where the band leaves out no difference.
-pm_diff_report <- function(res, covariate, levs, level, band, test = NULL) {
-  sig <- res$significant
-  if (!is.null(test)) {
-    message("Lines equal along ", covariate, ": F(", test[["numDF"]], ", ", format(round(test[["denDF"]], 1)), ") = ",
-            format(round(test[["F"]], 3)), ", p = ", format.pval(test[["p.value"]], digits = 3), ".")
-  }
-  message(if (!nrow(sig)) paste0("The ", band, " band (level ", level, ") includes no difference at every value of ",
-                                  covariate, " shown.") else
-    paste0(levs[1], " differs from ", levs[2], " (", band, " band, level ", level, ") for ", covariate, ": ",
-           paste0(format(sig$from, digits = 4), " to ", format(sig$to, digits = 4), " (", sig$direction, ")",
-                  collapse = "; "), "."))
-  invisible(NULL)
 }

@@ -196,7 +196,7 @@ pm_with_seed <- function(seed, expr) {
 ## max_g P(|t_df_g| < |T_g|), and the band of row g uses the t quantile of
 ## its own df at the simulated (1 - level) quantile of that maximum. Returns
 ## one value per row then; one value when every df is infinite.
-pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf) {
+pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf, draws = FALSE) {
   D <- as.matrix(D)
   C <- as.matrix(C)
   se <- sqrt(rowSums((D %*% C) * D))
@@ -204,28 +204,32 @@ pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf) {
   df <- rep_len(df, nrow(D))
   df[is.na(df)] <- Inf
   tdist <- any(is.finite(df[ok]))
-  if (!any(ok)) return(if (tdist) stats::qt(1 - level/2, df) else stats::qnorm(1 - level/2))
+  if (!any(ok)) {
+    cr <- if (tdist) stats::qt(1 - level/2, df) else stats::qnorm(1 - level/2)
+    return(if (draws) list(crit = cr, M = NULL, tdist = tdist) else cr)
+  }
   e <- eigen(C, symmetric = TRUE)
   A <- e$vectors %*% diag(sqrt(pmax(e$values, 0)), nrow = length(e$values))
   DA <- D[ok, , drop = FALSE] %*% A
   M <- pm_with_seed(20240403, {
     Z <- matrix(stats::rnorm(ncol(A)*nsim), ncol(A))
-    if (!tdist) return(as.numeric(stats::quantile(apply(abs(DA %*% Z)/se[ok], 2, max), 1 - level)))
-    # W_g/df_g: one uniform per draw for all rows (comonotone), its exact
-    # chi-square quantile on each row's df (the Wilson-Hilferty cube-root
-    # approximation used before made the critical value up to 0.8% too large
-    # at df 8, against mvtnorm::qmvt()); in batches of 1000 draws (memory)
-    zu <- stats::rnorm(nsim)
-    d <- df[ok]
-    big <- !is.finite(d) | d > 1e8
-    unlist(lapply(split(seq_len(nsim), ceiling(seq_len(nsim)/1000)), function(j) {
-      T <- abs(DA %*% Z[, j, drop = FALSE])/se[ok]
-      u <- rep(stats::pnorm(zu[j]), each = length(d))
-      r <- matrix(stats::qchisq(u, rep(pmin(d, 1e8), length(j))) / rep(pmin(d, 1e8), length(j)), length(d))
-      r[big, ] <- 1
-      apply(matrix(stats::pt(T/sqrt(r), rep(d, length(j))), nrow(T)), 2, max)
-    }))
+    if (!tdist) apply(abs(DA %*% Z)/se[ok], 2, max) else {
+      # W_g/df_g: one uniform per draw for all rows (comonotone), its exact
+      # chi-square quantile on each row's df (the Wilson-Hilferty cube-root
+      # approximation used before made the critical value up to 0.8% too large
+      # at df 8, against mvtnorm::qmvt()); in batches of 1000 draws (memory)
+      zu <- stats::rnorm(nsim)
+      d <- df[ok]
+      big <- !is.finite(d) | d > 1e8
+      unlist(lapply(split(seq_len(nsim), ceiling(seq_len(nsim)/1000)), function(j) {
+        T <- abs(DA %*% Z[, j, drop = FALSE])/se[ok]
+        u <- rep(stats::pnorm(zu[j]), each = length(d))
+        r <- matrix(stats::qchisq(u, rep(pmin(d, 1e8), length(j))) / rep(pmin(d, 1e8), length(j)), length(d))
+        r[big, ] <- 1
+        apply(matrix(stats::pt(T/sqrt(r), rep(d, length(j))), nrow(T)), 2, max)
+      }))
+    }
   })
-  if (!tdist) return(M)
-  stats::qt(as.numeric(stats::quantile(M, 1 - level)), df)
+  cr <- if (!tdist) as.numeric(stats::quantile(M, 1 - level)) else stats::qt(as.numeric(stats::quantile(M, 1 - level)), df)
+  if (draws) list(crit = cr, M = M, tdist = tdist) else cr
 }

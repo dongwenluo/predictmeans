@@ -7,11 +7,11 @@
 semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
 		   scales=c("fixed", "free", "free_x", "free_y"),
-		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 		   band=c("pointwise", "simultaneous"),
 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-		   mean_type=c("conditional", "overall"))
+		   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -75,7 +75,12 @@ be added to it.}
 
 \item{threeD}{A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.}
 
-\item{prt}{A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.}
+\item{prt}{The name of \code{plot} before 2.0: \code{TRUE} draws the plot, \code{FALSE} does not (whatever
+\code{plot} says). The default \code{NULL} leaves it to \code{plot}.}
+
+\item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
+(\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
+session, draws it; so does \code{plotord}.}
 
 \item{band}{\code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
 whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
@@ -106,14 +111,34 @@ on the link scale, as the ratio (log link) or the odds ratio (logit link) of the
 \sQuote{Comparing two lines} in \code{\link{covariatemeans}}: the test is on the model scale.}
 }
 \value{
-\item{plt}{A ggplot object.}
-\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+An object of class \code{c("semipred", "pm_curves")}, a list. \code{tidy()} and \code{as.data.frame()} return its
+table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}).
+\item{means}{The curves: the factor columns of \code{modelterm}, the covariate(s), \code{estimate},
+  \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} on the model scale (pointwise limits), with a
+  simultaneous band \code{adj.conf.low}, \code{adj.conf.high}; for generalized fits and with \code{trans} also
+  \code{response}, \code{response.std.error}, \code{response.conf.low}, \code{response.conf.high} (and
+  \code{response.adj.conf.*}). \code{NULL} with \code{contr} or \code{deriv}.}
+\item{slopes}{With \code{deriv = 1} (\code{2}): the slopes (curvatures) in the same columns, with
+  \code{statistic}, \code{p.value} and, with a simultaneous band, \code{p.adj}.}
+\item{pairs}{With \code{contr}: the difference of the two curves, as \code{covariatemeans()$pairs}; with a
+  simultaneous band \code{p.adj} is the share of the simulated maxima at least as large (below 0.05 exactly where
+  the band leaves out zero; the smallest value is 1/10000).}
+\item{settings}{The options: \code{df_method}, \code{band}, \code{deriv}, \code{unconditional},
+  \code{back_transform}, ...}
+\item{significant}{With \code{contr} or \code{deriv}: the ranges of the covariate where the band asked for
+  leaves out zero.}
+\item{plt}{A ggplot object (a list of plotly plots for \code{threeD} surfaces by group); drawn only when
+  \code{plot = TRUE}.}
+\item{pred_df}{The 1.x table: a data.frame with the predicted values, their limits \code{LL} and \code{UL} (the band asked for), \code{SE} and
   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
   are t; with \code{contr} the columns described in Details.}
 }
 \description{
-This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
+Predicted curves (or surfaces) of a semiparametric model along a covariate, with pointwise or simultaneous
+bands; their slopes (\code{deriv}), or the difference between two curves (\code{contr}). The result holds the
+tables in the layout of \code{\link{predictmeans}} (see \code{\link{tidy.pm_curves}}) and the plot, which
+\code{autoplot()} returns.
 }
 \details{
 Degrees of freedom (gaussian fits, both engines): a point of a curve, or of a difference of curves, is a
@@ -151,8 +176,10 @@ has the columns of \code{covariatemeans(contr = )}: \code{diff}, \code{ses}, \co
 \code{..includes1}; \code{response.diff}, \code{response.ses}, \code{response.LL}, \code{response.UL} and
 \code{response.includes0} on the response scale; and \code{significant} (the link scale). Before 2.0 the band of
 a generalized model's difference used the standard error of the link-scale difference multiplied by a weight
-evaluated at the difference of the means, which is not a standard error of any difference. The ranges of the
-covariate where the curves differ are printed and kept in \code{attr(pred_df, "significant")}; with
+evaluated at the difference of the means, which is not a standard error of any difference. The same difference
+is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
+covariate where the curves differ are printed with the result and kept in \code{significant} and
+\code{attr(pred_df, "significant")}; with
 \code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
 when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)
@@ -166,8 +193,10 @@ same grid), so the slopes are those of the fitted curves for any basis; for the 
 to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
 models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
 response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
-below zero (the curve rises or falls) are printed and kept in \code{attr(pred_df, "significant")}. A covariate
-scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. In a simulation
+below zero (the curve rises or falls) are printed with the result and kept in \code{attr(pred_df, "significant")}. A covariate
+scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. The table \code{slopes} of the
+result has the slopes with \code{statistic} and \code{p.value} of slope = 0 (and \code{p.adj} with a
+simultaneous band), and \code{significant} the ranges. In a simulation
 (\file{dev/sim-semipred-deriv.R}; \eqn{y = \sin(x/1.5)} plus noise, 150 points, 500 data sets) the bands covered
 the true slope 0.97 pointwise and over the whole range with the default 6 knots, 0.99-1.00 with 15; the
 curvature 0.98-1.00.
@@ -200,25 +229,27 @@ anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 
 # the curves with pointwise bands (t limits with Satterthwaite df), then simultaneous ones
 out <- semipred(fm, "QB", "pressure")
-head(out$pred_df)
-semipred(fm, "QB", "pressure", band = "simultaneous")
+out
+autoplot(out)
+autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 # at given pressures
-semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2), prt = FALSE)$pred_df
+semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
 
 # the difference of the two curves, and where they differ
 dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
-attr(dif$pred_df, "significant")
+dif$significant
+head(as.data.frame(dif))
 
 # slopes of the curves, and where they differ from zero over the whole range
 slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
-attr(slp$pred_df, "significant")
+slp$significant
 \donttest{
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
                data = copper, prt = FALSE)
-semipred(fcu, covariate = "zcoord", trans = exp, prt = FALSE)$plt
-semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
+autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 
 # a binary response: the probability scale, and the odds ratio of two curves
 set.seed(4)
@@ -227,8 +258,8 @@ db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x 
                                      rnorm(12, 0, 0.5)[db$cl]))
 fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
                 prt = FALSE)
-semipred(fbin, "g", "x", prt = FALSE)$plt
-head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df)
+autoplot(semipred(fbin, "g", "x"))
+head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
 }
 }
 \references{

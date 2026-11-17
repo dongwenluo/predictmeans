@@ -7,20 +7,20 @@
 \alias{print.pm_curves}
 \title{Curves and Their Differences as Data Frames}
 \usage{
-\method{tidy}{pm_curves}(x, what = c("means", "pairs"), ...)
+\method{tidy}{pm_curves}(x, what = c("means", "pairs", "slopes"), ...)
 
 \method{as.data.frame}{pm_curves}(x, row.names = NULL, optional = FALSE,
-              what = c("means", "pairs"), ...)
+              what = c("means", "pairs", "slopes"), ...)
 
 \method{autoplot}{pm_curves}(object, ...)
 
 \method{print}{pm_curves}(x, n = 10, digits = 4, ...)
 }
 \arguments{
-\item{x, object}{A result of \code{\link{covariatemeans}}.}
+\item{x, object}{A result of \code{\link{covariatemeans}} or \code{\link{semipred}}.}
 
-\item{what}{Which table: \code{"means"} or \code{"pairs"}. The default is the one the result has
-(\code{"pairs"} for a result with \code{contr}).}
+\item{what}{Which table: \code{"means"}, \code{"pairs"} or \code{"slopes"}. The default is the one the result
+has (\code{"pairs"} for a result with \code{contr}, \code{"slopes"} for \code{semipred(deriv = 1)}).}
 
 \item{row.names}{Optional row names for the result.}
 
@@ -33,32 +33,40 @@
 \item{\dots}{Not used.}
 }
 \value{
-\code{tidy()} and \code{as.data.frame()}: a data frame with unrounded values.
+\code{tidy()} and \code{as.data.frame()}: a data frame with unrounded values. In every table
+\code{conf.low} and \code{conf.high} are pointwise limits (t with the row's \code{df}); with
+\code{band = "simultaneous"} the simultaneous band is in \code{adj.conf.low} and \code{adj.conf.high}, with
+\code{p.adj} where there is a test (Scheffe over the covariate values for \code{covariatemeans()}, the simulated
+maximum for \code{semipred()}; the adjusted p-value is below \code{level} exactly where the band leaves out zero,
+up to the resolution of the 10000 draws for \code{semipred()}). Columns beginning \code{response} are the same
+quantities on the response scale (back-transformed limits for means, delta-method limits for differences).
 \describe{
-\item{\code{means}}{The factor columns of \code{modelterm}, the covariate, \code{estimate}, \code{std.error},
+\item{\code{means}}{The factor columns of \code{modelterm}, the covariate(s), \code{estimate}, \code{std.error},
   \code{df}, \code{conf.low}, \code{conf.high} (the model scale: the link, or the transformed response) and,
   when the curves are back-transformed, \code{response}, \code{response.std.error} (delta method),
-  \code{response.conf.low}, \code{response.conf.high} (the back-transformed limits).}
-\item{\code{pairs}}{\code{level1}, \code{level2}, the covariate, \code{estimate} (\code{level1} minus
+  \code{response.conf.low}, \code{response.conf.high}.}
+\item{\code{slopes}}{(\code{semipred(deriv = 1, 2)}) The same columns for the slopes (curvatures) on the model
+  scale, with \code{statistic} (t) and \code{p.value} of slope = 0.}
+\item{\code{pairs}}{\code{level1}, \code{level2}, the covariate(s), \code{estimate} (\code{level1} minus
   \code{level2} on the model scale), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value},
-  \code{conf.low}, \code{conf.high} (pointwise limits); with \code{band = "simultaneous"} also \code{p.adj}
-  and \code{adj.conf.low}, \code{adj.conf.high} (Scheffe over the covariate values; the adjusted p-value is
-  below \code{level} exactly when these limits leave out zero); \code{ratio} or \code{odds.ratio} with
-  their (pointwise) limits for a log or logit scale; and \code{response}, \code{response.std.error},
-  \code{response.conf.low}, \code{response.conf.high}, the difference of the back-transformed curves with
-  delta-method limits.}
+  \code{conf.low}, \code{conf.high}; \code{ratio} or \code{odds.ratio} with their (pointwise) limits for a log or
+  logit scale; and \code{response}, \code{response.std.error}, \code{response.conf.low},
+  \code{response.conf.high}, the difference of the back-transformed curves.}
 }
 \code{settings} (a list in the result) records \code{modelterm}, \code{covariate}, \code{level},
 \code{contrast}, \code{band}, \code{df_method}, \code{vcov_adjust}, \code{vcov}, \code{back_transform},
-\code{test} (the joint F test that the two curves are the same), \code{component} (zero-inflated
-\code{glmmTMB} fits), \code{model_class} and \code{version}.
+\code{test} (\code{covariatemeans()}: the joint F test that the two curves are the same), for
+\code{semipred()} also \code{deriv}, \code{unconditional} and \code{boundary}, then \code{component}
+(zero-inflated \code{glmmTMB} fits), \code{model_class} and \code{version}. \code{significant} (in the result)
+holds the ranges of the covariate where the band asked for leaves out zero.
 }
 \description{
-The result of \code{\link{covariatemeans}} holds its tables in the layout of \code{\link{predictmeans}}:
-\code{means} (one row per point of a curve) and, with \code{contr}, \code{pairs} (the difference of the two
-curves at each covariate value), with the same column names (\code{estimate}, \code{std.error}, \code{df},
-\code{conf.low}, \code{conf.high}, ...) and the covariate under its own name. \code{tidy()} and
-\code{as.data.frame()} return them, \code{autoplot()} returns the plot and \code{print()} shows a short summary.
+The results of \code{\link{covariatemeans}} and \code{\link{semipred}} hold their tables in the layout of
+\code{\link{predictmeans}}: \code{means} (one row per point of a curve or surface), \code{slopes}
+(\code{semipred(deriv = )}) and, with \code{contr}, \code{pairs} (the difference of two curves at each
+covariate value), with the same column names (\code{estimate}, \code{std.error}, \code{df}, \code{conf.low},
+\code{conf.high}, ...) and the covariates under their own names. \code{tidy()} and \code{as.data.frame()} return
+them, \code{autoplot()} returns the plot and \code{print()} shows a short summary.
 }
 \examples{
   library(predictmeans)

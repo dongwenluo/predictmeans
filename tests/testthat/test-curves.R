@@ -93,3 +93,83 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
   expect_equal(rs$settings$test, rs$test)
   expect_output(print(rs), "Difference a3 - a1 of 'A' along x")
 })
+
+test_that("semipred(): the layout of predictmeans(); the simultaneous band in adj.conf.*, with p.adj that agrees", {
+  data(Dialyzer, package = "nlme")
+  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer, prt = FALSE)
+  while (!is.null(grDevices::dev.list())) grDevices::dev.off()
+  out <- semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+  expect_null(grDevices::dev.list())                     # nothing drawn
+  expect_s3_class(out, c("semipred", "pm_curves"))
+  m <- out$means
+  expect_named(m, c("QB", "pressure", "estimate", "std.error", "df", "conf.low", "conf.high"))
+  expect_equal(m$estimate, out$pred_df$rate)
+  expect_equal(m$std.error, out$pred_df$SE)
+  expect_equal(m$df, out$pred_df$df)
+  expect_equal(m$conf.low, out$pred_df$LL)
+  expect_identical(as.data.frame(out), m)
+  expect_match(out$settings$df_method, "Satterthwaite")
+  expect_false(out$settings$unconditional)
+  expect_s3_class(ggplot2::autoplot(out), "ggplot")
+  expect_output(print(out), "Curves of 'QB' along pressure")
+  # simultaneous: conf.* stay pointwise, adj.conf.* are the band of pred_df
+  os <- semipred(fm, "QB", "pressure", band = "simultaneous")
+  op <- semipred(fm, "QB", "pressure")
+  expect_equal(os$means$conf.low, op$means$conf.low)
+  expect_equal(os$means$adj.conf.low, os$pred_df$LL)
+  expect_true(all(os$means$adj.conf.high > os$means$conf.high))
+  # the difference of two curves: p.adj < 0.05 exactly where the band leaves out 0
+  d <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
+  p <- d$pairs
+  expect_named(p, c("level1", "level2", "pressure", "estimate", "std.error", "df", "statistic", "p.value", "p.adj",
+                    "conf.low", "conf.high", "adj.conf.low", "adj.conf.high"))
+  expect_equal(unique(p$level1), "300")
+  expect_equal(p$estimate, d$pred_df$rate)
+  expect_equal(p$std.error, d$pred_df$SE_contr)
+  expect_equal(p$adj.conf.high, d$pred_df$UL)
+  expect_equal(p$p.adj < 0.05, d$pred_df$significant)
+  expect_true(all(p$p.adj >= p$p.value))
+  expect_equal(d$significant, attr(d$pred_df, "significant"))
+  expect_identical(as.data.frame(d), p)
+  expect_equal(d$settings$contrast, c("300", "200"))
+  # slopes, with the test of slope = 0
+  s <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
+  expect_null(s$means)
+  expect_named(s$slopes, c("QB", "pressure", "estimate", "std.error", "df", "statistic", "p.value", "p.adj",
+                           "conf.low", "conf.high", "adj.conf.low", "adj.conf.high"))
+  expect_equal(s$slopes$adj.conf.low, s$pred_df$LL)
+  expect_equal(s$slopes$p.adj < 0.05, s$pred_df$significant)
+  expect_equal(s$settings$deriv, 1)
+  expect_identical(as.data.frame(s), s$slopes)
+  expect_output(print(s), "Slopes of 'QB'")
+})
+
+test_that("semipred(): generalized fits have response columns; surfaces keep the boundary", {
+  set.seed(4)
+  db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
+  db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x + rnorm(12, 0, 0.5)[db$cl]))
+  fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db, prt = FALSE)
+  b <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8))
+  m <- b$means
+  expect_equal(m$response, plogis(m$estimate))
+  expect_equal(m$response, b$pred_df$y)
+  expect_equal(m$response.conf.low, b$pred_df$LL)
+  expect_equal(m$response.std.error, b$pred_df$SE_mu)
+  expect_equal(b$settings$back_transform$estimate, "typical cluster (random effects at zero)")
+  expect_true(b$settings$unconditional)
+  bc <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8), contr = c("b", "a"))
+  expect_equal(bc$pairs$odds.ratio, bc$pred_df$odds.ratio)
+  expect_equal(bc$pairs$odds.ratio.conf.low, bc$pred_df$odds.ratio.LL)
+  expect_equal(bc$pairs$response, bc$pred_df$response.diff)
+  expect_equal(bc$pairs$response.conf.high, bc$pred_df$response.UL)
+  # a surface inside semiboundary(): the rows of pred_df
+  data(copper)
+  fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6), data = copper,
+                 prt = FALSE)
+  s2 <- semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, boundary = TRUE)
+  expect_equal(nrow(s2$means), nrow(s2$pred_df))
+  expect_equal(s2$means$response, s2$pred_df$Trans_y)
+  expect_equal(s2$means$response.std.error, s2$means$response*s2$means$std.error, tolerance = 1e-6)
+  expect_true(s2$settings$boundary)
+  expect_output(print(s2), "Surface over xcoord, ycoord")
+})
