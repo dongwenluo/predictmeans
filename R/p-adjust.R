@@ -211,14 +211,18 @@ pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf) {
   M <- pm_with_seed(20240403, {
     Z <- matrix(stats::rnorm(ncol(A)*nsim), ncol(A))
     if (!tdist) return(as.numeric(stats::quantile(apply(abs(DA %*% Z)/se[ok], 2, max), 1 - level)))
-    # W_g/df_g by the Wilson-Hilferty cube-root approximation, one normal
-    # deviate per draw for all rows; in batches of 1000 draws (memory)
+    # W_g/df_g: one uniform per draw for all rows (comonotone), its exact
+    # chi-square quantile on each row's df (the Wilson-Hilferty cube-root
+    # approximation used before made the critical value up to 0.8% too large
+    # at df 8, against mvtnorm::qmvt()); in batches of 1000 draws (memory)
     zu <- stats::rnorm(nsim)
     d <- df[ok]
-    a <- 2/(9*pmin(d, 1e8))
+    big <- !is.finite(d) | d > 1e8
     unlist(lapply(split(seq_len(nsim), ceiling(seq_len(nsim)/1000)), function(j) {
       T <- abs(DA %*% Z[, j, drop = FALSE])/se[ok]
-      r <- pmax(outer(1 - a, rep(1, length(j))) + outer(sqrt(a), zu[j]), 1e-3)^3
+      u <- rep(stats::pnorm(zu[j]), each = length(d))
+      r <- matrix(stats::qchisq(u, rep(pmin(d, 1e8), length(j))) / rep(pmin(d, 1e8), length(j)), length(d))
+      r[big, ] <- 1
       apply(matrix(stats::pt(T/sqrt(r), rep(d, length(j))), nrow(T)), 2, max)
     }))
   })

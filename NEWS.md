@@ -1463,6 +1463,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Bug fixes
 
+* Simultaneous bands of `semipred()` with t limits: the critical value
+  took each point's chi-square by the Wilson-Hilferty approximation, which
+  made it up to 0.8% too large at small df (df 8, against
+  `mvtnorm::qmvt()`); it now uses the exact quantile transform. Checked
+  against mvtnorm for df Inf, 30 and 8 (`dev/check-sim-crit.R`: within the
+  Monte Carlo error, about 0.3% with the default 10,000 draws). The
+  smoothing-parameter correction (`unconditional = TRUE`) was checked
+  against mgcv's (`dev/check-uncond-mgcv.R`: SEs equal to 0.1% gaussian,
+  0.5% Poisson), and the bands of `covariatemeans()` against emmeans
+  (`dev/check-covariatemeans-bands.R`).
+
 * **`semireg_tmb()` fits with zero inflation: bands and SEs were too
   narrow.** The covariance of the fixed and smooth coefficients used the
   working weights of the count part alone, which treat every zero as a
