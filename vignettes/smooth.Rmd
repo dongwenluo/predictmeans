@@ -114,8 +114,9 @@ predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 ```
 
 For gaussian fits the tests are t tests with Satterthwaite df (next section), and
-`semipred()` uses the same df for its bands (column `df`); for generalized fits both are
-normal-based.
+`semipred()` uses the same df for its bands (column `df`); generalized fits get the df of
+the design's strata, as GLMMs do (normal-based when the model has no random term besides
+the smooths).
 
 ## What predictmeans adds
 

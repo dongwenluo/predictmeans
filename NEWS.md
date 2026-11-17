@@ -46,6 +46,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   curve) at the 95% level; with t (8-11 df) 0.94-0.95 and 0.96-0.97.
   Differences of curves: normal 0.94-0.96, t 0.96-0.97. Curves without
   design strata: 0.95-0.98 either way (the df are then the residual df).
+* **Generalized `semireg()` / `semireg_tmb()` fits get the df of the
+  design's strata** in `predictmeans()` and `semipred()`, the inner-outer
+  df that GLMMs get (the smooth blocks are not strata), instead of z tests;
+  without random terms besides the smooths they stay z (as `glm` with a
+  known dispersion). Poisson counts in a split-plot design with curves over
+  time (`dev/sim-semireg-glmm-df.R`, 1000 data sets per setting): z tests of
+  two treatments at a time rejected 5.8-9.2% of true equalities and normal
+  bands covered a treatment's curve 0.91-0.93; with t on the 10 whole-plot
+  df 3.1-5.9% and 0.955-0.970. `settings$df_method` says
+  `"inner-outer (design strata; smooths within)"`. The rule for a row (the
+  smallest df of the coefficients it uses; means: the df of their term) is
+  now one function for every model (`pm_io_row_df()`).
 * **The Satterthwaite df of `semireg()` fits hold the smoothing parameters
   at their estimates** (`predictmeans()` and `semipred()`): they count the
   design's variance components and the residual. With the smoothing

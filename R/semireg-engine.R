@@ -310,6 +310,39 @@ pm_sr_uncond <- function(semireg) {
   (J %*% Vth %*% t(J))/s2
 }
 
+## df for linear combinations L of the fixed and random coefficients (beta,
+## u) of a semireg() fit (means and curves with the smooths' random effects;
+## 'idx': the columns of (beta, u) that the columns of L are; 'terms': the
+## model terms of the means). The one rule for predictmeans() and semipred()
+## on semireg fits, as pm_inference() for other models:
+##   gaussian     Satterthwaite (pm_sr_satt_ddf()), smoothing parameters held
+##   generalized  inner-outer df (R/df-innerouter.R; the GLMM default) from
+##                the design's grouping factors, the smooth blocks left out;
+##                the smooth coefficients vary within every group, so a row
+##                takes the df of the fixed coefficients it uses; Inf (z
+##                tests, as glm with a known dispersion) when there is no
+##                grouping factor besides the smooths
+## Returns the df with attribute "method" (the label for settings).
+pm_sr_ddf <- function(semireg, L, idx, terms = NULL) {
+  semer <- semireg$semer
+  L <- as.matrix(L)
+  gaus <- if (inherits(semer, "glmmTMB")) stats::family(semer)$family == "gaussian" else lme4::isLMM(semer)
+  if (gaus) {
+    df <- pm_sr_satt_ddf(semireg, L, idx)
+    return(structure(df, method = if (any(is.finite(df))) "Satterthwaite (fixed + smooth coefficients)"
+                     else "normal (semireg)"))
+  }
+  io <- tryCatch(pm_inner_outer_df(semer, drop = names(semireg$refit$smoothZ)), error = function(e) NULL)
+  if (is.null(io)) return(structure(rep(Inf, nrow(L)), method = "normal (semireg)"))
+  p <- length(io)
+  fx <- idx <= p
+  Lf <- L[, fx, drop = FALSE]
+  df <- pm_io_row_df(io, names(io)[idx[fx]], Lf, terms)
+  # a row without fixed coefficients (smooth coefficients only): within groups
+  df[is.na(df)] <- max(io)
+  structure(df, method = "inner-outer (design strata; smooths within)")
+}
+
 ## Satterthwaite df for linear combinations L of the fixed and random
 ## coefficients (beta, u) of a gaussian semireg() fit (lme4 engine), e.g.
 ## means at a covariate value, which include the smooths' random effects.

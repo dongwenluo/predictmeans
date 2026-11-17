@@ -27,12 +27,25 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
   L <- diag(length(lme4::fixef(fit$semer)))[2:3, , drop = FALSE]
   expect_equal(pm_sr_satt_ddf(fit, L, seq_len(ncol(L))), unname(pm_satt_ddf(L, pm_satt_parts(fit$semer))),
                tolerance = 1e-2)
-  # generalized fits keep normal-based tests
+  # generalized fits: the inner-outer df of the design's strata, as glmer gets
+  # for the same design (the smooth blocks are not strata); z without strata
   d$cnt <- rpois(nrow(d), exp(d$y/2))
-  gf <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
+  gf <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), family = poisson, data = d,
+                  prt = FALSE))
   gm <- q(predictmeans(gf, "A", covariate = c(t = 5), pairwise = TRUE))
-  expect_true(all(is.infinite(gm$means$df)))
-  expect_equal(gm$settings$df_method, "normal (semireg)")
+  io <- pm_inner_outer_df(q(lme4::glmer(cnt ~ A + A:t + (1 | Block) + (1 | Block:A), family = poisson, data = d)))
+  expect_equal(gm$means$df, rep(attr(io, "terms")[["A"]], 3))
+  expect_equal(gm$means$df, rep(10, 3))                   # 18 whole plots - 6 blocks - 3 treatments + 1
+  expect_equal(gm$pairs$df, rep(10, 3))
+  expect_equal(gm$settings$df_method, "inner-outer (design strata; smooths within)")
+  expect_equal(gm$pairs$p.value, 2*pt(-abs(gm$pairs$estimate/gm$pairs$std.error), 10))
+  sp <- q(semipred(gf, "A", "t", prt = FALSE))$pred_df
+  expect_equal(sp$df, rep(10, nrow(sp)))
+  g0 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6), family = poisson, data = d, prt = FALSE))
+  g0m <- q(predictmeans(g0, "A", covariate = c(t = 5), pairwise = TRUE))
+  expect_true(all(is.infinite(g0m$means$df)))
+  expect_equal(g0m$settings$df_method, "normal (semireg)")
+  expect_null(q(semipred(g0, "A", "t", prt = FALSE))$pred_df$df)
 })
 
 test_that("s(x, f1*f2): a variance per deviation term; anova() tests which deviation curves are needed", {
@@ -85,11 +98,16 @@ test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Sat
   expect_equal(pb$means$df, pa$means$df, tolerance = 1e-3)
   expect_equal(pb$pairs$df, pa$pairs$df, tolerance = 1e-3)
   expect_equal(pb$pairs$p.value, pa$pairs$p.value, tolerance = 1e-4)
-  # other families: maximum likelihood (Laplace) and normal-based tests, as before
+  # other families: maximum likelihood (Laplace), and the inner-outer df of
+  # the design's strata as with the lme4 engine (A varies within blocks: the
+  # residual stratum)
   d$cnt <- rpois(nrow(d), exp(d$y/2))
   g <- q(semireg_tmb(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
   expect_false(g$semer$modelInfo$REML)
-  expect_true(all(is.infinite(q(predictmeans(g, "A", covariate = c(t = 5)))$means$df)))
+  g4 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
+  dg <- q(predictmeans(g, "A", covariate = c(t = 5)))$means$df
+  expect_equal(dg, q(predictmeans(g4, "A", covariate = c(t = 5)))$means$df)
+  expect_equal(dg, rep(nrow(d) - 6 - 5, 3))                # N - rank([X, blocks])
 })
 
 test_that("semireg_tmb() with AR(1) residuals: means at a time with Satterthwaite df", {

@@ -30,7 +30,9 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 
 \item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
 version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
-with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits normal limits.}
+with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
+df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
+besides the smooths.}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
 
@@ -96,7 +98,16 @@ out. So the df are the residual df when there is no other random term, and few w
 Simultaneous bands use a multivariate t: the simulated deviations are divided by variance estimates that move
 together over the points (each point with its own df), the points are put on one scale by their t
 probabilities, and each point gets the t quantile of its df at the simulated \code{1 - level} quantile (with one
-df for all points: the exact multivariate t). Generalized fits keep normal limits.
+df for all points: the exact multivariate t).
+
+Generalized fits (both engines) take the df that \code{\link{predictmeans}} gives GLMMs: the inner-outer df of
+the stratum of the design's random effects in which the fixed coefficients of a point vary (a curve of a
+treatment applied to whole plots: the whole-plot df), the smooth blocks left out (they are not strata of the
+design); with no random term besides the smooths, normal limits (as for a \code{glm} with a known dispersion).
+In a simulation (\file{dev/sim-semireg-glmm-df.R}; Poisson counts in the split plot above, 1000 data sets per
+setting) normal limits rejected 5.8-9.2\% of true equalities of two treatments at a time and covered a
+treatment's curve 0.91-0.93, the t limits (10 df) 3.1-5.9\% and 0.955-0.970; bands of differences covered
+0.92-0.96 (normal) and 0.95-0.996 (t).
 
 In a simulation (\file{dev/sim-semipred-df.R}; split plot, 6 blocks, 3 treatments on whole plots, curves over 11
 times; 500 data sets per setting) normal limits of a treatment's curve covered 0.91 pointwise and 0.92 over the

@@ -30,7 +30,8 @@ means include the smooth terms (as \code{\link{semipred}}), at the covariates' m
 tests with Satterthwaite df for the combination of fixed and smooth coefficients (the means include the smooths'
 random effects; SAS gives such df to estimates that involve random effects), from the design's variance
 components and the residual with the smoothing parameters held at their estimates (as \code{\link{semipred}});
-for generalized fits they are normal-based.}
+for generalized fits the inner-outer df of the design's strata (the GLMM default; normal-based without random
+terms besides the smooths).}
 
 \item{modelterm}{Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
 factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
