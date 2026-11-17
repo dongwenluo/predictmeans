@@ -25,7 +25,7 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   expect_equal(m3$df, pm$df[match(m3$Variety, pm$Variety)])
   expect_identical(as.data.frame(r), m)
   if (requireNamespace("generics", quietly = TRUE)) expect_identical(generics::tidy(r), m)
-  expect_error(as.data.frame(r, what = "pairs"), "no pairs")
+  expect_error(as.data.frame(r, what = "pairs"), "no 'pairs' table")
   expect_s3_class(ggplot2::autoplot(r), "ggplot")
   expect_equal(r$settings$df_method, "residual")
   expect_null(r$settings$back_transform)

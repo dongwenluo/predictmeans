@@ -29,7 +29,7 @@ test_that("contrastmeans(): the contrasts table, the 1.x table in its place, una
   expect_equal(ct$settings$df_method, "Kenward-Roger")
   expect_equal(ct$settings$adjust, "bonferroni")
   expect_output(print(ct), "Joint F test: F\\(2, 30.2\\)")
-  expect_error(as.data.frame(contrastmeans(fm, "nitro:Variety", ctrmatrix = cm), what = "joint"), "joint = TRUE")
+  expect_error(as.data.frame(contrastmeans(fm, "nitro:Variety", ctrmatrix = cm), what = "joint"), "no 'joint' table")
 })
 
 test_that("contrastmeans(): odds ratios for a logit link when the weights sum to zero; permutation p-values", {

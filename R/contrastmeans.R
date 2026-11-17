@@ -247,19 +247,14 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     fams <- pm_families(rep("all", nr), est = !is.na(as.vector(cm)), rank = qr(ctrmatrix)$rank)
     t.p.value <- pm_adjust_p(adj, t.v, t.p.value, rep_len(Df, nr), fams, R = cor.contr)
     crit <- stats::qt(1 - level/2, Df)
-    out.put <- cbind(cm, ses, t.v, Df, t.p.value, cm - crit*ses, cm + crit*ses)
-    colnames(out.put) <- c("Estimate", "Std. Error", "t value", "df", "Pr(>|t|)", "lower.CL", "upper.CL")
     # simultaneous limits that agree with the adjusted p-values (R/p-adjust.R)
     crit_adj <- pm_adjust_crit(adj, level, rep_len(Df, nr), fams, R = cor.contr)
-    if (!is.null(crit_adj)) {
-      out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ses, adj.upper.CL = as.vector(cm) + crit_adj*ses)
-    }
     eqm <- pm_equiv_margins(equivalence)
     p_equiv <- if (!is.null(eqm)) pm_tost(as.vector(cm), ses, Df, eqm)
-    if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = p_equiv)
-    rownames(out.put) <- rownames(ctrmatrix)
+    # the table, once; the 1.x table is read from it
     tab <- pm_contrast_table(rownames(ctrmatrix), cm, ses, rep_len(Df, nr), t.v, p_raw, t.p.value, crit, ses, crit_adj,
                              p_equiv, "t", cr, pm_contrast_kind(model, ctrmatrix))
+    out.put <- pm_contrast_legacy(tab, rownames(ctrmatrix), perm = FALSE)
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     if (!is.null(inf$vcov_label)) {
       attr(out.put, "Note") <- paste0(attr(out.put, "Note"), " Standard errors from the covariance given by 'vcov' (",
@@ -283,19 +278,13 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   # adjustments that have them (max-|t|, bonferroni, sidak; R/p-adjust.R)
   crit <- pm_perm_crit(fam$T, level)
   ci_se <- if (!is.null(fam$se)) fam$se else ses   # robust permlist: HC3 SEs
-  out.put <- cbind(cm, ses, t.v, per.p, cm - crit*ci_se, cm + crit*ci_se)
-  colnames(out.put) <- c("Estimate", "Std. Error", "t value", "Permuted Pr(>|t|)", "lower.CL", "upper.CL")
   crit_adj <- if (nrow(rK) > 1) pm_adjust_crit(adj, level, rep(NA_real_, nr), fams, T = fam$T)
-  if (!is.null(crit_adj)) {
-    out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ci_se, adj.upper.CL = as.vector(cm) + crit_adj*ci_se)
-  }
   eqm <- pm_equiv_margins(equivalence)
   p_equiv <- if (!is.null(eqm)) pm_tost(as.vector(cm), ses, Inf, eqm)       # normal-based
-  if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = p_equiv)
-  rownames(out.put) <- rownames(ctrmatrix)
   tab <- pm_contrast_table(rownames(ctrmatrix), cm, ses, rep(NA_real_, nr), t.v, p_raw, per.p, crit, ci_se, crit_adj,
                            p_equiv, if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else
                              "permutation", cr, pm_contrast_kind(model, ctrmatrix))
+  out.put <- pm_contrast_legacy(tab, rownames(ctrmatrix), perm = TRUE)
   attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
                                  if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),
                                  if (maxt) paste0(" (", if (adj == "westfall") "step-down" else "single-step",
@@ -368,6 +357,20 @@ pm_contrast_table <- function(names, est, se, df, t, p, p_adj, crit, ci_se, crit
   out
 }
 
+## The 1.x table of contrastmeans() (before rounding), read from the table of
+## pm_contrast_table(): the adjusted p-value in "Pr(>|t|)" ("Permuted
+## Pr(>|t|)" with a permlist, which has no df column).
+pm_contrast_legacy <- function(tab, rn, perm = FALSE) {
+  cols <- c(Estimate = "estimate", "Std. Error" = "std.error", "t value" = "statistic",
+            if (!perm) c(df = "df"), stats::setNames("p.adj", if (perm) "Permuted Pr(>|t|)" else "Pr(>|t|)"),
+            lower.CL = "conf.low", upper.CL = "conf.high", adj.lower.CL = "adj.conf.low",
+            adj.upper.CL = "adj.conf.high", p.equiv = "p.equiv")
+  cols <- cols[cols %in% names(tab)]
+  m <- as.matrix(tab[cols])
+  dimnames(m) <- list(rn, names(cols))
+  m
+}
+
 ## "log" or "logit" when exp of the contrasts is a ratio or an odds ratio: a
 ## log or logit link, or a log response in the formula, and every contrast's
 ## weights summing to zero. NULL otherwise.
@@ -381,16 +384,11 @@ pm_contrast_kind <- function(model, ctrmatrix) {
 ## Methods: the contrasts (or the joint test) as a data frame, and a printed
 ## summary.
 tidy.contrastmeans <- function(x, what = c("contrasts", "joint"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There is no ", what, " table in this result (joint = TRUE gives the joint test).", call. = FALSE)
-  out
+  pm_result_table(x, if (!missing(what)) what, c("contrasts", "joint"))    # R/tidy.R
 }
 
 as.data.frame.contrastmeans <- function(x, row.names = NULL, optional = FALSE, what = c("contrasts", "joint"), ...) {
-  out <- tidy.contrastmeans(x, what = match.arg(what))
-  if (!is.null(row.names)) rownames(out) <- row.names
-  out
+  pm_result_table(x, if (!missing(what)) what, c("contrasts", "joint"), row.names)
 }
 
 print.contrastmeans <- function(x, digits = 4, ...) {

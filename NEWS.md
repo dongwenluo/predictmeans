@@ -1938,6 +1938,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* One helper (`pm_result_table()`, `R/tidy.R`) gives the tables of every
+  classed result to `tidy()` and `as.data.frame()` (`predictmeans`,
+  `covariatemeans`/`semipred`, `pm_slopes`, `contrastmeans`); the error
+  for a missing table reads "There is no 'pairs' table in this result".
+  `contrastmeans()` builds its table once and reads the 1.x table from it
+  (identical at tolerance 0 in 9 cases: permutations, equivalence, robust
+  `vcov`, user `Df`, empty cells).
 * The package's own numerical derivatives are in one file (`R/deriv.R`)
   with one rule: central differences with the step c max(|x|, scale),
   c = 1e-5 for first derivatives, 1e-4 for second and 1e-3 for third (the

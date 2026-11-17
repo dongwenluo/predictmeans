@@ -290,9 +290,18 @@ get_vcov.predictmeans <- function(model, ...) vcov.predictmeans(model)
 
 as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
                                        what = c("means", "pairs"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
+  pm_result_table(x, if (!missing(what)) what, c("means", "pairs"), row.names)
+}
+
+## The tables of a classed result as data frames: tidy() and as.data.frame()
+## of predictmeans(), covariatemeans() / semipred() (pm_curves), pm_slopes()
+## and contrastmeans(), in one place. 'tables': the result's table names;
+## without 'what', the first of them that the result has.
+pm_result_table <- function(x, what, tables, row.names = NULL) {
+  what <- if (is.null(what)) tables[!vapply(tables, function(t) is.null(x[[t]]), logical(1))][1] else
+    match.arg(what, tables)
+  out <- if (is.na(what)) NULL else x[[what]]
+  if (is.null(out)) stop("There is no '", if (is.na(what)) tables[1] else what, "' table in this result.", call. = FALSE)
   if (!is.null(row.names)) rownames(out) <- row.names
   out
 }
@@ -352,10 +361,7 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 NULL
 
 tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
-  out
+  pm_result_table(x, if (!missing(what)) what, c("means", "pairs"))
 }
 
 ## One row describing a result (the generics/broom glance()).

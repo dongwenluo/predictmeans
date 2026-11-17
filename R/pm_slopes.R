@@ -128,16 +128,11 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
 }
 
 tidy.pm_slopes <- function(x, what = c("slopes", "pairs"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
-  out
+  pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"))       # R/tidy.R
 }
 
 as.data.frame.pm_slopes <- function(x, row.names = NULL, optional = FALSE, what = c("slopes", "pairs"), ...) {
-  out <- tidy.pm_slopes(x, what = match.arg(what))
-  if (!is.null(row.names)) rownames(out) <- row.names
-  out
+  pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"), row.names)
 }
 
 print.pm_slopes <- function(x, digits = 4, ...) {

@@ -236,19 +236,15 @@ pm_curve_result <- function(means = NULL, pairs = NULL, settings, legacy, fun = 
 NULL
 
 ## The table a result holds (pairs, then slopes, then means).
-pm_curve_what <- function(x) if (!is.null(x$pairs)) "pairs" else if (!is.null(x$slopes)) "slopes" else "means"
+pm_curve_tables <- c("pairs", "slopes", "means")
+pm_curve_what <- function(x) pm_curve_tables[!vapply(pm_curve_tables, function(t) is.null(x[[t]]), logical(1))][1]
 
 tidy.pm_curves <- function(x, what = c("means", "pairs", "slopes"), ...) {
-  what <- if (missing(what)) pm_curve_what(x) else match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
-  out
+  pm_result_table(x, if (!missing(what)) what, pm_curve_tables)            # R/tidy.R
 }
 
 as.data.frame.pm_curves <- function(x, row.names = NULL, optional = FALSE, what = c("means", "pairs", "slopes"), ...) {
-  out <- if (missing(what)) tidy.pm_curves(x) else tidy.pm_curves(x, what = what)
-  if (!is.null(row.names)) rownames(out) <- row.names
-  out
+  pm_result_table(x, if (!missing(what)) what, pm_curve_tables, row.names)
 }
 
 autoplot.pm_curves <- function(object, ...) {
