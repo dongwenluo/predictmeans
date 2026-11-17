@@ -816,7 +816,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `nboot`, `ncore`), with sequential stopping (a clearly non-significant
   test stops after 20 simulated statistics reach the observed one) and one
   seed per draw (the same p-values with any number of cores); the warning
-  points to it.
+  points to it. In a simulation of seven designs (`dev/sim-vc-defaults.R`)
+  the default was never liberal (0-4.5% at the 5% level); for GLMMs it was
+  conservative (binary, clusters of 4: 0.5%; Poisson 4%; negative binomial
+  0%), where the bootstrap was nearer 5% (1.5-6%) and added 5-7 points of
+  power. For `s(x, f1*f2)` deviation curves every reference was conservative
+  (0%), with full power for a real difference in shape.
 * **`semireg_tmb()` gaussian fits are REML, as documented.** The default
   `REML = TRUE` never reached glmmTMB (the call passed only the arguments
   given), so since 1.x gaussian `semireg_tmb()` fits were maximum

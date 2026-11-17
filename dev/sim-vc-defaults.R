@@ -10,6 +10,21 @@
 ##   E Poisson, (1 | g), 15 clusters of 6
 ##   F negative binomial (glmmTMB nbinom2), (1 | g), 15 x 6
 ##   G semireg s(x, f1*f2): the f2 deviation curves
+## Results (2026-11-17; rejection at 0.05; A-E 200 null / 100 alternative data
+## sets and 199 bootstrap draws, F and G 100 / 50 and 99 draws):
+##   scenario                          level default  bootstrap   power default  bootstrap
+##   A crossed gaussian                     0.025       0.040          0.75        0.82
+##   B random slope                         0.045       0.045          0.94        0.94
+##   C one-way, 4 levels (exact)            0.080*      0.080          0.53        0.51
+##   D binary, clusters of 4                0.005       0.015          0.24        0.29
+##   E Poisson                              0.040       0.060          0.92        0.94
+##   F negative binomial (glmmTMB)          0.000       0.020          0.60        0.66
+##   G s(x, f1*f2), f2 deviation curves     0.000       0.000          1.00        1.00
+## * 0.054 with 1000 data sets (these 200 give 8% for both methods).
+## The default is never liberal; where it is conservative (GLMMs, crossed
+## terms) the bootstrap is nearer 5% and adds 5-7 points of power. In G
+## every reference is conservative (the deviation blocks compete for the
+## same signal), and a real difference in shape is still found every time.
 ##   Rscript dev/sim-vc-defaults.R [scenarios, e.g. ABC] [nrep] [outdir] [nboot]
 ## (F, glmmTMB, rebuilds the model at each bootstrap refit: some 2 minutes
 ## per data set with 199 draws; run with fewer data sets and nboot = 99)

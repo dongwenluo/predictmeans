@@ -160,6 +160,13 @@ varcomp(fm1, test = TRUE, test_method = "bootstrap", ncore = 4)
 A clearly non-significant test stops after 20 simulated statistics reach the observed
 one; a significant one uses all `nboot` (999) refits of both models.
 
+In a simulation of seven designs (in the package sources, `dev/sim-vc-defaults.R`) the
+default reference was never liberal: it rejected 0-4.5% of data sets without the
+component at the 5% level. For GLMMs it was conservative (binary data in clusters of
+four 0.5%, Poisson 4%, negative binomial 0%), and there the bootstrap was nearer 5%
+and found 5-7% more of the real components. For GLMMs and small data sets the
+bootstrap is therefore worth its time.
+
 ## Testing random effects: `permlmer()`
 
 `permlmer()` compares two nested mixed models with a permutation likelihood-ratio test
