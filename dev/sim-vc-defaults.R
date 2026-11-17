@@ -17,9 +17,14 @@ which_sc <- if (length(args)) strsplit(args[1], "")[[1]] else LETTERS[1:7]
 nrep <- if (length(args) > 1) as.integer(args[2]) else 200
 outdir <- if (length(args) > 2) args[3] else tempdir()
 q <- function(e) suppressWarnings(suppressMessages(e))
+## each data set with its own seed for the simulated null distributions: with
+## one fixed seed every data set would be compared with the same simulated
+## statistics, and the rejection rate would reflect one Monte Carlo draw of
+## the critical value (a first run did that: bootstrap 6.1-6.7% in C and E)
 pv <- function(fit, row) {
-  a <- q(pm_vc_test(fit, rows = row, nsim = 4000))
-  b <- q(pm_vc_test(fit, rows = row, method = "bootstrap", nboot = 199))
+  s <- sample.int(.Machine$integer.max, 1)
+  a <- q(pm_vc_test(fit, rows = row, nsim = 4000, seed = s))
+  b <- q(pm_vc_test(fit, rows = row, method = "bootstrap", nboot = 199, seed = s))
   c(default = a$p.value[1], bootstrap = b$p.value[1])
 }
 sc <- list(
