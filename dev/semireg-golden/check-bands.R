@@ -19,8 +19,8 @@
 ##   B. semipred(contr = ): fits equal (logLik 6385.2187); difference curve
 ##      equal to 1.2e-4, SE to 3.1e-5. Limits: t with Satterthwaite df 137 to
 ##      1279 (quantiles 1.962 to 1.978) where Wand uses qnorm (1.960), by design.
-##   Found: semipred() failed when the formula referred to a variable in xt
-##   (xt = list(range = range.age)); the check writes the values in.
+##   Found: semipred() failed when a random curve (s(age, xt = list(range =
+##   range.age)) | idnum) referred to an object of the session (fixed).
 ##   Rscript dev/semireg-golden/check-bands.R
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 suppressMessages(library(nlme))
@@ -129,8 +129,8 @@ LB <- cbind(0, 0, Xg, -Zg, Zg)
 sdB <- wand_band(fitB, XB, list(Zw, Zb), c(sig.uB[6], sig.uB[5]), LB, exact = TRUE)
 
 d$blackF <- blackF
-fmB <- q(eval(bquote(semireg(height ~ s(age, by = blackF, bs = "os", k = 20, xt = list(range = .(range.age))) +
-                   (s(age, bs = "os", k = 10, xt = list(range = .(range.age))) | idnum), data = d, prt = FALSE))))
+fmB <- q(semireg(height ~ s(age, by = blackF, bs = "os", k = 20, xt = list(range = range.age)) +
+                   (s(age, bs = "os", k = 10, xt = list(range = range.age)) | idnum), data = d, prt = FALSE))
 cat(sprintf("   logLik lme %.4f, semireg %.4f\n", as.numeric(logLik(fitB)), as.numeric(logLik(fmB$semer))))
 sp <- q(semipred(fmB, "blackF", "age", contr = c("1", "0"), covariateV = ageg, prt = FALSE))$pred_df
 cat(sprintf("   contrast curve: max |semipred - lme| / max |lme| = %.1e\n", rel(sp$height, ContB)))

@@ -51,7 +51,9 @@ pm_sm_parse <- function(formula, data = NULL) {
     covs <- vapply(a[an == ""], deparse1l, "")
     if (is.null(lhs$bs)) lhs$bs <- "os"
     rcurves[[length(rcurves) + 1L]] <- list(call = deparse1l(lhs), group = deparse1l(bars[[i]][[3]]),
-                                           vars = c(all.vars(lhs), all.vars(bars[[i]][[3]])))
+                                           # the data variables: the covariates and the group (not those of
+                                           # xt, k, ..., which may be objects of the session)
+                                           vars = c(unlist(lapply(a[an == ""], all.vars)), all.vars(bars[[i]][[3]])))
     bars[[i]] <- call("|", str2lang(paste(covs, collapse = " + ")), bars[[i]][[3]])
   }
   f_fixed <- pm_nobars(formula)
@@ -101,7 +103,7 @@ pm_sm_parse <- function(formula, data = NULL) {
         stop("A factor in t2() is not available: give it as 'by' (t2(x1, x2, by = f)): ", deparse1l(e), call. = FALSE)
       }
       tensors <- c(tensors, deparse1l(e))
-      vars <- c(vars, all.vars(e))
+      vars <- c(vars, unlist(lapply(ta[tn == ""], all.vars)), if ("by" %in% tn) all.vars(ta[["by"]]))
       next
     }
     args <- as.list(e)[-1]

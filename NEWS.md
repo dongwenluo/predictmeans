@@ -1453,6 +1453,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Bug fixes
 
+* `semipred()` and `predictmeans()` on `semireg()` fits stopped with "Can't
+  find the variable(s) ..." when a random curve `(s(x, ...) | g)` or a
+  `t2()` term had an object of the session in its arguments, such as
+  `xt = list(range = rg)` or `k = kk`: those names were taken for data
+  columns. Only the covariates, `by` and the group are now (as for `s()`
+  already).
+
 * **Gaussian `semireg()` fits moved a little each time their df or
   variance components were computed.** lme4 maps the fitted model's theta
   into the deviance function that the fit keeps; the Satterthwaite df
