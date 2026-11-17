@@ -14,6 +14,9 @@
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 suppressMessages(library(nlme))
 q <- function(e) suppressWarnings(suppressMessages(e))
+orig <- new.env()                                   # Wand's ZOSull(x, range.x, intKnots)
+sys.source("dev/semireg-golden/original/ZOSull.r", orig)
+ZOSull <- orig$ZOSull
 gi <- read.table("inst/extdata/semireg/growthIndiana.txt", header = TRUE)
 gm <- gi[gi$male == 1, ]
 idnum <- match(gm$idnum, unique(gm$idnum))
@@ -98,7 +101,6 @@ cat(sprintf("   band SE:        max |semireg - lme| / max |lme| = %.1e\n", rel(s
 blackF <- factor(black)
 XB <- cbind(1, age, black, age * black)              # = (white curve, black - white) fixed part
 Zw <- (1 - black) * Z; Zb <- black * Z
-data.fr$Zw <- NULL
 t0 <- proc.time()[[3]]
 fitB <- lme(height ~ -1 + X, data = data.fr,
             random = list(dummyId = pdIdent(~ -1 + Zw), dummyId = pdIdent(~ -1 + Zb),
