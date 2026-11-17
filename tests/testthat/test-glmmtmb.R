@@ -140,18 +140,18 @@ test_that("zero inflation: the means are the conditional ones, said in a message
   expect_true(is.na(suppressMessages(predictmeans(m0, "trt"))$settings$component))
 })
 
-test_that("mean_type = 'response': overall means (1 - pi) mu, equal to glmmTMB and emmeans", {
+test_that("mean_type = 'overall': overall means (1 - pi) mu, equal to glmmTMB and emmeans", {
   set.seed(7)
   d <- expand.grid(trt = factor(c("a", "b")), dose = factor(c("lo", "hi")), site = factor(1:10), r = 1:6)
   d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
                 rpois(nrow(d), exp(1.5 + 0.3 * (d$trt == "b") + 0.2 * (d$dose == "hi") + rnorm(10, 0, 0.3)[d$site])))
   m <- glmmTMB::glmmTMB(y ~ trt * dose + (1 | site), ziformula = ~trt, family = poisson, data = d)
-  pm <- suppressMessages(predictmeans(m, "trt:dose", mean_type = "response"))
+  pm <- suppressMessages(predictmeans(m, "trt:dose", mean_type = "overall"))
   nd <- data.frame(trt = pm$means$trt, dose = pm$means$dose, site = NA)
   expect_equal(pm$means$response, unname(predict(m, nd, type = "response", re.form = NA, allow.new.levels = TRUE)),
                tolerance = 1e-8)
-  expect_identical(pm$settings$component, "response")
-  p1 <- suppressMessages(predictmeans(m, "trt", mean_type = "response", pairwise = TRUE))
+  expect_identical(pm$settings$component, "overall")
+  p1 <- suppressMessages(predictmeans(m, "trt", mean_type = "overall", pairwise = TRUE))
   skip_if_not_installed("emmeans")
   em <- summary(emmeans::emmeans(m, ~ trt, component = "response"))
   expect_equal(p1$means$response, em$emmean, tolerance = 1e-6)
@@ -159,5 +159,5 @@ test_that("mean_type = 'response': overall means (1 - pi) mu, equal to glmmTMB a
   expect_equal(p1$pairs$ratio, p1$means$response[1] / p1$means$response[2], tolerance = 1e-8)
   # without zero inflation it is ignored, with a message
   m0 <- glmmTMB::glmmTMB(y ~ trt + (1 | site), family = poisson, data = d)
-  expect_message(predictmeans(m0, "trt", mean_type = "response"), "has none")
+  expect_message(predictmeans(m0, "trt", mean_type = "overall"), "has none")
 })

@@ -94,7 +94,7 @@ median or bias-adjusted mean; NULL when not back-transformed), `bias_adjust` (th
 used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `singular` (TRUE when
 the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`, `component`
 (glmmTMB fits with zero inflation: `"conditional"`, the means of the count part, mu, the default, or
-`"response"`, the overall means (1 - pi) mu with `predictmeans(mean_type = "response")`; NA otherwise), `model_class`, `version`.
+`"overall"`, the overall means (1 - pi) mu with `predictmeans(mean_type = "overall")`; NA otherwise), `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
 `summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "pvalue", "response"))`,

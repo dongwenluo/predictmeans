@@ -184,19 +184,19 @@ pm_setup <- function(a, pa) {
 
   # zero-inflated glmmTMB fits: the overall means (1 - pi) mu (R/zero-inflation.R)
   mean_type <- if (is.null(a$mean_type)) "conditional" else a$mean_type
-  if (identical(mean_type, "response")) {
+  if (identical(mean_type, "overall")) {
     if (is.null(pm_zi_component(model))) {
-      message("mean_type = \"response\" applies to glmmTMB models with zero inflation; this model has none, so the ",
+      message("mean_type = \"overall\" applies to glmmTMB models with zero inflation; this model has none, so the ",
               "means are the usual ones.")
       mean_type <- "conditional"
     } else {
       fam <- stats::family(model)
       if (!identical(fam$link, "log") || grepl("truncated", fam$family)) {
-        stop("mean_type = \"response\" is available for zero-inflated count models with a log link (poisson, nbinom1, ",
+        stop("mean_type = \"overall\" is available for zero-inflated count models with a log link (poisson, nbinom1, ",
              "nbinom2, ...), not ", fam$family, " (", fam$link, ").", call. = FALSE)
       }
       if (!is.null(a$permlist) || !is.null(a$vcov) || isTRUE(a$bias_adjust) || identical(a$bias_adjust, "taylor")) {
-        stop("mean_type = \"response\" cannot be combined with 'permlist', 'vcov' or 'bias_adjust'.", call. = FALSE)
+        stop("mean_type = \"overall\" cannot be combined with 'permlist', 'vcov' or 'bias_adjust'.", call. = FALSE)
       }
     }
   }
@@ -221,7 +221,7 @@ pm_estimate <- function(opt) {
   # (the grid of all combinations is only needed to average on the response scale)
   ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data, prtnum=opt$prtnum,
                         cov_reduce=opt$cov_reduce, exclude=opt$exclude, weights=opt$weights,
-                        refgrid=identical(opt$average, "response") || identical(opt$mean_type, "response"))
+                        refgrid=identical(opt$average, "response") || identical(opt$mean_type, "overall"))
   KK <- ctr.matrix$K
   if (anyDuplicated(ctr.matrix$fctnames[seq_along(opt$vars)])) {
     stop("predictmeans() gives one mean for each combination of the levels of '", opt$modelterm, "': give one value ",
@@ -239,7 +239,7 @@ pm_estimate <- function(opt) {
        mt = est$mt, bkmt = est$mt,    # bkmt: for back transformed
        mean.table = est$mean.table, se.table = est$se.table)
   # the overall means of a zero-inflated model, on the log scale (R/zero-inflation.R)
-  if (identical(opt$mean_type, "response")) out <- pm_zi_response_est(opt, out)
+  if (identical(opt$mean_type, "overall")) out <- pm_zi_overall_est(opt, out)
   out
 }
 

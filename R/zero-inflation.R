@@ -1,5 +1,5 @@
 ## Overall means (1 - pi) mu of glmmTMB fits with zero inflation, for
-## predictmeans(type = "response").
+## predictmeans(mean_type = "overall").
 ##
 ## For each cell of the reference grid (rg, from Kmatrix(refgrid = TRUE)) the
 ## mean of the count part is mu = exp(eta) (log link) and the probability of
@@ -29,7 +29,7 @@ pm_zi_overall <- function(model, rg, rows) {
     stats::model.matrix(tz, stats::model.frame(tz, grid, na.action = stats::na.pass))
   }, error = function(e) NULL)
   if (is.null(Xz) || !all(names(bz) %in% colnames(Xz))) {
-    stop("type = \"response\": the zero-inflation formula (", paste(deparse(fz), collapse = ""), ") uses variables or ",
+    stop("mean_type = \"overall\": the zero-inflation formula (", paste(deparse(fz), collapse = ""), ") uses variables or ",
          "terms that are not in the grid of the means; give them in 'modelterm' or 'covariate'.", call. = FALSE)
   }
   Xz <- Xz[, names(bz), drop = FALSE]
@@ -47,7 +47,7 @@ pm_zi_overall <- function(model, rg, rows) {
 ## SEDs, letters and the back-transformation (exp, the inverse link) of the
 ## later stages work unchanged; the df of a contrast L of the means are those
 ## of L K for the conditional model (its df rule, by term).
-pm_zi_response_est <- function(opt, est) {
+pm_zi_overall_est <- function(opt, est) {
   K0 <- est$K
   KK <- est$KK
   rows <- match(rownames(K0), rownames(KK))

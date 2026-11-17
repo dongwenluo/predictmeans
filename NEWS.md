@@ -1472,7 +1472,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   means 4.80 and 5.94, overall means 4.00 and 3.83). A message now says
   which, `settings$component` is `"conditional"`, and the help pages have a
   section "Zero inflation (glmmTMB)". `predictmeans(mean_type =
-  "response")` gives the overall means (1 - pi) mu, with SEs from the joint
+  "overall")` gives the overall means (1 - pi) mu, with SEs from the joint
   covariance of the conditional and zero-inflation coefficients, averaged
   over the cells of the grid, and their ratios in `pairs`; equal to
   glmmTMB's `predict(type = "response")` and to emmeans with `component =

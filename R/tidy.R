@@ -215,10 +215,10 @@ pm_tidy_parts <- function(e) {
   )
   zi <- pm_zi_component(model)
   if (!is.null(zi)) {
-    message(if (identical(g("mean_type"), "response")) paste0(
-      "The model has zero inflation: the means are the overall means (1 - pi) mu (mean_type = \"response\"), ",
+    message(if (identical(g("mean_type"), "overall")) paste0(
+      "The model has zero inflation: the means are the overall means (1 - pi) mu (mean_type = \"overall\"), ",
       "averaged over the cells of the grid; 'estimate' is their log, the ratios are of these means.") else
-      paste(attr(zi, "note"), "mean_type = \"response\" gives the overall means."))
+      paste(attr(zi, "note"), "mean_type = \"overall\" gives the overall means."))
   }
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)

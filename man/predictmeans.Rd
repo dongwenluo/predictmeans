@@ -276,7 +276,7 @@ stay on the link scale.}
 
 \item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}); for other models the two
 are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
-\eqn{\mu}. \code{"response"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+\eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
 with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
 averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
 pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
@@ -356,7 +356,7 @@ part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give
 \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
 ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
 \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
-\code{predictmeans(mean_type = "response")} gives the overall means and their ratios.
+\code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
 }
 
 \examples{
