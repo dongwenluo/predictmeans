@@ -33,7 +33,9 @@
 ## constraint is put between the common curve and the deviations: the mixed
 ## model separates them by their variances, as nested random effects.
 pm_sm_parse <- function(formula, data = NULL) {
-  bars <- pm_findbars(formula)
+  # glmmTMB covariance-structure terms (ar1(), ou(), ...) are kept as written
+  specials <- pm_special_terms(formula)
+  bars <- pm_plain_bars(formula, specials)
   deparse1l <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
   # random curves (s(x) | g): (x | g), the straight lines per level with
   # correlated intercepts and slopes, plus the wiggly part of the smooth per
@@ -76,14 +78,31 @@ pm_sm_parse <- function(formula, data = NULL) {
   vars <- character(0)
   taken <- names(data)
   used <- character(0)
+  tensors <- character(0)
   for (e in sm_calls) {
-    # tensor products: mgcv's pre-fit design of t2() is not in the span of its
-    # prediction matrix (mgcv 1.9-1), so its split into fixed and random parts
-    # cannot be checked yet (dev/review-semireg.md); te() and ti() cannot be
-    # written as independent random effects at all
-    if (as.character(e[[1]]) %in% c("te", "t2", "ti")) {
-      stop("Tensor-product smooths (te(), t2(), ti()) are not available in semireg() yet; use s(x1, x2) ",
-           "(isotropic thin plate) or s(x1, x2, bs = \"ztps\").", call. = FALSE)
+    # tensor products: t2() (Wood, Scheipl and Faraway 2013), whose penalties
+    # make independent random effects; te() has overlapping penalties, which
+    # random effects cannot represent: it is fitted as t2() with a message;
+    # ti() (the interaction alone, with its own constraints) is refused
+    fn <- as.character(e[[1]])
+    if (fn == "ti") {
+      stop("ti() is not available in semireg(): its penalties cannot be written as random effects. Use t2(x1, x2), ",
+           "which contains the main effects, or s(x1, x2).", call. = FALSE)
+    }
+    if (fn %in% c("te", "t2")) {
+      if (fn == "te") {
+        e[[1]] <- as.name("t2")
+        message("te() is fitted as t2(), the tensor product whose penalties are random effects (Wood, Scheipl ",
+                "and Faraway 2013); the fit differs a little from mgcv's te().")
+      }
+      ta <- as.list(e)[-1]
+      tn <- if (is.null(names(ta))) rep("", length(ta)) else names(ta)
+      if (any(vapply(ta[tn == ""], is_factor, logical(1)))) {
+        stop("A factor in t2() is not available: give it as 'by' (t2(x1, x2, by = f)): ", deparse1l(e), call. = FALSE)
+      }
+      tensors <- c(tensors, deparse1l(e))
+      vars <- c(vars, all.vars(e))
+      next
     }
     args <- as.list(e)[-1]
     nms <- if (is.null(names(args))) rep("", length(args)) else names(args)
@@ -134,14 +153,15 @@ pm_sm_parse <- function(formula, data = NULL) {
   ig <- mgcv::interpret.gam(f_fixed)
   pf <- ig$pf
   rhs <- c(paste(deparse(pf[[3]], width.cutoff = 500L), collapse = " "),
-           vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""))
+           vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
+           vapply(specials, deparse1l, ""))
   f_new <- stats::as.formula(paste(paste(deparse(formula[[2]], width.cutoff = 500L), collapse = " "), "~",
                                    paste(rhs, collapse = " + ")), env = environment(formula))
   # the variables of the smooths (covariates, factors, 'by' variables): never
   # centred or scaled (a numeric 'by' multiplies the smooth)
   vars <- c(vars, unlist(lapply(rcurves, `[[`, "vars")))
   list(formula = f_new, groups = groups, fixed = unique(fixed), derived = derived, vars = unique(vars),
-       rcurves = rcurves)
+       rcurves = rcurves, tensors = tensors)
 }
 
 ## The derived 'by' factors (cells of several factors) for data or new data.
@@ -170,6 +190,19 @@ pm_sm_build <- function(sp, data) {
     G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", paste(g, collapse = " + ")), env = environment(sp$formula)),
                    data = gd, fit = FALSE)
     sms <- c(sms, G$smooth)
+  }
+  # t2(): set up without the sum-to-zero constraint (as the bases "os" and
+  # "ztps"): mgcv imposes it on the whole tensor product, which leaves a
+  # little of the penalised space in the unpenalised one (5% on a test
+  # surface), so the fixed part would not be the terms x1 + x2 + x1:x2. With
+  # no constraint the unpenalised part is exactly 1, x1, x2, x1:x2 (the
+  # products of the marginal null spaces), the intercept is the model's, and
+  # the design is that of PredictMat() at prediction
+  for (tc in sp$tensors) {
+    ce <- str2lang(tc)
+    ce[[1]] <- quote(mgcv::t2)
+    spec <- eval(ce, envir = environment(sp$formula))
+    sms <- c(sms, mgcv::smoothCon(spec, data = gd, knots = NULL, absorb.cons = FALSE))
   }
   blocks <- list()
   maps <- list()
@@ -401,4 +434,147 @@ Predict.matrix.ztps.smooth <- function(object, data) {
   x <- as.matrix(as.data.frame(data[object$term]))
   Z <- unclass(as.matrix(Ztps(x, k = object$ztps_k, knots = object$ztps_knots)))
   cbind(1, x, Z)
+}
+
+## bs = "user": a basis of the user's own. xt = list(basis = <function>) (or
+## xt = <function>): a function of the covariate(s), one argument per
+## covariate in the order of s(), returning a matrix with one row per value.
+## Its columns get iid random coefficients with one variance (as a matrix in
+## smoothZ); the fixed part is the constant and the covariate(s), added to
+## the formula as for bs = "os" (xt$null = "constant": the constant only;
+## "none": no fixed part). The function is checked when the smooth is set up
+## (pm_user_basis_check()) and its values again at prediction.
+
+smooth.construct.user.smooth.spec <- function(object, data, knots) {
+  xt <- if (is.function(object$xt)) list(basis = object$xt) else object$xt
+  f <- if (is.list(xt)) xt$basis
+  if (!is.function(f)) {
+    stop("bs = \"user\" needs the basis function: s(x, bs = \"user\", xt = list(basis = function(x) ...)).",
+         call. = FALSE)
+  }
+  null <- if (is.list(xt) && !is.null(xt$null)) xt$null else "linear"
+  if (!null %in% c("linear", "constant", "none")) {
+    stop("xt$null of bs = \"user\" must be \"linear\", \"constant\" or \"none\".", call. = FALSE)
+  }
+  x <- lapply(object$term, function(v) data[[v]])
+  B <- pm_user_basis_check(f, x, object$term, null)
+  N <- pm_user_null(x, null)
+  object$X <- cbind(N, B)
+  object$S <- list(diag(c(rep(0, ncol(N)), rep(1, ncol(B))), ncol(N) + ncol(B)))
+  object$rank <- ncol(B)
+  object$null.space.dim <- ncol(N)
+  object$C <- matrix(0, 0, ncol(object$X))
+  object$bs.dim <- ncol(object$X)
+  object$df <- ncol(object$X)
+  object$user_basis <- f
+  object$user_null <- null
+  object$user_ncol <- ncol(B)
+  class(object) <- c("user.smooth", "mgcv.smooth")
+  object
+}
+
+Predict.matrix.user.smooth <- function(object, data) {
+  x <- lapply(object$term, function(v) data[[v]])
+  lab <- paste0("s(", paste(object$term, collapse = ", "), ", bs = \"user\")")
+  B <- tryCatch(pm_user_basis_value(object$user_basis, x),
+                error = function(e) stop("The basis function of ", lab, " failed at the values to predict: ",
+                                         conditionMessage(e), call. = FALSE))
+  if (nrow(B) != length(x[[1]]) || ncol(B) != object$user_ncol || any(!is.finite(B))) {
+    stop("The basis function of ", lab, " did not give ", object$user_ncol, " finite columns with a row per value ",
+         "at the values to predict.", call. = FALSE)
+  }
+  cbind(pm_user_null(x, object$user_null), B)
+}
+
+## The fixed part of a user basis: the constant and the covariates, the
+## constant, or nothing.
+pm_user_null <- function(x, null) {
+  n <- length(x[[1]])
+  switch(null, linear = cbind(1, do.call(cbind, x)), constant = matrix(1, n, 1), none = matrix(0, n, 0))
+}
+
+## The user's basis at x, as a numeric matrix (a sparse Matrix or a data frame
+## is converted; for one value a vector is one row).
+pm_user_basis_value <- function(f, x) {
+  B <- do.call(f, unname(x))
+  if (inherits(B, "Matrix") || is.data.frame(B)) B <- as.matrix(B)
+  if (is.null(dim(B)) && is.numeric(B) && length(x[[1]]) == 1) B <- matrix(B, 1)
+  if (!is.matrix(B) || !is.numeric(B)) stop("it must return a numeric matrix.", call. = FALSE)
+  matrix(as.numeric(B), nrow(B), ncol(B))
+}
+
+## The checks of a user basis on the data, before the fit. Each stops with
+## what is wrong and how to put it right:
+##   1. the function runs on the data and returns a numeric matrix, a row per
+##      value, at least one column, finite values;
+##   2. the same values twice (no random numbers);
+##   3. a row depends on its own covariate value only, not on the data set:
+##      the rows of part of the data in another order, and of a single value
+##      (as at prediction), equal those of the whole data (knots or a range
+##      taken from the data fail here: prediction would use other ones);
+##   4. the columns, with the fixed part, are linearly independent;
+## and a warning when the function fails just beyond the ends of the data
+## (slopes there, semipred(deriv = ), need it).
+pm_user_basis_check <- function(f, x, term, null) {
+  lab <- paste0("s(", paste(term, collapse = ", "), ", bs = \"user\")")
+  fail <- function(...) stop("The basis function of ", lab, " ", ..., call. = FALSE)
+  n <- length(x[[1]])
+  B <- tryCatch(pm_user_basis_value(f, x), error = function(e) fail("failed on the data: ", conditionMessage(e)))
+  if (nrow(B) != n) fail("must return a matrix with a row per value (", n, " rows), not ", nrow(B), ".")
+  if (ncol(B) < 1) fail("returned no columns.")
+  bad <- !is.finite(B)
+  if (any(bad)) {
+    i <- which(rowSums(bad) > 0)[1]
+    fail("returned NA or infinite values (first at ", paste(term, "=", vapply(x, function(v) format(v[i]), ""),
+                                                            collapse = ", "), ").")
+  }
+  same <- function(a, b) isTRUE(all.equal(a, b, tolerance = 1e-8, check.attributes = FALSE))
+  if (!same(pm_user_basis_value(f, x), B)) fail("gave different values on two calls (random numbers?).")
+  # part of the data, in reverse order, without the smallest and largest
+  # values of the first covariate; and a single value
+  o <- order(x[[1]])
+  cut <- max(1L, floor(n/10))
+  part <- rev(o[(cut + 1):max(cut + 1, n - cut)])
+  one <- o[ceiling(n/2)]
+  for (idx in list(part, one)) {
+    Bi <- tryCatch(pm_user_basis_value(f, lapply(x, function(v) v[idx])), error = function(e) e)
+    if (inherits(Bi, "error")) {
+      fail("failed on ", if (length(idx) == 1) "a single value (as at prediction)" else "part of the data", ": ",
+           conditionMessage(Bi))
+    }
+    if (!identical(dim(Bi), c(length(idx), ncol(B)))) {
+      fail("must return a matrix with a row per value and the same ", ncol(B), " columns for any number of values; ",
+           "for ", length(idx), " value", if (length(idx) > 1) "s", " it returned ", nrow(Bi), " x ", ncol(Bi),
+           if (length(idx) == 1) " (keep one row for one value, e.g. matrix(..., nrow = length(x)))", ".")
+    }
+    if (!same(Bi, B[idx, , drop = FALSE])) {
+      fail("depends on the data it is given: the rows for the same values differ when it is evaluated on part ",
+           "of the data", if (length(idx) == 1) " (one value, as at prediction)", ". Fix the knots and range in the ",
+           "function, e.g. function(x) ZOSull(x, intKnots = c(...), range.x = c(lo, hi)).")
+    }
+  }
+  rank_of <- function(M) {
+    nrm <- sqrt(colSums(M^2))
+    qr(sweep(M, 2, ifelse(nrm > 0, nrm, 1), "/"), tol = 1e-7)$rank
+  }
+  rB <- rank_of(B)
+  if (rB < ncol(B)) fail("has linearly dependent columns (rank ", rB, " of ", ncol(B), "): remove the redundant ones.")
+  X <- cbind(pm_user_null(x, null), B)
+  if (rank_of(X) < ncol(X)) {
+    # the constant in the basis's span: only null = "none" helps; the
+    # straight line only: null = "constant"
+    with_const <- rank_of(cbind(1, B)) < ncol(B) + 1
+    fail("has columns in the span of the fixed part (", if (with_const) "the constant" else
+         "the constant and the straight line", "): remove them, or set xt = list(basis = ..., null = ",
+         if (with_const) "\"none\"" else "\"constant\"", ").")
+  }
+  # just beyond the ends of the data (the slopes of semipred(deriv = ))
+  ends <- lapply(x, function(v) { rg <- range(v); rg + c(-1, 1)*1e-4*max(diff(rg), 1e-8) })
+  ok <- tryCatch({
+    Be <- pm_user_basis_value(f, ends)
+    nrow(Be) == 2 && ncol(Be) == ncol(B) && all(is.finite(Be))
+  }, error = function(e) FALSE)
+  if (!ok) warning("The basis function of ", lab, " fails just beyond the ends of the data; slopes there ",
+                   "(semipred(deriv = )) need it: widen its range a little.", call. = FALSE)
+  B
 }

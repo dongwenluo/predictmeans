@@ -86,6 +86,11 @@ reference:
   - Clinical
   - copper
   - Drug
+  - growthIndiana
+  - ozoneCalif
+  - SBMDfem
+  - scallop
+  - wageTUnion
   - Poisson_ind
 - title: Package
   contents:

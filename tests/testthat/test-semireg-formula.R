@@ -104,8 +104,10 @@ test_that("formula smooths in GLMMs and glmmTMB; negative binomial SEs of semire
 
 test_that("formula smooths: refusals with a message", {
   d <- sf_data()
-  expect_error(semireg(y ~ t2(x, z), data = d, prt = FALSE), "Tensor-product")
-  expect_error(semireg(y ~ te(x, z), data = d, prt = FALSE), "Tensor-product")
+  # tensor products: t2() is fitted, te() as t2() with a message, ti() refused (test-semireg-tensor.R)
+  expect_s3_class(suppressWarnings(semireg(y ~ t2(x, z), data = d, prt = FALSE)), "semireg")
+  expect_message(suppressWarnings(semireg(y ~ te(x, z), data = d, prt = FALSE)), "fitted as t2")
+  expect_error(semireg(y ~ ti(x, z), data = d, prt = FALSE), "ti\\(\\) is not available")
   expect_error(semireg(y ~ s(x), smoothZ = list(sm = smZ(z)), data = d, prt = FALSE), "not both")
   expect_error(semireg(y ~ s(x):f, data = d, prt = FALSE), "term of its own")
 })

@@ -3,6 +3,7 @@
 \docType{data}
 \name{copper}
 \alias{copper}
+\alias{copperKnots}
 \title{\code{copper} data}
 \format{
 A data frame with 439 rows and 4 columns:
@@ -12,9 +13,12 @@ A data frame with 439 rows and 4 columns:
 \item{zcoord}{Z coordinate of the sampling point.}
 \item{grade}{copper grade.}
 }
+\code{copperKnots}: the 20 knots (columns \code{xcoord}, \code{ycoord}) of M. P. Wand's thin-plate spline
+fit of these data (a geoadditive model fitted by \code{lme()}), which \code{\link{semireg}} reproduces.
 }
 \usage{
 data(copper)
+data(copperKnots)
 }
 \description{
 Copper grade at sampling points with their X, Y and Z coordinates within a designated
@@ -23,11 +27,17 @@ thin-plate spline in X and Y.
 }
 \examples{
 data(copper)
-\donttest{
-mod <- semireg(log(grade) ~ (xcoord + ycoord + zcoord)^2,
-               smoothZ = list(grp_z = smZ(zcoord),
-                              grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
-               data = copper, prt = FALSE)
+data(copperKnots)
+# M. P. Wand's geoadditive model: a thin-plate surface over the plane with the given knots,
+# and an O'Sullivan spline in depth (their linear terms are added to the fixed effects)
+mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
+                 s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
 anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
+semipred(mod, covariate = c("xcoord", "ycoord"), prt = FALSE)$plt
+\donttest{
+# on the log scale, with the pairwise interactions of the coordinates
+mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
+                  xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
+semipred(mod2, covariate = "zcoord", trans = exp, prt = FALSE)$plt
 }
 }

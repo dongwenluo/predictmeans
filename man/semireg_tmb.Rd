@@ -17,7 +17,7 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 \item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.}
 
-\item{smoothZ}{The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+\item{smoothZ}{Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.}
 
 \item{ziformula}{a \emph{one-sided} (i.e., no response variable) formula for zero-inflation combining fixed and random effects: the default \code{~0} specifies no zero-inflation. Specifying \code{~.} sets the zero-inflation formula identical to the right-hand side of \code{formula} (i.e., the conditional effects formula); terms can also be added or subtracted. \strong{When using \code{~.} as the zero-inflation formula in models where the conditional effects formula contains an offset term, the offset term will automatically be dropped}. The zero-inflation model uses a logit link.}
@@ -48,7 +48,7 @@ because of missingness.}
 
 \item{control}{control parameters, see \code{\link{glmmTMBControl}}.}
 
-\item{REML}{whether to use REML estimation rather than maximum likelihood.}
+\item{REML}{whether to use REML estimation rather than maximum likelihood. Gaussian fits use REML by default; for other families the default is maximum likelihood (Laplace), as \code{glmer}, unless \code{REML = TRUE} is given. (Before 2.0 the default never reached glmmTMB, so gaussian fits were maximum likelihood.)}
 
 \item{start}{starting values, expressed as a list with possible components \code{beta}, \code{betazi}, \code{betad} (fixed-effect parameters for conditional, zero-inflation, dispersion models); \code{b}, \code{bzi} (conditional modes for conditional and zero-inflation models); \code{theta}, \code{thetazi} (random-effect parameters, on the standard deviation/Cholesky scale, for conditional and z-i models); \code{psi} (extra family parameters, e.g., shape for Tweedie models).}
 
@@ -83,6 +83,18 @@ Fit a semi parametric model based on glmmTMB.
 \details{
 A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg_tmb} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
 }
+\section{Correlation structures}{
+
+glmmTMB's covariance structures can be written next to the smooths and are kept as written: \code{ar1()},
+\code{ou()} (unequally spaced times, with \code{glmmTMB::numFactor()}), \code{cs()}, \code{toep()},
+\code{diag()}, and the spatial \code{exp()}, \code{gau()}, \code{mat()}. Residuals correlated in time within
+subjects are written as \code{ar1(time_factor + 0 | subject)} with \code{dispformula = ~0} (the structure is
+then the residual covariance; with a residual variance as well it is AR1 plus a nugget, and \code{cs()} plus a
+residual variance is not identified), e.g.
+\code{semireg_tmb(y ~ s(time, by = trt) + ar1(tf + 0 | id), dispformula = ~0, data = d)}. \code{semireg()}
+(lme4) has no such structures and refuses them.
+}
+
 \section{Smooth terms in the formula}{
 
 Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
@@ -99,7 +111,9 @@ slopes:
   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
-  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
+  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6} \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own (see \code{\link{semireg}}) \tab \code{x} \cr
+  \code{t2(x1, x2)} \tab tensor-product surface, a variance per penalty \tab \code{x1 + x2 + x1:x2} \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
   \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
@@ -115,44 +129,47 @@ plus the common curve plus its deviations.
 The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
 \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
-\code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
-not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both.
+\code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)}, as in \code{\link{semireg}}
+(\code{te()} is fitted as \code{t2()}; \code{ti()} is not available). Smooths are given either in the formula or in \code{smoothZ}, not both.
 }
 
 \examples{
 library(predictmeans)
-if (requireNamespace("HRW", quietly = TRUE)) {
-  data(WarsawApts, package = "HRW")
-  fit1 <- semireg_tmb(areaPerMzloty ~ construction.date,
-                      smoothZ=list(
-                        grp=smZ(construction.date, k=25)
-                      ),
-                      data = WarsawApts)
-  sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+## Counts with extra zeros: curves of two treatments, a random site effect, a negative
+## binomial with zero inflation; the rate ratio of the curves along x and where it differs
+## from 1
+set.seed(5)
+cn <- expand.grid(x = seq(0, 3, length = 30), trt = factor(c("ctl", "trt")), site = factor(1:8))
+cn$y <- rnbinom(nrow(cn), size = 3,
+                mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
+cn$y[runif(nrow(cn)) < 0.1] <- 0
+fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
+                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+attr(rr$pred_df, "significant")
+predictmeans(fc, "trt", covariate = c(x = 1.5))$means
+\donttest{
+## Repeated measures: curves over time, AR(1) correlation within subjects (the residual
+## covariance, dispformula = ~0); means at a time with Satterthwaite df
+set.seed(9)
+d <- expand.grid(t = 1:8, id = factor(1:12))
+d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
+d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
+  unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
+d$tf <- factor(d$t)
+fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
+                  dispformula = ~0, data = d, prt = FALSE)
+predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
+varcomp(fa)
 
-  WarsawApts$district <- factor(WarsawApts$district)
-  fit2 <- semireg_tmb(areaPerMzloty ~ construction.date*district,
-                      smoothZ=list(group=smZ(construction.date, k=15,
-                                             by = district, group=TRUE)),
-                      data=WarsawApts)
-  sp_out2_1 <- semipred(fit2, "district", "construction.date")
-  sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-}
+## Binary responses with a random intercept per child (HRW::indonRespir)
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
-  fit3 <- semireg_tmb(respirInfec ~ age+vitAdefic + female + height
-                      + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                      smoothZ=list(
-                        grp=smZ(age)
-                      ),
-                      family = binomial,
-                      data = indonRespir)
-  sp_out3 <- semipred(fit3, "age", "age")
-  library(ggplot2)
-  print(sp_out3$plt +
-    geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-    geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
-    coord_cartesian(ylim = c(0, 0.2)))
+  fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
+                      stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir, prt = FALSE)
+  semipred(fb, "age", "age", prt = FALSE)$plt
+}
 }
 }
 \references{

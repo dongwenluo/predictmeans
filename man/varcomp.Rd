@@ -5,7 +5,8 @@
 \title{Variance Components with Standard Errors and Confidence Intervals}
 \usage{
 varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
-        information = c("observed", "average", "expected"))
+        information = c("observed", "average", "expected"), test = FALSE,
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
@@ -25,13 +26,30 @@ the variance parameters behind the SEs: \code{"observed"} (the default, as SAS P
 (the average information of Genstat's and ASReml's REML: Genstat's s.e.) or \code{"expected"}; the same
 choices as for the Kenward-Roger df (\code{df_method} of \code{\link{predictmeans}}). Other fits use the
 observed information.}
+
+\item{test}{\code{TRUE}: add a likelihood ratio test of each component being zero (\code{lmer}, \code{glmer},
+\code{glmmTMB} and \code{semireg} fits; see \sQuote{Tests}). The default is \code{FALSE}: each test refits the
+model once.}
+
+\item{test_method}{\code{"auto"} (the default) or \code{"mixture"}: the reference distribution of a single
+variance (see \sQuote{Tests}); \code{"bootstrap"}: a parametric bootstrap of each likelihood ratio, for small
+samples, few levels, or where the asymptotic references are conservative.}
+
+\item{nsim}{Number of draws of the exact null distribution of the restricted likelihood ratio (default 10000,
+with a fixed seed, so the p-values repeat).}
+
+\item{nboot}{Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
+statistics reach the observed one.}
+
+\item{ncore}{Number of cores for the bootstrap (default 1; not on Windows).}
 }
 \value{
 A data frame with one row per component (random-effect variances and covariances by group, named
   \code{group.term} and \code{group.term1.term2}; correlation and variance-function parameters named
   \code{cor.name} and \code{var.name}; \code{residual}) and columns \code{vcov} (the estimate), \code{SE} and,
   with \code{ci = TRUE}, the limits. Values are rounded to 4 decimals; attribute \code{"ci_method"} says how
-  the intervals were made.
+  the intervals were made. With \code{test = TRUE} also \code{LRT} and \code{p.value}, and class
+  \code{"pm_varcomp"} (printed with the hypotheses).
 }
 \description{
 The variance components of a fitted model, with standard errors and confidence intervals, for every model class
@@ -76,11 +94,63 @@ completed as in \code{\link{predictmeans}}.
 \code{gam}: \code{mgcv::gam.vcomp()} (variances of the smooths, and the scale), its intervals squared, and the
 SEs from their width on the log scale; it needs \code{method = "REML"} or \code{"ML"}.
 }
+\section{Tests}{
+
+With \code{test = TRUE} each row gets the likelihood ratio test of the model one would fit without it
+(columns \code{LRT} and \code{p.value}; the hypotheses and reference distributions are printed below the
+table and kept in \code{attr(, "tests")}):
+\tabular{lll}{
+  \strong{Row} \tab \strong{Model refitted} \tab \strong{Reference distribution} \cr
+  variance of a one-variance term \code{(1 | g)}, smooth block \tab the term dropped \tab \eqn{\frac12\chi^2_0 + \frac12\chi^2_1}; exact restricted LRT when it is the only random effect of a gaussian \code{lmer}/\code{semireg} REML fit \cr
+  slope variance in \code{(1 + x | g)} (k components) \tab \code{(1 | g)} \tab \eqn{\frac12\chi^2_{k-1} + \frac12\chi^2_k} \cr
+  intercept variance of \code{(1 + x | g)}, variance of \code{ar1()} etc. \tab the whole term dropped \tab \eqn{\chi^2} with the term's number of parameters (conservative) \cr
+  covariance in \code{(1 + x | g)} \tab \code{(1 + x || g)} (glmmTMB: \code{diag()}) \tab \eqn{\chi^2} with the number of covariances \cr
+  correlation of \code{ar1()}, \code{ou()}, \code{cs()} \tab \code{homdiag()} / \code{diag()} \tab \eqn{\chi^2_1} \cr
+  residual variance; a structure that is the residual covariance (\code{dispformula = ~0}) \tab no test \tab \cr
+}
+A variance is on the boundary of its range under the hypothesis, so its likelihood ratio has the mixture
+distributions of Self and Liang (1987) and Stram and Lee (1994), not \eqn{\chi^2_1} (which is conservative, as
+\code{lmerTest::ranova()}). When the tested variance is the only random effect of a gaussian model fitted by
+REML, the exact finite-sample null distribution of Crainiceanu and Ruppert (2004) is used (simulated); with
+other random effects present that distribution is no longer exact (in simulations it was too liberal), and
+the mixture is used. The mixture p-values equal SAS PROC GLIMMIX \code{COVTEST}, the likelihood ratios SAS
+PROC MIXED and Genstat REML (\code{tests/testthat/test-vc-test.R}). Where a p-value may be inaccurate in
+either direction (a term with fewer than 6 levels; binary data with fewer than 5 observations per level, where
+the Laplace approximation is poor), a warning names the rows and suggests the bootstrap.
+
+\code{test_method = "bootstrap"}: for each test, responses are simulated from the model without the
+component (new random effects and errors), both models are refitted to each, and the p-value is
+\eqn{(\#\{LRT^* \ge LRT\} + 1)/(b + 1)}. It needs no distributional approximation, so it is the check for
+the rows the warning names. A test stops once 20 simulated statistics reach the observed one (Besag and
+Clifford 1991): a clearly non-significant row needs some 40-400 refits, a significant one all \code{nboot}
+pairs. Each draw has its own seed, so the p-values repeat, with or without \code{ncore}. Run time: a few
+seconds to a minute for usual \code{lmer} and \code{glmer} models; \code{glmmTMB} fits are slower (each refit
+rebuilds the model). For \code{lme}, \code{gls}, \code{gam} and models without random effects
+\code{test = TRUE} is not available.
+
+Which method: in a simulation of seven designs (\file{dev/sim-vc-defaults.R} in the package sources) the
+default rejected at most 4.5\% of the data sets without the component at the 5\% level: it was never
+liberal. For GLMMs it was conservative (binary data in clusters of four 0.5\%, Poisson 4\%, negative
+binomial 0\%), and there the bootstrap rejected 1.5-6\% and found 5-7\% more of the real components. Use
+the default for gaussian models and as a quick first look; use the bootstrap for GLMMs, small data sets, the
+rows a warning names, and a p-value near the cut-off.
+}
+
 \examples{
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 varcomp(fm)
+# is each variance needed? (one refit per row)
+varcomp(fm, test = TRUE)
+\donttest{
+# the same by parametric bootstrap (a few seconds; more draws and ncore for real use)
+varcomp(fm, test = TRUE, test_method = "bootstrap", nboot = 99)
+}
+# a GLMM: the boundary mixture is conservative here, the bootstrap nearer 5\%
+gm <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
+            family = binomial, data = lme4::cbpp)
+varcomp(gm, test = TRUE)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
 # the same components by the analysis of variance
@@ -95,6 +165,18 @@ mod2 <- gls(distance ~ age*Sex, correlation=corAR1(form=~1|Subject),
 varcomp(mod2)
 # the error term of a linear model
 varcomp(lm(yield ~ Block + nitro*Variety, data=Oats))
+}
+\references{
+Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values. \emph{Biometrika}, 78, 301-304.
+
+Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
+component. \emph{Journal of the Royal Statistical Society B}, 66, 165-185.
+
+Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
+tests under nonstandard conditions. \emph{Journal of the American Statistical Association}, 82, 605-610.
+
+Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed effects model.
+\emph{Biometrics}, 50, 1171-1177.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

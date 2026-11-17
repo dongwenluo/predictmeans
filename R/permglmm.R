@@ -30,7 +30,7 @@ pm_permglmm <- function(m0, m1, nperm, ncore, seed, perms, method, plot, labels)
   f1 <- stats::formula(m1)
   fe0 <- colnames(W0$X)
   fe1 <- colnames(pm_working(m1)$X)
-  bars <- function(f) vapply(pm_findbars(f), function(b) paste(deparse(b), collapse = ""), "")
+  bars <- function(f) gsub(" ", "", pm_random_terms(f), fixed = TRUE)
   if (!all(fe0 %in% fe1) || !all(bars(f0) %in% bars(f1))) {
     stop("The model ", labels[1], " must be nested within the model ", labels[2], ".", call. = FALSE)
   }

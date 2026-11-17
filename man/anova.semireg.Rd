@@ -15,7 +15,7 @@
 \value{
 A list of class \code{"pm_semi_anova"} with \code{fixed} (the table of the fixed effects) and
   \code{smooth} (a data frame: the variance of each smooth block, the log-likelihoods of the model with and without
-  it, the likelihood ratio statistic and its p-value), printed together.
+  it, the likelihood ratio statistic, its p-value and the reference distribution), printed together.
 }
 \description{
 Tests of the fixed effects and of the smooth terms of a \code{\link{semireg}} or \code{\link{semireg_tmb}} fit,
@@ -29,9 +29,12 @@ for generalized fits Wald chi-square tests. The fixed parts of the smooths (e.g.
 
 \strong{Smooth terms}: for each block of smooth random effects (one variance), the likelihood ratio test of the
 variance being zero, i.e. of the curve being its straight-line part: the model is refitted without the block (with
-the same fixed effects, so REML likelihoods can be compared for gaussian fits). As the variance is on the boundary
-of its range under the null hypothesis, the p-value is half that of the chi-square with 1 df (Self and Liang,
-1987); \code{lmerTest::ranova()} used the full chi-square, which is conservative. For an \code{s(x, f)} smooth the
+the same fixed effects, so REML likelihoods can be compared for gaussian fits). The tests are those of
+\code{varcomp(fit, test = TRUE)}: as the variance is on the boundary of its range under the null hypothesis, the
+reference is the mixture \eqn{\frac12\chi^2_0 + \frac12\chi^2_1} (Self and Liang, 1987), and for the only random
+effect of a gaussian fit the exact null distribution of the restricted likelihood ratio (Crainiceanu and Ruppert,
+2004), where the mixture is conservative; \code{lmerTest::ranova()} used the full chi-square, more conservative
+still. Column \code{test} names the distribution. For an \code{s(x, f)} smooth the
 block of the deviation curves tests whether the curves of the levels of \code{f} have the same shape. For small
 samples \code{\link{permlmer}} or \code{\link{bootmodels}} on \code{fit$semer} give resampling tests.
 }
@@ -42,6 +45,9 @@ fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, pr
 anova(fm)
 }
 \references{
+Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
+component. \emph{Journal of the Royal Statistical Society B}, 66, 165-185.
+
 Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
 tests under nonstandard conditions. \emph{Journal of the American Statistical Association}, 82, 605-610.
 }

@@ -136,3 +136,22 @@ The run itself (`genstat-results-2026-11-14-run3.txt`, parsed by
 `varcomp(information = "average")` in all 26 values: Genstat centres age for
 the random slope (lmer with `age - 11`), and its REML keeps the negative
 Dyestuff2 component (-1.32, s.e. 1.36), which is the `aov` estimate.
+
+## Tests of variance components (`pm-reference-4.gen`, run 2026-11-17: `genstat-results-2026-11-17-run4.txt`)
+
+REML deviances of full and reduced models for `varcomp(test = TRUE)`
+(`R/vc-test.R`); the change in deviance is the LRT. predictmeans' values:
+Oats (complete) Block.Variety 7.66146, Block 4.97820; Orthodont with an
+uncorrelated random slope (`age || Subject`): intercept variance 1.77110,
+slope variance 3.68794.
+
+Run of 2026-11-17 (Genstat 23.1). Oats: deviances 418.76 (full), 426.42
+(Block.Variety dropped), 423.73 (Block dropped): LRT 7.66 and 4.97, as
+predictmeans (7.661, 4.978). Orthodont: Genstat centres covariates ("All
+covariates centred"), so its `Subject + Subject.age` is lmer's
+`(1 | Subject) + (0 + agec | Subject)` with agec = age − 11: the slope
+variance LRT 252.19 − 250.17 = 2.02 (predictmeans 2.018). Dropping the
+intercept, Genstat estimated a negative slope variance (−0.245), which lme4
+and SAS do not allow: not comparable. Random intercept + AR(1): 252.19 −
+252.11 = 0.08, φ = 0.0472, as SAS and predictmeans (0.0770). The deviance
+omits constants, so only differences compare with lme4's.

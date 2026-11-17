@@ -37,9 +37,24 @@ drv: either 0,1 or 2 with a default value of 0. If drv = 1 then the first deriva
 \item{Z}{A (or a list of) spline design matrix used in the list \code{smoothZ}.}
 }
 \description{
-Constructs a sparse matrix (Z) of a spline function with for a covariate with(out) group.
-Since 2.0 smooths can be written in the formula of \code{\link{semireg}} instead (\code{s(x, by = f)}), which
-adds their fixed terms automatically; \code{s(x, bs = "os", k = 10)} gives the basis of \code{smZ(x, k = 10)}.
+Superseded since 2.0: \code{smZ()} and the \code{smoothZ} argument of \code{\link{semireg}} keep working, so that
+1.x code runs, but get no new features. Write the smooths in the formula of \code{\link{semireg}} instead, which adds
+their fixed terms automatically and predicts from the stored bases:
+\tabular{ll}{
+  \strong{smZ()} \tab \strong{In the formula} \cr
+  \code{smZ(x, k = 10)} (O'Sullivan, the default) \tab \code{s(x, bs = "os", k = 10)} \cr
+  \code{smZ(x, by = f, group = TRUE)} \tab \code{s(x, by = f, bs = "os")} \cr
+  \code{smZ(x, by = f)} (one variance) \tab \code{s(x, by = f, bs = "os", id = 1)} \cr
+  \code{smZ(x, intKnots = kn, range.x = r)} \tab \code{s(x, bs = "os", xt = list(knots = kn, range = r))} \cr
+  \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{s(x1, x2, bs = "ztps", k = 6)} \cr
+  a matrix of your own in \code{smoothZ} \tab \code{s(x, bs = "user", xt = list(basis = f))} \cr
+  \code{smZ(x, drv = 1)} (derivative of the basis) \tab \code{semipred(fit, ..., deriv = 1)} \cr
+}
+The other types (\code{"bs"}, \code{"ns"}, the \pkg{splines2} types, \code{"smspline"}) give their basis iid
+random coefficients, which shrinks the curve towards zero rather than towards a straight line; the penalised
+bases of the formula (\code{"os"}, mgcv's \code{"cr"}, \code{"ps"}, \code{"tp"}) are preferable.
+
+Constructs a sparse matrix (Z) of a spline function for a covariate, with or without groups.
 }
 \examples{
 x <- seq.int(0, 1, by = 0.01)

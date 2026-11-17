@@ -210,15 +210,35 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   fixed effects + likelihood ratio test of each smooth term (variance = 0).
 - `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
   terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis, `xt = list(knots =,
-  range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `s(x, f)` / `s(x, f1*f2)` = common
+  range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `bs = "user", xt = list(basis = f)` (own basis
+  function, iid coefficients, fixed part 1 + x / `null = "constant"` / `"none"`; checked before the fit: a row
+  per value, finite, repeatable, rows independent of the data given, full rank); `s(x, f)` / `s(x, f1*f2)` = common
   curve + deviation curves, a variance per factor term; `(s(x, k = 10) | id)` = subject curves
-  `(x | id)` + spline deviation (HRW's group-specific curves); no `te()`/`t2()` yet). Equal to
+  `(x | id)` + spline deviation (HRW's group-specific curves); `t2(x1, x2)` tensor product, a variance per
+  penalty, fixed `x1 + x2 + x1:x2` (no sum-to-zero constraint; `te()` fitted as `t2()`, `ti()` refused)). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
-  `varcomp()`, `R2_model()`. The older `smoothZ = list(smZ())` form still runs (table in
-  `vignette("smooth")`). Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
+  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` are superseded: 1.x code still
+  runs, but write smooths in the formula (table in `?smZ` and `vignette("smooth")`; `smZ(type =
+  "Ztps")` is `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
+  `SBMDfem`, `ozoneCalif`, `scallop` (+ `scallopKnots`, `scallopBdry`), `wageTUnion`, `copper`
+  (+ `copperKnots`); their help pages show the analyses in the formula syntax. Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
-  included and t tests with Satterthwaite df for fixed + smooth coefficients (generalized: z);
-  `anova(fit)` tests each smooth variance (conservative, 1-3% at 5%).
+  included and t tests with Satterthwaite df for fixed + smooth coefficients (design variance components
+  and residual; smoothing parameters held at their estimates; generalized: inner-outer df of the design's
+  strata, z without strata); `semipred()` bands use the same df (column `df`; simultaneous: multivariate t);
+  `semipred(deriv = 1)` / `deriv = 2`: slopes / curvatures of the curves with bands (any basis; for
+  `bs = "os"` the exact `ZOSull(drv = )` derivatives), `contr` + `deriv` compares slopes, ranges where a
+  slope is above / below zero in `attr(pred_df, "significant")`; link scale for GLMMs;
+  `anova(fit)` tests each smooth variance (as `varcomp(fit, test = TRUE)`).
+- `varcomp(model, test = TRUE)` (lmer, glmer, glmmTMB, semireg): an LRT per row, each row's model refitted
+  (term dropped; `(x | g)` -> `(1 | g)`; covariances 0 by `||` / `diag()`; ar1/ou/cs correlation 0 by
+  `homdiag()`). Boundary mixtures (0.5 chi2(0) + 0.5 chi2(1); 0.5 chi2(k-1) + 0.5 chi2(k)) as SAS GLIMMIX
+  COVTEST; the exact restricted LRT (Crainiceanu & Ruppert) when the tested variance is the only random
+  effect of a gaussian REML fit. A warning names rows whose reference may be inaccurate (< 6 levels; binary
+  data, small clusters). `test_method = "bootstrap"` (`nboot = 999`, `ncore`): parametric bootstrap of each
+  LRT, stops after 20 exceedances. In simulation the default was never liberal (<= 4.5% at 5%) but
+  conservative for GLMMs (0-4%), where the bootstrap was nearer 5% with more power: use the default for
+  gaussian models, the bootstrap for GLMMs, small data and flagged rows.
 - `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
   `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
   the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link

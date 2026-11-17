@@ -117,16 +117,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     if (!is.null(io)) {
       # contrasts: the smallest df of the coefficients a row uses; means (rows
       # with the intercept): the df of their term (R/df-innerouter.R)
-      d <- io[names(mp$coef)]
-      int <- attr(io, "intercept")[match(names(mp$coef), names(io))]
-      tdf <- attr(io, "terms")
-      tdf <- tdf[intersect(terms, names(tdf))]
-      return(apply(L, 1, function(l) {
-        nz <- abs(l) > 1e-10
-        if (!any(nz)) return(NA_real_)
-        if (any(nz & int) && length(tdf) && all(is.finite(tdf))) return(min(tdf))
-        min(d[nz])
-      }))
+      return(pm_io_row_df(io, names(mp$coef), L, terms))
     }
     if (per_row_kr_satt) {
       if (nlme || aovl) return(as.numeric(pm_nlme_df(L, model, df_type, vcov_adj)))

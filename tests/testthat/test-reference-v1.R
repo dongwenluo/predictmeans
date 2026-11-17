@@ -77,6 +77,15 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
       a <- a[setdiff(names(a), c("includes0", "significant"))]
       attr(a, "significant") <- NULL
     }
+    # Since 2.0 semipred() limits of gaussian fits are t limits with
+    # Satterthwaite df (column df); 1.1.1's normal limits (level 0.1 in
+    # these cases) are rebuilt from the SE, the rest is compared as it is.
+    if (grepl("^semi_", nm) && is.data.frame(a) && !is.null(a$df)) {
+      se <- if (!is.null(a$SE)) a$SE else a$SE_contr
+      a$LL <- a$areaPerMzloty - qnorm(0.95)*se
+      a$UL <- a$areaPerMzloty + qnorm(0.95)*se
+      a$df <- NULL
+    }
     if (nm %in% vc_cases) { a <- vc_core(a); b <- vc_core(b) }
     if (nm %in% type3) {
       a$ANOVA <- a$ANOVA[grepl(":", rownames(a$ANOVA)), , drop = FALSE]

@@ -89,3 +89,19 @@ test_that("golden examples fitted by gamm() and gam(): semireg() equals gam(meth
                   data = oz, prt = FALSE))
   expect_lt(max(abs(fitted(fm$semer) - ref$ozoneCalifGAM$fitted_reml))/stats::sd(oz$ozone), 1e-5)
 })
+
+test_that("the package data sets of the golden examples equal their files (dev/semireg-golden/make-data.R)", {
+  get <- function(nm) { e <- new.env(); utils::data(list = nm, package = "predictmeans", envir = e); e[[nm]] }
+  same <- function(x, y) expect_equal(unname(as.list(x)), unname(as.list(y)), tolerance = 1e-12)
+  same(get("growthIndiana"), gdata("growthIndiana.txt", header = TRUE))
+  sb <- gdata("SBMDfem.txt", header = TRUE)
+  sb$ethnicity <- factor(sb$ethnicity)
+  same(get("SBMDfem"), sb)
+  same(get("ozoneCalif"), gdata("ozoneCalif.txt", header = TRUE))
+  same(get("scallop"), gdata("scallop.txt", header = TRUE))
+  same(get("scallopKnots"), gdata("scallopKnots.txt"))
+  same(get("scallopBdry"), gdata("scallopBdry.txt"))
+  same(get("copperKnots"), gdata("copperKnots.txt"))
+  same(get("wageTUnion"), gdata("wageTUnion.txt", header = TRUE))
+  same(get("copper"), gdata("copper.txt", header = TRUE))
+})

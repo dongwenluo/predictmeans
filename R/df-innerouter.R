@@ -22,28 +22,49 @@
 ## term, so all the means of a term share one df whatever the coding, while
 ## contrasts take the smallest df of the coefficients they use.
 
-## The fixed-effect design and the grouping factors of a model.
-pm_io_parts <- function(model) {
+## The fixed-effect design and the grouping factors of a model; 'drop':
+## grouping factors left out (the smooth blocks of a semireg() fit, which
+## are not strata of the design).
+pm_io_parts <- function(model, drop = character(0)) {
   if (inherits(model, "merMod")) {
-    return(list(X = as.matrix(lme4::getME(model, "X")), flist = as.list(lme4::getME(model, "flist"))))
+    fl <- as.list(lme4::getME(model, "flist"))
+    return(list(X = as.matrix(lme4::getME(model, "X")), flist = fl[!names(fl) %in% drop]))
   }
   if (inherits(model, "glmmTMB")) {
     X <- as.matrix(glmmTMB::getME(model, "X"))
-    fl <- model$modelInfo$reTrms$cond$flist
-    return(list(X = X, flist = as.list(fl)))
+    fl <- as.list(model$modelInfo$reTrms$cond$flist)
+    return(list(X = X, flist = fl[!names(fl) %in% drop]))
   }
   stop("df_method = \"inner-outer\" needs a model with random effects (lmer, glmer, glmmTMB, lme).", call. = FALSE)
+}
+
+## The inner-outer df of the rows of L (columns: the coefficients named in
+## 'coef_names'): contrasts take the smallest df of the coefficients they
+## use; means (rows that use the intercept) the df of their term ('terms').
+## Used by pm_inference() and for semireg() fits.
+pm_io_row_df <- function(io, coef_names, L, terms) {
+  L <- rbind(L)
+  d <- io[coef_names]
+  int <- attr(io, "intercept")[match(coef_names, names(io))]
+  tdf <- attr(io, "terms")
+  tdf <- tdf[intersect(terms, names(tdf))]
+  apply(L, 1, function(l) {
+    nz <- abs(l) > 1e-10
+    if (!any(nz)) return(NA_real_)
+    if (any(nz & int) && length(tdf) && all(is.finite(tdf))) return(min(tdf))
+    min(d[nz])
+  })
 }
 
 ## df of each coefficient (named vector).
 ## Value: df of each coefficient (named), with attributes "intercept" (which
 ## coefficient is the intercept) and "terms" (df of each term).
-pm_inner_outer_df <- function(model) {
+pm_inner_outer_df <- function(model, drop = character(0)) {
   if (inherits(model, "lme")) {                                # nlme's own
     d <- model$fixDF$X
     return(structure(d, intercept = names(d) == "(Intercept)", terms = model$fixDF$terms))
   }
-  parts <- pm_io_parts(model)
+  parts <- pm_io_parts(model, drop)
   X <- parts$X
   fl <- lapply(parts$flist, function(f) factor(f))
   if (!length(fl)) stop("the model has no random effects.", call. = FALSE)

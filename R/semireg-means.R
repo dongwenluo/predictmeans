@@ -1,10 +1,11 @@
 ## predictmeans() for semireg() fits: means of a factor term including the
 ## smooth terms (fixed part plus the smooth's random effects, as semipred()),
 ## with covariates at their means or at the values in 'covariate' (a named
-## numeric vector), and pairwise comparisons. Gaussian fits (lme4 engine):
-## t tests with Satterthwaite df for the combinations of fixed and smooth
-## coefficients (pm_sr_satt_ddf()); other fits: normal-based tests, as in
-## semipred(). Returns the stable tables (means, pairs, settings).
+## numeric vector), and pairwise comparisons, with the df of pm_sr_ddf()
+## (gaussian fits: Satterthwaite for the combinations of fixed and smooth
+## coefficients; generalized fits: inner-outer df of the design's strata, z
+## without strata), as semipred(). Returns the stable tables (means, pairs,
+## settings).
 pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL,
                              unconditional = getOption("predictmeans.semi_unconditional")) {
   adj <- pm_match_adj(adj)
@@ -39,10 +40,11 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   n <- length(est)
   CM <- if (n > 1) pm_pair_matrix(n)
   # df of the means and of their differences (one computation for both)
-  dfs <- if (!is.null(des$cov_idx)) pm_sr_satt_ddf(semireg, rbind(D, if (n > 1) CM %*% D), des$cov_idx) else
-    rep(Inf, n + if (n > 1) nrow(CM) else 0)
+  dfs <- if (!is.null(des$cov_idx)) pm_sr_ddf(semireg, rbind(D, if (n > 1) CM %*% D), des$cov_idx, modelterm) else
+    structure(rep(Inf, n + if (n > 1) nrow(CM) else 0), method = "normal (semireg)")
+  df_label <- attr(dfs, "method")
+  dfs <- as.numeric(dfs)
   dfs[is.na(dfs)] <- Inf
-  satt <- any(is.finite(dfs))
   df_m <- dfs[seq_len(n)]
   tq <- stats::qt(1 - level/2, df_m)
   means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se)
@@ -85,14 +87,14 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
                         ij = cbind(pp$j, pp$i), L = CM %*% D)
     p_adj <- pm_adjust_p(adj, stat, p, df_p, fams, R = if (adj == "mvt") stats::cov2cor(pV))
     pairs$p.adj <- p_adj
-    pairs$p.method <- if (adj == "tukey") "tukey" else if (satt) "t" else "z"
+    pairs$p.method <- if (adj == "tukey") "tukey" else if (any(is.finite(dfs))) "t" else "z"
     if (is.null(atvar)) {             # letters among all means
       P <- matrix(1, n, n, dimnames = list(levs, levs))
       P[cbind(pp$j, pp$i)] <- P[cbind(pp$i, pp$j)] <- p_adj
       means$group <- unname(pm_letter_groups(P, rep(TRUE, n), level))
     }
   }
-  settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = if (satt) "Satterthwaite (fixed + smooth coefficients)" else "normal (semireg)",
+  settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
                    vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
   structure(list(means = means, pairs = pairs, settings = settings), vcov = V,

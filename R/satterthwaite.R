@@ -10,7 +10,7 @@ pm_satt_parts <- function(model) {
   vp <- pm_lmer_varpar(model)                 # (theta, sigma) and their covariance (R/varcomp.R)
   p <- length(lme4::fixef(model))
   Jac <- numDeriv::jacobian(func = get_covbeta, x = vp$varpar, devfun = vp$devfun)
-  vp$devfun(lme4::getME(model, "theta"))      # leave the deviance function at the optimum
+  vp$devfun(vp$varpar[-length(vp$varpar)])    # leave the deviance function at the optimum
   structure(list(vcov_beta = as.matrix(stats::vcov(model)),
                  vcov_varpar = vp$vcov_varpar,
                  Jac_list = lapply(seq_len(ncol(Jac)), function(i) array(Jac[, i], dim = c(p, p)))),

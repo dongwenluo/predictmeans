@@ -1,9 +1,24 @@
 #' Generate Sparse Matrix Z for penalized spline smoothing
 #'
 #' @description
-#' Constructs a sparse matrix (Z) of a spline function with for a covariate with(out) group.
-#' Since 2.0 smooths can be written in the formula of \code{\link{semireg}} instead (\code{s(x, by = f)}), which
-#' adds their fixed terms automatically; \code{s(x, bs = "os", k = 10)} gives the basis of \code{smZ(x, k = 10)}.
+#' Superseded since 2.0: \code{smZ()} and the \code{smoothZ} argument of \code{\link{semireg}} keep working, so that
+#' 1.x code runs, but get no new features. Write the smooths in the formula of \code{\link{semireg}} instead, which adds
+#' their fixed terms automatically and predicts from the stored bases:
+#' \tabular{ll}{
+#'   \strong{smZ()} \tab \strong{In the formula} \cr
+#'   \code{smZ(x, k = 10)} (O'Sullivan, the default) \tab \code{s(x, bs = "os", k = 10)} \cr
+#'   \code{smZ(x, by = f, group = TRUE)} \tab \code{s(x, by = f, bs = "os")} \cr
+#'   \code{smZ(x, by = f)} (one variance) \tab \code{s(x, by = f, bs = "os", id = 1)} \cr
+#'   \code{smZ(x, intKnots = kn, range.x = r)} \tab \code{s(x, bs = "os", xt = list(knots = kn, range = r))} \cr
+#'   \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{s(x1, x2, bs = "ztps", k = 6)} \cr
+#'   a matrix of your own in \code{smoothZ} \tab \code{s(x, bs = "user", xt = list(basis = f))} \cr
+#'   \code{smZ(x, drv = 1)} (derivative of the basis) \tab \code{semipred(fit, ..., deriv = 1)} \cr
+#' }
+#' The other types (\code{"bs"}, \code{"ns"}, the \pkg{splines2} types, \code{"smspline"}) give their basis iid
+#' random coefficients, which shrinks the curve towards zero rather than towards a straight line; the penalised
+#' bases of the formula (\code{"os"}, mgcv's \code{"cr"}, \code{"ps"}, \code{"tp"}) are preferable.
+#'
+#' Constructs a sparse matrix (Z) of a spline function for a covariate, with or without groups.
 #' @usage
 #' smZ(x, k=6, intKnots=NULL, range.x=NULL, degree=3, 
 #'     type=c("ZOSull", "Ztps", "ns", "bs", "bernstein", "bSpline",
@@ -64,80 +79,36 @@ smZ <- function(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
   if (type!="Ztps") {
     x <- as.vector(x)
     nax <- is.na(x)
-    if (nas <- any(nax)) x <- x[!nax]
-	if (is.null(range.x)) range.x <- c(1.01*min(x) - 0.01*max(x), 
+    if (any(nax)) x <- x[!nax]
+    if (is.null(range.x)) range.x <- c(1.01*min(x) - 0.01*max(x), 
                                        1.01*max(x) - 0.01*min(x))
   }else{
     x <- as.matrix(x)
     nax <- rowSums(is.na(x)) > 0
-    if (nas <- any(nax)) x <- x[!nax,]  
+    if (any(nax)) x <- x[!nax,]  
+  }
+  by_f <- is.factor(by)
+  # the basis on the rows without missing values, back to all rows (NA rows),
+  # then one block per level of 'by' (or one sparse matrix)
+  blocks <- function(B) {
+    B <- pm_smz_na(B, nax)
+    if (by_f) pm_smz_by(B, by, group) else as(B, "sparseMatrix")
   }
   
   if (type=="ZOSull") {
-    if (is.factor(by)) {
-      if (is.null(intKnots)) {
-        k <- min(k, floor(length(x)/nlevels(by))-2)
-        intKnots <-  quantile(unique(x), seq(0,1,length = k+2)[-c(1,k+2)])
-      }
-      ZZ <- ZOSull(x, range.x=range.x, intKnots=intKnots, ...)
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(ZZ))
-        nmat[!nax, ] <- ZZ
-        ZZ <- nmat
-      }
-      by_lst <- lapply(split(data.frame(ZZ), by), as.matrix)[levels(by)]
-      Z <- lapply(by_lst, function(x) {
-        Z_i <- matrix(0, nrow(ZZ), ncol(x))
-        Z_i[as.numeric(rownames(x)),] <- x
-        as(Z_i, "sparseMatrix")
-      })
-      if (!group) Z <- do.call("cbind", Z)
-      attr(Z,"range.x") <- range.x
-      attr(Z,"knots") <- intKnots
-    }else{
-      if (is.null(intKnots)) {
-        k <- min(k, length(x)-2)
-        intKnots <-  quantile(unique(x), seq(0,1,length = k+2)[-c(1,k+2)])
-      }
-      Z <- ZOSull(x, intKnots=intKnots, range.x=range.x, ...)
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(Z))
-        nmat[!nax, ] <- Z
-        Z <- nmat
-      }
-      Z <- as(Z, "sparseMatrix") 
-      attr(Z,"range.x") <- range.x
-      attr(Z,"knots") <- intKnots
+    if (is.null(intKnots)) {
+      k <- if (by_f) min(k, floor(length(x)/nlevels(by))-2) else min(k, length(x)-2)
+      intKnots <-  quantile(unique(x), seq(0,1,length = k+2)[-c(1,k+2)])
     }
+    Z <- blocks(ZOSull(x, range.x=range.x, intKnots=intKnots, ...))
+    attr(Z,"range.x") <- range.x
+    attr(Z,"knots") <- intKnots
   }else if(type=="Ztps"){
-    if (is.factor(by)) {
-      ZZ <- Ztps(x, k=k, knots=intKnots, range.x=range.x)
-      if (is.null(intKnots)) Z_knots <- attr(ZZ,"knots")
-	  
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(ZZ))
-        nmat[!nax, ] <- ZZ
-        ZZ <- nmat
-      }	  
-      by_lst <- lapply(split(data.frame(ZZ), by), as.matrix)[levels(by)]
-      Z <- lapply(by_lst, function(x) {
-        Z_i <- matrix(0, nrow(ZZ), ncol(x))
-        Z_i[as.numeric(rownames(x)),] <- x
-        as(Z_i, "sparseMatrix")
-      })
-      if (!group) Z <- do.call("cbind", Z)
-    }else{
-      Z <- Ztps(x, k=k, knots=intKnots, range.x=range.x)
-	  if (is.null(intKnots)) Z_knots <- attr(Z,"knots")
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(Z))
-        nmat[!nax, ] <- Z
-        Z <- nmat
-      }  
-      Z <- as(Z, "sparseMatrix")
-    }
+    ZZ <- Ztps(x, k=k, knots=intKnots, range.x=range.x)
+    if (is.null(intKnots)) Z_knots <- attr(ZZ,"knots")
+    Z <- blocks(ZZ)
     if (is.null(intKnots)) attr(Z,"knots") <- Z_knots else attr(Z,"knots") <- intKnots
-	if (!is.null(range.x)) attr(Z,"range.x") <- range.x
+    if (!is.null(range.x)) attr(Z,"range.x") <- range.x
   }else if(type %in% c("bs", "ns", "bernstein", "bSpline", "nSpline", "cSpline", "iSpline", "mSpline")){ 
     if (!type %in% c("bs", "ns")) pm_need("splines2", paste0("type = \"", type, "\""))
     ZZ <- switch(type, 
@@ -150,58 +121,21 @@ smZ <- function(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
                  "iSpline"=as.matrix(splines2::iSpline(x, df=k, knots = intKnots, degree = degree, Boundary.knots = range.x, intercept=intercept)),
                  "mSpline"=as.matrix(splines2::mSpline(x, df=k, knots = intKnots, degree = degree, Boundary.knots = range.x, intercept=intercept))
     )
+    # (the attributes by position, as since 1.x)
     Z_attr <- attributes(ZZ)[3:6]
     attr(ZZ,"class") <- "matrix"
-    
-    if (nas) {
-      nmat <- matrix(NA, length(nax), ncol(ZZ))
-      nmat[!nax, ] <- ZZ
-      ZZ <- nmat
-    }
-    if (is.factor(by)) {
-      by_lst <- lapply(split(data.frame(ZZ), by), as.matrix)[levels(by)]
-      Z <- lapply(by_lst, function(x) {
-        Z_i <- matrix(0, nrow(ZZ), ncol(x))
-        Z_i[as.numeric(rownames(x)),] <- x
-        as(Z_i, "sparseMatrix")
-      })
-      if (!group) Z <- do.call("cbind", Z)
-    }else{      
-      Z <- as(ZZ, "sparseMatrix")
-    }
+    Z <- blocks(ZZ)
     attr(Z,"degree") <- Z_attr$degree
     attr(Z,"knots") <- Z_attr$knots
     attr(Z,"range.x") <- Z_attr$Boundary.knots
     attr(Z,"intercept") <- Z_attr$intercept
   }else if(type=="smspline"){
     pm_need("lmeSplines", "type = \"smspline\"")
-    if (is.factor(by)) {
-      ZZ <- lmeSplines::smspline(x)	
-	  if (pred) ZZ <- lmeSplines::approx.Z(Z=range.x, oldtimes=intKnots, newtimes=x)
-      if (ncol(ZZ)*nlevels(by) > nrow(ZZ) - 4) stop("'smspline' is not suitable for this data!")	  
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(ZZ))
-        nmat[!nax, ] <- ZZ
-        ZZ <- nmat
-      }	  
-      by_lst <- lapply(split(data.frame(ZZ), by), as.matrix)[levels(by)]
-      Z <- lapply(by_lst, function(x) {
-        Z_i <- matrix(0, nrow(ZZ), ncol(x))
-        Z_i[as.numeric(rownames(x)),] <- x
-        as(Z_i, "sparseMatrix")
-      })
-      if (!group) Z <- do.call("cbind", Z)
-    }else{
-      Z <- lmeSplines::smspline(x)
-	  if (pred) Z <- lmeSplines::approx.Z(Z=range.x, oldtimes=intKnots, newtimes=x)
-      if (nas) {
-        nmat <- matrix(NA, length(nax), ncol(Z))
-        nmat[!nax, ] <- Z
-        Z <- nmat
-      }  
-      Z <- as(Z, "sparseMatrix")
-    }	
-	attr(Z,"knots") <- lmeSplines::smspline.v(x)$Xs[,2]
+    ZZ <- lmeSplines::smspline(x)
+    if (pred) ZZ <- lmeSplines::approx.Z(Z=range.x, oldtimes=intKnots, newtimes=x)
+    if (by_f && ncol(ZZ)*nlevels(by) > nrow(ZZ) - 4) stop("'smspline' is not suitable for this data!")
+    Z <- blocks(ZZ)
+    attr(Z,"knots") <- lmeSplines::smspline.v(x)$Xs[,2]
     attr(Z,"range.x") <- lmeSplines::smspline.v(x)$Zs
   }
   
@@ -209,6 +143,24 @@ smZ <- function(x, k=6, intKnots=NULL, range.x=NULL, degree=3,
   return(Z=Z)
 }
 
+## The rows of a basis back at their places among all rows; rows with a
+## missing covariate are NA.
+pm_smz_na <- function(B, nax) {
+  if (!any(nax)) return(B)
+  out <- matrix(NA, length(nax), ncol(B))
+  out[!nax, ] <- B
+  out
+}
 
-
-
+## A basis split by the levels of a factor: per level a sparse matrix with
+## the level's rows (zero elsewhere); bound side by side unless group = TRUE.
+pm_smz_by <- function(B, by, group) {
+  by_lst <- lapply(split(data.frame(B), by), as.matrix)[levels(by)]
+  Z <- lapply(by_lst, function(x) {
+    Z_i <- matrix(0, nrow(B), ncol(x))
+    Z_i[as.numeric(rownames(x)),] <- x
+    as(Z_i, "sparseMatrix")
+  })
+  if (!group) Z <- do.call("cbind", Z)
+  Z
+}

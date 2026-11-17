@@ -202,7 +202,14 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
   q <- ncol(Z)
   Tm <- Matrix::.bdiag(list(Matrix::Diagonal(n_beta), Lambda))
   M <- Matrix::crossprod(Ct * w, Ct) + Matrix::.bdiag(list(Matrix::Matrix(0, n_beta, n_beta), Matrix::Diagonal(q)))
-  fullCovMat <- Tm %*% Matrix::solve(M, Matrix::t(Tm))
+  # solved with M scaled to unit diagonal: a random term whose variance is
+  # much larger than the residual one (glmmTMB ar1() with the nugget
+  # variance near 0) makes M badly scaled, not singular
+  dM <- sqrt(Matrix::diag(M))
+  dM[!is.finite(dM) | dM <= 0] <- 1
+  Dm <- Matrix::Diagonal(x = 1/dM)
+  Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
+  fullCovMat <- Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm)))
   fullCovMat <- Matrix::forceSymmetric(methods::as(fullCovMat, "generalMatrix"))
   df <- sum(Matrix::diag(fullCovMat %*% CTC))              # effective degrees of freedom
 
@@ -303,6 +310,39 @@ pm_sr_uncond <- function(semireg) {
   (J %*% Vth %*% t(J))/s2
 }
 
+## df for linear combinations L of the fixed and random coefficients (beta,
+## u) of a semireg() fit (means and curves with the smooths' random effects;
+## 'idx': the columns of (beta, u) that the columns of L are; 'terms': the
+## model terms of the means). The one rule for predictmeans() and semipred()
+## on semireg fits, as pm_inference() for other models:
+##   gaussian     Satterthwaite (pm_sr_satt_ddf()), smoothing parameters held
+##   generalized  inner-outer df (R/df-innerouter.R; the GLMM default) from
+##                the design's grouping factors, the smooth blocks left out;
+##                the smooth coefficients vary within every group, so a row
+##                takes the df of the fixed coefficients it uses; Inf (z
+##                tests, as glm with a known dispersion) when there is no
+##                grouping factor besides the smooths
+## Returns the df with attribute "method" (the label for settings).
+pm_sr_ddf <- function(semireg, L, idx, terms = NULL) {
+  semer <- semireg$semer
+  L <- as.matrix(L)
+  gaus <- if (inherits(semer, "glmmTMB")) stats::family(semer)$family == "gaussian" else lme4::isLMM(semer)
+  if (gaus) {
+    df <- pm_sr_satt_ddf(semireg, L, idx)
+    return(structure(df, method = if (any(is.finite(df))) "Satterthwaite (fixed + smooth coefficients)"
+                     else "normal (semireg)"))
+  }
+  io <- tryCatch(pm_inner_outer_df(semer, drop = names(semireg$refit$smoothZ)), error = function(e) NULL)
+  if (is.null(io)) return(structure(rep(Inf, nrow(L)), method = "normal (semireg)"))
+  p <- length(io)
+  fx <- idx <= p
+  Lf <- L[, fx, drop = FALSE]
+  df <- pm_io_row_df(io, names(io)[idx[fx]], Lf, terms)
+  # a row without fixed coefficients (smooth coefficients only): within groups
+  df[is.na(df)] <- max(io)
+  structure(df, method = "inner-outer (design strata; smooths within)")
+}
+
 ## Satterthwaite df for linear combinations L of the fixed and random
 ## coefficients (beta, u) of a gaussian semireg() fit (lme4 engine), e.g.
 ## means at a covariate value, which include the smooths' random effects.
@@ -313,9 +353,16 @@ pm_sr_uncond <- function(semireg) {
 ## estimates that involve random effects). For L without random effects the
 ## df are those of pm_satt_ddf(). 'idx': the columns of (beta, u) that the
 ## columns of L are. Inf for other fits (normal-based tests).
-pm_sr_satt_ddf <- function(semireg, L, idx) {
+## 'hold': random terms whose variance parameters are taken as known; by
+## default the smooth blocks, so that the df count the design's variance
+## components and the residual (the smoothing variances' uncertainty is what
+## 'unconditional' adds). With them free, a point where a smoothing variance
+## dominates got 2 df (WarsawApts); the coverage of bands was the same
+## either way in dev/sim-semipred-df.R.
+pm_sr_satt_ddf <- function(semireg, L, idx, hold = names(semireg$refit$smoothZ)) {
   semer <- semireg$semer
   L <- as.matrix(L)
+  if (inherits(semer, "glmmTMB")) return(pm_sr_satt_ddf_tmb(semer, L, idx, hold))
   if (!methods::is(semer, "semerMod") || !lme4::isLMM(semer)) return(rep(Inf, nrow(L)))
   vp <- pm_lmer_varpar(semer)
   X <- lme4::getME(semer, "X")
@@ -335,12 +382,154 @@ pm_sr_satt_ddf <- function(semireg, L, idx) {
     M <- Matrix::forceSymmetric(Matrix::crossprod(Ct * w, Ct) +
                                   Matrix::.bdiag(list(Matrix::Matrix(0, p, p), Matrix::Diagonal(q))))
     B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
-    psi[k]^2 * colSums(as.matrix(Matrix::solve(M, Matrix::t(B))) * t(as.matrix(B)))
+    psi[k]^2 * pm_quad_diag(M, B)
   }
   v0 <- v(vp$varpar)
-  G <- numDeriv::jacobian(v, vp$varpar)
-  denom <- rowSums((G %*% vp$vcov_varpar) * G)
+  # variance components estimated at zero are left out (as Kenward-Roger,
+  # R/kr.R): their derivative and variance at the boundary are not defined
+  th <- lme4::getME(semer, "theta")
+  bnd <- which(lme4::getME(semer, "lower") == 0 & th < 1e-6*max(1, max(abs(th))))
+  # 'hold': random terms whose variance parameters are taken as known
+  cnms <- lme4::getME(semer, "cnms")
+  nth <- lengths(cnms)*(lengths(cnms) + 1)/2
+  held <- which(rep(names(cnms), nth) %in% hold)
+  free <- setdiff(seq_len(k), c(bnd, held))
+  vfree <- function(x) { y <- vp$varpar; y[free] <- x; v(y) }
+  G <- pm_jac_central(vfree, vp$varpar[free])
+  denom <- rowSums((G %*% pm_cov_given(vp$vcov_varpar, free)) * G)
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
   df
+}
+
+## The covariance of the parameters 'keep' given the others (fixed at their
+## estimates): V_kk - V_kb V_bb^-1 V_bk.
+pm_cov_given <- function(V, keep) {
+  b <- setdiff(seq_len(nrow(V)), keep)
+  if (!length(b)) return(V[keep, keep, drop = FALSE])
+  V[keep, keep, drop = FALSE] - V[keep, b, drop = FALSE] %*% pm_vc_inv(V[b, b, drop = FALSE]) %*% V[b, keep, drop = FALSE]
+}
+
+## The same for a gaussian semireg_tmb() fit (glmmTMB engine; dispformula ~1,
+## or ~0 with a residual covariance structure such as ar1()): psi is
+## glmmTMB's own vector (theta, and the log residual SD unless dispformula =
+## ~0), its covariance from vcov(full = TRUE); the covariances of the random
+## terms at a psi from VarCorr(), as pm_tmb_varcomp() does. (The df do not
+## depend on the parameterisation.) Inf for other families, zero inflation
+## or a dispersion model with covariates.
+pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
+  L <- as.matrix(L)
+  inf <- rep(Inf, nrow(L))
+  dp <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
+  if (stats::family(m)$family != "gaussian") return(inf)
+  if (!dp(m$modelInfo$allForm$dispformula) %in% c("~1", "~0")) return(inf)
+  if (!identical(dp(m$modelInfo$allForm$ziformula), "~0")) return(inf)
+  pf <- m$fit$parfull
+  keep <- !names(pf) %in% c("b", "bzi")
+  pn <- names(pf)[keep]
+  V <- tryCatch(stats::vcov(m, full = TRUE), error = function(e) NULL)
+  if (is.null(V) || nrow(V) != length(pn)) return(inf)
+  use <- pn %in% c("theta", "betad", "betadisp")
+  pos <- which(keep)[use]
+  on.exit(m$obj$env$report(m$fit$parfull))   # leave the TMB object as it was
+  X <- glmmTMB::getME(m, "X")
+  Z <- glmmTMB::getME(m, "Z")
+  w <- tryCatch(as.numeric(stats::weights(m)), error = function(e) NULL)
+  if (length(w) != nrow(X)) w <- rep(1, nrow(X))
+  re <- pm_re_terms(m)
+  p <- ncol(X)
+  q <- ncol(Z)
+  Lf <- matrix(0, nrow(L), p + q)
+  Lf[, idx] <- L
+  at <- function(x) {
+    mm <- m
+    mm$fit$parfull[pos] <- x
+    for (nm in unique(pn[use])) mm$fit$par[names(mm$fit$par) == nm] <- x[pn[use] == nm]
+    mm
+  }
+  v <- function(x) {
+    mm <- at(x)
+    vc <- glmmTMB::VarCorr(mm)$cond
+    s <- stats::sigma(mm)
+    Lam <- Matrix::bdiag(lapply(seq_along(re), function(j) {
+      G <- matrix(as.numeric(vc[[j]]), nrow(vc[[j]]))
+      kronecker(Matrix::Diagonal(re[[j]]$nl), Matrix::Matrix(pm_chol_lower(G), sparse = TRUE))
+    }))
+    Ct <- cbind(X, Z %*% Lam)
+    M <- Matrix::crossprod(Ct * (w/s^2), Ct) + Matrix::.bdiag(list(Matrix::Matrix(0, p, p), Matrix::Diagonal(q)))
+    dM <- sqrt(Matrix::diag(M))
+    dM[!is.finite(dM) | dM <= 0] <- 1
+    Dm <- Matrix::Diagonal(x = 1/dM)
+    Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
+    B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
+    pm_quad_diag(Ms, B %*% Dm)
+  }
+  x0 <- pf[pos]
+  v0 <- v(x0)
+  # random terms with their variances estimated at zero are left out (their
+  # log-SD parameters sit far out on a flat likelihood)
+  pu <- pn[use]
+  th_pos <- which(pu == "theta")
+  nth <- vapply(m$modelInfo$reStruc$condReStruc, function(r) as.numeric(r$blockNumTheta), numeric(1))
+  vc0 <- glmmTMB::VarCorr(m)$cond
+  sds <- lapply(vc0, function(x) attr(x, "stddev"))
+  ref <- max(unlist(sds), if (dp(m$modelInfo$allForm$dispformula) == "~1") stats::sigma(m))
+  at0 <- vapply(sds, function(x) max(x) < 1e-3*ref, logical(1))
+  bnd <- th_pos[rep(at0, nth)]
+  held <- setdiff(th_pos[rep(names(m$modelInfo$reTrms$cond$cnms) %in% hold, nth)], bnd)
+  free <- setdiff(seq_along(x0), c(bnd, held))
+  # Held terms keep their ratio to the residual variance (the smoothing
+  # parameter, as lme4's relative theta does): with the residual log-variance
+  # parameter d (betad = log sigma^2, or log sigma in other glmmTMB versions),
+  # x = A phi with theta_h = phi_h + c phi_d, and phi_h is held
+  A <- diag(length(x0))
+  d <- which(pu %in% c("betad", "betadisp"))
+  if (length(held) && length(d) == 1) {
+    ls <- log(stats::sigma(m))
+    c_d <- if (abs(2*ls - x0[d]) < 1e-6*max(1, abs(ls))) 0.5 else if (abs(ls - x0[d]) < 1e-6*max(1, abs(ls))) 1 else 0
+    A[held, d] <- c_d
+  }
+  move <- c(free, held)
+  vmove <- function(x) { y <- x0; y[move] <- x; v(y) }
+  G <- matrix(0, length(v0), length(x0))
+  G[, move] <- pm_jac_central(vmove, x0[move])
+  Ai <- solve(A)
+  Vphi <- Ai %*% V[use, use, drop = FALSE] %*% t(Ai)
+  G <- (G %*% A)[, free, drop = FALSE]
+  denom <- rowSums((G %*% pm_cov_given(Vphi, free)) * G)
+  df <- 2*v0^2/denom
+  df[!is.finite(df) | df <= 0] <- NA_real_
+  df
+}
+
+## diag(B M^-1 B') for a symmetric positive definite (sparse) M and the rows
+## of B. Only the columns J that B uses matter: with S = (M^-1)[J, J] (from
+## |J| solves with M's sparse Cholesky factor), diag = rowSums((B_J S) * B_J).
+## The population curves of semipred() use the fixed and smooth coefficients
+## only, a few dozen columns of a large M (the subjects' random effects).
+pm_quad_diag <- function(M, B) {
+  J <- which(Matrix::colSums(abs(B)) > 0)
+  if (!length(J)) return(rep(0, nrow(B)))
+  E <- Matrix::sparseMatrix(i = J, j = seq_along(J), x = 1, dims = c(nrow(M), length(J)))
+  ch <- tryCatch(Matrix::Cholesky(M, perm = TRUE, LDL = FALSE), error = function(e) NULL)
+  S <- as.matrix(if (is.null(ch)) Matrix::solve(M, E) else Matrix::solve(ch, E))[J, , drop = FALSE]
+  BJ <- as.matrix(B[, J, drop = FALSE])
+  rowSums((BJ %*% S) * BJ)
+}
+
+## The Jacobian of f at x by central differences (two evaluations per
+## parameter; step 1e-4 relative, at least 1e-6): for the Satterthwaite df of
+## many prediction points, where Richardson extrapolation would cost some
+## eight evaluations per parameter for no difference that matters to a df.
+pm_jac_central <- function(f, x) {
+  f0 <- f(x)
+  G <- matrix(0, length(f0), length(x))
+  for (j in seq_along(x)) {
+    h <- 1e-4*max(abs(x[j]), 1e-2)
+    xp <- xm <- x
+    xp[j] <- x[j] + h
+    xm[j] <- x[j] - h
+    G[, j] <- (f(xp) - f(xm))/(2*h)
+  }
+  G
 }
