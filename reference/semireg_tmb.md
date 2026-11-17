@@ -42,14 +42,15 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 - smoothZ:
 
-  The older form of the smooths (see ‘Smooth terms in the formula’ for
-  the newer one): a list includes a set of smooth Z matrixs (called
-  'smooth term') used in the mixed effects model, the name of 'smooth
-  term' should be different any variables in the model, each 'smooth
-  term' is the result of function `smZ`. e.g. smoothZ=list(sm1=smZ(x1),
-  sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1'
-  to 'sm3' should be new variable names in the `data`, and x1 to x3 are
-  covariates, and f1, f2 are factors.
+  Superseded since 2.0 (kept so that 1.x code runs; no new features):
+  write the smooths in the formula instead (see ‘Smooth terms in the
+  formula’). The older form of the smooths: a list includes a set of
+  smooth Z matrixs (called 'smooth term') used in the mixed effects
+  model, the name of 'smooth term' should be different any variables in
+  the model, each 'smooth term' is the result of function `smZ`. e.g.
+  smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2,
+  group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in
+  the `data`, and x1 to x3 are covariates, and f1, f2 are factors.
 
 - ziformula:
 
@@ -122,6 +123,10 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 - REML:
 
   whether to use REML estimation rather than maximum likelihood.
+  Gaussian fits use REML by default; for other families the default is
+  maximum likelihood (Laplace), as `glmer`, unless `REML = TRUE` is
+  given. (Before 2.0 the default never reached glmmTMB, so gaussian fits
+  were maximum likelihood.)
 
 - start:
 
@@ -237,6 +242,22 @@ some covariates (named \<e2\>\<80\>\<98\>smooth term\<e2\>\<80\>\<99\>).
 `semireg_tmb` follows the approach suggested by Wand and Ormerod (2008)
 and represents the 'smooth term' using O'Sullivan-type of Z.
 
+## Correlation structures
+
+glmmTMB's covariance structures can be written next to the smooths and
+are kept as written: `ar1()`, `ou()` (unequally spaced times, with
+[`glmmTMB::numFactor()`](https://rdrr.io/pkg/glmmTMB/man/numFactor.html)),
+`cs()`, `toep()`, [`diag()`](https://rdrr.io/r/base/diag.html), and the
+spatial [`exp()`](https://rdrr.io/r/base/Log.html), `gau()`, `mat()`.
+Residuals correlated in time within subjects are written as
+`ar1(time_factor + 0 | subject)` with `dispformula = ~0` (the structure
+is then the residual covariance; with a residual variance as well it is
+AR1 plus a nugget, and `cs()` plus a residual variance is not
+identified), e.g.
+`semireg_tmb(y ~ s(time, by = trt) + ar1(tf + 0 | id), dispformula = ~0, data = d)`.
+[`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+(lme4) has no such structures and refuses them.
+
 ## Smooth terms in the formula
 
 Smooths can be written in the model formula, as for
@@ -258,7 +279,9 @@ its group slopes:
 | `s(x, f, bs = "fs")` | random curves per level, one variance | none |
 | `s(x1, x2)` | isotropic surface (thin plate) | `x1 + x2` |
 | `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots, as `smZ(x, k = 10)` | `x` |
-| `s(x1, x2, bs = "ztps", k = 6)` | thin plate of `Ztps()`, as `smZ(cbind(x1, x2), type = "Ztps")` | `x1 + x2` |
+| `s(x1, x2, bs = "ztps", k = 6)` | thin plate of `Ztps()`, as `smZ(cbind(x1, x2), type = "Ztps", k = 6)` with `k = 6` | `x1 + x2` |
+| `s(x, bs = "user", xt = list(basis = f))` | a basis of your own (see [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)) | `x` |
+| `t2(x1, x2)` | tensor-product surface, a variance per penalty | `x1 + x2 + x1:x2` |
 | `s(x, bs = "cs")`, `"ts"` | shrinkage smooths (no unpenalised part) | none |
 | `s(x, f)` | common curve + a deviation curve per level of `f`, one variance for the deviations | `x + f + f:x` |
 | `s(x, f1:f2)` | the same with the cells of `f1:f2` | `x + f1:f2 + f1:f2:x` |
@@ -282,9 +305,11 @@ and
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
 give the curves, means and their standard errors of `predict.gam()`. The
 variables of formula smooths are not centred or scaled (`ncenter` and
-`nscale` apply to the other numeric covariates). Tensor products
-(`te()`, `t2()`, `ti()`) are not available yet. Smooths are given either
-in the formula or in `smoothZ`, not both.
+`nscale` apply to the other numeric covariates). Tensor products:
+`t2(x1, x2)`, as in
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+(`te()` is fitted as `t2()`; `ti()` is not available). Smooths are given
+either in the formula or in `smoothZ`, not both.
 
 ## References
 
@@ -300,116 +325,66 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 ``` r
 library(predictmeans)
-if (requireNamespace("HRW", quietly = TRUE)) {
-  data(WarsawApts, package = "HRW")
-  fit1 <- semireg_tmb(areaPerMzloty ~ construction.date,
-                      smoothZ=list(
-                        grp=smZ(construction.date, k=25)
-                      ),
-                      data = WarsawApts)
-  sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+## Counts with extra zeros: curves of two treatments, a random site effect, a negative
+## binomial with zero inflation; the rate ratio of the curves along x and where it differs
+## from 1
+set.seed(5)
+cn <- expand.grid(x = seq(0, 3, length = 30), trt = factor(c("ctl", "trt")), site = factor(1:8))
+cn$y <- rnbinom(nrow(cn), size = 3,
+                mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
+cn$y[runif(nrow(cn)) < 0.1] <- 0
+fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
+                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+attr(rr$pred_df, "significant")
+#>        from to direction
+#> 1 0.7241379  3         >
+predictmeans(fc, "trt", covariate = c(x = 1.5))$means
+#>   trt estimate std.error  df conf.low conf.high  response response.std.error
+#> 1 ctl 1.842115 0.1565336 469 1.534521  2.149709  6.309871           0.987707
+#> 2 trt 2.852923 0.1517429 469 2.554743  3.151103 17.338385           2.630977
+#>   response.conf.low response.conf.high group
+#> 1          4.639104           8.582363    A 
+#> 2         12.867989          23.361818     B
+# \donttest{
+## Repeated measures: curves over time, AR(1) correlation within subjects (the residual
+## covariance, dispformula = ~0); means at a time with Satterthwaite df
+set.seed(9)
+d <- expand.grid(t = 1:8, id = factor(1:12))
+d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
+d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
+  unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
+d$tf <- factor(d$t)
+fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
+                  dispformula = ~0, data = d, prt = FALSE)
+#> Warning: Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')
+predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
+#>   level1 level2   estimate std.error       df  statistic   p.value     p.adj
+#> 1     a1     a2 -0.2146406 0.3486284 20.38780 -0.6156717 0.5449237 0.5449237
+#> 2     a1     a3 -0.3028874 0.3191386 17.32269 -0.9490782 0.3556348 0.3556348
+#> 3     a2     a3 -0.0882468 0.3358240 19.16869 -0.2627769 0.7955261 0.7955261
+#>   p.method
+#> 1        t
+#> 2        t
+#> 3        t
+varcomp(fa)
+#>                       vcov     SE  2.5 %       97.5 %
+#> id.(Intercept)      0.0000     NA 0.0000           NA
+#> id.1.var            0.3314 0.0850 0.2122 5.893000e-01
+#> cor.id.1            0.7043 0.0773 0.5191 8.264000e-01
+#> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.807443e+02
+#> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432300e+00
+#> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.658432e+16
+#> residual            0.0000     NA 0.0000           NA
 
-  WarsawApts$district <- factor(WarsawApts$district)
-  fit2 <- semireg_tmb(areaPerMzloty ~ construction.date*district,
-                      smoothZ=list(group=smZ(construction.date, k=15,
-                                             by = district, group=TRUE)),
-                      data=WarsawApts)
-  sp_out2_1 <- semipred(fit2, "district", "construction.date")
-  sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-}
-#> Formula:          areaPerMzloty ~ construction.date + (1 | grp)
-#> Data: .pm_sr_data
-#>       AIC       BIC    logLik -2*log(L)  df.resid 
-#>  3550.889  3566.944 -1771.445  3542.889       405 
-#> Random-effects (co)variances:
-#> 
-#> Conditional model:
-#>  Groups   Name        Std.Dev.
-#>  grp      (Intercept)  1.137  
-#>  Residual             17.785  
-#> 
-#> Number of obs: 409 / Conditional model: grp, 27
-#> 
-#> Dispersion estimate for gaussian family (sigma^2):  316 
-#> 
-#> Fixed Effects:
-#> 
-#> Conditional model:
-#>       (Intercept)  construction.date  
-#>         -19.28657            0.06521  
-
-#> Warning: Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
-#> Formula:          
-#> areaPerMzloty ~ construction.date * district + (1 | group.Mokotow) +  
-#>     (1 | group.Srodmiescie) + (1 | group.Wola) + (1 | group.Zoliborz)
-#> Data: .pm_sr_data
-#>       AIC       BIC    logLik -2*log(L)  df.resid 
-#>        NA        NA        NA        NA       396 
-#> Random-effects (co)variances:
-#> 
-#> Conditional model:
-#>  Groups            Name        Std.Dev. 
-#>  group.Mokotow     (Intercept) 6.898e-01
-#>  group.Srodmiescie (Intercept) 3.187e-15
-#>  group.Wola        (Intercept) 1.091e-01
-#>  group.Zoliborz    (Intercept) 5.413e-01
-#>  Residual                      1.756e+01
-#> 
-#> Number of obs: 409 / Conditional model: group.Mokotow, 17; group.Srodmiescie, 17; group.Wola, 17; group.Zoliborz, 17
-#> 
-#> Dispersion estimate for gaussian family (sigma^2):  308 
-#> 
-#> Fixed Effects:
-#> 
-#> Conditional model:
-#>                           (Intercept)                      construction.date  
-#>                             -43.32116                                0.07831  
-#>                   districtSrodmiescie                           districtWola  
-#>                             485.88087                              776.89772  
-#>                      districtZoliborz  construction.date:districtSrodmiescie  
-#>                             282.67890                               -0.25265  
-#>        construction.date:districtWola     construction.date:districtZoliborz  
-#>                              -0.39155                               -0.14576  
-
-#> Srodmiescie differs from Mokotow (pointwise band, level 0.05) for construction.date: 1956 to 2000 (<).
-
+## Binary responses with a random intercept per child (HRW::indonRespir)
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
-  fit3 <- semireg_tmb(respirInfec ~ age+vitAdefic + female + height
-                      + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                      smoothZ=list(
-                        grp=smZ(age)
-                      ),
-                      family = binomial,
-                      data = indonRespir)
-  sp_out3 <- semipred(fit3, "age", "age")
-  library(ggplot2)
-  print(sp_out3$plt +
-    geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-    geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
-    coord_cartesian(ylim = c(0, 0.2)))
+  fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
+                      stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir, prt = FALSE)
+  semipred(fb, "age", "age", prt = FALSE)$plt
 }
-#> Formula:          
-#> respirInfec ~ age + vitAdefic + female + height + stunted + visit2 +  
-#>     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp)
-#> Data: .pm_sr_data
-#>       AIC       BIC    logLik -2*log(L)  df.resid 
-#>  673.9676  740.1386 -323.9838  647.9676      1187 
-#> Random-effects (co)variances:
-#> 
-#> Conditional model:
-#>  Groups Name        Std.Dev.
-#>  idnum  (Intercept) 0.7939  
-#>  grp    (Intercept) 0.4285  
-#> 
-#> Number of obs: 1200 / Conditional model: idnum, 275; grp, 8
-#> 
-#> Fixed Effects:
-#> 
-#> Conditional model:
-#> (Intercept)          age    vitAdefic       female       height      stunted  
-#>   -0.972232    -0.500262     0.666181    -0.505897    -0.033005     0.454810  
-#>      visit2       visit3       visit4       visit5       visit6  
-#>   -1.107213    -0.572605    -1.275794     0.473012    -0.004682  
 
+# }
 ```

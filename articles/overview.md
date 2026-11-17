@@ -538,7 +538,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  20.381   0.072  20.397
+    ##  37.714   0.156  37.880
 
 ``` r
 
@@ -1738,26 +1738,24 @@ ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
 
 ``` r
 
-mod1 <- semireg(apartment.price ~ construction.date,
-                smoothZ=list(
-                  grp=smZ(construction.date, k=25) 
-                ), # Use of a O'Sullivan spline with 25 knots 
-                  #  to model the non-linear relationship
+# an O'Sullivan spline with 25 interior knots for the non-linear relationship;
+# its straight line (construction.date) is added to the fixed effects
+mod1 <- semireg(apartment.price ~ s(construction.date, bs = "os", k = 25),
                 data = WarsawApts)
 ```
 
     ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: apartment.price ~ construction.date + (1 | grp)
+    ## Formula: apartment.price ~ 1 + construction.date + (1 | s_construction_date)
     ##    Data: WarsawApts
     ## REML criterion at convergence: 3544.905
     ## Random effects:
-    ##  Groups   Name        Std.Dev.
-    ##  grp      (Intercept)  1.191  
-    ##  Residual             17.812  
-    ## Number of obs: 409, groups:  grp, 27
+    ##  Groups              Name        Std.Dev.
+    ##  s_construction_date (Intercept) 45.81   
+    ##  Residual                        17.81   
+    ## Number of obs: 409, groups:  s_construction_date, 27
     ## Fixed Effects:
     ##       (Intercept)  construction.date  
-    ##         109.38694            0.06692
+    ##         -22.63914            0.06692
 
 ``` r
 
@@ -1775,10 +1773,10 @@ residplot(mod1$semer)
 kable(anova(mod1$semer))
 ```
 
-|                   |           F |  Df |   Df.res |   Pr(\>F) |
-|:------------------|------------:|----:|---------:|----------:|
-| (Intercept)       | 9266.058795 |   1 | 175.2759 | 0.0000000 |
-| construction.date |    1.456952 |   1 | 149.7415 | 0.2293189 |
+|                   |         F |  Df |  Df.res |   Pr(\>F) |
+|:------------------|----------:|----:|--------:|----------:|
+| (Intercept)       | 0.0427881 |   1 | 149.228 | 0.8364068 |
+| construction.date | 1.4569482 |   1 | 149.742 | 0.2293196 |
 
 - **Tests of the smooth terms**
 
@@ -1787,9 +1785,9 @@ kable(anova(mod1$semer))
 kable(anova(mod1)$smooth)
 ```
 
-| term | variance |    logLik | logLik.without |     LRT | p.value |
-|:-----|---------:|----------:|---------------:|--------:|--------:|
-| grp  | 1.419026 | -1772.452 |      -1844.882 | 144.859 |       0 |
+| term | variance | logLik | logLik.without | LRT | p.value | test |
+|:---|---:|---:|---:|---:|---:|:---|
+| s_construction_date | 2098.633 | -1772.452 | -1844.882 | 144.859 | 1e-04 | exact restricted LRT (10000 simulations) |
 
 - **$`R^2`$**
 
@@ -1800,8 +1798,8 @@ R2_glmm(mod1$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##    Total    Fixed   Random      grp 
-    ## "86.14%"  "0.03%" "86.11%" "86.11%"
+    ##               Total               Fixed              Random s_construction_date 
+    ##            "86.14%"             "0.03%"            "86.11%"            "86.11%"
 
 ### Prediction
 
@@ -1829,37 +1827,36 @@ pred_out1$plt
 
 ``` r
 
-mod2 <- semireg(apartment.price ~ construction.date*district, 
-                smoothZ=list(
-                  grp=smZ(construction.date, k=10, 
-                            by = district, group=TRUE)
-                  ),
-                data=WarsawApts)
+# a curve per district, each with its own smoothing variance; district and the
+# district slopes (district + district:construction.date) are added automatically
+mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os", k = 10),
+                data = WarsawApts)
 ```
 
     ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: apartment.price ~ construction.date * district + (1 | grp.Mokotow) +  
-    ##     (1 | grp.Srodmiescie) + (1 | grp.Wola) + (1 | grp.Zoliborz)
+    ## Formula: apartment.price ~ 1 + district + district:construction.date +  
+    ##     (1 | s_construction_date_districtMokotow) + (1 | s_construction_date_districtSrodmiescie) +  
+    ##     (1 | s_construction_date_districtWola) + (1 | s_construction_date_districtZoliborz)
     ##    Data: WarsawApts
     ## REML criterion at convergence: 3503.051
     ## Random effects:
-    ##  Groups          Name        Std.Dev.
-    ##  grp.Mokotow     (Intercept)  1.0608 
-    ##  grp.Srodmiescie (Intercept)  1.9026 
-    ##  grp.Wola        (Intercept)  0.1682 
-    ##  grp.Zoliborz    (Intercept)  0.5889 
-    ##  Residual                    16.6234 
+    ##  Groups                                  Name        Std.Dev.
+    ##  s_construction_date_districtMokotow     (Intercept) 29.894  
+    ##  s_construction_date_districtSrodmiescie (Intercept) 40.159  
+    ##  s_construction_date_districtWola        (Intercept)  2.871  
+    ##  s_construction_date_districtZoliborz    (Intercept)  7.162  
+    ##  Residual                                            16.624  
     ## Number of obs: 409, groups:  
-    ## grp.Mokotow, 12; grp.Srodmiescie, 12; grp.Wola, 12; grp.Zoliborz, 12
+    ## s_construction_date_districtMokotow, 12; s_construction_date_districtSrodmiescie, 12; s_construction_date_districtWola, 12; s_construction_date_districtZoliborz, 12
     ## Fixed Effects:
-    ##                           (Intercept)                      construction.date  
-    ##                             110.32764                                0.09293  
-    ##                   districtSrodmiescie                           districtWola  
-    ##                              -9.57778                                3.41474  
-    ##                      districtZoliborz  construction.date:districtSrodmiescie  
-    ##                              -5.32125                               -0.23491  
-    ##        construction.date:districtWola     construction.date:districtZoliborz  
-    ##                              -0.34627                               -0.18153
+    ##                           (Intercept)                    districtSrodmiescie  
+    ##                             -73.03858                              453.93920  
+    ##                          districtWola                       districtZoliborz  
+    ##                             686.45142                              352.75138  
+    ##     districtMokotow:construction.date  districtSrodmiescie:construction.date  
+    ##                               0.09294                               -0.14199  
+    ##        districtWola:construction.date     districtZoliborz:construction.date  
+    ##                              -0.25325                               -0.08855
 
 ``` r
 
@@ -1877,12 +1874,11 @@ residplot(mod2$semer, group="district")
 kable(anova(mod2$semer))
 ```
 
-|                            |           F |  Df |   Df.res |   Pr(\>F) |
-|:---------------------------|------------:|----:|---------:|----------:|
-| (Intercept)                | 3896.137431 |   1 | 29.47737 | 0.0000000 |
-| construction.date          |    1.402695 |   1 | 15.89182 | 0.2536845 |
-| district                   |    4.351173 |   3 | 24.12287 | 0.0138515 |
-| construction.date:district |    1.597233 |   3 | 19.44538 | 0.2223950 |
+|                            |        F |  Df |   Df.res |   Pr(\>F) |
+|:---------------------------|---------:|----:|---------:|----------:|
+| (Intercept)                | 3.387549 |   1 | 15.38809 | 0.0850560 |
+| district                   | 1.548635 |   3 | 19.12871 | 0.2343749 |
+| district:construction.date | 1.219447 |   4 | 26.47655 | 0.3261956 |
 
 - **Tests of the smooth terms**
 
@@ -1891,12 +1887,12 @@ kable(anova(mod2$semer))
 kable(anova(mod2)$smooth)
 ```
 
-| term            |  variance |    logLik | logLik.without |       LRT |   p.value |
-|:----------------|----------:|----------:|---------------:|----------:|----------:|
-| grp.Mokotow     | 1.1252662 | -1751.525 |      -1800.940 | 98.829673 | 0.0000000 |
-| grp.Srodmiescie | 3.6198554 | -1751.525 |      -1761.894 | 20.737486 | 0.0000026 |
-| grp.Wola        | 0.0282768 | -1751.525 |      -1752.495 |  1.939838 | 0.0818431 |
-| grp.Zoliborz    | 0.3467569 | -1751.525 |      -1760.028 | 17.004645 | 0.0000186 |
+| term | variance | logLik | logLik.without | LRT | p.value | test |
+|:---|---:|---:|---:|---:|---:|:---|
+| s_construction_date_districtMokotow | 893.678898 | -1751.525 | -1800.940 | 98.829583 | 0.0000000 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtSrodmiescie | 1612.747676 | -1751.525 | -1761.894 | 20.737475 | 0.0000026 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtWola | 8.240899 | -1751.525 | -1752.495 | 1.939841 | 0.0818429 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtZoliborz | 51.291075 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 
@@ -1907,10 +1903,14 @@ R2_glmm(mod2$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##           Total           Fixed          Random     grp.Mokotow grp.Srodmiescie 
-    ##        "89.99%"         "0.69%"         "89.3%"        "31.75%"        "55.46%" 
-    ##        grp.Wola    grp.Zoliborz 
-    ##         "0.27%"         "1.82%"
+    ##                                   Total                                   Fixed 
+    ##                                "89.98%"                                 "0.69%" 
+    ##                                  Random     s_construction_date_districtMokotow 
+    ##                                "89.29%"                                "31.79%" 
+    ## s_construction_date_districtSrodmiescie        s_construction_date_districtWola 
+    ##                                "55.41%"                                 "0.27%" 
+    ##    s_construction_date_districtZoliborz 
+    ##                                 "1.81%"
 
 ### Prediction with Group
 
@@ -2010,41 +2010,37 @@ summary(Caschool)
 
 ``` r
 
-mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
-                          smoothZ=list(
-                            cal_grp=smZ(calwpct, k=12),  
-                            avg_grp=smZ(log.avginc, k=5),
-                            comp_grp=smZ(compstu, k=12)
-                          ), 
-                          data=Caschool)
+mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = "os", k = 5) +
+                     s(compstu, bs = "os", k = 12) + (1 | county) + (1 | grspan),
+                   data = Caschool)
 ```
 
     ## Formula:          
-    ## mathscr ~ calwpct + log.avginc + compstu + (1 | county) + (1 |  
-    ##     grspan) + (1 | cal_grp) + (1 | avg_grp) + (1 | comp_grp)
+    ## mathscr ~ 1 + (1 | county) + (1 | grspan) + calwpct + log.avginc +  
+    ##     compstu + (1 | s_calwpct) + (1 | s_log_avginc) + (1 | s_compstu)
     ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  3233.449  3273.851 -1606.724  3213.449       410 
+    ##  3223.605  3264.008 -1601.803  3203.605       410 
     ## Random-effects (co)variances:
     ## 
     ## Conditional model:
-    ##  Groups   Name        Std.Dev. 
-    ##  county   (Intercept) 5.816e+00
-    ##  grspan   (Intercept) 1.426e-03
-    ##  cal_grp  (Intercept) 2.096e-01
-    ##  avg_grp  (Intercept) 2.704e+01
-    ##  comp_grp (Intercept) 1.454e+02
-    ##  Residual             1.016e+01
+    ##  Groups       Name        Std.Dev.
+    ##  county       (Intercept)  5.9013 
+    ##  grspan       (Intercept)  0.6581 
+    ##  s_calwpct    (Intercept)  6.1400 
+    ##  s_log_avginc (Intercept)  5.1887 
+    ##  s_compstu    (Intercept)  1.9127 
+    ##  Residual                 10.1824 
     ## 
-    ## Number of obs: 420 / Conditional model: county, 45; grspan, 2; cal_grp, 14; avg_grp, 7; comp_grp, 14
+    ## Number of obs: 420 / Conditional model: county, 45; grspan, 2; s_calwpct, 14; s_log_avginc, 7; s_compstu, 14
     ## 
-    ## Dispersion estimate for gaussian family (sigma^2):  103 
+    ## Dispersion estimate for gaussian family (sigma^2):  104 
     ## 
     ## Fixed Effects:
     ## 
     ## Conditional model:
     ## (Intercept)      calwpct   log.avginc      compstu  
-    ##     594.493       -0.491       24.694       18.010
+    ##    594.6222      -0.4925      24.6536      19.1168
 
 ``` r
 
@@ -2064,9 +2060,9 @@ kable(Anova(mod$semer))
 
 |            |     Chisq |  Df | Pr(\>Chisq) |
 |:-----------|----------:|----:|------------:|
-| calwpct    | 35.440298 |   1 |   0.0000000 |
-| log.avginc | 91.867908 |   1 |   0.0000000 |
-| compstu    |  1.858845 |   1 |   0.1727581 |
+| calwpct    | 35.005795 |   1 |   0.0000000 |
+| log.avginc | 90.020820 |   1 |   0.0000000 |
+| compstu    |  1.896853 |   1 |   0.1684309 |
 
 - **$`R^2`$**
 
@@ -2077,8 +2073,10 @@ R2_glmm(mod$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##    Total    Fixed   Random   county   grspan  cal_grp  avg_grp comp_grp 
-    ## "72.42%" "51.35%" "21.06%"  "8.74%"     "0%"  "8.98%"  "2.84%"  "0.51%"
+    ##        Total        Fixed       Random       county       grspan    s_calwpct 
+    ##      "72.6%"     "50.87%"     "21.73%"       "8.9%"      "0.03%"      "9.12%" 
+    ## s_log_avginc    s_compstu 
+    ##      "2.97%"      "0.72%"
 
 ### Prediction
 
@@ -2208,18 +2206,14 @@ summary(indonRespir)
 
 ``` r
 
-mod1 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
-                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                             smoothZ=list(
-                               grp=smZ(age, k=25)
-                             ),
-                             family = binomial,
-                             data = indonRespir)
+mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic + sex + height + stunted +
+                      visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
 ```
 
     ## Formula:          
-    ## respirInfec ~ age + vitAdefic + sex + height + stunted + visit2 +  
-    ##     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp)
+    ## respirInfec ~ vitAdefic + sex + height + stunted + visit2 + visit3 +  
+    ##     visit4 + visit5 + visit6 + (1 | idnum) + age + (1 | s_age)
     ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
     ##  673.0182  739.1892 -323.5091  647.0182      1187 
@@ -2228,17 +2222,17 @@ mod1 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted +
     ## Conditional model:
     ##  Groups Name        Std.Dev.
     ##  idnum  (Intercept) 0.8353  
-    ##  grp    (Intercept) 0.4430  
+    ##  s_age  (Intercept) 0.3839  
     ## 
-    ## Number of obs: 1200 / Conditional model: idnum, 275; grp, 27
+    ## Number of obs: 1200 / Conditional model: idnum, 275; s_age, 27
     ## 
     ## Fixed Effects:
     ## 
     ## Conditional model:
-    ## (Intercept)          age    vitAdefic    sexfemale       height      stunted  
-    ##   -0.856632    -0.514185     0.655032    -0.509131    -0.033262     0.460009  
-    ##      visit2       visit3       visit4       visit5       visit6  
-    ##   -1.109010    -0.570409    -1.274438     0.477829    -0.002891
+    ## (Intercept)    vitAdefic    sexfemale       height      stunted       visit2  
+    ##   -0.856596     0.655028    -0.509131    -0.033264     0.459970    -1.109032  
+    ##      visit3       visit4       visit5       visit6          age  
+    ##   -0.570441    -1.274461     0.477797    -0.002907    -0.514188
 
 ``` r
 
@@ -2258,16 +2252,16 @@ kable(car::Anova(mod1$semer))
 
 |           |      Chisq |  Df | Pr(\>Chisq) |
 |:----------|-----------:|----:|------------:|
-| age       | 15.5042755 |   1 |   0.0000823 |
-| vitAdefic |  1.7004790 |   1 |   0.1922253 |
-| sex       |  3.6344414 |   1 |   0.0565956 |
-| height    |  1.4757295 |   1 |   0.2244439 |
-| stunted   |  0.9710527 |   1 |   0.3244178 |
-| visit2    |  7.8003972 |   1 |   0.0052235 |
-| visit3    |  2.2951131 |   1 |   0.1297818 |
-| visit4    |  7.6878903 |   1 |   0.0055593 |
-| visit5    |  2.0929208 |   1 |   0.1479829 |
-| visit6    |  0.0000626 |   1 |   0.9936854 |
+| vitAdefic |  1.7004525 |   1 |   0.1922288 |
+| sex       |  3.6344237 |   1 |   0.0565962 |
+| height    |  1.4758603 |   1 |   0.2244233 |
+| stunted   |  0.9708859 |   1 |   0.3244593 |
+| visit2    |  7.8007540 |   1 |   0.0052224 |
+| visit3    |  2.2953732 |   1 |   0.1297600 |
+| visit4    |  7.6881957 |   1 |   0.0055583 |
+| visit5    |  2.0926505 |   1 |   0.1480091 |
+| visit6    |  0.0000633 |   1 |   0.9936497 |
+| age       | 15.5045938 |   1 |   0.0000823 |
 
 - **$`R^2`$**
 
@@ -2278,7 +2272,7 @@ R2_glmm(mod1$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##    Total    Fixed   Random    idnum      grp 
+    ##    Total    Fixed   Random    idnum    s_age 
     ##  "33.8%" "17.33%" "16.47%" "13.99%"  "2.48%"
 
 ### Prediction
@@ -2310,39 +2304,38 @@ pred_out1$plt+
 
 ``` r
 
-mod2 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
-                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                smoothZ=list(
-                  grp=smZ(age, k=25, by=sex, group=TRUE)
-                ),
-                family = binomial,
-                data = indonRespir)
+# a curve of age for each sex (sex and sex:age are added to the fixed effects)
+mod2 <- semireg_tmb(respirInfec ~ s(age, by = sex, bs = "os", k = 25) + vitAdefic + height + stunted +
+                      visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
 ```
 
     ## Formula:          
-    ## respirInfec ~ age + vitAdefic + sex + height + stunted + visit2 +  
-    ##     visit3 + visit4 + visit5 + visit6 + (1 | idnum) + (1 | grp.male) +  
-    ##     (1 | grp.female)
+    ## respirInfec ~ vitAdefic + height + stunted + visit2 + visit3 +  
+    ##     visit4 + visit5 + visit6 + (1 | idnum) + sex + sex:age +  
+    ##     (1 | s_age_sexmale) + (1 | s_age_sexfemale)
     ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  673.6117  744.8728 -322.8058  645.6117      1186 
+    ##  675.5755  751.9267 -322.7878  645.5755      1185 
     ## Random-effects (co)variances:
     ## 
     ## Conditional model:
-    ##  Groups     Name        Std.Dev. 
-    ##  idnum      (Intercept) 8.548e-01
-    ##  grp.male   (Intercept) 5.633e-01
-    ##  grp.female (Intercept) 6.932e-05
+    ##  Groups          Name        Std.Dev. 
+    ##  idnum           (Intercept) 8.553e-01
+    ##  s_age_sexmale   (Intercept) 3.786e-01
+    ##  s_age_sexfemale (Intercept) 4.134e-05
     ## 
-    ## Number of obs: 1200 / Conditional model: idnum, 275; grp.male, 27; grp.female, 27
+    ## Number of obs: 1200 / Conditional model: idnum, 275; s_age_sexmale, 27; s_age_sexfemale, 27
     ## 
     ## Fixed Effects:
     ## 
     ## Conditional model:
-    ## (Intercept)          age    vitAdefic    sexfemale       height      stunted  
-    ##    -0.90721     -0.52553      0.62490     -0.26799     -0.03518      0.46107  
-    ##      visit2       visit3       visit4       visit5       visit6  
-    ##    -1.09504     -0.53393     -1.22544      0.53412      0.06265
+    ##   (Intercept)      vitAdefic         height        stunted         visit2  
+    ##      -0.95732        0.62528       -0.03509        0.46323       -1.09441  
+    ##        visit3         visit4         visit5         visit6      sexfemale  
+    ##      -0.53190       -1.22243        0.53727        0.06550       -0.16396  
+    ##   sexmale:age  sexfemale:age  
+    ##      -0.50650       -0.54696
 
 ``` r
 
@@ -2362,16 +2355,16 @@ kable(Anova(mod2$semer))
 
 |           |      Chisq |  Df | Pr(\>Chisq) |
 |:----------|-----------:|----:|------------:|
-| age       | 20.0274492 |   1 |   0.0000076 |
-| vitAdefic |  1.5265392 |   1 |   0.2166326 |
-| sex       |  0.9017615 |   1 |   0.3423098 |
-| height    |  1.6630360 |   1 |   0.1971939 |
-| stunted   |  0.9686910 |   1 |   0.3250069 |
-| visit2    |  7.5723914 |   1 |   0.0059269 |
-| visit3    |  2.0072509 |   1 |   0.1565488 |
-| visit4    |  7.1443814 |   1 |   0.0075199 |
-| visit5    |  2.6819018 |   1 |   0.1014945 |
-| visit6    |  0.0305583 |   1 |   0.8612294 |
+| vitAdefic |  1.5282678 |   1 |   0.2163726 |
+| height    |  1.6518437 |   1 |   0.1987082 |
+| stunted   |  0.9757535 |   1 |   0.3232495 |
+| visit2    |  7.5616474 |   1 |   0.0059623 |
+| visit3    |  1.9898132 |   1 |   0.1583604 |
+| visit4    |  7.0981395 |   1 |   0.0077164 |
+| visit5    |  2.7020790 |   1 |   0.1002175 |
+| visit6    |  0.0332517 |   1 |   0.8553077 |
+| sex       |  0.8920972 |   1 |   0.3449096 |
+| sex:age   | 20.0324865 |   2 |   0.0000447 |
 
 - **$`R^2`$**
 
@@ -2382,8 +2375,10 @@ R2_glmm(mod2$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##      Total      Fixed     Random      idnum   grp.male grp.female 
-    ##   "34.21%"      "17%"   "17.21%"   "14.57%"    "2.64%"       "0%"
+    ##           Total           Fixed          Random           idnum   s_age_sexmale 
+    ##        "33.67%"        "16.27%"         "17.4%"         "14.7%"          "2.7%" 
+    ## s_age_sexfemale 
+    ##            "0%"
 
 ### Prediction with Group
 
@@ -2480,47 +2475,47 @@ summary(ragweed)
 
 ``` r
 
-mod <- semireg_tmb(pollenCount ~ rain+year+temperatureResidual+dayInSeason+windSpeed,
-                   smoothZ=list(
-                     s_day=smZ(dayInSeason, by=year, group=TRUE),
-                     s_temp=smZ(temperatureResidual),
-                     s_wind=smZ(windSpeed)
-                   ),
-                   family = nbinom1,
-                   data=ragweed)
+# a seasonal curve for each year (with year and year:dayInSeason as fixed terms),
+# and curves in temperature and wind speed
+mod <- semireg_tmb(pollenCount ~ rain + s(dayInSeason, by = year, bs = "os") +
+                     s(temperatureResidual, bs = "os") + s(windSpeed, bs = "os"),
+                   family = nbinom1, data = ragweed)
 ```
 
     ## Formula:          
-    ## pollenCount ~ rain + year + temperatureResidual + dayInSeason +  
-    ##     windSpeed + (1 | s_day.1991) + (1 | s_day.1992) + (1 | s_day.1993) +  
-    ##     (1 | s_day.1994) + (1 | s_temp) + (1 | s_wind)
+    ## pollenCount ~ rain + year + year:dayInSeason + temperatureResidual +  
+    ##     windSpeed + (1 | s_dayInSeason_year1991) + (1 | s_dayInSeason_year1992) +  
+    ##     (1 | s_dayInSeason_year1993) + (1 | s_dayInSeason_year1994) +  
+    ##     (1 | s_temperatureResidual) + (1 | s_windSpeed)
     ## Data: .pm_sr_data
     ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  2367.406  2424.574 -1168.703  2337.406       319 
+    ##  2364.185  2432.786 -1164.093  2328.185       316 
     ## Random-effects (co)variances:
     ## 
     ## Conditional model:
-    ##  Groups     Name        Std.Dev. 
-    ##  s_day.1991 (Intercept) 4.476e-02
-    ##  s_day.1992 (Intercept) 4.826e-02
-    ##  s_day.1993 (Intercept) 4.073e-02
-    ##  s_day.1994 (Intercept) 3.614e-02
-    ##  s_temp     (Intercept) 2.264e-07
-    ##  s_wind     (Intercept) 4.796e-06
+    ##  Groups                 Name        Std.Dev. 
+    ##  s_dayInSeason_year1991 (Intercept) 1.076e+00
+    ##  s_dayInSeason_year1992 (Intercept) 1.000e+00
+    ##  s_dayInSeason_year1993 (Intercept) 1.033e+00
+    ##  s_dayInSeason_year1994 (Intercept) 7.563e-01
+    ##  s_temperatureResidual  (Intercept) 1.805e-05
+    ##  s_windSpeed            (Intercept) 8.023e-06
     ## 
-    ## Number of obs: 334 / Conditional model: s_day.1991, 8; s_day.1992, 8; s_day.1993, 8; s_day.1994, 8; s_temp, 8; s_wind, 8
+    ## Number of obs: 334 / Conditional model: s_dayInSeason_year1991, 8; s_dayInSeason_year1992, 8; s_dayInSeason_year1993, 8; s_dayInSeason_year1994, 8; s_temperatureResidual, 8; s_windSpeed, 8
     ## 
-    ## Dispersion parameter for nbinom1 family (): 11.1 
+    ## Dispersion parameter for nbinom1 family ():   11 
     ## 
     ## Fixed Effects:
     ## 
     ## Conditional model:
-    ##         (Intercept)                 rain             year1992  
-    ##             2.18616              0.79800              0.34493  
-    ##            year1993             year1994  temperatureResidual  
-    ##            -0.10079              0.04793              0.04768  
-    ##         dayInSeason            windSpeed  
-    ##            -0.03125              0.08007
+    ##          (Intercept)                  rain              year1992  
+    ##              1.95165               0.80200               1.57098  
+    ##             year1993              year1994   temperatureResidual  
+    ##              0.03111               0.84614               0.04792  
+    ##            windSpeed  year1991:dayInSeason  year1992:dayInSeason  
+    ##              0.07958              -0.02430              -0.07432  
+    ## year1993:dayInSeason  year1994:dayInSeason  
+    ##             -0.02775              -0.05606
 
 ``` r
 
@@ -2538,13 +2533,13 @@ residplot(mod$semer)
 kable(car::Anova(mod$semer))
 ```
 
-|                     |     Chisq |  Df | Pr(\>Chisq) |
-|:--------------------|----------:|----:|------------:|
-| rain                | 28.697489 |   1 |   0.0000001 |
-| year                |  6.902495 |   3 |   0.0750714 |
-| temperatureResidual | 70.281585 |   1 |   0.0000000 |
-| dayInSeason         | 34.539924 |   1 |   0.0000000 |
-| windSpeed           | 76.531043 |   1 |   0.0000000 |
+|                     |    Chisq |  Df | Pr(\>Chisq) |
+|:--------------------|---------:|----:|------------:|
+| rain                | 29.05128 |   1 |     1.0e-07 |
+| year                | 25.70815 |   3 |     1.1e-05 |
+| temperatureResidual | 72.10172 |   1 |     0.0e+00 |
+| windSpeed           | 76.13483 |   1 |     0.0e+00 |
+| year:dayInSeason    | 45.61101 |   4 |     0.0e+00 |
 
 - **$`R^2`$**
 
@@ -2555,10 +2550,12 @@ R2_glmm(mod$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##      Total      Fixed     Random s_day.1991 s_day.1992 s_day.1993 s_day.1994 
-    ##   "63.15%"   "10.23%"   "52.93%"   "15.89%"   "16.19%"   "12.09%"    "8.76%" 
-    ##     s_temp     s_wind 
-    ##       "0%"       "0%"
+    ##                  Total                  Fixed                 Random 
+    ##               "60.26%"               "16.37%"               "43.89%" 
+    ## s_dayInSeason_year1991 s_dayInSeason_year1992 s_dayInSeason_year1993 
+    ##               "13.61%"               "11.43%"               "12.32%" 
+    ## s_dayInSeason_year1994  s_temperatureResidual            s_windSpeed 
+    ##                "6.53%"                   "0%"                   "0%"
 
 ### Prediction by Day in Season
 
@@ -2567,7 +2564,7 @@ R2_glmm(mod$semer)
 
 ``` r
 
-pred_out1_1 <- semipred(mod, "year", "dayInSeason", sm_term="s_day", prt=FALSE)
+pred_out1_1 <- semipred(mod, "year", "dayInSeason", prt=FALSE)   # other covariates at their means
 DT_df(pred_out1_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2626,30 +2623,29 @@ DT_df(copper)
 
 ``` r
 
-mod <- semireg(log(grade) ~ (xcoord+ycoord+zcoord)^2,
-                smoothZ=list(
-                  grp_z=smZ(zcoord),
-                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
-                  ), 
-                data=copper)
+# an O'Sullivan spline in depth, a thin-plate surface over the plane (their linear
+# terms are added to the fixed effects), and the pairwise interactions of the coordinates
+mod <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
+                 xcoord:ycoord + xcoord:zcoord + ycoord:zcoord,
+               data = copper)
 ```
 
     ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: log(grade) ~ (xcoord + ycoord + zcoord)^2 + (1 | grp_z) + (1 |  
-    ##     grp_geo)
+    ## Formula: log(grade) ~ xcoord:ycoord + xcoord:zcoord + ycoord:zcoord +  
+    ##     zcoord + xcoord + ycoord + (1 | s_zcoord) + (1 | s_xcoord_ycoord)
     ##    Data: copper
-    ## REML criterion at convergence: 327.8956
+    ## REML criterion at convergence: 318.4061
     ## Random effects:
-    ##  Groups   Name        Std.Dev.
-    ##  grp_geo  (Intercept) 0.001138
-    ##  grp_z    (Intercept) 0.064577
-    ##  Residual             0.287157
-    ## Number of obs: 439, groups:  grp_geo, 36; grp_z, 8
+    ##  Groups          Name        Std.Dev.
+    ##  s_xcoord_ycoord (Intercept) 1.3363  
+    ##  s_zcoord        (Intercept) 0.2810  
+    ##  Residual                    0.2894  
+    ## Number of obs: 439, groups:  s_xcoord_ycoord, 36; s_zcoord, 8
     ## Fixed Effects:
-    ##   (Intercept)         xcoord         ycoord         zcoord  xcoord:ycoord  
-    ##     3.472e-03     -1.738e-03     -2.455e-05      2.705e-03     -2.470e-06  
+    ##   (Intercept)         zcoord         xcoord         ycoord  xcoord:ycoord  
+    ##    -2.312e+00      2.637e-02      7.141e-04      5.194e-03     -2.455e-06  
     ## xcoord:zcoord  ycoord:zcoord  
-    ##    -1.400e-05     -4.049e-05  
+    ##    -1.394e-05     -4.048e-05  
     ## fit warnings:
     ## Some predictor variables are on very different scales: consider rescaling. 
     ## You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
@@ -2670,15 +2666,15 @@ residplot(mod$semer)
 kable(anova(mod$semer))
 ```
 
-|               |          F |  Df |      Df.res |   Pr(\>F) |
-|:--------------|-----------:|----:|------------:|----------:|
-| (Intercept)   |  0.0000171 |   1 |    12.61068 | 0.9967612 |
-| xcoord        |  0.1861696 |   1 |    12.61863 | 0.6734040 |
-| ycoord        |  0.0000373 |   1 |    12.62189 | 0.9952252 |
-| zcoord        |  5.8288453 |   1 | -3789.58126 |       NaN |
-| xcoord:ycoord |  0.2840352 |   1 |    15.41602 | 0.6016675 |
-| xcoord:zcoord |  4.0103748 |   1 |   428.88169 | 0.0458501 |
-| ycoord:zcoord | 26.3669225 |   1 |   424.53685 | 0.0000004 |
+|               |          F |  Df |    Df.res |   Pr(\>F) |
+|:--------------|-----------:|----:|----------:|----------:|
+| (Intercept)   |  0.8534314 |   1 |  14.25096 | 0.3709616 |
+| zcoord        | 26.5094686 |   1 | 417.28577 | 0.0000004 |
+| xcoord        |  0.0247375 |   1 |  13.95960 | 0.8772752 |
+| ycoord        |  1.4111370 |   1 |  14.17006 | 0.2543982 |
+| xcoord:ycoord |  0.2820408 |   1 |  15.46128 | 0.6029130 |
+| xcoord:zcoord |  3.9173411 |   1 | 416.02554 | 0.0484493 |
+| ycoord:zcoord | 25.9679209 |   1 | 413.16877 | 0.0000005 |
 
 - **Tests of the smooth terms**
 
@@ -2687,10 +2683,10 @@ kable(anova(mod$semer))
 kable(anova(mod)$smooth)
 ```
 
-| term    |  variance |    logLik | logLik.without |      LRT | p.value |
-|:--------|----------:|----------:|---------------:|---------:|--------:|
-| grp_z   | 0.0041702 | -163.9478 |      -199.6525 | 71.40941 |       0 |
-| grp_geo | 0.0000013 | -163.9478 |      -207.6783 | 87.46111 |       0 |
+| term | variance | logLik | logLik.without | LRT | p.value | test |
+|:---|---:|---:|---:|---:|---:|:---|
+| s_zcoord | 0.0789849 | -159.2031 | -199.6525 | 80.89885 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_xcoord_ycoord | 1.7857080 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 
@@ -2701,45 +2697,8 @@ R2_glmm(mod$semer)
 
     ## # Adjusted R2 for Mixed Models
 
-    ##     Total     Fixed    Random   grp_geo     grp_z 
-    ##  "94.41%" "-37.27%" "131.68%"  "54.09%"   "77.6%"
-
-The negative $`R^2`$ indictates we may fit the model with intercept
-only.
-
-``` r
-
-mod <- semireg(log(grade) ~ 1,
-                smoothZ=list(
-                  grp_z=smZ(zcoord),
-                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
-                  ), 
-                data=copper)
-```
-
-    ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: log(grade) ~ 1 + (1 | grp_z) + (1 | grp_geo)
-    ##    Data: copper
-    ## REML criterion at convergence: 264.0244
-    ## Random effects:
-    ##  Groups   Name        Std.Dev. 
-    ##  grp_geo  (Intercept) 0.0009715
-    ##  grp_z    (Intercept) 0.0612618
-    ##  Residual             0.2985738
-    ## Number of obs: 439, groups:  grp_geo, 36; grp_z, 8
-    ## Fixed Effects:
-    ## (Intercept)  
-    ##      0.1596
-
-``` r
-
-R2_glmm(mod$semer)
-```
-
-    ## # Adjusted R2 for Mixed Models
-
-    ##    Total    Fixed   Random  grp_geo    grp_z 
-    ## "94.76%"     "0%" "94.76%"  "34.2%" "60.56%"
+    ##           Total           Fixed          Random s_xcoord_ycoord        s_zcoord 
+    ##         "79.2%"      "-135.63%"       "214.83%"       "196.83%"           "18%"
 
 ### Semiparametric prediction
 
@@ -2761,7 +2720,7 @@ DT_df(pred_out1$pred_df %>%
 pred_out1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-108-1.png)
+![](overview_files/figure-html/unnamed-chunk-106-1.png)
 
 ``` r
 
@@ -2775,7 +2734,7 @@ DT_df(pred_out2$pred_df %>%
 pred_out2$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-110-1.png)
+![](overview_files/figure-html/unnamed-chunk-108-1.png)
 
 ``` r
 

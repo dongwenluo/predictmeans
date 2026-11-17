@@ -291,6 +291,62 @@ GLMM):</p>
 <span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="testing-random-effects-varcomptest-true">Testing random effects: <code>varcomp(test = TRUE)</code><a class="anchor" aria-label="anchor" href="#testing-random-effects-varcomptest-true"></a>
+</h2>
+<p>The quickest way to ask whether each random effect is needed is
+<code>varcomp(test = TRUE)</code> (<code>lmer</code>,
+<code>glmer</code>, <code>glmmTMB</code> and <code><a href="../reference/semireg.html">semireg()</a></code>
+fits). Each row of the variance-component table is tested by refitting
+the model one would fit without it: a term dropped, a random slope
+removed (<code>(Days | Subject)</code> to <code>(1 | Subject)</code>),
+or a covariance set to zero. A variance is tested on the boundary of its
+range, so its likelihood ratio is referred to the mixtures of Self and
+Liang (1987) and Stram and Lee (1994), as SAS PROC GLIMMIX does, not to
+the chi-square, which is conservative. When the tested variance is the
+model’s only random effect in a gaussian REML fit, the exact null
+distribution of Crainiceanu and Ruppert (2004) is used.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="va">Days</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span>, test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                              vcov       SE    2.5 %    97.5 %      LRT</span></span>
+<span><span class="co">#&gt; Subject.(Intercept)      612.1002 288.7884 289.4484 2042.7092 150.0354</span></span>
+<span><span class="co">#&gt; Subject.Days.(Intercept)   9.6044  46.6790 -75.9538   89.0540   0.0410</span></span>
+<span><span class="co">#&gt; Subject.Days              35.0717  14.7821  17.7159   99.5608  42.8368</span></span>
+<span><span class="co">#&gt; residual                 654.9400  77.1854 526.5448  837.0498       NA</span></span>
+<span><span class="co">#&gt;                            p.value</span></span>
+<span><span class="co">#&gt; Subject.(Intercept)      2.589e-32</span></span>
+<span><span class="co">#&gt; Subject.Days.(Intercept) 8.395e-01</span></span>
+<span><span class="co">#&gt; Subject.Days             2.793e-10</span></span>
+<span><span class="co">#&gt; residual                        NA</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Tests (likelihood ratio, each row's model refitted):</span></span>
+<span><span class="co">#&gt;   Subject.(Intercept): drop (Days | Subject); chi2(3), conservative</span></span>
+<span><span class="co">#&gt;   Subject.Days.(Intercept): (Days | Subject) -&gt; (Days || Subject); chi2(1)</span></span>
+<span><span class="co">#&gt;   Subject.Days: (Days | Subject) -&gt; (1 | Subject); 0.5 chi2(1) + 0.5 chi2(2)</span></span></code></pre></div>
+<p>Where the reference distribution may be inaccurate (a term with fewer
+than six levels, binary data with fewer than five observations per
+level), a warning names the rows and points to the parametric bootstrap,
+which simulates from the model without the component and refits both
+models to each simulated data set:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm1</span>, test <span class="op">=</span> <span class="cn">TRUE</span>, test_method <span class="op">=</span> <span class="st">"bootstrap"</span>, ncore <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
+<p>A clearly non-significant test stops after 20 simulated statistics
+reach the observed one; a significant one uses all <code>nboot</code>
+(999) refits of both models.</p>
+<p>In a simulation of seven designs (in the package sources,
+<code>dev/sim-vc-defaults.R</code>) the default reference was never
+liberal: it rejected 0-4.5% of data sets without the component at the 5%
+level. For GLMMs it was conservative (binary data in clusters of four
+0.5%, Poisson 4%, negative binomial 0%), and there the bootstrap was
+nearer 5% and found 5-7% more of the real components. So the default is
+a fast first look, safe for gaussian models; for GLMMs, small data sets,
+the rows a warning names and p-values near the cut-off the bootstrap is
+worth its time (some seconds to a minute per model with 999 draws on
+four cores; glmmTMB fits are slower).</p>
+<p><code>varcomp(test = TRUE)</code> tests each row against the model
+without it; <code><a href="../reference/permlmer.html">permlmer()</a></code>, below, compares any two nested
+models the user writes.</p>
+</div>
+<div class="section level2">
 <h2 id="testing-random-effects-permlmer">Testing random effects: <code>permlmer()</code><a class="anchor" aria-label="anchor" href="#testing-random-effects-permlmer"></a>
 </h2>
 <p><code><a href="../reference/permlmer.html">permlmer()</a></code> compares two nested mixed models with a
@@ -298,9 +354,8 @@ permutation likelihood-ratio test (Lee and Braun 2012). This is useful
 for random effects, where the usual chi-square reference distribution is
 wrong because the null value of a variance lies on the boundary. Does
 the slope for <code>Days</code> vary between subjects?</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="va">Days</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span></span>
-<span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">Reaction</span> <span class="op">~</span> <span class="va">Days</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">sleepstudy</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">fm0</span>, <span class="va">fm1</span>, nperm <span class="op">=</span> <span class="fl">99</span>, ncore <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Data: sleepstudy</span></span>
 <span><span class="co">#&gt; Models:</span></span>
@@ -316,7 +371,7 @@ fails with rare events or tiny clusters, randomised quantile residuals
 are permuted instead and the GLMMs refitted
 (<code>method = "quantile"</code>, chosen automatically). Do tick counts
 vary between locations, beyond the variation between broods?</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="va">TICKS</span> <span class="op">~</span> <span class="va">YEAR</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">HEIGHT</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">BROOD</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">poisson</span>,</span>
 <span>             data <span class="op">=</span> <span class="fu">lme4</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lme4/man/grouseticks.html" class="external-link">grouseticks</a></span><span class="op">)</span></span>
 <span><span class="va">gm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">gm1</span>, <span class="va">.</span> <span class="op">~</span> <span class="va">.</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">LOCATION</span><span class="op">)</span><span class="op">)</span></span>
@@ -340,7 +395,7 @@ are possible: treatments are randomised within blocks, whole-plot
 treatments to whole plots. <code><a href="../reference/permindex.html">permindex()</a></code> gives such
 permutations, and <code><a href="../reference/permmodels.html">permmodels()</a></code> and <code><a href="../reference/permlmer.html">permlmer()</a></code>
 use them through <code>perms</code> (a randomisation test):</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fm_rcb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">nitro</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permindex.html">permindex</a></span><span class="op">(</span><span class="va">Oats</span>, block <span class="op">=</span> <span class="st">"Block"</span>, nsim <span class="op">=</span> <span class="fl">999</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_rcb</span>, perms <span class="op">=</span> <span class="va">idx</span><span class="op">)</span><span class="op">$</span><span class="va">ANOVA</span></span>
@@ -381,7 +436,7 @@ use them through <code>perms</code> (a randomisation test):</p>
 fitted without its fixed effects (an intercept and the same random
 effects: the global null hypothesis), refits the full model to each and
 compares the statistics. For the clinical trial data:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bootmodels.html">bootmodels</a></span><span class="op">(</span><span class="va">fm_clin</span>, nsim <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
@@ -396,7 +451,7 @@ compares the statistics. For the clinical trial data:</p>
 <span><span class="co">#&gt; Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model.</span></span></code></pre></div>
 <p>Its result is used as a <code>permlist</code>; the <code>pairs</code>
 table then says <code>"bootstrap"</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
@@ -415,7 +470,7 @@ with group SDs 3, 1, 1). For <code>lm</code>, <code>aov</code> and
 heteroscedasticity-robust (HC3) t and F statistics and flips the signs
 of the reduced model’s residuals at random instead of permuting them (a
 wild bootstrap), so each residual keeps its own variance:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="va">mtcars</span>, cyl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cyl</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fm_mt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, robust <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -452,7 +507,7 @@ each term and coefficient, and checks the parametric test against them:
 which the term has no effect) where the parametric test rejects at
 <code>level</code>. Near <code>level</code>, the parametric test suits
 these data; well above it, its p-values are too small here.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_mpg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">p_mpg</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           statistic df1 df2      p.param p.perm       ses param.size</span></span>
@@ -470,7 +525,7 @@ combination; Pesarin and Salmaso 2010) and p-values adjusted for testing
 every response (min-p; Westfall and Young 1993). The responses’
 correlation is kept by the shared permutations, without a multivariate
 model.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_qsec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                     prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permcombine.html">permcombine</a></span><span class="op">(</span>mpg <span class="op">=</span> <span class="va">p_mpg</span>, qsec <span class="op">=</span> <span class="va">p_qsec</span><span class="op">)</span></span>
@@ -521,7 +576,11 @@ max-statistic (step-down max-|t|) adjustment over the time points.</p>
 <td>
 <code><a href="../reference/permmodels.html">permmodels()</a></code> (Freedman–Lane with refits); or the
 Kenward–Roger F test</td>
-<td><code><a href="../reference/permlmer.html">permlmer()</a></code></td>
+<td>
+<code>varcomp(test = TRUE)</code> (<code>lmer</code>);
+<code>test_method = "bootstrap"</code> for small data;
+<code><a href="../reference/permlmer.html">permlmer()</a></code>
+</td>
 </tr>
 <tr class="even">
 <td>
@@ -531,6 +590,8 @@ Kenward–Roger F test</td>
 <code><a href="../reference/permmodels.html">permmodels()</a></code> (Freedman–Lane on the working scale, with
 refits)</td>
 <td>
+<code>varcomp(test = TRUE)</code>,
+<code>test_method = "bootstrap"</code> for small data;
 <code><a href="../reference/permlmer.html">permlmer()</a></code>: working scale; quantile residuals for 0/1
 responses</td>
 </tr>
@@ -575,6 +636,8 @@ power of each scheme (in the package sources:
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
+<p>Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values.
+<em>Biometrika</em> 78, 301–304.</p>
 <p>Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at
 last. <em>Journal of Econometrics</em> 146, 162–169.</p>
 <p>DiCiccio, C. J. and Romano, J. P. (2017). Robust permutation tests
@@ -596,6 +659,16 @@ Statistics</em> 1, 292–298.</p>
 effects in linear mixed models. <em>Biometrics</em> 68, 486–493.</p>
 <p>Westfall, P. H. and Young, S. S. (1993). <em>Resampling-Based
 Multiple Testing</em>. Wiley.</p>
+<p>Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in
+linear mixed models with one variance component. <em>Journal of the
+Royal Statistical Society B</em> 66, 165–185.</p>
+<p>Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum
+likelihood estimators and likelihood ratio tests under nonstandard
+conditions. <em>Journal of the American Statistical Association</em> 82,
+605–610.</p>
+<p>Stram, D. O. and Lee, J. W. (1994). Variance components testing in
+the longitudinal mixed effects model. <em>Biometrics</em> 50,
+1171–1177.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

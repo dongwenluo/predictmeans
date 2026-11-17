@@ -134,6 +134,7 @@
   `Clinical` data
 
 - [`copper`](https://dongwenluo.github.io/predictmeans/reference/copper.md)
+  [`copperKnots`](https://dongwenluo.github.io/predictmeans/reference/copper.md)
   :
 
   `copper` data
@@ -142,6 +143,23 @@
   :
 
   `Drug` data
+
+- [`growthIndiana`](https://dongwenluo.github.io/predictmeans/reference/growthIndiana.md)
+  : Growth of Indiana Children
+
+- [`ozoneCalif`](https://dongwenluo.github.io/predictmeans/reference/ozoneCalif.md)
+  : Ozone Concentration and Meteorology in California
+
+- [`SBMDfem`](https://dongwenluo.github.io/predictmeans/reference/SBMDfem.md)
+  : Spinal Bone Mineral Density of Girls
+
+- [`scallop`](https://dongwenluo.github.io/predictmeans/reference/scallop.md)
+  [`scallopKnots`](https://dongwenluo.github.io/predictmeans/reference/scallop.md)
+  [`scallopBdry`](https://dongwenluo.github.io/predictmeans/reference/scallop.md)
+  : Scallop Abundance off Long Island
+
+- [`wageTUnion`](https://dongwenluo.github.io/predictmeans/reference/wageTUnion.md)
+  : Trade Union Membership and Wages
 
 - [`Poisson_ind`](https://dongwenluo.github.io/predictmeans/reference/Poisson_ind.md)
   :

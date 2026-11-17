@@ -8,6 +8,7 @@ model with a smooth in Z and a thin-plate spline in X and Y.
 
 ``` r
 data(copper)
+data(copperKnots)
 ```
 
 ## Format
@@ -30,36 +31,48 @@ A data frame with 439 rows and 4 columns:
 
   copper grade.
 
+`copperKnots`: the 20 knots (columns `xcoord`, `ycoord`) of M. P. Wand's
+thin-plate spline fit of these data (a geoadditive model fitted by
+[`lme()`](https://rdrr.io/pkg/nlme/man/lme.html)), which
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+reproduces.
+
 ## Examples
 
 ``` r
 data(copper)
-# \donttest{
-mod <- semireg(log(grade) ~ (xcoord + ycoord + zcoord)^2,
-               smoothZ = list(grp_z = smZ(zcoord),
-                              grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
-               data = copper, prt = FALSE)
+data(copperKnots)
+# M. P. Wand's geoadditive model: a thin-plate surface over the plane with the given knots,
+# and an O'Sullivan spline in depth (their linear terms are added to the fixed effects)
+mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
+                 s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
 anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
-#> Warning: NaNs produced
-#> Warning: NaNs produced
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
-#> Response: log(grade)
-#>                     F Df  Df.res    Pr(>F)    
-#> (Intercept)    0.0000  1    12.6   0.99676    
-#> xcoord         0.1862  1    12.6   0.67340    
-#> ycoord         0.0000  1    12.6   0.99523    
-#> zcoord         5.8288  1 -3789.6       NaN    
-#> xcoord:ycoord  0.2840  1    15.4   0.60167    
-#> xcoord:zcoord  4.0104  1   428.9   0.04585 *  
-#> ycoord:zcoord 26.3669  1   424.5 4.309e-07 ***
+#> Response: grade
+#>                  F Df Df.res  Pr(>F)  
+#> (Intercept) 1.9416  1   9.89 0.19402  
+#> xcoord      2.0529  1   9.71 0.18332  
+#> ycoord      0.1194  1   9.33 0.73730  
+#> zcoord      5.3331  1 419.35 0.02141 *
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #> 
 #> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);
-#> p-values halved for the boundary (chi-square 0:1)
-#>     term  variance logLik logLik.without   LRT p.value
-#>    grp_z 4.170e-03 -163.9         -199.7 71.41  <2e-16
-#>  grp_geo 1.295e-06 -163.9         -207.7 87.46  <2e-16
+#> reference: exact restricted LRT for the only random effect of a gaussian fit, otherwise 0.5 chi2(0) + 0.5 chi2(1)
+#>             term variance logLik logLik.without   LRT  p.value
+#>  s_xcoord_ycoord  1.74189 -207.2         -245.5 76.56  < 2e-16
+#>         s_zcoord  0.05986 -207.2         -234.1 53.72 1.15e-13
+#>                       test
+#>  0.5 chi2(0) + 0.5 chi2(1)
+#>  0.5 chi2(0) + 0.5 chi2(1)
+semipred(mod, covariate = c("xcoord", "ycoord"), prt = FALSE)$plt
+
+# \donttest{
+# on the log scale, with the pairwise interactions of the coordinates
+mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
+                  xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
+semipred(mod2, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+
 # }
 ```

@@ -217,8 +217,8 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 #> $`The t tests of the specified contrasts`
 #>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 30.2308   0.3885 -28.3344  11.3344
-#> [2,] -45.6667      9.715 -4.7006 30.2308   0.0001 -65.5011 -25.8323
+#> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344
+#> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
@@ -238,8 +238,8 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #> $`The t tests of the specified contrasts`
 #>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 30.2308   0.3885 -28.3344  11.3344
-#> [2,] -45.6667      9.715 -4.7006 30.2308   0.0001 -65.5011 -25.8323
+#> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344
+#> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323
 #> attr(,"Note")
 #> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
 #> 
@@ -256,6 +256,6 @@ contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
 #> 
 #> $`Joint F test of the contrasts`
 #>               df1     df2 F.ratio p.value
-#> all contrasts   2 30.2308 12.4991   1e-04
+#> all contrasts   2 30.2307 12.4991   1e-04
 #> 
 ```

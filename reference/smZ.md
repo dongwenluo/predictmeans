@@ -1,10 +1,31 @@
 # Generate Sparse Matrix Z for penalized spline smoothing
 
-Constructs a sparse matrix (Z) of a spline function with for a covariate
-with(out) group. Since 2.0 smooths can be written in the formula of
+Superseded since 2.0: `smZ()` and the `smoothZ` argument of
 [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
-instead (`s(x, by = f)`), which adds their fixed terms automatically;
-`s(x, bs = "os", k = 10)` gives the basis of `smZ(x, k = 10)`.
+keep working, so that 1.x code runs, but get no new features. Write the
+smooths in the formula of
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+instead, which adds their fixed terms automatically and predicts from
+the stored bases:
+
+|  |  |
+|----|----|
+| **smZ()** | **In the formula** |
+| `smZ(x, k = 10)` (O'Sullivan, the default) | `s(x, bs = "os", k = 10)` |
+| `smZ(x, by = f, group = TRUE)` | `s(x, by = f, bs = "os")` |
+| `smZ(x, by = f)` (one variance) | `s(x, by = f, bs = "os", id = 1)` |
+| `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
+| `smZ(cbind(x1, x2), type = "Ztps")` | `s(x1, x2, bs = "ztps", k = 6)` |
+| a matrix of your own in `smoothZ` | `s(x, bs = "user", xt = list(basis = f))` |
+| `smZ(x, drv = 1)` (derivative of the basis) | `semipred(fit, ..., deriv = 1)` |
+
+The other types (`"bs"`, `"ns"`, the splines2 types, `"smspline"`) give
+their basis iid random coefficients, which shrinks the curve towards
+zero rather than towards a straight line; the penalised bases of the
+formula (`"os"`, mgcv's `"cr"`, `"ps"`, `"tp"`) are preferable.
+
+Constructs a sparse matrix (Z) of a spline function for a covariate,
+with or without groups.
 
 ## Usage
 

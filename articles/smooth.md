@@ -53,6 +53,8 @@ variance.
 | `s(x, f)` | common curve + a deviation curve per level of `f` |
 | `s(x, f1*f2)` | common curve + deviations for `f1`, `f2`, `f1:f2`, a variance each |
 | `s(x1, x2)`, `s(x1, x2, bs = "ztps")` | surface |
+| `t2(x1, x2)` | tensor-product surface (covariates on different scales), a variance per penalty; `te()` is fitted as `t2()` |
+| `s(x, bs = "user", xt = list(basis = f))` | a basis of your own, `f(x)` (checked before the fit) |
 | `(s(x, k = 10) \| g)` | random curve per subject: `(x \| g)` + a spline deviation |
 
 [`?semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
@@ -75,10 +77,13 @@ anova(fm)
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 
 #> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);
-#> p-values halved for the boundary (chi-square 0:1)
+#> reference: exact restricted LRT for the only random effect of a gaussian fit, otherwise 0.5 chi2(0) + 0.5 chi2(1)
 #>              term variance logLik logLik.without   LRT p.value
 #>  s_pressure_QB200    28.92 -355.6         -476.4 241.5  <2e-16
 #>  s_pressure_QB300    24.53 -355.6         -468.3 225.3  <2e-16
+#>                       test
+#>  0.5 chi2(0) + 0.5 chi2(1)
+#>  0.5 chi2(0) + 0.5 chi2(1)
 ```
 
 ## Curves with confidence bands
@@ -87,13 +92,13 @@ anova(fm)
 
 cur <- semipred(fm, "QB", "pressure", prt = FALSE)
 head(cur$pred_df)
-#>    QB pressure        SE     rate        LL       UL
-#> 1 200    0.235 1.0383074 2.720144 0.6850986 4.755189
-#> 2 200    0.240 1.0224163 3.029839 1.0259401 5.033738
-#> 3 200    0.245 1.0080322 3.339669 1.3639617 5.315375
-#> 4 200    0.250 0.9950291 3.649587 1.6993659 5.599808
-#> 5 200    0.255 0.9832854 3.959550 2.0323462 5.886754
-#> 6 200    0.260 0.9726852 4.269514 2.3630858 6.175942
+#>    QB pressure        SE       df     rate        LL       UL
+#> 1 200    0.235 1.0383074 40.52855 2.720144 0.6224983 4.817789
+#> 2 200    0.240 1.0224163 38.62697 3.029839 0.9611684 5.098510
+#> 3 200    0.245 1.0080322 36.94778 3.339669 1.2971038 5.382233
+#> 4 200    0.250 0.9950291 35.46806 3.649587 1.6305231 5.668651
+#> 5 200    0.255 0.9832854 34.16605 3.959550 1.9616315 5.957469
+#> 6 200    0.260 0.9726852 33.02154 4.269514 2.2906198 6.248408
 cur$plt
 ```
 
@@ -101,7 +106,9 @@ cur$plt
 
 The band is pointwise: at each pressure it covers the true curve with
 95% probability (`level = 0.05`). Before version 2.0 these limits were
-90% limits; `level = 0.1` gives them.
+90% limits; `level = 0.1` gives them. They are t limits with the
+Satterthwaite df of each point (column `df`), from the variance
+components of the design (here the dialyzers) and the residual.
 
 A **simultaneous** band covers the whole curve at once with 95%
 probability, so it is wider. Use it to judge the shape of the curve over
@@ -110,17 +117,24 @@ its whole range:
 ``` r
 
 sim <- semipred(fm, "QB", "pressure", simultaneous = TRUE, prt = FALSE)
-crit <- (sim$pred_df$UL - sim$pred_df$rate) / sim$pred_df$SE
-c(pointwise = qnorm(0.975), simultaneous = crit[1])
-#>    pointwise simultaneous 
-#>     1.959964     2.953853
+p <- sim$pred_df
+head(data.frame(pressure = p$pressure, df = p$df, pointwise = qt(0.975, p$df),
+                simultaneous = (p$UL - p$rate) / p$SE))
+#>   pressure       df pointwise simultaneous
+#> 1    0.235 40.52855  2.020255     3.090897
+#> 2    0.240 38.62697  2.023316     3.100261
+#> 3    0.245 36.94778  2.026289     3.109380
+#> 4    0.250 35.46806  2.029151     3.118176
+#> 5    0.255 34.16605  2.031881     3.126588
+#> 6    0.260 33.02154  2.034465     3.134566
 sim$plt
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-6-1.png)
 
-The critical value comes from 10,000 draws of the estimates’
-distribution, with a fixed seed, so the band is the same each time.
+The critical values come from 10,000 draws of the estimates’
+distribution (a multivariate t), with a fixed seed, so the band is the
+same each time.
 
 ## Where do the curves differ?
 
@@ -138,6 +152,33 @@ dif$plt
 
 ![](smooth_files/figure-html/unnamed-chunk-7-1.png)
 
+## Slopes and curvature: `deriv`
+
+`deriv = 1` gives the slope of each curve along the covariate,
+`deriv = 2` its curvature, with the same bands and df. Where the band
+lies above zero the rate still rises with pressure; the ranges are
+printed and kept in `attr(pred_df, "significant")` (here with a
+simultaneous band, which holds over the whole range at once):
+
+``` r
+
+slp <- semipred(fm, "QB", "pressure", deriv = 1, simultaneous = TRUE, prt = FALSE)
+attr(slp$pred_df, "significant")
+#>   level  from       to direction
+#> 1   200 0.235 1.661020       > 0
+#> 2   300 0.235 2.060306       > 0
+slp$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-8-1.png)
+
+`contr` with `deriv` compares the slopes of two curves. The derivatives
+are those of the whole fitted curve (fixed and smooth parts), for any
+basis, and for the O’Sullivan basis equal the exact derivatives of
+`smZ(drv = )`. For generalized models they are on the link scale. In a
+simulation (`dev/sim-semipred-deriv.R` in the package sources) their
+bands covered the true slope and curvature 0.97-1.00 at the 95% level.
+
 ## Means of factor levels
 
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
@@ -154,22 +195,25 @@ predictmeans(fm, "QB")
 #> Predicted means of 'QB' from a semireg model (smooth terms included)
 #> 
 #>   QB estimate std.error    df conf.low conf.high group
-#>  200    44.66    0.9740 29.44    42.66     46.65    A 
-#>  300    51.21    0.9723 29.24    49.22     53.20     B
+#>  200    44.66    0.9740 29.45    42.66     46.65    A 
+#>  300    51.21    0.9723 29.27    49.22     53.20     B
 #> 
 #> Pairwise comparisons (t tests, Satterthwaite df; p.adj: none)
 #> 
 #>  level1 level2 estimate std.error    df statistic   p.value     p.adj p.method
-#>     200    300   -6.557     1.376 29.36    -4.764 4.749e-05 4.749e-05        t
+#>     200    300   -6.557     1.376 29.36    -4.764 4.748e-05 4.748e-05        t
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 #>    QB estimate std.error       df conf.low conf.high group
-#> 1 200 36.30263 0.9244804 36.51477 34.42861  38.17664     A
-#> 2 300 38.81293 0.9262667 36.68683 36.93559  40.69026     A
+#> 1 200 36.30263 0.9244804 36.54632 34.42867  38.17659     A
+#> 2 300 38.81293 0.9262667 36.79558 36.93578  40.69007     A
 ```
 
 For gaussian fits the tests are t tests with Satterthwaite df (next
-section); for generalized fits they are normal-based, as in
-[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md).
+section), and
+[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+uses the same df for its bands (column `df`); generalized fits get the
+df of the design’s strata, as GLMMs do (normal-based when the model has
+no random term besides the smooths).
 
 ## What predictmeans adds
 
@@ -185,9 +229,11 @@ include the curves’ random coefficients, and their comparisons rest on
 the whole-plot variation, so they have far fewer degrees of freedom than
 the 180 residual df. predictmeans gives them Satterthwaite df for the
 combination of fixed and smooth coefficients (as SAS does for estimates
-that involve random effects); normal-based tests would reject a true
-null hypothesis too often (`dev/sim-semireg-df.R` in the package
-sources).
+that involve random effects), from the variance components of the design
+with the smoothing parameters held at their estimates; normal-based
+tests would reject a true null hypothesis too often
+(`dev/sim-semireg-df.R` in the package sources), and normal bands of the
+curves cover 0.91 instead of 0.95 (`dev/sim-semipred-df.R`).
 
 ``` r
 
@@ -200,14 +246,14 @@ fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
 pm <- predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)
 pm$means
 #>    A estimate std.error       df conf.low conf.high group
-#> 1 a1 2.353834 0.2423023 8.655220 1.802361  2.905306     A
-#> 2 a2 2.415646 0.2431558 8.777611 1.863457  2.967834     A
-#> 3 a3 2.695334 0.2426143 8.699969 2.143604  3.247064     A
+#> 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A
+#> 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A
+#> 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A
 pm$pairs[c("level1", "level2", "estimate", "std.error", "df", "p.value")]
 #>   level1 level2    estimate std.error       df   p.value
-#> 1     a1     a2 -0.06181205 0.1991743 17.56558 0.7599533
-#> 2     a1     a3 -0.34150024 0.1985129 17.33696 0.1031776
-#> 3     a2     a3 -0.27968819 0.1995537 17.69918 0.1783368
+#> 1     a1     a2 -0.06181205 0.1991743 17.61641 0.7599429
+#> 2     a1     a3 -0.34150024 0.1985129 17.38920 0.1031244
+#> 3     a2     a3 -0.27968819 0.1995537 17.74765 0.1782902
 ```
 
 The smooth terms are written in the formula: `s(t, by = A)` adds the
@@ -217,7 +263,8 @@ fixed terms `A + A:t` (the straight lines) itself.
 curves are a common curve plus deviation curves for `f1`, `f2` and
 `f1:f2`, each with its own variance.
 [`anova()`](https://rdrr.io/r/stats/anova.html) tests each variance (the
-likelihood ratio, halved for the boundary) and
+likelihood ratio against its boundary distribution, as
+`varcomp(fit, test = TRUE)`) and
 [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
 shows their sizes. Here the shapes differ by `f1` only:
 
@@ -232,10 +279,10 @@ dd$y <- sin(2*pi*dd$x) + (dd$f1 == "q")*1.5*sin(pi*dd$x)^2 +
 fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd, prt = FALSE)
 anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 #>        term     variance        LRT      p.value
-#> 1       s_x 0.3163539389  5.7060123 8.453451e-03
-#> 2    s_x_f1 0.0927799765 26.9861474 1.024594e-07
-#> 3    s_x_f2 0.0000000000  0.0000000 5.000000e-01
-#> 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01
+#> 1       s_x 0.3163567534  5.7060123 8.453451e-03
+#> 2    s_x_f1 0.0927791411 26.9861474 1.024594e-07
+#> 3    s_x_f2 0.0000000000  0.0000000 1.000000e+00
+#> 4 s_x_f1_f2 0.0002386665  0.1328028 3.577718e-01
 ```
 
 The test is conservative: in 200 simulated data sets like these, with no
@@ -268,21 +315,20 @@ attr(rr$pred_df, "significant")
 rr$plt
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-11-1.png)
+![](smooth_files/figure-html/unnamed-chunk-12-1.png)
 
 **Subject-specific curves.** `(s(age, k = 10) | idnum)` gives each
 subject a random straight line, `(age | idnum)`, and a random spline
 deviation with one variance for all subjects (Durban et al. 2005). The
-heights of 28 black boys of the Indiana growth study, in the package’s
-data, fitted as in Harezlak, Ruppert and Wand (2018, section 9.2); the
-fit is the same as that of their
+heights of 28 black boys of the Indiana growth study
+(`data(growthIndiana)`), fitted as in Harezlak, Ruppert and Wand (2018,
+section 9.2); the fit is the same as that of their
 [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) code:
 
 ``` r
 
-gi <- read.table(system.file("extdata", "semireg", "growthIndiana.txt", package = "predictmeans"),
-                 header = TRUE)
-gb <- subset(gi, male == 1 & black == 1)
+data(growthIndiana)
+gb <- subset(growthIndiana, male == 1 & black == 1)
 gb$idnum <- factor(gb$idnum)
 fg <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
                 (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb, prt = FALSE)
@@ -291,10 +337,205 @@ logLik(fg$semer)
 semipred(fg, "age", "age", prt = FALSE)$plt
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-12-1.png)
+![](smooth_files/figure-html/unnamed-chunk-13-1.png)
 
 The population curve leaves out the subjects’ curves; `anova(fg)` would
 test whether they are needed beyond straight lines.
+
+## More situations
+
+Each example below is complete; the data are simulated unless named.
+
+**Several smooths and a varying coefficient.** An additive model with a
+curve in `x1`, and an effect of `z` that changes smoothly with `x2`
+(`by = z`, a numeric variable):
+
+``` r
+
+set.seed(2)
+da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
+da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
+fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
+#>     term   variance      LRT      p.value
+#> 1   s_x1 0.03875716 122.8299 7.596575e-29
+#> 2 s_x2_z 0.33715120 188.0839 4.164359e-43
+semipred(fa, covariate = "x1", prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-14-1.png)
+
+**A surface.** Copper grade over a mining area (`data(copper)`): a
+thin-plate surface over the plane (`bs = "ztps"`) and a curve in depth,
+on the log scale, back-transformed for the plots:
+
+``` r
+
+data(copper)
+fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
+               data = copper, prt = FALSE)
+semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-15-1.png)
+
+**Binary responses.** The probability of a response over `x` for two
+groups, with a random effect of cluster; `contr` gives the log odds
+ratio of the curves and the odds ratio:
+
+``` r
+
+set.seed(4)
+db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
+db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
+                                     rnorm(12, 0, 0.5)[db$cl]))
+fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial,
+                data = db, prt = FALSE)
+semipred(fbin, "g", "x", prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-16-1.png)
+
+``` r
+
+head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df[
+  c("x", "odds.ratio", "odds.ratio.LL", "odds.ratio.UL")])
+#>            x odds.ratio odds.ratio.LL odds.ratio.UL
+#> 1 0.00000000  0.6341654     0.1769871      2.272289
+#> 2 0.02040816  0.7152452     0.2422917      2.111404
+#> 3 0.04081633  0.8012505     0.3169543      2.025536
+#> 4 0.04166667  0.8049156     0.3201933      2.023431
+#> 5 0.06122449  0.8903096     0.3949808      2.006809
+#> 6 0.08163265  0.9798775     0.4675019      2.053810
+```
+
+**Repeated measures with serial correlation.** Curves over time for
+three treatments, twelve subjects, AR(1) correlation of the residuals
+within a subject
+([`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md),
+glmmTMB’s `ar1()` as the residual covariance, `dispformula = ~0`);
+treatment means at a time with Satterthwaite df:
+
+``` r
+
+set.seed(9)
+dr <- expand.grid(t = 1:8, id = factor(1:12))
+dr$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
+dr$y <- sin(dr$t/3) + rnorm(12, 0, 0.4)[dr$id] +
+  unlist(lapply(1:12, function(i) as.numeric(arima.sim(list(ar = 0.6), 8, sd = 0.4))))
+dr$tf <- factor(dr$t)
+far <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
+                   dispformula = ~0, data = dr, prt = FALSE)
+predictmeans(far, "A", covariate = c(t = 4), pairwise = TRUE)$pairs[
+  c("level1", "level2", "estimate", "std.error", "df", "p.value")]
+#>   level1 level2   estimate std.error       df   p.value
+#> 1     a1     a2 -0.2146406 0.3486284 20.38780 0.5449237
+#> 2     a1     a3 -0.3028874 0.3191386 17.32269 0.3556348
+#> 3     a2     a3 -0.0882468 0.3358240 19.16869 0.7955261
+```
+
+**A tensor-product surface.** Two covariates on different scales
+(`data(ozoneCalif)`: inversion base height in feet, its temperature in
+degrees F) call for `t2()`, whose smoothness differs by direction; each
+of its penalties is a random effect with its own variance, and
+`x1 + x2 + x1:x2` are added to the fixed effects:
+
+``` r
+
+data(ozoneCalif)
+fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
+#>                                             term  variance          LRT
+#> 1                    s_daggett_pressure_gradient  4.591269 3.631529e+01
+#> 2 t2_inversion_base_height_inversion_base_temp_1  0.000000 2.171419e-10
+#> 3 t2_inversion_base_height_inversion_base_temp_2  1.124284 7.662851e-01
+#> 4 t2_inversion_base_height_inversion_base_temp_3 12.919219 8.407200e+00
+#>        p.value
+#> 1 8.392096e-10
+#> 2 4.999941e-01
+#> 3 1.906844e-01
+#> 4 1.868689e-03
+semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-18-1.png)
+
+**A basis of your own.** A seasonal cycle on a straight trend: two years
+of daily values and a Fourier basis (`bs = "user"`, with no fixed part
+of its own, `null = "none"`). The basis function is checked before the
+fit: it must give the same row for the same day whatever data it is
+given.
+
+``` r
+
+set.seed(3)
+ds <- data.frame(day = 1:730)
+ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
+season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
+fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
+              data = ds, prt = FALSE)
+semipred(fs, covariate = "day", prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-19-1.png)
+
+## Examples from the semiparametric regression literature
+
+The package has the data of M. P. Wand’s examples, which
+[`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+reproduces (`tests/testthat/test-semireg-golden.R`): `growthIndiana`
+(above), `SBMDfem`, `ozoneCalif`, `scallop` (with `scallopKnots` and
+`scallopBdry`), `wageTUnion` and `copper` (with `copperKnots`). Their
+help pages have the analyses; a few here.
+
+**Bone density by ethnic group** (`SBMDfem`): a curve over age,
+ethnicity as a fixed effect and a random intercept per girl; the groups
+compared at age 15:
+
+``` r
+
+data(SBMDfem)
+SBMDfem$idnum <- factor(SBMDfem$idnum)
+fsb <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum),
+               data = SBMDfem, prt = FALSE)
+pm_sb <- predictmeans(fsb, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")
+pm_sb$means
+#>   ethnicity  estimate  std.error       df  conf.low conf.high group
+#> 1     Asian 0.9918785 0.01647278 274.8882 0.9594497  1.024307    A 
+#> 2     Black 1.0980570 0.01440646 274.1369 1.0696956  1.126418     B
+#> 3  Hispanic 1.0050416 0.01642609 289.7213 0.9727120  1.037371    A 
+#> 4     White 1.0179401 0.01610810 264.8705 0.9862239  1.049656    A
+```
+
+**Scallop catches over the sea floor** (`scallop`): a thin-plate surface
+with the knots of the original fit, drawn inside the boundary of the
+survey area on the scale of the catch:
+
+``` r
+
+data(scallop); data(scallopKnots); data(scallopBdry)
+fsc <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
+                                   xt = list(knots = as.matrix(scallopKnots))),
+               data = scallop, prt = FALSE)
+semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
+         trans = sinh, prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-21-1.png)
+
+**Union membership over the wage** (`wageTUnion`): penalised spline
+logistic regression, the probability with its band:
+
+``` r
+
+data(wageTUnion)
+fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
+              data = wageTUnion, prt = FALSE)
+semipred(fw, "wage", "wage", prt = FALSE)$plt
+```
+
+![](smooth_files/figure-html/unnamed-chunk-22-1.png)
 
 ## From the `smoothZ` form
 
@@ -308,8 +549,10 @@ terms itself:
 | `y ~ x, smoothZ = list(sm = smZ(x, k = 10))` | `y ~ s(x, bs = "os", k = 10)` |
 | `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f, group = TRUE))` | `y ~ s(x, by = f, bs = "os", k = 10)` |
 | `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))` | `y ~ s(x, by = f, bs = "os", k = 10, id = 1)` |
-| `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps")` |
+| `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps", k = 6)` |
 | `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
+| `smoothZ = list(sm = myZ(x))`, a matrix of your own | `s(x, bs = "user", xt = list(basis = myZ))` |
+| `smZ(x, drv = 1)` (derivative of the basis) | `semipred(fit, ..., deriv = 1)` |
 
 Smooths are given either in the formula or in `smoothZ`, not both. Other
 changes since 1.x: the optimizer is `nloptwrap`

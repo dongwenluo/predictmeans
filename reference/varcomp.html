@@ -78,7 +78,8 @@ of <code>lm</code>, <code>aov</code> and <code>glm</code> models (residual varia
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">model</span>, ci <span class="op">=</span> <span class="cn">TRUE</span>, level <span class="op">=</span> <span class="fl">0.95</span>, ci_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Satterthwaite"</span>, <span class="st">"Wald"</span>, <span class="st">"profile"</span><span class="op">)</span>,</span>
-<span>        information <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observed"</span>, <span class="st">"average"</span>, <span class="st">"expected"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>        information <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observed"</span>, <span class="st">"average"</span>, <span class="st">"expected"</span><span class="op">)</span>, test <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        test_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"mixture"</span>, <span class="st">"bootstrap"</span><span class="op">)</span>, nsim <span class="op">=</span> <span class="fl">10000</span>, nboot <span class="op">=</span> <span class="fl">999</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -112,6 +113,32 @@ the variance parameters behind the SEs: <code>"observed"</code> (the default, as
 choices as for the Kenward-Roger df (<code>df_method</code> of <code><a href="predictmeans.html">predictmeans</a></code>). Other fits use the
 observed information.</p></dd>
 
+
+<dt id="arg-test">test<a class="anchor" aria-label="anchor" href="#arg-test"></a></dt>
+<dd><p><code>TRUE</code>: add a likelihood ratio test of each component being zero (<code>lmer</code>, <code>glmer</code>,
+<code>glmmTMB</code> and <code>semireg</code> fits; see ‘Tests’). The default is <code>FALSE</code>: each test refits the
+model once.</p></dd>
+
+
+<dt id="arg-test-method">test_method<a class="anchor" aria-label="anchor" href="#arg-test-method"></a></dt>
+<dd><p><code>"auto"</code> (the default) or <code>"mixture"</code>: the reference distribution of a single
+variance (see ‘Tests’); <code>"bootstrap"</code>: a parametric bootstrap of each likelihood ratio, for small
+samples, few levels, or where the asymptotic references are conservative.</p></dd>
+
+
+<dt id="arg-nsim">nsim<a class="anchor" aria-label="anchor" href="#arg-nsim"></a></dt>
+<dd><p>Number of draws of the exact null distribution of the restricted likelihood ratio (default 10000,
+with a fixed seed, so the p-values repeat).</p></dd>
+
+
+<dt id="arg-nboot">nboot<a class="anchor" aria-label="anchor" href="#arg-nboot"></a></dt>
+<dd><p>Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
+statistics reach the observed one.</p></dd>
+
+
+<dt id="arg-ncore">ncore<a class="anchor" aria-label="anchor" href="#arg-ncore"></a></dt>
+<dd><p>Number of cores for the bootstrap (default 1; not on Windows).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -119,7 +146,8 @@ observed information.</p></dd>
   <code>group.term</code> and <code>group.term1.term2</code>; correlation and variance-function parameters named
   <code>cor.name</code> and <code>var.name</code>; <code>residual</code>) and columns <code>vcov</code> (the estimate), <code>SE</code> and,
   with <code>ci = TRUE</code>, the limits. Values are rounded to 4 decimals; attribute <code>"ci_method"</code> says how
-  the intervals were made.</p>
+  the intervals were made. With <code>test = TRUE</code> also <code>LRT</code> and <code>p.value</code>, and class
+  <code>"pm_varcomp"</code> (printed with the hypotheses).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -152,6 +180,47 @@ completed as in <code><a href="predictmeans.html">predictmeans</a></code>.</p>
 SEs from their width on the log scale; it needs <code>method = "REML"</code> or <code>"ML"</code>.</p>
     </div>
     <div class="section level2">
+    <h2 id="tests">Tests<a class="anchor" aria-label="anchor" href="#tests"></a></h2>
+
+
+<p>With <code>test = TRUE</code> each row gets the likelihood ratio test of the model one would fit without it
+(columns <code>LRT</code> and <code>p.value</code>; the hypotheses and reference distributions are printed below the
+table and kept in <code>attr(, "tests")</code>):</p><table class="table table"><tr><td><strong>Row</strong></td><td><strong>Model refitted</strong></td><td><strong>Reference distribution</strong></td></tr><tr><td>variance of a one-variance term <code>(1 | g)</code>, smooth block</td><td>the term dropped</td><td>\(\frac12\chi^2_0 + \frac12\chi^2_1\); exact restricted LRT when it is the only random effect of a gaussian <code>lmer</code>/<code>semireg</code> REML fit</td></tr><tr><td>slope variance in <code>(1 + x | g)</code> (k components)</td><td><code>(1 | g)</code></td><td>\(\frac12\chi^2_{k-1} + \frac12\chi^2_k\)</td></tr><tr><td>intercept variance of <code>(1 + x | g)</code>, variance of <code>ar1()</code> etc.</td><td>the whole term dropped</td><td>\(\chi^2\) with the term's number of parameters (conservative)</td></tr><tr><td>covariance in <code>(1 + x | g)</code></td><td><code>(1 + x || g)</code> (glmmTMB: <code><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag()</a></code>)</td><td>\(\chi^2\) with the number of covariances</td></tr><tr><td>correlation of <code>ar1()</code>, <code>ou()</code>, <code>cs()</code></td><td><code>homdiag()</code> / <code><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag()</a></code></td><td>\(\chi^2_1\)</td></tr><tr><td>residual variance; a structure that is the residual covariance (<code>dispformula = ~0</code>)</td><td>no test</td><td></td></tr></table><p>A variance is on the boundary of its range under the hypothesis, so its likelihood ratio has the mixture
+distributions of Self and Liang (1987) and Stram and Lee (1994), not \(\chi^2_1\) (which is conservative, as
+<code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">lmerTest::ranova()</a></code>). When the tested variance is the only random effect of a gaussian model fitted by
+REML, the exact finite-sample null distribution of Crainiceanu and Ruppert (2004) is used (simulated); with
+other random effects present that distribution is no longer exact (in simulations it was too liberal), and
+the mixture is used. The mixture p-values equal SAS PROC GLIMMIX <code>COVTEST</code>, the likelihood ratios SAS
+PROC MIXED and Genstat REML (<code>tests/testthat/test-vc-test.R</code>). Where a p-value may be inaccurate in
+either direction (a term with fewer than 6 levels; binary data with fewer than 5 observations per level, where
+the Laplace approximation is poor), a warning names the rows and suggests the bootstrap.</p>
+<p><code>test_method = "bootstrap"</code>: for each test, responses are simulated from the model without the
+component (new random effects and errors), both models are refitted to each, and the p-value is
+\((\#\{LRT^* \ge LRT\} + 1)/(b + 1)\). It needs no distributional approximation, so it is the check for
+the rows the warning names. A test stops once 20 simulated statistics reach the observed one (Besag and
+Clifford 1991): a clearly non-significant row needs some 40-400 refits, a significant one all <code>nboot</code>
+pairs. Each draw has its own seed, so the p-values repeat, with or without <code>ncore</code>. Run time: a few
+seconds to a minute for usual <code>lmer</code> and <code>glmer</code> models; <code>glmmTMB</code> fits are slower (each refit
+rebuilds the model). For <code>lme</code>, <code>gls</code>, <code>gam</code> and models without random effects
+<code>test = TRUE</code> is not available.</p>
+<p>Which method: in a simulation of seven designs (<code class="file">dev/sim-vc-defaults.R</code> in the package sources) the
+default rejected at most 4.5% of the data sets without the component at the 5% level: it was never
+liberal. For GLMMs it was conservative (binary data in clusters of four 0.5%, Poisson 4%, negative
+binomial 0%), and there the bootstrap rejected 1.5-6% and found 5-7% more of the real components. Use
+the default for gaussian models and as a quick first look; use the bootstrap for GLMMs, small data sets, the
+rows a warning names, and a p-value near the cut-off.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values. <em>Biometrika</em>, 78, 301-304.</p>
+<p>Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
+component. <em>Journal of the Royal Statistical Society B</em>, 66, 165-185.</p>
+<p>Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
+tests under nonstandard conditions. <em>Journal of the American Statistical Association</em>, 82, 605-610.</p>
+<p>Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed effects model.
+<em>Biometrics</em>, 50, 1171-1177.</p>
+    </div>
+    <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Dongwen Luo, Siva Ganesh and John Koolaard</p>
     </div>
@@ -166,12 +235,43 @@ SEs from their width on the log scale; it needs <code>method = "REML"</code> or 
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variety:Block.(Intercept) 106.0618  67.8754  40.9773  657.7703</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)         214.4810 168.8381  70.8628 2575.3156</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> residual                  177.0831  37.3324 121.8272  280.9241</span>
+<span class="r-in"><span><span class="co"># is each variance needed? (one refit per row)</span></span></span>
+<span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">fm</span>, test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                               vcov       SE    2.5 %    97.5 %    LRT  p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variety:Block.(Intercept) 106.0618  67.8754  40.9773  657.7703 7.6615 0.002821</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)         214.4810 168.8381  70.8628 2575.3156 4.9782 0.012830</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> residual                  177.0831  37.3324 121.8272  280.9241     NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Tests (likelihood ratio, each row's model refitted):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Variety:Block.(Intercept): drop (1 | Variety:Block); 0.5 chi2(0) + 0.5 chi2(1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Block.(Intercept): drop (1 | Block); 0.5 chi2(0) + 0.5 chi2(1)</span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="co"># the same by parametric bootstrap (a few seconds; more draws and ncore for real use)</span></span></span>
+<span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">fm</span>, test <span class="op">=</span> <span class="cn">TRUE</span>, test_method <span class="op">=</span> <span class="st">"bootstrap"</span>, nboot <span class="op">=</span> <span class="fl">99</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                               vcov       SE    2.5 %    97.5 %    LRT p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variety:Block.(Intercept) 106.0618  67.8754  40.9773  657.7703 7.6615    0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)         214.4810 168.8381  70.8628 2575.3156 4.9782    0.02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> residual                  177.0831  37.3324 121.8272  280.9241     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Tests (likelihood ratio, each row's model refitted):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Variety:Block.(Intercept): drop (1 | Variety:Block); parametric bootstrap (99 draws)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Block.(Intercept): drop (1 | Block); parametric bootstrap (99 draws)</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
+<span class="r-in"><span><span class="co"># a GLMM: the boundary mixture is conservative here, the bootstrap nearer 5%</span></span></span>
+<span class="r-in"><span><span class="va">gm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">incidence</span>, <span class="va">size</span> <span class="op">-</span> <span class="va">incidence</span><span class="op">)</span> <span class="op">~</span> <span class="va">period</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">herd</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>            family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="fu">lme4</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lme4/man/cbpp.html" class="external-link">cbpp</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">gm</span>, test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    vcov     SE  2.5 % 97.5 %     LRT   p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> herd.(Intercept) 0.4125 0.2294 0.1757 1.8476 14.0058 9.112e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Tests (likelihood ratio, each row's model refitted):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   herd.(Intercept): drop (1 | herd); 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-in"><span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span>, random<span class="op">=</span><span class="op">~</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">fm1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                         vcov       SE    2.5 %    97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1691</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Variety.(Intercept) 106.0618  67.8756  40.9772  657.7745</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> residual            177.0835  37.3325 121.8275  280.9250</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1701</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variety.(Intercept) 106.0618  67.8756  40.9773  657.7748</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> residual            177.0835  37.3325 121.8275  280.9249</span>
 <span class="r-in"><span><span class="co"># the same components by the analysis of variance</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="fu">Error</span><span class="op">(</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   vcov       SE    2.5 %    97.5 %</span>
@@ -183,7 +283,7 @@ SEs from their width on the log scale; it needs <code>method = "REML"</code> or 
 <span class="r-in"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">distance</span> <span class="op">~</span> <span class="va">age</span>, random<span class="op">=</span><span class="op">~</span><span class="va">age</span><span class="op">|</span><span class="va">Subject</span>, data<span class="op">=</span><span class="va">Orthodont</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">mod1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                            vcov     SE   2.5 %   97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6996</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6998</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Subject.age.(Intercept) -0.3211 0.4244 -0.4943   0.1570</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Subject.age              0.0513 0.0415  0.0166   0.6844</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> residual                 1.7162 0.3303  1.2163   2.6042</span>

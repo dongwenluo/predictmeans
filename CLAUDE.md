@@ -94,8 +94,14 @@ table; the row marked “Next” is the current task) and `NEWS.md`.
   `os`/`ztps` bases as mgcv smooth classes); plan in
   `dev/review-semireg.md`. Golden examples (the maintainer’s lme
   scripts, reference runs) in `dev/semireg-golden/`, data in
-  `inst/extdata/semireg/`, checked by
+  `inst/extdata/semireg/` (as received) and as package data sets
+  (`growthIndiana`, `SBMDfem`, `ozoneCalif`, `scallop`, `scallopKnots`,
+  `scallopBdry`, `copperKnots`, `wageTUnion`; built by
+  `dev/semireg-golden/make-data.R`), checked by
   `tests/testthat/test-semireg-golden.R`.
+  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)/`smoothZ`
+  are superseded (maintainer, 2026-11-17): kept for 1.x code, no new
+  features; help pages, vignettes and articles use the formula syntax.
 - Help pages: edit the roxygen2 block above each function (data sets in
   `R/data.R`, the package page in `R/predictmeans-package.R`), then
   `Rscript -e 'roxygen2::roxygenise(roclets = "rd")'`. NAMESPACE is

@@ -82,7 +82,7 @@ with the package's own code (no <span class="pkg">lmerTest</span> needed).</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>"pm_semi_anova"</code> with <code>fixed</code> (the table of the fixed effects) and
   <code>smooth</code> (a data frame: the variance of each smooth block, the log-likelihoods of the model with and without
-  it, the likelihood ratio statistic and its p-value), printed together.</p>
+  it, the likelihood ratio statistic, its p-value and the reference distribution), printed together.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -92,15 +92,20 @@ for generalized fits Wald chi-square tests. The fixed parts of the smooths (e.g.
 <code>s(x, by = f)</code>) are tested here: they are the straight-line parts of the curves.</p>
 <p><strong>Smooth terms</strong>: for each block of smooth random effects (one variance), the likelihood ratio test of the
 variance being zero, i.e. of the curve being its straight-line part: the model is refitted without the block (with
-the same fixed effects, so REML likelihoods can be compared for gaussian fits). As the variance is on the boundary
-of its range under the null hypothesis, the p-value is half that of the chi-square with 1 df (Self and Liang,
-1987); <code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">lmerTest::ranova()</a></code> used the full chi-square, which is conservative. For an <code>s(x, f)</code> smooth the
+the same fixed effects, so REML likelihoods can be compared for gaussian fits). The tests are those of
+<code>varcomp(fit, test = TRUE)</code>: as the variance is on the boundary of its range under the null hypothesis, the
+reference is the mixture \(\frac12\chi^2_0 + \frac12\chi^2_1\) (Self and Liang, 1987), and for the only random
+effect of a gaussian fit the exact null distribution of the restricted likelihood ratio (Crainiceanu and Ruppert,
+2004), where the mixture is conservative; <code><a href="https://rdrr.io/pkg/lmerTest/man/ranova.html" class="external-link">lmerTest::ranova()</a></code> used the full chi-square, more conservative
+still. Column <code>test</code> names the distribution. For an <code>s(x, f)</code> smooth the
 block of the deviation curves tests whether the curves of the levels of <code>f</code> have the same shape. For small
 samples <code><a href="permlmer.html">permlmer</a></code> or <code><a href="bootmodels.html">bootmodels</a></code> on <code>fit$semer</code> give resampling tests.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
+    <p>Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
+component. <em>Journal of the Royal Statistical Society B</em>, 66, 165-185.</p>
+<p>Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
 tests under nonstandard conditions. <em>Journal of the American Statistical Association</em>, 82, 605-610.</p>
     </div>
 
@@ -122,10 +127,13 @@ tests under nonstandard conditions. <em>Journal of the American Statistical Asso
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> p-values halved for the boundary (chi-square 0:1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> reference: exact restricted LRT for the only random effect of a gaussian fit, otherwise 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           term variance logLik logLik.without   LRT  p.value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     s_pressure      176 -361.9         -368.4 13.06 0.000151</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  s_pressure_QB        0 -361.9         -361.9  0.00 0.500000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  s_pressure_QB        0 -361.9         -361.9  0.00 1.000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                       test</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.5 chi2(0) + 0.5 chi2(1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.5 chi2(0) + 0.5 chi2(1)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

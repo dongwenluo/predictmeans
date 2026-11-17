@@ -150,6 +150,16 @@ it, a block of random effects with its own variance.</p>
 <td>surface</td>
 </tr>
 <tr class="odd">
+<td><code>t2(x1, x2)</code></td>
+<td>tensor-product surface (covariates on different scales), a variance
+per penalty; <code>te()</code> is fitted as <code>t2()</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>s(x, bs = "user", xt = list(basis = f))</code></td>
+<td>a basis of your own, <code>f(x)</code> (checked before the fit)</td>
+</tr>
+<tr class="odd">
 <td><code>(s(x, k = 10) \| g)</code></td>
 <td>random curve per subject: <code>(x \| g)</code> + a spline
 deviation</td>
@@ -174,10 +184,13 @@ line.</p>
 <span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Smooth terms: likelihood ratio tests of variance = 0 (the curve is its straight-line part);</span></span>
-<span><span class="co">#&gt; p-values halved for the boundary (chi-square 0:1)</span></span>
+<span><span class="co">#&gt; reference: exact restricted LRT for the only random effect of a gaussian fit, otherwise 0.5 chi2(0) + 0.5 chi2(1)</span></span>
 <span><span class="co">#&gt;              term variance logLik logLik.without   LRT p.value</span></span>
 <span><span class="co">#&gt;  s_pressure_QB200    28.92 -355.6         -476.4 241.5  &lt;2e-16</span></span>
-<span><span class="co">#&gt;  s_pressure_QB300    24.53 -355.6         -468.3 225.3  &lt;2e-16</span></span></code></pre></div>
+<span><span class="co">#&gt;  s_pressure_QB300    24.53 -355.6         -468.3 225.3  &lt;2e-16</span></span>
+<span><span class="co">#&gt;                       test</span></span>
+<span><span class="co">#&gt;  0.5 chi2(0) + 0.5 chi2(1)</span></span>
+<span><span class="co">#&gt;  0.5 chi2(0) + 0.5 chi2(1)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="curves-with-confidence-bands">Curves with confidence bands<a class="anchor" aria-label="anchor" href="#curves-with-confidence-bands"></a>
@@ -185,31 +198,41 @@ line.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cur</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cur</span><span class="op">$</span><span class="va">pred_df</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    QB pressure        SE     rate        LL       UL</span></span>
-<span><span class="co">#&gt; 1 200    0.235 1.0383074 2.720144 0.6850986 4.755189</span></span>
-<span><span class="co">#&gt; 2 200    0.240 1.0224163 3.029839 1.0259401 5.033738</span></span>
-<span><span class="co">#&gt; 3 200    0.245 1.0080322 3.339669 1.3639617 5.315375</span></span>
-<span><span class="co">#&gt; 4 200    0.250 0.9950291 3.649587 1.6993659 5.599808</span></span>
-<span><span class="co">#&gt; 5 200    0.255 0.9832854 3.959550 2.0323462 5.886754</span></span>
-<span><span class="co">#&gt; 6 200    0.260 0.9726852 4.269514 2.3630858 6.175942</span></span>
+<span><span class="co">#&gt;    QB pressure        SE       df     rate        LL       UL</span></span>
+<span><span class="co">#&gt; 1 200    0.235 1.0383074 40.52855 2.720144 0.6224983 4.817789</span></span>
+<span><span class="co">#&gt; 2 200    0.240 1.0224163 38.62697 3.029839 0.9611684 5.098510</span></span>
+<span><span class="co">#&gt; 3 200    0.245 1.0080322 36.94778 3.339669 1.2971038 5.382233</span></span>
+<span><span class="co">#&gt; 4 200    0.250 0.9950291 35.46806 3.649587 1.6305231 5.668651</span></span>
+<span><span class="co">#&gt; 5 200    0.255 0.9832854 34.16605 3.959550 1.9616315 5.957469</span></span>
+<span><span class="co">#&gt; 6 200    0.260 0.9726852 33.02154 4.269514 2.2906198 6.248408</span></span>
 <span><span class="va">cur</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>
 <p>The band is pointwise: at each pressure it covers the true curve with
 95% probability (<code>level = 0.05</code>). Before version 2.0 these
-limits were 90% limits; <code>level = 0.1</code> gives them.</p>
+limits were 90% limits; <code>level = 0.1</code> gives them. They are t
+limits with the Satterthwaite df of each point (column <code>df</code>),
+from the variance components of the design (here the dialyzers) and the
+residual.</p>
 <p>A <strong>simultaneous</strong> band covers the whole curve at once
 with 95% probability, so it is wider. Use it to judge the shape of the
 curve over its whole range:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">crit</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">UL</span> <span class="op">-</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">rate</span><span class="op">)</span> <span class="op">/</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span><span class="op">$</span><span class="va">SE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span>, simultaneous <span class="op">=</span> <span class="va">crit</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    pointwise simultaneous </span></span>
-<span><span class="co">#&gt;     1.959964     2.953853</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">$</span><span class="va">pred_df</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">pressure</span>, df <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">df</span>, pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">0.975</span>, <span class="va">p</span><span class="op">$</span><span class="va">df</span><span class="op">)</span>,</span>
+<span>                simultaneous <span class="op">=</span> <span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">UL</span> <span class="op">-</span> <span class="va">p</span><span class="op">$</span><span class="va">rate</span><span class="op">)</span> <span class="op">/</span> <span class="va">p</span><span class="op">$</span><span class="va">SE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   pressure       df pointwise simultaneous</span></span>
+<span><span class="co">#&gt; 1    0.235 40.52855  2.020255     3.090897</span></span>
+<span><span class="co">#&gt; 2    0.240 38.62697  2.023316     3.100261</span></span>
+<span><span class="co">#&gt; 3    0.245 36.94778  2.026289     3.109380</span></span>
+<span><span class="co">#&gt; 4    0.250 35.46806  2.029151     3.118176</span></span>
+<span><span class="co">#&gt; 5    0.255 34.16605  2.031881     3.126588</span></span>
+<span><span class="co">#&gt; 6    0.260 33.02154  2.034465     3.134566</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
-<p>The critical value comes from 10,000 draws of the estimates’
-distribution, with a fixed seed, so the band is the same each time.</p>
+<p>The critical values come from 10,000 draws of the estimates’
+distribution (a multivariate t), with a fixed seed, so the band is the
+same each time.</p>
 </div>
 <div class="section level2">
 <h2 id="where-do-the-curves-differ">Where do the curves differ?<a class="anchor" aria-label="anchor" href="#where-do-the-curves-differ"></a>
@@ -225,31 +248,59 @@ ultrafiltration rate from a pressure of about 1.2 upwards:</p>
 <p><img src="smooth_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
+<h2 id="slopes-and-curvature-deriv">Slopes and curvature: <code>deriv</code><a class="anchor" aria-label="anchor" href="#slopes-and-curvature-deriv"></a>
+</h2>
+<p><code>deriv = 1</code> gives the slope of each curve along the
+covariate, <code>deriv = 2</code> its curvature, with the same bands and
+df. Where the band lies above zero the rate still rises with pressure;
+the ranges are printed and kept in
+<code>attr(pred_df, "significant")</code> (here with a simultaneous
+band, which holds over the whole range at once):</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">slp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, deriv <span class="op">=</span> <span class="fl">1</span>, simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">slp</span><span class="op">$</span><span class="va">pred_df</span>, <span class="st">"significant"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   level  from       to direction</span></span>
+<span><span class="co">#&gt; 1   200 0.235 1.661020       &gt; 0</span></span>
+<span><span class="co">#&gt; 2   300 0.235 2.060306       &gt; 0</span></span>
+<span><span class="va">slp</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="672"></p>
+<p><code>contr</code> with <code>deriv</code> compares the slopes of two
+curves. The derivatives are those of the whole fitted curve (fixed and
+smooth parts), for any basis, and for the O’Sullivan basis equal the
+exact derivatives of <code>smZ(drv = )</code>. For generalized models
+they are on the link scale. In a simulation
+(<code>dev/sim-semipred-deriv.R</code> in the package sources) their
+bands covered the true slope and curvature 0.97-1.00 at the 95%
+level.</p>
+</div>
+<div class="section level2">
 <h2 id="means-of-factor-levels">Means of factor levels<a class="anchor" aria-label="anchor" href="#means-of-factor-levels"></a>
 </h2>
 <p><code><a href="../reference/predictmeans.html">predictmeans()</a></code> accepts a <code><a href="../reference/semireg.html">semireg()</a></code> fit. The
 means of the blood flow rates include the smooth (as
 <code><a href="../reference/semipred.html">semipred()</a></code> gives at the same pressure), at the mean
 pressure or at values given by name:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Predicted means of 'QB' from a semireg model (smooth terms included)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   QB estimate std.error    df conf.low conf.high group</span></span>
-<span><span class="co">#&gt;  200    44.66    0.9740 29.44    42.66     46.65    A </span></span>
-<span><span class="co">#&gt;  300    51.21    0.9723 29.24    49.22     53.20     B</span></span>
+<span><span class="co">#&gt;  200    44.66    0.9740 29.45    42.66     46.65    A </span></span>
+<span><span class="co">#&gt;  300    51.21    0.9723 29.27    49.22     53.20     B</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Pairwise comparisons (t tests, Satterthwaite df; p.adj: none)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  level1 level2 estimate std.error    df statistic   p.value     p.adj p.method</span></span>
-<span><span class="co">#&gt;     200    300   -6.557     1.376 29.36    -4.764 4.749e-05 4.749e-05        t</span></span>
+<span><span class="co">#&gt;     200    300   -6.557     1.376 29.36    -4.764 4.748e-05 4.748e-05        t</span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;    QB estimate std.error       df conf.low conf.high group</span></span>
-<span><span class="co">#&gt; 1 200 36.30263 0.9244804 36.51477 34.42861  38.17664     A</span></span>
-<span><span class="co">#&gt; 2 300 38.81293 0.9262667 36.68683 36.93559  40.69026     A</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 200 36.30263 0.9244804 36.54632 34.42867  38.17659     A</span></span>
+<span><span class="co">#&gt; 2 300 38.81293 0.9262667 36.79558 36.93578  40.69007     A</span></span></code></pre></div>
 <p>For gaussian fits the tests are t tests with Satterthwaite df (next
-section); for generalized fits they are normal-based, as in
-<code><a href="../reference/semipred.html">semipred()</a></code>.</p>
+section), and <code><a href="../reference/semipred.html">semipred()</a></code> uses the same df for its bands
+(column <code>df</code>); generalized fits get the df of the design’s
+strata, as GLMMs do (normal-based when the model has no random term
+besides the smooths).</p>
 </div>
 <div class="section level2">
 <h2 id="what-predictmeans-adds">What predictmeans adds<a class="anchor" aria-label="anchor" href="#what-predictmeans-adds"></a>
@@ -263,10 +314,13 @@ times; a curve over time for each treatment. The treatment means at time
 the whole-plot variation, so they have far fewer degrees of freedom than
 the 180 residual df. predictmeans gives them Satterthwaite df for the
 combination of fixed and smooth coefficients (as SAS does for estimates
-that involve random effects); normal-based tests would reject a true
-null hypothesis too often (<code>dev/sim-semireg-df.R</code> in the
-package sources).</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+that involve random effects), from the variance components of the design
+with the smoothing parameters held at their estimates; normal-based
+tests would reject a true null hypothesis too often
+(<code>dev/sim-semireg-df.R</code> in the package sources), and normal
+bands of the curves cover 0.91 instead of 0.95
+(<code>dev/sim-semipred-df.R</code>).</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
 <span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">10</span>, A <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a1"</span>, <span class="st">"a2"</span>, <span class="st">"a3"</span><span class="op">)</span><span class="op">)</span>, Block <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">sp</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">sp</span><span class="op">$</span><span class="va">t</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="fl">1</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">A</span><span class="op">]</span><span class="op">*</span><span class="va">sp</span><span class="op">$</span><span class="va">t</span><span class="op">/</span><span class="fl">10</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span><span class="op">$</span><span class="va">Block</span><span class="op">]</span> <span class="op">+</span></span>
@@ -276,14 +330,14 @@ package sources).</p>
 <span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fsp</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;    A estimate std.error       df conf.low conf.high group</span></span>
-<span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.655220 1.802361  2.905306     A</span></span>
-<span><span class="co">#&gt; 2 a2 2.415646 0.2431558 8.777611 1.863457  2.967834     A</span></span>
-<span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.699969 2.143604  3.247064     A</span></span>
+<span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A</span></span>
+<span><span class="co">#&gt; 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A</span></span>
+<span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2    estimate std.error       df   p.value</span></span>
-<span><span class="co">#&gt; 1     a1     a2 -0.06181205 0.1991743 17.56558 0.7599533</span></span>
-<span><span class="co">#&gt; 2     a1     a3 -0.34150024 0.1985129 17.33696 0.1031776</span></span>
-<span><span class="co">#&gt; 3     a2     a3 -0.27968819 0.1995537 17.69918 0.1783368</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     a1     a2 -0.06181205 0.1991743 17.61641 0.7599429</span></span>
+<span><span class="co">#&gt; 2     a1     a3 -0.34150024 0.1985129 17.38920 0.1031244</span></span>
+<span><span class="co">#&gt; 3     a2     a3 -0.27968819 0.1995537 17.74765 0.1782902</span></span></code></pre></div>
 <p>The smooth terms are written in the formula:
 <code>s(t, by = A)</code> adds the fixed terms <code>A + A:t</code> (the
 straight lines) itself.</p>
@@ -291,9 +345,10 @@ straight lines) itself.</p>
 <code>s(x, f1*f2)</code> the curves are a common curve plus deviation
 curves for <code>f1</code>, <code>f2</code> and <code>f1:f2</code>, each
 with its own variance. <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> tests each variance (the
-likelihood ratio, halved for the boundary) and <code><a href="../reference/varcomp.html">varcomp()</a></code>
-shows their sizes. Here the shapes differ by <code>f1</code> only:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+likelihood ratio against its boundary distribution, as
+<code>varcomp(fit, test = TRUE)</code>) and <code><a href="../reference/varcomp.html">varcomp()</a></code> shows
+their sizes. Here the shapes differ by <code>f1</code> only:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">dd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>, f1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"p"</span>, <span class="st">"q"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                  f2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"u"</span>, <span class="st">"v"</span>, <span class="st">"w"</span><span class="op">)</span><span class="op">)</span>, rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span></span>
@@ -303,10 +358,10 @@ shows their sizes. Here the shapes differ by <code>f1</code> only:</p>
 <span><span class="va">fx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, <span class="va">f1</span><span class="op">*</span><span class="va">f2</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dd</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fx</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"variance"</span>, <span class="st">"LRT"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;        term     variance        LRT      p.value</span></span>
-<span><span class="co">#&gt; 1       s_x 0.3163539389  5.7060123 8.453451e-03</span></span>
-<span><span class="co">#&gt; 2    s_x_f1 0.0927799765 26.9861474 1.024594e-07</span></span>
-<span><span class="co">#&gt; 3    s_x_f2 0.0000000000  0.0000000 5.000000e-01</span></span>
-<span><span class="co">#&gt; 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01</span></span></code></pre></div>
+<span><span class="co">#&gt; 1       s_x 0.3163567534  5.7060123 8.453451e-03</span></span>
+<span><span class="co">#&gt; 2    s_x_f1 0.0927791411 26.9861474 1.024594e-07</span></span>
+<span><span class="co">#&gt; 3    s_x_f2 0.0000000000  0.0000000 1.000000e+00</span></span>
+<span><span class="co">#&gt; 4 s_x_f1_f2 0.0002386665  0.1328028 3.577718e-01</span></span></code></pre></div>
 <p>The test is conservative: in 200 simulated data sets like these, with
 no <code>f2</code> or <code>f1:f2</code> differences, it rejected at the
 5% level in 1-3% of them, and it found the <code>f1</code> difference in
@@ -318,7 +373,7 @@ matters.</p>
 negative binomial with zero inflation is available. <code>contr</code>
 gives the difference of two curves on the log scale and as a ratio, with
 a simultaneous band and the ranges where the ratio differs from 1:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">cn</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">3</span>, length <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>, trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ctl"</span>, <span class="st">"trt"</span><span class="op">)</span><span class="op">)</span>, site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cn</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/NegBinomial.html" class="external-link">rnbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cn</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -331,28 +386,190 @@ a simultaneous band and the ranges where the ratio differs from 1:</p>
 <span><span class="co">#&gt;        from to direction</span></span>
 <span><span class="co">#&gt; 1 0.7241379  3         &gt;</span></span>
 <span><span class="va">rr</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="smooth_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="672"></p>
 <p><strong>Subject-specific curves.</strong>
 <code>(s(age, k = 10) | idnum)</code> gives each subject a random
 straight line, <code>(age | idnum)</code>, and a random spline deviation
 with one variance for all subjects (Durban et al. 2005). The heights of
-28 black boys of the Indiana growth study, in the package’s data, fitted
-as in Harezlak, Ruppert and Wand (2018, section 9.2); the fit is the
-same as that of their <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> code:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"semireg"</span>, <span class="st">"growthIndiana.txt"</span>, package <span class="op">=</span> <span class="st">"predictmeans"</span><span class="op">)</span>,</span>
-<span>                 header <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">gb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gi</span>, <span class="va">male</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">black</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+28 black boys of the Indiana growth study
+(<code>data(growthIndiana)</code>), fitted as in Harezlak, Ruppert and
+Wand (2018, section 9.2); the fit is the same as that of their
+<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> code:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">growthIndiana</span><span class="op">)</span></span>
+<span><span class="va">gb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">growthIndiana</span>, <span class="va">male</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">black</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">gb</span><span class="op">$</span><span class="va">idnum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">gb</span><span class="op">$</span><span class="va">idnum</span><span class="op">)</span></span>
 <span><span class="va">fg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">height</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">age</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">20</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.5</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>                <span class="op">(</span><span class="fu">s</span><span class="op">(</span><span class="va">age</span>, k <span class="op">=</span> <span class="fl">10</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.5</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">gb</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik</a></span><span class="op">(</span><span class="va">fg</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 'log Lik.' -935.7451 (df=8)</span></span>
 <span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fg</span>, <span class="st">"age"</span>, <span class="st">"age"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="smooth_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="672"></p>
 <p>The population curve leaves out the subjects’ curves;
 <code>anova(fg)</code> would test whether they are needed beyond
 straight lines.</p>
+</div>
+<div class="section level2">
+<h2 id="more-situations">More situations<a class="anchor" aria-label="anchor" href="#more-situations"></a>
+</h2>
+<p>Each example below is complete; the data are simulated unless
+named.</p>
+<p><strong>Several smooths and a varying coefficient.</strong> An
+additive model with a curve in <code>x1</code>, and an effect of
+<code>z</code> that changes smoothly with <code>x2</code>
+(<code>by = z</code>, a numeric variable):</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">da</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span>, x2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span>, z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">da</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">3</span><span class="op">*</span><span class="va">da</span><span class="op">$</span><span class="va">x1</span><span class="op">)</span> <span class="op">+</span> <span class="va">da</span><span class="op">$</span><span class="va">z</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">da</span><span class="op">$</span><span class="va">x2</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span>
+<span><span class="va">fa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x1</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">x2</span>, by <span class="op">=</span> <span class="va">z</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">da</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fa</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"variance"</span>, <span class="st">"LRT"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;     term   variance      LRT      p.value</span></span>
+<span><span class="co">#&gt; 1   s_x1 0.03875716 122.8299 7.596575e-29</span></span>
+<span><span class="co">#&gt; 2 s_x2_z 0.33715120 188.0839 4.164359e-43</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fa</span>, covariate <span class="op">=</span> <span class="st">"x1"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="672"></p>
+<p><strong>A surface.</strong> Copper grade over a mining area
+(<code>data(copper)</code>): a thin-plate surface over the plane
+(<code>bs = "ztps"</code>) and a curve in depth, on the log scale,
+back-transformed for the plots:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">copper</span><span class="op">)</span></span>
+<span><span class="va">fcu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span>
+<span>               data <span class="op">=</span> <span class="va">copper</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fcu</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>, trans <span class="op">=</span> <span class="va">exp</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="672"></p>
+<p><strong>Binary responses.</strong> The probability of a response over
+<code>x</code> for two groups, with a random effect of cluster;
+<code>contr</code> gives the log odds ratio of the curves and the odds
+ratio:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">db</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>, g <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span><span class="op">)</span>, cl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">db</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">pi</span><span class="op">*</span><span class="va">db</span><span class="op">$</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.8</span><span class="op">*</span><span class="op">(</span><span class="va">db</span><span class="op">$</span><span class="va">g</span> <span class="op">==</span> <span class="st">"b"</span><span class="op">)</span><span class="op">*</span><span class="va">db</span><span class="op">$</span><span class="va">x</span> <span class="op">+</span></span>
+<span>                                     <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">[</span><span class="va">db</span><span class="op">$</span><span class="va">cl</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fbin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">g</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">cl</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>,</span>
+<span>                data <span class="op">=</span> <span class="va">db</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b"</span>, <span class="st">"a"</span><span class="op">)</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pred_df</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"odds.ratio"</span>, <span class="st">"odds.ratio.LL"</span>, <span class="st">"odds.ratio.UL"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            x odds.ratio odds.ratio.LL odds.ratio.UL</span></span>
+<span><span class="co">#&gt; 1 0.00000000  0.6341654     0.1769871      2.272289</span></span>
+<span><span class="co">#&gt; 2 0.02040816  0.7152452     0.2422917      2.111404</span></span>
+<span><span class="co">#&gt; 3 0.04081633  0.8012505     0.3169543      2.025536</span></span>
+<span><span class="co">#&gt; 4 0.04166667  0.8049156     0.3201933      2.023431</span></span>
+<span><span class="co">#&gt; 5 0.06122449  0.8903096     0.3949808      2.006809</span></span>
+<span><span class="co">#&gt; 6 0.08163265  0.9798775     0.4675019      2.053810</span></span></code></pre></div>
+<p><strong>Repeated measures with serial correlation.</strong> Curves
+over time for three treatments, twelve subjects, AR(1) correlation of
+the residuals within a subject (<code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>, glmmTMB’s
+<code>ar1()</code> as the residual covariance,
+<code>dispformula = ~0</code>); treatment means at a time with
+Satterthwaite df:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">9</span><span class="op">)</span></span>
+<span><span class="va">dr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">8</span>, id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dr</span><span class="op">$</span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a1"</span>, <span class="st">"a2"</span>, <span class="st">"a3"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">32</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dr</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">dr</span><span class="op">$</span><span class="va">t</span><span class="op">/</span><span class="fl">3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">0</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">[</span><span class="va">dr</span><span class="op">$</span><span class="va">id</span><span class="op">]</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/arima.sim.html" class="external-link">arima.sim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ar <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span>, <span class="fl">8</span>, sd <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dr</span><span class="op">$</span><span class="va">tf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">dr</span><span class="op">$</span><span class="va">t</span><span class="op">)</span></span>
+<span><span class="va">far</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">t</span>, by <span class="op">=</span> <span class="va">A</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ar1</span><span class="op">(</span><span class="va">tf</span> <span class="op">+</span> <span class="fl">0</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>,</span>
+<span>                   dispformula <span class="op">=</span> <span class="op">~</span><span class="fl">0</span>, data <span class="op">=</span> <span class="va">dr</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">far</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   level1 level2   estimate std.error       df   p.value</span></span>
+<span><span class="co">#&gt; 1     a1     a2 -0.2146406 0.3486284 20.38780 0.5449237</span></span>
+<span><span class="co">#&gt; 2     a1     a3 -0.3028874 0.3191386 17.32269 0.3556348</span></span>
+<span><span class="co">#&gt; 3     a2     a3 -0.0882468 0.3358240 19.16869 0.7955261</span></span></code></pre></div>
+<p><strong>A tensor-product surface.</strong> Two covariates on
+different scales (<code>data(ozoneCalif)</code>: inversion base height
+in feet, its temperature in degrees F) call for <code>t2()</code>, whose
+smoothness differs by direction; each of its penalties is a random
+effect with its own variance, and <code>x1 + x2 + x1:x2</code> are added
+to the fixed effects:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ozoneCalif</span><span class="op">)</span></span>
+<span><span class="va">fo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">ozone</span> <span class="op">~</span> <span class="fu">t2</span><span class="op">(</span><span class="va">inversion.base.height</span>, <span class="va">inversion.base.temp</span><span class="op">)</span> <span class="op">+</span></span>
+<span>                <span class="fu">s</span><span class="op">(</span><span class="va">daggett.pressure.gradient</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">ozoneCalif</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fo</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"variance"</span>, <span class="st">"LRT"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;                                             term  variance          LRT</span></span>
+<span><span class="co">#&gt; 1                    s_daggett_pressure_gradient  4.591269 3.631529e+01</span></span>
+<span><span class="co">#&gt; 2 t2_inversion_base_height_inversion_base_temp_1  0.000000 2.171419e-10</span></span>
+<span><span class="co">#&gt; 3 t2_inversion_base_height_inversion_base_temp_2  1.124284 7.662851e-01</span></span>
+<span><span class="co">#&gt; 4 t2_inversion_base_height_inversion_base_temp_3 12.919219 8.407200e+00</span></span>
+<span><span class="co">#&gt;        p.value</span></span>
+<span><span class="co">#&gt; 1 8.392096e-10</span></span>
+<span><span class="co">#&gt; 2 4.999941e-01</span></span>
+<span><span class="co">#&gt; 3 1.906844e-01</span></span>
+<span><span class="co">#&gt; 4 1.868689e-03</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fo</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"inversion.base.height"</span>, <span class="st">"inversion.base.temp"</span><span class="op">)</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="672"></p>
+<p><strong>A basis of your own.</strong> A seasonal cycle on a straight
+trend: two years of daily values and a Fourier basis
+(<code>bs = "user"</code>, with no fixed part of its own,
+<code>null = "none"</code>). The basis function is checked before the
+fit: it must give the same row for the same day whatever data it is
+given.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">ds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>day <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">730</span><span class="op">)</span></span>
+<span><span class="va">ds</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="op">+</span> <span class="fl">0.002</span><span class="op">*</span><span class="va">ds</span><span class="op">$</span><span class="va">day</span> <span class="op">+</span> <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">ds</span><span class="op">$</span><span class="va">day</span><span class="op">/</span><span class="fl">365</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">730</span><span class="op">)</span></span>
+<span><span class="va">season</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">d</span><span class="op">/</span><span class="fl">365</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">d</span><span class="op">/</span><span class="fl">365</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">4</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">d</span><span class="op">/</span><span class="fl">365</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">cos</a></span><span class="op">(</span><span class="fl">4</span><span class="op">*</span><span class="va">pi</span><span class="op">*</span><span class="va">d</span><span class="op">/</span><span class="fl">365</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">day</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">day</span>, bs <span class="op">=</span> <span class="st">"user"</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>basis <span class="op">=</span> <span class="va">season</span>, null <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>              data <span class="op">=</span> <span class="va">ds</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fs</span>, covariate <span class="op">=</span> <span class="st">"day"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="examples-from-the-semiparametric-regression-literature">Examples from the semiparametric regression literature<a class="anchor" aria-label="anchor" href="#examples-from-the-semiparametric-regression-literature"></a>
+</h2>
+<p>The package has the data of M. P. Wand’s examples, which
+<code><a href="../reference/semireg.html">semireg()</a></code> reproduces
+(<code>tests/testthat/test-semireg-golden.R</code>):
+<code>growthIndiana</code> (above), <code>SBMDfem</code>,
+<code>ozoneCalif</code>, <code>scallop</code> (with
+<code>scallopKnots</code> and <code>scallopBdry</code>),
+<code>wageTUnion</code> and <code>copper</code> (with
+<code>copperKnots</code>). Their help pages have the analyses; a few
+here.</p>
+<p><strong>Bone density by ethnic group</strong> (<code>SBMDfem</code>):
+a curve over age, ethnicity as a fixed effect and a random intercept per
+girl; the groups compared at age 15:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">SBMDfem</span><span class="op">)</span></span>
+<span><span class="va">SBMDfem</span><span class="op">$</span><span class="va">idnum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">SBMDfem</span><span class="op">$</span><span class="va">idnum</span><span class="op">)</span></span>
+<span><span class="va">fsb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">spnbmd</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">age</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span> <span class="op">+</span> <span class="va">ethnicity</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>,</span>
+<span>               data <span class="op">=</span> <span class="va">SBMDfem</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm_sb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fsb</span>, <span class="st">"ethnicity"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span>
+<span><span class="va">pm_sb</span><span class="op">$</span><span class="va">means</span></span>
+<span><span class="co">#&gt;   ethnicity  estimate  std.error       df  conf.low conf.high group</span></span>
+<span><span class="co">#&gt; 1     Asian 0.9918785 0.01647278 274.8882 0.9594497  1.024307    A </span></span>
+<span><span class="co">#&gt; 2     Black 1.0980570 0.01440646 274.1369 1.0696956  1.126418     B</span></span>
+<span><span class="co">#&gt; 3  Hispanic 1.0050416 0.01642609 289.7213 0.9727120  1.037371    A </span></span>
+<span><span class="co">#&gt; 4     White 1.0179401 0.01610810 264.8705 0.9862239  1.049656    A</span></span></code></pre></div>
+<p><strong>Scallop catches over the sea floor</strong>
+(<code>scallop</code>): a thin-plate surface with the knots of the
+original fit, drawn inside the boundary of the survey area on the scale
+of the catch:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">scallop</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">scallopKnots</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">scallopBdry</span><span class="op">)</span></span>
+<span><span class="va">fsc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">asinh</a></span><span class="op">(</span><span class="va">tot.catch</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">longitude</span>, <span class="va">latitude</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>,</span>
+<span>                                   xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">scallopKnots</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>               data <span class="op">=</span> <span class="va">scallop</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fsc</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"longitude"</span>, <span class="st">"latitude"</span><span class="op">)</span>, boundary <span class="op">=</span> <span class="va">scallopBdry</span>,</span>
+<span>         trans <span class="op">=</span> <span class="va">sinh</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="672"></p>
+<p><strong>Union membership over the wage</strong>
+(<code>wageTUnion</code>): penalised spline logistic regression, the
+probability with its band:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">wageTUnion</span><span class="op">)</span></span>
+<span><span class="va">fw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">unionMember</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">wage</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>,</span>
+<span>              data <span class="op">=</span> <span class="va">wageTUnion</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fw</span>, <span class="st">"wage"</span>, <span class="st">"wage"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
+<p><img src="smooth_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="from-the-smoothz-form">From the <code>smoothZ</code> form<a class="anchor" aria-label="anchor" href="#from-the-smoothz-form"></a>
@@ -385,11 +602,21 @@ gives the same model and adds the fixed terms itself:</p>
 </tr>
 <tr class="even">
 <td><code>y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))</code></td>
-<td><code>y ~ s(x1, x2, bs = "ztps")</code></td>
+<td><code>y ~ s(x1, x2, bs = "ztps", k = 6)</code></td>
 </tr>
 <tr class="odd">
 <td><code>smZ(x, intKnots = kn, range.x = r)</code></td>
 <td><code>s(x, bs = "os", xt = list(knots = kn, range = r))</code></td>
+</tr>
+<tr class="even">
+<td>
+<code>smoothZ = list(sm = myZ(x))</code>, a matrix of your own</td>
+<td><code>s(x, bs = "user", xt = list(basis = myZ))</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code>smZ(x, drv = 1)</code> (derivative of the basis)</td>
+<td><code>semipred(fit, ..., deriv = 1)</code></td>
 </tr>
 </tbody>
 </table>

@@ -52,6 +52,59 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Changes that affect results or scripts
 
+- **[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  bands of gaussian
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  /
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits are t limits with Satterthwaite df** at each point (new column
+  `df`), as
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on the fit; simultaneous bands use a multivariate t with each point’s
+  df; differences of curves (`contr`) their own df. Generalized fits
+  keep normal limits. In a split-plot design with curves over time
+  (`dev/sim-semipred-df.R`, 500 data sets per setting) the normal band
+  of a treatment’s curve covered 0.91 (pointwise) and 0.92 (whole curve)
+  at the 95% level; with t (8-11 df) 0.94-0.95 and 0.96-0.97.
+  Differences of curves: normal 0.94-0.96, t 0.96-0.97. Curves without
+  design strata: 0.95-0.98 either way (the df are then the residual df).
+
+- **Generalized
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  /
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits get the df of the design’s strata** in
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+  the inner-outer df that GLMMs get (the smooth blocks are not strata),
+  instead of z tests; without random terms besides the smooths they stay
+  z (as `glm` with a known dispersion). Poisson counts in a split-plot
+  design with curves over time (`dev/sim-semireg-glmm-df.R`, 1000 data
+  sets per setting): z tests of two treatments at a time rejected
+  5.8-9.2% of true equalities and normal bands covered a treatment’s
+  curve 0.91-0.93; with t on the 10 whole-plot df 3.1-5.9% and
+  0.955-0.970. `settings$df_method` says
+  `"inner-outer (design strata; smooths within)"`. The rule for a row
+  (the smallest df of the coefficients it uses; means: the df of their
+  term) is now one function for every model (`pm_io_row_df()`).
+
+- **The Satterthwaite df of
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits hold the smoothing parameters at their estimates**
+  ([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)):
+  they count the design’s variance components and the residual. With the
+  smoothing variances free, a point where one of them dominates got 2 df
+  (a WarsawApts fit: 1.85-369 df along the curves, now 401, the residual
+  df); their uncertainty is what `unconditional = TRUE` adds. In the
+  split-plot designs the df hardly change (the level of
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)’s
+  tests stays 4.6%). The glmmTMB engine holds the same quantity (the
+  ratio of each smoothing variance to the residual variance), so both
+  engines agree.
+
 - **Kenward-Roger df with a variance component estimated as zero** (a
   singular fit): the component is left out of the adjustment, as in SAS
   PROC MIXED. Its near-singular information gave nonsense df before (in
@@ -1056,6 +1109,98 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### New features
 
+- **Tensor products in
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  and
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md):
+  `t2(x1, x2)`** (Wood, Scheipl and Faraway 2013), a surface for
+  covariates on different scales, each penalty a random effect with its
+  own variance, the fixed terms `x1 + x2 + x1:x2` added, `by = f` for a
+  surface per level; with
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`anova()`](https://rdrr.io/r/stats/anova.html) and
+  [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+  as for other smooths. It is set up without mgcv’s sum-to-zero
+  constraint on the whole product, which leaves part of the penalised
+  space in the unpenalised one (so the fixed part would not be those
+  terms, and with a random intercept the population surface shifted by
+  0.04 on a test surface); the fit equals `gam()` with that basis and
+  its penalties, and `gam()`’s own `t2()` without other random effects
+  (tested). `te()` is fitted as `t2()` with a message (its overlapping
+  penalties cannot be random effects); `ti()` is refused with a message.
+
+- **[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
+  and `smoothZ` are superseded** (maintainer’s decision of 2026-11-17):
+  they keep working, so that 1.x code runs, but get no new features;
+  [`?smZ`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
+  has the table of their formula equivalents. Every help page, vignette
+  and article now writes smooths in the formula, with more examples of
+  the semi-parametric system: curves in a mixed model, a split-plot
+  design with curves over time, crossed factors (`s(x, f1*f2)`), an
+  additive model with a varying coefficient, a basis of your own, binary
+  responses, subject-specific curves, counts with zero inflation, AR(1)
+  residuals, surfaces
+  ([`?semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+  [`?semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md),
+  [`?semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+  section “More situations” of
+  [`vignette("smooth")`](https://dongwenluo.github.io/predictmeans/articles/smooth.md)).
+  The migration table said `smZ(cbind(x1, x2), type = "Ztps")` is
+  `s(x1, x2, bs = "ztps")`: the defaults differ (6 and 10 knots per
+  axis), it is `bs = "ztps", k = 6`.
+
+- **New data sets: the data of M. P. Wand’s semiparametric regression
+  examples** (the maintainer’s golden examples): `growthIndiana`
+  (subject-specific growth curves, black-white contrast curve),
+  `SBMDfem` (bone density by ethnic group, additive mixed model),
+  `ozoneCalif` (additive model), `scallop` with `scallopKnots` and
+  `scallopBdry` (thin-plate surface inside a boundary), `wageTUnion`
+  (penalised spline logistic regression) and `copperKnots` (for
+  `copper`), each with its analysis in the formula syntax;
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  reproduces the original
+  [`lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fits
+  (`tests/testthat/test-semireg-golden.R`).
+
+- **`s(x, bs = "user", xt = list(basis = f))`: a basis of your own in
+  the formula of
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  /
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)**,
+  the formula form of a matrix in `smoothZ`: `f(x)` (or `f(x1, x2)`)
+  returns a matrix with a row per value, its columns get iid random
+  coefficients with one variance, and the constant and the covariate are
+  the fixed part, added to the formula (`xt$null = "constant"` or
+  `"none"` for less). Prediction evaluates `f` on the grid, so
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  (also `deriv`),
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  `by`, `s(x, f)` and random curves work. The function is checked before
+  the fit, which stops with what is wrong and how to put it right when
+  it fails on the data, does not return a numeric matrix with a row per
+  value (also for a single value, as at prediction), gives NA or
+  infinite values, gives other values on a second call, gives other rows
+  for the same values on part of the data (knots or a range taken from
+  the data: prediction would use other ones), or has dependent columns
+  or columns in the fixed part; a warning when it fails just beyond the
+  ends of the data. With the O’Sullivan or Ztps basis it reproduces the
+  `bs = "os"` / `"ztps"` fits exactly (tested, both engines).
+
+- **`semipred(deriv = 1)` and `deriv = 2`: slopes and curvatures of the
+  fitted curves** along the covariate, with pointwise or simultaneous
+  bands and the same df as the curves; with `contr` the difference of
+  two slopes. The ranges where a slope is above or below zero (the curve
+  rises or falls) are printed and kept in
+  `attr(pred_df, "significant")`. Central differences of the whole
+  prediction design, so any basis works; for the O’Sullivan basis
+  (`bs = "os"`,
+  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md))
+  they equal the exact derivatives of `ZOSull(drv = )` to 1e-8 (tested).
+  Generalized models: link scale. The bands covered the true slope and
+  curvature 0.97-1.00 at the 95% level (`dev/sim-semipred-deriv.R`).
+  This replaces `smZ(drv = )` for formula smooths.
+
 - **[`anova()`](https://rdrr.io/r/stats/anova.html) of `lmer` fits with
   df and p-values, without lmerTest**: Type III F tests with
   Kenward-Roger df by default (as SAS `DDFM=KR`),
@@ -1098,6 +1243,74 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   tests of smooth variances, rate ratios between count curves,
   subject-specific curves) and a table for moving from the
   `smoothZ = list(smZ())` form, which still runs.
+
+- **`varcomp(model, test = TRUE)`: a test of each variance component**
+  for `lmer`, `glmer`, `glmmTMB` and
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)/[`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits: columns `LRT` and `p.value`, each row’s hypothesis and reference
+  distribution printed below the table. Each row is tested by refitting
+  the model one would fit without it: a term dropped, `(1 + x | g)`
+  reduced to `(1 | g)` for the slope, covariances set to 0 (`||`,
+  glmmTMB [`diag()`](https://rdrr.io/r/base/diag.html)), the correlation
+  of `ar1()`/`ou()`/`cs()` set to 0 (`homdiag()`). The likelihood ratios
+  equal SAS PROC MIXED and Genstat REML runs; the boundary mixtures (0.5
+  chi2(0) + 0.5 chi2(1) for a variance, 0.5 chi2(k-1) + 0.5 chi2(k) for
+  a slope) equal SAS PROC GLIMMIX `COVTEST`. When the tested variance is
+  the only random effect of a gaussian REML fit the exact null
+  distribution of the restricted likelihood ratio (Crainiceanu and
+  Ruppert 2004) is used: there the mixture was conservative (2-3% at the
+  5% level, the exact test 4.3%); with other random effects the “exact”
+  distribution was too liberal (7%) and the mixture is used (5.0%)
+  (`dev/sim-vc-test.R`). Rows where the reference may be inaccurate
+  (fewer than 6 levels; binary data with fewer than 5 observations per
+  level) are named in a warning with how to check them.
+  [`anova()`](https://rdrr.io/r/stats/anova.html) of a
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fit uses the same tests for its smooth terms (before: always the
+  halved chi-square). `test_method = "bootstrap"` gives a parametric
+  bootstrap of each likelihood ratio (responses simulated from the model
+  without the component, both models refitted; `nboot`, `ncore`), with
+  sequential stopping (a clearly non-significant test stops after 20
+  simulated statistics reach the observed one) and one seed per draw
+  (the same p-values with any number of cores); the warning points to
+  it. In a simulation of seven designs (`dev/sim-vc-defaults.R`) the
+  default was never liberal (0-4.5% at the 5% level); for GLMMs it was
+  conservative (binary, clusters of 4: 0.5%; Poisson 4%; negative
+  binomial 0%), where the bootstrap was nearer 5% (1.5-6%) and added 5-7
+  points of power. For `s(x, f1*f2)` deviation curves every reference
+  was conservative (0%), with full power for a real difference in shape.
+  [`?varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+  and
+  [`vignette("resampling")`](https://dongwenluo.github.io/predictmeans/articles/resampling.md)
+  say which to use: the default for gaussian models and a first look;
+  the bootstrap for GLMMs, small data, flagged rows and p-values near
+  the cut-off.
+
+- **[`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  gaussian fits are REML, as documented.** The default `REML = TRUE`
+  never reached glmmTMB (the call passed only the arguments given), so
+  since 1.x gaussian
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits were maximum likelihood, with variance components biased
+  downwards. They are now REML and equal
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  (lme4) on the same model. Other families keep maximum likelihood
+  (Laplace), as `glmer`, unless `REML = TRUE` is given.
+
+- **[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on gaussian
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits: Satterthwaite df**, as for
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+  also with glmmTMB covariance structures such as AR(1) residuals
+  (`ar1(tf + 0 | id)`, `dispformula = ~0`). The df equal those of the
+  lme4 engine on the same model (to 1e-4). In a repeated-measures
+  simulation with AR(1) residuals and no treatment effect, t tests
+  rejected 5.0% at the 5% level (df 18-49), z tests 5.5%
+  (`dev/sim-semireg-tmb-df.R`). In both engines, variance components
+  estimated at zero are left out of the Satterthwaite df, as in
+  Kenward-Roger (a log-SD far out on a flat likelihood had given df
+  below 1).
 
 - **[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   on gaussian
@@ -1146,6 +1359,23 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `gam(method = "REML")` where the script used `gamm()` (whose `lme` fit
   stopped short of the REML optimum) or `gam()`
   (`tests/testthat/test-semireg-golden.R`, `dev/semireg-golden/`).
+
+- **[`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  with glmmTMB covariance structures** (`ar1()`, `ou()`, `cs()`,
+  `toep()`, [`diag()`](https://rdrr.io/r/base/diag.html),
+  [`exp()`](https://rdrr.io/r/base/Log.html), …) next to formula
+  smooths: the formula was rebuilt from `findbars()`, which keeps only
+  the bar inside such a term, so `ar1(tf + 0 | id)` was fitted as an
+  unstructured covariance without a message (78 parameters instead of 2
+  for 12 times). The terms are now kept as written, also in
+  [`anova()`](https://rdrr.io/r/stats/anova.html)‘s refits and in
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)’
+  null model for glmmTMB fits. The covariance of the coefficients is
+  computed with the matrix scaled to unit diagonal, so AR1 residuals
+  with `dispformula = ~0` (or a nugget variance near 0) no longer fail
+  as “computationally singular”.
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  (lme4, which has no such structures) refuses them with a message.
 
 - `semireg_tmb(family = nbinom1)` (a glmmTMB family named without
   glmmTMB attached) failed with “object ‘nbinom1’ not found” after the
@@ -1737,6 +1967,26 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Bug fixes
 
+- **Gaussian
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits moved a little each time their df or variance components were
+  computed.** lme4 maps the fitted model’s theta into the deviance
+  function that the fit keeps; the Satterthwaite df
+  ([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on the fit, [`anova()`](https://rdrr.io/r/stats/anova.html)),
+  [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+  and `unconditional = TRUE` evaluate that function at nearby points and
+  then reset it to the model’s theta, which by then was the last of
+  those points. Each call moved the variance parameters by about 1-3%
+  (Block’s theta 1.66 -\> 1.60 -\> 1.56 in a split-plot example) and
+  with them [`vcov()`](https://rdrr.io/r/stats/vcov.html) of the fit, so
+  the second
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  call gave other df than the first. The fit now keeps its own copy of
+  theta and the deviance function is reset from copies made before it is
+  evaluated; repeated calls give the same results (tested). The first
+  call on a fit was right before too.
+
 - Refits inside
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
@@ -1992,6 +2242,20 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Speed
 
+- The Satterthwaite df of the curves of
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits
+  ([`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)):
+  central differences instead of Richardson extrapolation, and only the
+  block of the inverse mixed-model matrix that the curves use (the fixed
+  and smooth coefficients, not the subjects’ random effects), and the
+  Hessian of the variance parameters computed once per fit (cached). On
+  the growth curves of 2257 rows with 130 subject curves: the difference
+  of two curves with a simultaneous band 46 s -\> 6 s, slopes 23 s -\>
+  3 s. `semipred(contr = )` no longer computes the df of the curves it
+  does not report.
+
 - Satterthwaite and Kenward-Roger df for `lme` and `gls` models build
   the covariance of the data as a sparse matrix, block diagonal by
   subject, so the time grows about linearly with the data: an
@@ -2240,6 +2504,13 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   vignette).
 
 ### Internal
+
+- [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md):
+  the code that puts back rows with a missing covariate (7 copies) and
+  splits a basis by the levels of `by` (4 copies) is one helper each
+  (`pm_smz_na()`, `pm_smz_by()`); the results of 114 argument
+  combinations (every type, `by`, `group`, missing values, knots) are
+  identical to before.
 
 - The permutation and bootstrap tests share one engine
   (`R/perm-engine.R`): permutation indices, refits (in parallel if

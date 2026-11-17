@@ -237,6 +237,71 @@ perm_clin <- permmodels(fm_clin, nperm = 199, seed = 1, ncore = 1)
 #> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.
 ```
 
+## Testing random effects: `varcomp(test = TRUE)`
+
+The quickest way to ask whether each random effect is needed is
+`varcomp(test = TRUE)` (`lmer`, `glmer`, `glmmTMB` and
+[`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+fits). Each row of the variance-component table is tested by refitting
+the model one would fit without it: a term dropped, a random slope
+removed (`(Days | Subject)` to `(1 | Subject)`), or a covariance set to
+zero. A variance is tested on the boundary of its range, so its
+likelihood ratio is referred to the mixtures of Self and Liang (1987)
+and Stram and Lee (1994), as SAS PROC GLIMMIX does, not to the
+chi-square, which is conservative. When the tested variance is the
+model’s only random effect in a gaussian REML fit, the exact null
+distribution of Crainiceanu and Ruppert (2004) is used.
+
+``` r
+
+varcomp(fm1 <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy), test = TRUE)
+#>                              vcov       SE    2.5 %    97.5 %      LRT
+#> Subject.(Intercept)      612.1002 288.7884 289.4484 2042.7092 150.0354
+#> Subject.Days.(Intercept)   9.6044  46.6790 -75.9538   89.0540   0.0410
+#> Subject.Days              35.0717  14.7821  17.7159   99.5608  42.8368
+#> residual                 654.9400  77.1854 526.5448  837.0498       NA
+#>                            p.value
+#> Subject.(Intercept)      2.589e-32
+#> Subject.Days.(Intercept) 8.395e-01
+#> Subject.Days             2.793e-10
+#> residual                        NA
+#> 
+#> Tests (likelihood ratio, each row's model refitted):
+#>   Subject.(Intercept): drop (Days | Subject); chi2(3), conservative
+#>   Subject.Days.(Intercept): (Days | Subject) -> (Days || Subject); chi2(1)
+#>   Subject.Days: (Days | Subject) -> (1 | Subject); 0.5 chi2(1) + 0.5 chi2(2)
+```
+
+Where the reference distribution may be inaccurate (a term with fewer
+than six levels, binary data with fewer than five observations per
+level), a warning names the rows and points to the parametric bootstrap,
+which simulates from the model without the component and refits both
+models to each simulated data set:
+
+``` r
+
+varcomp(fm1, test = TRUE, test_method = "bootstrap", ncore = 4)
+```
+
+A clearly non-significant test stops after 20 simulated statistics reach
+the observed one; a significant one uses all `nboot` (999) refits of
+both models.
+
+In a simulation of seven designs (in the package sources,
+`dev/sim-vc-defaults.R`) the default reference was never liberal: it
+rejected 0-4.5% of data sets without the component at the 5% level. For
+GLMMs it was conservative (binary data in clusters of four 0.5%, Poisson
+4%, negative binomial 0%), and there the bootstrap was nearer 5% and
+found 5-7% more of the real components. So the default is a fast first
+look, safe for gaussian models; for GLMMs, small data sets, the rows a
+warning names and p-values near the cut-off the bootstrap is worth its
+time (some seconds to a minute per model with 999 draws on four cores;
+glmmTMB fits are slower).
+
+`varcomp(test = TRUE)` tests each row against the model without it;
+[`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
+below, compares any two nested models the user writes.
+
 ## Testing random effects: `permlmer()`
 
 [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
@@ -248,7 +313,6 @@ between subjects?
 
 ``` r
 
-fm1 <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 fm0 <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
 permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 #> Data: sleepstudy
@@ -474,8 +538,8 @@ max-statistic (step-down max-\|t\|) adjustment over the time points.
 |----|----|----|
 | `lm`, `aov` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane) | — |
 | `glm` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane on the working scale) | — |
-| `lmer`, `lme`, `gls` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane with refits); or the Kenward–Roger F test | [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md) |
-| `glmer`, `glmmTMB` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane on the working scale, with refits) | [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md): working scale; quantile residuals for 0/1 responses |
+| `lmer`, `lme`, `gls` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane with refits); or the Kenward–Roger F test | `varcomp(test = TRUE)` (`lmer`); `test_method = "bootstrap"` for small data; [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md) |
+| `glmer`, `glmmTMB` | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) (Freedman–Lane on the working scale, with refits) | `varcomp(test = TRUE)`, `test_method = "bootstrap"` for small data; [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md): working scale; quantile residuals for 0/1 responses |
 | designed experiments | `permmodels(perms = permindex(...))` for a randomisation test |  |
 | `lm`, `glm` with unequal variances | `permmodels(robust = TRUE)` (HC3 statistics, sign flips) |  |
 | several responses, same units | [`permcombine()`](https://dongwenluo.github.io/predictmeans/reference/permcombine.md) of [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) results with the same `seed` |  |
@@ -491,6 +555,9 @@ max-statistic (step-down max-\|t\|) adjustment over the time points.
   `dev/sim-study/`).
 
 ## References
+
+Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values.
+*Biometrika* 78, 301–304.
 
 Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at
 last. *Journal of Econometrics* 146, 162–169.
@@ -519,3 +586,15 @@ in linear mixed models. *Biometrics* 68, 486–493.
 
 Westfall, P. H. and Young, S. S. (1993). *Resampling-Based Multiple
 Testing*. Wiley.
+
+Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in
+linear mixed models with one variance component. *Journal of the Royal
+Statistical Society B* 66, 165–185.
+
+Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum
+likelihood estimators and likelihood ratio tests under nonstandard
+conditions. *Journal of the American Statistical Association* 82,
+605–610.
+
+Stram, D. O. and Lee, J. W. (1994). Variance components testing in the
+longitudinal mixed effects model. *Biometrics* 50, 1171–1177.

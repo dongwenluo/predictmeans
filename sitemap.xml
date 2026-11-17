@@ -28,6 +28,7 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Poisson_ind.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/R2_glmm.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/R2_model.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/SBMDfem.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/anova.semireg.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.html</loc></url>
@@ -38,7 +39,9 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/copper.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/covariatemeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/df_term.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/growthIndiana.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/index.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/ozoneCalif.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/permcombine.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/permindex.html</loc></url>
@@ -53,6 +56,7 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/predictmeans-package.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/predictmeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/residplot.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/scallop.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/se_ranef.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/semipred.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/semireg.html</loc></url>
@@ -61,5 +65,6 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/specify_contrast.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/varcomp.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/wageTUnion.html</loc></url>
 </urlset>
 

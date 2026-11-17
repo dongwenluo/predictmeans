@@ -302,27 +302,27 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
 
 #>        Variety xvar      ses      Mean        LL        UL     factors
-#> 1  Golden Rain  0.0 8.570716  81.90000  63.36196 100.43804 Golden Rain
-#> 2  Golden Rain  0.1 8.150210  89.43333  71.40550 107.46117 Golden Rain
-#> 3  Golden Rain  0.2 7.887152  96.96667  79.20735 114.72598 Golden Rain
-#> 4  Golden Rain  0.3 7.797494 104.50000  86.82110 122.17890 Golden Rain
-#> 5  Golden Rain  0.4 7.887152 112.03333  94.27402 129.79265 Golden Rain
-#> 6  Golden Rain  0.5 8.150210 119.56667 101.53883 137.59450 Golden Rain
-#> 7  Golden Rain  0.6 8.570716 127.10000 108.56196 145.63804 Golden Rain
-#> 8   Marvellous  0.0 8.570716  90.41667  71.87862 108.95471  Marvellous
-#> 9   Marvellous  0.1 8.150210  96.87500  78.84716 114.90284  Marvellous
-#> 10  Marvellous  0.2 7.887152 103.33333  85.57402 121.09265  Marvellous
-#> 11  Marvellous  0.3 7.797494 109.79167  92.11277 127.47056  Marvellous
-#> 12  Marvellous  0.4 7.887152 116.25000  98.49069 134.00931  Marvellous
-#> 13  Marvellous  0.5 8.150210 122.70833 104.68050 140.73617  Marvellous
-#> 14  Marvellous  0.6 8.570716 129.16667 110.62862 147.70471  Marvellous
-#> 15     Victory  0.0 8.570716  73.30000  54.76196  91.83804     Victory
-#> 16     Victory  0.1 8.150210  81.40833  63.38050  99.43617     Victory
-#> 17     Victory  0.2 7.887152  89.51667  71.75735 107.27598     Victory
-#> 18     Victory  0.3 7.797494  97.62500  79.94610 115.30390     Victory
-#> 19     Victory  0.4 7.887152 105.73333  87.97402 123.49265     Victory
-#> 20     Victory  0.5 8.150210 113.84167  95.81383 131.86950     Victory
-#> 21     Victory  0.6 8.570716 121.95000 103.41196 140.48804     Victory
+#> 1  Golden Rain  0.0 8.570714  81.90000  63.36196 100.43804 Golden Rain
+#> 2  Golden Rain  0.1 8.150208  89.43333  71.40550 107.46116 Golden Rain
+#> 3  Golden Rain  0.2 7.887150  96.96667  79.20736 114.72597 Golden Rain
+#> 4  Golden Rain  0.3 7.797492 104.50000  86.82111 122.17889 Golden Rain
+#> 5  Golden Rain  0.4 7.887150 112.03333  94.27403 129.79264 Golden Rain
+#> 6  Golden Rain  0.5 8.150208 119.56667 101.53884 137.59450 Golden Rain
+#> 7  Golden Rain  0.6 8.570714 127.10000 108.56196 145.63804 Golden Rain
+#> 8   Marvellous  0.0 8.570714  90.41667  71.87863 108.95470  Marvellous
+#> 9   Marvellous  0.1 8.150208  96.87500  78.84717 114.90283  Marvellous
+#> 10  Marvellous  0.2 7.887150 103.33333  85.57403 121.09264  Marvellous
+#> 11  Marvellous  0.3 7.797492 109.79167  92.11278 127.47056  Marvellous
+#> 12  Marvellous  0.4 7.887150 116.25000  98.49069 134.00931  Marvellous
+#> 13  Marvellous  0.5 8.150208 122.70833 104.68050 140.73616  Marvellous
+#> 14  Marvellous  0.6 8.570714 129.16667 110.62863 147.70470  Marvellous
+#> 15     Victory  0.0 8.570714  73.30000  54.76196  91.83804     Victory
+#> 16     Victory  0.1 8.150208  81.40833  63.38050  99.43616     Victory
+#> 17     Victory  0.2 7.887150  89.51667  71.75736 107.27597     Victory
+#> 18     Victory  0.3 7.797492  97.62500  79.94611 115.30389     Victory
+#> 19     Victory  0.4 7.887150 105.73333  87.97403 123.49264     Victory
+#> 20     Victory  0.5 8.150208 113.84167  95.81384 131.86950     Victory
+#> 21     Victory  0.6 8.570714 121.95000 103.41196 140.48804     Victory
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
   covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
@@ -331,5 +331,5 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> Lines equal along nitro: F(2, 21.6) = 0.515, p = 0.605.
 #> The simultaneous band (level 0.05) includes no difference at every value of nitro shown.
 #>      numDF      denDF          F    p.value 
-#>  2.0000000 21.5970538  0.5146026  0.6048849 
+#>  2.0000000 21.5970555  0.5146028  0.6048848 
 ```
