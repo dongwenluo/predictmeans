@@ -10,12 +10,15 @@
 ##   E Poisson, (1 | g), 15 clusters of 6
 ##   F negative binomial (glmmTMB nbinom2), (1 | g), 15 x 6
 ##   G semireg s(x, f1*f2): the f2 deviation curves
-##   Rscript dev/sim-vc-defaults.R [scenarios, e.g. ABC] [nrep] [outdir]
+##   Rscript dev/sim-vc-defaults.R [scenarios, e.g. ABC] [nrep] [outdir] [nboot]
+## (F, glmmTMB, rebuilds the model at each bootstrap refit: some 2 minutes
+## per data set with 199 draws; run with fewer data sets and nboot = 99)
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 args <- commandArgs(TRUE)
 which_sc <- if (length(args)) strsplit(args[1], "")[[1]] else LETTERS[1:7]
 nrep <- if (length(args) > 1) as.integer(args[2]) else 200
 outdir <- if (length(args) > 2) args[3] else tempdir()
+nboot <- if (length(args) > 3) as.integer(args[4]) else 199L
 q <- function(e) suppressWarnings(suppressMessages(e))
 ## each data set with its own seed for the simulated null distributions: with
 ## one fixed seed every data set would be compared with the same simulated
@@ -24,7 +27,7 @@ q <- function(e) suppressWarnings(suppressMessages(e))
 pv <- function(fit, row) {
   s <- sample.int(.Machine$integer.max, 1)
   a <- q(pm_vc_test(fit, rows = row, nsim = 4000, seed = s))
-  b <- q(pm_vc_test(fit, rows = row, method = "bootstrap", nboot = 199, seed = s))
+  b <- q(pm_vc_test(fit, rows = row, method = "bootstrap", nboot = nboot, seed = s))
   c(default = a$p.value[1], bootstrap = b$p.value[1])
 }
 sc <- list(

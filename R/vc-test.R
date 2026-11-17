@@ -445,11 +445,18 @@ pm_vc_boot_parts <- function(m) {
       tmbf <- eval(cl, pm_fit_env(m))
     }
     par <- m$obj$env$last.par.best
+    # an own TMB object (the fit's would be changed in place): for each new
+    # response it is re-recorded with the data (retape()) and optimised from
+    # glmmTMB's default start, as fitTMB() does (equal to fitTMB(); 5 times
+    # faster; from the fitted values the optimiser could stop at a worse
+    # optimum)
+    obj <- quiet(glmmTMB::fitTMB(tmbf, doOptim = FALSE))
+    p0 <- obj$par
     return(list(sim = function() m$obj$simulate(par = par)$yobs,
                 ll = function(y) {
-                  tf <- tmbf
-                  tf$data.tmb$yobs <- y
-                  -quiet(glmmTMB::fitTMB(tf))$fit$objective
+                  obj$env$data$yobs <- y
+                  quiet(obj$retape())
+                  -quiet(stats::nlminb(p0, obj$fn, obj$gr, control = list(eval.max = 1000, iter.max = 1000)))$objective
                 }))
   }
   if (inherits(m, "pm_lm_reml")) {
