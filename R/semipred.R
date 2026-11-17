@@ -36,6 +36,12 @@
 #'   The defaults are \code{c(1, 2)} for two way interactions.
 #' @param ci A logical scalar to indicate whether to print confidence interval. The default value is TRUE.
 #' @param point A logical scalar to indicate whether to print raw data points. The default value is TRUE.
+#' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+#'   for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+#'   \code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+#'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+#'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+#'   overall means. Log-link count families only.
 #' @param plot_args A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
 #'   curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
 #'   dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
@@ -131,7 +137,8 @@
 #' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
 #' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
 #' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
-#' \code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
+#' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+#' means and their ratios.
 #' @return
 #' \item{plt}{A ggplot object.}
 #' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
@@ -196,11 +203,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      scales=c("fixed", "free", "free_x", "free_y"), 
                      plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
                      contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
-                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list()) {
+                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+                     mean_type=c("conditional", "overall")) {
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
   sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
-  zi <- pm_zi_component(semireg)
-  if (!is.null(zi)) message(attr(zi, "note"))
+  mean_type <- pm_zi_check(semireg, match.arg(mean_type), deriv)      # R/zero-inflation.R
+  pm_zi_message(semireg, mean_type)
   if (deriv > 0) {
     if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
     if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)
@@ -278,6 +286,20 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   response <- des$response; response0 <- des$response0
   if (deriv > 0) des <- pm_semi_deriv(semireg, des, modelterm, covariate, sm_term, mod_df, deriv)
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
+  ncond <- ncol(D_mx)
+  if (mean_type == "overall") {
+    # overall means (1 - pi) mu of a zero-inflated fit: the rows of log m,
+    # with the joint covariance of the count (fixed + smooth) and
+    # zero-inflation coefficients from TMB's joint precision (unconditional:
+    # its whole inverse) (R/zero-inflation.R)
+    nzc <- ncol(lme4::getME(semer, "Z"))
+    nb <- length(glmmTMB::fixef(semer)$cond)
+    bz <- glmmTMB::fixef(semer)$zi
+    Vj <- pm_tmb_cond_cov(semer, nzc, zi = TRUE, full = if (is.null(unconditional)) TRUE else isTRUE(unconditional))
+    idx <- c(des$cov_idx, nb + nzc + seq_along(bz))
+    a <- pm_zi_augment(D_mx, beta_u, pm_zi_X(semer, pred_df, names(bz)), bz, Vj[idx, idx, drop = FALSE])
+    D_mx <- a$K; beta_u <- a$coef; sm_Cov <- a$vcov / sig.epsHat^2
+  }
 
   # two-sided (1 - level) limits, pointwise or simultaneous over the curve(s),
   # with the df of pm_sr_ddf() (as predictmeans() on the fit): gaussian fits
@@ -285,6 +307,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   # design's strata (normal without strata)
   sr_terms <- if (!is.null(modelterm) && !setequal(modelterm, covariate)) modelterm
   df_of <- function(D) {
+    D <- D[, seq_len(ncond), drop = FALSE]         # the count model's columns (mean_type = "overall")
     df <- if (is.null(des$cov_idx)) rep(Inf, nrow(D)) else pm_sr_ddf(semireg, D, des$cov_idx, sr_terms)
     df[is.na(df)] <- Inf
     as.numeric(df)

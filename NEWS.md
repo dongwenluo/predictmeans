@@ -1488,7 +1488,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   glmmTMB's `predict(type = "response")` and to emmeans with `component =
   "response"` (means and SEs). `mean_type = "conditional"` stays the
   default (the maintainer's decision of 2026-11-17); for models without
-  zero inflation the argument has no effect.
+  zero inflation the argument has no effect. `covariatemeans()` and
+  `semipred()` (also on `semireg_tmb()` fits) take `mean_type` too: curves
+  of overall means with bands exp(log m -+ crit SE), and with `contr` their
+  ratios and differences; equal to glmmTMB's `predict(type = "response")`
+  and to emmeans with `component = "response"` (curves, SEs, differences
+  and their SEs).
 
 * `semipred()` and `predictmeans()` on `semireg()` fits stopped with "Can't
   find the variable(s) ..." when a random curve `(s(x, ...) | g)` or a

@@ -81,7 +81,9 @@ pm_zi_overall_est <- function(opt, est) {
 ## the inverse of their block of TMB's joint precision. With zi = TRUE the
 ## fixed zero-inflation coefficients are included (after b), for the overall
 ## means of semipred(mean_type = "overall").
-pm_tmb_cond_cov <- function(m, nb, zi = FALSE) {
+## full = TRUE: the block of the inverse of the whole joint precision instead
+## (the uncertainty of the variance parameters included: unconditional).
+pm_tmb_cond_cov <- function(m, nb, zi = FALSE, full = FALSE) {
   pm_need("TMB", "the covariance of zero-inflated glmmTMB fits")
   P <- TMB::sdreport(m$obj, getJointPrecision = TRUE)$jointPrecision
   nm <- rownames(P)
@@ -89,5 +91,70 @@ pm_tmb_cond_cov <- function(m, nb, zi = FALSE) {
   iu <- which(nm == "b")[seq_len(nb)]
   iz <- if (zi) which(nm == "betazi") else integer(0)
   idx <- c(ib, iu, iz)
-  as.matrix(solve(P[idx, idx]))
+  if (full) as.matrix(solve(P))[idx, idx, drop = FALSE] else as.matrix(solve(P[idx, idx]))
+}
+
+## The fixed design of the zero-inflation model at the rows of 'grid' (a data
+## frame with the variables of the grid), columns 'names_z'.
+pm_zi_X <- function(model, grid, names_z) {
+  fz <- stats::formula(model, fixed.only = TRUE, component = "zi")
+  Xz <- tryCatch({
+    tz <- stats::delete.response(stats::terms(fz))
+    stats::model.matrix(tz, stats::model.frame(tz, as.data.frame(grid), na.action = stats::na.pass))
+  }, error = function(e) NULL)
+  if (is.null(Xz) || !all(names_z %in% colnames(Xz))) {
+    stop("mean_type = \"overall\": the zero-inflation formula (", paste(deparse(fz), collapse = ""), ") uses ",
+         "variables or terms that are not in the grid of the curves; give them in 'modelterm' or 'covariate'.",
+         call. = FALSE)
+  }
+  Xz[, names_z, drop = FALSE]
+}
+
+## Curves of overall means (semipred(), covariatemeans()): rows K of the
+## count model (coefficients b), rows Kz of the zero-inflation model
+## (coefficients bz), V the joint covariance of (b, bz). log m = eta +
+## log(1 - pi), pi = plogis(zeta); returned as a linear predictor with an
+## extra fixed column: K' = [K, -pi Kz, c] with c = log(1 - pi) + pi zeta and
+## coefficients (b, bz, 1), so K' coef = log m exactly and K' V' K' (V' = V
+## and 0 for the constant) its delta-method variance; the inverse link exp
+## gives m and its derivative the SE of m, differences the log ratios of
+## overall means. ncond: the columns of the count model (for the df).
+pm_zi_augment <- function(K, b, Kz, bz, V) {
+  K <- as.matrix(K)
+  zeta <- as.vector(Kz %*% bz)
+  p0 <- stats::plogis(zeta)
+  Ka <- cbind(K, -p0 * Kz, log1p(-p0) + p0 * zeta)
+  V <- as.matrix(V)
+  Va <- rbind(cbind(V, 0), 0)
+  nm <- c(names(b), paste0("zi~", names(bz)), "(log(1 - pi))")
+  dimnames(Va) <- list(nm, nm)
+  colnames(Ka) <- nm
+  list(K = Ka, coef = stats::setNames(c(b, bz, 1), nm), vcov = Va, ncond = ncol(K))
+}
+
+## The checks of mean_type = "overall" (one place): returns the type to use.
+pm_zi_check <- function(model, mean_type, deriv = 0) {
+  if (!identical(mean_type, "overall")) return("conditional")
+  if (is.null(pm_zi_component(model))) {
+    message("mean_type = \"overall\" applies to glmmTMB models with zero inflation; this model has none, so the ",
+            "means are the usual ones.")
+    return("conditional")
+  }
+  m <- if (inherits(model, "semireg")) model$semer else model
+  fam <- stats::family(m)
+  if (!identical(fam$link, "log") || grepl("truncated", fam$family)) {
+    stop("mean_type = \"overall\" is available for zero-inflated count models with a log link (poisson, nbinom1, ",
+         "nbinom2, ...), not ", fam$family, " (", fam$link, ").", call. = FALSE)
+  }
+  if (deriv > 0) stop("mean_type = \"overall\" is for the curves, not their derivatives.", call. = FALSE)
+  "overall"
+}
+
+## The zero-inflation message of the curve functions, by mean_type.
+pm_zi_message <- function(model, mean_type) {
+  zi <- pm_zi_component(model)
+  if (is.null(zi)) return(invisible(NULL))
+  message(if (identical(mean_type, "overall"))
+    "The model has zero inflation: the curves are of the overall means (1 - pi) mu (mean_type = \"overall\")." else
+    paste(attr(zi, "note"), "mean_type = \"overall\" gives the overall means."))
 }

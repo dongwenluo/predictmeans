@@ -179,3 +179,36 @@ test_that("semireg_tmb() with zero inflation: the covariance accounts for the ex
   se <- sqrt(diag(V)[seq_len(nb)])
   expect_true(all(abs(se / sqrt(diag(vcov(m)$cond)) - 1) < 0.03))
 })
+
+test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and ratios of overall means", {
+  set.seed(7)
+  d <- expand.grid(x = seq(0, 10, length = 25), trt = factor(c("a", "b")), site = factor(1:6))
+  d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
+                rpois(nrow(d), exp(1 + 0.08 * d$x + 0.3 * (d$trt == "b") + rnorm(6, 0, 0.3)[d$site])))
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  m <- glmmTMB::glmmTMB(y ~ trt * x + (1 | site), ziformula = ~trt, family = poisson, data = d)
+  xs <- c(2, 5, 8)
+  pd <- q(covariatemeans(m, "trt", "x", covariateV = xs, mean_type = "overall"))$pltdf
+  expect_equal(pd$Mean, unname(predict(m, data.frame(x = pd$xvar, trt = pd$trt, site = NA), type = "response",
+                                       re.form = NA, allow.new.levels = TRUE)), tolerance = 1e-8)
+  skip_if_not_installed("emmeans")
+  em <- summary(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"))
+  o <- match(paste(em$trt, em$x), paste(pd$trt, pd$xvar))
+  expect_equal(pd$Mean[o] * pd$ses[o], em$SE, tolerance = 1e-6)     # SE of m = m x SE of log m
+  cc <- q(covariatemeans(m, "trt", "x", covariateV = xs, contr = c("b", "a"), mean_type = "overall"))$pltdf
+  emc <- summary(emmeans::contrast(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"),
+                                   "revpairwise"))
+  expect_equal(cc$response.diff, emc$estimate, tolerance = 1e-6)
+  expect_equal(cc$response.ses, emc$SE, tolerance = 1e-6)
+  # semipred() on semireg_tmb(): the overall curve is (1 - pi) x the conditional one
+  f <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~trt, family = poisson, data = d,
+                     prt = FALSE))
+  pc <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, prt = FALSE))$pred_df
+  po <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, mean_type = "overall", prt = FALSE))$pred_df
+  bz <- glmmTMB::fixef(f$semer)$zi
+  expect_equal(po$y, (1 - plogis(bz[1] + bz[2] * (po$trt == "b"))) * pc$y, tolerance = 1e-8)
+  cr <- q(semipred(f, "trt", "x", covariateV = xs, contr = c("b", "a"), unconditional = FALSE, mean_type = "overall",
+                   prt = FALSE))$pred_df
+  expect_equal(cr$ratio, po$y[po$trt == "b"] / po$y[po$trt == "a"], tolerance = 1e-8)
+  expect_error(q(semipred(f, "trt", "x", deriv = 1, mean_type = "overall", prt = FALSE)), "not their derivatives")
+})

@@ -89,7 +89,8 @@
 #' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
 #' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
 #' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
-#' \code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
+#' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+#' means and their ratios.
 #' @return
 #' \item{semer}{A glmmTMB model used in the fitting.}
 #' \item{data}{A data.frame with generated variables in the fitting.}

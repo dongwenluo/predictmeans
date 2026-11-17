@@ -53,6 +53,13 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 
 \item{point}{A logical scalar to indicate whether to print raw data points. The default value is TRUE.}
 
+\item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+\code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+overall means. Log-link count families only.}
+
 \item{plot_args}{A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
 curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
 dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
@@ -172,7 +179,8 @@ part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give
 \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
 ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
 \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
-\code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
+\code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+means and their ratios.
 }
 
 \examples{
