@@ -994,7 +994,7 @@ kable(Table_5.8, digits = 4)
 
 -   Regression Plot
 ```{r}
-covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALSE)
+autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALSE))
 ```
 
 -   Table of seedlot mean and regression coefficients
@@ -1135,7 +1135,7 @@ kable(Table_5.10, digits = 4)
 
 -   Regression Plot
 ```{r}
-covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALSE)
+autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALSE))
 ```
 
 -   Table of seedlot mean and regression coefficients

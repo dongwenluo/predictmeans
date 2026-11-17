@@ -1,7 +1,9 @@
 #' Predicted Means of a Linear Model with Covariate Variable(s)
 #'
 #' @description
-#' This function obtains predicted means with graph for a new set of covariate values.
+#' Predicted means along a covariate for each level of a factor term (curves) with their confidence limits, or
+#' the difference between two of the curves with its band. The result holds the tables in the layout of
+#' \code{\link{predictmeans}} and the plot, which \code{autoplot()} returns.
 #' @usage
 #' covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, 
 #'   data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
@@ -11,7 +13,7 @@
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
 #'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-#'   mean_type=c("conditional", "overall"))
+#'   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -33,7 +35,7 @@
 #'   (Before 2.0 half the standard error of the fitted value was added inside \code{exp()} for a log.)
 #' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.
 #' @param responsen Name (in "quotes") of the back transformed response variable in the \code{model}.
-#' @param trellis A logical variable. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.
+#' @param trellis A logical variable. If set to TRUE (default), the plot is a trellis plot (one panel per level).
 #' @param plotord A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
 #'   \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
 #'   \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one 
@@ -76,6 +78,9 @@
 #'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
 #'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 #'   overall means. Log-link count families only.
+#' @param plot Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
+#'   (\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
+#'   session, draws it as 1.x did; \code{plotord} and \code{newwd = TRUE} also draw it.
 #' @param bias_adjust,sigma For back-transformed lines (a link, a transformed response or \code{trans}), as in
 #'   \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
 #'   for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
@@ -135,9 +140,17 @@
 #' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
 #' means and their ratios.
 #' @return
-#' \item{plt}{The plot (a \code{ggplot}).}
-#' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-#'   on the model scale and, when there is a back-transformation, on the response scale.}
+#' An object of class \code{c("covariatemeans", "pm_curves")}, a list. Its tables have the layout of
+#' \code{\link{predictmeans}} (columns \code{estimate}, \code{std.error}, \code{df}, \code{conf.low},
+#' \code{conf.high}, ..., the covariate under its own name; see \code{\link{tidy.pm_curves}}); \code{tidy()} and
+#' \code{as.data.frame()} return them, \code{autoplot()} the plot, and \code{print()} shows a summary.
+#' \item{means}{The curves: one row per level of \code{modelterm} and covariate value (\code{NULL} with
+#'   \code{contr}).}
+#' \item{pairs}{With \code{contr}: the difference of the two curves at each covariate value.}
+#' \item{settings}{The options that produced them (df method, level, band, back-transformation, ...).}
+#' \item{plt}{The plot (a \code{ggplot}); drawn only with \code{plot = TRUE}.}
+#' \item{pltdf}{The data of the plot as in 1.x: the fitted values with their limits, or with \code{contr} the
+#'   differences on the model scale and, when there is a back-transformation, on the response scale.}
 #' \item{test, significant}{With \code{contr}: the joint F test that the two lines are the same (numerator and
 #'   denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.}
 #' @author
@@ -148,12 +161,15 @@
 #'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 #' # library(lme4)
 #' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-#'   covariatemeans(fm, "Variety", covariate="nitro")
-#'   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
+#'   cm <- covariatemeans(fm, "Variety", covariate="nitro")
+#'   ggplot2::autoplot(cm)
+#'   covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.3))
 #' # the difference between two varieties along nitro, with a simultaneous band
 #' # (the two levels by name, or by number: contr=c(1, 3))
-#'   covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
-#'                  band="simultaneous")$test
+#'   cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
+#'                        band="simultaneous")
+#'   cd$settings$test
+#'   head(as.data.frame(cd))
 #' @name covariatemeans
 NULL
 
@@ -162,7 +178,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
                             df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                             vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
                             band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-                            mean_type=c("conditional", "overall")) {
+                            mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE)) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
@@ -196,6 +212,9 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       }
     }
   }
+  # draw the plot now? (as predictmeans(): only when asked; a plot order or a
+  # new window asks for it); the plot is in the result either way
+  draw <- isTRUE(plot) || isTRUE(newwd) || (!is.null(plotord) && !all(plotord %in% c("NULL", "")))
   weights <- match.arg(weights)
   ctr.matrix <- Kmatrix(model, modelterm, covariate, covariateV, data, cov_reduce=cov_reduce, exclude=exclude, weights=weights)
   KK <- ctr.matrix$K
@@ -225,7 +244,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   if (!is.null(contr)) {
     return(pm_cov_difference(contr, KK[, mp$estimable, drop = FALSE], pltdf, vars, covariate, modelterm, mp, inf,
                              level, Df, model, trans, mtitle, newwd, match.arg(contr_scale), match.arg(band),
-                             bias_adjust, sigma))
+                             bias_adjust, sigma, draw = draw, mean_type = mean_type))
   }
 
   if (!setequal(modelterm, covariate) & as.is) {
@@ -244,6 +263,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   pltdf$yhat <- as.numeric(KK%*%bhat)
   pltdf$ses <- sqrt(base::diag(KK %*% tcrossprod(mp$vcov, KK)))
 
+  Df_arg <- Df
   if (is.null(Df) || all(Df%in%c("NULL", ""))) {
     Df <- inf$df(KK, modelterm)          # each point its own df (Kenward-Roger, Satterthwaite)
     if (any(Df==0)) {
@@ -266,6 +286,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   }
 
   Mean <- LL <- UL <- xvar <- factors <- bky <- NULL
+  bt <- NULL
   if (is.null(trans)) {
     if (!isFALSE(bias_adjust)) pm_cov_back(model, NULL, bias_adjust, sigma)     # warns: nothing to adjust
     pltdf$Mean <- pltdf$yhat
@@ -276,13 +297,19 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
     # not a bias adjustment, and the line then depended on its own precision)
     # bias_adjust: the mean of the back-transformed response, not its median
     # (or the typical cluster of a GLMM); the same code as predictmeans()
-    hb <- pm_cov_back(model, trans_arg, bias_adjust, sigma)$h
+    bt <- pm_cov_back(model, trans_arg, bias_adjust, sigma)
+    hb <- bt$h
     if (is.null(hb)) hb <- trans
     lim <- cbind(hb(pltdf$yhat - qt(1 - level/2, df = Df) * pltdf$ses), hb(pltdf$yhat + qt(1 - level/2, df = Df) * pltdf$ses))
     pltdf$Mean <- hb(pltdf$yhat)-transOff
     pltdf$LL <- pmin(lim[, 1], lim[, 2])-transOff
     pltdf$UL <- pmax(lim[, 1], lim[, 2])-transOff
   }
+
+  # the stable table of the curves (R/curves.R), the rows of pltdf
+  lab_cols <- c(setdiff(intersect(vars, names(pltdf)), covariate), intersect(covariate, names(pltdf)))
+  means_tab <- pm_curve_means(pltdf[, lab_cols, drop = FALSE], pltdf$yhat, pltdf$ses, Df, qt(1 - level/2, df = Df),
+                              h = bt$h, d = bt$d, off = transOff)
 
   # pltdf$yhat <- pltdf$ses <- NULL
   pltdf$yhat <- NULL
@@ -309,7 +336,10 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   if (any(ndf$Freq==0)) {
     ndf0 <- ndf[ndf$Freq==0, , drop=FALSE]
     ndf0$factors <- factor(do.call("paste", c(ndf0[, vars, drop=FALSE], sep=":")))
-    pltdf <- pltdf[!pltdf$factors%in%ndf0$factors, ]
+    keep <- !pltdf$factors%in%ndf0$factors
+    pltdf <- pltdf[keep, ]
+    means_tab <- means_tab[keep, , drop = FALSE]
+    rownames(means_tab) <- NULL
   }
 
 
@@ -370,7 +400,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 
   if (!trellis) {
     if (newwd) {
-      dev.new()
+      if (draw) dev.new()
     }
     if (setequal(modelterm, covariate))  {
       plt <- ggplot(pltdf, aes(xvar, Mean))+
@@ -396,11 +426,11 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       }
       plt <- plt+guides(col = guide_legend(modelterm), fill=guide_legend(modelterm))
     }
-    print(plt)
+    if (draw) print(plt)
   }else{
     if (length(vars)==1) {
       if (newwd) {
-        dev.new()
+        if (draw) dev.new()
       }
       plt <- ggplot(pltdf, aes(xvar, Mean, colour=factors))+
         labs(title=paste(pm_wrap_title(mtitle, 11), "\n", sep=""), x=paste("\n", covariate, sep=""), y=paste(response, "\n"))+
@@ -417,11 +447,11 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
       if (setequal(modelterm, covariate))  {
         plt <- plt+ theme(legend.position="none")
       }
-      print(plt)
+      if (draw) print(plt)
     }
     if (length(vars)==2) {
       if (newwd) {
-        dev.new()
+        if (draw) dev.new()
       }
       if (is.null(plotord) || all(plotord%in%c("NULL", ""))) {
         plotord <- 1:2
@@ -440,11 +470,11 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
         plt <- plt + geom_point(aes(x=xvar, y=bky), position = position_jitter(width = jitterv, height = jitterv), data=mdf)
       }
       plt <- plt+guides(col = guide_legend(fact1), fill=guide_legend(fact1))
-      print(plt)
+      if (draw) print(plt)
     }
     if (length(vars)==3) {
       if (newwd) {
-        dev.new()
+        if (draw) dev.new()
       }
       if (is.null(plotord) || all(plotord%in%c("NULL", ""))) {
         plotord <- 1:3
@@ -464,11 +494,13 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
         plt <- plt + geom_point(aes(x=xvar, y=bky), position = position_jitter(width = jitterv, height = jitterv), data=mdf)
       }
       plt <- plt+guides(col = guide_legend(fact1), fill=guide_legend(fact1))
-      print(plt)
+      if (draw) print(plt)
     }
   }
 
-  return(invisible(list(plt=plt, pltdf=pltdf)))
+  settings <- pm_curve_settings(model, modelterm, covariate, level, inf, Df_arg, mean_type,
+                                pm_curve_back_label(model, trans_arg, bt))
+  pm_curve_result(means = means_tab, settings = settings, legacy = list(plt = plt, pltdf = pltdf))
 }
 
 ## The difference between two levels of the term along the covariate, with
@@ -490,7 +522,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
 ##    zero), as the lines of covariatemeans() are.
 pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, inf, level, Df, model, trans,
                               mtitle, newwd, contr_scale = "model", band = "pointwise", bias_adjust = FALSE,
-                              sigma = NULL) {
+                              sigma = NULL, draw = FALSE, mean_type = "conditional") {
   if (length(covariate) != 1 || setequal(modelterm, covariate)) {
     stop("'contr' compares two levels of 'modelterm' along one covariate.", call. = FALSE)
   }
@@ -527,12 +559,21 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   res <- pm_diff_table(x[a], Ka, Kb, mp$coef, mp$vcov, df, crit, h = bt$h, d1 = bt$d, kind = bt$kind)
   plt <- pm_diff_plot(res, covariate, levs[k], modelterm, level, band, contr_scale, test, mtitle,
                       typical = inherits(model, c("merMod", "glmmTMB", "lme")) && !bt$adjusted, adjusted = bt$adjusted)
-  if (newwd) grDevices::dev.new()
-  print(plt)
-  pm_diff_report(res, covariate, levs[k], level, band, test)
+  if (draw) {
+    if (newwd) grDevices::dev.new()
+    print(plt)
+  }
+  # the stable table (R/curves.R): pointwise limits, and with a simultaneous
+  # band the Scheffe p-values and limits
+  pairs <- pm_diff_pairs(res$table, covariate, levs[k], level, kind = res$kind, back = res$back,
+                         r = if (band == "simultaneous") r, crit_s = if (band == "simultaneous") crit)
   out <- res$table
   names(out)[1] <- covariate
-  invisible(list(plt = plt, pltdf = out, test = test, significant = res$significant))
+  settings <- pm_curve_settings(model, modelterm, covariate, level, inf, Df, mean_type,
+                                pm_curve_back_label(model, trans, bt),
+                                contr = levs[k], band = band, test = test)
+  pm_curve_result(pairs = pairs, settings = settings,
+                  legacy = list(plt = plt, pltdf = out, test = test, significant = res$significant))
 }
 
 ## The back-transformation of the fitted lines of a model: the inverse link,

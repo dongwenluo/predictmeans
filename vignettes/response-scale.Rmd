@@ -162,7 +162,7 @@ values where the lines differ are still taken from the model scale, and marked.
 |---|---|
 | Do the lines differ at one covariate value chosen beforehand? | the pointwise band (`band = "pointwise"`) |
 | Over which range of the covariate do they differ? | the simultaneous band (`band = "simultaneous"`, Scheffé; for straight lines the Working–Hotelling band) |
-| Do they differ anywhere? | the joint F test (`test` in the result) |
+| Do they differ anywhere? | the joint F test (`settings$test` in the result) |
 
 ```{r, fig.width = 6, fig.height = 4}
 set.seed(1)
@@ -171,9 +171,14 @@ dose$count <- rpois(80, exp(1 + 0.2*dose$x + 0.6*dose$x*(dose$trt == "treated"))
 fm_dose <- glm(count ~ trt*x, family = poisson, data = dose)
 cmp <- covariatemeans(fm_dose, "trt", covariate = "x", contr = c("treated", "control"),
                       band = "simultaneous")
-cmp$test
-cmp$significant
+cmp
+ggplot2::autoplot(cmp)
 ```
+
+The table has the columns of `predictmeans()$pairs`: `estimate` (the log ratio),
+`conf.low`/`conf.high` (pointwise), `p.adj` with `adj.conf.low`/`adj.conf.high`
+(the simultaneous band), `ratio` with its limits, and the response-scale difference
+(`response`, ...); `as.data.frame(cmp)` returns it.
 
 The pointwise band is narrower and would call a longer range significant; it is right
 only for a single value of the covariate chosen before seeing the data.

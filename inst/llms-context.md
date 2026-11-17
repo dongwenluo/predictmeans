@@ -240,14 +240,22 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   LRT, stops after 20 exceedances. In simulation the default was never liberal (<= 4.5% at 5%) but
   conservative for GLMMs (0-4%), where the bootstrap was nearer 5% with more power: use the default for
   gaussian models, the bootstrap for GLMMs, small data and flagged rows.
-- `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
-  `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
-  the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link
-  `odds.ratio` (with `.includes1`); `response.diff` etc. are the delta-method difference on the response
-  scale (`contr_scale = "response"` plots it). `band = "simultaneous"` (`simultaneous = TRUE` in
-  `semipred()`) for "over which range do the curves differ"; `$test` is the joint F test
-  (`covariatemeans()` only), `$significant` the ranges. `covariatemeans(bias_adjust = TRUE)` draws the
-  mean of the response instead of the median / typical cluster.
+- `covariatemeans(model, "A", covariate = "x")` returns class `c("covariatemeans", "pm_curves")` and draws
+  nothing (`plot = TRUE` or `ggplot2::autoplot(cm)` for the plot). `cm$means` (= `as.data.frame(cm)`,
+  `generics::tidy(cm)`): factor columns, the covariate under its own name, `estimate`, `std.error`, `df`,
+  `conf.low`, `conf.high` (model scale), `response`, `response.std.error`, `response.conf.low`,
+  `response.conf.high` when back-transformed; `cm$settings` as for `predictmeans()` (plus `covariate`,
+  `contrast`, `band`, `test`). `level` is alpha here too.
+- `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) gives the
+  difference between two curves along a covariate in `cm$pairs` (the default table of `as.data.frame()`):
+  `level1`, `level2`, the covariate, `estimate` (`a1` - `a3`, model scale, where the test is), `std.error`,
+  `df`, `statistic`, `p.value`, `conf.low`, `conf.high` (pointwise); with `band = "simultaneous"` also
+  `p.adj`, `adj.conf.low`, `adj.conf.high` (Scheffé over the covariate values, "over which range do the
+  curves differ"); `ratio` (log) or `odds.ratio` (logit) with limits; `response`, ... the delta-method
+  difference on the response scale. `cm$settings$test` is the joint F test, `cm$significant` the ranges
+  where the band asked for leaves out 0. `semipred(..., contr = )` still returns 1.x-style `diff`, `LL`,
+  `UL`, `includes0`, `ratio`, `response.diff` columns (`simultaneous = TRUE` for the band).
+  `covariatemeans(bias_adjust = TRUE)`: the mean of the response instead of the median / typical cluster.
 - `marginaleffects::hypotheses()` works on `predictmeans()` results after
   `options(marginaleffects_model_classes = "predictmeans")`.
 - Data must be available when `predictmeans()` runs: it re-reads the model's `data`

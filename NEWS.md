@@ -36,6 +36,25 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`covariatemeans()` returns a classed result and draws its plot only
+  when asked** (`plot = TRUE`, `options(predictmeans.plot = TRUE)`,
+  `plotord` or `newwd = TRUE`), as `predictmeans()`. The result (class
+  `c("covariatemeans", "pm_curves")`) prints a short summary and holds
+  the tables in the layout of `predictmeans()`: `means` (the curves:
+  factor columns, the covariate under its own name, `estimate`,
+  `std.error`, `df`, `conf.low`, `conf.high`, and `response` columns when
+  back-transformed) and, with `contr`, `pairs` (`level1`, `level2`, the
+  covariate, `estimate`, `std.error`, `df`, `statistic`, `p.value`,
+  pointwise `conf.low`/`conf.high`; with `band = "simultaneous"` the
+  Scheffé `p.adj` and `adj.conf.low`/`adj.conf.high`, which agree; ratio
+  or odds-ratio and response-scale columns), plus `settings` (with the
+  joint test in `settings$test`). `tidy()`, `as.data.frame()` and
+  `autoplot()` return them. The 1.x fields `plt`, `pltdf`, `test` and
+  `significant` are unchanged; the summary of the difference (the joint
+  test and where the curves differ) is printed with the result instead of
+  as messages. Scripts that relied on the plot appearing need
+  `plot = TRUE` or `autoplot()`. (Before, `plot = FALSE` was taken as
+  `plotord = FALSE` by partial matching.)
 * **`semipred()` bands of gaussian `semireg()` / `semireg_tmb()` fits are t
   limits with Satterthwaite df** at each point (new column `df`), as
   `predictmeans()` on the fit; simultaneous bands use a multivariate t with
@@ -1117,6 +1136,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   Suggests; predictmeans registers its `get_coef`/`set_coef`/`get_vcov`
   methods; recent marginaleffects versions also need
   `options(marginaleffects_model_classes = "predictmeans")`).
+
+* `covariatemeans()` results have the same layout: `means`, `pairs` (with
+  `contr`) and `settings`, with `tidy()`, `as.data.frame()`, `autoplot()`
+  and `print()` methods (`?tidy.pm_curves`).
 
 ## Plots and summaries from the result tables
 

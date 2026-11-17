@@ -12,7 +12,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-  mean_type=c("conditional", "overall"))
+  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -47,7 +47,7 @@ model formula (\code{log(y)}, \code{sqrt(y)}, ...; see \code{\link{predictmeans}
 
 \item{responsen}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
 
-\item{trellis}{A logical variable. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.}
+\item{trellis}{A logical variable. If set to TRUE (default), the plot is a trellis plot (one panel per level).}
 
 \item{plotord}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
 \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
@@ -105,6 +105,10 @@ their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the
 count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 overall means. Log-link count families only.}
 
+\item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
+(\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
+session, draws it as 1.x did; \code{plotord} and \code{newwd = TRUE} also draw it.}
+
 \item{bias_adjust, sigma}{For back-transformed lines (a link, a transformed response or \code{trans}), as in
 \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
 for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
@@ -117,14 +121,24 @@ emmeans. Use it for totals and expected amounts; ratios and tests do not need it
 variance as known. With \code{contr} the response-scale difference is that of the adjusted lines.}
 }
 \value{
-\item{plt}{The plot (a \code{ggplot}).}
-\item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
-  on the model scale and, when there is a back-transformation, on the response scale.}
+An object of class \code{c("covariatemeans", "pm_curves")}, a list. Its tables have the layout of
+\code{\link{predictmeans}} (columns \code{estimate}, \code{std.error}, \code{df}, \code{conf.low},
+\code{conf.high}, ..., the covariate under its own name; see \code{\link{tidy.pm_curves}}); \code{tidy()} and
+\code{as.data.frame()} return them, \code{autoplot()} the plot, and \code{print()} shows a summary.
+\item{means}{The curves: one row per level of \code{modelterm} and covariate value (\code{NULL} with
+  \code{contr}).}
+\item{pairs}{With \code{contr}: the difference of the two curves at each covariate value.}
+\item{settings}{The options that produced them (df method, level, band, back-transformation, ...).}
+\item{plt}{The plot (a \code{ggplot}); drawn only with \code{plot = TRUE}.}
+\item{pltdf}{The data of the plot as in 1.x: the fitted values with their limits, or with \code{contr} the
+  differences on the model scale and, when there is a back-transformation, on the response scale.}
 \item{test, significant}{With \code{contr}: the joint F test that the two lines are the same (numerator and
   denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.}
 }
 \description{
-This function obtains predicted means with graph for a new set of covariate values.
+Predicted means along a covariate for each level of a factor term (curves) with their confidence limits, or
+the difference between two of the curves with its band. The result holds the tables in the layout of
+\code{\link{predictmeans}} and the plot, which \code{autoplot()} returns.
 }
 \section{Comparing two lines}{
 
@@ -186,12 +200,15 @@ means and their ratios.
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 # library(lme4)
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-  covariatemeans(fm, "Variety", covariate="nitro")
-  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
+  cm <- covariatemeans(fm, "Variety", covariate="nitro")
+  ggplot2::autoplot(cm)
+  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.3))
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
-  covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
-                 band="simultaneous")$test
+  cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
+                       band="simultaneous")
+  cd$settings$test
+  head(as.data.frame(cd))
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
