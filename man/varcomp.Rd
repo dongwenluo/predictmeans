@@ -6,7 +6,7 @@
 \usage{
 varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
         information = c("observed", "average", "expected"), test = FALSE,
-        test_method = c("auto", "mixture"), nsim = 10000)
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
@@ -32,10 +32,16 @@ observed information.}
 model once.}
 
 \item{test_method}{\code{"auto"} (the default) or \code{"mixture"}: the reference distribution of a single
-variance (see \sQuote{Tests}).}
+variance (see \sQuote{Tests}); \code{"bootstrap"}: a parametric bootstrap of each likelihood ratio, for small
+samples, few levels, or where the asymptotic references are conservative.}
 
 \item{nsim}{Number of draws of the exact null distribution of the restricted likelihood ratio (default 10000,
 with a fixed seed, so the p-values repeat).}
+
+\item{nboot}{Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
+statistics reach the observed one.}
+
+\item{ncore}{Number of cores for the bootstrap (default 1; not on Windows).}
 }
 \value{
 A data frame with one row per component (random-effect variances and covariances by group, named
@@ -110,8 +116,17 @@ other random effects present that distribution is no longer exact (in simulation
 the mixture is used. The mixture p-values equal SAS PROC GLIMMIX \code{COVTEST}, the likelihood ratios SAS
 PROC MIXED and Genstat REML (\code{tests/testthat/test-vc-test.R}). Where a p-value may be inaccurate in
 either direction (a term with fewer than 6 levels; binary data with fewer than 5 observations per level, where
-the Laplace approximation is poor), a warning names the rows. For \code{lme}, \code{gls}, \code{gam} and
-models without random effects \code{test = TRUE} is not available.
+the Laplace approximation is poor), a warning names the rows and suggests the bootstrap.
+
+\code{test_method = "bootstrap"}: for each test, responses are simulated from the model without the
+component (new random effects and errors), both models are refitted to each, and the p-value is
+\eqn{(\#\{LRT^* \ge LRT\} + 1)/(b + 1)}. It needs no distributional approximation, so it is the check for
+the rows the warning names. A test stops once 20 simulated statistics reach the observed one (Besag and
+Clifford 1991): a clearly non-significant row needs some 40-400 refits, a significant one all \code{nboot}
+pairs. Each draw has its own seed, so the p-values repeat, with or without \code{ncore}. Run time: a few
+seconds to a minute for usual \code{lmer} and \code{glmer} models; \code{glmmTMB} fits are slower (each refit
+rebuilds the model). For \code{lme}, \code{gls}, \code{gam} and models without random effects
+\code{test = TRUE} is not available.
 }
 
 \examples{

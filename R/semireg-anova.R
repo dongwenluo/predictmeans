@@ -88,7 +88,7 @@ pm_sr_smooth_tests <- function(object) {
 ## terms, as texts, instead of the fit's, for the tests of varcomp(),
 ## R/vc-test.R): the fitted model (merMod, glmmTMB, or lm/glm when no random
 ## term is left).
-pm_sr_refit <- function(object, drop = character(0), random = NULL) {
+pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALSE) {
   r <- object$refit
   keep <- setdiff(names(r$smoothZ), drop)
   f <- r$formula
@@ -137,6 +137,9 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL) {
     if (!is.null(r$offset)) cl$offset <- quote(sr_off)
   }
   fit <- quiet(eval(cl, e))
+  # whole = TRUE: the semireg result (its glmmTMB structure 'tmbf' is needed
+  # by the parametric bootstrap, R/vc-test.R)
+  if (whole) return(fit)
   if (is.list(fit) && !is.null(fit$semer)) fit$semer else fit
 }
 

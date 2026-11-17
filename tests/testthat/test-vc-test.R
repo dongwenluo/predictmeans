@@ -177,7 +177,7 @@ test_that("varcomp(test = TRUE): LRT and p.value by row, hypotheses printed, one
   d <- expand.grid(g = factor(1:4), r = 1:6)
   d$y <- rbinom(nrow(d), 1, 0.4)
   g <- q(lme4::glmer(y ~ 1 + (1 | g), family = binomial, data = d))
-  expect_warning(varcomp(g, test = TRUE), "g.\\(Intercept\\) \\(4 levels.*permlmer")
+  expect_warning(varcomp(g, test = TRUE), "g.\\(Intercept\\) \\(4 levels.*bootstrap")
   # classes without random effects: the table without tests, and a message
   expect_message(r <- varcomp(lm(distance ~ age, O), test = TRUE), "lmer, glmer, glmmTMB and semireg")
   expect_false("p.value" %in% names(r))
@@ -195,4 +195,37 @@ test_that("anova() of a semireg fit uses the same tests as varcomp(test = TRUE);
   expect_equal(a$test, "0.5 chi2(0) + 0.5 chi2(1)")       # with (1 | g): the mixture
   one <- q(semireg(y ~ s(x, bs = "os", k = 8), data = d, prt = FALSE))
   expect_match(anova(one)$smooth$test, "exact restricted LRT")
+})
+
+test_that("parametric bootstrap: reproducible, the same with several cores, near the asymptotic p-values", {
+  skip_on_cran()                           # some 20 s of refits
+  data(Oats, package = "nlme", envir = environment())
+  Oa <- as.data.frame(Oats)
+  Oa$N <- factor(Oa$nitro)
+  m <- q(lme4::lmer(yield ~ Variety*N + (1 | Block/Variety), Oa))
+  b1 <- q(pm_vc_test(m, method = "bootstrap", nboot = 99))
+  b2 <- q(pm_vc_test(m, method = "bootstrap", nboot = 99))
+  expect_identical(b1$p.value, b2$p.value)
+  expect_match(b1$test[b1$kind == "drop"], "parametric bootstrap")
+  expect_true(all(b1$p.value[b1$kind == "drop"] >= 1/100 & b1$p.value[b1$kind == "drop"] <= 1))
+  if (.Platform$OS.type != "windows") {
+    expect_identical(q(pm_vc_test(m, method = "bootstrap", nboot = 99, ncore = 2))$p.value, b1$p.value)
+  }
+  # a clearly non-significant row stops early (20 exceedances)
+  set.seed(3)
+  d <- expand.grid(a = factor(1:8), b = factor(1:6), r = 1:2)
+  d$y <- rnorm(8, 0, 0.7)[d$a] + rnorm(nrow(d))
+  f <- q(lme4::lmer(y ~ 1 + (1 | a) + (1 | b), d))
+  bt <- q(pm_vc_test(f, rows = "b.(Intercept)", method = "bootstrap", nboot = 999))
+  expect_match(bt$test, "stopped early")
+  expect_gt(bt$p.value, 0.05)
+  # glm null (the only random term dropped), binomial with trials > 1
+  data(cbpp, package = "lme4", envir = environment())
+  g <- q(lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial, data = cbpp))
+  bg <- q(pm_vc_test(g, method = "bootstrap", nboot = 49))
+  expect_equal(bg$p.value, 1/50)          # LRT 14: no simulated statistic reaches it
+  # varcomp() passes it on, without the few-levels warning
+  v <- q(varcomp(m, test = TRUE, test_method = "bootstrap", nboot = 49))
+  tv <- attr(v, "tests")$test
+  expect_true(all(grepl("parametric bootstrap", tv[!is.na(tv)])))
 })

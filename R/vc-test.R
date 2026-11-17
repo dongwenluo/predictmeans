@@ -197,9 +197,9 @@ pm_vc_replace_fun <- function(i, new) {
 ## fit without the smooth placeholders, and 'drop_block' a smooth block to
 ## leave out). Returns the fit: merMod, glmmTMB, or lm/glm when no random
 ## term is left (an lm wrapped to give the REML log-likelihood of a REML fit).
-pm_vc_refit <- function(model, info, txt, drop_block = NULL) {
+pm_vc_refit <- function(model, info, txt, drop_block = NULL, whole = FALSE) {
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
-  if (info$engine == "semireg") return(pm_sr_refit(model, drop = drop_block, random = txt))
+  if (info$engine == "semireg") return(pm_sr_refit(model, drop = drop_block, random = txt, whole = whole))
   fit <- info$fit
   f <- info$formula
   fixed <- pm_nobars(f)
@@ -235,8 +235,10 @@ pm_vc_loglik <- function(m) {
 ## reduced model) and likelihood ratio statistics. A data frame with one row
 ## per varcomp() row: row, hypothesis, kind, npar, logLik (full),
 ## logLik.null (reduced model), LRT.
-pm_vc_test <- function(model, rows = NULL, method = c("auto", "mixture"), nsim = 10000L, seed = 2026L) {
+pm_vc_test <- function(model, rows = NULL, method = c("auto", "mixture", "bootstrap"), nsim = 10000L,
+                       seed = 2026L, nboot = 999L, ncore = 1L) {
   method <- match.arg(method)
+  boot <- identical(method, "bootstrap")
   if (is.null(pm_vc_engine(model))) {
     stop("Tests of variance components are available for lmer, glmer, glmmTMB and semireg fits.", call. = FALSE)
   }
@@ -247,6 +249,11 @@ pm_vc_test <- function(model, rows = NULL, method = c("auto", "mixture"), nsim =
   ph <- paste0("(1 | ", info$blocks, ")")       # smooth placeholders of a semireg fit
   ll_full <- pm_vc_loglik(info$fit)
   cache <- list()
+  key0 <- function(h) {
+    if (identical(h$kind, "none")) return(NA_character_)
+    txt <- if (is.null(h$change)) txt0 else h$change(txt0)
+    paste(c("model:", h$block, sort(txt[!txt %in% ph])), collapse = " ; ")
+  }
   rows_out <- lapply(hyp, function(h) {
     ll0 <- NA_real_
     if (!identical(h$kind, "none")) {
@@ -254,18 +261,21 @@ pm_vc_test <- function(model, rows = NULL, method = c("auto", "mixture"), nsim =
       txt <- txt[!txt %in% ph]
       key <- paste(c("model:", h$block, sort(txt)), collapse = " ; ")     # (never "": an empty name can't be looked up)
       if (is.null(cache[[key]])) {
-        red <- tryCatch(pm_vc_refit(model, info, txt, drop_block = h$block), error = function(e) NULL)
-        cache[[key]] <<- if (is.null(red)) NA_real_ else pm_vc_loglik(red)
+        red <- tryCatch(pm_vc_refit(model, info, txt, drop_block = h$block, whole = boot), error = function(e) NULL)
+        cache[[key]] <<- list(ll = if (is.null(red)) NA_real_ else
+          pm_vc_loglik(if (is.list(red) && !is.null(red$semer)) red$semer else red), fit = if (boot) red)
       }
-      ll0 <- cache[[key]]
+      ll0 <- cache[[key]]$ll
     }
     data.frame(row = h$row, hypothesis = h$label, kind = h$kind, npar = h$npar, term = h$term, logLik = ll_full,
-               logLik.null = ll0, LRT = if (is.na(ll0)) NA_real_ else max(0, 2*(ll_full - ll0)),
+               logLik.null = ll0, LRT = if (is.na(ll0)) NA_real_ else max(0, 2*(ll_full - ll0)), key = key0(h),
                stringsAsFactors = FALSE)
   })
   out <- do.call(rbind, rows_out)
   rownames(out) <- NULL
-  pm_vc_pvalues(out, info, method = method, nsim = nsim, seed = seed)
+  if (!boot) return(pm_vc_pvalues(out[setdiff(names(out), "key")], info, method = method, nsim = nsim, seed = seed))
+  out <- pm_vc_pvalues(out, info, method = "mixture")
+  pm_vc_boot(model, info, out, cache, nboot = nboot, ncore = ncore, seed = seed)
 }
 
 ## ---- step 2: p-values ----
@@ -380,4 +390,137 @@ pm_rlrt_null <- function(X, Z, w = NULL, nsim = 10000L, seed = 2026L, ngrid = 20
     best <- pmax(best, val)
   }
   best
+}
+
+## ---- step 4: parametric bootstrap ----
+##
+## For each tested row: responses simulated from the reduced (null) fit, with
+## new random effects; the reduced and the full model refitted to each
+## (lme4::refit() for lme4 fits, which keeps a semireg fit's smooth bases;
+## the fit's glmmTMB structure with the response replaced; lm.wfit /
+## glm.fit when no random term is left); p = (#{LRT* >= LRT} + 1)/(b + 1).
+## Sequential stopping (Besag and Clifford 1991): a row stops once 'h' = 20
+## simulated statistics reach the observed one (its p-value is then clearly
+## above 0.02), so only rows near or below the usual levels use all 'nboot'
+## draws. One seed per draw: the same p-values with or without parallel
+## cores. Each reduced model is simulated once for the rows that share it.
+
+## Simulation from a fit and the log-likelihood of a fit of the same model
+## to a new response: list(sim = function() y, ll = function(y) logLik).
+pm_vc_boot_parts <- function(m) {
+  quiet <- function(expr) suppressWarnings(suppressMessages(expr))
+  if (is.list(m) && !is.null(m$semer)) {
+    tmbf <- m$tmbf
+    m <- m$semer
+  } else tmbf <- NULL
+  if (inherits(m, "merMod")) {
+    X <- lme4::getME(m, "X")
+    Z <- lme4::getME(m, "Z")
+    Lam <- lme4::getME(m, "Lambda")
+    off <- lme4::getME(m, "offset")
+    w <- stats::weights(m)
+    fam <- stats::family(m)
+    s <- stats::sigma(m)
+    eta0 <- drop(X %*% lme4::fixef(m)) + off
+    if (!fam$family %in% c("gaussian", "binomial", "poisson")) {
+      stop("The parametric bootstrap is for gaussian, binomial and Poisson lme4 fits.", call. = FALSE)
+    }
+    sim <- function() {
+      eta <- eta0 + drop(as.matrix(Z %*% (Lam %*% stats::rnorm(ncol(Z)))))
+      switch(fam$family,
+             gaussian = eta + s*stats::rnorm(length(eta))/sqrt(w),
+             binomial = stats::rbinom(length(eta), size = w, prob = fam$linkinv(eta))/w,
+             poisson = stats::rpois(length(eta), fam$linkinv(eta)))
+    }
+    # binomial with trials > 1: refit() needs cbind(successes, failures) (a
+    # proportion would lose the weights)
+    resp <- if (fam$family == "binomial" && any(w != 1)) function(y) cbind(round(y*w), round(w - y*w)) else
+      function(y) y
+    return(list(sim = sim, ll = function(y) as.numeric(stats::logLik(quiet(lme4::refit(m, newresp = resp(y)))))))
+  }
+  if (inherits(m, "glmmTMB")) {
+    if (is.null(tmbf)) {
+      cl <- stats::getCall(m)
+      cl$doFit <- FALSE
+      tmbf <- eval(cl, pm_fit_env(m))
+    }
+    par <- m$obj$env$last.par.best
+    return(list(sim = function() m$obj$simulate(par = par)$yobs,
+                ll = function(y) {
+                  tf <- tmbf
+                  tf$data.tmb$yobs <- y
+                  -quiet(glmmTMB::fitTMB(tf))$fit$objective
+                }))
+  }
+  if (inherits(m, "pm_lm_reml")) {
+    f0 <- m$fit
+    X <- stats::model.matrix(f0)
+    w <- if (is.null(stats::weights(f0))) rep(1, nrow(X)) else stats::weights(f0)
+    mu <- stats::fitted(f0)
+    s <- stats::sigma(f0)
+    reml <- isTRUE(attr(m, "REML"))
+    return(list(sim = function() mu + s*stats::rnorm(length(mu))/sqrt(w),
+                ll = function(y) {
+                  f <- stats::lm.wfit(X, y, w)
+                  class(f) <- "lm"
+                  as.numeric(stats::logLik(f, REML = reml))
+                }))
+  }
+  if (inherits(m, "glm")) {
+    X <- stats::model.matrix(m)
+    w <- stats::weights(m, type = "prior")
+    off <- if (is.null(m$offset)) rep(0, nrow(X)) else m$offset
+    fam <- stats::family(m)
+    mu <- stats::fitted(m)
+    if (!fam$family %in% c("binomial", "poisson")) stop("The parametric bootstrap is for binomial and Poisson glm.",
+                                                       call. = FALSE)
+    return(list(sim = function() if (fam$family == "binomial") stats::rbinom(length(mu), w, mu)/w else
+      stats::rpois(length(mu), mu),
+      ll = function(y) {
+        f <- quiet(stats::glm.fit(X, y, weights = w, offset = off, family = fam))
+        f$rank - f$aic/2
+      }))
+  }
+  stop("The parametric bootstrap is not available for this model.", call. = FALSE)
+}
+
+pm_vc_boot <- function(model, info, tab, cache, nboot = 999L, ncore = 1L, seed = 2026L, h = 20L) {
+  full <- pm_vc_boot_parts(if (info$engine == "semireg") model else info$fit)
+  old <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) get(".Random.seed", envir = globalenv())
+  on.exit(if (is.null(old)) rm(".Random.seed", envir = globalenv()) else assign(".Random.seed", old, envir = globalenv()))
+  set.seed(seed)
+  seeds <- sample.int(.Machine$integer.max, nboot)
+  run <- function(fun, idx) {
+    if (ncore > 1 && .Platform$OS.type != "windows") {
+      unlist(parallel::mclapply(idx, fun, mc.cores = ncore))
+    } else vapply(idx, fun, numeric(1))
+  }
+  done <- list()
+  for (key in unique(tab$key[!is.na(tab$key) & !is.na(tab$LRT)])) {
+    rows <- which(tab$key == key)
+    obs <- tab$LRT[rows[1]]
+    red <- tryCatch(pm_vc_boot_parts(cache[[key]]$fit), error = function(e) NULL)
+    if (is.null(red)) next
+    one <- function(i) {
+      set.seed(seeds[i])
+      y <- red$sim()
+      tryCatch(max(0, 2*(full$ll(y) - red$ll(y))), error = function(e) NA_real_)
+    }
+    vals <- numeric(0)
+    b <- 0L
+    batch <- max(ncore, 1L)*10L
+    while (b < nboot) {
+      idx <- (b + 1L):min(nboot, b + batch)
+      vals <- c(vals, run(one, idx))
+      b <- max(idx)
+      if (sum(vals >= obs - 1e-8, na.rm = TRUE) >= h) break
+    }
+    ok <- !is.na(vals)
+    p <- (sum(vals[ok] >= obs - 1e-8) + 1)/(sum(ok) + 1)
+    tab$p.value[rows] <- p
+    tab$test[rows] <- sprintf("parametric bootstrap (%d draws%s)", sum(ok),
+                              if (sum(ok) < nboot) ", stopped early" else "")
+    tab$note[rows] <- ""
+  }
+  tab[setdiff(names(tab), "key")]
 }

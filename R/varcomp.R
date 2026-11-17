@@ -12,7 +12,7 @@
 #' @usage
 #' varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
 #'         information = c("observed", "average", "expected"), test = FALSE,
-#'         test_method = c("auto", "mixture"), nsim = 10000)
+#'         test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
 #' @param model A fitted model (see Description).
 #' @param ci \code{TRUE} (the default): add confidence intervals.
 #' @param level Confidence level of the intervals; the default is 0.95.
@@ -30,9 +30,13 @@
 #'   \code{glmmTMB} and \code{semireg} fits; see \sQuote{Tests}). The default is \code{FALSE}: each test refits the
 #'   model once.
 #' @param test_method \code{"auto"} (the default) or \code{"mixture"}: the reference distribution of a single
-#'   variance (see \sQuote{Tests}).
+#'   variance (see \sQuote{Tests}); \code{"bootstrap"}: a parametric bootstrap of each likelihood ratio, for small
+#'   samples, few levels, or where the asymptotic references are conservative.
 #' @param nsim Number of draws of the exact null distribution of the restricted likelihood ratio (default 10000,
 #'   with a fixed seed, so the p-values repeat).
+#' @param nboot Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
+#'   statistics reach the observed one.
+#' @param ncore Number of cores for the bootstrap (default 1; not on Windows).
 #' @section Tests:
 #' With \code{test = TRUE} each row gets the likelihood ratio test of the model one would fit without it
 #' (columns \code{LRT} and \code{p.value}; the hypotheses and reference distributions are printed below the
@@ -54,8 +58,17 @@
 #' the mixture is used. The mixture p-values equal SAS PROC GLIMMIX \code{COVTEST}, the likelihood ratios SAS
 #' PROC MIXED and Genstat REML (\code{tests/testthat/test-vc-test.R}). Where a p-value may be inaccurate in
 #' either direction (a term with fewer than 6 levels; binary data with fewer than 5 observations per level, where
-#' the Laplace approximation is poor), a warning names the rows. For \code{lme}, \code{gls}, \code{gam} and
-#' models without random effects \code{test = TRUE} is not available.
+#' the Laplace approximation is poor), a warning names the rows and suggests the bootstrap.
+#'
+#' \code{test_method = "bootstrap"}: for each test, responses are simulated from the model without the
+#' component (new random effects and errors), both models are refitted to each, and the p-value is
+#' \eqn{(\#\{LRT^* \ge LRT\} + 1)/(b + 1)}. It needs no distributional approximation, so it is the check for
+#' the rows the warning names. A test stops once 20 simulated statistics reach the observed one (Besag and
+#' Clifford 1991): a clearly non-significant row needs some 40-400 refits, a significant one all \code{nboot}
+#' pairs. Each draw has its own seed, so the p-values repeat, with or without \code{ncore}. Run time: a few
+#' seconds to a minute for usual \code{lmer} and \code{glmer} models; \code{glmmTMB} fits are slower (each refit
+#' rebuilds the model). For \code{lme}, \code{gls}, \code{gam} and models without random effects
+#' \code{test = TRUE} is not available.
 #' @details
 #' Standard errors are from the observed information of the variance parameters (the inverse Hessian of the
 #' REML, or ML, deviance at the estimates, as SAS PROC MIXED and the Kenward-Roger df of predictmeans), carried to
@@ -122,13 +135,13 @@ NULL
 
 varcomp <- function(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
                     information = c("observed", "average", "expected"), test = FALSE,
-                    test_method = c("auto", "mixture"), nsim = 10000) {
+                    test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1) {
   ci_method <- match.arg(ci_method)
   information <- match.arg(information)
   test_method <- match.arg(test_method)
   if (isTRUE(test)) {
     tab <- varcomp(model, ci = ci, level = level, ci_method = ci_method, information = information)
-    return(pm_vc_add_tests(tab, model, test_method, nsim))
+    return(pm_vc_add_tests(tab, model, test_method, nsim, nboot, ncore))
   }
   if (inherits(model, "semireg")) model <- model$semer
   if (ci_method == "profile" && !inherits(model, c("lmerMod", "glmerMod"))) {
@@ -158,13 +171,13 @@ varcomp <- function(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite
 
 ## ---- tests (varcomp(test = TRUE); the engine in R/vc-test.R) ----
 
-pm_vc_add_tests <- function(tab, model, method, nsim) {
+pm_vc_add_tests <- function(tab, model, method, nsim, nboot = 999, ncore = 1) {
   if (is.null(pm_vc_engine(model))) {
     message("Tests of variance components are available for lmer, glmer, glmmTMB and semireg fits; ",
             "the table without tests.")
     return(tab)
   }
-  tt <- pm_vc_test(model, method = method, nsim = nsim)
+  tt <- pm_vc_test(model, method = method, nsim = nsim, nboot = nboot, ncore = ncore)
   i <- match(rownames(tab), tt$row)
   tab$LRT <- round(tt$LRT[i], 4)
   tab$p.value <- signif(tt$p.value[i], 4)
@@ -175,7 +188,7 @@ pm_vc_add_tests <- function(tab, model, method, nsim) {
   if (nrow(flag)) {
     warning("The p-values of ", paste0(flag$row, " (", flag$note, ")", collapse = ", "),
             " rest on a reference distribution that may be inaccurate (too small or too large) here. ",
-            "Check them by simulation: permlmer() with the model without the term, or bootmodels().",
+            "Check them by simulation: varcomp(..., test = TRUE, test_method = \"bootstrap\").",
             call. = FALSE)
   }
   attr(tab, "tests") <- tests

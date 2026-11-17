@@ -810,7 +810,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   may be inaccurate (fewer than 6 levels; binary data with fewer than 5
   observations per level) are named in a warning with how to check them.
   `anova()` of a `semireg()` fit uses the same tests for its smooth terms
-  (before: always the halved chi-square).
+  (before: always the halved chi-square). `test_method = "bootstrap"`
+  gives a parametric bootstrap of each likelihood ratio (responses
+  simulated from the model without the component, both models refitted;
+  `nboot`, `ncore`), with sequential stopping (a clearly non-significant
+  test stops after 20 simulated statistics reach the observed one) and one
+  seed per draw (the same p-values with any number of cores); the warning
+  points to it.
 * **`semireg_tmb()` gaussian fits are REML, as documented.** The default
   `REML = TRUE` never reached glmmTMB (the call passed only the arguments
   given), so since 1.x gaussian `semireg_tmb()` fits were maximum
