@@ -17,7 +17,11 @@
 #' @param sm_term Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.
 #' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
 #' @param covariateV A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
-#' @param boundary A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.
+#' @param boundary For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
+#'   columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
+#'   by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
+#'   as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
+#'   the data cover, following their shape). \code{NULL} (default): the whole grid.
 #' @param level Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
 #'   version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 #'   with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
@@ -196,6 +200,19 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   }
   
   mod_df <- semireg$data
+  if (isFALSE(boundary)) boundary <- NULL
+  if (isTRUE(boundary)) {
+    # the region covered by the data (semiboundary()), in the covariates' units
+    if (length(covariate) != 2) stop("'boundary = TRUE' needs two covariates.", call. = FALSE)
+    bx <- mod_df[, covariate]
+    for (i in covariate) {
+      s <- attr(mod_df, paste(i, "sd", sep = "_"))
+      m <- attr(mod_df, paste(i, "mean", sep = "_"))
+      if (!is.null(s)) bx[[i]] <- bx[[i]] * s
+      if (!is.null(m)) bx[[i]] <- bx[[i]] + m
+    }
+    boundary <- semiboundary(bx)
+  }
   if (!is.null(contr)) {
     trans <- NULL
     stopifnot("'modelterm' must be a single term"=length(unlist(strsplit(modelterm, "\\:")))==1) 

@@ -796,6 +796,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`semiboundary()`: the region covered by two-dimensional data** (such as
+  longitude and latitude), for `semipred(boundary = )`; and
+  `semipred(boundary = TRUE)` uses it on the model's data. The region is
+  the closing of the data with a distance d (every place within d of a
+  point, shrunk back by d less a small margin), so it follows concave
+  shapes, fills small gaps and keeps large empty areas as holes and
+  distant clusters as separate pieces; d = 2 x the 95th percentile of the
+  nearest-neighbour distances, so it follows the density of the data
+  (`mult`, `d` to change it). Longitude is shrunk by the cosine of the
+  latitude; other covariates are scaled by their SD. With twice the median
+  spacing, uniform random designs of 50-1000 points gave 4 pieces and 12
+  spurious holes on average; with the 95th percentile one piece and no
+  holes, every point inside. On the `scallop` survey it covers 85% of the
+  area of the boundary drawn with the original analysis (`scallopBdry`).
+  `boundary` may now hold several rings separated by `NA` rows (separate
+  pieces and holes); one polygon works as before. Only base R
+  (`grDevices::contourLines()`), no new dependency.
+
 * **Tensor products in `semireg()` and `semireg_tmb()`: `t2(x1, x2)`**
   (Wood, Scheipl and Faraway 2013), a surface for covariates on different
   scales, each penalty a random effect with its own variance, the fixed

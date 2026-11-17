@@ -26,7 +26,11 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 
 \item{covariateV}{A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.}
 
-\item{boundary}{A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.}
+\item{boundary}{For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
+columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
+by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
+as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
+the data cover, following their shape). \code{NULL} (default): the whole grid.}
 
 \item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
 version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits

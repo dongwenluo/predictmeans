@@ -78,7 +78,7 @@ importMethodsFrom("Matrix",
 
 export(pm_coef, pm_vcov, pm_basis, pm_data, pm_df, pm_linkinv, pm_contrasts)
 export(pm_boxcox, pm_yeojohnson)
-export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permcombine, permglmer, permglmmTMB, permindex, permlmer, permmodels, permstats, pm_joint, pm_slopes, PMplot, pm_check, predictmeans, R2_glmm, R2_model, residplot, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
+export(bootmodels, ci_mcp, contrast_family, contrastmeans, CookD, covariatemeans, df_term, Kmatrix, permanova.lmer, permcombine, permglmer, permglmmTMB, permindex, permlmer, permmodels, permstats, pm_joint, pm_slopes, PMplot, pm_check, predictmeans, R2_glmm, R2_model, residplot, semiboundary, semipred, semireg, semireg_tmb, se_ranef, smZ, specify_contrast, varcomp)
 S3method(anova, semireg)
 S3method(anova, lmerMod)
 S3method(update, semerMod)
