@@ -36,6 +36,27 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Means over empty cells: nothing read off them contradicts their tests.**
+  Their pairs are compared on the cells both means have, so the difference
+  of the shown means is not the difference tested. Before, `letterCI = TRUE`
+  read letters from comparison intervals around these means and could call
+  two means different when their test did not (oats with Victory's N = 0.6
+  plots lost: Marvellous "A", Victory "B", p = 0.07), while
+  `settings$comparison$disagree` reported 0 because it judged overlap from
+  the pair estimates instead of the means shown. Now: column `over` of
+  `means` names the cells such a mean averages (the factors with levels
+  missing, e.g. `"N 0, 0.2, 0.4"`); when one of its pairs is not the
+  difference of the shown means (compared on common cells, or NA) it has no
+  comparison interval (`comparison.low`/`high` NA,
+  `settings$comparison$left_out`), `letterCI` takes the letters from the
+  p-values (with a message), the LSD note says to compare its pairs, not the
+  differences of the means, with the LSD, and `autoplot()` draws no
+  comparison or half-LSD bar for it; every mean over empty cells is an
+  open point. One rule decides this (`pm_misread_means()`). `disagree`
+  counts from the means shown. Means and pairs are unchanged; in the
+  snapshot of 52 calls only the four with empty cells or confounded
+  factors change (confounded factors: only `over` is added, their pairs
+  being the differences of the means).
 * **One layout for the comparison tables.** `contrastmeans()` returns class
   `"contrastmeans"`: the 1.x elements keep their places (`[[1]]` the
   rounded table with the adjusted p-value in `Pr(>|t|)`, `$K`, the joint

@@ -42,6 +42,10 @@ pm_tidy_parts <- function(e) {
   means <- label
   rownames(means) <- NULL
   for (v in names(means)) if (is.matrix(means[[v]])) means[[v]] <- as.vector(means[[v]])
+  # means over empty cells (R/empty-cells.R): the cells each one averages, as
+  # 'over' of the pairs (NA: all its cells)
+  ec_over <- g("ctr.matrix")$empty_cells$over
+  if (any(!is.na(ec_over))) means$over <- unname(ec_over[rownames(K)])
   means$estimate <- est
   means$std.error <- se
   means$df <- df
@@ -52,6 +56,10 @@ pm_tidy_parts <- function(e) {
   if (!is.null(cmp)) {
     means$comparison.low <- est - cmp$mult*se
     means$comparison.high <- est + cmp$mult*se
+    # none for means over empty cells: their pairs are compared on common
+    # cells, which no interval around the mean can show (R/comparison.R)
+    off <- rownames(K) %in% cmp$left_out
+    means$comparison.low[off] <- means$comparison.high[off] <- NA_real_
   }
 
   back <- function(x) {

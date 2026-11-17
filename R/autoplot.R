@@ -96,7 +96,17 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
       means$hi <- means$comparison.high
     }
   }
+  # means over empty cells (column 'over'): open points; and no comparison
+  # or half-LSD bars, which are read as tests, for those whose pairs are not
+  # the differences of the shown means (settings$comparison$left_out;
+  # R/comparison.R)
   cmp <- object$settings$comparison
+  aff <- if (is.null(means$over)) rep(FALSE, nrow(means)) else !is.na(means$over)
+  misread <- do.call(paste, c(lapply(means[vars], as.character), sep = ":")) %in% cmp$left_out
+  bars_off <- any(misread) && interval %in% c("comparison", "lsd")
+  if (bars_off) means$lo[misread] <- means$hi[misread] <- NA_real_
+  caption <- if (any(aff)) paste0("Open points: means over their observed cells only (column 'over')",
+                                  if (bars_off) "; no bar where a mean's pairs are compared on common cells: see the pairs")
   ci_label <- switch(interval,
                      ci = paste0(" with ", (1 - level) * 100, "% confidence limits"),
                      lsd = paste0(" with half-LSD (", level * 100, "%) bars"),
@@ -117,15 +127,20 @@ autoplot.predictmeans <- function(object, type = c("means", "pvalue", "response"
     ggplot2::ggplot(means, ggplot2::aes(x = .data[[x]], y = .data$y,
                                         colour = .data[[grp]], group = .data[[grp]]))
   }
-  p <- p + ggplot2::geom_line(position = dodge) + ggplot2::geom_point(size = 2, position = dodge)
+  p <- p + ggplot2::geom_line(position = dodge)
+  p <- if (any(aff)) {
+    means$cells <- ifelse(aff, "observed cells", "all cells")
+    p + ggplot2::geom_point(ggplot2::aes(shape = .data$cells), data = means, size = 2, position = dodge) +
+      ggplot2::scale_shape_manual(values = c("all cells" = 16, "observed cells" = 1), guide = "none")
+  } else p + ggplot2::geom_point(size = 2, position = dodge)
   if (interval != "none") {
     p <- p + ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$lo, ymax = .data$hi),
-                                    width = 0.15, position = dodge)
+                                    width = 0.15, position = dodge, na.rm = TRUE)
   }
   if (length(vars) >= 3) {
     p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", paste(sprintf("`%s`", vars[-(1:2)]), collapse = "+"))))
   }
-  p + ggplot2::labs(x = x, y = ylab, subtitle = subtitle,
+  p + ggplot2::labs(x = x, y = ylab, subtitle = subtitle, caption = caption,
                     title = pm_wrap_title(paste0("Predicted means for '", object$settings$modelterm, "'", ci_label), 11)) +
     ggplot2::theme_bw()
 }

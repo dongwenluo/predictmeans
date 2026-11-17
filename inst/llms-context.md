@@ -60,7 +60,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | factor (and covariate) columns | the level of each variable of `modelterm` |
 | `estimate`, `std.error`, `df` | mean on the model (link) scale, SE, denominator df |
 | `conf.low`, `conf.high` | confidence limits at `1 - level` (of each mean; not for comparing means) |
-| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap |
+| `over` | only when some mean averages over empty cells: the cells it averages (e.g. `"N 0, 0.2, 0.4"`); NA for the others |
+| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap; NA for a mean over empty cells whose pairs are not the differences of the shown means (`settings$comparison$left_out`; `letterCI` then takes the letters from the p-values) |
 | `response`, `response.std.error`, `response.conf.low`, `response.conf.high` | only when the means are back-transformed (non-identity link or `trans`); SE by the delta method |
 | `group` | letters (only with pairwise comparisons); means sharing a letter do not differ |
 | `n` | number of observations in the cell |

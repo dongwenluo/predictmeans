@@ -345,6 +345,12 @@ pm_compare <- function(opt, est) {
   pm_df_raw <- Df_diff <- pairDf <- df_user <- pair_tab <- nsim <- NULL
   t.p.valuem <- t.p.valuep <- LSDm <- t.p.valuemGrp <- p_valueMatrix <- NULL
   resvar <- atvar.levels <- rcnplotm <- listlength <- nrow.pm <- pmlist <- pmlistTab <- pmlistLetter <- NULL
+  # means over empty cells (R/empty-cells.R): their pairs are compared on the
+  # cells both means have, so nothing read off the means themselves
+  # (comparison intervals, letters from them) can agree with their tests
+  ec <- est$ctr.matrix$empty_cells
+  affected <- stats::setNames(if (is.null(ec)) rep(FALSE, nK) else unname(ec$affected[rnK] %in% TRUE), rnK)
+  letterCI <- opt$letterCI
   result <- function() {
     list(nK = nK, rnK = rnK, perm = perm, atvar = atvar, mt = mt, bkmt = bkmt, Df = Df, SED.out = SED.out, LSD = LSD,
          cmp_int = cmp_int, rK = rK, cm = cm, dses = dses, dses.df = dses.df, dses.m = dses.m,
@@ -352,7 +358,8 @@ pm_compare <- function(opt, est) {
          pairDf = pairDf, df_user = df_user, pair_tab = pair_tab, nsim = nsim, t.p.valuem = t.p.valuem,
          t.p.valuep = t.p.valuep, LSDm = LSDm, t.p.valuemGrp = t.p.valuemGrp, p_valueMatrix = p_valueMatrix,
          resvar = resvar, atvar.levels = atvar.levels, rcnplotm = rcnplotm, listlength = listlength,
-         nrow.pm = nrow.pm, pmlist = pmlist, pmlistTab = pmlistTab, pmlistLetter = pmlistLetter)
+         nrow.pm = nrow.pm, pmlist = pmlist, pmlistTab = pmlistTab, pmlistLetter = pmlistLetter,
+         letterCI = letterCI, affected = affected)
   }
   if (nK == 1) return(result())
 
@@ -404,8 +411,23 @@ pm_compare <- function(opt, est) {
   # limits that agree with them, with the same family of pairs.
   lsd <- if (perm) list(crit = NA_real_, note = NULL) else
     pm_lsd_crit(opt$adj, opt$level, Df, if (tab_pairs) attr(pair_tab, "families"), pair_cor)
+  # means over empty cells whose pairs are not the differences of the shown
+  # means (R/comparison.R): read their pairs, not their means
+  misread <- if (tab_pairs) pm_misread_means(pair_tab, mt$pm, affected) else affected
+  if (any(misread) && !perm) {
+    lsd$note <- paste(c(lsd$note, paste0("The pairs of ", paste(rnK[misread], collapse = ", "), " (means over empty ",
+                                         "cells) are compared on common cells: compare their pairs, not the differences ",
+                                         "of their means, with the LSD.")), collapse = " ")
+  }
   LSD <- pm_compare_lsd(SED.out, dses.m, vars, lsd$crit, Df, opt$slevel, opt$ndecimal, perm, lsd$note)
-  if (tab_pairs) cmp_int <- pm_comparison_intervals(pair_tab, mt$ses, if (perm) NULL else mt$Df, opt$level, opt$adj)
+  if (tab_pairs) cmp_int <- pm_comparison_intervals(pair_tab, mt$pm, mt$ses, if (perm) NULL else mt$Df, opt$level,
+                                                    opt$adj, affected)
+  if (letterCI && any(misread)) {
+    message("letterCI: ", paste(rnK[misread], collapse = ", "), " average", if (sum(misread) == 1) "s",
+            " over empty cells and ", if (sum(misread) == 1) "is" else "are", " compared on common cells, which no ",
+            "interval around a mean can show; the letters are from the p-values.")
+    letterCI <- FALSE
+  }
 
   # the printed matrices and the letters, from the pair table
   if (opt$pairwise) {
@@ -830,14 +852,15 @@ pm_pairs_atvar <- function(dses.df, KKvarndiff, labKK, mt, mdf, vars, atvar, pai
 ## letterCI), the response scale, and letters.
 pm_tables <- function(opt, est, cmp) {
   perm <- pm_perm_given(opt$permlist)
-  cmp_shown <- if (opt$letterCI) cmp$cmp_int       # the limits the letters are read from
+  letterCI <- if (is.null(cmp$letterCI)) opt$letterCI else cmp$letterCI    # (pm_compare())
+  cmp_shown <- if (letterCI) cmp$cmp_int           # the limits the letters are read from
   mt_res <- pm_mean_table(cmp$mt, opt$vars, perm = perm, slevel = opt$slevel, ndecimal = opt$ndecimal,
                           cmp = cmp_shown)
   ci_level <- mt_res$ci_level     # level of the table's limits (0.05 with a permlist: +- 2 SE)
   bkmt <- pm_back_transform(cmp$bkmt, opt$trans, opt$transOff, perm = perm, slevel = opt$slevel,
                             ndecimal = opt$ndecimal, count = opt$count, cmp = cmp_shown)
   meanTable <- pm_final_mean_table(mt_res$table, bkmt, opt$vars, cmp$atvar, cmp$resvar, opt$pairwise, opt$meandecr,
-                                   opt$letterCI, opt$slevel, opt$ndecimal, cmp$t.p.valuemGrp, cmp$pmlistLetter,
+                                   letterCI, opt$slevel, opt$ndecimal, cmp$t.p.valuemGrp, cmp$pmlistLetter,
                                    ci_level, cmp$cmp_int)
   list(meanTable = meanTable, ci_level = ci_level, bkmt = bkmt,
        nc = ncol(bkmt))           # the plots use bkmt[, nc - 1] and bkmt[, nc] (LL, UL)

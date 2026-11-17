@@ -273,10 +273,14 @@
 #'  \item{predictmeansBarPlot}{gg bar plot of predicted means.}
 #'  \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
 #'  \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
-#'  columns, \code{estimate}, \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} (confidence limits
+#'  columns, \code{over} (only when some mean averages over empty cells: the cells it averages, e.g.
+#'  \code{"N 0, 0.2, 0.4"}; NA for the means over all their cells), \code{estimate}, \code{std.error}, \code{df},
+#'  \code{conf.low}, \code{conf.high} (confidence limits
 #'  of each mean, not for comparing means), \code{comparison.low} and \code{comparison.high} (comparison
 #'  intervals: two means differ at \code{level}, with the adjustment of \code{adj} when it has a critical value,
-#'  when these do not overlap; see \code{letterCI}; present when the pairs are tabulated); when the means are
+#'  when these do not overlap; see \code{letterCI}; present when the pairs are tabulated; NA for a mean over empty
+#'  cells whose pairs are not the differences of the shown means (compared on common cells, or not estimable), which
+#'  no interval around it can show); when the means are
 #'  back-transformed also \code{response}, \code{response.std.error} (delta method, as \pkg{emmeans} with
 #'  \code{type = "response"}), \code{response.conf.low} and \code{response.conf.high}; \code{group}
 #'  (letters, when pairwise comparisons are made), \code{n} (number of observations) and \code{estimable}. Values are
@@ -301,8 +305,9 @@
 #'  degrees-of-freedom method, \code{vcov_adjust}, \code{vcov} (\code{"model"}, \code{"HC3"}, ...), \code{singular} (a
 #'  singular lmer/glmer fit; a message says so too), number of permutations, covariate values, model class and
 #'  package version; \code{comparison}, the comparison intervals: the multiplier \code{mult} of the SE, its
-#'  confidence level, the number of pairs and how many of them are judged differently by their own tests
-#'  (\code{disagree}; 0 and \code{exact = TRUE} when all SEDs are equal).}
+#'  confidence level, the number of pairs and how many of them are judged differently by their own tests, from the
+#'  means shown (\code{disagree}; 0 and \code{exact = TRUE} when all SEDs are equal), and \code{left_out}, the means
+#'  over empty cells that have none.}
 #'  The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
 #'  the \code{means}, \code{pairs} and \code{settings} slots are not printed.
 #' @note
