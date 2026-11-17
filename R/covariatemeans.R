@@ -575,7 +575,9 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   out <- res$table
   names(out)[1] <- covariate
   settings <- pm_curve_settings(model, modelterm, covariate, level, pm_cov_df_label(inf, Df), mean_type,
-                                pm_curve_back_label(model, trans, bt), contr = levs[k], band = band, test = test,
+                                pm_curve_back_label(model, trans, bt), contr = levs[k], band = band,
+                                test = if (!is.null(test)) data.frame(df1 = test[["numDF"]], df2 = test[["denDF"]],
+                                                                      F.ratio = test[["F"]], p.value = test[["p.value"]]),
                                 vcov_adjust = isTRUE(inf$vcov_adjust),
                                 vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label)
   pm_curve_result(pairs = pairs, settings = settings,

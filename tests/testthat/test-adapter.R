@@ -30,7 +30,10 @@ test_that("a class with only coef, vcov, terms and df.residual works", {
   expect_equal(a$pairs, b$pairs)
   expect_equal(a$mean_table, b$mean_table)
   cm <- specify_contrast(Kmatrix(toy, "nitro"), lin = `0.6` - `0`)
-  expect_equal(contrastmeans(toy, "nitro", ctrmatrix = cm), contrastmeans(ref, "nitro", ctrmatrix = cm))
+  ct_toy <- contrastmeans(toy, "nitro", ctrmatrix = cm)
+  ct_ref <- contrastmeans(ref, "nitro", ctrmatrix = cm)
+  expect_equal(ct_toy[c(1, 2)], ct_ref[c(1, 2)])
+  expect_equal(ct_toy$contrasts, ct_ref$contrasts)
 })
 
 test_that("pm_data() and pm_df() methods are used", {

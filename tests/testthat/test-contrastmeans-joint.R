@@ -21,8 +21,10 @@ test_that("the joint F test of contrasts", {
   expect_equal(one[[3]]$F.ratio, unname(round(one[[1]][1, "t value"]^2, 4)), tolerance = 1e-3)
   dep <- contrastmeans(fm, "nitro", ctrmatrix = rbind(cn, cn[1, ] + cn[2, ]), joint = TRUE)[[3]]
   expect_identical(dep$df1, 3)
-  # without joint the result is as before (two components)
-  expect_length(contrastmeans(fm, "nitro", ctrmatrix = cn), 2)
+  # without joint the 1.x components are as before (two), then the stable tables
+  nj <- contrastmeans(fm, "nitro", ctrmatrix = cn)
+  expect_named(nj, c("The t tests of the specified contrasts", "K", "contrasts", "settings"))
+  expect_null(nj$joint)
 })
 
 test_that("the joint F test by permutation", {

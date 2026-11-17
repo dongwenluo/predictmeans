@@ -213,7 +213,8 @@ pm_curve_result <- function(means = NULL, pairs = NULL, settings, legacy, fun = 
 #' }
 #' \code{settings} (a list in the result) records \code{modelterm}, \code{covariate}, \code{level},
 #' \code{contrast}, \code{band}, \code{df_method}, \code{vcov_adjust}, \code{vcov}, \code{back_transform},
-#' \code{test} (\code{covariatemeans()}: the joint F test that the two curves are the same), for
+#' \code{test} (\code{covariatemeans()}: the joint F test that the two curves are the same, with the columns of
+#' \code{\link{pm_joint}}: \code{df1}, \code{df2}, \code{F.ratio}, \code{p.value}), for
 #' \code{semipred()} also \code{deriv}, \code{unconditional} and \code{boundary}, then \code{component}
 #' (zero-inflated \code{glmmTMB} fits), \code{model_class} and \code{version}. \code{significant} (in the result)
 #' holds the ranges of the covariate where the band asked for leaves out zero.
@@ -274,9 +275,9 @@ print.pm_curves <- function(x, n = 10, digits = 4, ...) {
   cat(pct, " limits", if (simult) paste0("; adj.conf.*: ", pct, " simultaneous band"), "; ",
       if (identical(s$df_method, "user")) "df given" else paste(s$df_method, "df"), "\n", sep = "")
   tst <- s$test
-  if (!is.null(tst) && is.finite(tst[["p.value"]])) {
-    cat("Curves equal: F(", tst[["numDF"]], ", ", format(round(tst[["denDF"]], 1)), ") = ", format(round(tst[["F"]], 3)),
-        ", p = ", format.pval(tst[["p.value"]], digits = 3), "\n", sep = "")
+  if (!is.null(tst) && is.finite(tst$p.value)) {
+    cat("Curves equal: F(", tst$df1, ", ", format(round(tst$df2, 1)), ") = ", format(round(tst$F.ratio, 3)),
+        ", p = ", format.pval(tst$p.value, digits = 3), "\n", sep = "")
   }
   sig <- x$significant
   if (is.data.frame(sig) && length(s$covariate) == 1) {

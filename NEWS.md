@@ -36,6 +36,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **One layout for the comparison tables.** `contrastmeans()` returns class
+  `"contrastmeans"`: the 1.x elements keep their places (`[[1]]` the
+  rounded table with the adjusted p-value in `Pr(>|t|)`, `$K`, the joint
+  test), followed by `contrasts` (unrounded: `contrast`, `estimate`,
+  `std.error`, `df`, `statistic`, `p.value` unadjusted, `p.adj`,
+  `p.equiv`, `conf.low`, `conf.high`, `adj.conf.low`, `adj.conf.high`
+  instead of `adj.lower.CL`/`adj.upper.CL`, `p.method`, and `ratio` or
+  `odds.ratio` on a log or logit scale when each contrast's weights sum to
+  zero), `joint` (unrounded) and `settings`; it prints that table, and
+  `tidy()`/`as.data.frame()` return it. `pm_slopes()`: the column `slope`
+  is now `estimate` (columns in the order of `predictmeans()$pairs`); its
+  `pairs` gain `conf.low`, `conf.high` and, with tukey, bonferroni, sidak,
+  scheffe or mvt, `adj.conf.low`/`adj.conf.high`; `settings`, `tidy()` and
+  `as.data.frame()` are added. The pairs of `predictmeans()` on `semireg`
+  fits gain `conf.low`, `conf.high`, `lsd`, `adj.conf.*` and ratios or odds
+  ratios, as for other models. F tests use the names of `pm_joint()`
+  (`df1`, `df2`, `F.ratio`, `p.value`), also in
+  `covariatemeans()$settings$test`.
 * **`semipred()` returns a classed result and draws its plot only when
   asked** (`plot = TRUE`, `options(predictmeans.plot = TRUE)`, `plotord`,
   or `prt = TRUE`, the 1.x name; `prt = FALSE` still never draws). The

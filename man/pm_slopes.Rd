@@ -26,11 +26,18 @@ non-linearly); the default is its mean.}
 \item{df_method, vcov_adjust, weights, vcov}{As in \code{\link{predictmeans}}.}
 }
 \value{
-A list of two data frames:
-\item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{slope}, \code{std.error}, \code{df},
-  \code{conf.low}, \code{conf.high}, \code{statistic} (t) and \code{p.value} (of slope = 0).}
+An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predictmeans}} (\code{tidy()} and
+\code{as.data.frame()} return its tables, \code{what = "slopes"} or \code{"pairs"}):
+\item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{estimate} (the slope),
+  \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value} (of slope = 0), \code{conf.low} and
+  \code{conf.high}.}
 \item{pairs}{one row per pair of levels: \code{level1}, \code{level2}, \code{estimate} (slope of \code{level1} minus
-  slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value} and \code{p.adj}.}
+  slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
+  \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
+  mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
+  \code{p.adj} is below \code{level}.}
+\item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
+  \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
 }
 \description{
 The slope (rate of change) of the fitted response in a numeric covariate within each level of a model term, with
@@ -51,7 +58,9 @@ residual df.
   library(predictmeans)
   Oats <- as.data.frame(nlme::Oats)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-  pm_slopes(fm, "nitro", "Variety")
+  sl <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
+  sl
+  as.data.frame(sl, what = "pairs")
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

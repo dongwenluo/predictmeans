@@ -70,12 +70,25 @@
 #'   \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 #'   (normal-based in \code{contrastmeans}).
 #' @return
-#' There are two components in the output which are
-#' \item{Table}{A table showing t-test results for the specified linear contrasts.}
+#' An object of class \code{"contrastmeans"}, a list. \code{print()} shows the contrasts, \code{tidy()} and
+#' \code{as.data.frame()} return the table \code{contrasts} (\code{what = "joint"}: the joint test). Its first
+#' components are those of 1.x:
+#' \item{The t tests of the specified contrasts}{A table (rounded to 4 decimals) of the t tests of the contrasts,
+#'   with the adjusted p-value in \code{Pr(>|t|)}.}
 #' \item{K}{A contrast matrix.}
-#' and, with \code{joint = TRUE}, a third,
-#' \item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
-#'   (and \code{Perm_p_value} with \code{permlist}).}
+#' \item{Joint F test of the contrasts}{With \code{joint = TRUE}: \code{df1}, \code{df2}, \code{F.ratio} and
+#'   \code{p.value} of the joint test (and \code{Perm_p_value} with \code{permlist}).}
+#' and then the tables in the layout of \code{\link{predictmeans}}, unrounded:
+#' \item{contrasts}{One row per contrast: \code{contrast} (its name), \code{over} (contrasts of means over empty
+#'   cells: the cells used), \code{estimate}, \code{std.error}, \code{df}, \code{statistic} (t),
+#'   \code{p.value} (unadjusted; with \code{permlist} the permutation p-value), \code{p.adj} (adjusted by
+#'   \code{adj}), \code{p.equiv} (with \code{equivalence}), \code{conf.low}, \code{conf.high},
+#'   \code{adj.conf.low}, \code{adj.conf.high} (simultaneous, with the adjustments that have them),
+#'   \code{p.method}, and for a log or logit scale (link, or a log response) \code{ratio} or
+#'   \code{odds.ratio} with its limits when the weights of every contrast sum to zero.}
+#' \item{joint}{With \code{joint = TRUE}: the joint test, unrounded.}
+#' \item{settings}{\code{modelterm}, \code{level}, \code{adjust}, \code{df_method}, \code{vcov_adjust}, \code{vcov},
+#'   \code{equivalence}, \code{nperm}, \code{model_class}, \code{version}.}
 #' @references
 #' Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 #'     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
@@ -112,7 +125,9 @@
 #' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 #'
 #' # 3. ... and both contrasts tested together (an F test with 2 numerator df)
-#' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+#' ct <- contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+#' ct
+#' as.data.frame(ct)
 #' @name contrastmeans
 NULL
 
@@ -121,6 +136,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
                           level=0.05, vcov=NULL, equivalence=NULL) {
   vcov_adjust_default <- missing(vcov_adjust)
+  df_user <- !missing(Df)
   pm_equiv_margins(equivalence)                  # check early
   pm_note_singular(model)
   op <- options(scipen = 6)
@@ -226,6 +242,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   if (missing(permlist)) {
    # t.p.value <- 2*pt(-abs(t.v), Df)
 	t.p.value <- apply(cbind(t.v, Df), 1, function(x) 2*pt(-abs(x[1]), x[2]))
+    p_raw <- t.p.value
     # one family (R/p-adjust.R); Scheffe with the rank of ctrmatrix
     fams <- pm_families(rep("all", nr), est = !is.na(as.vector(cm)), rank = qr(ctrmatrix)$rank)
     t.p.value <- pm_adjust_p(adj, t.v, t.p.value, rep_len(Df, nr), fams, R = cor.contr)
@@ -238,8 +255,11 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
       out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ses, adj.upper.CL = as.vector(cm) + crit_adj*ses)
     }
     eqm <- pm_equiv_margins(equivalence)
-    if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Df, eqm))
+    p_equiv <- if (!is.null(eqm)) pm_tost(as.vector(cm), ses, Df, eqm)
+    if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = p_equiv)
     rownames(out.put) <- rownames(ctrmatrix)
+    tab <- pm_contrast_table(rownames(ctrmatrix), cm, ses, rep_len(Df, nr), t.v, p_raw, t.p.value, crit, ses, crit_adj,
+                             p_equiv, "t", cr, pm_contrast_kind(model, ctrmatrix))
     attr(out.put,"Note") <- paste("The p-value is adjusted by", sQuote(adj), "method, if p-value = 0 means p-value < 0.0001.")
     if (!is.null(inf$vcov_label)) {
       attr(out.put, "Note") <- paste0(attr(out.put, "Note"), " Standard errors from the covariance given by 'vcov' (",
@@ -254,6 +274,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   maxt <- nrow(rK) > 1 && adj %in% pm_perm_maxt_methods
   fam <- pm_perm_family(permlist, rK, model, abs(as.vector(t.v)), 1, joint = TRUE)
   per.p <- fam$p
+  p_raw <- per.p
   fams <- pm_families(rep("all", nr), est = !is.na(as.vector(cm)))
   if (nrow(rK) > 1 && adj != "none") {
     per.p <- pm_adjust_p(adj, t.v, per.p, rep(NA_real_, nr), fams, perm_T = list(obs = fam$obs, T = fam$T))
@@ -269,20 +290,27 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
     out.put <- cbind(out.put, adj.lower.CL = as.vector(cm) - crit_adj*ci_se, adj.upper.CL = as.vector(cm) + crit_adj*ci_se)
   }
   eqm <- pm_equiv_margins(equivalence)
-  if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = pm_tost(as.vector(cm), ses, Inf, eqm))   # normal-based
+  p_equiv <- if (!is.null(eqm)) pm_tost(as.vector(cm), ses, Inf, eqm)       # normal-based
+  if (!is.null(eqm)) out.put <- cbind(out.put, p.equiv = p_equiv)
   rownames(out.put) <- rownames(ctrmatrix)
+  tab <- pm_contrast_table(rownames(ctrmatrix), cm, ses, rep(NA_real_, nr), t.v, p_raw, per.p, crit, ci_se, crit_adj,
+                           p_equiv, if (identical(attr(permlist, "resampling"), "parametric bootstrap")) "bootstrap" else
+                             "permutation", cr, pm_contrast_kind(model, ctrmatrix))
   attr(out.put,"Note") <- paste0("The permuted p-value is obtained using ", sQuote(nsim), " permutations",
                                  if (nrow(rK) > 1 && adj != "none") paste0(", adjusted by ", sQuote(adj), " method"),
                                  if (maxt) paste0(" (", if (adj == "westfall") "step-down" else "single-step",
                                                   " max-|t| of the permutations)"), ".")
   }
   out <- list("The t tests of the specified contrasts"=round(out.put, 4), "K"=ctrmatrix)
+  jt_raw <- NULL
   if (isTRUE(joint)) {
     # all the contrasts together: the F test of pm_joint(), and with a
     # permlist the permutation p-value of the joint Wald F
     jt <- pm_joint(model, modelterm, ctrmatrix = ctrmatrix, df_method = df_method, weights = weights, vcov = vcov)
     if (!missing(permlist)) jt$Perm_p_value <- pm_perm_p(fam$Fobs, fam$F, fam$exact)
     dfm <- attr(jt, "df_method")
+    jt_raw <- jt
+    rownames(jt_raw) <- NULL
     jt[] <- lapply(jt, function(v) if (is.numeric(v)) round(v, 4) else v)
     rownames(jt) <- "all contrasts"
     attr(jt, "Note") <- paste0("F test of all the contrasts together (", nrow(ctrmatrix), " contrasts, rank ", jt$df1,
@@ -292,5 +320,94 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                                ".")
     out[["Joint F test of the contrasts"]] <- jt
   }
+  # the stable tables (the 1.x elements above keep their places)
+  out$contrasts <- tab
+  out$joint <- jt_raw
+  out$settings <- list(modelterm = modelterm, level = level, adjust = adj,
+                       df_method = if (!missing(permlist)) "permutation" else if (df_user) "user" else inf$label,
+                       vcov_adjust = isTRUE(inf$vcov_adjust),
+                       vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label,
+                       equivalence = eqm, nperm = if (!missing(permlist)) nsim else NA_integer_,
+                       model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
+  class(out) <- "contrastmeans"
   out
+}
+
+## The table of contrastmeans() in the columns of predictmeans()$pairs:
+## contrast, over (contrasts on common cells), estimate, std.error, df,
+## statistic, p.value (unadjusted), p.adj, p.equiv, conf.low, conf.high
+## (each contrast's limits), adj.conf.low, adj.conf.high (simultaneous, with
+## the adjustments that have them), p.method, and for a log or logit scale
+## the ratio or odds ratio with its limits (contrasts whose weights sum to
+## zero).
+pm_contrast_table <- function(names, est, se, df, t, p, p_adj, crit, ci_se, crit_adj, p_equiv, p_method, cr, kind) {
+  est <- as.vector(est)
+  n <- length(est)
+  out <- data.frame(contrast = if (is.null(names)) paste("contrast", seq_len(n)) else names, stringsAsFactors = FALSE)
+  if (any(cr$sub)) out$over <- ifelse(cr$sub, cr$over, NA_character_)
+  out$estimate <- est
+  out$std.error <- as.vector(se)
+  out$df <- as.vector(df)
+  out$statistic <- as.vector(t)
+  out$p.value <- as.vector(p)
+  out$p.adj <- as.vector(p_adj)
+  if (!is.null(p_equiv)) out$p.equiv <- p_equiv
+  out$conf.low <- est - crit*ci_se
+  out$conf.high <- est + crit*ci_se
+  if (!is.null(crit_adj)) {
+    out$adj.conf.low <- est - crit_adj*ci_se
+    out$adj.conf.high <- est + crit_adj*ci_se
+  }
+  out$p.method <- p_method
+  if (!is.null(kind)) {
+    pre <- if (kind == "log") "ratio" else "odds.ratio"
+    out[[pre]] <- exp(est)
+    out[[paste0(pre, ".conf.low")]] <- exp(out$conf.low)
+    out[[paste0(pre, ".conf.high")]] <- exp(out$conf.high)
+  }
+  out
+}
+
+## "log" or "logit" when exp of the contrasts is a ratio or an odds ratio: a
+## log or logit link, or a log response in the formula, and every contrast's
+## weights summing to zero. NULL otherwise.
+pm_contrast_kind <- function(model, ctrmatrix) {
+  if (any(abs(rowSums(ctrmatrix)) > 1e-8)) return(NULL)
+  link_scale <- !is.null(pm_link_trans(model))
+  trans <- if (link_scale) NULL else pm_response_trans(model)$fun
+  pm_ratio_kind(trans, model, link_scale)
+}
+
+## Methods: the contrasts (or the joint test) as a data frame, and a printed
+## summary.
+tidy.contrastmeans <- function(x, what = c("contrasts", "joint"), ...) {
+  what <- match.arg(what)
+  out <- x[[what]]
+  if (is.null(out)) stop("There is no ", what, " table in this result (joint = TRUE gives the joint test).", call. = FALSE)
+  out
+}
+
+as.data.frame.contrastmeans <- function(x, row.names = NULL, optional = FALSE, what = c("contrasts", "joint"), ...) {
+  out <- tidy.contrastmeans(x, what = match.arg(what))
+  if (!is.null(row.names)) rownames(out) <- row.names
+  out
+}
+
+print.contrastmeans <- function(x, digits = 4, ...) {
+  s <- x$settings
+  cat("Contrasts of '", s$modelterm, "' (", format(100*(1 - s$level)), "% limits; p.adj: ", s$adjust, "; ",
+      if (identical(s$df_method, "permutation")) paste(s$nperm, "permutations") else paste(s$df_method, "df"), ")\n",
+      sep = "")
+  tab <- x$contrasts
+  tab$p.method <- NULL
+  print(tab, digits = digits, row.names = FALSE)
+  jt <- x$joint
+  if (!is.null(jt)) {
+    cat("Joint F test: F(", jt$df1, ", ", format(round(jt$df2, 1)), ") = ", format(round(jt$F.ratio, 3)), ", p = ",
+        format.pval(jt$p.value, digits = 3), if (!is.null(jt$Perm_p_value)) paste0("; permutation p = ",
+                                                                                     format.pval(jt$Perm_p_value, digits = 3)),
+        "\n", sep = "")
+  }
+  if (!identical(s$vcov, "model")) cat("Standard errors from the covariance given by 'vcov' (", s$vcov, ").\n", sep = "")
+  invisible(x)
 }

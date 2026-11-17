@@ -90,7 +90,7 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
   expect_equal(s$p.adj < 0.05, rs$pltdf$significant)
   expect_equal(rs$settings$band, "simultaneous")
   expect_equal(rs$settings$contrast, c("a3", "a1"))
-  expect_equal(rs$settings$test, rs$test)
+  expect_equal(unlist(rs$settings$test), setNames(rs$test, c("df1", "df2", "F.ratio", "p.value")))
   expect_output(print(rs), "Difference a3 - a1 of 'A' along x")
 })
 

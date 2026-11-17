@@ -120,9 +120,9 @@ pm2 <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot 
 # contrasts by level names; standard families (Dunnett, polynomial, ...)
 K <- Kmatrix(fm, "nitro:Variety")
 cm <- specify_contrast(K, N_Victory = `0.6:Victory` - `0:Victory`)
-contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)[[1]]
+as.data.frame(contrastmeans(fm, "nitro:Variety", ctrmatrix = cm))
 contrastmeans(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl"),
-              adj = "mvt")[[1]]
+              adj = "mvt")$contrasts
 
 # joint F tests: nitrogen within each variety (SAS SLICE)
 pm_joint(fm, "nitro:Variety", by = "Variety")
@@ -130,7 +130,8 @@ pm_joint(fm, "nitro:Variety", by = "Variety")
 # slopes of a numeric covariate by group (fit with nitro numeric)
 Oats2 <- as.data.frame(nlme::Oats)
 fm2 <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats2)
-pm_slopes(fm2, "nitro", "Variety")
+sl <- pm_slopes(fm2, "nitro", "Variety", adj = "tukey")
+sl$slopes; sl$pairs                     # as.data.frame(sl, what = "pairs")
 
 # GLM / GLMM: response-scale means, ratios or odds ratios in pm$pairs
 data(Drug)
@@ -265,6 +266,14 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   curves at random effects zero; `settings$back_transform`). `$settings` adds `deriv`, `unconditional`,
   `boundary`; `$significant` the ranges. The 1.x `$pred_df` (`LL`/`UL` = the band asked for, `SE`,
   `SE_mu`, `diff`, `ratio`, `response.diff`, ...) and `$plt` are still there.
+- One layout for every comparison table: `predictmeans()$pairs`, `contrastmeans()$contrasts` (first column
+  `contrast`), `pm_slopes()$slopes` / `$pairs`, `covariatemeans()` / `semipred()` `$pairs`, and the pairs of
+  `predictmeans()` on `semireg` fits all use `estimate`, `std.error`, `df`, `statistic`, `p.value`
+  (unadjusted), `p.adj`, `conf.low`, `conf.high` (each row on its own) and, with an adjustment that has them
+  (tukey, bonferroni, sidak, scheffe, mvt; simultaneous bands), `adj.conf.low`, `adj.conf.high`; `ratio` or
+  `odds.ratio` with `.conf.low` / `.conf.high` on a log or logit scale. F tests (`pm_joint()`,
+  `contrastmeans(joint = TRUE)$joint`, `covariatemeans()$settings$test`) use `df1`, `df2`, `F.ratio`,
+  `p.value`. `contrastmeans()[[1]]` is still the rounded 1.x table (adjusted p in `Pr(>|t|)`).
 - `marginaleffects::hypotheses()` works on `predictmeans()` results after
   `options(marginaleffects_model_classes = "predictmeans")`.
 - Data must be available when `predictmeans()` runs: it re-reads the model's `data`

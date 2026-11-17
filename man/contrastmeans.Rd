@@ -85,12 +85,25 @@ one-sided p-values; below \code{level}, the difference lies within the margins (
 (normal-based in \code{contrastmeans}).}
 }
 \value{
-There are two components in the output which are
-\item{Table}{A table showing t-test results for the specified linear contrasts.}
+An object of class \code{"contrastmeans"}, a list. \code{print()} shows the contrasts, \code{tidy()} and
+\code{as.data.frame()} return the table \code{contrasts} (\code{what = "joint"}: the joint test). Its first
+components are those of 1.x:
+\item{The t tests of the specified contrasts}{A table (rounded to 4 decimals) of the t tests of the contrasts,
+  with the adjusted p-value in \code{Pr(>|t|)}.}
 \item{K}{A contrast matrix.}
-and, with \code{joint = TRUE}, a third,
-\item{Joint F test of the contrasts}{\code{df1}, \code{df2}, \code{F.ratio} and \code{p.value} of the joint test
-  (and \code{Perm_p_value} with \code{permlist}).}
+\item{Joint F test of the contrasts}{With \code{joint = TRUE}: \code{df1}, \code{df2}, \code{F.ratio} and
+  \code{p.value} of the joint test (and \code{Perm_p_value} with \code{permlist}).}
+and then the tables in the layout of \code{\link{predictmeans}}, unrounded:
+\item{contrasts}{One row per contrast: \code{contrast} (its name), \code{over} (contrasts of means over empty
+  cells: the cells used), \code{estimate}, \code{std.error}, \code{df}, \code{statistic} (t),
+  \code{p.value} (unadjusted; with \code{permlist} the permutation p-value), \code{p.adj} (adjusted by
+  \code{adj}), \code{p.equiv} (with \code{equivalence}), \code{conf.low}, \code{conf.high},
+  \code{adj.conf.low}, \code{adj.conf.high} (simultaneous, with the adjustments that have them),
+  \code{p.method}, and for a log or logit scale (link, or a log response) \code{ratio} or
+  \code{odds.ratio} with its limits when the weights of every contrast sum to zero.}
+\item{joint}{With \code{joint = TRUE}: the joint test, unrounded.}
+\item{settings}{\code{modelterm}, \code{level}, \code{adjust}, \code{df_method}, \code{vcov_adjust}, \code{vcov},
+  \code{equivalence}, \code{nperm}, \code{model_class}, \code{version}.}
 }
 \description{
 Performs t-tests (or permuted t-tests) of specified contrasts for linear models 
@@ -128,7 +141,9 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
 
 # 3. ... and both contrasts tested together (an F test with 2 numerator df)
-contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+ct <- contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+ct
+as.data.frame(ct)
 }
 \references{
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
