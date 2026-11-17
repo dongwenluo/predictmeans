@@ -796,6 +796,20 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **Tensor products in `semireg()` and `semireg_tmb()`: `t2(x1, x2)`**
+  (Wood, Scheipl and Faraway 2013), a surface for covariates on different
+  scales, each penalty a random effect with its own variance, the fixed
+  terms `x1 + x2 + x1:x2` added, `by = f` for a surface per level; with
+  `semipred()`, `predictmeans()`, `anova()` and `varcomp()` as for other
+  smooths. It is set up without mgcv's sum-to-zero constraint on the whole
+  product, which leaves part of the penalised space in the unpenalised one
+  (so the fixed part would not be those terms, and with a random intercept
+  the population surface shifted by 0.04 on a test surface); the fit equals
+  `gam()` with that basis and its penalties, and `gam()`'s own `t2()`
+  without other random effects (tested). `te()` is fitted as `t2()` with a
+  message (its overlapping penalties cannot be random effects); `ti()` is
+  refused with a message.
+
 * **`smZ()` and `smoothZ` are superseded** (maintainer's decision of
   2026-11-17): they keep working, so that 1.x code runs, but get no new
   features; `?smZ` has the table of their formula equivalents. Every help

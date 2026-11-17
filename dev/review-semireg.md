@@ -278,10 +278,17 @@ and closed:
    `bs = "os"`/`"ztps"` equal the `smZ()` fits exactly. Found on the way:
    variables of a smooth must not be centred (a numeric `by` multiplies the
    smooth); `semireg_tmb()` scaled the covariance by `sigma()`, which is theta
-   for a negative binomial (fixed). **Open:** for `t2()` the design of
+   for a negative binomial (fixed). For `t2()` the design of
    `gam(fit = FALSE)` and `smoothCon()` is not in the span of `PredictMat()`
-   (mgcv 1.9-1; a fitted gam is consistent), so its split cannot be checked;
-   `te()`/`t2()`/`ti()` stop with a message. `smZ()`'s own tidy-up is left:
+   (mgcv 1.9-1; a fitted gam is consistent): the sum-to-zero constraint is
+   not absorbed in that design. Closed 2026-11-17: `t2()` is set up without
+   the constraint (`smoothCon(absorb.cons = FALSE)`), so its unpenalised
+   part is exactly `1, x1, x2, x1:x2` (with mgcv's constraint on the whole
+   product 5% of the penalised space leaks into it, and a random intercept
+   then shifts the population surface: 0.04 on a test surface); the fit
+   equals `gam()` with that basis and penalties (`paraPen`), and `gam()`'s
+   `t2()` without other random effects (`test-semireg-tensor.R`). `te()` is
+   fitted as `t2()` with a message; `ti()` is refused. `smZ()`'s own tidy-up is left:
    the formula form covers what it lacked (numeric `by`, crossed factors via
    `by = interaction(f1, f2)`).
 4. **Crossed-factor syntax**.

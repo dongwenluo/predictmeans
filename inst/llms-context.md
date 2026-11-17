@@ -214,7 +214,8 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   function, iid coefficients, fixed part 1 + x / `null = "constant"` / `"none"`; checked before the fit: a row
   per value, finite, repeatable, rows independent of the data given, full rank); `s(x, f)` / `s(x, f1*f2)` = common
   curve + deviation curves, a variance per factor term; `(s(x, k = 10) | id)` = subject curves
-  `(x | id)` + spline deviation (HRW's group-specific curves); no `te()`/`t2()` yet). Equal to
+  `(x | id)` + spline deviation (HRW's group-specific curves); `t2(x1, x2)` tensor product, a variance per
+  penalty, fixed `x1 + x2 + x1:x2` (no sum-to-zero constraint; `te()` fitted as `t2()`, `ti()` refused)). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
   `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` are superseded: 1.x code still
   runs, but write smooths in the formula (table in `?smZ` and `vignette("smooth")`; `smZ(type =

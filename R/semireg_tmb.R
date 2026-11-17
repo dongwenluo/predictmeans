@@ -30,6 +30,7 @@
 #'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
 #'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6} \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own (see \code{\link{semireg}}) \tab \code{x} \cr
+#'   \code{t2(x1, x2)} \tab tensor-product surface, a variance per penalty \tab \code{x1 + x2 + x1:x2} \cr
 #'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
 #'   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
 #'   \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
@@ -45,8 +46,8 @@
 #' The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 #' intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
 #' \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
-#' \code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
-#' not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both.
+#' \code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)}, as in \code{\link{semireg}}
+#' (\code{te()} is fitted as \code{t2()}; \code{ti()} is not available). Smooths are given either in the formula or in \code{smoothZ}, not both.
 #' @usage
 #' semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, 
 #'         dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, 

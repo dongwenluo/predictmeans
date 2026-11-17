@@ -54,6 +54,7 @@ own variance.
 | `s(x, f)` | common curve + a deviation curve per level of `f` |
 | `s(x, f1*f2)` | common curve + deviations for `f1`, `f2`, `f1:f2`, a variance each |
 | `s(x1, x2)`, `s(x1, x2, bs = "ztps")` | surface |
+| `t2(x1, x2)` | tensor-product surface (covariates on different scales), a variance per penalty; `te()` is fitted as `t2()` |
 | `s(x, bs = "user", xt = list(basis = f))` | a basis of your own, `f(x)` (checked before the fit) |
 | `(s(x, k = 10) \| g)` | random curve per subject: `(x \| g)` + a spline deviation |
 
@@ -287,6 +288,19 @@ far <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | 
                    dispformula = ~0, data = dr, prt = FALSE)
 predictmeans(far, "A", covariate = c(t = 4), pairwise = TRUE)$pairs[
   c("level1", "level2", "estimate", "std.error", "df", "p.value")]
+```
+
+**A tensor-product surface.** Two covariates on different scales (`data(ozoneCalif)`:
+inversion base height in feet, its temperature in degrees F) call for `t2()`, whose
+smoothness differs by direction; each of its penalties is a random effect with its own
+variance, and `x1 + x2 + x1:x2` are added to the fixed effects:
+
+```{r, fig.height = 4}
+data(ozoneCalif)
+fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
+semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
 ```
 
 **A basis of your own.** A seasonal cycle on a straight trend: two years of daily values and

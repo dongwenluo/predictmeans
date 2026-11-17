@@ -96,6 +96,7 @@ slopes:
   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own: \code{f(x)} (\code{f(x1, x2)} for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in \code{smoothZ}); checked before the fit (see below); \code{xt = list(basis = f, null = "constant")} or \code{"none"} for a smaller fixed part \tab \code{x} (\code{x1 + x2}) \cr
+  \code{t2(x1, x2)}, \code{t2(x1, x2, bs = c("cr", "ps"), k = c(6, 8))} \tab tensor-product surface (covariates on different scales), a variance per penalty; \code{te()} is fitted as \code{t2()} \tab \code{x1 + x2 + x1:x2} \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
   \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
@@ -119,8 +120,14 @@ effects: \code{semipred()} and \code{predictmeans()} give the population curves 
 The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
 \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
-\code{nscale} apply to the other numeric covariates). Tensor products (\code{te()}, \code{t2()}, \code{ti()}) are
-not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
+\code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)} (Wood, Scheipl and Faraway 2013), a surface for covariates on different scales,
+whose penalties (one per product of the marginal penalised and unpenalised parts; \code{full = TRUE} for more)
+are independent random effects, each with its own variance; the fixed terms \code{x1 + x2 + x1:x2} are added,
+and \code{by = f} gives a surface per level. It is set up without mgcv's sum-to-zero constraint on the whole
+product (which leaves a little of the penalised space in the unpenalised one), so its fixed part is exactly those
+terms; the fit equals \code{gam()} with that basis and its penalties, and \code{gam()}'s own \code{t2()} when there
+are no other random effects. \code{te()} is fitted as \code{t2()} (with a message): its overlapping penalties
+cannot be written as random effects; \code{ti()} is not available. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
 \code{s()} (e.g. \code{xt = list(knots = kn)}) are taken from the environment of the formula.
 
 A basis of your own (\code{bs = "user"}) must give the same row for the same covariate value whatever data it is
@@ -202,8 +209,15 @@ season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), c
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
               data = ds, prt = FALSE)
 semipred(fs, covariate = "day", prt = FALSE)$plt
+## 6. A tensor-product surface for two covariates on different scales (data(ozoneCalif)),
+##    and a curve in a third
+data(ozoneCalif)
+fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+anova(fo)$smooth          # a variance per penalty of the surface
+semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
 \donttest{
-## 6. Binary responses with a random intercept per child (HRW::indonRespir): the probability
+## 7. Binary responses with a random intercept per child (HRW::indonRespir): the probability
 ##    of a respiratory infection over age
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
@@ -213,13 +227,13 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   semipred(fb, "age", "age", prt = FALSE)$plt
 }
 
-## 7. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
+## 8. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
 ##    own spline deviation, one variance for all; are the subjects' curves straight lines?
 fr <- semireg(Reaction ~ s(Days, bs = "os", k = 4) + (s(Days, k = 4) | Subject),
               data = lme4::sleepstudy, prt = FALSE)
 anova(fr)$smooth
 
-## 8. Curves by group, the price of apartments in Warsaw by district (HRW::WarsawApts)
+## 9. Curves by group, the price of apartments in Warsaw by district (HRW::WarsawApts)
 if (requireNamespace("HRW", quietly = TRUE)) {
   data(WarsawApts, package = "HRW")
   WarsawApts$district <- factor(WarsawApts$district)
@@ -237,6 +251,9 @@ longitudinal data. \emph{Statistics in Medicine}, \bold{24}, 1153-1167.
 Harezlak, J., Ruppert, D. and Wand, M.P. (2018). \emph{Semiparametric Regression with R}. Springer, New York.
 
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.
+
+Wood, S.N., Scheipl, F. and Faraway, J.J. (2013). Straightforward intermediate rank tensor product smoothing in
+mixed models. \emph{Statistics and Computing}, \bold{23}, 341-360.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

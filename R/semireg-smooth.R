@@ -78,14 +78,31 @@ pm_sm_parse <- function(formula, data = NULL) {
   vars <- character(0)
   taken <- names(data)
   used <- character(0)
+  tensors <- character(0)
   for (e in sm_calls) {
-    # tensor products: mgcv's pre-fit design of t2() is not in the span of its
-    # prediction matrix (mgcv 1.9-1), so its split into fixed and random parts
-    # cannot be checked yet (dev/review-semireg.md); te() and ti() cannot be
-    # written as independent random effects at all
-    if (as.character(e[[1]]) %in% c("te", "t2", "ti")) {
-      stop("Tensor-product smooths (te(), t2(), ti()) are not available in semireg() yet; use s(x1, x2) ",
-           "(isotropic thin plate) or s(x1, x2, bs = \"ztps\").", call. = FALSE)
+    # tensor products: t2() (Wood, Scheipl and Faraway 2013), whose penalties
+    # make independent random effects; te() has overlapping penalties, which
+    # random effects cannot represent: it is fitted as t2() with a message;
+    # ti() (the interaction alone, with its own constraints) is refused
+    fn <- as.character(e[[1]])
+    if (fn == "ti") {
+      stop("ti() is not available in semireg(): its penalties cannot be written as random effects. Use t2(x1, x2), ",
+           "which contains the main effects, or s(x1, x2).", call. = FALSE)
+    }
+    if (fn %in% c("te", "t2")) {
+      if (fn == "te") {
+        e[[1]] <- as.name("t2")
+        message("te() is fitted as t2(), the tensor product whose penalties are random effects (Wood, Scheipl ",
+                "and Faraway 2013); the fit differs a little from mgcv's te().")
+      }
+      ta <- as.list(e)[-1]
+      tn <- if (is.null(names(ta))) rep("", length(ta)) else names(ta)
+      if (any(vapply(ta[tn == ""], is_factor, logical(1)))) {
+        stop("A factor in t2() is not available: give it as 'by' (t2(x1, x2, by = f)): ", deparse1l(e), call. = FALSE)
+      }
+      tensors <- c(tensors, deparse1l(e))
+      vars <- c(vars, all.vars(e))
+      next
     }
     args <- as.list(e)[-1]
     nms <- if (is.null(names(args))) rep("", length(args)) else names(args)
@@ -144,7 +161,7 @@ pm_sm_parse <- function(formula, data = NULL) {
   # centred or scaled (a numeric 'by' multiplies the smooth)
   vars <- c(vars, unlist(lapply(rcurves, `[[`, "vars")))
   list(formula = f_new, groups = groups, fixed = unique(fixed), derived = derived, vars = unique(vars),
-       rcurves = rcurves)
+       rcurves = rcurves, tensors = tensors)
 }
 
 ## The derived 'by' factors (cells of several factors) for data or new data.
@@ -173,6 +190,19 @@ pm_sm_build <- function(sp, data) {
     G <- mgcv::gam(stats::as.formula(paste(".pm_y ~", paste(g, collapse = " + ")), env = environment(sp$formula)),
                    data = gd, fit = FALSE)
     sms <- c(sms, G$smooth)
+  }
+  # t2(): set up without the sum-to-zero constraint (as the bases "os" and
+  # "ztps"): mgcv imposes it on the whole tensor product, which leaves a
+  # little of the penalised space in the unpenalised one (5% on a test
+  # surface), so the fixed part would not be the terms x1 + x2 + x1:x2. With
+  # no constraint the unpenalised part is exactly 1, x1, x2, x1:x2 (the
+  # products of the marginal null spaces), the intercept is the model's, and
+  # the design is that of PredictMat() at prediction
+  for (tc in sp$tensors) {
+    ce <- str2lang(tc)
+    ce[[1]] <- quote(mgcv::t2)
+    spec <- eval(ce, envir = environment(sp$formula))
+    sms <- c(sms, mgcv::smoothCon(spec, data = gd, knots = NULL, absorb.cons = FALSE))
   }
   blocks <- list()
   maps <- list()
