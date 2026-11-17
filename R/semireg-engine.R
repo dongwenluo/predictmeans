@@ -320,10 +320,10 @@ pm_sr_uncond <- function(semireg) {
 ## estimates that involve random effects). For L without random effects the
 ## df are those of pm_satt_ddf(). 'idx': the columns of (beta, u) that the
 ## columns of L are. Inf for other fits (normal-based tests).
-pm_sr_satt_ddf <- function(semireg, L, idx) {
+pm_sr_satt_ddf <- function(semireg, L, idx, hold = character(0)) {
   semer <- semireg$semer
   L <- as.matrix(L)
-  if (inherits(semer, "glmmTMB")) return(pm_sr_satt_ddf_tmb(semer, L, idx))
+  if (inherits(semer, "glmmTMB")) return(pm_sr_satt_ddf_tmb(semer, L, idx, hold))
   if (!methods::is(semer, "semerMod") || !lme4::isLMM(semer)) return(rep(Inf, nrow(L)))
   vp <- pm_lmer_varpar(semer)
   X <- lme4::getME(semer, "X")
@@ -350,7 +350,11 @@ pm_sr_satt_ddf <- function(semireg, L, idx) {
   # R/kr.R): their derivative and variance at the boundary are not defined
   th <- lme4::getME(semer, "theta")
   bnd <- which(lme4::getME(semer, "lower") == 0 & th < 1e-6*max(1, max(abs(th))))
-  free <- setdiff(seq_len(k), bnd)
+  # 'hold': random terms whose variance parameters are taken as known
+  cnms <- lme4::getME(semer, "cnms")
+  nth <- lengths(cnms)*(lengths(cnms) + 1)/2
+  held <- which(rep(names(cnms), nth) %in% hold)
+  free <- setdiff(seq_len(k), c(bnd, held))
   vfree <- function(x) { y <- vp$varpar; y[free] <- x; v(y) }
   G <- numDeriv::jacobian(vfree, vp$varpar[free])
   denom <- rowSums((G %*% pm_cov_given(vp$vcov_varpar, free)) * G)
@@ -374,7 +378,7 @@ pm_cov_given <- function(V, keep) {
 ## terms at a psi from VarCorr(), as pm_tmb_varcomp() does. (The df do not
 ## depend on the parameterisation.) Inf for other families, zero inflation
 ## or a dispersion model with covariates.
-pm_sr_satt_ddf_tmb <- function(m, L, idx) {
+pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
   L <- as.matrix(L)
   inf <- rep(Inf, nrow(L))
   dp <- function(e) paste(deparse(e, width.cutoff = 500L), collapse = " ")
@@ -434,7 +438,8 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx) {
   ref <- max(unlist(sds), if (dp(m$modelInfo$allForm$dispformula) == "~1") stats::sigma(m))
   at0 <- vapply(sds, function(x) max(x) < 1e-3*ref, logical(1))
   bnd <- th_pos[rep(at0, nth)]
-  free <- setdiff(seq_along(x0), bnd)
+  held <- th_pos[rep(names(m$modelInfo$reTrms$cond$cnms) %in% hold, nth)]
+  free <- setdiff(seq_along(x0), c(bnd, held))
   vfree <- function(x) { y <- x0; y[free] <- x; v(y) }
   G <- numDeriv::jacobian(vfree, x0[free])
   denom <- rowSums((G %*% pm_cov_given(V[use, use, drop = FALSE], free)) * G)
