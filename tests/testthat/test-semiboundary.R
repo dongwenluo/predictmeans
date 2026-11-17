@@ -8,7 +8,7 @@ test_that("the scallop survey: one piece, every point inside, close to the bound
   data(scallopBdry, package = "predictmeans", envir = environment())
   b <- semiboundary(scallop[, c("longitude", "latitude")])
   expect_identical(names(b), c("longitude", "latitude"))
-  expect_true(attr(b, "lonlat"))
+  expect_identical(attr(b, "scale"), "lonlat")
   expect_false(anyNA(b))                                   # one ring
   expect_true(all(in_b(scallop[, c("longitude", "latitude")], b)))
   fine <- expand.grid(longitude = seq(-74, -71, length.out = 120), latitude = seq(38.5, 41.2, length.out = 120))
@@ -24,7 +24,7 @@ test_that("clusters apart give separate pieces and an empty middle gives a hole"
   set.seed(1)
   two <- data.frame(x = c(runif(80, 0, 1), runif(80, 5, 6)), y = runif(160, 0, 1))
   b <- semiboundary(two)
-  expect_false(attr(b, "lonlat"))
+  expect_identical(attr(b, "scale"), "sd")
   expect_equal(sum(is.na(b$x)), 1)                         # two rings
   expect_true(all(in_b(two, b)))
   expect_false(in_b(data.frame(3, 0.5), b))                 # between the clusters
@@ -47,6 +47,33 @@ test_that("pm_points_in_poly(): one polygon as before; rings by NA rows with the
   expect_identical(pm_points_in_poly(P, rbind(sq, NA, hole)), c(TRUE, FALSE, FALSE))
   far <- sq + 10
   expect_identical(pm_points_in_poly(rbind(P, c(12, 12)), rbind(sq, NA, far)), c(TRUE, TRUE, FALSE, TRUE))
+})
+
+test_that("scale: coordinates in the same unit are not stretched", {
+  # points on a 4 x 1 strip in metres: with "same" the closing distance is in metres and
+  # the same along both axes; "sd" divides each axis by its own SD
+  set.seed(3)
+  st <- data.frame(east = runif(300, 0, 400), north = runif(300, 0, 100))
+  bs <- semiboundary(st, scale = "same")
+  expect_identical(attr(bs, "scale"), "same")
+  expect_true(all(in_b(st, bs)))
+  expect_equal(range(bs$east, na.rm = TRUE), c(0, 400), tolerance = 0.05)
+  expect_identical(attr(semiboundary(st), "scale"), "sd")
+  expect_error(semiboundary(st, scale = "metres"), "should be one of")
+})
+
+test_that("small holes are filled, an area without data stays a hole", {
+  g <- expand.grid(x = 1:30, y = 1:30)
+  lake <- g[!(g$x %in% 10:15 & g$y %in% 10:15), ]               # 36 plots missing
+  b <- semiboundary(lake, scale = "same")
+  expect_false(in_b(data.frame(12.5, 12.5), b))
+  gap <- g[!(g$x %in% 10:12 & g$y %in% 10:12), ]                # 9 plots missing: filled
+  expect_true(in_b(data.frame(11, 11), semiboundary(gap, scale = "same")))
+  set.seed(1)
+  u <- data.frame(x = runif(10000), y = runif(10000))           # no spurious holes in dense random data
+  bu <- semiboundary(u)
+  expect_false(anyNA(bu))
+  expect_true(all(in_b(u, bu)))
 })
 
 test_that("arguments are checked", {

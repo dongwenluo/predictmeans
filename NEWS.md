@@ -804,8 +804,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   shapes, fills small gaps and keeps large empty areas as holes and
   distant clusters as separate pieces; d = 2 x the 95th percentile of the
   nearest-neighbour distances, so it follows the density of the data
-  (`mult`, `d` to change it). Longitude is shrunk by the cosine of the
-  latitude; other covariates are scaled by their SD. With twice the median
+  (`mult`, `d` to change it). `scale` puts the covariates on comparable
+  scales: `"lonlat"` (longitude shrunk by the cosine of the latitude; found
+  from the column names), `"same"` (map coordinates in one unit), `"sd"`
+  (two different variables). Holes smaller than the area of 20 data points
+  (`min_hole`) are filled. The outline is traced on a grid that gets finer
+  with the density of the data: 0.1 s for 150 points, 4 s for 10,000, 9 s
+  for 50,000. The help page has three examples with graphs (the scallop
+  survey against its original boundary, copper drill holes with three
+  values of `mult`, random points with a hole and a separate piece),
+  surfaces drawn inside the boundary, and a section of suggestions. With twice the median
   spacing, uniform random designs of 50-1000 points gave 4 pieces and 12
   spurious holes on average; with the 95th percentile one piece and no
   holes, every point inside. On the `scallop` survey it covers 85% of the
