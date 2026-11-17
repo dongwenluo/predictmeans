@@ -39,7 +39,8 @@ fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20)))
                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm, prt = FALSE)
 anova(fit)$smooth       # are the boys' curves straight lines?
 semipred(fit, "age", "age", prt = FALSE)$plt
-\donttest{
+\dontrun{
+# (about 30 s: 2257 measurements, 130 boys' curves)
 # all boys: a common curve and a black-white deviation curve (the contrast curve of
 # Harezlak, Ruppert and Wand); at which ages do the races differ, and in growth rate?
 gm <- subset(growthIndiana, male == 1)
