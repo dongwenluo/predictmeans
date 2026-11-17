@@ -796,6 +796,28 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`smZ()` and `smoothZ` are superseded** (maintainer's decision of
+  2026-11-17): they keep working, so that 1.x code runs, but get no new
+  features; `?smZ` has the table of their formula equivalents. Every help
+  page, vignette and article now writes smooths in the formula, with more
+  examples of the semi-parametric system: curves in a mixed model, a
+  split-plot design with curves over time, crossed factors (`s(x, f1*f2)`),
+  an additive model with a varying coefficient, a basis of your own, binary
+  responses, subject-specific curves, counts with zero inflation, AR(1)
+  residuals, surfaces (`?semireg`, `?semireg_tmb`, `?semipred`, section
+  "More situations" of `vignette("smooth")`). The migration table said
+  `smZ(cbind(x1, x2), type = "Ztps")` is `s(x1, x2, bs = "ztps")`: the
+  defaults differ (6 and 10 knots per axis), it is `bs = "ztps", k = 6`.
+* **New data sets: the data of M. P. Wand's semiparametric regression
+  examples** (the maintainer's golden examples): `growthIndiana`
+  (subject-specific growth curves, black-white contrast curve), `SBMDfem`
+  (bone density by ethnic group, additive mixed model), `ozoneCalif`
+  (additive model), `scallop` with `scallopKnots` and `scallopBdry`
+  (thin-plate surface inside a boundary), `wageTUnion` (penalised spline
+  logistic regression) and `copperKnots` (for `copper`), each with its
+  analysis in the formula syntax; `semireg()` reproduces the original
+  `lme()` fits (`tests/testthat/test-semireg-golden.R`).
+
 * **`s(x, bs = "user", xt = list(basis = f))`: a basis of your own in the
   formula of `semireg()` / `semireg_tmb()`**, the formula form of a matrix
   in `smoothZ`: `f(x)` (or `f(x1, x2)`) returns a matrix with a row per
@@ -1552,6 +1574,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   it in the grid too.
 
 ## Speed
+
+* The Satterthwaite df of the curves of `semireg()` fits (`semipred()`,
+  `predictmeans()`): central differences instead of Richardson
+  extrapolation, and only the block of the inverse mixed-model matrix that
+  the curves use (the fixed and smooth coefficients, not the subjects'
+  random effects), and the Hessian of the variance parameters computed
+  once per fit (cached). On the growth curves of 2257 rows with 130
+  subject curves: the difference of two curves with a simultaneous band
+  46 s -> 6 s, slopes 23 s -> 3 s. `semipred(contr = )` no longer computes
+  the df of the curves it does not report.
 
 * Satterthwaite and Kenward-Roger df for `lme` and `gls` models build the
   covariance of the data as a sparse matrix, block diagonal by subject, so the

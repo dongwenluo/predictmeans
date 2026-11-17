@@ -28,7 +28,7 @@
 #'   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
 #'   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
-#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")} \tab \code{x1 + x2} \cr
+#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6} \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own (see \code{\link{semireg}}) \tab \code{x} \cr
 #'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
 #'   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
@@ -56,7 +56,7 @@
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
 #' @param data data frame (tibbles are OK) containing model variables. Not required, but strongly recommended; if \code{data} is not specified, downstream methods such as prediction with new data (\code{predict(fitted_model, newdata = ...)}) will fail. If it is necessary to call \code{glmmTMB} with model variables taken from the environment rather than from a data frame, specifying \code{data=NULL} will suppress the warning message.
 #' @param family a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.
-#' @param smoothZ The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+#' @param smoothZ Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 #' smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.
 #' @param ziformula a \emph{one-sided} (i.e., no response variable) formula for zero-inflation combining fixed and random effects: the default \code{~0} specifies no zero-inflation. Specifying \code{~.} sets the zero-inflation formula identical to the right-hand side of \code{formula} (i.e., the conditional effects formula); terms can also be added or subtracted. \strong{When using \code{~.} as the zero-inflation formula in models where the conditional effects formula contains an offset term, the offset term will automatically be dropped}. The zero-inflation model uses a logit link.
 #' @param dispformula a \emph{one-sided} formula for dispersion containing only fixed effects: the default \code{~1} specifies the standard dispersion given any family. The argument is ignored for families that do not have a dispersion parameter. For an explanation of the dispersion parameter for each family, see \code{\link{sigma}}. The dispersion model uses a log link. In Gaussian mixed models, \code{dispformula=~0} fixes the residual variance to be 0 (actually a small non-zero value), forcing variance into the random effects. The precise value can be controlled via \code{control=glmmTMBControl(zero_dispval=...)}; the default value is \code{sqrt(.Machine$double.eps)}.
@@ -104,38 +104,41 @@
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
-#' if (requireNamespace("HRW", quietly = TRUE)) {
-#'   data(WarsawApts, package = "HRW")
-#'   fit1 <- semireg_tmb(areaPerMzloty ~ construction.date,
-#'                       smoothZ=list(
-#'                         grp=smZ(construction.date, k=25)
-#'                       ),
-#'                       data = WarsawApts)
-#'   sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+#' ## Counts with extra zeros: curves of two treatments, a random site effect, a negative
+#' ## binomial with zero inflation; the rate ratio of the curves along x and where it differs
+#' ## from 1
+#' set.seed(5)
+#' cn <- expand.grid(x = seq(0, 3, length = 30), trt = factor(c("ctl", "trt")), site = factor(1:8))
+#' cn$y <- rnbinom(nrow(cn), size = 3,
+#'                 mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
+#' cn$y[runif(nrow(cn)) < 0.1] <- 0
+#' fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
+#'                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+#' rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+#' attr(rr$pred_df, "significant")
+#' predictmeans(fc, "trt", covariate = c(x = 1.5))$means
+#' \donttest{
+#' ## Repeated measures: curves over time, AR(1) correlation within subjects (the residual
+#' ## covariance, dispformula = ~0); means at a time with Satterthwaite df
+#' set.seed(9)
+#' d <- expand.grid(t = 1:8, id = factor(1:12))
+#' d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
+#' d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
+#'   unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
+#' d$tf <- factor(d$t)
+#' fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
+#'                   dispformula = ~0, data = d, prt = FALSE)
+#' predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
+#' varcomp(fa)
 #'
-#'   WarsawApts$district <- factor(WarsawApts$district)
-#'   fit2 <- semireg_tmb(areaPerMzloty ~ construction.date*district,
-#'                       smoothZ=list(group=smZ(construction.date, k=15,
-#'                                              by = district, group=TRUE)),
-#'                       data=WarsawApts)
-#'   sp_out2_1 <- semipred(fit2, "district", "construction.date")
-#'   sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-#' }
+#' ## Binary responses with a random intercept per child (HRW::indonRespir)
 #' if (requireNamespace("HRW", quietly = TRUE)) {
 #'   data(indonRespir, package = "HRW")
-#'   fit3 <- semireg_tmb(respirInfec ~ age+vitAdefic + female + height
-#'                       + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-#'                       smoothZ=list(
-#'                         grp=smZ(age)
-#'                       ),
-#'                       family = binomial,
-#'                       data = indonRespir)
-#'   sp_out3 <- semipred(fit3, "age", "age")
-#'   library(ggplot2)
-#'   print(sp_out3$plt +
-#'     geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-#'     geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
-#'     coord_cartesian(ylim = c(0, 0.2)))
+#'   fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
+#'                       stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+#'                     family = binomial, data = indonRespir, prt = FALSE)
+#'   semipred(fb, "age", "age", prt = FALSE)$plt
+#' }
 #' }
 #' @name semireg_tmb
 NULL

@@ -382,7 +382,7 @@ pm_sr_satt_ddf <- function(semireg, L, idx, hold = names(semireg$refit$smoothZ))
     M <- Matrix::forceSymmetric(Matrix::crossprod(Ct * w, Ct) +
                                   Matrix::.bdiag(list(Matrix::Matrix(0, p, p), Matrix::Diagonal(q))))
     B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
-    psi[k]^2 * colSums(as.matrix(Matrix::solve(M, Matrix::t(B))) * t(as.matrix(B)))
+    psi[k]^2 * pm_quad_diag(M, B)
   }
   v0 <- v(vp$varpar)
   # variance components estimated at zero are left out (as Kenward-Roger,
@@ -395,7 +395,7 @@ pm_sr_satt_ddf <- function(semireg, L, idx, hold = names(semireg$refit$smoothZ))
   held <- which(rep(names(cnms), nth) %in% hold)
   free <- setdiff(seq_len(k), c(bnd, held))
   vfree <- function(x) { y <- vp$varpar; y[free] <- x; v(y) }
-  G <- numDeriv::jacobian(vfree, vp$varpar[free])
+  G <- pm_jac_central(vfree, vp$varpar[free])
   denom <- rowSums((G %*% pm_cov_given(vp$vcov_varpar, free)) * G)
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
@@ -462,8 +462,7 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
     Dm <- Matrix::Diagonal(x = 1/dM)
     Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
     B <- Lf %*% Matrix::.bdiag(list(Matrix::Diagonal(p), Lam))
-    Y <- Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(B))
-    colSums(as.matrix(Y) * t(as.matrix(B)))
+    pm_quad_diag(Ms, B %*% Dm)
   }
   x0 <- pf[pos]
   v0 <- v(x0)
@@ -493,7 +492,7 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
   move <- c(free, held)
   vmove <- function(x) { y <- x0; y[move] <- x; v(y) }
   G <- matrix(0, length(v0), length(x0))
-  G[, move] <- numDeriv::jacobian(vmove, x0[move])
+  G[, move] <- pm_jac_central(vmove, x0[move])
   Ai <- solve(A)
   Vphi <- Ai %*% V[use, use, drop = FALSE] %*% t(Ai)
   G <- (G %*% A)[, free, drop = FALSE]
@@ -501,4 +500,36 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
   df
+}
+
+## diag(B M^-1 B') for a symmetric positive definite (sparse) M and the rows
+## of B. Only the columns J that B uses matter: with S = (M^-1)[J, J] (from
+## |J| solves with M's sparse Cholesky factor), diag = rowSums((B_J S) * B_J).
+## The population curves of semipred() use the fixed and smooth coefficients
+## only, a few dozen columns of a large M (the subjects' random effects).
+pm_quad_diag <- function(M, B) {
+  J <- which(Matrix::colSums(abs(B)) > 0)
+  if (!length(J)) return(rep(0, nrow(B)))
+  E <- Matrix::sparseMatrix(i = J, j = seq_along(J), x = 1, dims = c(nrow(M), length(J)))
+  ch <- tryCatch(Matrix::Cholesky(M, perm = TRUE, LDL = FALSE), error = function(e) NULL)
+  S <- as.matrix(if (is.null(ch)) Matrix::solve(M, E) else Matrix::solve(ch, E))[J, , drop = FALSE]
+  BJ <- as.matrix(B[, J, drop = FALSE])
+  rowSums((BJ %*% S) * BJ)
+}
+
+## The Jacobian of f at x by central differences (two evaluations per
+## parameter; step 1e-4 relative, at least 1e-6): for the Satterthwaite df of
+## many prediction points, where Richardson extrapolation would cost some
+## eight evaluations per parameter for no difference that matters to a df.
+pm_jac_central <- function(f, x) {
+  f0 <- f(x)
+  G <- matrix(0, length(f0), length(x))
+  for (j in seq_along(x)) {
+    h <- 1e-4*max(abs(x[j]), 1e-2)
+    xp <- xm <- x
+    xp[j] <- x[j] + h
+    xm[j] <- x[j] - h
+    G[, j] <- (f(xp) - f(xm))/(2*h)
+  }
+  G
 }

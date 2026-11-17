@@ -122,57 +122,49 @@
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
-#' data(Dialyzer, package="nlme")
-#' str(Dialyzer)
-#'
+#' data(Dialyzer, package = "nlme")
 #' library(ggplot2)
-#' ggplot(Dialyzer, aes(x=pressure, y=rate, col=QB)) +
+#' ggplot(Dialyzer, aes(x = pressure, y = rate, col = QB)) +
 #'   geom_line() +
 #'   facet_wrap(vars(Subject))
 #'
-#' fm <- semireg(rate ~ pressure*QB+(pressure|Subject),
-#'               smoothZ=list(
-#'                 qb_grp=smZ(pressure, k=4, by=QB, group=TRUE)
-#'               ),
-#'               data=Dialyzer)
-#' str(fm$data)
-#' summary(fm$semer)
-#' residplot(fm$semer, group="QB")
+#' # a curve per blood flow rate, a random intercept and slope per dialyzer
+#' fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
+#'               data = Dialyzer, prt = FALSE)
+#' residplot(fm$semer, group = "QB")
 #' anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
-#' R2_glmm(fm$semer)
-#' ap_out1 <- semipred(fm, "QB", "pressure")
-#' str(ap_out1$pred_df)
-#' ap_out2 <- semipred(fm, "QB", "pressure", contr=c(1,2))
-#' str(ap_out2$pred_df)
 #'
-#' \donttest{
-#' str(sleepstudy)
-#' ggplot(sleepstudy, aes(x=Days, y=Reaction)) +
-#'   geom_point() +
-#'   geom_smooth(method="lm", formula=y~x, se=FALSE) +
-#'   facet_wrap(vars(Subject), nrow=2) +
-#'   labs(x="Days of sleep deprivation", y="Average reaction time (ms)")
+#' # the curves with pointwise bands (t limits with Satterthwaite df), then simultaneous ones
+#' out <- semipred(fm, "QB", "pressure")
+#' head(out$pred_df)
+#' semipred(fm, "QB", "pressure", band = "simultaneous")
+#' # at given pressures
+#' semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2), prt = FALSE)$pred_df
 #'
-#' sleep.semi <- semireg(Reaction ~ Days*Subject,
-#'                       smoothZ=list(
-#'                         sub_grp=smZ(Days, by=Subject, group=TRUE)
-#'                       ),
-#'                       data=sleepstudy)
-#' residplot(sleep.semi$semer)
-#' summary(sleep.semi$semer)
-#' anova(sleep.semi)
-#' R2_glmm(sleep.semi$semer)
-#'
-#' predout1 <- semipred(sleep.semi, "Subject", "Days")
-#' str(predout1$pred_df)
-#' predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
-#' str(predout2$pred_df)
+#' # the difference of the two curves, and where they differ
+#' dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
+#' attr(dif$pred_df, "significant")
 #'
 #' # slopes of the curves, and where they differ from zero over the whole range
-#' fm2 <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-#'                data = Dialyzer, prt = FALSE)
-#' slp <- semipred(fm2, "QB", "pressure", deriv = 1, band = "simultaneous")
+#' slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
 #' attr(slp$pred_df, "significant")
+#' \donttest{
+#' # a surface: copper grade over the plane and a smooth in depth (data(copper))
+#' data(copper)
+#' fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
+#'                data = copper, prt = FALSE)
+#' semipred(fcu, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+#' semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+#'
+#' # a binary response: the probability scale, and the odds ratio of two curves
+#' set.seed(4)
+#' db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
+#' db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
+#'                                      rnorm(12, 0, 0.5)[db$cl]))
+#' fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
+#'                 prt = FALSE)
+#' semipred(fbin, "g", "x", prt = FALSE)$plt
+#' head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df)
 #' }
 #' @name semipred
 NULL
@@ -262,8 +254,10 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   crit_of <- function(D, df) {
     if (simultaneous) pm_sim_crit(D, sm_Cov, level, df = df) else stats::qt(1 - level/2, df)
   }
-  df_mx <- df_of(D_mx)
-  crit <- crit_of(D_mx, df_mx)
+  # (with contr only the difference of two curves is reported: its own df
+  # and critical value below)
+  df_mx <- if (is.null(contr)) df_of(D_mx) else rep(Inf, nrow(D_mx))
+  crit <- if (is.null(contr)) crit_of(D_mx, df_mx) else stats::qnorm(1 - level/2)
   stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
   LL <- y_hat - crit*stderr

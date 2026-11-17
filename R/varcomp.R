@@ -397,7 +397,12 @@ pm_vc_mer_fun <- function(model, residual) {
 ## Satterthwaite df (R/satterthwaite.R).
 pm_lmer_varpar <- function(model) {
   # a semireg() fit keeps its own deviance function (with the smooth designs:
-  # a refit from its call would have plain random intercepts in their place)
+  # a refit from its call would have plain random intercepts in their place),
+  # and a cache: the Hessian is computed once per fit (several df and
+  # varcomp() calls), keyed by the fit's variance parameters
+  cache <- if (methods::is(model, "semerMod")) model@semireg_info$cache
+  key <- unname(c(lme4::getME(model, "theta"), stats::sigma(model)))
+  if (is.environment(cache) && identical(cache$key, key)) return(cache$varpar)
   devfun <- if (methods::is(model, "semerMod")) model@semireg_info$devfun
   if (is.null(devfun)) {
     cl <- stats::getCall(model)
@@ -410,7 +415,9 @@ pm_lmer_varpar <- function(model) {
   varpar <- unname(c(lme4::getME(model, "theta"), stats::sigma(model)))
   h <- numDeriv::hessian(func = devfun_vp, x = varpar, devfun = devfun, reml = is_reml)
   devfun(varpar[-length(varpar)])             # leave the deviance function at the optimum
-  list(devfun = devfun, varpar = varpar, vcov_varpar = 2 * pm_vc_inv(h))
+  out <- list(devfun = devfun, varpar = varpar, vcov_varpar = 2 * pm_vc_inv(h))
+  if (is.environment(cache)) { cache$varpar <- out; cache$key <- key }
+  out
 }
 
 pm_vc_lmer <- function(model, ci, level, information = "observed") {

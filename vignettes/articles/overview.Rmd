@@ -619,11 +619,9 @@ ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
 #### Model
 
 ```{r}
-mod1 <- semireg(apartment.price ~ construction.date,
-                smoothZ=list(
-                  grp=smZ(construction.date, k=25) 
-                ), # Use of a O'Sullivan spline with 25 knots 
-                  #  to model the non-linear relationship
+# an O'Sullivan spline with 25 interior knots for the non-linear relationship;
+# its straight line (construction.date) is added to the fixed effects
+mod1 <- semireg(apartment.price ~ s(construction.date, bs = "os", k = 25),
                 data = WarsawApts)
 ```
 
@@ -678,12 +676,10 @@ pred_out1$plt
 #### Model
 
 ```{r}
-mod2 <- semireg(apartment.price ~ construction.date*district, 
-                smoothZ=list(
-                  grp=smZ(construction.date, k=10, 
-                            by = district, group=TRUE)
-                  ),
-                data=WarsawApts)
+# a curve per district, each with its own smoothing variance; district and the
+# district slopes (district + district:construction.date) are added automatically
+mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os", k = 10),
+                data = WarsawApts)
 ```
 
 #### Residual Plot
@@ -780,13 +776,9 @@ summary(Caschool)
 #### Model
 
 ```{r}
-mod <- semireg_tmb(mathscr ~ calwpct+ log.avginc+ compstu+(1|county)+(1|grspan),
-                          smoothZ=list(
-                            cal_grp=smZ(calwpct, k=12),  
-                            avg_grp=smZ(log.avginc, k=5),
-                            comp_grp=smZ(compstu, k=12)
-                          ), 
-                          data=Caschool)
+mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = "os", k = 5) +
+                     s(compstu, bs = "os", k = 12) + (1 | county) + (1 | grspan),
+                   data = Caschool)
 ```
 
 #### Residual Plot
@@ -878,13 +870,9 @@ summary(indonRespir)
 #### Model
 
 ```{r}
-mod1 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
-                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                             smoothZ=list(
-                               grp=smZ(age, k=25)
-                             ),
-                             family = binomial,
-                             data = indonRespir)
+mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic + sex + height + stunted +
+                      visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
 ```
 
 #### Residual Plot
@@ -935,13 +923,10 @@ pred_out1$plt+
 #### Model
 
 ```{r}
-mod2 <- semireg_tmb(respirInfec ~ age+vitAdefic + sex + height + stunted + 
-                      visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-                smoothZ=list(
-                  grp=smZ(age, k=25, by=sex, group=TRUE)
-                ),
-                family = binomial,
-                data = indonRespir)
+# a curve of age for each sex (sex and sex:age are added to the fixed effects)
+mod2 <- semireg_tmb(respirInfec ~ s(age, by = sex, bs = "os", k = 25) + vitAdefic + height + stunted +
+                      visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
 ```
 
 #### Residual Plot
@@ -1033,14 +1018,11 @@ summary(ragweed)
 #### Model
 
 ```{r}
-mod <- semireg_tmb(pollenCount ~ rain+year+temperatureResidual+dayInSeason+windSpeed,
-                   smoothZ=list(
-                     s_day=smZ(dayInSeason, by=year, group=TRUE),
-                     s_temp=smZ(temperatureResidual),
-                     s_wind=smZ(windSpeed)
-                   ),
-                   family = nbinom1,
-                   data=ragweed)
+# a seasonal curve for each year (with year and year:dayInSeason as fixed terms),
+# and curves in temperature and wind speed
+mod <- semireg_tmb(pollenCount ~ rain + s(dayInSeason, by = year, bs = "os") +
+                     s(temperatureResidual, bs = "os") + s(windSpeed, bs = "os"),
+                   family = nbinom1, data = ragweed)
 ```
 
 #### Residual Plot
@@ -1069,7 +1051,7 @@ R2_glmm(mod$semer)
 #### Predict Table
 
 ```{r}
-pred_out1_1 <- semipred(mod, "year", "dayInSeason", sm_term="s_day", prt=FALSE)
+pred_out1_1 <- semipred(mod, "year", "dayInSeason", prt=FALSE)   # other covariates at their means
 DT_df(pred_out1_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1113,12 +1095,11 @@ DT_df(copper)
 #### Model
 
 ```{r}
-mod <- semireg(log(grade) ~ (xcoord+ycoord+zcoord)^2,
-                smoothZ=list(
-                  grp_z=smZ(zcoord),
-                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
-                  ), 
-                data=copper)
+# an O'Sullivan spline in depth, a thin-plate surface over the plane (their linear
+# terms are added to the fixed effects), and the pairwise interactions of the coordinates
+mod <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
+                 xcoord:ycoord + xcoord:zcoord + ycoord:zcoord,
+               data = copper)
 ```
 
 #### Residual Plot
@@ -1148,18 +1129,6 @@ kable(anova(mod)$smooth)
 R2_glmm(mod$semer)
 ```
 
-The negative $R^2$ indictates we may fit the model with intercept only.
-```{r}
-mod <- semireg(log(grade) ~ 1,
-                smoothZ=list(
-                  grp_z=smZ(zcoord),
-                  grp_geo=smZ(cbind(xcoord, ycoord), type="Ztps")
-                  ), 
-                data=copper)
-```
-```{r}
-R2_glmm(mod$semer)
-```
 
 
 ### Semiparametric prediction {.tabset .tabset-pills}

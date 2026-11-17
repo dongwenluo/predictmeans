@@ -20,7 +20,7 @@
 #'   \code{(s(x, k = 10) | g)} \tab random curve per level of \code{g}: \code{(x | g)} (correlated intercepts and slopes) plus a spline deviation per level, one variance \tab none \cr
 #'   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
-#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
+#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own: \code{f(x)} (\code{f(x1, x2)} for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in \code{smoothZ}); checked before the fit (see below); \code{xt = list(basis = f, null = "constant")} or \code{"none"} for a smaller fixed part \tab \code{x} (\code{x1 + x2}) \cr
 #'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
 #'   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
@@ -61,8 +61,9 @@
 #'
 #' The penalised-spline examples fitted by \code{nlme::lme} in Wand's course scripts and in \pkg{HRW} (additive
 #' models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
-#' give the same REML log-likelihood and fitted values with \code{semireg()} (data in
-#' \code{system.file("extdata", "semireg", package = "predictmeans")}; \code{tests/testthat/test-semireg-golden.R}).
+#' give the same REML log-likelihood and fitted values with \code{semireg()} (\code{tests/testthat/test-semireg-golden.R});
+#' their data are in the package: \code{\link{growthIndiana}}, \code{\link{SBMDfem}}, \code{\link{ozoneCalif}},
+#' \code{\link{scallop}}, \code{\link{wageTUnion}}, \code{\link{copper}}, whose help pages show the analyses.
 #' The optimizer is \code{nloptwrap} (lme4's default for \code{lmer}) since 2.0: on these examples it reached the
 #' same optimum as \code{bobyqa} (1.x's default; \code{control = lmerControl(optimizer = "bobyqa")}) faster, also
 #' for binomial and Poisson fits. Each smooth block of a formula smooth is scaled as a random intercept (sum of
@@ -72,7 +73,8 @@
 #' Moving from the \code{smoothZ} form: \code{y ~ x, smoothZ = list(sm = smZ(x, k = 10))} is
 #' \code{y ~ s(x, bs = "os", k = 10)}; \code{smZ(x, by = f, group = TRUE)} is \code{s(x, by = f, bs = "os")};
 #' \code{smZ(x, by = f)} (one variance) is \code{s(x, by = f, bs = "os", id = 1)}; \code{smZ(cbind(x1, x2),
-#' type = "Ztps")} is \code{s(x1, x2, bs = "ztps")}; \code{smZ(x, intKnots = kn, range.x = r)} is
+#' type = "Ztps")} is \code{s(x1, x2, bs = "ztps", k = 6)} (\code{smZ()}'s default of 6 knots per axis; the default
+#' of \code{bs = "ztps"} is 10); \code{smZ(x, intKnots = kn, range.x = r)} is
 #' \code{s(x, bs = "os", xt = list(knots = kn, range = r))}; any other matrix-valued function of the covariate is
 #' \code{s(x, bs = "user", xt = list(basis = f))}; \code{smZ(x, drv = 1)} (the derivative of the basis) is
 #' \code{semipred(..., deriv = 1)}. The fits are the same (\code{vignette("smooth")}).
@@ -87,7 +89,7 @@
 #' @param family A GLM family, see glm and family.
 #' @param ngbinomial Logical scalar - Should a negative binomial GLMMs be used?                  .
 #' @param REML Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?
-#' @param smoothZ The older form of the smooths (see \sQuote{Smooth terms in the formula} for the newer one): a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
+#' @param smoothZ Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 #' smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.
 #' @param ncenter Logical scalar - Should the numeric predictors to be centered or not?
 #' @param nscale Logical scalar - Should the numeric predictors to be scaled or not?
@@ -132,47 +134,77 @@
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
-#' if (requireNamespace("HRW", quietly = TRUE)) {
-#'   data(WarsawApts, package = "HRW")
-#'   WarsawApts$district <- factor(WarsawApts$district)
-#'   # smooths in the formula: a curve per district; district and its slopes are added as fixed terms
-#'   fit0 <- semireg(areaPerMzloty ~ s(construction.date, by = district), data = WarsawApts, prt = FALSE)
-#'   semipred(fit0, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
-#'   predictmeans(fit0, "district", covariate = c(construction.date = 1980))$means
-#' }
-#' if (requireNamespace("HRW", quietly = TRUE)) {
-#'   data(WarsawApts, package = "HRW")
-#'   fit1 <- semireg(areaPerMzloty ~ construction.date,
-#'                   smoothZ=list(
-#'                     grp=smZ(construction.date, k=25)
-#'                   ),
-#'                   data = WarsawApts)
-#'   sp_out1 <- semipred(fit1, "construction.date", "construction.date")
+#' ## 1. Curves in a mixed model (nlme::Dialyzer): a curve of the ultrafiltration rate over
+#' ##    pressure for each blood flow rate, a random intercept and slope per dialyzer; the
+#' ##    fixed terms QB + QB:pressure are added automatically
+#' data(Dialyzer, package = "nlme")
+#' fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
+#'               data = Dialyzer, prt = FALSE)
+#' anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test of each smooth
+#' varcomp(fm)     # variance components, the smooths' among them
+#' predictmeans(fm, "QB", covariate = c(pressure = 1))$means
+#' semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous", prt = FALSE)$plt
 #'
-#'   WarsawApts$district <- factor(WarsawApts$district)
-#'   fit2 <- semireg(areaPerMzloty ~ construction.date*district, resp_scale = TRUE,
-#'                   smoothZ=list(group=smZ(construction.date, k=15,
-#'                                          by = district, group=TRUE)),
-#'                   data=WarsawApts)
-#'   sp_out2_1 <- semipred(fit2, "district", "construction.date")
-#'   sp_out2_2 <- semipred(fit2, "district", "construction.date", contr=c(2,1))
-#' }
+#' ## 2. A designed experiment: treatments on the whole plots of six blocks, curves over time;
+#' ##    treatment means at a time get Satterthwaite df from the whole-plot stratum
+#' set.seed(11)
+#' sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
+#' sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] +
+#'   rnorm(18, 0, 0.3)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
+#' fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
+#'                data = sp, prt = FALSE)
+#' predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)$pairs
+#'
+#' ## 3. Two crossed factors: a common curve and deviation curves for f1, f2 and f1:f2, each
+#' ##    with its own variance; which deviations are needed?
+#' set.seed(1)
+#' dx <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = factor(c("u", "v")),
+#'                   rep = 1:3)
+#' dx$y <- sin(2*pi*dx$x) + (dx$f1 == "q")*sin(pi*dx$x)^2 + rnorm(nrow(dx), 0, 0.2)
+#' fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx, prt = FALSE)
+#' varcomp(fx, test = TRUE)
+#'
+#' ## 4. An additive model with a varying coefficient: a smooth in x1, and the effect of z
+#' ##    changing smoothly with x2 (numeric 'by')
+#' set.seed(2)
+#' da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
+#' da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
+#' fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+#' anova(fa)$smooth
+#'
+#' ## 5. A basis of your own (checked before the fit): a seasonal cycle on a straight trend
+#' set.seed(3)
+#' ds <- data.frame(day = 1:730)
+#' ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
+#' season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
+#' fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
+#'               data = ds, prt = FALSE)
+#' semipred(fs, covariate = "day", prt = FALSE)$plt
 #' \donttest{
+#' ## 6. Binary responses with a random intercept per child (HRW::indonRespir): the probability
+#' ##    of a respiratory infection over age
 #' if (requireNamespace("HRW", quietly = TRUE)) {
 #'   data(indonRespir, package = "HRW")
-#'   fit3 <- semireg(respirInfec ~ age+vitAdefic + female + height
-#'                   + stunted + visit2 + visit3 + visit4  + visit5 + visit6+(1|idnum),
-#'                   smoothZ=list(
-#'                     grp=smZ(age)
-#'                   ),
-#'                   family = binomial,
-#'                   data = indonRespir)
-#'   sp_out3 <- semipred(fit3, "age", "age")
-#'   library(ggplot2)
-#'   print(sp_out3$plt +
-#'     geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
-#'     geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink") +
-#'     coord_cartesian(ylim = c(0, 0.2)))
+#'   fb <- semireg(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height + stunted +
+#'                   visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
+#'                 family = binomial, data = indonRespir, prt = FALSE)
+#'   semipred(fb, "age", "age", prt = FALSE)$plt
+#' }
+#'
+#' ## 7. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
+#' ##    own spline deviation, one variance for all; are the subjects' curves straight lines?
+#' fr <- semireg(Reaction ~ s(Days, bs = "os", k = 4) + (s(Days, k = 4) | Subject),
+#'               data = lme4::sleepstudy, prt = FALSE)
+#' anova(fr)$smooth
+#'
+#' ## 8. Curves by group, the price of apartments in Warsaw by district (HRW::WarsawApts)
+#' if (requireNamespace("HRW", quietly = TRUE)) {
+#'   data(WarsawApts, package = "HRW")
+#'   WarsawApts$district <- factor(WarsawApts$district)
+#'   fw <- semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
+#'                 data = WarsawApts, prt = FALSE)
+#'   semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
+#'   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 #' }
 #' }
 #' @name semireg
@@ -236,7 +268,8 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     # function (Satterthwaite df, varcomp()) cannot move the fitted model
     semer@theta <- semer@theta + 0
     semer <- methods::new("semerMod", semer,
-                          semireg_info = list(devfun = fit$devfun, data = st$data, smoothZ = st$smoothZN,
+                          semireg_info = list(devfun = fit$devfun, cache = new.env(parent = emptyenv()),
+                                              data = st$data, smoothZ = st$smoothZN,
                                               formula = st$formula, REML = isTRUE(REML), control = control))
   }
   if (prt) print(semer)

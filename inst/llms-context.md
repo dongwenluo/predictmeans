@@ -216,8 +216,11 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   curve + deviation curves, a variance per factor term; `(s(x, k = 10) | id)` = subject curves
   `(x | id)` + spline deviation (HRW's group-specific curves); no `te()`/`t2()` yet). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
-  `varcomp()`, `R2_model()`. The older `smoothZ = list(smZ())` form still runs (table in
-  `vignette("smooth")`). Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
+  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` are superseded: 1.x code still
+  runs, but write smooths in the formula (table in `?smZ` and `vignette("smooth")`; `smZ(type =
+  "Ztps")` is `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
+  `SBMDfem`, `ozoneCalif`, `scallop` (+ `scallopKnots`, `scallopBdry`), `wageTUnion`, `copper`
+  (+ `copperKnots`); their help pages show the analyses in the formula syntax. Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
   included and t tests with Satterthwaite df for fixed + smooth coefficients (design variance components
   and residual; smoothing parameters held at their estimates; generalized: inner-outer df of the design's
