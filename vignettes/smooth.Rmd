@@ -75,20 +75,22 @@ cur$plt
 
 The band is pointwise: at each pressure it covers the true curve with 95% probability
 (`level = 0.05`). Before version 2.0 these limits were 90% limits; `level = 0.1` gives
-them.
+them. They are t limits with the Satterthwaite df of each point (column `df`), from the
+variance components of the design (here the dialyzers) and the residual.
 
 A **simultaneous** band covers the whole curve at once with 95% probability, so it is
 wider. Use it to judge the shape of the curve over its whole range:
 
 ```{r}
 sim <- semipred(fm, "QB", "pressure", simultaneous = TRUE, prt = FALSE)
-crit <- (sim$pred_df$UL - sim$pred_df$rate) / sim$pred_df$SE
-c(pointwise = qnorm(0.975), simultaneous = crit[1])
+p <- sim$pred_df
+head(data.frame(pressure = p$pressure, df = p$df, pointwise = qt(0.975, p$df),
+                simultaneous = (p$UL - p$rate) / p$SE))
 sim$plt
 ```
 
-The critical value comes from 10,000 draws of the estimates' distribution, with a fixed
-seed, so the band is the same each time.
+The critical values come from 10,000 draws of the estimates' distribution (a
+multivariate t), with a fixed seed, so the band is the same each time.
 
 ## Where do the curves differ?
 
@@ -101,6 +103,25 @@ higher ultrafiltration rate from a pressure of about 1.2 upwards:
 dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), simultaneous = TRUE, prt = FALSE)
 dif$plt
 ```
+
+## Slopes and curvature: `deriv`
+
+`deriv = 1` gives the slope of each curve along the covariate, `deriv = 2` its
+curvature, with the same bands and df. Where the band lies above zero the rate still
+rises with pressure; the ranges are printed and kept in `attr(pred_df, "significant")`
+(here with a simultaneous band, which holds over the whole range at once):
+
+```{r}
+slp <- semipred(fm, "QB", "pressure", deriv = 1, simultaneous = TRUE, prt = FALSE)
+attr(slp$pred_df, "significant")
+slp$plt
+```
+
+`contr` with `deriv` compares the slopes of two curves. The derivatives are those of the
+whole fitted curve (fixed and smooth parts), for any basis, and for the O'Sullivan basis
+equal the exact derivatives of `smZ(drv = )`. For generalized models they are on the link
+scale. In a simulation (`dev/sim-semipred-deriv.R` in the package sources) their bands
+covered the true slope and curvature 0.97-1.00 at the 95% level.
 
 ## Means of factor levels
 

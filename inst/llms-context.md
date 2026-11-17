@@ -220,6 +220,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   included and t tests with Satterthwaite df for fixed + smooth coefficients (design variance components
   and residual; smoothing parameters held at their estimates; generalized: inner-outer df of the design's
   strata, z without strata); `semipred()` bands use the same df (column `df`; simultaneous: multivariate t);
+  `semipred(deriv = 1)` / `deriv = 2`: slopes / curvatures of the curves with bands (any basis; for
+  `bs = "os"` the exact `ZOSull(drv = )` derivatives), `contr` + `deriv` compares slopes, ranges where a
+  slope is above / below zero in `attr(pred_df, "significant")`; link scale for GLMMs;
   `anova(fit)` tests each smooth variance (as `varcomp(fit, test = TRUE)`).
 - `varcomp(model, test = TRUE)` (lmer, glmer, glmmTMB, semireg): an LRT per row, each row's model refitted
   (term dropped; `(x | g)` -> `(1 | g)`; covariances 0 by `||` / `diag()`; ar1/ou/cs correlation 0 by

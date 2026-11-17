@@ -796,6 +796,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`semipred(deriv = 1)` and `deriv = 2`: slopes and curvatures of the
+  fitted curves** along the covariate, with pointwise or simultaneous bands
+  and the same df as the curves; with `contr` the difference of two slopes.
+  The ranges where a slope is above or below zero (the curve rises or
+  falls) are printed and kept in `attr(pred_df, "significant")`. Central
+  differences of the whole prediction design, so any basis works; for the
+  O'Sullivan basis (`bs = "os"`, `smZ()`) they equal the exact derivatives
+  of `ZOSull(drv = )` to 1e-8 (tested). Generalized models: link scale.
+  The bands covered the true slope and curvature 0.97-1.00 at the 95% level
+  (`dev/sim-semipred-deriv.R`). This replaces `smZ(drv = )` for formula
+  smooths.
+
 * **`anova()` of `lmer` fits with df and p-values, without lmerTest**: Type
   III F tests with Kenward-Roger df by default (as SAS `DDFM=KR`),
   `ddf = "Satterthwaite"` (lmerTest's numbers), `type = "II"` or `"I"`

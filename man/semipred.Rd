@@ -10,7 +10,7 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 		   band=c("pointwise", "simultaneous"),
-		   unconditional=getOption("predictmeans.semi_unconditional"))
+		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -74,6 +74,10 @@ it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.}
 
 \item{simultaneous}{\code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).}
 
+\item{deriv}{\code{0} (the default): the curves; \code{1}: their slopes, \code{2}: their curvatures (first and
+second derivatives along \code{covariate}, one covariate), with bands as for the curves, and with \code{contr}
+the difference of the slopes (curvatures) of two curves. See \sQuote{Slopes and curvature}.}
+
 \item{contr_scale}{With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
 on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;
 \code{"response"} the difference of the back-transformed curves with a delta-method band. See
@@ -129,6 +133,22 @@ covariate where the curves differ are printed and kept in \code{attr(pred_df, "s
 when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)
 }
+\section{Slopes and curvature}{
+
+With \code{deriv = 1} (\code{2}) each row of the prediction design is replaced by its first (second) derivative
+along the covariate, by central differences of the whole design (the fixed part and every smooth basis, on the
+same grid), so the slopes are those of the fitted curves for any basis; for the O'Sullivan basis (\code{bs = "os"},
+\code{smZ()}) they equal the exact derivatives of the basis, \code{ZOSull(drv = )} (as \code{smZ(drv = )}),
+to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
+models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
+response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
+below zero (the curve rises or falls) are printed and kept in \code{attr(pred_df, "significant")}. A covariate
+scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. In a simulation
+(\file{dev/sim-semipred-deriv.R}; \eqn{y = \sin(x/1.5)} plus noise, 150 points, 500 data sets) the bands covered
+the true slope 0.97 pointwise and over the whole range with the default 6 knots, 0.99-1.00 with 15; the
+curvature 0.98-1.00.
+}
+
 \examples{
 library(predictmeans)
 data(Dialyzer, package="nlme")
@@ -176,6 +196,12 @@ predout1 <- semipred(sleep.semi, "Subject", "Days")
 str(predout1$pred_df)
 predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
 str(predout2$pred_df)
+
+# slopes of the curves, and where they differ from zero over the whole range
+fm2 <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
+               data = Dialyzer, prt = FALSE)
+slp <- semipred(fm2, "QB", "pressure", deriv = 1, band = "simultaneous")
+attr(slp$pred_df, "significant")
 }
 }
 \references{

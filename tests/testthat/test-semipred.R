@@ -245,3 +245,62 @@ test_that("semipred(contr = ) with two covariates: the difference of two surface
   expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
   expect_equal(r$significant, !r$includes0)
 })
+
+test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives of the O'Sullivan basis", {
+  set.seed(3)
+  d <- data.frame(x = runif(150, 0, 10))
+  d$y <- sin(d$x/1.5) + rnorm(150, 0, 0.3)
+  g <- suppressWarnings(semireg(y ~ x, smoothZ = list(sm = smZ(x, k = 10)), data = d, prt = FALSE))
+  xs <- seq(0.5, 9.5, by = 0.5)
+  xm <- attr(g$data, "x_mean")
+  kn <- g$knots_lst$sm
+  rg <- g$range_lst$sm
+  for (dv in 1:2) {
+    p <- semipred(g, covariate = "x", covariateV = xs, deriv = dv, prt = FALSE)$pred_df
+    Zd <- ZOSull(xs - xm, intKnots = kn, range.x = rg, drv = dv)
+    L <- cbind(0, if (dv == 1) 1 else 0, Zd)
+    expect_equal(p$y, as.numeric(L %*% c(lme4::fixef(g$semer), g$u_lst$sm)), tolerance = 1e-6)
+    idx <- seq_len(ncol(L))
+    expect_equal(p$SE, sigma(g$semer)*sqrt(rowSums((L %*% as.matrix(g$CovMat[idx, idx])) * L)), tolerance = 1e-6)
+    expect_equal(p$UL - p$y, qt(0.975, p$df)*p$SE, tolerance = 1e-8)
+    expect_equal(p$significant, !(p$LL <= 0 & p$UL >= 0))
+  }
+  # the formula form with the same basis gives the same slopes
+  f <- suppressWarnings(semireg(y ~ s(x, bs = "os", k = 10, xt = list(knots = kn + xm, range = rg + xm)), data = d,
+                                prt = FALSE))
+  pf <- semipred(f, covariate = "x", covariateV = xs, deriv = 1, prt = FALSE)$pred_df
+  pg <- semipred(g, covariate = "x", covariateV = xs, deriv = 1, prt = FALSE)$pred_df
+  expect_equal(pf$y, pg$y, tolerance = 1e-5)
+  expect_equal(pf$SE, pg$SE, tolerance = 1e-5)
+  # the ranges where the slope differs from 0 (true slope cos(x/1.5)/1.5: > 0 below 2.36, < 0 to 7.07)
+  sig <- attr(semipred(f, covariate = "x", deriv = 1, prt = FALSE)$pred_df, "significant")
+  expect_equal(sig$direction, c("> 0", "< 0", "> 0"))
+  expect_true(sig$to[1] < 2.36 && sig$from[2] > 2.36 && sig$to[2] < 7.07 && sig$from[3] > 7.07)
+  expect_message(semipred(f, covariate = "x", deriv = 1), "Slope of y")
+  expect_error(semipred(f, covariate = "x", deriv = 3), "0, 1 or 2")
+  expect_error(semipred(f, covariate = "x", deriv = 1, trans = exp), "model scale")
+})
+
+test_that("semipred(deriv = , contr = ): the difference of two slopes; generalized fits on the link scale", {
+  set.seed(11)
+  sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
+  sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] + rnorm(nrow(sp), 0, 0.3)
+  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), data = sp, prt = FALSE))
+  a <- semipred(f, "A", "t", deriv = 1, prt = FALSE)$pred_df
+  r <- semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1"), prt = FALSE)$pred_df
+  expect_equal(r$y, a$y[a$A == "a2"] - a$y[a$A == "a1"], tolerance = 1e-10)
+  expect_equal(r$UL - r$y, qt(0.975, r$df)*r$SE_contr, tolerance = 1e-8)
+  expect_message(semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1")), "slope of a2|includes no difference")
+  # a GLMM: slopes of the linear predictor, no back-transformation
+  sp$cnt <- rpois(nrow(sp), exp(1 + sin(sp$t/2)/2))
+  g <- suppressWarnings(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = sp,
+                                prt = FALSE))
+  gp <- semipred(g, "A", "t", deriv = 1, prt = FALSE)$pred_df
+  expect_null(gp$SE_mu)
+  eta <- function(v) {
+    des <- pm_semi_design(g, "A", "t", v, NULL, g$data)
+    as.numeric(as.matrix(des$D_mx) %*% des$beta_u)
+  }
+  tt <- unique(gp$t)
+  expect_equal(gp$cnt, (eta(tt + 1e-4) - eta(tt - 1e-4))/2e-4, tolerance = 1e-5)
+})

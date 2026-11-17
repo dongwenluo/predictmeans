@@ -9,7 +9,7 @@
 #' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 #' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 #' 		   band=c("pointwise", "simultaneous"),
-#' 		   unconditional=getOption("predictmeans.semi_unconditional"))
+#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -51,10 +51,26 @@
 #'   data 0.97 without it (0.98 with it). \code{options(predictmeans.semi_unconditional = TRUE)} (or \code{FALSE}) sets
 #'   it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.
 #' @param simultaneous \code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).
+#' @param deriv \code{0} (the default): the curves; \code{1}: their slopes, \code{2}: their curvatures (first and
+#'   second derivatives along \code{covariate}, one covariate), with bands as for the curves, and with \code{contr}
+#'   the difference of the slopes (curvatures) of two curves. See \sQuote{Slopes and curvature}.
 #' @param contr_scale With \code{contr} and a generalized model: \code{"model"} (the default) plots the difference
 #'   on the link scale, as the ratio (log link) or the odds ratio (logit link) of the two curves;
 #'   \code{"response"} the difference of the back-transformed curves with a delta-method band. See
 #'   \sQuote{Comparing two lines} in \code{\link{covariatemeans}}: the test is on the model scale.
+#' @section Slopes and curvature:
+#' With \code{deriv = 1} (\code{2}) each row of the prediction design is replaced by its first (second) derivative
+#' along the covariate, by central differences of the whole design (the fixed part and every smooth basis, on the
+#' same grid), so the slopes are those of the fitted curves for any basis; for the O'Sullivan basis (\code{bs = "os"},
+#' \code{smZ()}) they equal the exact derivatives of the basis, \code{ZOSull(drv = )} (as \code{smZ(drv = )}),
+#' to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
+#' models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
+#' response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
+#' below zero (the curve rises or falls) are printed and kept in \code{attr(pred_df, "significant")}. A covariate
+#' scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. In a simulation
+#' (\file{dev/sim-semipred-deriv.R}; \eqn{y = \sin(x/1.5)} plus noise, 150 points, 500 data sets) the bands covered
+#' the true slope 0.97 pointwise and over the whole range with the default 6 knots, 0.99-1.00 with 15; the
+#' curvature 0.98-1.00.
 #' @details
 #' Degrees of freedom (gaussian fits, both engines): a point of a curve, or of a difference of curves, is a
 #' combination of fixed and smooth (random) coefficients. Its df are Satterthwaite's for that combination (as
@@ -151,6 +167,12 @@
 #' str(predout1$pred_df)
 #' predout2 <- semipred(sleep.semi, "Subject", "Days", contr = c(6,1))
 #' str(predout2$pred_df)
+#'
+#' # slopes of the curves, and where they differ from zero over the whole range
+#' fm2 <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
+#'                data = Dialyzer, prt = FALSE)
+#' slp <- semipred(fm2, "QB", "pressure", deriv = 1, band = "simultaneous")
+#' attr(slp$pred_df, "significant")
 #' }
 #' @name semipred
 NULL
@@ -160,7 +182,13 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      scales=c("fixed", "free", "free_x", "free_y"), 
                      plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
                      contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
-                     unconditional=getOption("predictmeans.semi_unconditional")) {
+                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0) {
+  if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
+  if (deriv > 0) {
+    if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
+    if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)
+    point <- FALSE
+  }
   contr_scale <- match.arg(contr_scale)
   # band = "simultaneous" as in covariatemeans(); simultaneous = TRUE (1.x) still works
   band <- match.arg(band)
@@ -218,6 +246,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = unconditional)
   semer <- des$semer; mod_df <- des$mod_df; pred_df <- des$pred_df
   response <- des$response; response0 <- des$response0
+  if (deriv > 0) des <- pm_semi_deriv(semireg, des, modelterm, covariate, sm_term, mod_df, deriv)
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
 
   # two-sided (1 - level) limits, pointwise or simultaneous over the curve(s),
@@ -241,7 +270,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   UL <- y_hat + crit*stderr
   
   if (is.null(trans)) {
-    if (!isLMM(semer)) {
+    if (!isLMM(semer) && deriv == 0) {
       # the means and limits back-transformed with the inverse link, as
       # predictmeans() and covariatemeans() do: h(eta), h(eta -+ crit SE), and
       # the delta-method SE |h'(eta)| SE. (Before 2.0: limits h(eta) -+ crit
@@ -300,9 +329,13 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
     pred_df$LL <- pred_df$LL*attr(mod_df, paste(response, "sd", sep="_")) 
     pred_df$UL <- pred_df$UL*attr(mod_df, paste(response, "sd", sep="_")) 
+    if (deriv > 0) {
+      pred_df[[response]] <- pred_df[[response]]*attr(mod_df, paste(response, "sd", sep="_"))
+      pred_df$SE <- pred_df$SE*attr(mod_df, paste(response, "sd", sep="_"))
+    }
   }
   
-  if (!is.null(attr(mod_df, paste(response, "mean", sep="_")))) {
+  if (deriv == 0 && !is.null(attr(mod_df, paste(response, "mean", sep="_")))) {
     pred_df$LL <- pred_df$LL+attr(mod_df, paste(response, "mean", sep="_")) 
     pred_df$UL <- pred_df$UL+attr(mod_df, paste(response, "mean", sep="_")) 
   }
@@ -381,7 +414,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
           df_c <- df_of(D_a - D_b)
           crit_c <- crit_of(D_a - D_b, df_c)
-          glmm <- !isLMM(semer)
+          glmm <- !isLMM(semer) && deriv == 0
           fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
           res <- pm_diff_table(plt_df_contr[[covariate]], D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
                                h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
@@ -395,7 +428,10 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
                               typical = glmm)
           if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
-          if (prt) pm_diff_report(res, covariate, grp_fct_levl[contr], level, band_c)
+          lv_c <- grp_fct_levl[contr]
+          if (deriv > 0) lv_c <- c(paste("The", if (deriv == 1) "slope" else "curvature", "of", lv_c[1]),
+                                   paste("that of", lv_c[2]))
+          if (prt) pm_diff_report(res, covariate, lv_c, level, band_c)
           tab <- res$table
           if (glmm) {
             # a GLMM: the columns of covariatemeans(contr = ); SE_contr on the model scale
@@ -533,6 +569,32 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     }
   }
   #     facet_grid(formula(paste(Variable1, "~", Variable2)))
+
+  if (deriv > 0) {
+    ylab <- paste0(if (deriv == 1) "Slope" else "Curvature", " of ", if (response == "response_y") response0 else response,
+                   " (d", if (deriv == 2) "2", "/d", covariate, if (deriv == 2) "2", if (!isLMM(semer)) ", link scale", ")")
+    if (is.null(contr)) {
+      pred_df$includes0 <- pred_df$LL <= 0 & pred_df$UL >= 0
+      pred_df$significant <- !pred_df$includes0
+      by <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
+      sig <- pm_deriv_ranges(pred_df, by, covariate)
+      attr(pred_df, "significant") <- sig
+      if (prt) {
+        bandw <- if (simultaneous) "simultaneous" else "pointwise"
+        message(if (is.null(sig)) paste0("The ", bandw, " band (level ", level, ") of the ", tolower(sub(" .*", "", ylab)),
+                                          " includes 0 at every value of ", covariate, " shown.") else
+          paste0(sub(" \\(.*", "", ylab), " (", bandw, " band, level ", level, "): ",
+                 paste0(ifelse(nzchar(sig$level), paste0(sig$level, ": "), ""), format(sig$from, digits = 4), " to ",
+                        format(sig$to, digits = 4), " (", sig$direction, ")", collapse = "; "), "."))
+      }
+      if (inherits(plt, "ggplot")) plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = "grey40") + labs(y = ylab)
+    } else if (inherits(plt, "ggplot")) {
+      plt <- plt + labs(y = paste0("The difference of the ", tolower(substr(ylab, 1, 1)), substring(ylab, 2)))
+      if (!is.null(plt$labels$title))
+        plt <- plt + ggtitle(sub("^Difference between", paste("Difference between the", if (deriv == 1) "slopes" else
+          "curvatures", "of"), plt$labels$title))
+    }
+  }
   
   if (prt) {
     options(warn = -1)	  
@@ -552,7 +614,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
 ## basis on the reference grid of 'modelterm' (and covariate values), the
 ## estimates (beta, u) and their covariance up to sigma^2. Also used by
 ## predictmeans() for semireg fits.
-pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = NULL) {
+pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = NULL,
+                           cov = TRUE) {
   semer <- semireg$semer 
   vcov_indN <- semireg$Cov_indN
   cov_lst <- semireg$cov_lst
@@ -588,6 +651,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     c(seq_len(length(betaHat)), unlist(lapply(blocks, function(b) (ci[match(b, names(ci)) - 1] + 1):ci[match(b, names(ci))])))
   }
   cov_of <- function(blocks) {
+    if (!cov) return(NULL)                     # (the design only: derivatives)
     idx <- cov_idx(blocks)
     V <- fullCovMat[idx, idx]
     if (isTRUE(unconditional)) {
@@ -672,4 +736,46 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
        response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
                 cov_idx = cov_idx(blocks),
        sm_term = sm_term)
+}
+
+## Derivatives of the curves of semipred(): the rows of the design D(x) on
+## the grid replaced by dD/dx (deriv = 1) or d2D/dx2 (deriv = 2), by central
+## differences of the whole design (fixed part and every smooth basis; for
+## the O'Sullivan basis they equal ZOSull(drv = ) to 1e-8, tested), the same
+## grid rebuilt at x + h and x - h. Per unit of the covariate as given (a
+## covariate scaled by semireg(nscale = TRUE): divided by its SD).
+pm_semi_deriv <- function(semireg, des, modelterm, covariate, sm_term, mod_df, deriv) {
+  xg <- unique(des$pred_df[[covariate]])
+  r <- diff(range(xg))
+  if (!is.finite(r) || r <= 0) stop("'deriv' needs more than one value of the covariate.", call. = FALSE)
+  h <- r*(if (deriv == 1) 1e-5 else 1e-4)
+  at <- function(v) pm_semi_design(semireg, modelterm, covariate, v, sm_term, mod_df, cov = FALSE)
+  dp <- at(xg + h)
+  dm <- at(xg - h)
+  same <- function(a) identical(a$pred_df[names(a$pred_df) != covariate], des$pred_df[names(des$pred_df) != covariate])
+  if (!same(dp) || !same(dm)) stop("The grid could not be rebuilt for the derivative.", call. = FALSE)
+  D <- if (deriv == 1) (as.matrix(dp$D_mx) - as.matrix(dm$D_mx))/(2*h) else
+    (as.matrix(dp$D_mx) - 2*as.matrix(des$D_mx) + as.matrix(dm$D_mx))/h^2
+  s <- attr(mod_df, paste(covariate, "sd", sep = "_"))
+  if (!is.null(s)) D <- D/s^deriv
+  dimnames(D) <- dimnames(as.matrix(des$D_mx))
+  des$D_mx <- D
+  des
+}
+
+## The ranges of the covariate where a derivative band leaves out zero, per
+## level of the factor (pred_df in the units of the data).
+pm_deriv_ranges <- function(pred_df, by, covariate) {
+  grp <- if (length(by)) interaction(pred_df[by], sep = ":", drop = TRUE) else factor(rep("", nrow(pred_df)))
+  out <- lapply(levels(grp), function(g) {
+    d <- pred_df[grp == g, , drop = FALSE]
+    runs <- rle(d$significant)
+    end <- cumsum(runs$lengths)
+    start <- end - runs$lengths + 1L
+    k <- runs$values
+    if (!any(k)) return(NULL)
+    data.frame(level = g, from = d[[covariate]][start[k]], to = d[[covariate]][end[k]],
+               direction = ifelse(d$LL[start[k]] > 0, "> 0", "< 0"), stringsAsFactors = FALSE)
+  })
+  do.call(rbind, out)
 }
