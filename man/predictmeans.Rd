@@ -341,6 +341,15 @@ The \code{predictmeans} function becomes confused if a factor or covariate is ch
   
   For \code{predictmeans} function, it is assumed that methods \code{coef}, \code{vcov}, \code{model.matrix}, \code{model.frame} and \code{terms} are available for \code{model}.
 }
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+}
+
 \examples{
   library(predictmeans)
   Oats$nitro <- factor(Oats$nitro)

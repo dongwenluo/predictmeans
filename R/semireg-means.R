@@ -94,8 +94,11 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
       means$group <- unname(pm_letter_groups(P, rep(TRUE, n), level))
     }
   }
+  zi <- pm_zi_component(semireg)
+  if (!is.null(zi)) message(attr(zi, "note"))
   settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
-                   vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, model_class = "semireg",
+                   vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate,
+                   component = if (is.null(pm_zi_component(semireg))) NA_character_ else "conditional", model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
   structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
             class = c("pm_semimeans", "predictmeans"))

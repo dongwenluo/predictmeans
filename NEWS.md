@@ -1463,6 +1463,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Bug fixes
 
+* **glmmTMB fits with zero inflation: the means were those of the
+  conditional (count) part, mu, without saying so.** `predictmeans()`,
+  `covariatemeans()` and `semipred()` (also on `semireg_tmb()` fits) give
+  mu, as emmeans and `predict(type = "conditional")` do, not the overall
+  mean (1 - pi) mu; the two can order treatments differently when the
+  probability of an extra zero differs (a Poisson example: conditional
+  means 4.80 and 5.94, overall means 4.00 and 3.83). A message now says
+  which, `settings$component` is `"conditional"`, and the help pages have a
+  section "Zero inflation (glmmTMB)". Means of the overall mean are a
+  planned option.
+
 * `semipred()` and `predictmeans()` on `semireg()` fits stopped with "Can't
   find the variable(s) ..." when a random curve `(s(x, ...) | g)` or a
   `t2()` term had an object of the session in its arguments, such as

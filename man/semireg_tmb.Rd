@@ -133,6 +133,15 @@ intercept), and \code{semipred()} and \code{predictmeans()} give the curves, mea
 (\code{te()} is fitted as \code{t2()}; \code{ti()} is not available). Smooths are given either in the formula or in \code{smoothZ}, not both.
 }
 
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+}
+
 \examples{
 library(predictmeans)
 ## Counts with extra zeros: curves of two treatments, a random site effect, a negative

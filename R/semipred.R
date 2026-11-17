@@ -125,6 +125,12 @@
 #' \code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
 #' when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 #' penalised smooth coefficients are not reliable.)
+#' @section Zero inflation (glmmTMB):
+#' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+#' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+#' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+#' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+#' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
 #' @return
 #' \item{plt}{A ggplot object.}
 #' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
@@ -192,6 +198,8 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list()) {
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
   sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
+  zi <- pm_zi_component(semireg)
+  if (!is.null(zi)) message(attr(zi, "note"))
   if (deriv > 0) {
     if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
     if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)

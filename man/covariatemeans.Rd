@@ -161,6 +161,15 @@ Each set of limits in \code{pltdf} has a column that says whether it includes th
 the result (the ranges of the covariate) follow the band asked for, on the model scale.
 }
 
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+}
+
 \examples{
   library(predictmeans)
   data(Oats, package="nlme")

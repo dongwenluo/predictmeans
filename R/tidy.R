@@ -209,9 +209,12 @@ pm_tidy_parts <- function(e) {
     average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
+    component = if (is.null(pm_zi_component(model))) NA_character_ else "conditional",
     model_class = class(model)[1],
     version = as.character(utils::packageVersion("predictmeans"))
   )
+  zi <- pm_zi_component(model)
+  if (!is.null(zi)) message(attr(zi, "note"))
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)
 }

@@ -124,3 +124,18 @@ test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left a
   expect_equal(as.numeric(glmmTMB::VarCorr(m2)$cond$Subject[1, 1]), v2[1, "vcov"], tolerance = 1e-6)
   expect_identical(colnames(varcomp(m2, ci = FALSE)), c("vcov", "SE"))
 })
+
+test_that("zero inflation: the means are the conditional ones, said in a message and in settings", {
+  set.seed(7)
+  d <- expand.grid(trt = factor(c("a", "b")), site = factor(1:10), r = 1:10)
+  d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
+                rpois(nrow(d), exp(1.5 + 0.3 * (d$trt == "b") + rnorm(10, 0, 0.3)[d$site])))
+  m <- glmmTMB::glmmTMB(y ~ trt + (1 | site), ziformula = ~trt, family = poisson, data = d)
+  expect_message(pm <- predictmeans(m, "trt"), "conditional \\(count\\) part")
+  expect_identical(pm$settings$component, "conditional")
+  nd <- data.frame(trt = factor(c("a", "b")), site = NA)
+  expect_equal(pm$means$response, unname(predict(m, nd, type = "conditional", re.form = NA, allow.new.levels = TRUE)),
+               tolerance = 1e-6)
+  m0 <- glmmTMB::glmmTMB(y ~ trt + (1 | site), family = poisson, data = d)
+  expect_true(is.na(suppressMessages(predictmeans(m0, "trt"))$settings$component))
+})

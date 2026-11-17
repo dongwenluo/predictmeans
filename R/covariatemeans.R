@@ -119,6 +119,12 @@
 #' \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
 #' \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
 #' the result (the ranges of the covariate) follow the band asked for, on the model scale.
+#' @section Zero inflation (glmmTMB):
+#' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+#' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+#' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+#' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+#' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
 #' @return
 #' \item{plt}{The plot (a \code{ggplot}).}
 #' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
@@ -150,6 +156,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
+  zi <- pm_zi_component(model)
+  if (!is.null(zi)) message(attr(zi, "note"))
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
