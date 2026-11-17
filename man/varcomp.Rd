@@ -127,6 +127,13 @@ pairs. Each draw has its own seed, so the p-values repeat, with or without \code
 seconds to a minute for usual \code{lmer} and \code{glmer} models; \code{glmmTMB} fits are slower (each refit
 rebuilds the model). For \code{lme}, \code{gls}, \code{gam} and models without random effects
 \code{test = TRUE} is not available.
+
+Which method: in a simulation of seven designs (\file{dev/sim-vc-defaults.R} in the package sources) the
+default rejected at most 4.5\% of the data sets without the component at the 5\% level: it was never
+liberal. For GLMMs it was conservative (binary data in clusters of four 0.5\%, Poisson 4\%, negative
+binomial 0\%), and there the bootstrap rejected 1.5-6\% and found 5-7\% more of the real components. Use
+the default for gaussian models and as a quick first look; use the bootstrap for GLMMs, small data sets, the
+rows a warning names, and a p-value near the cut-off.
 }
 
 \examples{
@@ -136,6 +143,14 @@ fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 varcomp(fm)
 # is each variance needed? (one refit per row)
 varcomp(fm, test = TRUE)
+\donttest{
+# the same by parametric bootstrap (a few seconds; more draws and ncore for real use)
+varcomp(fm, test = TRUE, test_method = "bootstrap", nboot = 99)
+}
+# a GLMM: the boundary mixture is conservative here, the bootstrap nearer 5\%
+gm <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
+            family = binomial, data = lme4::cbpp)
+varcomp(gm, test = TRUE)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
 # the same components by the analysis of variance
@@ -150,6 +165,18 @@ mod2 <- gls(distance ~ age*Sex, correlation=corAR1(form=~1|Subject),
 varcomp(mod2)
 # the error term of a linear model
 varcomp(lm(yield ~ Block + nitro*Variety, data=Oats))
+}
+\references{
+Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values. \emph{Biometrika}, 78, 301-304.
+
+Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
+component. \emph{Journal of the Royal Statistical Society B}, 66, 165-185.
+
+Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
+tests under nonstandard conditions. \emph{Journal of the American Statistical Association}, 82, 605-610.
+
+Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed effects model.
+\emph{Biometrics}, 50, 1171-1177.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

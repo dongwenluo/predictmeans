@@ -164,8 +164,13 @@ In a simulation of seven designs (in the package sources, `dev/sim-vc-defaults.R
 default reference was never liberal: it rejected 0-4.5% of data sets without the
 component at the 5% level. For GLMMs it was conservative (binary data in clusters of
 four 0.5%, Poisson 4%, negative binomial 0%), and there the bootstrap was nearer 5%
-and found 5-7% more of the real components. For GLMMs and small data sets the
-bootstrap is therefore worth its time.
+and found 5-7% more of the real components. So the default is a fast first look, safe
+for gaussian models; for GLMMs, small data sets, the rows a warning names and p-values
+near the cut-off the bootstrap is worth its time (some seconds to a minute per model
+with 999 draws on four cores; glmmTMB fits are slower).
+
+`varcomp(test = TRUE)` tests each row against the model without it; `permlmer()`, below,
+compares any two nested models the user writes.
 
 ## Testing random effects: `permlmer()`
 
@@ -296,6 +301,9 @@ max-statistic (step-down max-|t|) adjustment over the time points.
   (in the package sources: `dev/permutation-plan.md` and `dev/sim-study/`).
 
 ## References
+
+Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values. *Biometrika* 78,
+301–304.
 
 Davidson, R. and Flachaire, E. (2008). The wild bootstrap, tamed at last. *Journal of
 Econometrics* 146, 162–169.

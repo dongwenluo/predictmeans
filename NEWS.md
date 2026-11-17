@@ -821,7 +821,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   conservative (binary, clusters of 4: 0.5%; Poisson 4%; negative binomial
   0%), where the bootstrap was nearer 5% (1.5-6%) and added 5-7 points of
   power. For `s(x, f1*f2)` deviation curves every reference was conservative
-  (0%), with full power for a real difference in shape.
+  (0%), with full power for a real difference in shape. `?varcomp` and
+  `vignette("resampling")` say which to use: the default for gaussian models
+  and a first look; the bootstrap for GLMMs, small data, flagged rows and
+  p-values near the cut-off.
 * **`semireg_tmb()` gaussian fits are REML, as documented.** The default
   `REML = TRUE` never reached glmmTMB (the call passed only the arguments
   given), so since 1.x gaussian `semireg_tmb()` fits were maximum

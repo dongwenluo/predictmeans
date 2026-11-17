@@ -224,7 +224,10 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `homdiag()`). Boundary mixtures (0.5 chi2(0) + 0.5 chi2(1); 0.5 chi2(k-1) + 0.5 chi2(k)) as SAS GLIMMIX
   COVTEST; the exact restricted LRT (Crainiceanu & Ruppert) when the tested variance is the only random
   effect of a gaussian REML fit. A warning names rows whose reference may be inaccurate (< 6 levels; binary
-  data, small clusters).
+  data, small clusters). `test_method = "bootstrap"` (`nboot = 999`, `ncore`): parametric bootstrap of each
+  LRT, stops after 20 exceedances. In simulation the default was never liberal (<= 4.5% at 5%) but
+  conservative for GLMMs (0-4%), where the bootstrap was nearer 5% with more power: use the default for
+  gaussian models, the bootstrap for GLMMs, small data and flagged rows.
 - `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
   `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
   the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link
