@@ -127,7 +127,7 @@ test_that("nesting the formula does not say (confounded factors): the combinatio
   # not exist; the means are those of the combinations that exist (as G/T), and a warning says so
   # (decision of 2026-11-16; NA before)
   expect_warning(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE),
-                 "'G' and 'T' are confounded in the data.*write the nesting in the formula \\(G/T\\)")
+                 "'G' and 'T' are confounded in the data.*G/T in the formula")
   expect_equal(pa$means$estimate, as.vector(cell), tolerance = 1e-10)
   pa2 <- suppressWarnings(predictmeans(lm(y ~ G + T, dn), "G", prtnum = FALSE))
   expect_equal(pa2$means$estimate, pg$means$estimate, tolerance = 1e-10)

@@ -441,10 +441,7 @@ pm_type3_hyp <- function(map, j) {
 ## The heading line of a Type III table on the cells with data.
 pm_cells_note <- function(map) {
   if (!isTRUE(map$cells)) return(character(0))
-  o <- map$over[!is.na(map$over)]
-  paste0("\nEmpty cells: each term is tested on the cells with data (interactions: the contrasts that use no empty ",
-         "cell; main effects", if (length(o)) paste0(" ", paste(names(o), collapse = ", ")), ": on the cells their means ",
-         "share, as pm_joint())")
+  "\nEmpty cells: each term is tested on the cells with data (see ?anova.lmerMod)"
 }
 
 ## Type III hypotheses when cells are empty (aliased coefficients), where the

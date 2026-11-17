@@ -1974,6 +1974,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* Shorter empty-cell messages: the confounding warning (about 450
+  characters) now names the two factors and the three ways to state the
+  structure in one sentence; the empty-cell warning, the message on
+  non-estimable means and the `anova()` heading point to
+  `vignette("missing-cells")` / `?anova.lmerMod` for the explanation.
 * One helper (`pm_result_table()`, `R/tidy.R`) gives the tables of every
   classed result to `tidy()` and `as.data.frame()` (`predictmeans`,
   `covariatemeans`/`semipred`, `pm_slopes`, `contrastmeans`); the error

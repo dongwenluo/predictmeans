@@ -277,11 +277,8 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
     if (any(non_est)) {
       pm[non_est] <- NA
       ses[non_est] <- NA
-      message("Means that cannot be estimated are shown as NA: ",
-              paste(rownames(K)[non_est], collapse = ", "),
-              ". Their pairwise differences are shown when estimable. ",
-              "If factors are confounded or cells are empty, weights = \"cells\" ",
-              "averages over the observed cells only.")
+      message("Means that cannot be estimated are NA: ", paste(rownames(K)[non_est], collapse = ", "),
+              " (their estimable differences are kept; see vignette(\"missing-cells\")).")
     }
   }
   mt <- data.frame(pm, ses, label)

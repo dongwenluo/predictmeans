@@ -251,17 +251,14 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   # factors confounded in the data: say so first, and how to say it in the model
   conf <- if (length(rule$confounded)) paste0(
     paste(vapply(rule$confounded, function(p) paste0("'", p[1], "' and '", p[2], "'"), character(1)), collapse = "; "),
-    if (length(rule$confounded) == 1) " are" else ": each pair is", " confounded in the data (not all their combinations ",
-    "occur and the model has no term with both), so a mean over all their combinations cannot be estimated: ",
-    "the means average over the combinations that exist. To say this in the model, write the nesting in the formula (",
+    if (length(rule$confounded) == 1) " are" else ": each pair is", " confounded in the data: the means average over ",
+    "the combinations that exist (to say so: ",
     paste(vapply(rule$confounded, function(p) paste0(p[1], "/", p[2]), character(1)), collapse = ", "),
-    ") or leave out the factor that adds nothing; weights = \"cells\" weights the combinations by their numbers of ",
-    "observations. ")
+    " in the formula, leave one factor out, or weights = \"cells\"). ")
   warning(conf, "No data for ", miss_lab, ". ",
           if (one) "The mean of " else "The means of ", modelterm, " = ", short(aff_lab),
-          if (one) " averages only its observed cells; comparisons with it" else
-            " average only their observed cells; comparisons with them",
-          " use only the cells that the compared means all have (column 'over' of the pairs).",
+          if (one) " averages only its observed cells; its pairs" else " average only their observed cells; their pairs",
+          " use the cells both means have (column 'over'). See vignette(\"missing-cells\").",
           call. = FALSE)
   # the cells each mean over empty cells averages (as 'over' of the pairs)
   over <- stats::setNames(rep(NA_character_, length(affected)), labels)
