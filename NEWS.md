@@ -1784,11 +1784,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   used it before (`semireg()` df, the covariance pieces of gls/lme,
   back-transformations, `pm_slopes()`, `semipred(deriv = )`).
   `semipred(deriv = )` and the second differences keep their steps; the
-  first derivatives that stepped 1e-4 now step 1e-5 (more accurate; the
-  results move far below anything printed). The derivative of a
+  first derivatives that stepped 1e-4 now step 1e-5 (more accurate):
+  results move by at most 1e-9 relative (the 52 calls of
+  `dev/snapshot-predictmeans.R` equal to 1e-12; the df of `semipred()`
+  bands 3e-10). The derivative of a
   back-transformation (`trans`) for the response-scale SEs is the same
   function as for the bias adjustment and response-scale averaging (it was
-  numDeriv's in one place, central differences in the other). numDeriv
+  numDeriv's in one place, central differences in the other; the SEs
+  moved by 1e-11). numDeriv
   stays where a derivative is computed once per model (lmer Satterthwaite
   df, equal to lmerTest's; Hessians of lme4 variance parameters;
   `varcomp()`'s delta method).
