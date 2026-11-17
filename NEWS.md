@@ -1471,8 +1471,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   probability of an extra zero differs (a Poisson example: conditional
   means 4.80 and 5.94, overall means 4.00 and 3.83). A message now says
   which, `settings$component` is `"conditional"`, and the help pages have a
-  section "Zero inflation (glmmTMB)". Means of the overall mean are a
-  planned option.
+  section "Zero inflation (glmmTMB)". `predictmeans(mean_type =
+  "response")` gives the overall means (1 - pi) mu, with SEs from the joint
+  covariance of the conditional and zero-inflation coefficients, averaged
+  over the cells of the grid, and their ratios in `pairs`; equal to
+  glmmTMB's `predict(type = "response")` and to emmeans with `component =
+  "response"` (means and SEs). `mean_type = "conditional"` stays the
+  default (the maintainer's decision of 2026-11-17); for models without
+  zero inflation the argument has no effect.
 
 * `semipred()` and `predictmeans()` on `semireg()` fits stopped with "Can't
   find the variable(s) ..." when a random curve `(s(x, ...) | g)` or a

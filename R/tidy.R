@@ -209,12 +209,17 @@ pm_tidy_parts <- function(e) {
     average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
-    component = if (is.null(pm_zi_component(model))) NA_character_ else "conditional",
+    component = if (is.null(pm_zi_component(model))) NA_character_ else g("mean_type"),
     model_class = class(model)[1],
     version = as.character(utils::packageVersion("predictmeans"))
   )
   zi <- pm_zi_component(model)
-  if (!is.null(zi)) message(attr(zi, "note"))
+  if (!is.null(zi)) {
+    message(if (identical(g("mean_type"), "response")) paste0(
+      "The model has zero inflation: the means are the overall means (1 - pi) mu (mean_type = \"response\"), ",
+      "averaged over the cells of the grid; 'estimate' is their log, the ratios are of these means.") else
+      paste(attr(zi, "note"), "mean_type = \"response\" gives the overall means."))
+  }
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)
 }

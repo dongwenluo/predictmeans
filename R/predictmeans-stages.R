@@ -182,7 +182,26 @@ pm_setup <- function(a, pa) {
     }
   }
 
-  list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf,
+  # zero-inflated glmmTMB fits: the overall means (1 - pi) mu (R/zero-inflation.R)
+  mean_type <- if (is.null(a$mean_type)) "conditional" else a$mean_type
+  if (identical(mean_type, "response")) {
+    if (is.null(pm_zi_component(model))) {
+      message("mean_type = \"response\" applies to glmmTMB models with zero inflation; this model has none, so the ",
+              "means are the usual ones.")
+      mean_type <- "conditional"
+    } else {
+      fam <- stats::family(model)
+      if (!identical(fam$link, "log") || grepl("truncated", fam$family)) {
+        stop("mean_type = \"response\" is available for zero-inflated count models with a log link (poisson, nbinom1, ",
+             "nbinom2, ...), not ", fam$family, " (", fam$link, ").", call. = FALSE)
+      }
+      if (!is.null(a$permlist) || !is.null(a$vcov) || isTRUE(a$bias_adjust) || identical(a$bias_adjust, "taylor")) {
+        stop("mean_type = \"response\" cannot be combined with 'permlist', 'vcov' or 'bias_adjust'.", call. = FALSE)
+      }
+    }
+  }
+
+  list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf, mean_type = mean_type,
        pairwise = pairwise, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
        meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letterCI = a$letterCI,
@@ -202,7 +221,7 @@ pm_estimate <- function(opt) {
   # (the grid of all combinations is only needed to average on the response scale)
   ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data, prtnum=opt$prtnum,
                         cov_reduce=opt$cov_reduce, exclude=opt$exclude, weights=opt$weights,
-                        refgrid=identical(opt$average, "response"))
+                        refgrid=identical(opt$average, "response") || identical(opt$mean_type, "response"))
   KK <- ctr.matrix$K
   if (anyDuplicated(ctr.matrix$fctnames[seq_along(opt$vars)])) {
     stop("predictmeans() gives one mean for each combination of the levels of '", opt$modelterm, "': give one value ",
@@ -213,12 +232,15 @@ pm_estimate <- function(opt) {
                       term_df = TRUE)
   mp <- inf$mp
   est <- pm_estimate_means(KK, ctr.matrix$fctnames, mdf, opt$vars, mp, opt$ndecimal)
-  list(ctr.matrix = ctr.matrix, KK = KK, mdf = mdf, response = ctr.matrix$response, inf = inf, mp = mp,
+  out <- list(ctr.matrix = ctr.matrix, KK = KK, mdf = mdf, response = ctr.matrix$response, inf = inf, mp = mp,
        vcov_adjust = inf$vcov_adjust, vcov_label = inf$vcov_label, vcovm = mp$vcov,
        K = est$K, label = est$label, pm = est$pm, ses = est$ses,
        ndf = est$ndf,                 # cell counts, used by the stable tables
        mt = est$mt, bkmt = est$mt,    # bkmt: for back transformed
        mean.table = est$mean.table, se.table = est$se.table)
+  # the overall means of a zero-inflated model, on the log scale (R/zero-inflation.R)
+  if (identical(opt$mean_type, "response")) out <- pm_zi_response_est(opt, out)
+  out
 }
 
 ## Predicted means, their SEs and the legacy mean/SE tables (pure function).
