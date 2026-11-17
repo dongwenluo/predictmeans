@@ -10,6 +10,17 @@
 ##      (s(age, by = blackF)), fitted by lme() (one pdIdent block per group,
 ##      the band by Wand's formula) and by semireg(); the difference of the
 ##      two curves and its SE from semipred(contr = c("1", "0")).
+## Result (2026-11-17; 1,000+ boys' measurements, all males):
+##   A. fits equal (REML logLik 6386.1019 both); contrast curve equal to 2e-6;
+##      band SE equal to 5e-6 when Wand's formula uses the fitted subject
+##      covariance. The script itself rebuilds the pdSymm(~age) covariance as
+##      crossprod(rbind(c(s2, s3), c(0, s4))) from exp() of nlme's parameters,
+##      which are not Cholesky factors: its band SE are 0.56% off.
+##   B. semipred(contr = ): fits equal (logLik 6385.2187); difference curve
+##      equal to 1.2e-4, SE to 3.1e-5. Limits: t with Satterthwaite df 137 to
+##      1279 (quantiles 1.962 to 1.978) where Wand uses qnorm (1.960), by design.
+##   Found: semipred() failed when the formula referred to a variable in xt
+##   (xt = list(range = range.age)); the check writes the values in.
 ##   Rscript dev/semireg-golden/check-bands.R
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 suppressMessages(library(nlme))
@@ -47,10 +58,13 @@ Csub <- subj_cols()
 ## Wand's band from an lme fit: blocks = penalty blocks for the spline columns
 ## (in the order of 'cols'), the subject part from the last two variance
 ## parameters; L = rows of the contrast for (fixed, splines)
-wand_band <- function(fit, Cfix, Zcols, lam_spl, L) {
+wand_band <- function(fit, Cfix, Zcols, lam_spl, L, exact = FALSE) {
   s2 <- fit$sigma^2
   sig.u <- as.numeric(fit$sigma * exp(unlist(fit$modelStruct)))
-  Sig <- crossprod(rbind(c(sig.u[2], sig.u[3]), c(0, sig.u[4])))    # pdSymm(~age)
+  # pdSymm(~age): as in the script (exp() of nlme's parameters as a Cholesky
+  # factor), or exact, the fitted matrix itself
+  Sig <- if (exact) s2 * nlme::pdMatrix(fit$modelStruct$reStruct)[["idnum"]] else
+    crossprod(rbind(c(sig.u[2], sig.u[3]), c(0, sig.u[4])))
   pen <- c(rep(0, ncol(Cfix)), unlist(lapply(seq_along(Zcols), function(j) rep(s2 / lam_spl[j]^2, ncol(Zcols[[j]])))))
   Lam <- diag(c(pen, rep(0, ncol(Csub))))
   k1 <- length(pen)
@@ -77,6 +91,8 @@ sig.uA <- as.numeric(fitA$sigma * exp(unlist(fitA$modelStruct)))   # (subject sp
 ContA <- Xg %*% fitA$coef$fixed[3:4] + Zg %*% as.vector(fitA$coef$random[[2]])
 LA <- cbind(0, 0, Xg, matrix(0, 101, ncol(Z)), Zg)
 sdA <- wand_band(fitA, X, list(Zbase, Zcont), c(sig.uA[6], sig.uA[5]), LA)
+sdAx <- wand_band(fitA, X, list(Zbase, Zcont), c(sig.uA[6], sig.uA[5]), LA, exact = TRUE)
+cat(sprintf("   the script's subject covariance vs the fitted one: band SE differ by %.1e\n", rel(sdA, sdAx)))
 
 d <- data.frame(height = height, age = age, black = black, idnum = factor(idnum))
 fmA <- q(semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = range.age)) +
@@ -95,7 +111,7 @@ Lc <- cbind(Lf, Zc)
 ContS <- Lc %*% c(b, fmA$u_lst[[blk]])
 sdS <- sigma(fmA$semer) * sqrt(rowSums((Lc %*% as.matrix(fmA$CovMat[idx, idx])) * Lc))
 cat(sprintf("   contrast curve: max |semireg - lme| / max |lme| = %.1e\n", rel(ContS, ContA)))
-cat(sprintf("   band SE:        max |semireg - lme| / max |lme| = %.1e\n", rel(sdS, sdA)))
+cat(sprintf("   band SE:        max |semireg - lme| / max |lme| = %.1e (script's), %.1e (exact covariance)\n", rel(sdS, sdA), rel(sdS, sdAx)))
 
 ## ---- B. a curve per group: semipred(contr = ) ------------------------------
 blackF <- factor(black)
@@ -110,15 +126,15 @@ sig.uB <- as.numeric(fitB$sigma * exp(unlist(fitB$modelStruct)))   # (subject sp
 uW <- as.vector(fitB$coef$random[[1]]); uB <- as.vector(fitB$coef$random[[2]])
 ContB <- Xg %*% fitB$coef$fixed[3:4] + Zg %*% (uB - uW)
 LB <- cbind(0, 0, Xg, -Zg, Zg)
-sdB <- wand_band(fitB, XB, list(Zw, Zb), c(sig.uB[6], sig.uB[5]), LB)
+sdB <- wand_band(fitB, XB, list(Zw, Zb), c(sig.uB[6], sig.uB[5]), LB, exact = TRUE)
 
 d$blackF <- blackF
-fmB <- q(semireg(height ~ s(age, by = blackF, bs = "os", k = 20, xt = list(range = range.age)) +
-                   (s(age, bs = "os", k = 10, xt = list(range = range.age)) | idnum), data = d, prt = FALSE))
+fmB <- q(eval(bquote(semireg(height ~ s(age, by = blackF, bs = "os", k = 20, xt = list(range = .(range.age))) +
+                   (s(age, bs = "os", k = 10, xt = list(range = .(range.age))) | idnum), data = d, prt = FALSE))))
 cat(sprintf("   logLik lme %.4f, semireg %.4f\n", as.numeric(logLik(fitB)), as.numeric(logLik(fmB$semer))))
 sp <- q(semipred(fmB, "blackF", "age", contr = c("1", "0"), covariateV = ageg, prt = FALSE))$pred_df
 cat(sprintf("   contrast curve: max |semipred - lme| / max |lme| = %.1e\n", rel(sp$height, ContB)))
-cat(sprintf("   band SE:        max |semipred - lme| / max |lme| = %.1e\n", rel(sp$SE_contr, sdB)))
+cat(sprintf("   band SE:        max |semipred - lme| / max |lme| = %.1e (exact covariance)\n", rel(sp$SE_contr, sdB)))
 cat(sprintf("   limits: semipred t with df %.0f-%.0f (qt %.4f-%.4f) vs Wand's qnorm %.4f;",
             min(sp$df), max(sp$df), qt(0.975, max(sp$df)), qt(0.975, min(sp$df)), qnorm(0.975)),
     sprintf("UL - estimate = qt(0.975, df) x SE: %s\n",
