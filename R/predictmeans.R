@@ -13,7 +13,8 @@
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
+#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+#'   mean_type=c("conditional", "overall"), ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the

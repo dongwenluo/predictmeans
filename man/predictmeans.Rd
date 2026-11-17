@@ -11,7 +11,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
+  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+  mean_type=c("conditional", "overall"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},

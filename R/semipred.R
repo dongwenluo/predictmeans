@@ -9,7 +9,8 @@
 #' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 #' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 #' 		   band=c("pointwise", "simultaneous"),
-#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
+#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+#' 		   mean_type=c("conditional", "overall"))
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.

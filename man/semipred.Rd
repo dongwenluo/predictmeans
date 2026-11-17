@@ -10,7 +10,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 		   band=c("pointwise", "simultaneous"),
-		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
+		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+		   mean_type=c("conditional", "overall"))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}

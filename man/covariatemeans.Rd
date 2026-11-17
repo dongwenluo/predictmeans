@@ -11,7 +11,8 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
+  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+  mean_type=c("conditional", "overall"))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}

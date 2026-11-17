@@ -10,7 +10,8 @@
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-#'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
+#'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+#'   mean_type=c("conditional", "overall"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
