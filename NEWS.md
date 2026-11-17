@@ -791,6 +791,26 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   Satterthwaite df, tests of smooth variances, rate ratios between count
   curves, subject-specific curves) and a table for moving from the
   `smoothZ = list(smZ())` form, which still runs.
+* **`varcomp(model, test = TRUE)`: a test of each variance component** for
+  `lmer`, `glmer`, `glmmTMB` and `semireg()`/`semireg_tmb()` fits: columns
+  `LRT` and `p.value`, each row's hypothesis and reference distribution
+  printed below the table. Each row is tested by refitting the model one
+  would fit without it: a term dropped, `(1 + x | g)` reduced to `(1 | g)`
+  for the slope, covariances set to 0 (`||`, glmmTMB `diag()`), the
+  correlation of `ar1()`/`ou()`/`cs()` set to 0 (`homdiag()`). The
+  likelihood ratios equal SAS PROC MIXED and Genstat REML runs; the
+  boundary mixtures (0.5 chi2(0) + 0.5 chi2(1) for a variance, 0.5
+  chi2(k-1) + 0.5 chi2(k) for a slope) equal SAS PROC GLIMMIX `COVTEST`.
+  When the tested variance is the only random effect of a gaussian REML fit
+  the exact null distribution of the restricted likelihood ratio
+  (Crainiceanu and Ruppert 2004) is used: there the mixture was
+  conservative (2-3% at the 5% level, the exact test 4.3%); with other
+  random effects the "exact" distribution was too liberal (7%) and the
+  mixture is used (5.0%) (`dev/sim-vc-test.R`). Rows where the reference
+  may be inaccurate (fewer than 6 levels; binary data with fewer than 5
+  observations per level) are named in a warning with how to check them.
+  `anova()` of a `semireg()` fit uses the same tests for its smooth terms
+  (before: always the halved chi-square).
 * **`semireg_tmb()` gaussian fits are REML, as documented.** The default
   `REML = TRUE` never reached glmmTMB (the call passed only the arguments
   given), so since 1.x gaussian `semireg_tmb()` fits were maximum

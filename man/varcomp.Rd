@@ -5,7 +5,8 @@
 \title{Variance Components with Standard Errors and Confidence Intervals}
 \usage{
 varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
-        information = c("observed", "average", "expected"))
+        information = c("observed", "average", "expected"), test = FALSE,
+        test_method = c("auto", "mixture"), nsim = 10000)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
@@ -25,13 +26,24 @@ the variance parameters behind the SEs: \code{"observed"} (the default, as SAS P
 (the average information of Genstat's and ASReml's REML: Genstat's s.e.) or \code{"expected"}; the same
 choices as for the Kenward-Roger df (\code{df_method} of \code{\link{predictmeans}}). Other fits use the
 observed information.}
+
+\item{test}{\code{TRUE}: add a likelihood ratio test of each component being zero (\code{lmer}, \code{glmer},
+\code{glmmTMB} and \code{semireg} fits; see \sQuote{Tests}). The default is \code{FALSE}: each test refits the
+model once.}
+
+\item{test_method}{\code{"auto"} (the default) or \code{"mixture"}: the reference distribution of a single
+variance (see \sQuote{Tests}).}
+
+\item{nsim}{Number of draws of the exact null distribution of the restricted likelihood ratio (default 10000,
+with a fixed seed, so the p-values repeat).}
 }
 \value{
 A data frame with one row per component (random-effect variances and covariances by group, named
   \code{group.term} and \code{group.term1.term2}; correlation and variance-function parameters named
   \code{cor.name} and \code{var.name}; \code{residual}) and columns \code{vcov} (the estimate), \code{SE} and,
   with \code{ci = TRUE}, the limits. Values are rounded to 4 decimals; attribute \code{"ci_method"} says how
-  the intervals were made.
+  the intervals were made. With \code{test = TRUE} also \code{LRT} and \code{p.value}, and class
+  \code{"pm_varcomp"} (printed with the hypotheses).
 }
 \description{
 The variance components of a fitted model, with standard errors and confidence intervals, for every model class
@@ -76,11 +88,39 @@ completed as in \code{\link{predictmeans}}.
 \code{gam}: \code{mgcv::gam.vcomp()} (variances of the smooths, and the scale), its intervals squared, and the
 SEs from their width on the log scale; it needs \code{method = "REML"} or \code{"ML"}.
 }
+\section{Tests}{
+
+With \code{test = TRUE} each row gets the likelihood ratio test of the model one would fit without it
+(columns \code{LRT} and \code{p.value}; the hypotheses and reference distributions are printed below the
+table and kept in \code{attr(, "tests")}):
+\tabular{lll}{
+  \strong{Row} \tab \strong{Model refitted} \tab \strong{Reference distribution} \cr
+  variance of a one-variance term \code{(1 | g)}, smooth block \tab the term dropped \tab \eqn{\frac12\chi^2_0 + \frac12\chi^2_1}; exact restricted LRT when it is the only random effect of a gaussian \code{lmer}/\code{semireg} REML fit \cr
+  slope variance in \code{(1 + x | g)} (k components) \tab \code{(1 | g)} \tab \eqn{\frac12\chi^2_{k-1} + \frac12\chi^2_k} \cr
+  intercept variance of \code{(1 + x | g)}, variance of \code{ar1()} etc. \tab the whole term dropped \tab \eqn{\chi^2} with the term's number of parameters (conservative) \cr
+  covariance in \code{(1 + x | g)} \tab \code{(1 + x || g)} (glmmTMB: \code{diag()}) \tab \eqn{\chi^2} with the number of covariances \cr
+  correlation of \code{ar1()}, \code{ou()}, \code{cs()} \tab \code{homdiag()} / \code{diag()} \tab \eqn{\chi^2_1} \cr
+  residual variance; a structure that is the residual covariance (\code{dispformula = ~0}) \tab no test \tab \cr
+}
+A variance is on the boundary of its range under the hypothesis, so its likelihood ratio has the mixture
+distributions of Self and Liang (1987) and Stram and Lee (1994), not \eqn{\chi^2_1} (which is conservative, as
+\code{lmerTest::ranova()}). When the tested variance is the only random effect of a gaussian model fitted by
+REML, the exact finite-sample null distribution of Crainiceanu and Ruppert (2004) is used (simulated); with
+other random effects present that distribution is no longer exact (in simulations it was too liberal), and
+the mixture is used. The mixture p-values equal SAS PROC GLIMMIX \code{COVTEST}, the likelihood ratios SAS
+PROC MIXED and Genstat REML (\code{tests/testthat/test-vc-test.R}). Where a p-value may be inaccurate in
+either direction (a term with fewer than 6 levels; binary data with fewer than 5 observations per level, where
+the Laplace approximation is poor), a warning names the rows. For \code{lme}, \code{gls}, \code{gam} and
+models without random effects \code{test = TRUE} is not available.
+}
+
 \examples{
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 varcomp(fm)
+# is each variance needed? (one refit per row)
+varcomp(fm, test = TRUE)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
 # the same components by the analysis of variance

@@ -157,3 +157,42 @@ test_that("p-values: mixtures equal SAS GLIMMIX COVTEST; the exact restricted LR
   expect_equal(g$test, "0.5 chi2(0) + 0.5 chi2(1)")
   expect_lt(g$p.value, 1e-4)
 })
+
+test_that("varcomp(test = TRUE): LRT and p.value by row, hypotheses printed, one warning with guidance", {
+  data(Orthodont, package = "nlme", envir = environment())
+  O <- as.data.frame(Orthodont)
+  m <- q(lme4::lmer(distance ~ age + (age | Subject), O))
+  v <- q(varcomp(m, test = TRUE))
+  tt <- q(pm_vc_test(m))
+  expect_s3_class(v, "pm_varcomp")
+  expect_equal(v$p.value, signif(tt$p.value[match(rownames(v), tt$row)], 4))
+  expect_true(is.na(v["residual", "p.value"]))
+  expect_equal(attr(v, "tests")$row, rownames(v)[rownames(v) %in% tt$row])
+  out <- capture.output(print(v))
+  expect_true(any(grepl("(age | Subject) -> (1 | Subject); 0.5 chi2(1) + 0.5 chi2(2)", out, fixed = TRUE)))
+  # without test = TRUE the table is as before
+  expect_false("p.value" %in% names(q(varcomp(m))))
+  # few levels: a warning that names the row and how to check
+  set.seed(1)
+  d <- expand.grid(g = factor(1:4), r = 1:6)
+  d$y <- rbinom(nrow(d), 1, 0.4)
+  g <- q(lme4::glmer(y ~ 1 + (1 | g), family = binomial, data = d))
+  expect_warning(varcomp(g, test = TRUE), "g.\\(Intercept\\) \\(4 levels.*permlmer")
+  # classes without random effects: the table without tests, and a message
+  expect_message(r <- varcomp(lm(distance ~ age, O), test = TRUE), "lmer, glmer, glmmTMB and semireg")
+  expect_false("p.value" %in% names(r))
+})
+
+test_that("anova() of a semireg fit uses the same tests as varcomp(test = TRUE); one smooth: exact", {
+  set.seed(2)
+  d <- data.frame(x = runif(80))
+  d$y <- sin(3*d$x) + rnorm(80, 0, 0.3)
+  d$g <- gl(8, 10)
+  fit <- q(semireg(y ~ s(x, bs = "os", k = 8) + (1 | g), data = d, prt = FALSE))
+  a <- anova(fit)$smooth
+  v <- q(varcomp(fit, test = TRUE))
+  expect_equal(signif(a$p.value, 4), v["s_x.(Intercept)", "p.value"])
+  expect_equal(a$test, "0.5 chi2(0) + 0.5 chi2(1)")       # with (1 | g): the mixture
+  one <- q(semireg(y ~ s(x, bs = "os", k = 8), data = d, prt = FALSE))
+  expect_match(anova(one)$smooth$test, "exact restricted LRT")
+})

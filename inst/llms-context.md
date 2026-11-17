@@ -218,7 +218,13 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `vignette("smooth")`). Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
   included and t tests with Satterthwaite df for fixed + smooth coefficients (generalized: z);
-  `anova(fit)` tests each smooth variance (conservative, 1-3% at 5%).
+  `anova(fit)` tests each smooth variance (as `varcomp(fit, test = TRUE)`).
+- `varcomp(model, test = TRUE)` (lmer, glmer, glmmTMB, semireg): an LRT per row, each row's model refitted
+  (term dropped; `(x | g)` -> `(1 | g)`; covariances 0 by `||` / `diag()`; ar1/ou/cs correlation 0 by
+  `homdiag()`). Boundary mixtures (0.5 chi2(0) + 0.5 chi2(1); 0.5 chi2(k-1) + 0.5 chi2(k)) as SAS GLIMMIX
+  COVTEST; the exact restricted LRT (Crainiceanu & Ruppert) when the tested variance is the only random
+  effect of a gaussian REML fit. A warning names rows whose reference may be inaccurate (< 6 levels; binary
+  data, small clusters).
 - `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
   `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
   the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link

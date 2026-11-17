@@ -147,7 +147,7 @@ The smooth terms are written in the formula: `s(t, by = A)` adds the fixed terms
 
 **Which differences between curves are needed?** In `s(x, f1*f2)` the curves are a common
 curve plus deviation curves for `f1`, `f2` and `f1:f2`, each with its own variance.
-`anova()` tests each variance (the likelihood ratio, halved for the boundary) and
+`anova()` tests each variance (the likelihood ratio against its boundary distribution, as `varcomp(fit, test = TRUE)`) and
 `varcomp()` shows their sizes. Here the shapes differ by `f1` only:
 
 ```{r}
