@@ -1589,6 +1589,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Speed
 
+* Kenward-Roger and Satterthwaite df of `gls` and `lme` fits (the default
+  for these models) and `varcomp()` of them: the observed information is
+  computed from its formula instead of numerical second derivatives of the
+  log-likelihood (numDeriv's Hessian, 1 + 4k(k + 1) likelihood evaluations
+  for k variance parameters), and the derivative of the coefficients'
+  covariance exactly. Only the pieces of the covariance (`corMatrix()`,
+  `varWeights()`, `pdMatrix()`) are differenced. Same df (to 1e-7) on 11
+  gls/lme models with every kind of structure, REML and ML; an unstructured
+  `gls` with 6 times, 2000 observations and 21 variance parameters: 13.5 s
+  -> 2.7 s; small models 3-10 times faster.
+
 * The Satterthwaite df of the curves of `semireg()` fits (`semipred()`,
   `predictmeans()`): central differences instead of Richardson
   extrapolation, and only the block of the inverse mixed-model matrix that

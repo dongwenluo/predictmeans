@@ -7,10 +7,11 @@
 ## variance parameters theta (coef(modelStruct), unconstrained, and
 ## log(sigma)): random effects Z D Z' from the reStruct, times the
 ## correlation matrices and variance weights, in the data order (nlme sorts
-## the data by groups internally). Then, numerically,
+## the data by groups internally). Then
 ##   A = 2 H^-1 (H the Hessian of -2 REML log-likelihood: the observed
-##       information, as SAS uses),
-##   G_k = d vcov(beta) / d theta_k,
+##       information, as SAS uses; from its formula, pm_nlme_info(), with
+##       central differences of the covariance's pieces only),
+##   G_k = d vcov(beta) / d theta_k = Phi X' S^-1 (dS/dtheta_k) S^-1 X Phi,
 ## and df = 2 (l V l')^2 / (g' A g) with g_k = l G_k l'. The rebuilt
 ## covariance is checked against vcov() of the fit. Checked against SAS
 ## PROC MIXED DDFM=SATTERTHWAITE (dev/sas): unstructured repeated measures
@@ -65,27 +66,45 @@ pm_nlme_sigma <- function(model) {
     jb <- unlist(lapply(seq_along(sz), function(b) rep(seq_len(sz[b]), each = sz[b]) + off[b]))
     list(ia = ia, jb = jb, up = ord[ia] <= ord[jb])
   }
-  # attribute Zs: the random-effect designs by level (R2_model())
-  structure(function(theta) {
+  # the pieces at theta: variance weights w (sorted order), correlations r (the
+  # entries of the blocks, as blk), relative random-effect covariances D
+  pieces <- function(theta, what = c("w", "r", "D")) {
     if (length(theta)) ms <- nlme::`coef<-`(ms, value = theta)
-    w <- if (is.null(ms$varStruct)) rep(1, n) else 1 / nlme::varWeights(ms$varStruct)
+    list(w = if ("w" %in% what) (if (is.null(ms$varStruct)) rep(1, n) else 1 / nlme::varWeights(ms$varStruct)),
+         r = if ("r" %in% what && !is.null(blk)) {
+           cm <- nlme::corMatrix(ms$corStruct)
+           if (is.list(cm)) unlist(cm, use.names = FALSE) else as.vector(cm)
+         },
+         D = if ("D" %in% what && !is.null(Zs)) nlme::pdMatrix(ms$reStruct))
+  }
+  # the part each parameter belongs to (coef(modelStruct) is in the order of
+  # the components, and of the levels within the reStruct)
+  comp <- unlist(lapply(names(ms), function(nm) {
+    if (nm == "reStruct") {
+      unlist(lapply(names(ms$reStruct), function(lv) rep(paste0("re:", lv), length(stats::coef(ms$reStruct[[lv]])))))
+    } else rep(nm, length(stats::coef(ms[[nm]])))
+  }))
+  if (length(comp) != length(stats::coef(ms))) comp <- rep("other", length(stats::coef(ms)))
+  # attribute Zs: the random-effect designs by level (R2_model()); pieces and
+  # layout: for the second derivatives of the covariance (pm_nlme_T())
+  structure(function(theta) {
+    pc <- pieces(theta)
+    w <- pc$w
     S <- if (is.null(blk)) {
       Matrix::sparseMatrix(i = ord, j = ord, x = w^2, dims = c(n, n), symmetric = TRUE)
     } else {
-      cm <- nlme::corMatrix(ms$corStruct)
-      x <- (if (is.list(cm)) unlist(cm, use.names = FALSE) else as.vector(cm)) * w[blk$ia] * w[blk$jb]
+      x <- pc$r * w[blk$ia] * w[blk$jb]
       u <- blk$up
       Matrix::sparseMatrix(i = ord[blk$ia][u], j = ord[blk$jb][u], x = x[u], dims = c(n, n), symmetric = TRUE)
     }
     if (!is.null(Zs)) {
-      D <- nlme::pdMatrix(ms$reStruct)
       for (lv in names(Zs)) {
         Z <- Zs[[lv]]$Z
-        S <- S + Z %*% Matrix::kronecker(Zs[[lv]]$I, Matrix::Matrix(D[[lv]])) %*% Matrix::t(Z)
+        S <- S + Z %*% Matrix::kronecker(Zs[[lv]]$I, Matrix::Matrix(pc$D[[lv]])) %*% Matrix::t(Z)
       }
     }
     Matrix::forceSymmetric(methods::as(S, "CsparseMatrix"), uplo = "U")
-  }, Zs = Zs)
+  }, Zs = Zs, pieces = pieces, layout = list(n = n, ord = ord, blk = blk, comp = comp))
 }
 
 ## The likelihood pieces of a gls or lme fit as functions of theta =
@@ -126,24 +145,190 @@ pm_nlme_reml <- function(model, reml = FALSE) {
     stop("Satterthwaite and Kenward-Roger df are not available for this ", class(model)[1], " model (its ",
          "covariance structure could not be rebuilt).", call. = FALSE)
   }
-  list(X = X, y = y, th0 = th0, k = k, Sig = Sig, vb = vb, reml2 = reml2, Vm = Vm)
+  list(X = X, y = y, th0 = th0, k = k, Sig = Sig, Srel = Srel, vb = vb, reml2 = reml2, Vm = Vm, ml = ml,
+       vscale = vscale)
 }
 
-## Inverse of half the Hessian of -2 REML log-likelihood: the covariance of
-## the variance parameters from the observed information.
-pm_nlme_W_observed <- function(R) {
-  H <- numDeriv::hessian(R$reml2, R$th0)
-  eg <- eigen(H, symmetric = TRUE)
-  pos <- eg$values > 1e-8
-  2 * eg$vectors[, pos, drop = FALSE] %*% diag(1 / eg$values[pos], nrow = sum(pos)) %*% t(eg$vectors[, pos, drop = FALSE])
+## The derivative pieces of a gls or lme fit at its estimates (R from
+## pm_nlme_reml()): G_i = d Sigma / d theta_i (central differences of the
+## covariance for the modelStruct parameters, exact for log sigma), Sigma^-1
+## X, Sigma^-1 G_i, Phi = (X' Sigma^-1 X)^-1, A_i = X' S^-1 G_i S^-1 X,
+## Q_ij = X' S^-1 G_i S^-1 G_j S^-1 X, P y and G_i P y with P G_i P y. All n x n
+## products stay sparse (block diagonal); the rest is p x p.
+pm_nlme_parts <- function(R) {
+  X <- R$X
+  th <- R$th0
+  k <- R$k
+  S0 <- R$Sig(th)
+  G <- lapply(seq_len(k), function(i) {
+    if (i == k) return(2 * S0)                 # d Sigma / d log sigma
+    h <- 1e-4 * max(1, abs(th[i]))
+    e <- replace(numeric(k), i, h)
+    (R$Sig(th + e) - R$Sig(th - e)) / (2 * h)
+  })
+  C <- Matrix::Cholesky(S0, LDL = FALSE)
+  SX <- as.matrix(Matrix::solve(C, X, system = "A"))
+  SG <- lapply(G, function(Gi) Matrix::solve(C, methods::as(Gi, "CsparseMatrix"), system = "A"))   # Sigma^-1 G_i
+  Phi <- R$Vm / R$vscale
+  A <- lapply(G, function(Gi) as.matrix(crossprod(SX, Gi %*% SX)))
+  Q <- lapply(seq_len(k), function(i) lapply(seq_len(k), function(j)
+    as.matrix(crossprod(SX, G[[i]] %*% (SG[[j]] %*% SX)))))
+  Pv <- function(v) {                          # P v = S^-1 v - S^-1 X Phi X' S^-1 v
+    sv <- as.matrix(Matrix::solve(C, v, system = "A"))
+    sv - SX %*% (Phi %*% crossprod(SX, v))
+  }
+  Py <- Pv(R$y)
+  a <- lapply(G, function(Gi) as.matrix(Gi %*% Py))
+  list(S0 = S0, G = G, C = C, SX = SX, SG = SG, Phi = Phi, A = A, Q = Q, Py = as.vector(Py), a = a,
+       Pa = lapply(a, Pv))
 }
 
+## T_ij = sum_ab c_ab d2 Sigma_ab / d theta_i d theta_j, c = P - P y y' P
+## (REML; Sigma^-1 in place of P for ML): the part of the Hessian of the -2
+## log-likelihood that has the second derivatives of the covariance. The
+## covariance is a sum of the random-effect levels, Z (I x D) Z', and the
+## residual part, sigma^2 w_a w_b r_ab (weights from the varStruct,
+## correlations from the corStruct), so parameters of different parts give 0
+## and the residual part splits by the product rule; central differences of
+## those pieces only (pdMatrix, corMatrix, varWeights), never of the
+## likelihood. log sigma: d2 Sigma = 4 Sigma, and 2 G_i with the others.
+pm_nlme_T <- function(R, pt, reml) {
+  k <- R$k
+  ctr <- function(M) {                         # sum_ab c_ab M_ab for a symmetric n x n M
+    v <- sum(Matrix::diag(Matrix::solve(pt$C, methods::as(M, "CsparseMatrix"), system = "A"))) -
+      sum(pt$Py * as.vector(M %*% pt$Py))
+    if (reml) v - sum((pt$SX %*% pt$Phi) * as.matrix(M %*% pt$SX)) else v
+  }
+  Tm <- matrix(0, k, k)
+  for (i in seq_len(k - 1)) Tm[i, k] <- Tm[k, i] <- 2 * ctr(pt$G[[i]])
+  Tm[k, k] <- 4 * ctr(pt$S0)
+  m <- k - 1
+  if (!m) return(Tm)
+  lay <- attr(R$Srel, "layout")
+  pieces <- attr(R$Srel, "pieces")
+  comp <- lay$comp
+  th <- R$th0[-k]
+  if (any(comp == "other")) {                  # parts not known here: second differences of the likelihood
+    H <- numDeriv::hessian(R$reml2, R$th0)
+    return(H - 2 * pm_nlme_info(R, pt, "expected", reml) + 4 * pm_nlme_info(R, pt, "average", reml))
+  }
+  n <- lay$n
+  Sinv <- Matrix::solve(pt$C, Matrix::Diagonal(n), system = "A")
+  XP <- pt$SX %*% pt$Phi
+  cvec <- function(i, j) {                     # c at the entries (i, j)
+    v <- Sinv[cbind(i, j)] - pt$Py[i] * pt$Py[j]
+    if (reml) v - rowSums(XP[i, , drop = FALSE] * pt$SX[j, , drop = FALSE]) else v
+  }
+  h <- 1e-4 * pmax(1, abs(th))
+  at <- function(idx, d) replace(th, idx, th[idx] + d)
+  hess2 <- function(f, idx) {                  # central second differences of f over the parameters idx
+    p <- length(idx)
+    H <- matrix(0, p, p)
+    f0 <- f(th)
+    for (a in seq_len(p)) {
+      i <- idx[a]
+      H[a, a] <- (f(at(i, h[i])) - 2 * f0 + f(at(i, -h[i]))) / h[i]^2
+      for (b in seq_len(a - 1)) {
+        j <- idx[b]
+        H[a, b] <- H[b, a] <- (f(at(c(i, j), c(h[i], h[j]))) - f(at(c(i, j), c(h[i], -h[j]))) -
+                                 f(at(c(i, j), c(-h[i], h[j]))) + f(at(c(i, j), c(-h[i], -h[j])))) / (4 * h[i] * h[j])
+      }
+    }
+    H
+  }
+  Ts <- matrix(0, m, m)
+  # random-effect levels: sum_g Z_g' c Z_g (q x q) times d2 D
+  for (lv in names(attr(R$Srel, "Zs"))) {
+    idx <- which(comp == paste0("re:", lv))
+    if (!length(idx)) next
+    Z <- attr(R$Srel, "Zs")[[lv]]$Z
+    ng <- nrow(attr(R$Srel, "Zs")[[lv]]$I)
+    q <- ncol(Z) %/% ng
+    K <- Matrix::crossprod(Z, Sinv %*% Z)
+    U <- as.matrix(Matrix::crossprod(Z, pt$SX))
+    u <- as.vector(Matrix::crossprod(Z, pt$Py))
+    M <- matrix(0, q, q)
+    for (r in seq_len(q)) for (s in seq_len(q)) {
+      ir <- (seq_len(ng) - 1L) * q + r
+      is <- (seq_len(ng) - 1L) * q + s
+      M[r, s] <- sum(K[cbind(ir, is)]) - sum(u[ir] * u[is]) -
+        (if (reml) sum((U[ir, , drop = FALSE] %*% pt$Phi) * U[is, , drop = FALSE]) else 0)
+    }
+    Ts[idx, idx] <- hess2(function(x) sum(M * pieces(x, "D")$D[[lv]]), idx)
+  }
+  # residual part
+  ic <- which(comp == "corStruct")
+  iv <- which(comp == "varStruct")
+  if (length(ic) || length(iv)) {
+    blk <- lay$blk
+    ia <- if (is.null(blk)) seq_len(n) else blk$ia      # positions in nlme's sorted order
+    jb <- if (is.null(blk)) seq_len(n) else blk$jb
+    cp <- cvec(lay$ord[ia], lay$ord[jb])
+    p0 <- pieces(th, c("w", "r"))
+    r0 <- if (is.null(p0$r)) 1 else p0$r
+    ww <- function(w) w[ia] * w[jb]
+    if (length(ic)) {
+      cw <- cp * ww(p0$w)
+      Ts[ic, ic] <- hess2(function(x) sum(cw * pieces(x, "r")$r), ic)
+    }
+    if (length(iv)) {
+      cr <- cp * r0
+      Ts[iv, iv] <- hess2(function(x) sum(cr * ww(pieces(x, "w")$w)), iv)
+    }
+    if (length(ic) && length(iv)) {
+      dr <- lapply(ic, function(i) (pieces(at(i, h[i]), "r")$r - pieces(at(i, -h[i]), "r")$r) / (2 * h[i]))
+      dw <- lapply(iv, function(j) (ww(pieces(at(j, h[j]), "w")$w) - ww(pieces(at(j, -h[j]), "w")$w)) / (2 * h[j]))
+      for (a in seq_along(ic)) for (b in seq_along(iv)) {
+        Ts[ic[a], iv[b]] <- Ts[iv[b], ic[a]] <- sum(cp * dr[[a]] * dw[[b]])
+      }
+    }
+  }
+  Tm[seq_len(m), seq_len(m)] <- exp(2 * R$th0[k]) * Ts
+  Tm
+}
+
+## Information about the variance parameters theta (pt from
+## pm_nlme_parts()): "expected", 1/2 tr(P G_i P G_j); "average" (Genstat),
+## 1/2 y'P G_i P G_j P y; "observed" (SAS), half the Hessian of the -2
+## log-likelihood, 1/2 T - expected + 2 average (pm_nlme_T(); exact up to
+## the differences of the covariance's pieces). ML fits (reml = FALSE): S^-1
+## in place of P in the traces.
+pm_nlme_info <- function(R, pt, type = c("observed", "expected", "average"), reml = TRUE) {
+  type <- match.arg(type)
+  k <- R$k
+  if (type == "average") {
+    AI <- matrix(0, k, k)
+    for (i in seq_len(k)) for (j in i:k) AI[i, j] <- AI[j, i] <- 0.5 * sum(pt$a[[i]] * pt$Pa[[j]])
+    return(AI)
+  }
+  if (type == "expected") {
+    IE <- matrix(0, k, k)
+    for (i in seq_len(k)) for (j in i:k) {
+      tr <- sum(pt$SG[[i]] * Matrix::t(pt$SG[[j]]))
+      if (reml) tr <- tr - 2 * sum(pt$Phi * t(pt$Q[[i]][[j]])) + sum((pt$Phi %*% pt$A[[i]]) * t(pt$Phi %*% pt$A[[j]]))
+      IE[i, j] <- IE[j, i] <- 0.5 * tr
+    }
+    return(IE)
+  }
+  0.5 * pm_nlme_T(R, pt, reml) - pm_nlme_info(R, pt, "expected", reml) + 2 * pm_nlme_info(R, pt, "average", reml)
+}
+
+## The covariance of the variance parameters from the observed information
+## (directions with a non-positive curvature left out).
+pm_nlme_W_observed <- function(R, pt = pm_nlme_parts(R)) {
+  I <- pm_nlme_info(R, pt, "observed", reml = !R$ml)
+  I <- (I + t(I)) / 2
+  eg <- eigen(I, symmetric = TRUE)
+  pos <- eg$values > 5e-9
+  eg$vectors[, pos, drop = FALSE] %*% diag(1 / eg$values[pos], nrow = sum(pos)) %*% t(eg$vectors[, pos, drop = FALSE])
+}
+
+## Satterthwaite: d vcov(beta) / d theta_i = Phi A_i Phi (exact, given G_i).
 pm_satt_parts_nlme <- function(model) {
   R <- pm_nlme_reml(model)
-  J <- numDeriv::jacobian(function(p) as.vector(R$vb(p)), R$th0)
-  p <- ncol(R$X)
-  structure(list(vcov_beta = R$Vm, vcov_varpar = pm_nlme_W_observed(R),
-                 Jac_list = lapply(seq_len(R$k), function(i) matrix(J[, i], p, p))),
+  pt <- pm_nlme_parts(R)
+  structure(list(vcov_beta = R$Vm, vcov_varpar = pm_nlme_W_observed(R, pt),
+                 Jac_list = lapply(pt$A, function(a) R$vscale * pt$Phi %*% a %*% pt$Phi)),
             class = "pm_satt")
 }
 
@@ -163,45 +348,12 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "aver
   information <- match.arg(information)
   R <- pm_nlme_reml(model, reml = TRUE)
   X <- R$X
-  th <- R$th0
   k <- R$k
-  S0 <- R$Sig(th)
-  G <- lapply(seq_len(k), function(i) {
-    if (i == k) return(2 * S0)                 # d Sigma / d log sigma
-    h <- 1e-4 * max(1, abs(th[i]))
-    e <- replace(numeric(k), i, h)
-    (R$Sig(th + e) - R$Sig(th - e)) / (2 * h)
-  })
-  # all n x n products stay sparse (block diagonal); the rest is p x p
-  C <- Matrix::Cholesky(S0, LDL = FALSE)
-  SX <- as.matrix(Matrix::solve(C, X, system = "A"))
-  SG <- lapply(G, function(Gi) Matrix::solve(C, methods::as(Gi, "CsparseMatrix"), system = "A"))   # Sigma^-1 G_i
-  Phi <- R$Vm
-  A <- lapply(G, function(Gi) as.matrix(crossprod(SX, Gi %*% SX)))          # X' S^-1 G_i S^-1 X
-  PP <- lapply(A, function(a) -a)
-  Q <- lapply(seq_len(k), function(i) lapply(seq_len(k), function(j)
-    as.matrix(crossprod(SX, G[[i]] %*% (SG[[j]] %*% SX)))))
-  W <- if (information == "observed") pm_nlme_W_observed(R) else if (information == "average") {
-    # average information: 1/2 (G_i P y)' P (G_j P y), with P v = S^-1 v - S^-1 X Phi X' S^-1 v
-    Pv <- function(v) {
-      sv <- as.matrix(Matrix::solve(C, v, system = "A"))
-      sv - SX %*% (Phi %*% crossprod(SX, v))
-    }
-    Py <- Pv(R$y)
-    a <- lapply(G, function(Gi) as.matrix(Gi %*% Py))
-    Pa <- lapply(a, Pv)
-    AI <- matrix(0, k, k)
-    for (i in seq_len(k)) for (j in i:k) AI[i, j] <- AI[j, i] <- 0.5 * sum(a[[i]] * Pa[[j]])
-    solve(AI)
-  } else {
-    # expected information: 1/2 tr(P G_i P G_j), P = S^-1 - S^-1 X Phi X' S^-1, in pieces
-    IE <- matrix(0, k, k)
-    for (i in seq_len(k)) for (j in i:k) {
-      IE[i, j] <- IE[j, i] <- 0.5 * (sum(SG[[i]] * Matrix::t(SG[[j]])) - 2 * sum(Phi * t(Q[[i]][[j]])) +
-                                       sum((Phi %*% A[[i]]) * t(Phi %*% A[[j]])))
-    }
-    solve(IE)
-  }
+  pt <- pm_nlme_parts(R)
+  Phi <- pt$Phi
+  Q <- pt$Q
+  PP <- lapply(pt$A, function(a) -a)
+  W <- if (information == "observed") pm_nlme_W_observed(R, pt) else solve(pm_nlme_info(R, pt, information))
   U <- matrix(0, ncol(X), ncol(X))
   for (i in seq_len(k)) for (j in seq_len(k)) {
     U <- U + W[i, j] * (Q[[i]][[j]] - PP[[i]] %*% Phi %*% PP[[j]])
