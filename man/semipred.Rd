@@ -10,7 +10,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 		   band=c("pointwise", "simultaneous"),
-		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
+		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+		   mean_type=c("conditional", "overall"))
 }
 \arguments{
 \item{semireg}{A list object returned by \code{semireg}.}
@@ -26,7 +27,11 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 
 \item{covariateV}{A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.}
 
-\item{boundary}{A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.}
+\item{boundary}{For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
+columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
+by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
+as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
+the data cover, following their shape). \code{NULL} (default): the whole grid.}
 
 \item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
 version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
@@ -48,6 +53,23 @@ The defaults are \code{c(1, 2)} for two way interactions.}
 \item{ci}{A logical scalar to indicate whether to print confidence interval. The default value is TRUE.}
 
 \item{point}{A logical scalar to indicate whether to print raw data points. The default value is TRUE.}
+
+\item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+\code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+overall means. Log-link count families only.}
+
+\item{plot_args}{A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
+dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
+difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
+(1), \code{points}, \code{point_alpha}, \code{point_size} (the data: grey, 0.6, 1.3), \code{palette} (curves
+by group: eight colours that colour-blind readers can tell apart; ggplot2's own beyond eight groups),
+\code{surface_points} (the data on surfaces: red). Bands are drawn first and their lines on top. For
+example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
+be added to it.}
 
 \item{jitterv}{A degree of jitter in x and y direction in the graph. The default is zero.}
 
@@ -85,8 +107,10 @@ on the link scale, as the ratio (log link) or the odds ratio (logit link) of the
 }
 \value{
 \item{plt}{A ggplot object.}
-\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL} and (gaussian fits)
-  \code{SE} and \code{df}; with \code{contr} the columns described in Details.}
+\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+  \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
+  \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
+  are t; with \code{contr} the columns described in Details.}
 }
 \description{
 This function produces predicted means with graph for a semi paramatric model with new set of covariate values.
@@ -147,6 +171,17 @@ scaled by \code{semireg(nscale = TRUE)} is differentiated in its own units. In a
 (\file{dev/sim-semipred-deriv.R}; \eqn{y = \sin(x/1.5)} plus noise, 150 points, 500 data sets) the bands covered
 the true slope 0.97 pointwise and over the whole range with the default 6 knots, 0.99-1.00 with 15; the
 curvature 0.98-1.00.
+}
+
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+\code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+means and their ratios.
 }
 
 \examples{

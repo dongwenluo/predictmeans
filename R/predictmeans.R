@@ -13,7 +13,8 @@
 #'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
+#'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+#'   mean_type=c("conditional", "overall"), ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
@@ -242,6 +243,20 @@
 #'   grid, then average with the same weights, as emmeans' \code{regrid()}: the mean of the response, e.g. a mean
 #'   count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
 #'   stay on the link scale.
+#' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}); for other models the two
+#'   are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
+#'   \eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+#'   with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
+#'   averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
+#'   pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
+#'   \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
+#' @section Zero inflation (glmmTMB):
+#' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+#' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+#' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+#' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+#' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+#' \code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
 #' @return
 #' \item{Predicted Means}{A table of predicted means.}
 #'  \item{Standard Error of Means}{A table of standard errors of predicted means.}
@@ -358,8 +373,10 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
                           cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...) {
+                          equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+                          mean_type=c("conditional", "overall"), ...) {
   average <- match.arg(average)
+  mean_type <- match.arg(mean_type)
   pm_equiv_margins(equivalence)                  # check early
   pm_note_singular(model)
 
@@ -393,7 +410,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
                        permlist = permlist, ncore = ncore, ndecimal = ndecimal, cov_reduce = cov_reduce,
                        exclude = exclude, vcov_adjust = vcov_adjust, vcov_adjust_default = missing(vcov_adjust),
                        weights = weights, df_method = df_method, vcov = vcov, equivalence = equivalence,
-                       bias_adjust = bias_adjust, sigma = sigma, average = average), pa)
+                       bias_adjust = bias_adjust, sigma = sigma, average = average, mean_type = mean_type), pa)
   est <- pm_estimate(opt)                        # K matrix, means, SEs
   cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals
   tab <- pm_tables(opt, est, cmp)                # mean table, response scale, letters

@@ -124,3 +124,91 @@ test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left a
   expect_equal(as.numeric(glmmTMB::VarCorr(m2)$cond$Subject[1, 1]), v2[1, "vcov"], tolerance = 1e-6)
   expect_identical(colnames(varcomp(m2, ci = FALSE)), c("vcov", "SE"))
 })
+
+test_that("zero inflation: the means are the conditional ones, said in a message and in settings", {
+  set.seed(7)
+  d <- expand.grid(trt = factor(c("a", "b")), site = factor(1:10), r = 1:10)
+  d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
+                rpois(nrow(d), exp(1.5 + 0.3 * (d$trt == "b") + rnorm(10, 0, 0.3)[d$site])))
+  m <- glmmTMB::glmmTMB(y ~ trt + (1 | site), ziformula = ~trt, family = poisson, data = d)
+  expect_message(pm <- predictmeans(m, "trt"), "conditional \\(count\\) part")
+  expect_identical(pm$settings$component, "conditional")
+  nd <- data.frame(trt = factor(c("a", "b")), site = NA)
+  expect_equal(pm$means$response, unname(predict(m, nd, type = "conditional", re.form = NA, allow.new.levels = TRUE)),
+               tolerance = 1e-6)
+  m0 <- glmmTMB::glmmTMB(y ~ trt + (1 | site), family = poisson, data = d)
+  expect_true(is.na(suppressMessages(predictmeans(m0, "trt"))$settings$component))
+})
+
+test_that("mean_type = 'overall': overall means (1 - pi) mu, equal to glmmTMB and emmeans", {
+  set.seed(7)
+  d <- expand.grid(trt = factor(c("a", "b")), dose = factor(c("lo", "hi")), site = factor(1:10), r = 1:6)
+  d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
+                rpois(nrow(d), exp(1.5 + 0.3 * (d$trt == "b") + 0.2 * (d$dose == "hi") + rnorm(10, 0, 0.3)[d$site])))
+  m <- glmmTMB::glmmTMB(y ~ trt * dose + (1 | site), ziformula = ~trt, family = poisson, data = d)
+  pm <- suppressMessages(predictmeans(m, "trt:dose", mean_type = "overall"))
+  nd <- data.frame(trt = pm$means$trt, dose = pm$means$dose, site = NA)
+  expect_equal(pm$means$response, unname(predict(m, nd, type = "response", re.form = NA, allow.new.levels = TRUE)),
+               tolerance = 1e-8)
+  expect_identical(pm$settings$component, "overall")
+  p1 <- suppressMessages(predictmeans(m, "trt", mean_type = "overall", pairwise = TRUE))
+  skip_if_not_installed("emmeans")
+  em <- summary(emmeans::emmeans(m, ~ trt, component = "response"))
+  expect_equal(p1$means$response, em$emmean, tolerance = 1e-6)
+  expect_equal(p1$means$response.std.error, em$SE, tolerance = 1e-6)
+  expect_equal(p1$pairs$ratio, p1$means$response[1] / p1$means$response[2], tolerance = 1e-8)
+  # without zero inflation it is ignored, with a message
+  m0 <- glmmTMB::glmmTMB(y ~ trt + (1 | site), family = poisson, data = d)
+  expect_message(predictmeans(m0, "trt", mean_type = "overall"), "has none")
+})
+
+test_that("semireg_tmb() with zero inflation: the covariance accounts for the extra zeros", {
+  # the working weights of the count part alone gave SEs 5-20% too small; the
+  # covariance now equals the inverse of the (beta, b) block of TMB's joint precision
+  skip_if_not_installed("TMB")
+  set.seed(7)
+  d <- expand.grid(x = seq(0, 10, length = 25), trt = factor(c("a", "b")), site = factor(1:6))
+  mu <- exp(1 + sin(d$x / 2) / 2 + 0.3 * (d$trt == "b") + rnorm(6, 0, 0.3)[d$site])
+  d$y <- ifelse(runif(nrow(d)) < 0.3, 0, rpois(nrow(d), mu))
+  f <- suppressWarnings(suppressMessages(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~1,
+                                                     family = poisson, data = d, prt = FALSE)))
+  m <- f$semer
+  nb <- length(glmmTMB::fixef(m)$cond)
+  V <- pm_tmb_cond_cov(m, ncol(lme4::getME(m, "Z")))
+  expect_equal(unname(as.matrix(f$CovMat)) * sigma(m)^2, unname(V), tolerance = 1e-8)
+  se <- sqrt(diag(V)[seq_len(nb)])
+  expect_true(all(abs(se / sqrt(diag(vcov(m)$cond)) - 1) < 0.03))
+})
+
+test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and ratios of overall means", {
+  set.seed(7)
+  d <- expand.grid(x = seq(0, 10, length = 25), trt = factor(c("a", "b")), site = factor(1:6))
+  d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
+                rpois(nrow(d), exp(1 + 0.08 * d$x + 0.3 * (d$trt == "b") + rnorm(6, 0, 0.3)[d$site])))
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  m <- glmmTMB::glmmTMB(y ~ trt * x + (1 | site), ziformula = ~trt, family = poisson, data = d)
+  xs <- c(2, 5, 8)
+  pd <- q(covariatemeans(m, "trt", "x", covariateV = xs, mean_type = "overall"))$pltdf
+  expect_equal(pd$Mean, unname(predict(m, data.frame(x = pd$xvar, trt = pd$trt, site = NA), type = "response",
+                                       re.form = NA, allow.new.levels = TRUE)), tolerance = 1e-8)
+  skip_if_not_installed("emmeans")
+  em <- summary(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"))
+  o <- match(paste(em$trt, em$x), paste(pd$trt, pd$xvar))
+  expect_equal(pd$Mean[o] * pd$ses[o], em$SE, tolerance = 1e-6)     # SE of m = m x SE of log m
+  cc <- q(covariatemeans(m, "trt", "x", covariateV = xs, contr = c("b", "a"), mean_type = "overall"))$pltdf
+  emc <- summary(emmeans::contrast(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"),
+                                   "revpairwise"))
+  expect_equal(cc$response.diff, emc$estimate, tolerance = 1e-6)
+  expect_equal(cc$response.ses, emc$SE, tolerance = 1e-6)
+  # semipred() on semireg_tmb(): the overall curve is (1 - pi) x the conditional one
+  f <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~trt, family = poisson, data = d,
+                     prt = FALSE))
+  pc <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, prt = FALSE))$pred_df
+  po <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, mean_type = "overall", prt = FALSE))$pred_df
+  bz <- glmmTMB::fixef(f$semer)$zi
+  expect_equal(po$y, (1 - plogis(bz[1] + bz[2] * (po$trt == "b"))) * pc$y, tolerance = 1e-8)
+  cr <- q(semipred(f, "trt", "x", covariateV = xs, contr = c("b", "a"), unconditional = FALSE, mean_type = "overall",
+                   prt = FALSE))$pred_df
+  expect_equal(cr$ratio, po$y[po$trt == "b"] / po$y[po$trt == "a"], tolerance = 1e-8)
+  expect_error(q(semipred(f, "trt", "x", deriv = 1, mean_type = "overall", prt = FALSE)), "not their derivatives")
+})

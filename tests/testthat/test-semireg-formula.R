@@ -217,3 +217,21 @@ test_that("smooths with fewer distinct covariate values than basis columns: exac
   g2 <- mgcv::gam(y ~ s(x, id, bs = "fs", k = 5), data = droplevels(d2), method = "REML")
   expect_equal(unname(fitted(s2$semer)), unname(fitted(g2)), tolerance = 1e-4)
 })
+
+test_that("objects of the session in xt or k of random curves and t2() are not taken for data", {
+  set.seed(1)
+  d <- data.frame(x = rep(seq(0, 1, length = 10), 12), z = runif(120), id = factor(rep(1:12, each = 10)),
+                  g = factor(rep(1:2, each = 60)))
+  d$y <- sin(3 * d$x) + d$z + rnorm(12, 0, 0.3)[d$id] + rnorm(120, 0, 0.2)
+  rg <- c(-0.05, 1.05)
+  kk <- 4
+  fm <- suppressMessages(semireg(y ~ s(x, by = g, bs = "os", k = 6, xt = list(range = rg)) +
+                                   (s(x, bs = "os", k = kk, xt = list(range = rg)) | id), data = d, prt = FALSE))
+  expect_false(any(c("rg", "kk") %in% fm$sm_vars))
+  expect_true(all(is.finite(semipred(fm, "g", "x", prt = FALSE)$pred_df$SE)))
+  expect_true(all(is.finite(semipred(fm, "g", "x", contr = c("2", "1"), prt = FALSE)$pred_df$SE_contr)))
+  expect_true(all(is.finite(predictmeans(fm, "g", covariate = c(x = 0.5))$means$std.error)))
+  ft <- suppressMessages(semireg(y ~ t2(x, z, k = kk) + (1 | id), data = d, prt = FALSE))
+  expect_false("kk" %in% ft$sm_vars)
+  expect_true(all(is.finite(semipred(ft, covariate = c("x", "z"), prt = FALSE)$pred_df$SE)))
+})

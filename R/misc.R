@@ -882,3 +882,19 @@ pm_note_singular <- function(model) {
             "definite\"). Consider simplifying the random effects.")
   }
 }
+
+## glmmTMB fits with zero inflation: the means of predictmeans(),
+## covariatemeans() and semipred() are those of the conditional (count) part,
+## mu, not the overall mean (1 - pi) mu. Returns "conditional" (the settings
+## field) with the message as attribute, or NULL.
+pm_zi_component <- function(model) {
+  if (inherits(model, "semireg")) model <- model$semer
+  if (!inherits(model, "glmmTMB")) return(NULL)
+  zf <- model$modelInfo$allForm$ziformula
+  if (is.null(zf) || identical(paste(deparse(zf), collapse = ""), "~0")) return(NULL)
+  structure("conditional", note = paste0(
+    "The model has zero inflation (ziformula ", paste(deparse(zf), collapse = ""), "): the means are those of ",
+    "the conditional (count) part, mu, as emmeans and predict(type = \"conditional\") give; the overall mean is ",
+    "(1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall ",
+    "means only when pi is the same)."))
+}

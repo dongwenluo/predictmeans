@@ -11,7 +11,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
+  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+  mean_type=c("conditional", "overall"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -273,6 +274,14 @@ average on the link scale, then back-transform) or \code{"response"} (back-trans
 grid, then average with the same weights, as emmeans' \code{regrid()}: the mean of the response, e.g. a mean
 count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
 stay on the link scale.}
+
+\item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}); for other models the two
+are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
+\eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
+averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
+pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
+\code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}
@@ -341,6 +350,16 @@ The \code{predictmeans} function becomes confused if a factor or covariate is ch
   
   For \code{predictmeans} function, it is assumed that methods \code{coef}, \code{vcov}, \code{model.matrix}, \code{model.frame} and \code{terms} are available for \code{model}.
 }
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+\code{predictmeans(mean_type = "overall")} gives the overall means and their ratios.
+}
+
 \examples{
   library(predictmeans)
   Oats$nitro <- factor(Oats$nitro)

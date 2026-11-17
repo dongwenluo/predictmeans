@@ -209,16 +209,25 @@ pm_tidy_parts <- function(e) {
     average = avg,
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
+    component = if (is.null(pm_zi_component(model))) NA_character_ else g("mean_type"),
     model_class = class(model)[1],
     version = as.character(utils::packageVersion("predictmeans"))
   )
+  zi <- pm_zi_component(model)
+  if (!is.null(zi)) {
+    message(if (identical(g("mean_type"), "overall")) paste0(
+      "The model has zero inflation: the means are the overall means (1 - pi) mu (mean_type = \"overall\"), ",
+      "averaged over the cells of the grid; 'estimate' is their log, the ratios are of these means.") else
+      paste(attr(zi, "note"), "mean_type = \"overall\" gives the overall means."))
+  }
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)
 }
 
 ## Derivative of the back-transformation at the means (link scale): the
-## family's mu.eta for a non-identity link, else the user's 'trans'
-## (numerically).
+## family's mu.eta for a non-identity link, exp for a log, else the user's
+## 'trans' by central differences (R/deriv.R). The one place for h' (also
+## pm_back_funs()).
 pm_back_deriv <- function(trans, eta, model, link_scale) {
   if (link_scale) {
     fam <- tryCatch(stats::family(model), error = function(e) NULL)
@@ -229,10 +238,9 @@ pm_back_deriv <- function(trans, eta, model, link_scale) {
     }
     if (is.list(fam) && is.function(fam$mu.eta)) return(fam$mu.eta(eta))
   }
-  if (identical(trans, exp)) return(exp(eta))
-  vapply(eta, function(e) {
-    if (is.na(e)) NA_real_ else numDeriv::grad(function(x) as.numeric(trans(x)), e)
-  }, numeric(1))
+  if (identical(trans, exp) || identical(trans, stats::make.link("log")$linkinv)) return(exp(eta))
+  d <- pm_fd_fun(function(x) as.numeric(trans(x)))
+  vapply(eta, function(e) if (is.na(e)) NA_real_ else d(e), numeric(1))
 }
 
 ## "log" when differences of the means are log ratios (log link or

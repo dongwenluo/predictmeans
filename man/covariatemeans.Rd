@@ -11,7 +11,8 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
+  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+  mean_type=c("conditional", "overall"))
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -97,6 +98,13 @@ delta-method band; it describes the size of the difference, the test stays on th
 each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
 values together, for saying over which range of the covariate the lines differ.}
 
+\item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+\code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+overall means. Log-link count families only.}
+
 \item{bias_adjust, sigma}{For back-transformed lines (a link, a transformed response or \code{trans}), as in
 \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
 for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
@@ -159,6 +167,17 @@ Each set of limits in \code{pltdf} has a column that says whether it includes th
 \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
 \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
 the result (the ranges of the covariate) follow the band asked for, on the model scale.
+}
+
+\section{Zero inflation (glmmTMB)}{
+
+For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+\eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+\code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+\code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+means and their ratios.
 }
 
 \examples{

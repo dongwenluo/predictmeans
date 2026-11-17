@@ -194,7 +194,9 @@ pm_sr_fit_tmb <- function(tmbc, st, env) {
 ##   X, Z, Lambda   of the fit; w: weights (length n)
 ##   uHat           random effects in the column order of Z, named
 ##   u_ind          number of columns of Z of each term, named by term
-pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
+##   V              (optional) the covariance itself, relative to sigma^2
+##                  (zero-inflated glmmTMB fits: from TMB's joint precision)
+pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm, V = NULL) {
   n_beta <- ncol(X)
   C <- cbind(X, Z)
   CTC <- Matrix::crossprod(C * w, C)
@@ -209,7 +211,7 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
   dM[!is.finite(dM) | dM <= 0] <- 1
   Dm <- Matrix::Diagonal(x = 1/dM)
   Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
-  fullCovMat <- Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm)))
+  fullCovMat <- if (is.null(V)) Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm))) else Matrix::Matrix(V)
   fullCovMat <- Matrix::forceSymmetric(methods::as(fullCovMat, "generalMatrix"))
   df <- sum(Matrix::diag(fullCovMat %*% CTC))              # effective degrees of freedom
 
@@ -395,7 +397,7 @@ pm_sr_satt_ddf <- function(semireg, L, idx, hold = names(semireg$refit$smoothZ))
   held <- which(rep(names(cnms), nth) %in% hold)
   free <- setdiff(seq_len(k), c(bnd, held))
   vfree <- function(x) { y <- vp$varpar; y[free] <- x; v(y) }
-  G <- pm_jac_central(vfree, vp$varpar[free])
+  G <- pm_fd_jac(vfree, vp$varpar[free], scale = 1e-2)         # R/deriv.R
   denom <- rowSums((G %*% pm_cov_given(vp$vcov_varpar, free)) * G)
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
@@ -492,7 +494,7 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
   move <- c(free, held)
   vmove <- function(x) { y <- x0; y[move] <- x; v(y) }
   G <- matrix(0, length(v0), length(x0))
-  G[, move] <- pm_jac_central(vmove, x0[move])
+  G[, move] <- pm_fd_jac(vmove, x0[move], scale = 1e-2)
   Ai <- solve(A)
   Vphi <- Ai %*% V[use, use, drop = FALSE] %*% t(Ai)
   G <- (G %*% A)[, free, drop = FALSE]
@@ -515,21 +517,4 @@ pm_quad_diag <- function(M, B) {
   S <- as.matrix(if (is.null(ch)) Matrix::solve(M, E) else Matrix::solve(ch, E))[J, , drop = FALSE]
   BJ <- as.matrix(B[, J, drop = FALSE])
   rowSums((BJ %*% S) * BJ)
-}
-
-## The Jacobian of f at x by central differences (two evaluations per
-## parameter; step 1e-4 relative, at least 1e-6): for the Satterthwaite df of
-## many prediction points, where Richardson extrapolation would cost some
-## eight evaluations per parameter for no difference that matters to a df.
-pm_jac_central <- function(f, x) {
-  f0 <- f(x)
-  G <- matrix(0, length(f0), length(x))
-  for (j in seq_along(x)) {
-    h <- 1e-4*max(abs(x[j]), 1e-2)
-    xp <- xm <- x
-    xp[j] <- x[j] + h
-    xm[j] <- x[j] - h
-    G[, j] <- (f(xp) - f(xm))/(2*h)
-  }
-  G
 }

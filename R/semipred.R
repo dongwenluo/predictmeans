@@ -9,7 +9,8 @@
 #' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
 #' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
 #' 		   band=c("pointwise", "simultaneous"),
-#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
+#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+#' 		   mean_type=c("conditional", "overall"))
 #' @param semireg A list object returned by \code{semireg}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
@@ -17,7 +18,11 @@
 #' @param sm_term Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.
 #' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
 #' @param covariateV A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
-#' @param boundary A matrix or data frame of two columns, used to specify boundary of longitude and latitude, it is functional when the length of covariate is two.
+#' @param boundary For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
+#'   columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
+#'   by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
+#'   as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
+#'   the data cover, following their shape). \code{NULL} (default): the whole grid.
 #' @param level Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
 #'   version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 #'   with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
@@ -32,6 +37,21 @@
 #'   The defaults are \code{c(1, 2)} for two way interactions.
 #' @param ci A logical scalar to indicate whether to print confidence interval. The default value is TRUE.
 #' @param point A logical scalar to indicate whether to print raw data points. The default value is TRUE.
+#' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+#'   for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+#'   \code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+#'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+#'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+#'   overall means. Log-link count families only.
+#' @param plot_args A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+#'   curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
+#'   dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
+#'   difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
+#'   (1), \code{points}, \code{point_alpha}, \code{point_size} (the data: grey, 0.6, 1.3), \code{palette} (curves
+#'   by group: eight colours that colour-blind readers can tell apart; ggplot2's own beyond eight groups),
+#'   \code{surface_points} (the data on surfaces: red). Bands are drawn first and their lines on top. For
+#'   example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
+#'   be added to it.
 #' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
 #' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
 #' @param prt A logical scalar to indicate whether to produce plots on the screen or not. The default value is TRUE.
@@ -112,10 +132,20 @@
 #' \code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
 #' when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 #' penalised smooth coefficients are not reliable.)
+#' @section Zero inflation (glmmTMB):
+#' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+#' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+#' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+#' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+#' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+#' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+#' means and their ratios.
 #' @return
 #' \item{plt}{A ggplot object.}
-#' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL} and (gaussian fits)
-#'   \code{SE} and \code{df}; with \code{contr} the columns described in Details.}
+#' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+#'   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
+#'   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
+#'   are t; with \code{contr} the columns described in Details.}
 #' @references
 #' Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
 #' @author
@@ -174,8 +204,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                      scales=c("fixed", "free", "free_x", "free_y"), 
                      plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE, simultaneous=FALSE,
                      contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
-                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0) {
+                     unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+                     mean_type=c("conditional", "overall")) {
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
+  sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
+  mean_type <- pm_zi_check(semireg, match.arg(mean_type), deriv)      # R/zero-inflation.R
+  pm_zi_message(semireg, mean_type)
   if (deriv > 0) {
     if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
     if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)
@@ -196,6 +230,19 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   }
   
   mod_df <- semireg$data
+  if (isFALSE(boundary)) boundary <- NULL
+  if (isTRUE(boundary)) {
+    # the region covered by the data (semiboundary()), in the covariates' units
+    if (length(covariate) != 2) stop("'boundary = TRUE' needs two covariates.", call. = FALSE)
+    bx <- mod_df[, covariate]
+    for (i in covariate) {
+      s <- attr(mod_df, paste(i, "sd", sep = "_"))
+      m <- attr(mod_df, paste(i, "mean", sep = "_"))
+      if (!is.null(s)) bx[[i]] <- bx[[i]] * s
+      if (!is.null(m)) bx[[i]] <- bx[[i]] + m
+    }
+    boundary <- semiboundary(bx)
+  }
   if (!is.null(contr)) {
     trans <- NULL
     stopifnot("'modelterm' must be a single term"=length(unlist(strsplit(modelterm, "\\:")))==1) 
@@ -240,6 +287,20 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   response <- des$response; response0 <- des$response0
   if (deriv > 0) des <- pm_semi_deriv(semireg, des, modelterm, covariate, sm_term, mod_df, deriv)
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
+  ncond <- ncol(D_mx)
+  if (mean_type == "overall") {
+    # overall means (1 - pi) mu of a zero-inflated fit: the rows of log m,
+    # with the joint covariance of the count (fixed + smooth) and
+    # zero-inflation coefficients from TMB's joint precision (unconditional:
+    # its whole inverse) (R/zero-inflation.R)
+    nzc <- ncol(lme4::getME(semer, "Z"))
+    nb <- length(glmmTMB::fixef(semer)$cond)
+    bz <- glmmTMB::fixef(semer)$zi
+    Vj <- pm_tmb_cond_cov(semer, nzc, zi = TRUE, full = if (is.null(unconditional)) TRUE else isTRUE(unconditional))
+    idx <- c(des$cov_idx, nb + nzc + seq_along(bz))
+    a <- pm_zi_augment(D_mx, beta_u, pm_zi_X(semer, pred_df, names(bz)), bz, Vj[idx, idx, drop = FALSE])
+    D_mx <- a$K; beta_u <- a$coef; sm_Cov <- a$vcov / sig.epsHat^2
+  }
 
   # two-sided (1 - level) limits, pointwise or simultaneous over the curve(s),
   # with the df of pm_sr_ddf() (as predictmeans() on the fit): gaussian fits
@@ -247,6 +308,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   # design's strata (normal without strata)
   sr_terms <- if (!is.null(modelterm) && !setequal(modelterm, covariate)) modelterm
   df_of <- function(D) {
+    D <- D[, seq_len(ncond), drop = FALSE]         # the count model's columns (mean_type = "overall")
     df <- if (is.null(des$cov_idx)) rep(Inf, nrow(D)) else pm_sr_ddf(semireg, D, des$cov_idx, sr_terms)
     df[is.na(df)] <- Inf
     as.numeric(df)
@@ -285,6 +347,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           response <- "Proportion"
         }		
       } 
+      pred_df$SE <- stderr                         # the link scale (the limits are h(eta -+ crit SE))
       pred_df$SE_mu <- stderr_mu
       if (any(is.finite(df_mx))) pred_df$df <- df_mx
     }else {
@@ -340,12 +403,15 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
   
   if (setequal(modelterm, covariate)) {
     if (length(covariate)==1) {
-      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))))+  
-        geom_line(linewidth=1, col="red") +
-        geom_ribbon(aes(ymin = LL, ymax = UL), alpha = 0.6, stat="identity", fill="#00FFFF", col="#00FFFF")+
-        labs(x=covariate, y=response)+
+      # the data underneath, then the band, then the line on top
+      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)))) +
+        labs(x=covariate, y=response) +
         theme_bw()
-      if (point) plt <- plt + geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))), col="DeepPink", position = position_jitter(width = jitterv, height = jitterv))
+      if (point) plt <- plt + geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))),
+                                         colour = sty$points, alpha = sty$point_alpha, size = sty$point_size,
+                                         position = position_jitter(width = jitterv, height = jitterv))
+      if (ci) plt <- plt + geom_ribbon(aes(ymin = LL, ymax = UL), fill = sty$band, alpha = sty$alpha, colour = NA)
+      plt <- plt + geom_line(colour = sty$line, linewidth = sty$linewidth)
       if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
     }else if(length(covariate)==2) {
       if (!is.null(boundary)){
@@ -364,12 +430,12 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
         
         if (point) plt <- plotly::add_trace(plt, x = mod_df[[covariate[1]]], y = mod_df[[covariate[2]]], 
                                             z = mod_df[[response]], mode = "markers", type = "scatter3d", 
-                                            marker = list(size = 2.5, color = "red", symbol = 104))						
+                                            marker = list(size = 2.5, color = sty$surface_points, symbol = 104))						
       }else{		
         plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) +
           geom_contour_filled() +
           labs(x=covariate[1], y=covariate[2], z=response)
-        if (point) plt <- plt + geom_point(data=mod_df, col="red", size=1.5)   
+        if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)   
         if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))		
       }
       
@@ -380,15 +446,16 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       if (length(covariate)==1) {
         if (is.null(contr)) {
           plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))))+
-            geom_line(aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))), linewidth=1) +
             labs(x=covariate, y=response, col=modelterm) +
             theme_bw()	
-          if (ci) plt <- plt + 
-              geom_ribbon(aes(ymin = LL, ymax = UL, fill=eval(parse(text = modelterm))), alpha = 0.3, stat="identity")+
-              labs(fill=modelterm)
           if (point) plt <- plt + 
-              geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))), position = position_jitter(width = jitterv, height = jitterv))+
+              geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))),
+                         alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))+
               labs(col=modelterm)
+          if (ci) plt <- plt + 
+              geom_ribbon(aes(ymin = LL, ymax = UL, fill=eval(parse(text = modelterm))), alpha = sty$alpha, colour = NA)+
+              labs(fill=modelterm)
+          plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[modelterm]])))
           if (trellis)  plt <- plt + 
               facet_wrap(formula(paste("~", modelterm)), scales=scales) 
           if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))  
@@ -420,7 +487,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           }
           band_c <- if (simultaneous) "simultaneous" else "pointwise"
           plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
-                              typical = glmm)
+                              typical = glmm, style = sty)
           if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
           lv_c <- grp_fct_levl[contr]
           if (deriv > 0) lv_c <- c(paste("The", if (deriv == 1) "slope" else "curvature", "of", lv_c[1]),
@@ -471,7 +538,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
               for (i in names(mod_df_lst)) {
                 plt[[i]] <- plotly::add_trace(plt[[i]], x = mod_df_lst[[i]][[covariate[1]]], y = mod_df_lst[[i]][[covariate[2]]], 
                                               z = mod_df_lst[[i]][[response]], mode = "markers", type = "scatter3d", 
-                                              marker = list(size = 2.5, color = "red", symbol = 104)) 
+                                              marker = list(size = 2.5, color = sty$surface_points, symbol = 104)) 
                 
               }
             }
@@ -480,7 +547,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
               geom_contour_filled()+
               facet_wrap(formula(paste("~", modelterm)), scales=scales)+
               labs(x=covariate[1], y=covariate[2], z=response) 
-            if (point) plt <- plt + geom_point(data=mod_df, col="red", size=1.5)
+            if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)
             if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))			
           }          
         }else{
@@ -525,7 +592,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           
           plt <- ggplot(plt_df_contrN, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) + 
             geom_contour_filled() +
-            geom_point(data=plt_df_contrSub, col="red", size=2.5, shape=22) +
+            geom_point(data=plt_df_contrSub, col=sty$surface_points, size=2.5, shape=22) +
             ggtitle(pm_wrap_title(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with Points at the Area out of", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI"), 11)) +
             labs(x=covariate[1], y=paste("The difference of ", response, "\n", sep=""), z=response) +
             theme_bw() +
@@ -550,16 +617,17 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
       fact1 <- (vars[plotord])[1]
       fact2 <- (vars[plotord])[2]
       plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))))+         	  
-        geom_line(aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))), linewidth=1) +
         labs(x=covariate, y=response, col=fact1) + 
         facet_wrap(formula(paste("~", fact2)), scales=scales)+		
         theme_bw()
       if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
-      if (ci) plt <- plt +
-        geom_ribbon(data=pred_df, aes(ymin = LL, ymax = UL, fill=eval(parse(text = fact1))), alpha = 0.3, stat="identity") +
-        labs(fill=fact1)
       if (point) plt <- plt + 
-        geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))), position = position_jitter(width = jitterv, height = jitterv))
+        geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))),
+                   alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))
+      if (ci) plt <- plt +
+        geom_ribbon(data=pred_df, aes(ymin = LL, ymax = UL, fill=eval(parse(text = fact1))), alpha = sty$alpha, colour = NA) +
+        labs(fill=fact1)
+      plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[fact1]])))
     }
   }
   #     facet_grid(formula(paste(Variable1, "~", Variable2)))
@@ -581,7 +649,11 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
                  paste0(ifelse(nzchar(sig$level), paste0(sig$level, ": "), ""), format(sig$from, digits = 4), " to ",
                         format(sig$to, digits = 4), " (", sig$direction, ")", collapse = "; "), "."))
       }
-      if (inherits(plt, "ggplot")) plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = "grey40") + labs(y = ylab)
+      if (inherits(plt, "ggplot")) {
+        plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = sty$ref) + labs(y = ylab)
+        # one slope: bars where its band leaves out 0
+        if (!length(by)) plt <- plt + pm_sig_bars(sig, pred_df[[covariate]], sty)
+      }
     } else if (inherits(plt, "ggplot")) {
       plt <- plt + labs(y = paste0("The difference of the ", tolower(substr(ylab, 1, 1)), substring(ylab, 2)))
       if (!is.null(plt$labels$title))
@@ -742,7 +814,7 @@ pm_semi_deriv <- function(semireg, des, modelterm, covariate, sm_term, mod_df, d
   xg <- unique(des$pred_df[[covariate]])
   r <- diff(range(xg))
   if (!is.finite(r) || r <= 0) stop("'deriv' needs more than one value of the covariate.", call. = FALSE)
-  h <- r*(if (deriv == 1) 1e-5 else 1e-4)
+  h <- pm_fd_h(0, r, order = deriv)            # R/deriv.R: 1e-5 or 1e-4 of the range
   at <- function(v) pm_semi_design(semireg, modelterm, covariate, v, sm_term, mod_df, cov = FALSE)
   dp <- at(xg + h)
   dm <- at(xg - h)

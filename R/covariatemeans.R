@@ -10,7 +10,8 @@
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-#'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
+#'   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+#'   mean_type=c("conditional", "overall"))
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
@@ -69,6 +70,12 @@
 #' @param band With \code{contr}: \code{"pointwise"} (the default) gives limits at the level \code{level} for
 #'   each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
 #'   values together, for saying over which range of the covariate the lines differ.
+#' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
+#'   for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
+#'   \code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+#'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
+#'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
+#'   overall means. Log-link count families only.
 #' @param bias_adjust,sigma For back-transformed lines (a link, a transformed response or \code{trans}), as in
 #'   \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
 #'   for a transformed response (the geometric mean for a log), and the response of a typical cluster (random effects
@@ -119,6 +126,14 @@
 #' \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
 #' \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
 #' the result (the ranges of the covariate) follow the band asked for, on the model scale.
+#' @section Zero inflation (glmmTMB):
+#' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
+#' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
+#' \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero); ratios are of these means, and equal the
+#' ratios of overall means only when \eqn{\pi} is the same. A message says so and \code{settings$component} is
+#' \code{"conditional"}. The two can order treatments differently when \eqn{\pi} differs between them.
+#' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
+#' means and their ratios.
 #' @return
 #' \item{plt}{The plot (a \code{ggplot}).}
 #' \item{pltdf}{The data of the plot: the fitted values with their limits, or with \code{contr} the differences
@@ -146,10 +161,16 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
                             weights=c("equal", "proportional", "outer", "cells", "flat"),
                             df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                             vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-                            band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL) {
+                            band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+                            mean_type=c("conditional", "overall")) {
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
+  mean_type <- pm_zi_check(model, match.arg(mean_type))               # R/zero-inflation.R
+  if (identical(mean_type, "overall") && !isFALSE(bias_adjust)) {
+    stop("mean_type = \"overall\" cannot be combined with 'bias_adjust'.", call. = FALSE)
+  }
+  pm_zi_message(model, mean_type)
 
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
@@ -183,6 +204,21 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, covar
   preddf <- ctr.matrix$preddf
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default)     # R/inference.R
   mp <- inf$mp
+  if (mean_type == "overall") {
+    # the curves of overall means (1 - pi) mu, as log m (R/zero-inflation.R);
+    # df from the count model's columns
+    bz <- glmmTMB::fixef(model)$zi
+    b <- mp$coef[mp$estimable]
+    Vf <- as.matrix(stats::vcov(model, full = TRUE))[seq_len(length(b) + length(bz)), seq_len(length(b) + length(bz))]
+    a <- pm_zi_augment(KK[, mp$estimable, drop = FALSE], b, pm_zi_X(model, pltdf, names(bz)), bz, Vf)
+    KK <- a$K
+    mp$coef <- a$coef
+    mp$vcov <- a$vcov
+    mp$estimable <- rep(TRUE, length(a$coef))
+    df0 <- inf$df
+    inf$df <- function(L, terms) df0(as.matrix(L)[, seq_len(a$ncond), drop = FALSE], terms)
+    inf$mp <- mp
+  }
   bhat <- mp$coef
 
   # the difference between two levels along the covariate, with its own band
@@ -592,7 +628,7 @@ pm_diff_table <- function(x, Ka, Kb, coef, V, df, crit, h = NULL, d1 = NULL, kin
 ## "response" the response-scale difference, with marks where the curves
 ## differ on the model scale.
 pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_scale = "model", test = NULL,
-                         mtitle = NULL, typical = FALSE, adjusted = FALSE) {
+                         mtitle = NULL, typical = FALSE, adjusted = FALSE, style = pm_curve_style()) {
   out <- res$table
   ratio <- if (res$kind %in% c("ratio", "odds.ratio")) res$kind else character(0)
   what <- if (res$back && contr_scale == "response") "response" else if (length(ratio)) ratio else "diff"
@@ -617,19 +653,23 @@ pm_diff_plot <- function(res, covariate, levs, modelterm, level, band, contr_sca
                paste("=", format(round(test[["p.value"]], 3)))),
            if (what == "response") paste0(
              "delta-method band", if (adjusted) " (bias-adjusted means)" else if (typical) " (random effects at zero)" else "",
-             "; marks: where the lines differ on the model scale"))
+             "; marks: where the lines differ on the model scale"),
+           if (what != "response" && any(out$significant, na.rm = TRUE))
+             paste0("marks: where the band leaves out ", if (what %in% c("ratio", "odds.ratio")) 1 else 0))
   ref <- if (what %in% c("ratio", "odds.ratio")) 1 else 0
+  # the band, the reference line, then the difference on top (R/plot-style.R)
   plt <- ggplot2::ggplot(pd, ggplot2::aes(x = .data$x, y = .data$y)) +
-    ggplot2::geom_hline(yintercept = ref, linetype = 2, colour = "grey40") +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), alpha = 0.2) +
-    ggplot2::geom_line() +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), fill = style$diff_band, alpha = style$alpha,
+                         colour = NA) +
+    ggplot2::geom_hline(yintercept = ref, linetype = 2, colour = style$ref) +
+    ggplot2::geom_line(colour = style$diff_line, linewidth = style$linewidth) +
     ggplot2::labs(title = paste0(pm_wrap_title(mtitle, 11), "\n"), x = covariate, y = ylab,
                   subtitle = if (length(sub)) pm_wrap_title(paste(sub, collapse = "; "), 11, rel = 1)) +
     ggplot2::theme_bw()
   if (ref == 1) plt <- plt + ggplot2::scale_y_log10()            # ratios: a log axis
-  if (what == "response" && any(out$significant)) {
-    plt <- plt + ggplot2::geom_rug(data = pd[out$significant, , drop = FALSE], sides = "b", colour = "red3")
-  }
+  # marks under the curve where the band leaves out the reference (on the
+  # model scale for response-scale plots)
+  plt <- plt + pm_sig_bars(res$significant, pd$x, style)
   plt
 }
 

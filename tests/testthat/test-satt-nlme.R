@@ -97,3 +97,25 @@ test_that("lme: Satterthwaite df equal lmer's (and SAS's) for the split plot wit
   df <- pm_satt_ddf(diag(6)[2, , drop = FALSE], P)
   expect_true(is.finite(df) && df > 0)
 })
+
+test_that("the observed information from its formula equals the Hessian of the log-likelihood", {
+  # pm_nlme_info(): T/2 - expected + 2 average, the second derivatives of the
+  # covariance from its pieces only; against numDeriv's Hessian of -2 logLik
+  r <- rep_data()
+  r$tn <- as.numeric(r$Time)
+  fits <- list(
+    nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
+              weights = nlme::varIdent(form = ~ 1 | Time)),
+    nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corAR1(form = ~ as.integer(Time) | Subj),
+              weights = nlme::varPower(form = ~ tn)),
+    nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corCompSymm(form = ~ 1 | Subj), method = "ML"),
+    nlme::lme(distance ~ age * Sex, random = ~ age | Subject, data = nlme::Orthodont,
+              correlation = nlme::corAR1(), weights = nlme::varIdent(form = ~ 1 | Sex)),
+    nlme::lme(yield ~ nitro, random = ~ 1 | Block/Variety, data = nlme::Oats, method = "ML"))
+  for (m in fits) {
+    R <- pm_nlme_reml(m)
+    I <- pm_nlme_info(R, pm_nlme_parts(R), "observed", reml = !R$ml)
+    H <- numDeriv::hessian(R$reml2, R$th0)
+    expect_equal(I, H / 2, tolerance = 1e-6)
+  }
+})

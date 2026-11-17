@@ -388,6 +388,15 @@ pm_need <- function(pkg, what) {
 pm_points_in_poly <- function(points, polygon) {
   points <- as.matrix(points)
   polygon <- as.matrix(polygon)
+  gap <- !stats::complete.cases(polygon)
+  if (any(gap)) {
+    # several rings separated by NA rows (semiboundary(), polygon()): inside
+    # an odd number of them (holes and separate pieces)
+    ring <- cumsum(gap)[!gap]
+    k <- Reduce(`+`, lapply(split(seq_along(ring), ring), function(i)
+      pm_points_in_poly(points, polygon[!gap, , drop = FALSE][i, , drop = FALSE])))
+    return(k %% 2 == 1)
+  }
   nv <- nrow(polygon)
   if (nv > 1 && all(polygon[1, ] == polygon[nv, ])) {
     polygon <- polygon[-nv, , drop = FALSE]

@@ -13,21 +13,13 @@
 ##     averaged with the same weights (as emmeans' regrid()); SE by the delta
 ##     method, limits mean +- t SE.
 
-## h and its derivatives (vectorised): the family's mu.eta when there is one,
-## else central differences.
+## h and its derivatives (vectorised): h' from pm_back_deriv() (R/tidy.R:
+## the family's mu.eta, exp, else central differences), h'' and h''' central
+## differences of it (R/deriv.R).
 pm_back_funs <- function(back, trans, model, link_scale) {
-  fd <- function(f) function(x) {
-    e <- 1e-4 * pmax(1, abs(x))
-    (f(x + e) - f(x - e)) / (2 * e)
-  }
-  d1 <- NULL
-  if (link_scale) {
-    fam <- tryCatch(stats::family(model), error = function(e) NULL)
-    if (is.list(fam) && is.function(fam$mu.eta)) d1 <- function(x) fam$mu.eta(x)
-  }
-  if (is.null(d1)) d1 <- if (identical(trans, exp)) exp else fd(back)
-  d2 <- fd(d1)
-  d3 <- fd(d2)
+  d1 <- function(x) pm_back_deriv(trans, x, model, link_scale)
+  d2 <- pm_fd_fun(d1, order = 2)
+  d3 <- pm_fd_fun(d2, order = 3)
   list(h = back, d1 = d1, d2 = d2, d3 = d3)
 }
 
