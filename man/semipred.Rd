@@ -99,8 +99,10 @@ on the link scale, as the ratio (log link) or the odds ratio (logit link) of the
 }
 \value{
 \item{plt}{A ggplot object.}
-\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL} and (gaussian fits)
-  \code{SE} and \code{df}; with \code{contr} the columns described in Details.}
+\item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+  \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
+  \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
+  are t; with \code{contr} the columns described in Details.}
 }
 \description{
 This function produces predicted means with graph for a semi paramatric model with new set of covariate values.

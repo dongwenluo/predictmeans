@@ -796,6 +796,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* `semipred()` on generalized fits: the table of the curves has the SE on
+  the link scale (`SE`, from which the limits h(eta -+ crit SE) come) next
+  to the delta-method SE of the means (`SE_mu`); before, only `SE_mu` was
+  given. The bands of generalized fits and of their differences were
+  checked against independent calculations (`dev/semireg-golden/
+  check-bands-glmm.R`: M. P. Wand's binary example, a Poisson split plot)
+  and the gaussian contrast band against Wand's growth-curve script
+  (`check-bands.R`): equal to rounding error given the variance
+  parameters.
+
 * **Clearer colours in `semipred()` plots, set in one place, and
   `semipred(plot_args = )` to change them.** Each band is drawn first and
   its line on top in a darker shade of the same hue (1.x drew the band over

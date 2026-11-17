@@ -127,8 +127,10 @@
 #' penalised smooth coefficients are not reliable.)
 #' @return
 #' \item{plt}{A ggplot object.}
-#' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL} and (gaussian fits)
-#'   \code{SE} and \code{df}; with \code{contr} the columns described in Details.}
+#' \item{pred_df}{A data.frame with the predicted values, their limits \code{LL} and \code{UL}, \code{SE} and
+#'   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
+#'   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
+#'   are t; with \code{contr} the columns described in Details.}
 #' @references
 #' Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
 #' @author
@@ -312,6 +314,7 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
           response <- "Proportion"
         }		
       } 
+      pred_df$SE <- stderr                         # the link scale (the limits are h(eta -+ crit SE))
       pred_df$SE_mu <- stderr_mu
       if (any(is.finite(df_mx))) pred_df$df <- df_mx
     }else {

@@ -323,3 +323,14 @@ test_that("plot_args sets the colours: band under its line, reference line, bars
   expect_true("GeomSegment" %in% gc)                               # 300 and 200 differ at high pressure
   expect_error(semipred(fm, "QB", "pressure", prt = FALSE, plot_args = list(colour = "red")), "can hold")
 })
+
+test_that("generalized fits: SE on the link scale next to SE_mu, the limits h(eta -+ crit SE)", {
+  set.seed(5)
+  d <- data.frame(x = runif(200, 0, 10))
+  d$y <- rbinom(200, 1, plogis(-1 + sin(d$x / 2)))
+  f <- suppressMessages(semireg(y ~ s(x, bs = "os", k = 8), family = binomial, data = d, prt = FALSE))
+  p <- semipred(f, "x", "x", prt = FALSE)$pred_df
+  expect_true(all(c("SE", "SE_mu") %in% names(p)))
+  expect_equal(p$LL, plogis(qlogis(p$y) - qnorm(0.975) * p$SE), tolerance = 1e-10)
+  expect_equal(p$SE_mu, p$y * (1 - p$y) * p$SE, tolerance = 1e-10)
+})

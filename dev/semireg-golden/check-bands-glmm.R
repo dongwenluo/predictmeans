@@ -66,7 +66,8 @@ sdS <- as.numeric(attr(lme4::VarCorr(fm$semer)[[blk]], "stddev"))
 sc <- unname(coef(stats::lm(Zs(x)[, 1] ~ Z[, 1] - 1)))          # semireg's basis = Wand's x sc
 wS <- wand(lme4::fixef(fm$semer), fm$u_lst[[1]], sdS, Zs(x), Zs(xg))
 sp <- q(semipred(fm, "x", "x", covariateV = xg, unconditional = FALSE, prt = FALSE))$pred_df
-se_link <- (qlogis(sp$y) - qlogis(sp$LL)) / qnorm(0.975)        # the curve table gives SE_mu only
+se_link <- sp$SE                                                # the link scale
+stopifnot(isTRUE(all.equal(sp$LL, plogis(qlogis(sp$y) - qnorm(0.975) * sp$SE), tolerance = 1e-10)))
 cat("2. wageTUnion (binary, no random term besides the smooth: normal limits)\n")
 cat(sprintf("   (a) fits: spline SD PQL %.4f, Laplace %.4f (on Wand's basis; semireg's basis is his x %.4f);\n",
             sdP, sdS * sc, sc),
