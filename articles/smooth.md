@@ -121,12 +121,12 @@ p <- sim$pred_df
 head(data.frame(pressure = p$pressure, df = p$df, pointwise = qt(0.975, p$df),
                 simultaneous = (p$UL - p$rate) / p$SE))
 #>   pressure       df pointwise simultaneous
-#> 1    0.235 40.52855  2.020255     3.090897
-#> 2    0.240 38.62697  2.023316     3.100261
-#> 3    0.245 36.94778  2.026289     3.109380
-#> 4    0.250 35.46806  2.029151     3.118176
-#> 5    0.255 34.16605  2.031881     3.126588
-#> 6    0.260 33.02154  2.034465     3.134566
+#> 1    0.235 40.52855  2.020255     3.091407
+#> 2    0.240 38.62697  2.023316     3.100775
+#> 3    0.245 36.94778  2.026289     3.109898
+#> 4    0.250 35.46806  2.029151     3.118699
+#> 5    0.255 34.16605  2.031881     3.127113
+#> 6    0.260 33.02154  2.034465     3.135096
 sim$plt
 ```
 
@@ -246,7 +246,7 @@ fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
 pm <- predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)
 pm$means
 #>    A estimate std.error       df conf.low conf.high group
-#> 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A
+#> 1 a1 2.353834 0.2423023 8.659083 1.802401  2.905267     A
 #> 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A
 #> 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A
 pm$pairs[c("level1", "level2", "estimate", "std.error", "df", "p.value")]
@@ -429,9 +429,9 @@ far <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | 
 predictmeans(far, "A", covariate = c(t = 4), pairwise = TRUE)$pairs[
   c("level1", "level2", "estimate", "std.error", "df", "p.value")]
 #>   level1 level2   estimate std.error       df   p.value
-#> 1     a1     a2 -0.2146406 0.3486284 20.38780 0.5449237
-#> 2     a1     a3 -0.3028874 0.3191386 17.32269 0.3556348
-#> 3     a2     a3 -0.0882468 0.3358240 19.16869 0.7955261
+#> 1     a1     a2 -0.2146406 0.3486284 20.51249 0.5448827
+#> 2     a1     a3 -0.3028874 0.3191386 17.43094 0.3555549
+#> 3     a2     a3 -0.0882468 0.3358240 19.17360 0.7955254
 ```
 
 **A tensor-product surface.** Two covariates on different scales

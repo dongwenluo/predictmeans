@@ -264,7 +264,7 @@ varcomp(gm, test = TRUE)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
 #>                         vcov       SE    2.5 %    97.5 %
-#> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1701
+#> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1700
 #> Variety.(Intercept) 106.0618  67.8756  40.9773  657.7748
 #> residual            177.0835  37.3325 121.8275  280.9249
 # the same components by the analysis of variance

@@ -311,6 +311,21 @@ variables of formula smooths are not centred or scaled (`ncenter` and
 (`te()` is fitted as `t2()`; `ti()` is not available). Smooths are given
 either in the formula or in `smoothZ`, not both.
 
+## Zero inflation (glmmTMB)
+
+For a `glmmTMB` fit with zero inflation (`ziformula`) the means are
+those of the conditional (count) part, \\\mu\\, as `emmeans` and
+`predict(type = "conditional")` give, not the overall mean \\(1 -
+\pi)\mu\\ (\\\pi\\ the probability of an extra zero); ratios are of
+these means, and equal the ratios of overall means only when \\\pi\\ is
+the same. A message says so and `settings$component` is `"conditional"`.
+The two can order treatments differently when \\\pi\\ differs between
+them. `mean_type = "overall"`
+([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md))
+gives the overall means and their ratios.
+
 ## References
 
 Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with
@@ -336,10 +351,12 @@ cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
 rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+#> The model has zero inflation (ziformula ~1): the means are those of the conditional (count) part, mu, as emmeans and predict(type = "conditional") give; the overall mean is (1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall means only when pi is the same). mean_type = "overall" gives the overall means.
 attr(rr$pred_df, "significant")
 #>        from to direction
 #> 1 0.7241379  3         >
 predictmeans(fc, "trt", covariate = c(x = 1.5))$means
+#> The model has zero inflation (ziformula ~1): the means are those of the conditional (count) part, mu, as emmeans and predict(type = "conditional") give; the overall mean is (1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall means only when pi is the same).
 #>   trt estimate std.error  df conf.low conf.high  response response.std.error
 #> 1 ctl 1.842115 0.1565336 469 1.534521  2.149709  6.309871           0.987707
 #> 2 trt 2.852923 0.1517429 469 2.554743  3.151103 17.338385           2.630977
@@ -360,9 +377,9 @@ fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | i
 #> Warning: Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')
 predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
 #>   level1 level2   estimate std.error       df  statistic   p.value     p.adj
-#> 1     a1     a2 -0.2146406 0.3486284 20.38780 -0.6156717 0.5449237 0.5449237
-#> 2     a1     a3 -0.3028874 0.3191386 17.32269 -0.9490782 0.3556348 0.3556348
-#> 3     a2     a3 -0.0882468 0.3358240 19.16869 -0.2627769 0.7955261 0.7955261
+#> 1     a1     a2 -0.2146406 0.3486284 20.51249 -0.6156717 0.5448827 0.5448827
+#> 2     a1     a3 -0.3028874 0.3191386 17.43094 -0.9490782 0.3555549 0.3555549
+#> 3     a2     a3 -0.0882468 0.3358240 19.17360 -0.2627769 0.7955254 0.7955254
 #>   p.method
 #> 1        t
 #> 2        t

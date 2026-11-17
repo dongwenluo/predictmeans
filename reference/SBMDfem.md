@@ -76,7 +76,7 @@ predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "
 #> 5    Black    White  0.08011684 0.02041221 223.5667  3.9249469 1.155142e-04
 #> 6 Hispanic    White -0.01289857 0.02149288 225.9151 -0.6001325 5.490194e-01
 #>          p.adj p.method
-#> 1 3.509783e-06    tukey
+#> 1 3.509784e-06    tukey
 #> 2 9.294398e-01    tukey
 #> 3 5.436499e-05    tukey
 #> 4 6.246109e-01    tukey

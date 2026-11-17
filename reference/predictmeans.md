@@ -15,7 +15,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
-  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"), ...)
+  equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
+  mean_type=c("conditional", "overall"), ...)
 ```
 
 ## Arguments
@@ -502,6 +503,20 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   only the `response` columns of `means`; the printed tables and the
   `pairs` stay on the link scale.
 
+- mean_type:
+
+  Only for `glmmTMB` fits with zero inflation (`ziformula`); for other
+  models the two are the same and the argument is ignored.
+  `"conditional"` (default): the means of the count part, \\\mu\\.
+  `"overall"`: the overall means \\(1 - \pi)\mu\\ (\\\pi\\ the
+  probability of an extra zero), with SEs from the joint covariance of
+  the conditional and zero-inflation coefficients (delta method),
+  averaged over the cells of the grid as `average = "response"` does;
+  `estimate` is their log and the pairs are their ratios. Equal to
+  glmmTMB's `predict(type = "response")` and to emmeans with
+  `component = "response"`. For log-link count families (poisson,
+  nbinom1, nbinom2, ...).
+
 ## Value
 
 - Predicted Means:
@@ -622,6 +637,18 @@ tables are not affected.
 
 For `predictmeans` function, it is assumed that methods `coef`, `vcov`,
 `model.matrix`, `model.frame` and `terms` are available for `model`.
+
+## Zero inflation (glmmTMB)
+
+For a `glmmTMB` fit with zero inflation (`ziformula`) the means are
+those of the conditional (count) part, \\\mu\\, as `emmeans` and
+`predict(type = "conditional")` give, not the overall mean \\(1 -
+\pi)\mu\\ (\\\pi\\ the probability of an extra zero); ratios are of
+these means, and equal the ratios of overall means only when \\\pi\\ is
+the same. A message says so and `settings$component` is `"conditional"`.
+The two can order treatments differently when \\\pi\\ differs between
+them. `predictmeans(mean_type = "overall")` gives the overall means and
+their ratios.
 
 ## References
 
@@ -767,6 +794,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> $covariates
 #> NULL
 #> 
+#> $component
+#> [1] NA
+#> 
 #> $model_class
 #> [1] "lmerMod"
 #> 
@@ -834,7 +864,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 1 9.985280e-05 -28.43407 -10.5659255 8.934075        t
 #> 2 1.694756e-09 -43.76741 -25.8992588 8.934075        t
 #> 3 1.446076e-03 -24.26741  -6.3992588 8.934075        t
-#> 4 4.018306e-12 -52.93407 -35.0659255 8.934075        t
+#> 4 4.018305e-12 -52.93407 -35.0659255 8.934075        t
 #> 5 3.166715e-06 -33.43407 -15.5659255 8.934075        t
 #> 6 4.456098e-02 -18.10074  -0.2325921 8.934075        t
 ```

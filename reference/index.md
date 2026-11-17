@@ -103,6 +103,8 @@
 - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   : Predicted Means of a Semi Paramatric Model with Covariate
   Variable(s)
+- [`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md)
+  : Boundary of the region covered by two-dimensional data
 - [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
   : Generate Sparse Matrix Z for penalized spline smoothing
 

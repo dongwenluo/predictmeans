@@ -13,7 +13,8 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
-  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL)
+  band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
+  mean_type=c("conditional", "overall"))
 ```
 
 ## Arguments
@@ -191,6 +192,17 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   Scheffe limits that hold for all covariate values together, for saying
   over which range of the covariate the lines differ.
 
+- mean_type:
+
+  Only for `glmmTMB` fits with zero inflation (`ziformula`; ignored,
+  with a message, for other models): `"conditional"` (default), curves
+  of the means of the count part, \\\mu\\; `"overall"`, curves of the
+  overall means \\(1 - \pi)\mu\\ (\\\pi\\ the probability of an extra
+  zero), their bands \\\exp(\log m \mp crit\\SE)\\ with the SE of \\\log
+  m\\ from the joint covariance of the count and zero-inflation
+  coefficients (delta method), and with `contr` the ratio and the
+  difference of the overall means. Log-link count families only.
+
 - bias_adjust, sigma:
 
   For back-transformed lines (a link, a transformed response or
@@ -285,6 +297,21 @@ from `includes0` near the boundary). Column `significant` (`!includes0`)
 and `significant` in the result (the ranges of the covariate) follow the
 band asked for, on the model scale.
 
+## Zero inflation (glmmTMB)
+
+For a `glmmTMB` fit with zero inflation (`ziformula`) the means are
+those of the conditional (count) part, \\\mu\\, as `emmeans` and
+`predict(type = "conditional")` give, not the overall mean \\(1 -
+\pi)\mu\\ (\\\pi\\ the probability of an extra zero); ratios are of
+these means, and equal the ratios of overall means only when \\\pi\\ is
+the same. A message says so and `settings$component` is `"conditional"`.
+The two can order treatments differently when \\\pi\\ differs between
+them. `mean_type = "overall"`
+([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+`covariatemeans()`,
+[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md))
+gives the overall means and their ratios.
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -331,5 +358,5 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> Lines equal along nitro: F(2, 21.6) = 0.515, p = 0.605.
 #> The simultaneous band (level 0.05) includes no difference at every value of nitro shown.
 #>      numDF      denDF          F    p.value 
-#>  2.0000000 21.5970555  0.5146028  0.6048848 
+#>  2.0000000 21.5970557  0.5146028  0.6048848 
 ```

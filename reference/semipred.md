@@ -12,7 +12,8 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
        plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
        simultaneous=FALSE, contr_scale=c("model", "response"),
        band=c("pointwise", "simultaneous"),
-       unconditional=getOption("predictmeans.semi_unconditional"), deriv=0)
+       unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+       mean_type=c("conditional", "overall"))
 ```
 
 ## Arguments
@@ -60,9 +61,16 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
 - boundary:
 
-  A matrix or data frame of two columns, used to specify boundary of
-  longitude and latitude, it is functional when the length of covariate
-  is two.
+  For two covariates (a surface): the region where predictions are
+  shown. A matrix or data frame of two columns (the covariates in the
+  order of `covariate`), the vertices of a polygon, or of several rings
+  separated by a row of `NA` (a point is inside when it is inside an odd
+  number of them: separate pieces and holes), such as
+  [`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md)
+  returns; or `TRUE` for
+  [`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md)
+  of the model's data (the region the data cover, following their
+  shape). `NULL` (default): the whole grid.
 
 - level:
 
@@ -106,6 +114,32 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
   A logical scalar to indicate whether to print raw data points. The
   default value is TRUE.
+
+- mean_type:
+
+  Only for `glmmTMB` fits with zero inflation (`ziformula`; ignored,
+  with a message, for other models): `"conditional"` (default), curves
+  of the means of the count part, \\\mu\\; `"overall"`, curves of the
+  overall means \\(1 - \pi)\mu\\ (\\\pi\\ the probability of an extra
+  zero), their bands \\\exp(\log m \mp crit\\SE)\\ with the SE of \\\log
+  m\\ from the joint covariance of the count and zero-inflation
+  coefficients (delta method), and with `contr` the ratio and the
+  difference of the overall means. Log-link count families only.
+
+- plot_args:
+
+  A named list of colours and sizes for the plots, any of: `line` and
+  `band` (one curve; dark and light blue), `diff_line` and `diff_band`
+  (a difference of two curves, `contr`; dark and light green), `ref`
+  (the dashed reference line at 0, or 1 for ratios, and the marks under
+  a difference where its band leaves out the reference; red), `alpha`
+  (of the bands, 0.35), `linewidth` (1), `points`, `point_alpha`,
+  `point_size` (the data: grey, 0.6, 1.3), `palette` (curves by group:
+  eight colours that colour-blind readers can tell apart; ggplot2's own
+  beyond eight groups), `surface_points` (the data on surfaces: red).
+  Bands are drawn first and their lines on top. For example
+  `plot_args = list(line = "black", band = "grey70")`; the plot is a
+  ggplot, so anything else can be added to it.
 
 - jitterv:
 
@@ -186,9 +220,11 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
 - pred_df:
 
-  A data.frame with the predicted values, their limits `LL` and `UL` and
-  (gaussian fits) `SE` and `df`; with `contr` the columns described in
-  Details.
+  A data.frame with the predicted values, their limits `LL` and `UL`,
+  `SE` and `df`; for generalized fits the means and limits are on the
+  response scale (limits `h(eta -+ crit SE)`), `SE` on the link scale
+  and `SE_mu` on the response scale (delta method), `df` when the limits
+  are t; with `contr` the columns described in Details.
 
 ## Details
 
@@ -275,6 +311,20 @@ simulation (`dev/sim-semipred-deriv.R`; \\y = \sin(x/1.5)\\ plus noise,
 150 points, 500 data sets) the bands covered the true slope 0.97
 pointwise and over the whole range with the default 6 knots, 0.99-1.00
 with 15; the curvature 0.98-1.00.
+
+## Zero inflation (glmmTMB)
+
+For a `glmmTMB` fit with zero inflation (`ziformula`) the means are
+those of the conditional (count) part, \\\mu\\, as `emmeans` and
+`predict(type = "conditional")` give, not the overall mean \\(1 -
+\pi)\mu\\ (\\\pi\\ the probability of an extra zero); ratios are of
+these means, and equal the ratios of overall means only when \\\pi\\ is
+the same. A message says so and `settings$component` is `"conditional"`.
+The two can order treatments differently when \\\pi\\ differs between
+them. `mean_type = "overall"`
+([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+`semipred()`) gives the overall means and their ratios.
 
 ## References
 

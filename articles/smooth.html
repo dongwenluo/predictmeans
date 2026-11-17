@@ -222,12 +222,12 @@ curve over its whole range:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">pressure</span>, df <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">df</span>, pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">0.975</span>, <span class="va">p</span><span class="op">$</span><span class="va">df</span><span class="op">)</span>,</span>
 <span>                simultaneous <span class="op">=</span> <span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">UL</span> <span class="op">-</span> <span class="va">p</span><span class="op">$</span><span class="va">rate</span><span class="op">)</span> <span class="op">/</span> <span class="va">p</span><span class="op">$</span><span class="va">SE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   pressure       df pointwise simultaneous</span></span>
-<span><span class="co">#&gt; 1    0.235 40.52855  2.020255     3.090897</span></span>
-<span><span class="co">#&gt; 2    0.240 38.62697  2.023316     3.100261</span></span>
-<span><span class="co">#&gt; 3    0.245 36.94778  2.026289     3.109380</span></span>
-<span><span class="co">#&gt; 4    0.250 35.46806  2.029151     3.118176</span></span>
-<span><span class="co">#&gt; 5    0.255 34.16605  2.031881     3.126588</span></span>
-<span><span class="co">#&gt; 6    0.260 33.02154  2.034465     3.134566</span></span>
+<span><span class="co">#&gt; 1    0.235 40.52855  2.020255     3.091407</span></span>
+<span><span class="co">#&gt; 2    0.240 38.62697  2.023316     3.100775</span></span>
+<span><span class="co">#&gt; 3    0.245 36.94778  2.026289     3.109898</span></span>
+<span><span class="co">#&gt; 4    0.250 35.46806  2.029151     3.118699</span></span>
+<span><span class="co">#&gt; 5    0.255 34.16605  2.031881     3.127113</span></span>
+<span><span class="co">#&gt; 6    0.260 33.02154  2.034465     3.135096</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">plt</span></span></code></pre></div>
 <p><img src="smooth_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
 <p>The critical values come from 10,000 draws of the estimates’
@@ -330,7 +330,7 @@ bands of the curves cover 0.91 instead of 0.95
 <span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fsp</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;    A estimate std.error       df conf.low conf.high group</span></span>
-<span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A</span></span>
+<span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.659083 1.802401  2.905267     A</span></span>
 <span><span class="co">#&gt; 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A</span></span>
 <span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
@@ -480,9 +480,9 @@ Satterthwaite df:</p>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">far</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate std.error       df   p.value</span></span>
-<span><span class="co">#&gt; 1     a1     a2 -0.2146406 0.3486284 20.38780 0.5449237</span></span>
-<span><span class="co">#&gt; 2     a1     a3 -0.3028874 0.3191386 17.32269 0.3556348</span></span>
-<span><span class="co">#&gt; 3     a2     a3 -0.0882468 0.3358240 19.16869 0.7955261</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     a1     a2 -0.2146406 0.3486284 20.51249 0.5448827</span></span>
+<span><span class="co">#&gt; 2     a1     a3 -0.3028874 0.3191386 17.43094 0.3555549</span></span>
+<span><span class="co">#&gt; 3     a2     a3 -0.0882468 0.3358240 19.17360 0.7955254</span></span></code></pre></div>
 <p><strong>A tensor-product surface.</strong> Two covariates on
 different scales (<code>data(ozoneCalif)</code>: inversion base height
 in feet, its temperature in degrees F) call for <code>t2()</code>, whose

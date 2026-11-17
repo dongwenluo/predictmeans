@@ -1109,6 +1109,63 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### New features
 
+- [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  on generalized fits: the table of the curves has the SE on the link
+  scale (`SE`, from which the limits h(eta -+ crit SE) come) next to the
+  delta-method SE of the means (`SE_mu`); before, only `SE_mu` was
+  given. The bands of generalized fits and of their differences were
+  checked against independent calculations
+  (`dev/semireg-golden/ check-bands-glmm.R`: M. P. Wand’s binary
+  example, a Poisson split plot) and the gaussian contrast band against
+  Wand’s growth-curve script (`check-bands.R`): equal to rounding error
+  given the variance parameters.
+
+- **Clearer colours in
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  plots, set in one place, and `semipred(plot_args = )` to change
+  them.** Each band is drawn first and its line on top in a darker shade
+  of the same hue (1.x drew the band over the line, which dimmed it):
+  one curve and its slopes in blue, the difference of two curves
+  (`contr`) in green as in 1.x, the reference line at 0 (1 for ratios)
+  dashed red. Under a difference, and under one slope, red bars mark the
+  stretches where the band leaves out the reference. Curves by group
+  take a palette that colour-blind readers can tell apart (Okabe and
+  Ito; ggplot2’s own beyond eight groups); the data are grey and half
+  transparent. `plot_args` holds any of `line`, `band`, `diff_line`,
+  `diff_band`, `ref`, `alpha`, `linewidth`, `points`, `point_alpha`,
+  `point_size`, `palette`, `surface_points`. The difference plots of
+  `covariatemeans(contr = )` use the same colours. `ci = FALSE` now also
+  leaves out the band of a single curve.
+
+- **[`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md):
+  the region covered by two-dimensional data** (such as longitude and
+  latitude), for `semipred(boundary = )`; and
+  `semipred(boundary = TRUE)` uses it on the model’s data. The region is
+  the closing of the data with a distance d (every place within d of a
+  point, shrunk back by d less a small margin), so it follows concave
+  shapes, fills small gaps and keeps large empty areas as holes and
+  distant clusters as separate pieces; d = 2 x the 95th percentile of
+  the nearest-neighbour distances, so it follows the density of the data
+  (`mult`, `d` to change it). `scale` puts the covariates on comparable
+  scales: `"lonlat"` (longitude shrunk by the cosine of the latitude;
+  found from the column names), `"same"` (map coordinates in one unit),
+  `"sd"` (two different variables). Holes smaller than the area of 20
+  data points (`min_hole`) are filled. The outline is traced on a grid
+  that gets finer with the density of the data: 0.1 s for 150 points, 4
+  s for 10,000, 9 s for 50,000. The help page has three examples with
+  graphs (the scallop survey against its original boundary, copper drill
+  holes with three values of `mult`, random points with a hole and a
+  separate piece), surfaces drawn inside the boundary, and a section of
+  suggestions. With twice the median spacing, uniform random designs of
+  50-1000 points gave 4 pieces and 12 spurious holes on average; with
+  the 95th percentile one piece and no holes, every point inside. On the
+  `scallop` survey it covers 85% of the area of the boundary drawn with
+  the original analysis (`scallopBdry`). `boundary` may now hold several
+  rings separated by `NA` rows (separate pieces and holes); one polygon
+  works as before. Only base R
+  ([`grDevices::contourLines()`](https://rdrr.io/r/grDevices/contourLines.html)),
+  no new dependency.
+
 - **Tensor products in
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   and
@@ -1967,6 +2024,78 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Bug fixes
 
+- Simultaneous bands of
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  with t limits: the critical value took each point’s chi-square by the
+  Wilson-Hilferty approximation, which made it up to 0.8% too large at
+  small df (df 8, against
+  [`mvtnorm::qmvt()`](https://rdrr.io/pkg/mvtnorm/man/qmvt.html)); it
+  now uses the exact quantile transform. Checked against mvtnorm for df
+  Inf, 30 and 8 (`dev/check-sim-crit.R`: within the Monte Carlo error,
+  about 0.3% with the default 10,000 draws). The smoothing-parameter
+  correction (`unconditional = TRUE`) was checked against mgcv’s
+  (`dev/check-uncond-mgcv.R`: SEs equal to 0.1% gaussian, 0.5% Poisson),
+  and the bands of
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  against emmeans (`dev/check-covariatemeans-bands.R`).
+
+- **[`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits with zero inflation: bands and SEs were too narrow.** The
+  covariance of the fixed and smooth coefficients used the working
+  weights of the count part alone, which treat every zero as a count:
+  SEs of the fixed effects were 5-22% too small (an example with 30%
+  extra zeros), and so were the bands of
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  and the SEs of
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on the fit. For zero-inflated fits the covariance is now the inverse
+  of the block of TMB’s joint precision for those coefficients (given
+  the variance and zero-inflation parameters), the exact one; for other
+  fits the two were already equal.
+
+- **glmmTMB fits with zero inflation: the means were those of the
+  conditional (count) part, mu, without saying so.**
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  (also on
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits) give mu, as emmeans and `predict(type = "conditional")` do, not
+  the overall mean (1 - pi) mu; the two can order treatments differently
+  when the probability of an extra zero differs (a Poisson example:
+  conditional means 4.80 and 5.94, overall means 4.00 and 3.83). A
+  message now says which, `settings$component` is `"conditional"`, and
+  the help pages have a section “Zero inflation (glmmTMB)”.
+  `predictmeans(mean_type = "overall")` gives the overall means (1 - pi)
+  mu, with SEs from the joint covariance of the conditional and
+  zero-inflation coefficients, averaged over the cells of the grid, and
+  their ratios in `pairs`; equal to glmmTMB’s
+  `predict(type = "response")` and to emmeans with
+  `component = "response"` (means and SEs). `mean_type = "conditional"`
+  stays the default (the maintainer’s decision of 2026-11-17); for
+  models without zero inflation the argument has no effect.
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  (also on
+  [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  fits) take `mean_type` too: curves of overall means with bands exp(log
+  m -+ crit SE), and with `contr` their ratios and differences; equal to
+  glmmTMB’s `predict(type = "response")` and to emmeans with
+  `component = "response"` (curves, SEs, differences and their SEs).
+
+- [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on
+  [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  fits stopped with “Can’t find the variable(s) …” when a random curve
+  `(s(x, ...) | g)` or a `t2()` term had an object of the session in its
+  arguments, such as `xt = list(range = rg)` or `k = kk`: those names
+  were taken for data columns. Only the covariates, `by` and the group
+  are now (as for `s()` already).
+
 - **Gaussian
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fits moved a little each time their df or variance components were
@@ -2242,6 +2371,22 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Speed
 
+- Kenward-Roger and Satterthwaite df of `gls` and `lme` fits (the
+  default for these models) and
+  [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+  of them: the observed information is computed from its formula instead
+  of numerical second derivatives of the log-likelihood (numDeriv’s
+  Hessian, 1 + 4k(k + 1) likelihood evaluations for k variance
+  parameters), and the derivative of the coefficients’ covariance
+  exactly. Only the pieces of the covariance
+  ([`corMatrix()`](https://rdrr.io/pkg/nlme/man/corMatrix.html),
+  [`varWeights()`](https://rdrr.io/pkg/nlme/man/varWeights.html),
+  [`pdMatrix()`](https://rdrr.io/pkg/nlme/man/pdMatrix.html)) are
+  differenced. Same df (to 1e-7) on 11 gls/lme models with every kind of
+  structure, REML and ML; an unstructured `gls` with 6 times, 2000
+  observations and 21 variance parameters: 13.5 s -\> 2.7 s; small
+  models 3-10 times faster.
+
 - The Satterthwaite df of the curves of
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fits
@@ -2504,6 +2649,30 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   vignette).
 
 ### Internal
+
+- The package’s own numerical derivatives are in one file (`R/deriv.R`)
+  with one rule: central differences with the step c max(\|x\|, scale),
+  c = 1e-5 for first derivatives, 1e-4 for second and 1e-3 for third
+  (the usual balance of truncation and rounding error), the scale saying
+  what x is (1 for unconstrained variance parameters, 0.01 for lme4’s
+  theta, a covariate’s spread with no location). Five copies with their
+  own steps used it before
+  ([`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  df, the covariance pieces of gls/lme, back-transformations,
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md),
+  `semipred(deriv = )`). `semipred(deriv = )` and the second differences
+  keep their steps; the first derivatives that stepped 1e-4 now step
+  1e-5 (more accurate): results move by at most 1e-9 relative (the 52
+  calls of `dev/snapshot-predictmeans.R` equal to 1e-12; the df of
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  bands 3e-10). The derivative of a back-transformation (`trans`) for
+  the response-scale SEs is the same function as for the bias adjustment
+  and response-scale averaging (it was numDeriv’s in one place, central
+  differences in the other; the SEs moved by 1e-11). numDeriv stays
+  where a derivative is computed once per model (lmer Satterthwaite df,
+  equal to lmerTest’s; Hessians of lme4 variance parameters;
+  [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)’s
+  delta method).
 
 - [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md):
   the code that puts back rows with a missing covariate (7 copies) and

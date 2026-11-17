@@ -245,6 +245,18 @@ intercept), and <code><a href="semipred.html">semipred()</a></code> and <code><a
 (<code>te()</code> is fitted as <code>t2()</code>; <code>ti()</code> is not available). Smooths are given either in the formula or in <code>smoothZ</code>, not both.</p>
     </div>
     <div class="section level2">
+    <h2 id="zero-inflation-glmmtmb-">Zero inflation (glmmTMB)<a class="anchor" aria-label="anchor" href="#zero-inflation-glmmtmb-"></a></h2>
+
+
+<p>For a <code>glmmTMB</code> fit with zero inflation (<code>ziformula</code>) the means are those of the conditional (count)
+part, \(\mu\), as <code>emmeans</code> and <code>predict(type = "conditional")</code> give, not the overall mean
+\((1 - \pi)\mu\) (\(\pi\) the probability of an extra zero); ratios are of these means, and equal the
+ratios of overall means only when \(\pi\) is the same. A message says so and <code>settings$component</code> is
+<code>"conditional"</code>. The two can order treatments differently when \(\pi\) differs between them.
+<code>mean_type = "overall"</code> (<code><a href="predictmeans.html">predictmeans()</a></code>, <code><a href="covariatemeans.html">covariatemeans()</a></code>, <code><a href="semipred.html">semipred()</a></code>) gives the overall
+means and their ratios.</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. <em>Australian and New Zealand Journal of Statistics.</em> <b>50</b>, 179-198.</p>
     </div>
@@ -267,10 +279,12 @@ intercept), and <code><a href="semipred.html">semipred()</a></code> and <code><a
 <span class="r-in"><span><span class="va">fc</span> <span class="op">&lt;-</span> <span class="fu">semireg_tmb</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">trt</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">site</span><span class="op">)</span>, ziformula <span class="op">=</span> <span class="op">~</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>                  family <span class="op">=</span> <span class="fu">glmmTMB</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/glmmTMB/man/nbinom2.html" class="external-link">nbinom2</a></span>, data <span class="op">=</span> <span class="va">cn</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fc</span>, <span class="st">"trt"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"trt"</span>, <span class="st">"ctl"</span><span class="op">)</span>, band <span class="op">=</span> <span class="st">"simultaneous"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The model has zero inflation (ziformula ~1): the means are those of the conditional (count) part, mu, as emmeans and predict(type = "conditional") give; the overall mean is (1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall means only when pi is the same). mean_type = "overall" gives the overall means.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">pred_df</span>, <span class="st">"significant"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        from to direction</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.7241379  3         &gt;</span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fc</span>, <span class="st">"trt"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The model has zero inflation (ziformula ~1): the means are those of the conditional (count) part, mu, as emmeans and predict(type = "conditional") give; the overall mean is (1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall means only when pi is the same).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   trt estimate std.error  df conf.low conf.high  response response.std.error</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 ctl 1.842115 0.1565336 469 1.534521  2.149709  6.309871           0.987707</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 trt 2.852923 0.1517429 469 2.554743  3.151103 17.338385           2.630977</span>
@@ -291,9 +305,9 @@ intercept), and <code><a href="semipred.html">semipred()</a></code> and <code><a
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')</span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fa</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2   estimate std.error       df  statistic   p.value     p.adj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.2146406 0.3486284 20.38780 -0.6156717 0.5449237 0.5449237</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.3028874 0.3191386 17.32269 -0.9490782 0.3556348 0.3556348</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.0882468 0.3358240 19.16869 -0.2627769 0.7955261 0.7955261</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.2146406 0.3486284 20.51249 -0.6156717 0.5448827 0.5448827</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.3028874 0.3191386 17.43094 -0.9490782 0.3555549 0.3555549</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.0882468 0.3358240 19.17360 -0.2627769 0.7955254 0.7955254</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   p.method</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1        t</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2        t</span>
