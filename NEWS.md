@@ -1775,6 +1775,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* The package's own numerical derivatives are in one file (`R/deriv.R`)
+  with one rule: central differences with the step c max(|x|, scale),
+  c = 1e-5 for first derivatives, 1e-4 for second and 1e-3 for third (the
+  usual balance of truncation and rounding error), the scale saying what x
+  is (1 for unconstrained variance parameters, 0.01 for lme4's theta, a
+  covariate's spread with no location). Five copies with their own steps
+  used it before (`semireg()` df, the covariance pieces of gls/lme,
+  back-transformations, `pm_slopes()`, `semipred(deriv = )`).
+  `semipred(deriv = )` and the second differences keep their steps; the
+  first derivatives that stepped 1e-4 now step 1e-5 (more accurate; the
+  results move far below anything printed). The derivative of a
+  back-transformation (`trans`) for the response-scale SEs is the same
+  function as for the bias adjustment and response-scale averaging (it was
+  numDeriv's in one place, central differences in the other). numDeriv
+  stays where a derivative is computed once per model (lmer Satterthwaite
+  df, equal to lmerTest's; Hessians of lme4 variance parameters;
+  `varcomp()`'s delta method).
+
 * `smZ()`: the code that puts back rows with a missing covariate (7
   copies) and splits a basis by the levels of `by` (4 copies) is one helper
   each (`pm_smz_na()`, `pm_smz_by()`); the results of 114 argument

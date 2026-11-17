@@ -161,10 +161,7 @@ pm_nlme_parts <- function(R) {
   k <- R$k
   S0 <- R$Sig(th)
   G <- lapply(seq_len(k), function(i) {
-    if (i == k) return(2 * S0)                 # d Sigma / d log sigma
-    h <- 1e-4 * max(1, abs(th[i]))
-    e <- replace(numeric(k), i, h)
-    (R$Sig(th + e) - R$Sig(th - e)) / (2 * h)
+    if (i == k) 2 * S0 else pm_fd_d1(R$Sig, th, i)   # d Sigma / d log sigma; R/deriv.R
   })
   C <- Matrix::Cholesky(S0, LDL = FALSE)
   SX <- as.matrix(Matrix::solve(C, X, system = "A"))
@@ -219,23 +216,7 @@ pm_nlme_T <- function(R, pt, reml) {
     v <- Sinv[cbind(i, j)] - pt$Py[i] * pt$Py[j]
     if (reml) v - rowSums(XP[i, , drop = FALSE] * pt$SX[j, , drop = FALSE]) else v
   }
-  h <- 1e-4 * pmax(1, abs(th))
-  at <- function(idx, d) replace(th, idx, th[idx] + d)
-  hess2 <- function(f, idx) {                  # central second differences of f over the parameters idx
-    p <- length(idx)
-    H <- matrix(0, p, p)
-    f0 <- f(th)
-    for (a in seq_len(p)) {
-      i <- idx[a]
-      H[a, a] <- (f(at(i, h[i])) - 2 * f0 + f(at(i, -h[i]))) / h[i]^2
-      for (b in seq_len(a - 1)) {
-        j <- idx[b]
-        H[a, b] <- H[b, a] <- (f(at(c(i, j), c(h[i], h[j]))) - f(at(c(i, j), c(h[i], -h[j]))) -
-                                 f(at(c(i, j), c(-h[i], h[j]))) + f(at(c(i, j), c(-h[i], -h[j])))) / (4 * h[i] * h[j])
-      }
-    }
-    H
-  }
+  hess2 <- function(f, idx) pm_fd_hess(f, th, idx)   # R/deriv.R
   Ts <- matrix(0, m, m)
   # random-effect levels: sum_g Z_g' c Z_g (q x q) times d2 D
   for (lv in names(attr(R$Srel, "Zs"))) {
@@ -276,8 +257,8 @@ pm_nlme_T <- function(R, pt, reml) {
       Ts[iv, iv] <- hess2(function(x) sum(cr * ww(pieces(x, "w")$w)), iv)
     }
     if (length(ic) && length(iv)) {
-      dr <- lapply(ic, function(i) (pieces(at(i, h[i]), "r")$r - pieces(at(i, -h[i]), "r")$r) / (2 * h[i]))
-      dw <- lapply(iv, function(j) (ww(pieces(at(j, h[j]), "w")$w) - ww(pieces(at(j, -h[j]), "w")$w)) / (2 * h[j]))
+      dr <- lapply(ic, function(i) pm_fd_d1(function(x) pieces(x, "r")$r, th, i))
+      dw <- lapply(iv, function(j) pm_fd_d1(function(x) ww(pieces(x, "w")$w), th, j))
       for (a in seq_along(ic)) for (b in seq_along(iv)) {
         Ts[ic[a], iv[b]] <- Ts[iv[b], ic[a]] <- sum(cp * dr[[a]] * dw[[b]])
       }

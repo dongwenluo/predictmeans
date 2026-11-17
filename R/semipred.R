@@ -742,7 +742,7 @@ pm_semi_deriv <- function(semireg, des, modelterm, covariate, sm_term, mod_df, d
   xg <- unique(des$pred_df[[covariate]])
   r <- diff(range(xg))
   if (!is.finite(r) || r <= 0) stop("'deriv' needs more than one value of the covariate.", call. = FALSE)
-  h <- r*(if (deriv == 1) 1e-5 else 1e-4)
+  h <- pm_fd_h(0, r, order = deriv)            # R/deriv.R: 1e-5 or 1e-4 of the range
   at <- function(v) pm_semi_design(semireg, modelterm, covariate, v, sm_term, mod_df, cov = FALSE)
   dp <- at(xg + h)
   dm <- at(xg - h)

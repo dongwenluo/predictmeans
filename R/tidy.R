@@ -217,8 +217,9 @@ pm_tidy_parts <- function(e) {
 }
 
 ## Derivative of the back-transformation at the means (link scale): the
-## family's mu.eta for a non-identity link, else the user's 'trans'
-## (numerically).
+## family's mu.eta for a non-identity link, exp for a log, else the user's
+## 'trans' by central differences (R/deriv.R). The one place for h' (also
+## pm_back_funs()).
 pm_back_deriv <- function(trans, eta, model, link_scale) {
   if (link_scale) {
     fam <- tryCatch(stats::family(model), error = function(e) NULL)
@@ -229,10 +230,9 @@ pm_back_deriv <- function(trans, eta, model, link_scale) {
     }
     if (is.list(fam) && is.function(fam$mu.eta)) return(fam$mu.eta(eta))
   }
-  if (identical(trans, exp)) return(exp(eta))
-  vapply(eta, function(e) {
-    if (is.na(e)) NA_real_ else numDeriv::grad(function(x) as.numeric(trans(x)), e)
-  }, numeric(1))
+  if (identical(trans, exp) || identical(trans, stats::make.link("log")$linkinv)) return(exp(eta))
+  d <- pm_fd_fun(function(x) as.numeric(trans(x)))
+  vapply(eta, function(e) if (is.na(e)) NA_real_ else d(e), numeric(1))
 }
 
 ## "log" when differences of the means are log ratios (log link or
