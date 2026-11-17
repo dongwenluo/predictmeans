@@ -54,6 +54,7 @@ own variance.
 | `s(x, f)` | common curve + a deviation curve per level of `f` |
 | `s(x, f1*f2)` | common curve + deviations for `f1`, `f2`, `f1:f2`, a variance each |
 | `s(x1, x2)`, `s(x1, x2, bs = "ztps")` | surface |
+| `s(x, bs = "user", xt = list(basis = f))` | a basis of your own, `f(x)` (checked before the fit) |
 | `(s(x, k = 10) \| g)` | random curve per subject: `(x \| g)` + a spline deviation |
 
 `?semireg` has the full table. `anova(fm)` gives the tests of the
@@ -242,6 +243,8 @@ the same model and adds the fixed terms itself:
 | `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))` | `y ~ s(x, by = f, bs = "os", k = 10, id = 1)` |
 | `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps")` |
 | `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
+| `smoothZ = list(sm = myZ(x))`, a matrix of your own | `s(x, bs = "user", xt = list(basis = myZ))` |
+| `smZ(x, drv = 1)` (derivative of the basis) | `semipred(fit, ..., deriv = 1)` |
 
 Smooths are given either in the formula or in `smoothZ`, not both. Other changes since
 1.x: the optimizer is `nloptwrap` (`control = lmerControl(optimizer = "bobyqa")` gives

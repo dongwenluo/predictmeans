@@ -796,6 +796,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`s(x, bs = "user", xt = list(basis = f))`: a basis of your own in the
+  formula of `semireg()` / `semireg_tmb()`**, the formula form of a matrix
+  in `smoothZ`: `f(x)` (or `f(x1, x2)`) returns a matrix with a row per
+  value, its columns get iid random coefficients with one variance, and the
+  constant and the covariate are the fixed part, added to the formula
+  (`xt$null = "constant"` or `"none"` for less). Prediction evaluates `f` on
+  the grid, so `semipred()` (also `deriv`), `predictmeans()`, `by`,
+  `s(x, f)` and random curves work. The function is checked before the fit,
+  which stops with what is wrong and how to put it right when it fails on
+  the data, does not return a numeric matrix with a row per value (also for
+  a single value, as at prediction), gives NA or infinite values, gives
+  other values on a second call, gives other rows for the same values on
+  part of the data (knots or a range taken from the data: prediction would
+  use other ones), or has dependent columns or columns in the fixed part; a
+  warning when it fails just beyond the ends of the data. With the
+  O'Sullivan or Ztps basis it reproduces the `bs = "os"` / `"ztps"` fits
+  exactly (tested, both engines).
+
 * **`semipred(deriv = 1)` and `deriv = 2`: slopes and curvatures of the
   fitted curves** along the covariate, with pointwise or simultaneous bands
   and the same df as the curves; with `contr` the difference of two slopes.

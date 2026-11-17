@@ -210,7 +210,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   fixed effects + likelihood ratio test of each smooth term (variance = 0).
 - `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
   terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis, `xt = list(knots =,
-  range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `s(x, f)` / `s(x, f1*f2)` = common
+  range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `bs = "user", xt = list(basis = f)` (own basis
+  function, iid coefficients, fixed part 1 + x / `null = "constant"` / `"none"`; checked before the fit: a row
+  per value, finite, repeatable, rows independent of the data given, full rank); `s(x, f)` / `s(x, f1*f2)` = common
   curve + deviation curves, a variance per factor term; `(s(x, k = 10) | id)` = subject curves
   `(x | id)` + spline deviation (HRW's group-specific curves); no `te()`/`t2()` yet). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,

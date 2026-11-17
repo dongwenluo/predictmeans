@@ -95,6 +95,7 @@ slopes:
   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps")}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own: \code{f(x)} (\code{f(x1, x2)} for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in \code{smoothZ}); checked before the fit (see below); \code{xt = list(basis = f, null = "constant")} or \code{"none"} for a smaller fixed part \tab \code{x} (\code{x1 + x2}) \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
   \code{s(x, f)} \tab common curve + a deviation curve per level of \code{f}, one variance for the deviations \tab \code{x + f + f:x} \cr
   \code{s(x, f1:f2)} \tab the same with the cells of \code{f1:f2} \tab \code{x + f1:f2 + f1:f2:x} \cr
@@ -122,6 +123,16 @@ intercept), and \code{semipred()} and \code{predictmeans()} give the curves, mea
 not available yet. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
 \code{s()} (e.g. \code{xt = list(knots = kn)}) are taken from the environment of the formula.
 
+A basis of your own (\code{bs = "user"}) must give the same row for the same covariate value whatever data it is
+given, as prediction evaluates it on new values: knots and range belong in the function, e.g.
+\code{f <- function(x) ZOSull(x, intKnots = c(2, 4, 6, 8), range.x = c(0, 10))}. It is checked before the fit, and
+the fit stops with what is wrong and how to put it right when it fails on the data, does not return a numeric
+matrix with a row per value (also for a single value), gives missing or infinite values, gives different values on
+two calls, gives other rows for the same values on part of the data (knots or range taken from the data), or has
+linearly dependent columns or columns in the span of its fixed part; a warning says when it fails just beyond the
+ends of the data (the slopes of \code{semipred(deriv = )} there need it). Its values are checked again at
+prediction.
+
 The penalised-spline examples fitted by \code{nlme::lme} in Wand's course scripts and in \pkg{HRW} (additive
 models, additive mixed models, thin-plate surfaces with given knots, group-specific curves with a contrast curve)
 give the same REML log-likelihood and fitted values with \code{semireg()} (data in
@@ -136,7 +147,9 @@ Moving from the \code{smoothZ} form: \code{y ~ x, smoothZ = list(sm = smZ(x, k =
 \code{y ~ s(x, bs = "os", k = 10)}; \code{smZ(x, by = f, group = TRUE)} is \code{s(x, by = f, bs = "os")};
 \code{smZ(x, by = f)} (one variance) is \code{s(x, by = f, bs = "os", id = 1)}; \code{smZ(cbind(x1, x2),
 type = "Ztps")} is \code{s(x1, x2, bs = "ztps")}; \code{smZ(x, intKnots = kn, range.x = r)} is
-\code{s(x, bs = "os", xt = list(knots = kn, range = r))}. The fits are the same (\code{vignette("smooth")}).
+\code{s(x, bs = "os", xt = list(knots = kn, range = r))}; any other matrix-valued function of the covariate is
+\code{s(x, bs = "user", xt = list(basis = f))}; \code{smZ(x, drv = 1)} (the derivative of the basis) is
+\code{semipred(..., deriv = 1)}. The fits are the same (\code{vignette("smooth")}).
 }
 
 \examples{
