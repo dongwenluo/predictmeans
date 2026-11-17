@@ -220,7 +220,11 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
     }
     u_ind <- vapply(re, function(tm) length(tm$cols), numeric(1))
     names(u_ind) <- vapply(re, `[[`, "", "group")
-    info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), st$smoothZm)
+    # zero inflation: the working weights of the count part alone ignore the
+    # extra zeros (covariances 5-20% too small); the covariance of (beta, b)
+    # given the other parameters is then taken from TMB's joint precision
+    Vzi <- if (is.null(pm_zi_component(semer))) NULL else pm_tmb_cond_cov(semer, ncol(Z)) / stats::sigma(semer)^2
+    info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), st$smoothZm, V = Vzi)
   }
   mi <- semer$modelInfo
   refit <- list(engine = "glmmTMB", formula = st$formula, data = st$data, smoothZ = st$smoothZN,

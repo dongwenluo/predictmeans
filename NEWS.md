@@ -1463,6 +1463,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Bug fixes
 
+* **`semireg_tmb()` fits with zero inflation: bands and SEs were too
+  narrow.** The covariance of the fixed and smooth coefficients used the
+  working weights of the count part alone, which treat every zero as a
+  count: SEs of the fixed effects were 5-22% too small (an example with 30%
+  extra zeros), and so were the bands of `semipred()` and the SEs of
+  `predictmeans()` on the fit. For zero-inflated fits the covariance is now
+  the inverse of the block of TMB's joint precision for those coefficients
+  (given the variance and zero-inflation parameters), the exact one; for
+  other fits the two were already equal.
+
 * **glmmTMB fits with zero inflation: the means were those of the
   conditional (count) part, mu, without saying so.** `predictmeans()`,
   `covariatemeans()` and `semipred()` (also on `semireg_tmb()` fits) give

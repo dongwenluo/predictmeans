@@ -74,3 +74,20 @@ pm_zi_overall_est <- function(opt, est) {
                               label = e$label, pm = e$pm, ses = e$ses, ndf = e$ndf, mt = e$mt, bkmt = e$mt,
                               mean.table = e$mean.table, se.table = e$se.table))
 }
+
+## The covariance of the fixed and random coefficients of the conditional
+## model of a glmmTMB fit, (beta, b) (the first nb random effects), given the
+## other parameters (variances, zero-inflation and dispersion coefficients):
+## the inverse of their block of TMB's joint precision. With zi = TRUE the
+## fixed zero-inflation coefficients are included (after b), for the overall
+## means of semipred(mean_type = "overall").
+pm_tmb_cond_cov <- function(m, nb, zi = FALSE) {
+  pm_need("TMB", "the covariance of zero-inflated glmmTMB fits")
+  P <- TMB::sdreport(m$obj, getJointPrecision = TRUE)$jointPrecision
+  nm <- rownames(P)
+  ib <- which(nm == "beta")
+  iu <- which(nm == "b")[seq_len(nb)]
+  iz <- if (zi) which(nm == "betazi") else integer(0)
+  idx <- c(ib, iu, iz)
+  as.matrix(solve(P[idx, idx]))
+}

@@ -161,3 +161,21 @@ test_that("mean_type = 'overall': overall means (1 - pi) mu, equal to glmmTMB an
   m0 <- glmmTMB::glmmTMB(y ~ trt + (1 | site), family = poisson, data = d)
   expect_message(predictmeans(m0, "trt", mean_type = "overall"), "has none")
 })
+
+test_that("semireg_tmb() with zero inflation: the covariance accounts for the extra zeros", {
+  # the working weights of the count part alone gave SEs 5-20% too small; the
+  # covariance now equals the inverse of the (beta, b) block of TMB's joint precision
+  skip_if_not_installed("TMB")
+  set.seed(7)
+  d <- expand.grid(x = seq(0, 10, length = 25), trt = factor(c("a", "b")), site = factor(1:6))
+  mu <- exp(1 + sin(d$x / 2) / 2 + 0.3 * (d$trt == "b") + rnorm(6, 0, 0.3)[d$site])
+  d$y <- ifelse(runif(nrow(d)) < 0.3, 0, rpois(nrow(d), mu))
+  f <- suppressWarnings(suppressMessages(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~1,
+                                                     family = poisson, data = d, prt = FALSE)))
+  m <- f$semer
+  nb <- length(glmmTMB::fixef(m)$cond)
+  V <- pm_tmb_cond_cov(m, ncol(lme4::getME(m, "Z")))
+  expect_equal(unname(as.matrix(f$CovMat)) * sigma(m)^2, unname(V), tolerance = 1e-8)
+  se <- sqrt(diag(V)[seq_len(nb)])
+  expect_true(all(abs(se / sqrt(diag(vcov(m)$cond)) - 1) < 0.03))
+})

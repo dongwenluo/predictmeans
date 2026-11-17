@@ -194,7 +194,9 @@ pm_sr_fit_tmb <- function(tmbc, st, env) {
 ##   X, Z, Lambda   of the fit; w: weights (length n)
 ##   uHat           random effects in the column order of Z, named
 ##   u_ind          number of columns of Z of each term, named by term
-pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
+##   V              (optional) the covariance itself, relative to sigma^2
+##                  (zero-inflated glmmTMB fits: from TMB's joint precision)
+pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm, V = NULL) {
   n_beta <- ncol(X)
   C <- cbind(X, Z)
   CTC <- Matrix::crossprod(C * w, C)
@@ -209,7 +211,7 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm) {
   dM[!is.finite(dM) | dM <= 0] <- 1
   Dm <- Matrix::Diagonal(x = 1/dM)
   Ms <- Matrix::forceSymmetric(methods::as(Dm %*% M %*% Dm, "generalMatrix"))
-  fullCovMat <- Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm)))
+  fullCovMat <- if (is.null(V)) Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm))) else Matrix::Matrix(V)
   fullCovMat <- Matrix::forceSymmetric(methods::as(fullCovMat, "generalMatrix"))
   df <- sum(Matrix::diag(fullCovMat %*% CTC))              # effective degrees of freedom
 
