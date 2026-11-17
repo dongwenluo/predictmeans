@@ -28,8 +28,9 @@
 #'   \code{covariate} (a named vector, e.g. \code{c(construction.date = 1980)}); the result holds only the
 #'   \code{means}, \code{pairs} and \code{settings} tables, with any \code{adj}. For gaussian fits the tests are t
 #'   tests with Satterthwaite df for the combination of fixed and smooth coefficients (the means include the smooths'
-#'   random effects; SAS gives such df to estimates that involve random effects); for generalized fits they are
-#'   normal-based.
+#'   random effects; SAS gives such df to estimates that involve random effects), from the design's variance
+#'   components and the residual with the smoothing parameters held at their estimates (as \code{\link{semipred}});
+#'   for generalized fits they are normal-based.
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
 #'   factors of the model joined by ":", e.g. "A" or "A:B". A combination of factors that is not a term of the
 #'   model can be asked for too (e.g. "A:B" for \code{y ~ A + B}): its means are the sums of the factors' effects

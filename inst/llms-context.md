@@ -217,7 +217,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `varcomp()`, `R2_model()`. The older `smoothZ = list(smZ())` form still runs (table in
   `vignette("smooth")`). Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
-  included and t tests with Satterthwaite df for fixed + smooth coefficients (generalized: z);
+  included and t tests with Satterthwaite df for fixed + smooth coefficients (design variance components
+  and residual; smoothing parameters held at their estimates; generalized: z); `semipred()` bands of
+  gaussian fits use the same df (column `df`; simultaneous: multivariate t);
   `anova(fit)` tests each smooth variance (as `varcomp(fit, test = TRUE)`).
 - `varcomp(model, test = TRUE)` (lmer, glmer, glmmTMB, semireg): an LRT per row, each row's model refitted
   (term dropped; `(x | g)` -> `(1 | g)`; covariances 0 by `||` / `diag()`; ar1/ou/cs correlation 0 by

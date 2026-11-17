@@ -36,6 +36,25 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **`semipred()` bands of gaussian `semireg()` / `semireg_tmb()` fits are t
+  limits with Satterthwaite df** at each point (new column `df`), as
+  `predictmeans()` on the fit; simultaneous bands use a multivariate t with
+  each point's df; differences of curves (`contr`) their own df.
+  Generalized fits keep normal limits. In a split-plot design with curves
+  over time (`dev/sim-semipred-df.R`, 500 data sets per setting) the normal
+  band of a treatment's curve covered 0.91 (pointwise) and 0.92 (whole
+  curve) at the 95% level; with t (8-11 df) 0.94-0.95 and 0.96-0.97.
+  Differences of curves: normal 0.94-0.96, t 0.96-0.97. Curves without
+  design strata: 0.95-0.98 either way (the df are then the residual df).
+* **The Satterthwaite df of `semireg()` fits hold the smoothing parameters
+  at their estimates** (`predictmeans()` and `semipred()`): they count the
+  design's variance components and the residual. With the smoothing
+  variances free, a point where one of them dominates got 2 df (a
+  WarsawApts fit: 1.85-369 df along the curves, now 401, the residual df);
+  their uncertainty is what `unconditional = TRUE` adds. In the split-plot
+  designs the df hardly change (the level of `predictmeans()`'s tests stays
+  4.6%). The glmmTMB engine holds the same quantity (the ratio of each
+  smoothing variance to the residual variance), so both engines agree.
 * **Kenward-Roger df with a variance component estimated as zero** (a
   singular fit): the component is left out of the adjustment, as in SAS
   PROC MIXED. Its near-singular information gave nonsense df before (in a

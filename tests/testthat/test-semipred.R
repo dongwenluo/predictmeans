@@ -235,9 +235,13 @@ test_that("semipred(contr = ) with two covariates: the difference of two surface
   expect_equal(r$w, rep(b, 3), tolerance = 1e-6)
   expect_equal(r$SE_contr, rep(se, 3), tolerance = 1e-4)
   expect_equal(r$UL - r$w, qt(0.975, r$df)*r$SE_contr, tolerance = 1e-8)
-  # a difference of fixed effects only: the Satterthwaite df of that coefficient
+  # a difference of fixed effects only, the smoothing variance held at its
+  # estimate (the default): the residual is the only variance left, df n - p;
+  # with nothing held, lmer's Satterthwaite df of that coefficient
+  expect_equal(r$df, rep(200 - 4, 3), tolerance = 1e-3)
   L <- matrix(as.numeric(names(lme4::fixef(sm$semer)) == "gb"), 1)
-  expect_equal(r$df, rep(unname(pm_satt_ddf(L, pm_satt_parts(sm$semer))), 3), tolerance = 1e-4)
+  expect_equal(pm_sr_satt_ddf(sm, L, 1:4, hold = character(0)), unname(pm_satt_ddf(L, pm_satt_parts(sm$semer))),
+               tolerance = 1e-4)
   expect_equal(r$includes0, r$LL <= 0 & r$UL >= 0)
   expect_equal(r$significant, !r$includes0)
 })

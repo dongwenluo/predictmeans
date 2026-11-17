@@ -6,11 +6,26 @@
 ## count); simultaneous bands: pm_sim_crit(df = ).
 ## Designs: a split-plot with curves over time (6 blocks, 3 treatments on
 ## whole plots, 11 times; whole-plot SD 0.2 or 0.4), and curves by group
-## without design strata (3 groups of 40, x uniform); no treatment effect,
-## true curve 2 + sin(t/2).
+## without design strata (3 groups of 40, x uniform on [0, 10] with both ends
+## in each group: the grid must not reach beyond the data, where the spline
+## extrapolates (a first run without the ends covered t = 0 in 69% of the
+## data sets)); no treatment effect, true curve 2 + sin(t/2).
 ## Per data set, over 21 points: the difference a2 - a1 (true value 0) and the
 ## curve of a1; pointwise coverage (mean over the points) and simultaneous
 ## coverage (the band covers at every point).
+## Result (2026-11-17, 500 data sets per design, nominal 0.95, MC SE 0.010
+## for simultaneous coverage):
+##   design       target  pointwise z / t_all / t_design  simultaneous z / t_all / t_design  median df all / design
+##   split, 0.2   diff    0.955 / 0.962 / 0.962           0.952 / 0.958 / 0.958              30.7 / 31.8
+##                curve   0.911 / 0.946 / 0.946           0.918 / 0.966 / 0.966               8.3 /  8.3
+##   split, 0.4   diff    0.942 / 0.958 / 0.958           0.956 / 0.972 / 0.972              15.3 / 15.4
+##                curve   0.913 / 0.939 / 0.939           0.920 / 0.962 / 0.962              10.9 / 10.9
+##   by group     diff    0.956 / 0.960 / 0.959           0.970 / 0.976 / 0.974              76.3 / 114
+##                curve   0.952 / 0.957 / 0.955           0.970 / 0.976 / 0.976              53.2 / 114
+## Decision: t with the design df (smoothing parameters held; the default of
+## pm_sr_satt_ddf()): normal bands of curves in designs with strata cover
+## 0.91; the two kinds of df cover alike, and holding the smoothing
+## parameters avoids df near 2 where a smoothing variance dominates.
 ##   Rscript dev/sim-semipred-df.R [nsim] [out.rds]
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
 args <- commandArgs(TRUE)
@@ -20,7 +35,7 @@ tt <- seq(0, 10, by = 0.5)
 fit_of <- function(seed, design) {
   set.seed(seed)
   if (design == "smooth") {
-    d <- data.frame(t = runif(120, 0, 10), A = gl(3, 40, labels = c("a1", "a2", "a3")))
+    d <- data.frame(t = c(replicate(3, c(0, 10, runif(38, 0, 10)))), A = gl(3, 40, labels = c("a1", "a2", "a3")))
     d$y <- 2 + sin(d$t/2) + rnorm(120, 0, 0.3)
     return(q(semireg(y ~ s(t, by = A, bs = "os", k = 8), data = d, prt = FALSE)))
   }
@@ -42,8 +57,8 @@ one <- function(seed, design) {
     truth <- if (what == "diff") 0 else 2 + sin(tt/2)
     est <- as.numeric(L %*% des$beta_u)
     se <- des$sig.epsHat*sqrt(rowSums((L %*% as.matrix(des$sm_Cov)) * L))
-    dfs <- list(all = pm_sr_satt_ddf(f, L, des$cov_idx),
-                design = pm_sr_satt_ddf(f, L, des$cov_idx, hold = names(f$refit$smoothZ)))
+    dfs <- list(all = pm_sr_satt_ddf(f, L, des$cov_idx, hold = character(0)),
+                design = pm_sr_satt_ddf(f, L, des$cov_idx))
     dfs <- lapply(dfs, function(x) { x[is.na(x)] <- Inf; x })
     crit <- list(z_pw = qnorm(0.975), tall_pw = qt(0.975, dfs$all), tdes_pw = qt(0.975, dfs$design),
                  z_sim = pm_sim_crit(L, des$sm_Cov, 0.05),

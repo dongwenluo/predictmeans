@@ -320,7 +320,13 @@ pm_sr_uncond <- function(semireg) {
 ## estimates that involve random effects). For L without random effects the
 ## df are those of pm_satt_ddf(). 'idx': the columns of (beta, u) that the
 ## columns of L are. Inf for other fits (normal-based tests).
-pm_sr_satt_ddf <- function(semireg, L, idx, hold = character(0)) {
+## 'hold': random terms whose variance parameters are taken as known; by
+## default the smooth blocks, so that the df count the design's variance
+## components and the residual (the smoothing variances' uncertainty is what
+## 'unconditional' adds). With them free, a point where a smoothing variance
+## dominates got 2 df (WarsawApts); the coverage of bands was the same
+## either way in dev/sim-semipred-df.R.
+pm_sr_satt_ddf <- function(semireg, L, idx, hold = names(semireg$refit$smoothZ)) {
   semer <- semireg$semer
   L <- as.matrix(L)
   if (inherits(semer, "glmmTMB")) return(pm_sr_satt_ddf_tmb(semer, L, idx, hold))
@@ -438,11 +444,27 @@ pm_sr_satt_ddf_tmb <- function(m, L, idx, hold = character(0)) {
   ref <- max(unlist(sds), if (dp(m$modelInfo$allForm$dispformula) == "~1") stats::sigma(m))
   at0 <- vapply(sds, function(x) max(x) < 1e-3*ref, logical(1))
   bnd <- th_pos[rep(at0, nth)]
-  held <- th_pos[rep(names(m$modelInfo$reTrms$cond$cnms) %in% hold, nth)]
+  held <- setdiff(th_pos[rep(names(m$modelInfo$reTrms$cond$cnms) %in% hold, nth)], bnd)
   free <- setdiff(seq_along(x0), c(bnd, held))
-  vfree <- function(x) { y <- x0; y[free] <- x; v(y) }
-  G <- numDeriv::jacobian(vfree, x0[free])
-  denom <- rowSums((G %*% pm_cov_given(V[use, use, drop = FALSE], free)) * G)
+  # Held terms keep their ratio to the residual variance (the smoothing
+  # parameter, as lme4's relative theta does): with the residual log-variance
+  # parameter d (betad = log sigma^2, or log sigma in other glmmTMB versions),
+  # x = A phi with theta_h = phi_h + c phi_d, and phi_h is held
+  A <- diag(length(x0))
+  d <- which(pu %in% c("betad", "betadisp"))
+  if (length(held) && length(d) == 1) {
+    ls <- log(stats::sigma(m))
+    c_d <- if (abs(2*ls - x0[d]) < 1e-6*max(1, abs(ls))) 0.5 else if (abs(ls - x0[d]) < 1e-6*max(1, abs(ls))) 1 else 0
+    A[held, d] <- c_d
+  }
+  move <- c(free, held)
+  vmove <- function(x) { y <- x0; y[move] <- x; v(y) }
+  G <- matrix(0, length(v0), length(x0))
+  G[, move] <- numDeriv::jacobian(vmove, x0[move])
+  Ai <- solve(A)
+  Vphi <- Ai %*% V[use, use, drop = FALSE] %*% t(Ai)
+  G <- (G %*% A)[, free, drop = FALSE]
+  denom <- rowSums((G %*% pm_cov_given(Vphi, free)) * G)
   df <- 2*v0^2/denom
   df[!is.finite(df) | df <= 0] <- NA_real_
   df

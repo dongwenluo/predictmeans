@@ -127,9 +127,11 @@ plots of six blocks, measured at eleven times; a curve over time for each treatm
 The treatment means at time 5 include the curves' random coefficients, and their
 comparisons rest on the whole-plot variation, so they have far fewer degrees of freedom
 than the 180 residual df. predictmeans gives them Satterthwaite df for the combination of
-fixed and smooth coefficients (as SAS does for estimates that involve random effects);
-normal-based tests would reject a true null hypothesis too often
-(`dev/sim-semireg-df.R` in the package sources).
+fixed and smooth coefficients (as SAS does for estimates that involve random effects),
+from the variance components of the design with the smoothing parameters held at their
+estimates; normal-based tests would reject a true null hypothesis too often
+(`dev/sim-semireg-df.R` in the package sources), and normal bands of the curves cover
+0.91 instead of 0.95 (`dev/sim-semipred-df.R`).
 
 ```{r}
 set.seed(11)

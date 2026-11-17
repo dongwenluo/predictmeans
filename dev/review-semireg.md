@@ -231,7 +231,10 @@ and closed:
 - `semipred()` bands of gaussian fits were still normal-based; since
   2026-11-17 they are t limits with these df at each point (one gradient
   for all points: `pm_sr_satt_ddf()` takes many rows at once) and, for
-  simultaneous bands, a multivariate t (`pm_sim_crit(df = )`);
+  simultaneous bands, a multivariate t (`pm_sim_crit(df = )`), the
+  smoothing parameters held at their estimates (design variance
+  components and residual only). Coverage of a treatment's curve in the
+  split plot: normal 0.91, t 0.94-0.95 pointwise, 0.96-0.97 simultaneous;
   `dev/sim-semipred-df.R`.
 - `anova()`'s likelihood ratio tests of the smooth variances (halved
   p-values, chi-square 0:1) are conservative (`dev/sim-semireg-lrt.R`;

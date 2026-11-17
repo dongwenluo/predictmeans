@@ -55,15 +55,21 @@
 #'   \sQuote{Comparing two lines} in \code{\link{covariatemeans}}: the test is on the model scale.
 #' @details
 #' Degrees of freedom (gaussian fits, both engines): a point of a curve, or of a difference of curves, is a
-#' combination of fixed and smooth (random) coefficients, so its variance depends on all variance components. Its
-#' df are Satterthwaite's for that combination (as \code{\link{predictmeans}} on the fit and SAS for estimates
-#' that involve random effects; variance components estimated at zero left out): close to the residual df where
-#' the residual variance dominates, few where a design stratum does (curves of treatments applied to whole plots).
-#' Pointwise limits use \code{qt(1 - level/2, df)} at each point. Simultaneous bands use a multivariate t: the
-#' simulated deviations are divided by variance estimates that move together over the points (each point with its
-#' own df), the points are put on one scale by their t probabilities, and each point gets the t quantile of its
-#' df at the simulated \code{1 - level} quantile (with one df for all points: the exact multivariate t).
-#' Generalized fits keep normal limits.
+#' combination of fixed and smooth (random) coefficients. Its df are Satterthwaite's for that combination (as
+#' \code{\link{predictmeans}} on the fit and SAS for estimates that involve random effects), counting the
+#' variance components of the design (blocks, plots, ...) and the residual; the smoothing parameters are held at
+#' their estimates (their uncertainty is what \code{unconditional} adds), and components estimated at zero are left
+#' out. So the df are the residual df when there is no other random term, and few where a design stratum dominates
+#' (curves of treatments applied to whole plots). Pointwise limits use \code{qt(1 - level/2, df)} at each point.
+#' Simultaneous bands use a multivariate t: the simulated deviations are divided by variance estimates that move
+#' together over the points (each point with its own df), the points are put on one scale by their t
+#' probabilities, and each point gets the t quantile of its df at the simulated \code{1 - level} quantile (with one
+#' df for all points: the exact multivariate t). Generalized fits keep normal limits.
+#'
+#' In a simulation (\file{dev/sim-semipred-df.R}; split plot, 6 blocks, 3 treatments on whole plots, curves over 11
+#' times; 500 data sets per setting) normal limits of a treatment's curve covered 0.91 pointwise and 0.92 over the
+#' whole curve, these t limits (about 8-11 df) 0.94-0.95 and 0.96-0.97; for differences of curves (15-31 df) normal
+#' 0.94-0.96, t 0.96-0.97. With curves by group and no design strata both covered 0.95-0.98.
 #'
 #' With \code{contr} the difference between two curves is computed as in \code{\link{covariatemeans}}, from the
 #' contrast of the two curves and the covariance of the fixed and smooth coefficients. For a linear model
