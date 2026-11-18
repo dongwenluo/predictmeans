@@ -38,7 +38,7 @@ Useful links:
 
 }
 \author{
-Dongwen Luo, Siva Ganesh and John Koolaard; contributor: James Curran
+Dongwen Luo, Siva Ganesh, John Koolaard and James Curran
 
 Maintainer: Dongwen Luo <dongwen.luo@agresearch.co.nz>
 }
