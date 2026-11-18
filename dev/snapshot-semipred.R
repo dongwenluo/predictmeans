@@ -10,10 +10,23 @@ n <- 240
 d <- data.frame(x = runif(n, 0, 3), z = runif(n, 0, 2), f = factor(rep(c("a", "b"), each = n/2)))
 d$y <- sin(2*d$x) + (d$f == "b")*d$x/2 + d$z + rnorm(n, sd = 0.3)
 d$cnt <- rpois(n, exp(0.3 + sin(d$x)/2))
-fit <- suppressMessages(semireg(y ~ s(x, by = f) + s(z), data = d, prt = FALSE))
-fit1 <- suppressMessages(semireg(y ~ s(x) + z, data = d, prt = FALSE))
-fp <- suppressMessages(semireg(cnt ~ f + s(x), data = d, family = poisson(), prt = FALSE))
-f2 <- suppressMessages(semireg(y ~ s(x, z, bs = "ztps", k = 6), data = d, prt = FALSE))
+# the fits, in the 1.1.1 spelling (prt), as 2.0 when the library is 2.0
+new_lib <- !"prt" %in% names(formals(semireg))
+fit_call <- function(cl) {
+  a <- as.list(cl)
+  if (new_lib) a$prt <- NULL
+  suppressMessages(suppressWarnings(eval(as.call(a))))
+}
+fits <- list(
+  fit = quote(semireg(y ~ s(x, by = f) + s(z), data = d)),
+  fit1 = quote(semireg(y ~ s(x) + z, data = d)),
+  fp = quote(semireg(cnt ~ f + s(x), data = d, family = poisson())),
+  f2 = quote(semireg(y ~ s(x, z, bs = "ztps", k = 6), data = d)),
+  ft = quote(semireg_tmb(cnt ~ s(x, by = f, bs = "os", k = 6), family = glmmTMB::nbinom2, ziformula = ~1, data = d)),
+  ftg = quote(semireg_tmb(y ~ s(x) + z, data = d)))
+for (nm in names(fits)) assign(nm, fit_call(fits[[nm]]))
+fit_summary <- function(m) list(logLik = as.numeric(logLik(m$semer)), fixef = unlist(lme4::fixef(m$semer)),
+                                CovMat = as.matrix(m$CovMat), u = unlist(m$u_lst), class = class(m$semer))
 xs <- seq(0.2, 2.8, length.out = 7)
 calls <- list(
   one = quote(semipred(fit1, covariate = "x")),
@@ -28,7 +41,9 @@ calls <- list(
   plotset = quote(semipred(fit, "f", "x", trellis = FALSE, ci = FALSE, point = FALSE, jitterv = 0.1, prt = TRUE)),
   scales = quote(semipred(fit, "f", "x", scales = "free_y", plotord = 1)),
   surf = quote(semipred(f2, covariate = c("x", "z"))),
-  named = quote(semipred(semireg = fit1, covariate = "x", covariateV = xs)))
+  named = quote(semipred(semireg = fit1, covariate = "x", covariateV = xs)),
+  tmb = quote(semipred(ft, "f", "x", covariateV = xs, contr = c("b", "a"))),
+  tmb_g = quote(semipred(ftg, covariate = "x", covariateV = xs)))
 pm2 <- function(cl) {
   if (!"conf.level" %in% names(formals(semipred))) return(cl)
   a <- as.list(cl); n <- names(a)
@@ -56,5 +71,6 @@ for (nm in names(calls)) {
   }
   R[[nm]] <- list(result = r, pages = pages)
 }
+R$fits <- lapply(names(fits), function(nm) fit_summary(get(nm)))
 saveRDS(R, out)
 cat(length(R), "calls;", sum(vapply(R, function(x) is.character(x$result), logical(1))), "errors\n")

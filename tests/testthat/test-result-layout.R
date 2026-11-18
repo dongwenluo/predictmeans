@@ -71,7 +71,7 @@ test_that("predictmeans() on a semireg fit: pairs with conf.*, adj.conf.* and ra
   set.seed(3)
   d <- expand.grid(x = seq(0, 1, length = 15), A = factor(c("a1", "a2", "a3")), blk = factor(1:6))
   d$y <- rpois(nrow(d), exp(1 + sin(2*d$x) + 0.3*(d$A == "a2") + rnorm(6, 0, 0.2)[d$blk]))
-  f <- semireg(y ~ A + s(x, bs = "os", k = 6) + (1 | blk), family = poisson, data = d, prt = FALSE)
+  f <- semireg(y ~ A + s(x, bs = "os", k = 6) + (1 | blk), family = poisson, data = d)
   pm <- suppressMessages(predictmeans(f, "A", adj = "tukey"))
   p <- pm$pairs
   expect_true(all(c("conf.low", "conf.high", "lsd", "adj.conf.low", "adj.conf.high", "ratio", "ratio.conf.low",

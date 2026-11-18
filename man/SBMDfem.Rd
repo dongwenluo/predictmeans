@@ -31,7 +31,7 @@ additive mixed model example (\code{gamm()}). \code{HRW::femSBMD} is a larger ve
 data(SBMDfem)
 SBMDfem$idnum <- factor(SBMDfem$idnum)
 # a curve over age, ethnicity as a fixed effect, a random intercept per girl
-fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem, prt = FALSE)
+fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem)
 anova(fit)       # ethnicity: F test with Kenward-Roger df; the smooth: likelihood ratio test
 # the ethnic groups at age 15, compared in pairs
 predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")$pairs

@@ -27,7 +27,7 @@ pm_defunct_rows <- function() {
     # printing (D10)
     r(c("predictmeans", "Kmatrix"), "prtnum", print_dig),
     r("predictmeans", "ndecimal", print_dig),
-    r(c("semipred", "semireg", "permmodels", "bootmodels"), "prt", "print(x)"),
+    r(c("semipred", "semireg", "semireg_tmb", "permmodels", "bootmodels"), "prt", "print(x)"),
     # plots (D10): analysis functions keep only 'plot'
     plot_set("predictmeans", c("lsd_bar", "plotord", "lineplot", "plottitle", "plotxlab", "plotylab", "jitterv", "basesz")),
     r("predictmeans", c("mplot", "barplot", "pplot", "bkplot", "which.plots"), "plot = c(\"mean\", \"bar\", \"pval\", \"back\") (the plots wanted)"),
@@ -47,8 +47,8 @@ pm_defunct_rows <- function() {
     # semireg (D5, D9)
     r("semireg", "smoothZ", "smooths in the formula, e.g. y ~ x + s(x, bs = \"os\") (see ?semireg)"),
     r("semireg", c("ncenter", "nscale", "resp_scale"), "nothing: smooths in the formula need no centring or scaling"),
-    r("semireg", "ngbinomial", "semireg(engine = \"glmmTMB\", family = \"nbinom2\")"),
-    r("semireg", "predict_info", "nothing: the prediction information is always kept"),
+    r("semireg", "ngbinomial", "semireg_tmb(family = glmmTMB::nbinom2) (the maximum-likelihood fit)"),
+    r(c("semireg", "semireg_tmb"), "predict_info", "nothing: the prediction information is always kept"),
     r("permmodels", "fo", "nothing: the formula is read from the model")
   )
 }
@@ -56,7 +56,6 @@ pm_defunct_table <- pm_defunct_rows()
 
 ## Removed functions and their 2.0 replacement (D5-D9).
 pm_defunct_funs <- c(
-  semireg_tmb = "semireg(..., engine = \"glmmTMB\")",
   smZ = "smooths in the formula of semireg(), e.g. s(x, bs = \"os\") for type = \"ZOSull\" (see ?semireg)",
   permglmer = "permlmer()",
   permglmmTMB = "permlmer()",

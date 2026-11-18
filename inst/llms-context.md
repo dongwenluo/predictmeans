@@ -261,7 +261,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   where the band asked for leaves out 0.
   `covariatemeans(bias_adjust = TRUE)`: the mean of the response instead of the median / typical cluster.
 - `semipred(fit, "A", "x")` returns class `c("semipred", "pm_curves")` with the same tables and methods and
-  draws nothing (`plot = TRUE`; `prt = TRUE`, the 1.x name, also draws, `prt = FALSE` never): `$means` (the
+  draws nothing unless `plot = TRUE`: `$means` (the
   curves or surfaces; `NULL` with `contr` or `deriv`), `$slopes` (`deriv = 1, 2`: the same columns plus
   `statistic`, `p.value` of slope = 0), `$pairs` (`contr`: the difference of two curves). In every table
   `conf.low`/`conf.high` are pointwise t limits; with `band = "simultaneous"` the simulated band is

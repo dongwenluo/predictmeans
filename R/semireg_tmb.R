@@ -49,11 +49,10 @@
 #' \code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)}, as in \code{\link{semireg}}
 #' (\code{te()} is fitted as \code{t2()}; \code{ti()} is not available). Smooths are given either in the formula or in \code{smoothZ}, not both.
 #' @usage
-#' semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, 
-#'         dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, 
-#' 		se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), 
-#' 		REML = TRUE, start = NULL, map = NULL, sparseX = NULL, prt=TRUE, 
-#' 		predict_info=TRUE)
+#' semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0,
+#'         dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action,
+#'         se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(),
+#'         REML = TRUE, start = NULL, map = NULL, sparseX = NULL, ...)
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
 #' @param data data frame (tibbles are OK) containing model variables. Not required, but strongly recommended; if \code{data} is not specified, downstream methods such as prediction with new data (\code{predict(fitted_model, newdata = ...)}) will fail. If it is necessary to call \code{glmmTMB} with model variables taken from the environment rather than from a data frame, specifying \code{data=NULL} will suppress the warning message.
 #' @param family a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.
@@ -81,8 +80,8 @@
 #' @param start starting values, expressed as a list with possible components \code{beta}, \code{betazi}, \code{betad} (fixed-effect parameters for conditional, zero-inflation, dispersion models); \code{b}, \code{bzi} (conditional modes for conditional and zero-inflation models); \code{theta}, \code{thetazi} (random-effect parameters, on the standard deviation/Cholesky scale, for conditional and z-i models); \code{psi} (extra family parameters, e.g., shape for Tweedie models).
 #' @param map a list specifying which parameter values should be fixed to a constant value rather than estimated. \code{map} should be a named list containing factors corresponding to a subset of the internal parameter names (see \code{start} parameter). Distinct factor values are fitted as separate parameter values, \code{NA} values are held fixed: e.g., \code{map=list(beta=factor(c(1,2,3,NA)))} would fit the first three fixed-effect parameters of the conditional model and fix the fourth parameter to its starting value. In general, users will probably want to use \code{start} to specify non-default starting values for fixed parameters. See \code{\link[TMB]{MakeADFun}} for more details.
 #' @param sparseX a named logical vector containing (possibly) elements named "cond", "zi", "disp" to indicate whether fixed-effect model matrices for particular model components should be generated as sparse matrices, e.g. \code{c(cond=TRUE)}. Default is all \code{FALSE}
-#' @param prt Logical scalar - Should the info to be print on screen in the middle of the process or not?
-#' @param predict_info Logical scalar - Should provide the info for function semipred or not? In case of there is a correlation theta parameter appearing, you may set predict=FALSE.
+#' @param ... Not used: arguments removed in 2.0 (\code{prt}, \code{predict_info}) stop with their 2.0 spelling;
+#'   nothing is printed during the fit (\code{print(fit$semer)}).
 #' @section Zero inflation (glmmTMB):
 #' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
 #' part, \eqn{\mu}, as \code{emmeans} and \code{predict(type = "conditional")} give, not the overall mean
@@ -122,7 +121,7 @@
 #'                 mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
 #' cn$y[runif(nrow(cn)) < 0.1] <- 0
 #' fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
-#'                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+#'                   family = glmmTMB::nbinom2, data = cn)
 #' rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
 #' attr(rr$pred_df, "significant")
 #' predictmeans(fc, "trt", covariate = c(x = 1.5))$means
@@ -136,7 +135,7 @@
 #'   unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
 #' d$tf <- factor(d$t)
 #' fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
-#'                   dispformula = ~0, data = d, prt = FALSE)
+#'                   dispformula = ~0, data = d)
 #' predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
 #' varcomp(fa)
 #'
@@ -145,19 +144,34 @@
 #'   data(indonRespir, package = "HRW")
 #'   fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
 #'                       stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-#'                     family = binomial, data = indonRespir, prt = FALSE)
+#'                     family = binomial, data = indonRespir)
 #'   semipred(fb, "age", "age")$plt
 #' }
 #' }
 #' @name semireg_tmb
 NULL
 
-semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, dispformula = ~1, 
-                        weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE, 
-                        verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE, 
-                        start = NULL, map = NULL, sparseX = NULL, prt=TRUE, predict_info=TRUE)
+semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, dispformula = ~1,
+                        weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
+                        verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE,
+                        start = NULL, map = NULL, sparseX = NULL, ...)
 {
-  mc <- match.call() 
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("semireg_tmb", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  mc <- match.call()
+  mc[[1]] <- pm_semireg_tmb
+  eval(mc, parent.frame())
+}
+
+## The fit of semireg_tmb(). The package's own refits call it with
+## predict_info = FALSE.
+pm_semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, dispformula = ~1,
+                           weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
+                           verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE,
+                           start = NULL, map = NULL, sparseX = NULL, predict_info=TRUE)
+{
+  mc <- match.call()
+  mc[[1]] <- as.name("semireg_tmb")
   env <- parent.frame()
   environment(formula) <- env
   mc$formula <- formula
@@ -172,7 +186,7 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
 
   glmmTMBcall <- mc 
   glmmTMBcall[[1]] <- quote(glmmTMB::glmmTMB)
-  glmmTMBcall <- glmmTMBcall[!names(glmmTMBcall) %in% c("smoothZ", "prt", "predict_info")]
+  glmmTMBcall <- glmmTMBcall[!names(glmmTMBcall) %in% c("smoothZ", "predict_info")]
   # REML: the call has only the arguments given, so the default REML = TRUE
   # never reached glmmTMB (1.x too): gaussian fits were ML. REML for
   # gaussian families, as documented and as semireg(); other families keep
@@ -189,7 +203,6 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   fit <- pm_sr_fit_tmb(glmmTMBcall, st, env)
   semer <- fit$semer
   tmbf <- fit$tmbf
-  if (prt) print(semer)  
   
   info <- NULL
   if (predict_info) {

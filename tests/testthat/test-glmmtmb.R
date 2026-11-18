@@ -92,7 +92,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   W$district <- factor(W$district)
   fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date,
            smoothZ = list(grp = smZ(construction.date, k = 25)),
-           data = W, prt = FALSE))
+           data = W))
   sp <- semipred(fit, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp$SE)) && all(sp$SE > 0))
   r2 <- R2_glmm(fit$semer)
@@ -100,7 +100,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   # with a correlated random term as well
   W$surf <- as.numeric(scale(W$surface))
   fit2 <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date + surf + (surf | district),
-           smoothZ = list(grp = smZ(construction.date, k = 10)), data = W, prt = FALSE))
+           smoothZ = list(grp = smZ(construction.date, k = 10)), data = W))
   sp2 <- semipred(fit2, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp2$SE)) && all(sp2$SE > 0))
 })
@@ -171,7 +171,7 @@ test_that("semireg_tmb() with zero inflation: the covariance accounts for the ex
   mu <- exp(1 + sin(d$x / 2) / 2 + 0.3 * (d$trt == "b") + rnorm(6, 0, 0.3)[d$site])
   d$y <- ifelse(runif(nrow(d)) < 0.3, 0, rpois(nrow(d), mu))
   f <- suppressWarnings(suppressMessages(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~1,
-                                                     family = poisson, data = d, prt = FALSE)))
+                                                     family = poisson, data = d)))
   m <- f$semer
   nb <- length(glmmTMB::fixef(m)$cond)
   V <- pm_tmb_cond_cov(m, ncol(lme4::getME(m, "Z")))
@@ -201,8 +201,7 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
   expect_equal(cc$response.diff, emc$estimate, tolerance = 1e-6)
   expect_equal(cc$response.ses, emc$SE, tolerance = 1e-6)
   # semipred() on semireg_tmb(): the overall curve is (1 - pi) x the conditional one
-  f <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~trt, family = poisson, data = d,
-                     prt = FALSE))
+  f <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~trt, family = poisson, data = d))
   pc <- q(semipred(f, "trt", "x", at = xs, unconditional = FALSE))$pred_df
   po <- q(semipred(f, "trt", "x", at = xs, unconditional = FALSE, mean_type = "overall"))$pred_df
   bz <- glmmTMB::fixef(f$semer)$zi

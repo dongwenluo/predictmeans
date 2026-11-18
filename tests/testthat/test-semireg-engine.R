@@ -6,7 +6,7 @@ test_that("semireg(): Satterthwaite df and variance components equal the same mo
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   fit <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 25)),
-                 data = WarsawApts, prt = FALSE)
+                 data = WarsawApts)
   # the same mixed model in nlme, as Harezlak, Ruppert and Wand write it
   d <- fit$data
   d$Z <- as.matrix(smZ(d$construction.date, k = 25))
@@ -38,13 +38,17 @@ test_that("semireg(): a smooth with its variance at zero (a straight line) and a
   d$yb <- rbinom(n, 1, plogis(-1 + 2*eta))
   d$ynb <- MASS::rnegbin(n, exp(1 + eta), 2)
   # before 2.0: "Matrix seems negative semi-definite"
-  fit <- suppressWarnings(semireg(ynb ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g)), data = d, ngbinomial = TRUE,
-                                  prt = FALSE))
+  fit <- suppressWarnings(semireg(yp ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g)), data = d, family = poisson))
   expect_s3_class(fit, "semireg")
-  expect_true(grepl("Negative Binomial", stats::family(fit$semer)$family))
   expect_true(all(is.finite(as.matrix(fit$CovMat))))
   sp <- semipred(fit, "g", "x")$pred_df
   expect_true(all(is.finite(sp$SE_mu)))
+  # negative binomial: semireg_tmb(family = nbinom2), the maximum-likelihood fit (1.x ngbinomial removed)
+  expect_error(semireg(ynb ~ x*g, data = d, ngbinomial = TRUE), "use semireg_tmb(family = glmmTMB::nbinom2)",
+               fixed = TRUE)
+  fnb <- suppressWarnings(semireg_tmb(ynb ~ s(x, by = g, bs = "os", k = 8), family = glmmTMB::nbinom2, data = d))
+  expect_true(all(is.finite(as.matrix(fnb$CovMat))))
+  expect_true(all(is.finite(semipred(fnb, "g", "x")$pred_df$SE_mu)))
   # a variance estimated as zero: its coefficients have zero covariance
   th <- lme4::getME(fit$semer, "theta")
   if (any(th == 0)) {
@@ -57,7 +61,7 @@ test_that("semireg(): the covariance of the coefficients is (C'WC + D)^-1 when L
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   fit <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                 data = WarsawApts, prt = FALSE)
+                 data = WarsawApts)
   s <- fit$semer
   C <- cbind(lme4::getME(s, "X"), lme4::getME(s, "Z"))
   L <- lme4::getME(s, "Lambda")
@@ -72,7 +76,7 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
   cbpp$x <- runif(nrow(cbpp))
   # before 2.0 the second column of cbind() was centred: "Response is constant"
   b <- semireg(cbind(incidence, size - incidence) ~ period + x + (1 | herd), smoothZ = list(sx = smZ(x, k = 5)),
-               family = binomial, data = cbpp, prt = FALSE)
+               family = binomial, data = cbpp)
   expect_s3_class(b, "semireg")
   expect_equal(unname(lme4::fixef(b$semer)[2:4]),
                unname(lme4::fixef(lme4::glmer(cbind(incidence, size - incidence) ~ period + x + (1 | herd),
@@ -82,7 +86,7 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
   f <- function() {
     before <- ls()
     m <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                 data = subset(WarsawApts, surface > 30), prt = FALSE)
+                 data = subset(WarsawApts, surface > 30))
     list(m = m, new = setdiff(ls(), c(before, "before", "m")))
   }
   r <- f()
@@ -90,7 +94,7 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
   expect_length(r$new, 0)
   expect_equal(nrow(r$m$data), sum(WarsawApts$surface > 30))
   t1 <- semireg_tmb(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                    data = subset(WarsawApts, surface > 30), prt = FALSE)
+                    data = subset(WarsawApts, surface > 30))
   expect_equal(as.numeric(logLik(t1$semer)), as.numeric(logLik(r$m$semer)), tolerance = 1e-3)
 })
 
@@ -101,7 +105,7 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
   n <- 200
   d <- data.frame(x = runif(n, 0, 3), f = gl(2, n/2, labels = c("a", "b")))
   d$y <- sin(2*d$x) + 0.6*(d$f == "b")*d$x + rnorm(n, 0, 0.4)
-  fit <- q(semireg(y ~ s(x, by = f), data = d, prt = FALSE))
+  fit <- q(semireg(y ~ s(x, by = f), data = d))
   g <- mgcv::gam(y ~ f + s(x, by = f), data = d, method = "REML")
   xs <- c(0.2, 1.5, 2.8)
   nd <- expand.grid(x = xs, f = levels(d$f))
@@ -121,8 +125,8 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
   options(op)
   # Poisson: the lme4 correction (stage-1 deviance) and glmmTMB's joint precision agree
   d$cnt <- rpois(n, exp(0.5 + sin(2*d$x)))
-  p <- q(semireg(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
-  t1 <- q(semireg_tmb(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
+  p <- q(semireg(cnt ~ s(x), family = poisson, data = d))
+  t1 <- q(semireg_tmb(cnt ~ s(x), family = poisson, data = d))
   pb <- q(semipred(p, NULL, "x", at = xs, unconditional = TRUE))$pred_df
   tb <- q(semipred(t1, NULL, "x", at = xs, unconditional = TRUE))$pred_df
   pa <- semipred(p, NULL, "x", at = xs)$pred_df
@@ -133,13 +137,13 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
 test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zero, smooth LRTs, no lmerTest", {
   q <- function(e) suppressWarnings(suppressMessages(e))
   data(Dialyzer, package = "nlme", envir = environment())
-  fit <- q(semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, prt = FALSE))
+  fit <- q(semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer))
   expect_false(methods::is(fit$semer, "lmerModLmerTest"))
   a <- q(anova(fit))
   expect_equal(a$smooth$variance[a$smooth$term == "s_pressure_QB"], 0, tolerance = 1e-8)
   # the deviation block is estimated at zero: KR leaves it out, so the df are those of the
   # model without it (before: 0.54 and 0.04 df for QB and pressure:QB)
-  b <- q(semireg(rate ~ s(pressure, k = 6) + QB + pressure:QB + (1 | Subject), data = Dialyzer, prt = FALSE))
+  b <- q(semireg(rate ~ s(pressure, k = 6) + QB + pressure:QB + (1 | Subject), data = Dialyzer))
   ab <- anova(b$semer)
   expect_equal(a$fixed["QB", "Df.res"], ab["QB", "Df.res"], tolerance = 1e-4)
   expect_equal(a$fixed["pressure:QB", "Df.res"], ab["QB:pressure", "Df.res"], tolerance = 1e-4)
@@ -148,7 +152,7 @@ test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zer
   set.seed(7)
   d <- data.frame(x = runif(200, 0, 3), f = gl(2, 100))
   d$y <- sin(2*d$x) + rnorm(200, 0, 0.3)
-  f1 <- q(semireg(y ~ f + s(x, k = 8), data = d, prt = FALSE))
+  f1 <- q(semireg(y ~ f + s(x, k = 8), data = d))
   s1 <- anova(f1)$smooth
   expect_equal(s1$LRT, 2*(as.numeric(logLik(f1$semer)) - as.numeric(logLik(lm(y ~ f + x, d), REML = TRUE))),
                tolerance = 1e-6)
@@ -164,7 +168,7 @@ test_that("semireg_tmb(): a glmmTMB family named without glmmTMB attached (famil
   e$d <- d
   fit <- suppressWarnings(suppressMessages(evalq(
     predictmeans::semireg_tmb(y ~ x + (1 | g), smoothZ = list(sm = predictmeans::smZ(x, k = 5)), family = nbinom1,
-                              data = d, prt = FALSE), e)))
+                              data = d), e)))
   expect_equal(fit$semer$modelInfo$family$family, "nbinom1")
 })
 
@@ -176,8 +180,7 @@ test_that("semireg(): the deviance function cannot move the fitted model (df, va
   sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
   sp$y <- 2 + sin(sp$t/2) + rnorm(6, 0, 0.5)[sp$Block] + rnorm(18, 0, 0.4)[interaction(sp$Block, sp$A)] +
     rnorm(nrow(sp), 0, 0.3)
-  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = sp,
-                                prt = FALSE))
+  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = sp))
   th <- lme4::getME(f$semer, "theta")
   V <- as.matrix(vcov(f$semer))
   d1 <- predictmeans(f, "A", covariate = c(t = 5))$means$df

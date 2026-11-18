@@ -146,13 +146,13 @@ NULL
 #' # M. P. Wand's geoadditive model: a thin-plate surface over the plane with the given knots,
 #' # and an O'Sullivan spline in depth (their linear terms are added to the fixed effects)
 #' mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
-#'                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
+#'                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper)
 #' anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
 #' semipred(mod, covariate = c("xcoord", "ycoord"))$plt
 #' \donttest{
 #' # on the log scale, with the pairwise interactions of the coordinates
 #' mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
-#'                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
+#'                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper)
 #' semipred(mod2, covariate = "zcoord", trans = exp)$plt
 #' }
 #' @aliases copperKnots
@@ -192,7 +192,7 @@ NULL
 #' gbm <- subset(growthIndiana, male == 1 & black == 1)
 #' gbm$idnum <- factor(gbm$idnum)
 #' fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-#'                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm, prt = FALSE)
+#'                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm)
 #' anova(fit)$smooth       # are the boys' curves straight lines?
 #' semipred(fit, "age", "age")$plt
 #' \dontrun{
@@ -203,7 +203,7 @@ NULL
 #' gm$idnum <- factor(gm$idnum)
 #' gm$race <- factor(ifelse(gm$black == 1, "black", "white"))
 #' fit2 <- semireg(height ~ s(age, race, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-#'                   (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm, prt = FALSE)
+#'                   (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm)
 #' dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous")
 #' attr(dif$pred_df, "significant")
 #' semipred(fit2, "race", "age", deriv = 1)$plt     # growth rates
@@ -238,7 +238,7 @@ NULL
 #' data(SBMDfem)
 #' SBMDfem$idnum <- factor(SBMDfem$idnum)
 #' # a curve over age, ethnicity as a fixed effect, a random intercept per girl
-#' fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem, prt = FALSE)
+#' fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem)
 #' anova(fit)       # ethnicity: F test with Kenward-Roger df; the smooth: likelihood ratio test
 #' # the ethnic groups at age 15, compared in pairs
 #' predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")$pairs
@@ -272,7 +272,7 @@ NULL
 #' # an additive model: three O'Sullivan splines
 #' fit <- semireg(ozone ~ s(inversion.base.height, bs = "os", k = 15) +
 #'                  s(daggett.pressure.gradient, bs = "os", k = 15) +
-#'                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+#'                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif)
 #' anova(fit)$smooth     # is each curve more than a straight line?
 #' # the effect of one covariate, the others at their means
 #' semipred(fit, covariate = "inversion.base.temp")$plt
@@ -311,11 +311,10 @@ NULL
 #' # a thin-plate surface of asinh(catch) (low-rank kriging) with the given knots
 #' fit <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
 #'                                    xt = list(knots = as.matrix(scallopKnots))),
-#'                data = scallop, prt = FALSE)
+#'                data = scallop)
 #' anova(fit)$smooth
 #' # the surface inside the survey area, on the scale of the catch
-#' semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh,
-#'          prt = FALSE)$plt
+#' semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh)$plt
 #' @aliases scallopKnots scallopBdry
 #' @name scallop
 #' @docType data
@@ -341,7 +340,7 @@ NULL
 #' @examples
 #' data(wageTUnion)
 #' # the probability of union membership as a smooth function of the wage
-#' fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion, prt = FALSE)
+#' fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion)
 #' anova(fit)$smooth
 #' semipred(fit, "wage", "wage")$plt
 #' @name wageTUnion

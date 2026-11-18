@@ -116,14 +116,14 @@
 #' outline <- function(b) { b$ring <- cumsum(is.na(b[[1]])); b }
 #' data(scallopKnots)
 #' fs <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
-#'                                   xt = list(knots = as.matrix(scallopKnots))), data = scallop, prt = FALSE)
+#'                                   xt = list(knots = as.matrix(scallopKnots))), data = scallop)
 #' semipred(fs, covariate = c("longitude", "latitude"), boundary = b, trans = sinh)$plt +
 #'   geom_path(data = outline(b), aes(longitude, latitude, group = ring), inherit.aes = FALSE,
 #'             na.rm = TRUE)
 #'
 #' data(copperKnots)
 #' fc <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
-#'                 s(zcoord, bs = "os"), data = copper, prt = FALSE)
+#'                 s(zcoord, bs = "os"), data = copper)
 #' semipred(fc, covariate = c("xcoord", "ycoord"), boundary = b2)$plt +
 #'   geom_path(data = outline(b2), aes(xcoord, ycoord, group = ring), inherit.aes = FALSE, na.rm = TRUE) +
 #'   geom_point(data = holes, aes(xcoord, ycoord), inherit.aes = FALSE, size = 0.8)

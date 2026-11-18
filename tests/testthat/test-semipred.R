@@ -6,7 +6,7 @@ test_that("factors not in modelterm (incl. 'by' factors) are averaged in both pa
   W$district <- factor(W$district)
   sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
                                  smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
-                                 data = W, prt = FALSE))
+                                 data = W))
   overall <- semipred(sm, covariate = "construction.date")$pred_df
   by_district <- semipred(sm, "district", "construction.date")$pred_df
   avg <- aggregate(by_district$areaPerMzloty, list(cd = by_district$construction.date), mean)
@@ -19,7 +19,7 @@ test_that("a matrix covariateV gives one prediction per point for a 2-D smooth",
   s2 <- data.frame(u = runif(200), v = runif(200))
   s2$w <- sin(3*s2$u) + cos(3*s2$v) + rnorm(200, sd = 0.2)
   sm <- semireg(w ~ u + v, smoothZ = list(g = smZ(cbind(u, v), k = 6, type = "Ztps")),
-                data = s2, prt = FALSE)
+                data = s2)
   pts <- cbind(u = c(0.2, 0.5, 0.8), v = c(0.3, 0.5, 0.7))
   p <- semipred(sm, covariate = c("u", "v"), at = pts)$pred_df
   expect_equal(nrow(p), 3)
@@ -31,9 +31,9 @@ test_that("a numeric variable that is not in the prediction (here the grouping i
   set.seed(7)
   d <- data.frame(u = runif(150, 2, 8), id = rep(1:15, each = 10))
   d$y <- sin(d$u) + rnorm(15, sd = 0.5)[d$id] + rnorm(150, sd = 0.3)
-  centred <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d, prt = FALSE))
+  centred <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d))
   plain <- suppressMessages(semireg(y ~ u + (1 | id), smoothZ = list(g = smZ(u)), data = d,
-                                    ncenter = FALSE, prt = FALSE))
+                                    ncenter = FALSE))
   expect_equal(semipred(centred, covariate = "u")$pred_df,
                semipred(plain, covariate = "u")$pred_df, tolerance = 1e-6)
 })
@@ -43,13 +43,13 @@ test_that("anova() of a semireg fit tests each smooth by refitting without it (c
   data(copper)
   full <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
     smoothZ = list(grp_z = smZ(zcoord), grp_geo = smZ(cbind(xcoord, ycoord), type = "Ztps")),
-    data = copper, prt = FALSE, predict_info = FALSE))
+    data = copper))
   expect_s4_class(full$semer, "semerMod")
   a <- anova(full)
   expect_equal(a$smooth$term, c("grp_z", "grp_geo"))
   # dropping grp_geo must equal fitting with the grp_z smooth only (REML, same fixed effects)
   only_z <- suppressWarnings(semireg(log(grade) ~ xcoord + ycoord + zcoord,
-    smoothZ = list(grp_z = smZ(zcoord)), data = copper, prt = FALSE, predict_info = FALSE))
+    smoothZ = list(grp_z = smZ(zcoord)), data = copper))
   expect_equal(a$smooth$logLik.without[a$smooth$term == "grp_geo"], as.numeric(logLik(only_z$semer)),
                tolerance = 1e-6)
   r <- a$smooth[a$smooth$term == "grp_geo", ]
@@ -66,7 +66,7 @@ test_that("predictmeans() on a semireg fit: means with the smooth, as semipred()
   W$district <- factor(W$district)
   sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
                                  smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
-                                 data = W, prt = FALSE))
+                                 data = W))
   r <- predictmeans(sm, "district", covariate = c(construction.date = 1980), adj = "tukey")
   expect_s3_class(r, "pm_semimeans")
   sp <- semipred(sm, "district", "construction.date", at = 1980)$pred_df
@@ -87,7 +87,7 @@ test_that("semipred(): two-sided t limits with Satterthwaite df; simultaneous ba
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
-                                 smoothZ = list(grp = smZ(construction.date, k = 25)), data = WarsawApts, prt = FALSE))
+                                 smoothZ = list(grp = smZ(construction.date, k = 25)), data = WarsawApts))
   p <- semipred(sm, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(p$df) & p$df > 1))
   expect_equal((p$UL - p$areaPerMzloty)/p$SE, qt(0.975, p$df), tolerance = 1e-10)
@@ -111,7 +111,7 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
   W$district <- factor(W$district)
   sm <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
                                  smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
-                                 data = W, prt = FALSE))
+                                 data = W))
   # a linear model: the 1.x columns and the indicators; level names in contr
   r <- semipred(sm, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"))$pred_df
   lv <- levels(W$district)
@@ -136,7 +136,7 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
   d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")))
   d$y <- rpois(n, exp(0.5 + sin(d$x) + 0.5*(d$g == "b")*d$x/3))
   sp <- suppressWarnings(semireg(y ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
-                                 family = poisson, prt = FALSE))
+                                 family = poisson))
   rg <- semipred(sp, "g", "x", contr = c("b", "a"))
   p <- rg$pred_df
   m <- semipred(sp, "g", "x")$pred_df
@@ -169,13 +169,12 @@ test_that("the covariance behind semipred()'s bands is that of the fitted model,
   d$yb <- rbinom(n, 1, plogis(-1.5 + 2*eta))
   q <- function(e) suppressWarnings(suppressMessages(e))
   fits <- list(
-    gaussian = q(semireg(yn ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
-                         prt = FALSE)),
+    gaussian = q(semireg(yn ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d)),
     poisson = q(semireg(yp ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
-                        family = poisson, prt = FALSE)),
+                        family = poisson)),
     # a 0/1 response: before 2.0 the weights were the constant 3/pi^2 and the SEs 15-25% too small
     binary = q(semireg(yb ~ x*g + (1 | id), smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
-                       family = binomial, prt = FALSE)))
+                       family = binomial)))
   for (nm in names(fits)) {
     sm <- fits[[nm]]
     p <- length(lme4::fixef(sm$semer))
@@ -207,7 +206,7 @@ test_that("semipred(): generalized models back-transform the limits, as predictm
   d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")))
   d$y <- rpois(n, exp(0.5 + sin(d$x) + 0.5*(d$g == "b")*d$x/3))
   sp <- suppressWarnings(semireg(y ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g, group = TRUE)), data = d,
-                                 family = poisson, prt = FALSE))
+                                 family = poisson))
   m <- semipred(sp, "g", "x", at = 1.5)$pred_df
   pm <- suppressMessages(predictmeans(sp, "g", covariate = c(x = 1.5)))$means
   expect_equal(m$y, pm$response, tolerance = 1e-8)
@@ -229,7 +228,7 @@ test_that("semipred(contr = ) with two covariates: the difference of two surface
   set.seed(3)
   s2 <- data.frame(u = runif(200), v = runif(200), g = gl(2, 100, labels = c("a", "b")))
   s2$w <- sin(3*s2$u) + cos(3*s2$v) + 0.4*(s2$g == "b") + rnorm(200, sd = 0.2)
-  sm <- semireg(w ~ u + v + g, smoothZ = list(s = smZ(cbind(u, v), k = 6, type = "Ztps")), data = s2, prt = FALSE)
+  sm <- semireg(w ~ u + v + g, smoothZ = list(s = smZ(cbind(u, v), k = 6, type = "Ztps")), data = s2)
   pts <- cbind(u = c(0.2, 0.5, 0.8), v = c(0.3, 0.5, 0.7))
   grDevices::pdf(NULL); on.exit(grDevices::dev.off())
   r <- semipred(sm, "g", c("u", "v"), contr = c("b", "a"), at = pts)$pred_df
@@ -254,7 +253,7 @@ test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives
   set.seed(3)
   d <- data.frame(x = runif(150, 0, 10))
   d$y <- sin(d$x/1.5) + rnorm(150, 0, 0.3)
-  g <- suppressWarnings(semireg(y ~ x, smoothZ = list(sm = smZ(x, k = 10)), data = d, prt = FALSE))
+  g <- suppressWarnings(semireg(y ~ x, smoothZ = list(sm = smZ(x, k = 10)), data = d))
   xs <- seq(0.5, 9.5, by = 0.5)
   xm <- attr(g$data, "x_mean")
   kn <- g$knots_lst$sm
@@ -270,8 +269,7 @@ test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives
     expect_equal(p$significant, !(p$LL <= 0 & p$UL >= 0))
   }
   # the formula form with the same basis gives the same slopes
-  f <- suppressWarnings(semireg(y ~ s(x, bs = "os", k = 10, xt = list(knots = kn + xm, range = rg + xm)), data = d,
-                                prt = FALSE))
+  f <- suppressWarnings(semireg(y ~ s(x, bs = "os", k = 10, xt = list(knots = kn + xm, range = rg + xm)), data = d))
   pf <- semipred(f, covariate = "x", at = xs, deriv = 1)$pred_df
   pg <- semipred(g, covariate = "x", at = xs, deriv = 1)$pred_df
   expect_equal(pf$y, pg$y, tolerance = 1e-5)
@@ -289,7 +287,7 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
   set.seed(11)
   sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
   sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] + rnorm(nrow(sp), 0, 0.3)
-  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), data = sp, prt = FALSE))
+  f <- suppressWarnings(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), data = sp))
   a <- semipred(f, "A", "t", deriv = 1)$pred_df
   r <- semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1"))$pred_df
   expect_equal(r$y, a$y[a$A == "a2"] - a$y[a$A == "a1"], tolerance = 1e-10)
@@ -297,8 +295,7 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
   expect_output(print(semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1"))), "Difference a2 - a1 of the slopes")
   # a GLMM: slopes of the linear predictor, no back-transformation
   sp$cnt <- rpois(nrow(sp), exp(1 + sin(sp$t/2)/2))
-  g <- suppressWarnings(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = sp,
-                                prt = FALSE))
+  g <- suppressWarnings(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = sp))
   gp <- semipred(g, "A", "t", deriv = 1)$pred_df
   expect_null(gp$SE_mu)
   eta <- function(v) {
@@ -312,7 +309,7 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
 test_that("plot_args sets the colours: band under its line, reference line, bars where a difference is clear", {
   data(Dialyzer, package = "nlme", envir = environment())
   fm <- suppressMessages(semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-                                 data = Dialyzer, prt = FALSE))
+                                 data = Dialyzer))
   geoms <- function(p) vapply(p$layers, function(l) class(l$geom)[1], "")
   p1 <- semipred(fm, "QB", "pressure", plot_args = list(palette = c("black", "grey50")))$plt
   g <- geoms(p1)
@@ -332,7 +329,7 @@ test_that("generalized fits: SE on the link scale next to SE_mu, the limits h(et
   set.seed(5)
   d <- data.frame(x = runif(200, 0, 10))
   d$y <- rbinom(200, 1, plogis(-1 + sin(d$x / 2)))
-  f <- suppressMessages(semireg(y ~ s(x, bs = "os", k = 8), family = binomial, data = d, prt = FALSE))
+  f <- suppressMessages(semireg(y ~ s(x, bs = "os", k = 8), family = binomial, data = d))
   p <- semipred(f, "x", "x")$pred_df
   expect_true(all(c("SE", "SE_mu") %in% names(p)))
   expect_equal(p$LL, plogis(qlogis(p$y) - qnorm(0.975) * p$SE), tolerance = 1e-10)

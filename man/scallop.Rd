@@ -37,11 +37,10 @@ data(scallopBdry)
 # a thin-plate surface of asinh(catch) (low-rank kriging) with the given knots
 fit <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
                                    xt = list(knots = as.matrix(scallopKnots))),
-               data = scallop, prt = FALSE)
+               data = scallop)
 anova(fit)$smooth
 # the surface inside the survey area, on the scale of the catch
-semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh,
-         prt = FALSE)$plt
+semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh)$plt
 }
 \references{
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003). \emph{Semiparametric Regression}. Cambridge University Press.

@@ -72,7 +72,7 @@ test_that("glmmTMB: unstructured terms, ar1() correlation; residual ar1 (dispfor
 
 test_that("semireg: smooth blocks as anova(), other random terms by refit; semireg_tmb with ar1()", {
   d <- sleep()
-  s1 <- q(semireg(Reaction ~ s(Days, bs = "os", k = 4) + (Days | Subject), data = d, prt = FALSE))
+  s1 <- q(semireg(Reaction ~ s(Days, bs = "os", k = 4) + (Days | Subject), data = d))
   tt <- q(pm_vc_test(s1))
   lr <- stats::setNames(tt$LRT, tt$row)
   sm <- anova(s1)$smooth
@@ -80,8 +80,7 @@ test_that("semireg: smooth blocks as anova(), other random terms by refit; semir
   red <- q(pm_sr_refit(s1, random = "(1 | Subject)"))
   expect_equal(lr[["Subject.Days"]], 2*(ll(s1$semer) - ll(red)), tolerance = 1e-6)
   expect_equal(tt$kind[tt$row == "Subject.Days"], "reduce")
-  s2 <- q(semireg_tmb(Reaction ~ s(Days, bs = "os", k = 4) + ar1(tf + 0 | Subject), dispformula = ~0, data = d,
-                      prt = FALSE))
+  s2 <- q(semireg_tmb(Reaction ~ s(Days, bs = "os", k = 4) + ar1(tf + 0 | Subject), dispformula = ~0, data = d))
   t2 <- q(pm_vc_test(s2))
   expect_true(all(c("cor.Subject", "s_Days.(Intercept)") %in% t2$row))
   expect_true(is.finite(t2$LRT[t2$row == "cor.Subject"]))
@@ -188,12 +187,12 @@ test_that("anova() of a semireg fit uses the same tests as varcomp(test = TRUE);
   d <- data.frame(x = runif(80))
   d$y <- sin(3*d$x) + rnorm(80, 0, 0.3)
   d$g <- gl(8, 10)
-  fit <- q(semireg(y ~ s(x, bs = "os", k = 8) + (1 | g), data = d, prt = FALSE))
+  fit <- q(semireg(y ~ s(x, bs = "os", k = 8) + (1 | g), data = d))
   a <- anova(fit)$smooth
   v <- q(varcomp(fit, test = TRUE))
   expect_equal(signif(a$p.value, 4), v["s_x.(Intercept)", "p.value"])
   expect_equal(a$test, "0.5 chi2(0) + 0.5 chi2(1)")       # with (1 | g): the mixture
-  one <- q(semireg(y ~ s(x, bs = "os", k = 8), data = d, prt = FALSE))
+  one <- q(semireg(y ~ s(x, bs = "os", k = 8), data = d))
   expect_match(anova(one)$smooth$test, "exact restricted LRT")
 })
 

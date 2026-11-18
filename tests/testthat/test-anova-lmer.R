@@ -37,7 +37,7 @@ test_that("with lmerTest loaded too: its fits keep its anova(), comparisons keep
   expect_match(attr(anova(lt1), "heading")[1], "Satterthwaite")
   expect_equal(rownames(anova(lt0, lt1)), c("lt0", "lt1"))   # lmerTest -> anova.lmerMod -> lme4
   data(Dialyzer, package = "nlme", envir = environment())
-  fit <- suppressWarnings(semireg(rate ~ s(pressure, k = 6) + QB + (1 | Subject), data = Dialyzer, prt = FALSE))
+  fit <- suppressWarnings(semireg(rate ~ s(pressure, k = 6) + QB + (1 | Subject), data = Dialyzer))
   rt <- suppressWarnings(suppressMessages(lmerTest::ranova(fit$semer)))
   a <- anova(fit)$smooth
   expect_equal(rt[["LRT"]][rownames(rt) == "(1 | s_pressure)"], a$LRT, tolerance = 1e-6)

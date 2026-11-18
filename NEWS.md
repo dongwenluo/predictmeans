@@ -66,6 +66,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     `ci`, `point`, `jitterv`, `threeD` -> `plot_args = list(...)` (with the
     colours). 13 calls of `dev/snapshot-semipred.R` written both ways give
     identical results.
+  - `semireg()`, `semireg_tmb()` (step 3b; both kept: their options differ by
+    engine): `prt` and `predict_info` removed (nothing is printed during the
+    fit; the prediction information is always kept). `ngbinomial` removed: it
+    took theta from a Poisson fit, which is not the maximum-likelihood fit
+    (on a test data set log-likelihood -1133.60 against -1132.98, theta 3.31
+    against 2.80, true 3; means 1%, SEs 4% apart); use
+    `semireg_tmb(family = glmmTMB::nbinom2)`. Six fits and their curves
+    (`dev/snapshot-semipred.R`) are identical (tolerance 0).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

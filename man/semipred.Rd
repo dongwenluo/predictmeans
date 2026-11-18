@@ -163,7 +163,7 @@ evaluated at the difference of the means, which is not a standard error of any d
 is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
 covariate where the curves differ are printed with the result and kept in \code{significant} and
 \code{attr(pred_df, "significant")}; with
-\code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
+\code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf.level}
 when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)
 }
@@ -206,7 +206,7 @@ ggplot(Dialyzer, aes(x = pressure, y = rate, col = QB)) +
 
 # a curve per blood flow rate, a random intercept and slope per dialyzer
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 residplot(fm$semer, group = "QB")
 anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 
@@ -230,7 +230,7 @@ slp$significant
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
-               data = copper, prt = FALSE)
+               data = copper)
 autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
 autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 
@@ -239,8 +239,7 @@ set.seed(4)
 db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
 db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
                                      rnorm(12, 0, 0.5)[db$cl]))
-fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
-                prt = FALSE)
+fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db)
 autoplot(semipred(fbin, "g", "x"))
 head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
 }

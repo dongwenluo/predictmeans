@@ -41,7 +41,7 @@ samples \code{\link{permlmer}} or \code{\link{bootmodels}} on \code{fit$semer} g
 \examples{
 library(predictmeans)
 data(Dialyzer, package = "nlme")
-fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, prt = FALSE)
+fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer)
 anova(fm)
 }
 \references{

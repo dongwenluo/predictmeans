@@ -35,7 +35,7 @@
 #' @examples
 #' library(predictmeans)
 #' data(Dialyzer, package = "nlme")
-#' fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, prt = FALSE)
+#' fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer)
 #' anova(fm)
 #' @name anova.semireg
 NULL
@@ -110,8 +110,8 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALS
   e$sr_off <- r$offset
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
   if (identical(r$engine, "glmmTMB")) {
-    cl <- call("semireg_tmb", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), family = r$family,
-               ziformula = r$ziformula, dispformula = r$dispformula, REML = r$REML, prt = FALSE, predict_info = FALSE)
+    cl <- call("pm_semireg_tmb", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), family = r$family,
+               ziformula = r$ziformula, dispformula = r$dispformula, REML = r$REML, predict_info = FALSE)
   } else if (!length(keep) && !length(other_txt)) {
     # no random term left: lm / glm (REML log-likelihood for a gaussian REML fit)
     environment(fixed) <- e
@@ -121,18 +121,15 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALS
     # the weights and offset as columns of the data (found there by the fitting function)
     w <- as.name(".pm_w")
     off <- as.name(".pm_off")
-    if (is.null(r$family) && !isTRUE(r$ngbinomial)) {
+    if (is.null(r$family)) {
       fit <- eval(call("lm", fixed, data = quote(dd), weights = w, offset = off))
       return(structure(list(fit = fit), class = "pm_lm_reml", REML = isTRUE(r$REML)))
     }
-    return(if (isTRUE(r$ngbinomial)) eval(call("glm.nb", fixed, data = quote(dd), weights = w),
-                                          list(glm.nb = MASS::glm.nb, dd = dd)) else
-      eval(call("glm", fixed, family = r$family, data = quote(dd), weights = w, offset = off)))
+    return(eval(call("glm", fixed, family = r$family, data = quote(dd), weights = w, offset = off)))
   } else {
-    cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = r$REML,
-               ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE, control = r$control)
+    cl <- call("pm_semireg_lme4", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = r$REML,
+               ncenter = FALSE, nscale = FALSE, predict_info = FALSE, control = r$control)
     if (!is.null(r$family)) cl$family <- r$family
-    if (isTRUE(r$ngbinomial)) cl$ngbinomial <- TRUE
     if (!is.null(r$weights) && any(r$weights != 1)) cl$weights <- quote(sr_w)
     if (!is.null(r$offset)) cl$offset <- quote(sr_off)
   }

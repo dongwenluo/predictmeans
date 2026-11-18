@@ -89,7 +89,7 @@ test_that("semipred(boundary = TRUE) keeps the grid points inside the data's reg
   set.seed(2)
   d <- data.frame(x1 = c(runif(60, 0, 1), runif(60, 2, 3)), x2 = runif(120, 0, 1))
   d$y <- sin(2 * d$x1) + d$x2 + rnorm(120, 0, 0.2)
-  fit <- semireg(y ~ s(x1, x2, bs = "ztps", k = 4), data = d, prt = FALSE)
+  fit <- semireg(y ~ s(x1, x2, bs = "ztps", k = 4), data = d)
   p_all <- semipred(fit, covariate = c("x1", "x2"))
   p_b <- semipred(fit, covariate = c("x1", "x2"), boundary = TRUE)
   p_s <- semipred(fit, covariate = c("x1", "x2"), boundary = semiboundary(d[, c("x1", "x2")]))

@@ -4,11 +4,10 @@
 \alias{semireg_tmb}
 \title{Fitting Semi Parametric Models Using glmmTMB}
 \usage{
-semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, 
-        dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, 
-		se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), 
-		REML = TRUE, start = NULL, map = NULL, sparseX = NULL, prt=TRUE, 
-		predict_info=TRUE)
+semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0,
+        dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action,
+        se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(),
+        REML = TRUE, start = NULL, map = NULL, sparseX = NULL, ...)
 }
 \arguments{
 \item{formula}{A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.}
@@ -56,9 +55,8 @@ because of missingness.}
 
 \item{sparseX}{a named logical vector containing (possibly) elements named "cond", "zi", "disp" to indicate whether fixed-effect model matrices for particular model components should be generated as sparse matrices, e.g. \code{c(cond=TRUE)}. Default is all \code{FALSE}}
 
-\item{prt}{Logical scalar - Should the info to be print on screen in the middle of the process or not?}
-
-\item{predict_info}{Logical scalar - Should provide the info for function semipred or not? In case of there is a correlation theta parameter appearing, you may set predict=FALSE.}
+\item{...}{Not used: arguments removed in 2.0 (\code{prt}, \code{predict_info}) stop with their 2.0 spelling;
+nothing is printed during the fit (\code{print(fit$semer)}).}
 }
 \value{
 \item{semer}{A glmmTMB model used in the fitting.}
@@ -155,7 +153,7 @@ cn$y <- rnbinom(nrow(cn), size = 3,
                 mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
-                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+                  family = glmmTMB::nbinom2, data = cn)
 rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
 attr(rr$pred_df, "significant")
 predictmeans(fc, "trt", covariate = c(x = 1.5))$means
@@ -169,7 +167,7 @@ d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
   unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
 d$tf <- factor(d$t)
 fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
-                  dispformula = ~0, data = d, prt = FALSE)
+                  dispformula = ~0, data = d)
 predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
 varcomp(fa)
 
@@ -178,7 +176,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
   fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
                       stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-                    family = binomial, data = indonRespir, prt = FALSE)
+                    family = binomial, data = indonRespir)
   semipred(fb, "age", "age")$plt
 }
 }

@@ -24,9 +24,8 @@ test_that("semireg_tmb() keeps ar1(), ou(), cs(), diag() terms: fit, refit for a
     f2 <- stats::as.formula(paste("y ~ time*trt +", term))
     # dispformula = ~0: the structure is the residual covariance (with a
     # nugget, cs() is not identified and glmmTMB flags the Hessian)
-    a <- q(semireg_tmb(f1, dispformula = ~0, data = d, prt = FALSE))
-    b <- q(semireg_tmb(f2, smoothZ = list(sm = smZ(time, k = 4, by = trt, group = TRUE)), dispformula = ~0, data = d,
-                       prt = FALSE))
+    a <- q(semireg_tmb(f1, dispformula = ~0, data = d))
+    b <- q(semireg_tmb(f2, smoothZ = list(sm = smZ(time, k = 4, by = trt, group = TRUE)), dispformula = ~0, data = d))
     expect_true(st %in% struct_codes(a$semer), label = paste(st, "formula form"))
     expect_true(st %in% struct_codes(b$semer), label = paste(st, "smoothZ form"))
     expect_equal(a$semer$fit$objective, b$semer$fit$objective, tolerance = 1e-6, label = st)
@@ -35,17 +34,14 @@ test_that("semireg_tmb() keeps ar1(), ou(), cs(), diag() terms: fit, refit for a
     expect_true(st %in% struct_codes(red), label = paste(st, "refit"))
   }
   # ou() with equally spaced times is ar1()
-  a <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d,
-                     prt = FALSE))
-  o <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ou(times + 0 | id), dispformula = ~0, data = d,
-                     prt = FALSE))
+  a <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d))
+  o <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ou(times + 0 | id), dispformula = ~0, data = d))
   expect_equal(a$semer$fit$objective, o$semer$fit$objective, tolerance = 1e-6)
 })
 
 test_that("pure AR1 residuals (dispformula = ~0): curves and means with finite SEs", {
   d <- ar1_data()
-  fit <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d,
-                       prt = FALSE))
+  fit <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d))
   expect_true("ar1" %in% struct_codes(fit$semer))
   cur <- q(semipred(fit, "trt", "time"))$pred_df
   expect_true(all(is.finite(cur$SE) & cur$SE > 0))
@@ -55,7 +51,7 @@ test_that("pure AR1 residuals (dispformula = ~0): curves and means with finite S
 
 test_that("semireg() (lme4) refuses covariance structures; bootmodels() keeps them in its null model", {
   d <- ar1_data()
-  expect_error(semireg(y ~ s(time) + ar1(tf + 0 | id), data = d, prt = FALSE), "semireg_tmb")
+  expect_error(semireg(y ~ s(time) + ar1(tf + 0 | id), data = d), "semireg_tmb")
   m <- q(glmmTMB::glmmTMB(y ~ trt + ar1(tf + 0 | id), data = d))
   expect_true("ar1" %in% struct_codes(pm_boot_parts(m)$null_fit))
   expect_equal(pm_random_terms(y ~ x + (1 | g) + ar1(tf + 0 | id)), c("(1 | g)", "ar1(tf + 0 | id)"))

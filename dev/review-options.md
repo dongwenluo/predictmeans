@@ -27,7 +27,7 @@ maintainer; its arguments read by parsing `R/`, not by running it) and
 | D2 | `Df` (a fixed df) beside `df_method` | `df_method` takes a number: `df_method = 10` |
 | D3 | `vcov_adjust` beside `vcov` and `df_method` | keep `vcov_adjust` (one meaning, used to reproduce 1.x); or fold into `vcov = "unadjusted"`. Proposal: keep (it is a statistical choice, documented, tested) |
 | D4 | `covariateV` (`Kmatrix`, `covariatemeans`, `semipred`) and `at` (`pm_slopes`) | `at` everywhere (a named list of covariate values) |
-| D5 | `semireg()` and `semireg_tmb()`: one engine, two front ends with different arguments | one `semireg(formula, data, family, engine = c("lme4", "glmmTMB"), ziformula, dispformula, REML, weights, offset, control, ...)`; `semireg_tmb()` removed (message: `semireg(engine = "glmmTMB")`); glmmTMB's own settings (`se`, `doFit`, `map`, `sparseX`, `na.action`, `start`) through `...` |
+| D5 | `semireg()` and `semireg_tmb()`: one engine, two front ends with different arguments | keep both (maintainer, 2026-11-18, step 3b: a merge removes no code and leaves half the options for one engine only); remove `prt`, `predict_info`, `ngbinomial` |
 | D6 | `permanova.lmer()` beside `permmodels()` (which tests lmer/glmer fixed effects on the shared engine) | remove `permanova.lmer()`: `permmodels(model, type =)` |
 | D7 | `ci_mcp()`: letters from overlap of any intervals given by the user; overlapping 95% (or 83.4%) intervals do not answer the tests (Rule no. 1, `R/comparison.R`) | remove: `predictmeans(letterCI = TRUE)` gives letters from comparison intervals that agree with the tests |
 | D8 | `R2_glmm()` beside `R2_model()` (same Piepho calculation, every class) | remove `R2_glmm()`: `R2_model(model)` |
@@ -101,10 +101,10 @@ end.
 
 | Argument | Proposal | 2.0 spelling |
 |---|---|---|
-| semireg_tmb() | merge (D5) | `semireg(engine = "glmmTMB")` |
+| semireg_tmb() | keep (D5) | |
 | smZ(), smoothZ | remove (D9) | `s(x, bs = "os")` etc. in the formula |
 | ncenter, nscale, resp_scale | remove (scaling only served `smoothZ`; formula smooths are location-invariant) | none |
-| ngbinomial | merge | `family = "nbinom2"` (glmmTMB engine) or `MASS::negative.binomial(theta)` |
+| ngbinomial | remove (not the ML fit) | `semireg_tmb(family = glmmTMB::nbinom2)` |
 | prt | remove (D10) | `print(fit)` / `summary(fit)` |
 | predict_info | remove (always stored; small) | none |
 | formula, data, family, REML, control, start, verbose, drop.unused.levels, subset, weights, offset, contrasts | keep | |

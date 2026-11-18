@@ -4,11 +4,10 @@
 \alias{semireg}
 \title{Fitting Semi Parametric Models Using lme4 Ecosystem}
 \usage{
-semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
-        smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-        control = lmerControl(optimizer="nloptwrap"), start = NULL, 
-        verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
-        offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
+semireg(formula, data, family = NULL, REML = TRUE, smoothZ = list(), ncenter = TRUE,
+        nscale = FALSE, resp_scale = FALSE, control = lmerControl(optimizer = "nloptwrap"),
+        start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+        offset, contrasts = NULL, ...)
 }
 \arguments{
 \item{formula}{A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.}
@@ -16,8 +15,6 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 \item{data}{A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula and smoothZ), typically the environment from which semireg is called.}
 
 \item{family}{A GLM family, see glm and family.}
-
-\item{ngbinomial}{Logical scalar - Should a negative binomial GLMMs be used?                  .}
 
 \item{REML}{Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?}
 
@@ -46,11 +43,11 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 
 \item{contrasts}{An optional list. See the contrasts.arg of model.matrix.default.}
 
-\item{prt}{Logical scalar - Should the info to be print on screen in the middle of the process or not?}
-
-\item{predict_info}{Logical scalar - Should provide the info for function semipred or not?}
-
-\item{...}{Further arguments for passing on to model setup routines.}
+\item{...}{Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{prt},
+\code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
+(\code{print(fit$semer)}). For a negative binomial model use \code{\link{semireg_tmb}(family =
+glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Poisson fit, which is not the
+maximum-likelihood fit.}
 }
 \value{
 \item{semer}{A mer model used in the fitting.}
@@ -168,7 +165,7 @@ library(predictmeans)
 ##    fixed terms QB + QB:pressure are added automatically
 data(Dialyzer, package = "nlme")
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test of each smooth
 varcomp(fm)     # variance components, the smooths' among them
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
@@ -181,7 +178,7 @@ sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6)
 sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] +
   rnorm(18, 0, 0.3)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
 fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
-               data = sp, prt = FALSE)
+               data = sp)
 predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)$pairs
 
 ## 3. Two crossed factors: a common curve and deviation curves for f1, f2 and f1:f2, each
@@ -190,7 +187,7 @@ set.seed(1)
 dx <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = factor(c("u", "v")),
                   rep = 1:3)
 dx$y <- sin(2*pi*dx$x) + (dx$f1 == "q")*sin(pi*dx$x)^2 + rnorm(nrow(dx), 0, 0.2)
-fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx, prt = FALSE)
+fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx)
 varcomp(fx, test = TRUE)
 
 ## 4. An additive model with a varying coefficient: a smooth in x1, and the effect of z
@@ -198,7 +195,7 @@ varcomp(fx, test = TRUE)
 set.seed(2)
 da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
 da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
-fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da)
 anova(fa)$smooth
 
 ## 5. A basis of your own (checked before the fit): a seasonal cycle on a straight trend
@@ -207,13 +204,13 @@ ds <- data.frame(day = 1:730)
 ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
-              data = ds, prt = FALSE)
+              data = ds)
 semipred(fs, covariate = "day")$plt
 ## 6. A tensor-product surface for two covariates on different scales (data(ozoneCalif)),
 ##    and a curve in a third
 data(ozoneCalif)
 fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
-                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif)
 anova(fo)$smooth          # a variance per penalty of the surface
 semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"))$plt
 \donttest{
@@ -223,14 +220,14 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
   fb <- semireg(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height + stunted +
                   visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-                family = binomial, data = indonRespir, prt = FALSE)
+                family = binomial, data = indonRespir)
   semipred(fb, "age", "age")$plt
 }
 
 ## 8. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
 ##    own spline deviation, one variance for all; are the subjects' curves straight lines?
 fr <- semireg(Reaction ~ s(Days, bs = "os", k = 4) + (s(Days, k = 4) | Subject),
-              data = lme4::sleepstudy, prt = FALSE)
+              data = lme4::sleepstudy)
 anova(fr)$smooth
 
 ## 9. Curves by group, the price of apartments in Warsaw by district (HRW::WarsawApts)
@@ -238,7 +235,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(WarsawApts, package = "HRW")
   WarsawApts$district <- factor(WarsawApts$district)
   fw <- semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
-                data = WarsawApts, prt = FALSE)
+                data = WarsawApts)
   semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"))$plt
   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 }

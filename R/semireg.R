@@ -86,15 +86,13 @@
 #' \code{s(x, bs = "user", xt = list(basis = f))}; \code{smZ(x, drv = 1)} (the derivative of the basis) is
 #' \code{semipred(..., deriv = 1)}. The fits are the same (\code{vignette("smooth")}).
 #' @usage
-#' semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
-#'         smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-#'         control = lmerControl(optimizer="nloptwrap"), start = NULL, 
-#'         verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
-#'         offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
+#' semireg(formula, data, family = NULL, REML = TRUE, smoothZ = list(), ncenter = TRUE,
+#'         nscale = FALSE, resp_scale = FALSE, control = lmerControl(optimizer = "nloptwrap"),
+#'         start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+#'         offset, contrasts = NULL, ...)
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
 #' @param data A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula and smoothZ), typically the environment from which semireg is called.
 #' @param family A GLM family, see glm and family.
-#' @param ngbinomial Logical scalar - Should a negative binomial GLMMs be used?                  .
 #' @param REML Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?
 #' @param smoothZ Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
 #' smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.
@@ -109,9 +107,11 @@
 #' @param weights An optional vector of <e2><80><98>prior weights<e2><80><99> to be used in the fitting process. Should be NULL or a numeric vector.
 #' @param offset This can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. One or more offset terms can be included in the formula instead or as well, and if more than one is specified their sum is used. See model.offset.
 #' @param contrasts An optional list. See the contrasts.arg of model.matrix.default.
-#' @param prt Logical scalar - Should the info to be print on screen in the middle of the process or not?
-#' @param predict_info Logical scalar - Should provide the info for function semipred or not?
-#' @param ... Further arguments for passing on to model setup routines.
+#' @param ... Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{prt},
+#'   \code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
+#'   (\code{print(fit$semer)}). For a negative binomial model use \code{\link{semireg_tmb}(family =
+#'   glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Poisson fit, which is not the
+#'   maximum-likelihood fit.
 #' @return
 #' \item{semer}{A mer model used in the fitting.}
 #' \item{data}{A data.frame with generated variables in the fitting.}
@@ -149,7 +149,7 @@
 #' ##    fixed terms QB + QB:pressure are added automatically
 #' data(Dialyzer, package = "nlme")
 #' fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-#'               data = Dialyzer, prt = FALSE)
+#'               data = Dialyzer)
 #' anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test of each smooth
 #' varcomp(fm)     # variance components, the smooths' among them
 #' predictmeans(fm, "QB", covariate = c(pressure = 1))$means
@@ -162,7 +162,7 @@
 #' sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] +
 #'   rnorm(18, 0, 0.3)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
 #' fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
-#'                data = sp, prt = FALSE)
+#'                data = sp)
 #' predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)$pairs
 #'
 #' ## 3. Two crossed factors: a common curve and deviation curves for f1, f2 and f1:f2, each
@@ -171,7 +171,7 @@
 #' dx <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = factor(c("u", "v")),
 #'                   rep = 1:3)
 #' dx$y <- sin(2*pi*dx$x) + (dx$f1 == "q")*sin(pi*dx$x)^2 + rnorm(nrow(dx), 0, 0.2)
-#' fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx, prt = FALSE)
+#' fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx)
 #' varcomp(fx, test = TRUE)
 #'
 #' ## 4. An additive model with a varying coefficient: a smooth in x1, and the effect of z
@@ -179,7 +179,7 @@
 #' set.seed(2)
 #' da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
 #' da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
-#' fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+#' fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da)
 #' anova(fa)$smooth
 #'
 #' ## 5. A basis of your own (checked before the fit): a seasonal cycle on a straight trend
@@ -188,13 +188,13 @@
 #' ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 #' season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 #' fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
-#'               data = ds, prt = FALSE)
+#'               data = ds)
 #' semipred(fs, covariate = "day")$plt
 #' ## 6. A tensor-product surface for two covariates on different scales (data(ozoneCalif)),
 #' ##    and a curve in a third
 #' data(ozoneCalif)
 #' fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
-#'                 s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+#'                 s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif)
 #' anova(fo)$smooth          # a variance per penalty of the surface
 #' semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"))$plt
 #' \donttest{
@@ -204,14 +204,14 @@
 #'   data(indonRespir, package = "HRW")
 #'   fb <- semireg(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height + stunted +
 #'                   visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-#'                 family = binomial, data = indonRespir, prt = FALSE)
+#'                 family = binomial, data = indonRespir)
 #'   semipred(fb, "age", "age")$plt
 #' }
 #'
 #' ## 8. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
 #' ##    own spline deviation, one variance for all; are the subjects' curves straight lines?
 #' fr <- semireg(Reaction ~ s(Days, bs = "os", k = 4) + (s(Days, k = 4) | Subject),
-#'               data = lme4::sleepstudy, prt = FALSE)
+#'               data = lme4::sleepstudy)
 #' anova(fr)$smooth
 #'
 #' ## 9. Curves by group, the price of apartments in Warsaw by district (HRW::WarsawApts)
@@ -219,7 +219,7 @@
 #'   data(WarsawApts, package = "HRW")
 #'   WarsawApts$district <- factor(WarsawApts$district)
 #'   fw <- semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
-#'                 data = WarsawApts, prt = FALSE)
+#'                 data = WarsawApts)
 #'   semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"))$plt
 #'   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 #' }
@@ -227,13 +227,28 @@
 #' @name semireg
 NULL
 
-semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
-                     smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-                     control = lmerControl(optimizer="nloptwrap"), start = NULL, 
-                     verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
-                     offset, contrasts = NULL, prt=TRUE, predict_info=TRUE, ...)
+semireg <- function(formula, data, family = NULL, REML = TRUE, smoothZ = list(), ncenter = TRUE, nscale = FALSE,
+                    resp_scale = FALSE, control = lmerControl(optimizer = "nloptwrap"), start = NULL, verbose = FALSE,
+                    drop.unused.levels = TRUE, subset, weights, offset, contrasts = NULL, ...)
+{
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("semireg", match.call(), formals_of = formals(sys.function()))
+  mc <- match.call()
+  mc[[1]] <- pm_semireg_lme4
+  eval(mc, parent.frame())
+}
+
+## The fit of semireg(). The package's own refits (update(), anova(),
+## variance-component tests) call it with predict_info = FALSE: the
+## covariance of the smooth coefficients is not needed there.
+pm_semireg_lme4 <- function(formula, data, family = NULL, REML = TRUE,
+                            smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE,
+                            control = lmerControl(optimizer="nloptwrap"), start = NULL,
+                            verbose = FALSE, drop.unused.levels=TRUE, subset, weights,
+                            offset, contrasts = NULL, predict_info=TRUE, ...)
 {
   mc <- match.call()
+  mc[[1]] <- as.name("semireg")
   env <- parent.frame()
   environment(formula) <- env
   mc$formula <- formula
@@ -258,22 +273,17 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
     if (!inherits(family, "family")) stop("unknown family type")
     gaus <- family$family == "gaussian" && family$link == "identity"
   }  
-  if (ngbinomial) gaus <- FALSE       # a negative binomial GLMM (theta by ML, R/semireg-engine.R)
-  
+
   lmerc <- mc                         # the call to lmer / glmer
   lmerc[[1]] <- if (gaus) as.name("lmer") else as.name("glmer")
-  if (ngbinomial) {
-    lmerc[[1]] <- as.name("glmer")
-    lmerc$family <- poisson()
-  }
-  lmerc <- lmerc[!names(lmerc) %in% c("smoothZ", "ncenter", "nscale", "resp_scale", "ngbinomial", "prt", "predict_info")]
+  lmerc <- lmerc[!names(lmerc) %in% c("smoothZ", "ncenter", "nscale", "resp_scale", "predict_info")]
   if (!gaus) lmerc$REML <- NULL
   if (!length(st$Zt))                 # no smooth: lmer / glmer itself
     return(eval.parent(lmerc))
   lmerc$formula <- st$formula
 
   # the structure without fitting, the smooth designs in Z, one fit
-  fit <- pm_sr_fit_lme4(lmerc, st, gaus, family, ngbinomial, control, start, verbose, drop.unused.levels, mc, env, ...)
+  fit <- pm_sr_fit_lme4(lmerc, st, gaus, family, control, start, verbose, drop.unused.levels, mc, env, ...)
   semer <- fit$semer
   if (gaus) {
     # an lmerMod that keeps the deviance function of the fitted model (with
@@ -289,8 +299,6 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
                                               data = st$data, smoothZ = st$smoothZN,
                                               formula = st$formula, REML = isTRUE(REML), control = control))
   }
-  if (prt) print(semer)
-
   info <- NULL
   if (predict_info) {
     Z <- getME(semer, "Z")
@@ -302,7 +310,7 @@ semireg <- function(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
   }
   # what a refit needs (tests of the smooth terms, anova.semireg())
   refit <- list(engine = "lme4", formula = st$formula, data = st$data, smoothZ = st$smoothZN,
-                family = if (gaus || ngbinomial) NULL else family, ngbinomial = ngbinomial, REML = REML,
+                family = if (gaus) NULL else family, REML = REML,
                 control = control, weights = semer@resp$weights,
                 offset = if (any(semer@resp$offset != 0)) semer@resp$offset)
   pm_sr_result(semer, st, mc, info, list(lmerc = lmerc, devfun0 = fit$devfun0, refit = refit))
@@ -341,8 +349,8 @@ update.semerMod <- function(object, formula = NULL, ...) {
   f_new <- stats::as.formula(paste(paste(deparse(f[[2]]), collapse = ""), "~", rhs), env = e)
   e$sr_data <- info$data
   e$sr_Z <- info$smoothZ[keep]
-  cl <- call("semireg", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = info$REML,
-             ncenter = FALSE, nscale = FALSE, prt = FALSE, predict_info = FALSE)
+  cl <- call("pm_semireg_lme4", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = info$REML,
+             ncenter = FALSE, nscale = FALSE, predict_info = FALSE)
   fit <- suppressMessages(suppressWarnings(eval(cl, e)))
   if (is.list(fit) && !is.null(fit$semer)) fit$semer else fit
 }

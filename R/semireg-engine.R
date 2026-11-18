@@ -124,7 +124,7 @@ pm_sr_call_for <- function(cl, fn, drop = character(0)) {
 ## Zt, one fit. 'lmerc' is the [g]lmer call of the front end (formula with
 ## placeholders). Returns the merMod and, for a gaussian fit, the deviance
 ## function that goes with it (Satterthwaite df and varcomp() need it).
-pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, ngbinomial, control, start, verbose, drop.unused.levels, mc, env,
+pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, control, start, verbose, drop.unused.levels, mc, env,
                            ...) {
   fc <- lmerc
   fc$formula <- st$formula
@@ -133,7 +133,7 @@ pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, ngbinomial, control, start, 
     fc <- pm_sr_call_for(fc, lme4::lFormula)
   } else {
     fc[[1]] <- quote(lme4::glFormula)
-    fc$family <- if (ngbinomial) stats::poisson() else family
+    fc$family <- family
     fc <- pm_sr_call_for(fc, lme4::glFormula, drop = "start")
   }
   lf <- suppressWarnings(pm_sr_eval(fc, st$data, env))
@@ -149,16 +149,6 @@ pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, ngbinomial, control, start, 
     opt <- lme4::optimizeGlmer(devfun, stage = 2, start = start, verbose = verbose, optimizer = control$optimizer,
                                control = control$optCtrl, ...)
     lme4::mkMerMod(environment(devfun), opt, reTrms, lf$fr, mc)
-  }
-  if (ngbinomial) {
-    # negative binomial: theta by ML from a Poisson fit, then the fit with it
-    semer1 <- glmm_fit(stats::poisson())
-    Y <- stats::model.response(stats::model.frame(semer1))
-    mu <- stats::na.omit(stats::fitted(semer1))
-    theta_v <- MASS::theta.ml(Y, mu, weights = semer1@resp$weights, limit = 20)
-    fam <- MASS::negative.binomial(theta = theta_v)
-    return(list(semer = glmm_fit(fam), devfun = NULL, devfun0 = function() do.call(lme4::mkGlmerDevfun,
-                                                                                    c(dfl, list(family = fam)))))
   }
   # GLMMs: a builder of the stage-1 deviance (a function of theta, with beta
   # and u by PIRLS) for the smoothing-parameter correction (pm_sr_uncond())

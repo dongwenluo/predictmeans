@@ -25,7 +25,7 @@ test_that("golden examples: additive models, thin-plate surfaces, additive mixed
   # addMix: O'Sullivan spline + binary covariate + random intercept (Smith and Wand, 2008)
   d <- ref$addMix$data
   d$id <- factor(d$id); d$t <- d$s
-  fm <- q(semireg(y ~ x + s(t, bs = "os", k = 15, xt = list(range = c(0, 1))) + (1 | id), data = d, prt = FALSE))
+  fm <- q(semireg(y ~ x + s(t, bs = "os", k = 15, xt = list(range = c(0, 1))) + (1 | id), data = d))
   expect_same_fit(fm, ref$addMix, d$y, "addMix")
   expect_equal(lme4::fixef(fm$semer)[["x"]], ref$addMix$x_effect, tolerance = 1e-5)
   expect_equal(sqrt(diag(as.matrix(vcov(fm$semer))))[["x"]], ref$addMix$x_se, tolerance = 1e-4)
@@ -37,7 +37,7 @@ test_that("golden examples: additive models, thin-plate surfaces, additive mixed
   zk <- seq(80, 120, by = 5)
   rz <- range(copper$zcoord)
   fm <- q(semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = kn)) +
-                    s(zcoord, bs = "os", xt = list(knots = zk, range = rz)), data = copper, prt = FALSE))
+                    s(zcoord, bs = "os", xt = list(knots = zk, range = rz)), data = copper))
   expect_same_fit(fm, ref$copper, copper$grade, "copper")
 
   # ozoneCalifLMM: three O'Sullivan splines, range of the data
@@ -46,14 +46,14 @@ test_that("golden examples: additive models, thin-plate surfaces, additive mixed
   r3 <- range(oz$inversion.base.temp)
   fm <- q(semireg(ozone ~ s(inversion.base.height, bs = "os", k = 15, xt = list(range = r1)) +
                     s(daggett.pressure.gradient, bs = "os", k = 15, xt = list(range = r2)) +
-                    s(inversion.base.temp, bs = "os", k = 15, xt = list(range = r3)), data = oz, prt = FALSE))
+                    s(inversion.base.temp, bs = "os", k = 15, xt = list(range = r3)), data = oz))
   expect_same_fit(fm, ref$ozoneCalifLMM, oz$ozone, "ozoneCalifLMM")
 
   # scallop: thin-plate surface of asinh(catch)
   sc <- gdata("scallop.txt", header = TRUE)
   sc$z <- asinh(sc$tot.catch)
   sk <- as.matrix(gdata("scallopKnots.txt"))
-  fm <- q(semireg(z ~ s(longitude, latitude, bs = "ztps", xt = list(knots = sk)), data = sc, prt = FALSE))
+  fm <- q(semireg(z ~ s(longitude, latitude, bs = "ztps", xt = list(knots = sk)), data = sc))
   expect_same_fit(fm, ref$scallop, sc$z, "scallop")
 })
 
@@ -64,7 +64,7 @@ test_that("golden example growthIndiana: mean curve + subject curves (s(age) | i
   d <- gi[gi$male == 1 & gi$black == 1, ]
   d$idnum <- factor(match(d$idnum, unique(d$idnum)))
   fm <- q(semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-                    (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = d, prt = FALSE))
+                    (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = d))
   expect_same_fit(fm, ref$growthIndiana, d$height, "growthIndiana")
   # (age | idnum) is a correlated intercept and slope per boy, as pdSymm(~age)
   vc <- as.data.frame(lme4::VarCorr(fm$semer))
@@ -79,14 +79,14 @@ test_that("golden examples fitted by gamm() and gam(): semireg() equals gam(meth
   # SBMDfem: gamm(s(age) + ethnicity, random intercept); gamm's lme stops short of the REML optimum
   sb <- gdata("SBMDfem.txt", header = TRUE)
   sb$idnum <- factor(sb$idnum)
-  fm <- q(semireg(spnbmd ~ s(age) + black + hispanic + white + (1 | idnum), data = sb, prt = FALSE))
+  fm <- q(semireg(spnbmd ~ s(age) + black + hispanic + white + (1 | idnum), data = sb))
   g <- mgcv::gam(spnbmd ~ s(age) + black + hispanic + white + s(idnum, bs = "re"), data = sb, method = "REML")
   expect_lt(max(abs(fitted(fm$semer) - fitted(g)))/stats::sd(sb$spnbmd), 1e-5)
   expect_lt(max(abs(fitted(fm$semer) - ref$SBMDfem$fitted))/stats::sd(sb$spnbmd), 5e-3)
   # ozoneCalifGAM: the script's gam uses GCV; semireg is REML
   oz <- gdata("ozoneCalif.txt", header = TRUE)
   fm <- q(semireg(ozone ~ s(inversion.base.height) + s(daggett.pressure.gradient) + s(inversion.base.temp),
-                  data = oz, prt = FALSE))
+                  data = oz))
   expect_lt(max(abs(fitted(fm$semer) - ref$ozoneCalifGAM$fitted_reml))/stats::sd(oz$ozone), 1e-5)
 })
 

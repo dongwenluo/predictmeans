@@ -96,7 +96,7 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
 
 test_that("semipred(): the layout of predictmeans(); the simultaneous band in adj.conf.*, with p.adj that agrees", {
   data(Dialyzer, package = "nlme")
-  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer, prt = FALSE)
+  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
   out <- semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
   expect_null(grDevices::dev.list())                     # nothing drawn
@@ -148,7 +148,7 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   set.seed(4)
   db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
   db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x + rnorm(12, 0, 0.5)[db$cl]))
-  fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db, prt = FALSE)
+  fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db)
   b <- semipred(fb, "g", "x", at = c(0.2, 0.5, 0.8))
   m <- b$means
   expect_equal(m$response, plogis(m$estimate))
@@ -164,8 +164,7 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   expect_equal(bc$pairs$response.conf.high, bc$pred_df$response.UL)
   # a surface inside semiboundary(): the rows of pred_df
   data(copper)
-  fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6), data = copper,
-                 prt = FALSE)
+  fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6), data = copper)
   s2 <- semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, boundary = TRUE)
   expect_equal(nrow(s2$means), nrow(s2$pred_df))
   expect_equal(s2$means$response, s2$pred_df$Trans_y)
