@@ -151,6 +151,9 @@ end.
 | semireg | control | `bobyqa` | `nloptwrap` |
 | residplot | id | FALSE | 3 |
 
+Step 6: `vignette("migrating")` lists every row above that is not "keep",
+with old and new code side by side; `dev/check-migrating.R` runs it.
+
 ## Size of the change
 
 About 45 arguments and 7 functions (`semireg_tmb`, `smZ`, `permglmer`,

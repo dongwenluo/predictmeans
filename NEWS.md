@@ -108,6 +108,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     intervals (its engine is now internal). The overview article's 83.4%
     letters along the dose became letters at a dose from `letterCI`. 12 calls
     of `dev/snapshot-diag.R` written both ways give identical results.
+  - The migration guide in full (step 6): `vignette("migrating")` shows the
+    1.1.1 and 2.0 code side by side for every changed call (means, covariates
+    and curves, permutation tests, diagnostics, smooth models), one table of
+    every changed argument and function, the defaults and the numbers that
+    change. `dev/check-migrating.R` runs each 2.0 line and checks that each
+    1.1.1 line stops with the 2.0 spelling.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
