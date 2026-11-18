@@ -1974,6 +1974,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* `R/defunct.R`: one table of the arguments and functions removed in 2.0 with their 2.0 spelling; `pm_defunct()` stops a call that names one (with the value given, e.g. `level = 0.05` -> `conf.level = 0.95`), `pm_defunct_fun()` is the body of a removed function. A test checks that no removed name can be partially matched to a remaining argument.
 * `dev/review-options.md`: inventory of every argument of 1.1.1 and 2.0 (keep, rename, merge, remove) for the clean-up of the options before 2.0.
 * Shorter empty-cell messages: the confounding warning (about 450
   characters) now names the two factors and the three ways to state the
