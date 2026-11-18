@@ -4,28 +4,18 @@
 \alias{semireg}
 \title{Fitting Semi Parametric Models Using lme4 Ecosystem}
 \usage{
-semireg(formula, data, family = NULL, REML = TRUE, smoothZ = list(), ncenter = TRUE,
-        nscale = FALSE, resp_scale = FALSE, control = lmerControl(optimizer = "nloptwrap"),
+semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
         start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
         offset, contrasts = NULL, ...)
 }
 \arguments{
 \item{formula}{A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.}
 
-\item{data}{A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula and smoothZ), typically the environment from which semireg is called.}
+\item{data}{A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula), typically the environment from which semireg is called.}
 
 \item{family}{A GLM family, see glm and family.}
 
 \item{REML}{Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?}
-
-\item{smoothZ}{Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
-smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.}
-
-\item{ncenter}{Logical scalar - Should the numeric predictors to be centered or not?}
-
-\item{nscale}{Logical scalar - Should the numeric predictors to be scaled or not?}
-
-\item{resp_scale}{Logical scalar - Should the response be involved in the scaling action or not?}
 
 \item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.}
 
@@ -43,8 +33,8 @@ smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ..
 
 \item{contrasts}{An optional list. See the contrasts.arg of model.matrix.default.}
 
-\item{...}{Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{prt},
-\code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
+\item{...}{Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{smoothZ},
+\code{ncenter}, \code{nscale}, \code{resp_scale}, \code{prt}, \code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
 (\code{print(fit$semer)}). For a negative binomial model use \code{\link{semireg_tmb}(family =
 glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Poisson fit, which is not the
 maximum-likelihood fit.}
@@ -53,16 +43,12 @@ maximum-likelihood fit.}
 \item{semer}{A mer model used in the fitting.}
 \item{data}{A data.frame with generated variables in the fitting.}
 \item{fomul_vars}{Name of variables in the formula of semireg model.}
-\item{sm_vars}{Name of variables in the smoothZ list.}
-\item{smoothZ_call}{A call used to produce smooth terms in the fitting.}
-\item{knots_lst}{Knots used in each smooth term in the fitting.}
-\item{range_lst}{Range of covariate used in each smooth term in the fitting.}
+\item{sm_vars}{Names of the variables of the smooths.}
 \item{cov_lst}{Covariance matrix list for each smooth term.}
 \item{u_lst}{Random effects list for each smooth term.} 
-\item{type_lst}{Smooth type list of smooth terms.} 
 \item{CovMat}{Covariance matrix for all smooth terms.}
 \item{Cov_ind}{Covariance matrix index for each smooth term.}
-\item{Cov_indN}{Covariance matrix index for each smooth term when \code{group=TRUE} in \code{smoothZ} argument.}
+\item{Cov_indN}{Covariance matrix index for each smooth term of several blocks (e.g. \code{s(x, by = f)}).}
 \item{df}{Degree of freedom of all random terms.}
 \item{lmerc}{Call used in the mer model in the fitting.}
 \item{smooths}{For smooths written in the formula: the mgcv smooth objects and the maps that give the random-effect
@@ -116,15 +102,14 @@ effects: \code{semipred()} and \code{predictmeans()} give the population curves 
 \code{anova()} tests whether they are needed (their variance is zero: each subject's curve is a straight line).
 The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
-\code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
-\code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)} (Wood, Scheipl and Faraway 2013), a surface for covariates on different scales,
+\code{predict.gam()}. The variables are used as they are (not centred or scaled). Tensor products: \code{t2(x1, x2)} (Wood, Scheipl and Faraway 2013), a surface for covariates on different scales,
 whose penalties (one per product of the marginal penalised and unpenalised parts; \code{full = TRUE} for more)
 are independent random effects, each with its own variance; the fixed terms \code{x1 + x2 + x1:x2} are added,
 and \code{by = f} gives a surface per level. It is set up without mgcv's sum-to-zero constraint on the whole
 product (which leaves a little of the penalised space in the unpenalised one), so its fixed part is exactly those
 terms; the fit equals \code{gam()} with that basis and its penalties, and \code{gam()}'s own \code{t2()} when there
 are no other random effects. \code{te()} is fitted as \code{t2()} (with a message): its overlapping penalties
-cannot be written as random effects; \code{ti()} is not available. Smooths are given either in the formula or in \code{smoothZ}, not both. Objects named in
+cannot be written as random effects; \code{ti()} is not available. Objects named in
 \code{s()} (e.g. \code{xt = list(knots = kn)}) are taken from the environment of the formula.
 
 A basis of your own (\code{bs = "user"}) must give the same row for the same covariate value whatever data it is
@@ -148,14 +133,10 @@ for binomial and Poisson fits. Each smooth block of a formula smooth is scaled a
 squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
 smooth block reported by \code{VarCorr()} or \code{varcomp()} is on that scale.
 
-Moving from the \code{smoothZ} form: \code{y ~ x, smoothZ = list(sm = smZ(x, k = 10))} is
-\code{y ~ s(x, bs = "os", k = 10)}; \code{smZ(x, by = f, group = TRUE)} is \code{s(x, by = f, bs = "os")};
-\code{smZ(x, by = f)} (one variance) is \code{s(x, by = f, bs = "os", id = 1)}; \code{smZ(cbind(x1, x2),
-type = "Ztps")} is \code{s(x1, x2, bs = "ztps", k = 6)} (\code{smZ()}'s default of 6 knots per axis; the default
-of \code{bs = "ztps"} is 10); \code{smZ(x, intKnots = kn, range.x = r)} is
-\code{s(x, bs = "os", xt = list(knots = kn, range = r))}; any other matrix-valued function of the covariate is
-\code{s(x, bs = "user", xt = list(basis = f))}; \code{smZ(x, drv = 1)} (the derivative of the basis) is
-\code{semipred(..., deriv = 1)}. The fits are the same (\code{vignette("smooth")}).
+Moving from 1.x: \code{smZ()} and \code{smoothZ} were removed in 2.0; \code{vignette("migrating")} shows each
+\code{smoothZ = list(sm = smZ(...))} form beside its formula form, which gives the same fit (checked in
+\code{dev/check-smz-migration.R}). The variables are no longer centred (1.x's \code{ncenter = TRUE}), which put knots
+given in the data's units (\code{smZ(x, intKnots = )}) in the wrong place.
 }
 
 \examples{

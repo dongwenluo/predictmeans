@@ -21,14 +21,10 @@ test_that("semireg_tmb() keeps ar1(), ou(), cs(), diag() terms: fit, refit for a
   for (st in c("ar1", "cs", "diag", "ou")) {
     term <- if (st == "ou") "ou(times + 0 | id)" else paste0(st, "(tf + 0 | id)")
     f1 <- stats::as.formula(paste("y ~ s(time, by = trt, bs = 'os', k = 4) +", term))
-    f2 <- stats::as.formula(paste("y ~ time*trt +", term))
     # dispformula = ~0: the structure is the residual covariance (with a
     # nugget, cs() is not identified and glmmTMB flags the Hessian)
     a <- q(semireg_tmb(f1, dispformula = ~0, data = d))
-    b <- q(semireg_tmb(f2, smoothZ = list(sm = smZ(time, k = 4, by = trt, group = TRUE)), dispformula = ~0, data = d))
     expect_true(st %in% struct_codes(a$semer), label = paste(st, "formula form"))
-    expect_true(st %in% struct_codes(b$semer), label = paste(st, "smoothZ form"))
-    expect_equal(a$semer$fit$objective, b$semer$fit$objective, tolerance = 1e-6, label = st)
     # anova()'s refit without a smooth block keeps the structure
     red <- q(pm_sr_refit(a, drop = names(a$refit$smoothZ)[1]))
     expect_true(st %in% struct_codes(red), label = paste(st, "refit"))

@@ -45,19 +45,16 @@
 #' plus the common curve plus its deviations.
 #' The fits equal \code{gam(..., method = "REML")} for gaussian models (with \code{s(g, bs = "re")} for a random
 #' intercept), and \code{semipred()} and \code{predictmeans()} give the curves, means and their standard errors of
-#' \code{predict.gam()}. The variables of formula smooths are not centred or scaled (\code{ncenter} and
-#' \code{nscale} apply to the other numeric covariates). Tensor products: \code{t2(x1, x2)}, as in \code{\link{semireg}}
-#' (\code{te()} is fitted as \code{t2()}; \code{ti()} is not available). Smooths are given either in the formula or in \code{smoothZ}, not both.
+#' \code{predict.gam()}. The variables are used as they are (not centred or scaled). Tensor products: \code{t2(x1, x2)}, as in \code{\link{semireg}}
+#' (\code{te()} is fitted as \code{t2()}; \code{ti()} is not available).
 #' @usage
-#' semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0,
+#' semireg_tmb(formula, data, family = gaussian(), ziformula = ~0,
 #'         dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action,
 #'         se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(),
 #'         REML = TRUE, start = NULL, map = NULL, sparseX = NULL, ...)
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
 #' @param data data frame (tibbles are OK) containing model variables. Not required, but strongly recommended; if \code{data} is not specified, downstream methods such as prediction with new data (\code{predict(fitted_model, newdata = ...)}) will fail. If it is necessary to call \code{glmmTMB} with model variables taken from the environment rather than from a data frame, specifying \code{data=NULL} will suppress the warning message.
 #' @param family a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.
-#' @param smoothZ Superseded since 2.0 (kept so that 1.x code runs; no new features): write the smooths in the formula instead (see \sQuote{Smooth terms in the formula}). The older form of the smooths: a list includes a set of smooth Z matrixs (called 'smooth term') used in the mixed effects model, the name of 'smooth term' should be different any variables in the model, each 'smooth term' is the result of function \code{smZ}. e.g.
-#' smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2, group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in the \code{data}, and x1 to x3 are covariates, and f1, f2 are factors.
 #' @param ziformula a \emph{one-sided} (i.e., no response variable) formula for zero-inflation combining fixed and random effects: the default \code{~0} specifies no zero-inflation. Specifying \code{~.} sets the zero-inflation formula identical to the right-hand side of \code{formula} (i.e., the conditional effects formula); terms can also be added or subtracted. \strong{When using \code{~.} as the zero-inflation formula in models where the conditional effects formula contains an offset term, the offset term will automatically be dropped}. The zero-inflation model uses a logit link.
 #' @param dispformula a \emph{one-sided} formula for dispersion containing only fixed effects: the default \code{~1} specifies the standard dispersion given any family. The argument is ignored for families that do not have a dispersion parameter. For an explanation of the dispersion parameter for each family, see \code{\link{sigma}}. The dispersion model uses a log link. In Gaussian mixed models, \code{dispformula=~0} fixes the residual variance to be 0 (actually a small non-zero value), forcing variance into the random effects. The precise value can be controlled via \code{control=glmmTMBControl(zero_dispval=...)}; the default value is \code{sqrt(.Machine$double.eps)}.
 #' @param weights weights, as in \code{glm}. Not automatically scaled to have sum 1.
@@ -80,7 +77,7 @@
 #' @param start starting values, expressed as a list with possible components \code{beta}, \code{betazi}, \code{betad} (fixed-effect parameters for conditional, zero-inflation, dispersion models); \code{b}, \code{bzi} (conditional modes for conditional and zero-inflation models); \code{theta}, \code{thetazi} (random-effect parameters, on the standard deviation/Cholesky scale, for conditional and z-i models); \code{psi} (extra family parameters, e.g., shape for Tweedie models).
 #' @param map a list specifying which parameter values should be fixed to a constant value rather than estimated. \code{map} should be a named list containing factors corresponding to a subset of the internal parameter names (see \code{start} parameter). Distinct factor values are fitted as separate parameter values, \code{NA} values are held fixed: e.g., \code{map=list(beta=factor(c(1,2,3,NA)))} would fit the first three fixed-effect parameters of the conditional model and fix the fourth parameter to its starting value. In general, users will probably want to use \code{start} to specify non-default starting values for fixed parameters. See \code{\link[TMB]{MakeADFun}} for more details.
 #' @param sparseX a named logical vector containing (possibly) elements named "cond", "zi", "disp" to indicate whether fixed-effect model matrices for particular model components should be generated as sparse matrices, e.g. \code{c(cond=TRUE)}. Default is all \code{FALSE}
-#' @param ... Not used: arguments removed in 2.0 (\code{prt}, \code{predict_info}) stop with their 2.0 spelling;
+#' @param ... Not used: arguments removed in 2.0 (\code{smoothZ}, \code{prt}, \code{predict_info}) stop with their 2.0 spelling;
 #'   nothing is printed during the fit (\code{print(fit$semer)}).
 #' @section Zero inflation (glmmTMB):
 #' For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
@@ -94,16 +91,12 @@
 #' \item{semer}{A glmmTMB model used in the fitting.}
 #' \item{data}{A data.frame with generated variables in the fitting.}
 #' \item{fomul_vars}{Name of variables in the formula of semireg_tmb model.}
-#' \item{sm_vars}{Name of variables in the smoothZ list.}
-#' \item{smoothZ_call}{A call used to produce smooth terms in the fitting.}
-#' \item{knots_lst}{Knots used in each smooth term in the fitting.}
-#' \item{range_lst}{Range of covariate used in each smooth term in the fitting.}
+#' \item{sm_vars}{Names of the variables of the smooths.}
 #' \item{cov_lst}{Covariance matrix list for each smooth term.}
 #' \item{u_lst}{Random effects list for each smooth term.} 
-#' \item{type_lst}{Smooth type list of smooth terms.} 
 #' \item{CovMat}{Covariance matrix for all smooth terms.}
 #' \item{Cov_ind}{Covariance matrix index for each smooth term.}
-#' \item{Cov_indN}{Covariance matrix index for each smooth term when \code{group=TRUE} in \code{smoothZ} argument.}
+#' \item{Cov_indN}{Covariance matrix index for each smooth term of several blocks (e.g. \code{s(x, by = f)}).}
 #' \item{df}{Degree of freedom of all random terms.}
 #' \item{tmbf}{The glmmTMB model result using doFit=FALSE.}
 #' @references
@@ -151,8 +144,7 @@
 #' @name semireg_tmb
 NULL
 
-semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, dispformula = ~1,
-                        weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
+semireg_tmb <- function(formula, data, family = gaussian(), ziformula = ~0, dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
                         verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE,
                         start = NULL, map = NULL, sparseX = NULL, ...)
 {
@@ -163,8 +155,8 @@ semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), zi
   eval(mc, parent.frame())
 }
 
-## The fit of semireg_tmb(). The package's own refits call it with
-## predict_info = FALSE.
+## The fit of semireg_tmb(). The package's own refits call it with the
+## smooth blocks of the fit already built ('smoothZ') and predict_info = FALSE.
 pm_semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, dispformula = ~1,
                            weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
                            verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE,
@@ -238,7 +230,7 @@ pm_semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(),
     # extra zeros (covariances 5-20% too small); the covariance of (beta, b)
     # given the other parameters is then taken from TMB's joint precision
     Vzi <- if (is.null(pm_zi_component(semer))) NULL else pm_tmb_cond_cov(semer, ncol(Z)) / stats::sigma(semer)^2
-    info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), st$smoothZm, V = Vzi)
+    info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), V = Vzi)
   }
   mi <- semer$modelInfo
   refit <- list(engine = "glmmTMB", formula = st$formula, data = st$data, smoothZ = st$smoothZN,

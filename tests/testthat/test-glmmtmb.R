@@ -90,17 +90,15 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   data(WarsawApts, package = "HRW", envir = environment())
   W <- WarsawApts
   W$district <- factor(W$district)
-  fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date,
-           smoothZ = list(grp = smZ(construction.date, k = 25)),
-           data = W))
+  fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = W))
   sp <- semipred(fit, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp$SE)) && all(sp$SE > 0))
   r2 <- R2_glmm(fit$semer)
   expect_true(all(is.finite(as.numeric(sub("%", "", r2)))))
   # with a correlated random term as well
   W$surf <- as.numeric(scale(W$surface))
-  fit2 <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date + surf + (surf | district),
-           smoothZ = list(grp = smZ(construction.date, k = 10)), data = W))
+  fit2 <- suppressWarnings(semireg_tmb(areaPerMzloty ~ s(construction.date, bs = "os", k = 10) + surf +
+                                         (surf | district), data = W))
   sp2 <- semipred(fit2, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp2$SE)) && all(sp2$SE > 0))
 })

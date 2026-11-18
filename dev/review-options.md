@@ -102,7 +102,7 @@ end.
 | Argument | Proposal | 2.0 spelling |
 |---|---|---|
 | semireg_tmb() | keep (D5) | |
-| smZ(), smoothZ | remove (D9) | `s(x, bs = "os")` etc. in the formula |
+| smZ(), smoothZ | removed (D9, step 3c; side-by-side code in `vignette("migrating")`) | `s(x, bs = "os")` etc. in the formula |
 | ncenter, nscale, resp_scale | remove (scaling only served `smoothZ`; formula smooths are location-invariant) | none |
 | ngbinomial | remove (not the ML fit) | `semireg_tmb(family = glmmTMB::nbinom2)` |
 | prt | remove (D10) | `print(fit)` / `summary(fit)` |

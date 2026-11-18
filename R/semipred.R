@@ -258,16 +258,9 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   mod_df <- semireg$data
   if (isFALSE(boundary)) boundary <- NULL
   if (isTRUE(boundary)) {
-    # the region covered by the data (semiboundary()), in the covariates' units
+    # the region covered by the data (semiboundary())
     if (length(covariate) != 2) stop("'boundary = TRUE' needs two covariates.", call. = FALSE)
-    bx <- mod_df[, covariate]
-    for (i in covariate) {
-      s <- attr(mod_df, paste(i, "sd", sep = "_"))
-      m <- attr(mod_df, paste(i, "mean", sep = "_"))
-      if (!is.null(s)) bx[[i]] <- bx[[i]] * s
-      if (!is.null(m)) bx[[i]] <- bx[[i]] + m
-    }
-    boundary <- semiboundary(bx)
+    boundary <- semiboundary(mod_df[, covariate])
   }
   if (!is.null(contr)) {
     trans <- NULL
@@ -290,22 +283,9 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
     }
   }
   
-  if (!is.null(covariateV)){
-    if (length(covariate) > 1) {
-      stopifnot(is.matrix(covariateV), dim(covariateV)[2] == length(covariate))
-      colnames(covariateV) <- covariate
-    }
-    
-    for (i in covariate) {
-      if (!is.null(attr(mod_df, paste(i, "mean", sep="_")))) {
-        if (!is.matrix(covariateV)) covariateV <- covariateV-attr(mod_df, paste(i, "mean", sep="_"))
-        else covariateV[,i] <- covariateV[,i]-attr(mod_df, paste(i, "mean", sep="_"))
-      }
-      if (!is.null(attr(mod_df, paste(i, "sd", sep="_")))) {
-        if (length(covariate) ==1) covariateV <- covariateV/attr(mod_df, paste(i, "sd", sep="_"))
-        else covariateV[,i] <- covariateV[,i]/attr(mod_df, paste(i, "sd", sep="_"))
-      } 
-    }
+  if (!is.null(covariateV) && length(covariate) > 1) {
+    stopifnot(is.matrix(covariateV), dim(covariateV)[2] == length(covariate))
+    colnames(covariateV) <- covariate
   }
   
   des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = unconditional)
@@ -413,37 +393,6 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   pred_df$LL <- LL
   pred_df$UL <- UL
   
-  # Undo semireg()'s centring and scaling. Numeric covariates that are not in
-  # the prediction grid (averaged over) are only in mod_df.
-  if (!is.null(attr(mod_df, "numeric_var"))) {
-    for (i in attr(mod_df, "numeric_var")) {
-      in_pred <- i %in% names(pred_df)
-      if (!is.null(attr(mod_df, paste(i, "sd", sep="_")))) {
-        mod_df[[i]] <- mod_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
-        if (in_pred) pred_df[[i]] <- pred_df[[i]]*attr(mod_df, paste(i, "sd", sep="_"))
-      }
-
-      if (!is.null(attr(mod_df, paste(i, "mean", sep="_")))) {
-        mod_df[[i]] <- mod_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
-        if (in_pred) pred_df[[i]] <- pred_df[[i]]+attr(mod_df, paste(i, "mean", sep="_"))
-      }
-    }
-  }
-  
-  if (!is.null(attr(mod_df, paste(response, "sd", sep="_")))) {
-    pred_df$LL <- pred_df$LL*attr(mod_df, paste(response, "sd", sep="_")) 
-    pred_df$UL <- pred_df$UL*attr(mod_df, paste(response, "sd", sep="_")) 
-    if (deriv > 0) {
-      pred_df[[response]] <- pred_df[[response]]*attr(mod_df, paste(response, "sd", sep="_"))
-      pred_df$SE <- pred_df$SE*attr(mod_df, paste(response, "sd", sep="_"))
-    }
-  }
-  
-  if (deriv == 0 && !is.null(attr(mod_df, paste(response, "mean", sep="_")))) {
-    pred_df$LL <- pred_df$LL+attr(mod_df, paste(response, "mean", sep="_")) 
-    pred_df$UL <- pred_df$UL+attr(mod_df, paste(response, "mean", sep="_")) 
-  }
-  
   for (i in names(pred_df)){
     if (is(pred_df[,i], "AsIs")) pred_df[,i] <- as.numeric(pred_df[,i])
   }
@@ -544,11 +493,6 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
           res <- pm_diff_table(plt_df_contr[[covariate]], D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
                                h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
                                kind = if (glmm) switch(fam$link, log = "ratio", logit = "odds.ratio", "none") else "none")
-          # semireg() may have standardised the response of a linear model
-          y_sd <- attr(mod_df, paste(response, "sd", sep = "_"))
-          if (!glmm && !is.null(y_sd)) {
-            for (cn in c("diff", "ses", "LL", "UL")) res$table[[cn]] <- res$table[[cn]]*y_sd
-          }
           band_c <- if (simultaneous) "simultaneous" else "pointwise"
           plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
                               typical = glmm, style = sty)
@@ -640,10 +584,6 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
                                h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
                                kind = if (glmm) switch(fam$link, log = "ratio", logit = "odds.ratio", "none") else "none")
           tab <- res$table
-          y_sd <- attr(mod_df, paste(response, "sd", sep = "_"))
-          if (!glmm && !is.null(y_sd)) {
-            for (cn in c("diff", "ses", "LL", "UL")) tab[[cn]] <- tab[[cn]]*y_sd
-          }
           pairs_tab <- pm_diff_pairs(tab, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
                                      crit_s = if (simultaneous) crit_c,
                                      p_adj = if (simultaneous) pm_sim_padj(sim_c, tab$diff/tab$ses, df_c),
@@ -809,90 +749,31 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     }
     V
   }
-  if (!is.null(semireg$smooths)) {
-    # smooths written in the formula: the blocks by name, their design for the
-    # grid from the stored mgcv smooth objects (R/semireg-smooth.R); random
-    # curves (s(x) | g) are random effects, not part of the population curves
-    blk <- intersect(names(semireg$u_lst), names(semireg$smooths$maps))
-    if (is.null(sm_term)) sm_term <- blk
-    bad <- setdiff(sm_term, blk)
-    if (length(bad)) stop("'sm_term' must be among the smooth blocks: ", paste(blk, collapse = ", "), call. = FALSE)
-    blocks <- blk[blk %in% sm_term]
-    sm_Cov <- cov_of(blocks)
-    smooth_basis <- function(nd) do.call(cbind, pm_sm_predict(semireg$smooths, nd, blocks))
-    ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
-    D_mx <- cbind(K, ZN)
-    beta_u <- c(betaHat, do.call("c", unname(semireg$u_lst[blocks])))
-    return(list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
-                response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
-                cov_idx = cov_idx(blocks),
-                sm_term = blocks))
+  if (is.null(semireg$smooths)) {
+    stop("This fit has its smooths in 'smoothZ' (smZ(), before 2.0): refit it with the smooths in the formula ",
+         "(see vignette(\"migrating\")).", call. = FALSE)
   }
-  # the smoothZ form: terms are the names of the smoothZ list; a term with
-  # group = TRUE has a block per level (named term.level)
-  blk <- names(semireg$u_lst)
-  grp <- sub("\\..*", "", blk)
-  terms_all <- intersect(names(as.list(semireg$smoothZ_call))[-1], grp)
-  if (is.null(sm_term)) sm_term <- terms_all
-  bad <- setdiff(sm_term, c(terms_all, blk))
-  if (length(bad)) stop("'sm_term' must be among the smooth terms: ", paste(terms_all, collapse = ", "), call. = FALSE)
-  blocks <- blk[grp %in% sm_term | blk %in% sm_term]
-  sm_term <- intersect(terms_all, unique(sub("\\..*", "", blocks)))
+  # the blocks by name, their design for the grid from the stored mgcv smooth
+  # objects (R/semireg-smooth.R); random curves (s(x) | g) are random
+  # effects, not part of the population curves
+  blk <- intersect(names(semireg$u_lst), names(semireg$smooths$maps))
+  if (is.null(sm_term)) sm_term <- blk
+  bad <- setdiff(sm_term, blk)
+  if (length(bad)) stop("'sm_term' must be among the smooth blocks: ", paste(blk, collapse = ", "), call. = FALSE)
+  blocks <- blk[blk %in% sm_term]
   sm_Cov <- cov_of(blocks)
-  u_lst <- semireg$u_lst[blocks]
-
-  knots_lst <- semireg$knots_lst[sm_term]
-  range_lst <- semireg$range_lst[sm_term] 
-  type_lst <- semireg$type_lst[sm_term]  
-  call_lst <- as.list(semireg$smoothZ_call)[sm_term]
-  
-  call_lstN <- Z_lstN <- vector("list", length(call_lst))
-  names(call_lstN) <- names(Z_lstN) <- sm_term 
-  
-  for (i in sm_term) {
-    xcall_lst  <- as.list(call_lst[[i]])
-    if (!is.null(xcall_lst$type) && xcall_lst$type=="smspline") xcall_lst$pred <- TRUE
-    if (!is.null(xcall_lst$k)) xcall_lst$k <- NULL
-    if (!is.null(range_lst[[i]]) && type_lst[[i]]!="Ztps") xcall_lst$range.x <- range_lst[[i]]
-    xcall_lst$intKnots <- knots_lst[[i]]
-    call_lstN[[i]] <- as.call(xcall_lst) 
-  }  
-  
-  # Smooth basis for a set of grid rows, in the order of the random effects.
-  smooth_basis <- function(nd) {
-    for (i in sm_term) {
-      Z_lstN[[i]] <- with(nd, eval(call_lstN[[i]]))
-    }
-
-    Z_lstNN <- list()
-    for (i in sm_term){
-      if (is.list(Z_lstN[[i]])) Z_lstNN <- c(Z_lstNN, unlist(Z_lstN[i], recursive=FALSE)) else Z_lstNN <- c(Z_lstNN, Z_lstN[i])
-    }
-
-    Z_lstNN <- Z_lstNN[blocks]
-    do.call("cbind", Z_lstNN)
-  }
-
-  # Evaluate the smooth basis on the full reference grid and average it with
-  # the same weights as K, so factors that are averaged over (including 'by'
-  # factors of the smooths) are treated identically in both parts.
+  smooth_basis <- function(nd) do.call(cbind, pm_sm_predict(semireg$smooths, nd, blocks))
   ZN <- pm_refgrid_average(KK$refgrid, smooth_basis)
-  D_mx <- cbind(K,ZN)
-  u_hat <- do.call("c", unname(u_lst))
-  beta_u <- c(betaHat, u_hat)
-  
   list(semer = semer, KK = KK, K = K, ZN = ZN, mod_df = mod_df, pred_df = pred_df, response = response,
-       response0 = response0, D_mx = D_mx, beta_u = beta_u, sm_Cov = sm_Cov, sig.epsHat = sig.epsHat,
-                cov_idx = cov_idx(blocks),
-       sm_term = sm_term)
+       response0 = response0, D_mx = cbind(K, ZN), beta_u = c(betaHat, do.call("c", unname(semireg$u_lst[blocks]))),
+       sm_Cov = sm_Cov, sig.epsHat = sig.epsHat, cov_idx = cov_idx(blocks), sm_term = blocks)
 }
 
 ## Derivatives of the curves of semipred(): the rows of the design D(x) on
 ## the grid replaced by dD/dx (deriv = 1) or d2D/dx2 (deriv = 2), by central
 ## differences of the whole design (fixed part and every smooth basis; for
 ## the O'Sullivan basis they equal ZOSull(drv = ) to 1e-8, tested), the same
-## grid rebuilt at x + h and x - h. Per unit of the covariate as given (a
-## covariate scaled by semireg(nscale = TRUE): divided by its SD).
+## grid rebuilt at x + h and x - h, per unit of the covariate.
 pm_semi_deriv <- function(semireg, des, modelterm, covariate, sm_term, mod_df, deriv) {
   xg <- unique(des$pred_df[[covariate]])
   r <- diff(range(xg))
@@ -905,8 +786,6 @@ pm_semi_deriv <- function(semireg, des, modelterm, covariate, sm_term, mod_df, d
   if (!same(dp) || !same(dm)) stop("The grid could not be rebuilt for the derivative.", call. = FALSE)
   D <- if (deriv == 1) (as.matrix(dp$D_mx) - as.matrix(dm$D_mx))/(2*h) else
     (as.matrix(dp$D_mx) - 2*as.matrix(des$D_mx) + as.matrix(dm$D_mx))/h^2
-  s <- attr(mod_df, paste(covariate, "sd", sep = "_"))
-  if (!is.null(s)) D <- D/s^deriv
   dimnames(D) <- dimnames(as.matrix(des$D_mx))
   des$D_mx <- D
   des

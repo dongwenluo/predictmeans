@@ -5,11 +5,13 @@
 test_that("semireg(): Satterthwaite df and variance components equal the same model fitted by lme", {
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
-  fit <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 25)),
-                 data = WarsawApts)
-  # the same mixed model in nlme, as Harezlak, Ruppert and Wand write it
+  fit <- semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = WarsawApts)
+  # the same mixed model in nlme, as Harezlak, Ruppert and Wand write it (O'Sullivan
+  # basis with 25 interior knots at quantiles of the unique values, the range widened by 1%)
   d <- fit$data
-  d$Z <- as.matrix(smZ(d$construction.date, k = 25))
+  cd <- d$construction.date
+  kn <- stats::quantile(unique(cd), seq(0, 1, length = 27)[-c(1, 27)])
+  d$Z <- ZOSull(cd, intKnots = kn, range.x = c(1.01*min(cd) - 0.01*max(cd), 1.01*max(cd) - 0.01*min(cd)))
   d$one <- factor(1)
   fl <- nlme::lme(areaPerMzloty ~ construction.date, random = list(one = nlme::pdIdent(~ -1 + Z)), data = d,
                   method = "REML")
@@ -26,7 +28,9 @@ test_that("semireg(): Satterthwaite df and variance components equal the same mo
   v2 <- varcomp(fl)
   expect_equal(v1["residual", "vcov"], v2["residual", "vcov"], tolerance = 1e-4)
   expect_equal(v1["residual", "SE"], v2["residual", "SE"], tolerance = 1e-3)
-  expect_equal(v1[1, "SE"], v2[1, "SE"], tolerance = 1e-3)
+  # (the smooth's variance is on the scale of the formula block, a constant times nlme's:
+  # the SE relative to the estimate is the same)
+  expect_equal(v1[1, "SE"]/v1[1, "vcov"], v2[1, "SE"]/v2[1, "vcov"], tolerance = 1e-3)
 })
 
 test_that("semireg(): a smooth with its variance at zero (a straight line) and a negative binomial fit", {
@@ -38,7 +42,7 @@ test_that("semireg(): a smooth with its variance at zero (a straight line) and a
   d$yb <- rbinom(n, 1, plogis(-1 + 2*eta))
   d$ynb <- MASS::rnegbin(n, exp(1 + eta), 2)
   # before 2.0: "Matrix seems negative semi-definite"
-  fit <- suppressWarnings(semireg(yp ~ x*g, smoothZ = list(grp = smZ(x, k = 8, by = g)), data = d, family = poisson))
+  fit <- suppressWarnings(semireg(yp ~ s(x, by = g, bs = "os", k = 8, id = 1), data = d, family = poisson))
   expect_s3_class(fit, "semireg")
   expect_true(all(is.finite(as.matrix(fit$CovMat))))
   sp <- semipred(fit, "g", "x")$pred_df
@@ -52,7 +56,7 @@ test_that("semireg(): a smooth with its variance at zero (a straight line) and a
   # a variance estimated as zero: its coefficients have zero covariance
   th <- lme4::getME(fit$semer, "theta")
   if (any(th == 0)) {
-    cs <- as.matrix(fit$cov_lst$grp)
+    cs <- as.matrix(fit$cov_lst$sm_Cov)
     expect_true(all(abs(cs[-(1:4), -(1:4)]) < 1e-10))
   }
 })
@@ -60,8 +64,7 @@ test_that("semireg(): a smooth with its variance at zero (a straight line) and a
 test_that("semireg(): the covariance of the coefficients is (C'WC + D)^-1 when Lambda is invertible", {
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
-  fit <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                 data = WarsawApts)
+  fit <- semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 10), data = WarsawApts)
   s <- fit$semer
   C <- cbind(lme4::getME(s, "X"), lme4::getME(s, "Z"))
   L <- lme4::getME(s, "Lambda")
@@ -75,7 +78,7 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
   set.seed(1)
   cbpp$x <- runif(nrow(cbpp))
   # before 2.0 the second column of cbind() was centred: "Response is constant"
-  b <- semireg(cbind(incidence, size - incidence) ~ period + x + (1 | herd), smoothZ = list(sx = smZ(x, k = 5)),
+  b <- semireg(cbind(incidence, size - incidence) ~ period + s(x, bs = "os", k = 5) + (1 | herd),
                family = binomial, data = cbpp)
   expect_s3_class(b, "semireg")
   expect_equal(unname(lme4::fixef(b$semer)[2:4]),
@@ -85,16 +88,14 @@ test_that("semireg(): cbind() responses, data as an expression, nothing written 
   data("WarsawApts", package = "HRW", envir = environment())
   f <- function() {
     before <- ls()
-    m <- semireg(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                 data = subset(WarsawApts, surface > 30))
+    m <- semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 10), data = subset(WarsawApts, surface > 30))
     list(m = m, new = setdiff(ls(), c(before, "before", "m")))
   }
   r <- f()
   expect_s3_class(r$m, "semireg")
   expect_length(r$new, 0)
   expect_equal(nrow(r$m$data), sum(WarsawApts$surface > 30))
-  t1 <- semireg_tmb(areaPerMzloty ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 10)),
-                    data = subset(WarsawApts, surface > 30))
+  t1 <- semireg_tmb(areaPerMzloty ~ s(construction.date, bs = "os", k = 10), data = subset(WarsawApts, surface > 30))
   expect_equal(as.numeric(logLik(t1$semer)), as.numeric(logLik(r$m$semer)), tolerance = 1e-3)
 })
 
@@ -167,8 +168,7 @@ test_that("semireg_tmb(): a glmmTMB family named without glmmTMB attached (famil
   e <- new.env(parent = as.environment("package:stats"))
   e$d <- d
   fit <- suppressWarnings(suppressMessages(evalq(
-    predictmeans::semireg_tmb(y ~ x + (1 | g), smoothZ = list(sm = predictmeans::smZ(x, k = 5)), family = nbinom1,
-                              data = d), e)))
+    predictmeans::semireg_tmb(y ~ s(x, bs = "os", k = 5) + (1 | g), family = nbinom1, data = d), e)))
   expect_equal(fit$semer$modelInfo$family$family, "nbinom1")
 })
 

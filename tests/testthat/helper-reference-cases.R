@@ -103,18 +103,25 @@ reference_cases <- function() {
 
   data("WarsawApts", package = "HRW", envir = environment())
   W <- WarsawApts; W$district <- factor(W$district)
-  sm1 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date,
-                 smoothZ = list(grp = smZ(construction.date, k = 25)), data = W))
+  # (1.1.1: smoothZ = list(grp = smZ(construction.date, k = 25)); the formula
+  # forms give the same fits, vignette("migrating"))
+  sm1 <- suppressWarnings(semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = W))
   # 1.1.1 used qnorm(1 - level) for the limits (90% with the default 0.05);
   # 2.0 uses qnorm(1 - level/2), so level = 0.1 gives the limits 1.1.1 gave
   cap("semi_1", semipred(sm1, covariate = "construction.date", conf.level = 0.9)$pred_df)
-  sm2 <- suppressWarnings(semireg(areaPerMzloty ~ construction.date*district,
-                 smoothZ = list(grp = smZ(construction.date, k = 15, by = district, group = TRUE)),
+  sm2 <- suppressWarnings(semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
                  data = W))
   cap("semi_2_grp", semipred(sm2, "district", "construction.date", conf.level = 0.9)$pred_df)
   cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), conf.level = 0.9)$pred_df)
-  sm3 <- suppressWarnings(semireg(areaPerMzloty ~ district + surface,
-                 smoothZ = list(gc = smZ(construction.date, k = 10)), data = W))
+  # 1.1.1: a smooth without its straight line in the formula,
+  # smoothZ = list(gc = smZ(construction.date, k = 10)): smZ()'s basis as a
+  # basis of one's own with no fixed part
+  cd <- W$construction.date
+  kn <- stats::quantile(unique(cd), seq(0, 1, length = 12)[-c(1, 12)])
+  rg <- c(1.01*min(cd) - 0.01*max(cd), 1.01*max(cd) - 0.01*min(cd))
+  zos <- function(x) predictmeans:::ZOSull(x, intKnots = kn, range.x = rg)
+  sm3 <- suppressWarnings(semireg(areaPerMzloty ~ district + surface +
+                                    s(construction.date, bs = "user", xt = list(basis = zos, null = "none")), data = W))
   cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", conf.level = 0.9)$pred_df)
   cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", conf.level = 0.9)$pred_df)
 

@@ -135,7 +135,7 @@ autoplot(slp)
 
 `contr` with `deriv` compares the slopes of two curves. The derivatives are those of the
 whole fitted curve (fixed and smooth parts), for any basis, and for the O'Sullivan basis
-equal the exact derivatives of `smZ(drv = )`. For generalized models they are on the link
+equal the exact derivatives of the basis (`ZOSull(drv = )`). For generalized models they are on the link
 scale. In a simulation (`dev/sim-semipred-deriv.R` in the package sources) their bands
 covered the true slope and curvature 0.97-1.00 at the 95% level.
 
@@ -374,30 +374,17 @@ fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
 autoplot(semipred(fw, "wage", "wage"))
 ```
 
-## From the `smoothZ` form
+## From 1.x
 
-Code written for 1.x, with the smooths in `smoothZ = list(smZ(...))` and their straight
-lines written in the formula, still runs and gives the same fits. The formula form gives
-the same model and adds the fixed terms itself:
-
-| 1.x | 2.0 |
-|---|---|
-| `y ~ x, smoothZ = list(sm = smZ(x, k = 10))` | `y ~ s(x, bs = "os", k = 10)` |
-| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f, group = TRUE))` | `y ~ s(x, by = f, bs = "os", k = 10)` |
-| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))` | `y ~ s(x, by = f, bs = "os", k = 10, id = 1)` |
-| `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps", k = 6)` |
-| `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
-| `smoothZ = list(sm = myZ(x))`, a matrix of your own | `s(x, bs = "user", xt = list(basis = myZ))` |
-| `smZ(x, drv = 1)` (derivative of the basis) | `semipred(fit, ..., deriv = 1)` |
-
-Smooths are given either in the formula or in `smoothZ`, not both. Other changes since
-1.x: the optimizer is `nloptwrap` (`control = lmerControl(optimizer = "bobyqa")` gives
-1.x's), `semipred()` limits are 95% (1.x: 90%), `anova(fit)` replaces lmerTest, and
-generalized fits include the uncertainty of the smoothing parameters in their bands.
+`smZ()` and `smoothZ` were removed in 2.0: `vignette("migrating")` shows each 1.x form beside its formula
+form (they give the same fits) and the 1.x models of the overview article beside their 2.0 code. Other changes
+since 1.x: the optimizer is `nloptwrap` (`control = lmerControl(optimizer = "bobyqa")` gives 1.x's),
+`semipred()` limits are 95% (1.x: 90%), `anova(fit)` replaces lmerTest, and generalized fits include the
+uncertainty of the smoothing parameters in their bands.
 
 ## More
 
-- `?semireg`, `?semipred`, `?smZ`; `semireg_tmb()` fits the same models with
+- `?semireg`, `?semipred`; `semireg_tmb()` fits the same models with
   glmmTMB, which also allows negative binomial and other families.
 - The worked examples on the package website use larger data sets (apartment prices,
   school scores, respiratory infections, pollen counts and a spatial smooth of copper

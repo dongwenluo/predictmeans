@@ -8,9 +8,6 @@ test_that("internal point-in-polygon matches HRW::pointsInPoly for closed polygo
   expect_identical(predictmeans:::pm_points_in_poly(pts, poly_closed[-6, ]), predictmeans:::pm_points_in_poly(pts, poly_closed))
 })
 
-test_that("optional spline types work when installed", {
-  x <- seq(0, 1, length = 50)
-  skip_if_not_installed("splines2")
-  Z <- smZ(x, k = 5, type = "bSpline")
-  expect_equal(nrow(Z), 50)
+test_that("smZ() was removed in 2.0: it stops with the formula form", {
+  expect_error(smZ(seq(0, 1, length = 50)), "s(x, bs = \"os\")", fixed = TRUE, class = "defunctError")
 })

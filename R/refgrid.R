@@ -54,7 +54,7 @@ pm_model_info <- function(model, data = NULL, exclude = NULL) {
   extra_vars <- character(0)
   data_first <- FALSE
   if (inherits(model, "semireg")) {
-    # Smooth-only covariates live in the smoothZ list, not the fixed formula.
+    # Covariates that are only in the smooths are not in the fixed formula.
     if (is.null(data)) data <- model$data
     data_first <- TRUE
     extra_vars <- setdiff(model$sm_vars, model$fomul_vars)

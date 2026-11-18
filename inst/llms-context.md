@@ -215,7 +215,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `ddf = "Satterthwaite"`, `type = "I"`/`"II"`; `anova(m1, m2)` is lme4's comparison. `anova(semireg_fit)`:
   fixed effects + likelihood ratio test of each smooth term (variance = 0).
 - `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
-  terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis, `xt = list(knots =,
+  terms `A + A:x` added automatically; `bs = "os"` = the O'Sullivan basis (1.x `smZ()`), `xt = list(knots =,
   range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `bs = "user", xt = list(basis = f)` (own basis
   function, iid coefficients, fixed part 1 + x / `null = "constant"` / `"none"`; checked before the fit: a row
   per value, finite, repeatable, rows independent of the data given, full rank); `s(x, f)` / `s(x, f1*f2)` = common
@@ -223,9 +223,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `(x | id)` + spline deviation (HRW's group-specific curves); `t2(x1, x2)` tensor product, a variance per
   penalty, fixed `x1 + x2 + x1:x2` (no sum-to-zero constraint; `te()` fitted as `t2()`, `ti()` refused)). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
-  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` are superseded: 1.x code still
-  runs, but write smooths in the formula (table in `?smZ` and `vignette("smooth")`; `smZ(type =
-  "Ztps")` is `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
+  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` were removed in 2.0 (they
+  stop with the formula form; table in `vignette("migrating")`; `smZ(type = "Ztps")` is
+  `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
   `SBMDfem`, `ozoneCalif`, `scallop` (+ `scallopKnots`, `scallopBdry`), `wageTUnion`, `copper`
   (+ `copperKnots`); their help pages show the analyses in the formula syntax. Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth

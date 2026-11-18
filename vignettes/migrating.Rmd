@@ -11,8 +11,48 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
 ```
 
-Most scripts written for predictmeans 1.x run unchanged. This page lists what gives
-different numbers, what is new, and how to get the old results back.
+predictmeans 2.0 cleans up the options: arguments that did the same thing under two names, printing and
+plot settings in the analysis functions, and the 1.x smooth interface (`smZ()`, `smoothZ`) are gone. A 1.1.1
+script that uses one of them **stops** with the 2.0 spelling, for example
+
+```
+predictmeans(): 'level' was removed in predictmeans 2.0: use conf.level = 0.95.
+```
+
+so nothing is silently ignored. This page shows the 1.1.1 code beside the 2.0 code, what gives different
+numbers and why, and what is new.
+
+<style>
+.pm-cols { display: flex; flex-wrap: wrap; gap: 0 1em; margin-bottom: 0.4em; }
+.pm-cols > div { flex: 1 1 18em; min-width: 0; }
+.pm-cols pre, .pm-cols pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.pm-cols pre { margin-top: 0.1em; }
+.pm-cols p { margin: 0.6em 0 0; font-size: 0.85em; color: #666; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+</style>
+
+## Code that changes
+
+### Arguments
+
+| Function | 1.1.1 | 2.0 |
+|---|---|---|
+| `predictmeans()`, `contrastmeans()`, `covariatemeans()`, `pm_slopes()`, `semipred()` | `level = 0.05` (a significance level) | `conf.level = 0.95` |
+| `predictmeans()`, `contrastmeans()`, `covariatemeans()` | `Df = 10` | `df_method = 10` |
+| `covariatemeans()`, `semipred()`, `Kmatrix()` | `covariateV = ` | `at = ` |
+| `df_term()` | `type = ` | `df_method = ` |
+| `predictmeans()`, `covariatemeans()` | `trans = exp, transOff = 1` | `trans = function(x) exp(x) - 1` |
+| `predictmeans()` | `count = TRUE` | (not needed: Poisson and negative binomial means are detected) |
+| `predictmeans()` | `which.plots = `, `mplot`, `barplot`, `pplot`, `bkplot` | `plot = c("mean", "bar", "pval", "back")` |
+| `predictmeans()` | `plottitle = `, `plotord = `, `lsd_bar = `, `lineplot = `, ... | `plot_args = list(plottitle = , ...)` |
+| `covariatemeans()` | `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` | `plot_args = list(...)` |
+| `semipred()` | `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD` | `plot_args = list(...)` |
+| `semipred()` | `semipred(semireg = fit)` | `semipred(model = fit)` (or `semipred(fit)`) |
+| `semipred()` | `simultaneous = TRUE` | `band = "simultaneous"` |
+| `predictmeans()`, `semipred()`, `semireg()`, `semireg_tmb()` | `prtnum`, `ndecimal`, `prt`, `prtplt`, `newwd` | removed: nothing is printed during the call; `print(x)`, `plot = TRUE`, `autoplot(x)` |
+| `semireg()` | `ngbinomial = TRUE` | `semireg_tmb(family = glmmTMB::nbinom2)` |
+| `semireg()`, `semireg_tmb()` | `smoothZ = list(sm = smZ(x))` | smooths in the formula: `s(x, bs = "os")` (below) |
+| `semireg()` | `ncenter`, `nscale`, `resp_scale` | removed: variables are used as they are |
 
 ```{r}
 library(predictmeans)
@@ -20,6 +60,445 @@ Oats <- as.data.frame(nlme::Oats)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ```
+
+```{r}
+try(predictmeans(fm, "nitro", level = 0.1))
+```
+
+Two of these change numbers, by design:
+
+- `trans = function(x) exp(x) - 1`: the pairs have no `ratio` columns any more; with an offset they were ratios
+  of `y + 1`, labelled as ratios of `y`.
+- `semireg(ngbinomial = TRUE)` took theta from a Poisson fit, which is not the maximum-likelihood fit
+  (on a test data set log-likelihood -1133.60 against -1132.98 for `semireg_tmb(family = glmmTMB::nbinom2)`,
+  theta 3.31 against 2.80 with the true value 3).
+
+### Smooth models: `smZ()` and `smoothZ`
+
+Smooths are written in the formula. Their fixed terms (the covariate, and with `by = f` the factor and its
+slopes) are added automatically, so they need not be written, and cannot be forgotten. Each form below was
+fitted both ways on the last build that had `smZ()` (`dev/check-smz-migration.R` in the package sources): the
+REML log-likelihoods are equal and the fitted values and curves agree to 1e-5 or better, unless a note says
+otherwise.
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x, smoothZ = list(sm = smZ(x)), data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, bs = "os"), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x, smoothZ = list(sm = smZ(x, k = 10)), data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, bs = "os", k = 10), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x*f, smoothZ = list(sm = smZ(x, by = f, group = TRUE)),
+        data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, by = f, bs = "os"), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x*f, smoothZ = list(sm = smZ(x, by = f)), data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+# one variance for all levels
+semireg(y ~ s(x, by = f, bs = "os", id = 1), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x + z, smoothZ = list(sx = smZ(x), sz = smZ(z)), data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, bs = "os") + s(z, bs = "os"), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x + (1 | id), smoothZ = list(sm = smZ(x)), data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, bs = "os") + (1 | id), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x + z, smoothZ = list(sm = smZ(cbind(x, z), type = "Ztps")),
+        data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, z, bs = "ztps", k = 6), data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(cnt ~ x*f, smoothZ = list(sm = smZ(x, by = f, group = TRUE)),
+        family = poisson, data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(cnt ~ s(x, by = f, bs = "os"), family = poisson, data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg_tmb(cnt ~ x*f, smoothZ = list(sm = smZ(x, by = f, group = TRUE)),
+            family = poisson, data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg_tmb(cnt ~ s(x, by = f, bs = "os"), family = poisson, data = d)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+semireg(y ~ x, smoothZ = list(sm = smZ(x, intKnots = kn, range.x = r)),
+        data = d)
+```
+
+</div><div>
+
+2.0
+
+```r
+semireg(y ~ s(x, bs = "os", xt = list(knots = kn, range = r)), data = d)
+```
+
+</div></div>
+
+Notes:
+
+- `bs = "os"` is the O'Sullivan spline of `smZ()` (`k` interior knots, 6 by default as `smZ()`);
+  `bs = "ztps"` is its thin-plate basis (`k = 6` knots per axis as `smZ()`; the default of `bs = "ztps"` is 10).
+- Knots of your own (the last pair above): here the fits differ, and 2.0 is right: 1.x centred `x` before `smZ()` saw it (`ncenter = TRUE`, the
+  default), so knots given in the units of the data were in the wrong place (in the check: REML log-likelihood
+  -398.53 against -389.12; 1.x with `ncenter = FALSE` gives -389.12).
+- The Poisson fit through lme4 agrees to the optimizer's tolerance (log-likelihood within 1e-6, fitted counts
+  within 0.003); through glmmTMB to 1e-6.
+- `smZ(x, drv = 1)` (the derivative of the basis) is `semipred(fit, ..., deriv = 1)`.
+- Any other basis: `s(x, bs = "user", xt = list(basis = f))`, with `f(x)` returning the basis matrix; its
+  columns must not be in the span of the constant and `x` (the fixed part). The other `smZ()` types (`"bs"`,
+  `"ns"`, the splines2 types, `"smspline"`) gave their B-spline or natural-spline columns iid random
+  coefficients, which shrinks the curve towards zero rather than towards a straight line; they have no formula
+  form that gives the same fit. `bs = "os"` is the penalised B-spline that does the same job properly.
+- `fit$knots_lst`, `fit$range_lst`, `fit$type_lst` and `fit$smoothZ_call` are no longer in the result; a fit
+  made with `smZ()` and saved before 2.0 cannot be used by `semipred()` (it says so): refit it.
+
+#### The models of the overview article
+
+The smooth models of the overview article (`vignettes/articles/overview.Rmd`), in its 1.1.1 version and
+in 2.0:
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod1 <- semireg(apartment.price ~ construction.date,
+                smoothZ = list(grp = smZ(construction.date, k = 25)),
+                data = WarsawApts)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod1 <- semireg(apartment.price ~ s(construction.date, bs = "os", k = 25),
+                data = WarsawApts)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod2 <- semireg(apartment.price ~ construction.date*district,
+                smoothZ = list(grp = smZ(construction.date, k = 10,
+                                         by = district, group = TRUE)),
+                data = WarsawApts)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod2 <- semireg(apartment.price ~ s(construction.date, by = district,
+                                    bs = "os", k = 10),
+                data = WarsawApts)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod <- semireg_tmb(mathscr ~ calwpct + log.avginc + compstu +
+                     (1|county) + (1|grspan),
+                   smoothZ = list(cal_grp = smZ(calwpct, k = 12),
+                                  avg_grp = smZ(log.avginc, k = 5),
+                                  comp_grp = smZ(compstu, k = 12)),
+                   data = Caschool)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) +
+                     s(log.avginc, bs = "os", k = 5) +
+                     s(compstu, bs = "os", k = 12) +
+                     (1 | county) + (1 | grspan),
+                   data = Caschool)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod1 <- semireg_tmb(respirInfec ~ age + vitAdefic + sex + height +
+                      stunted + visit2 + visit3 + visit4 + visit5 +
+                      visit6 + (1|idnum),
+                    smoothZ = list(grp = smZ(age, k = 25)),
+                    family = binomial, data = indonRespir)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic +
+                      sex + height + stunted + visit2 + visit3 + visit4 +
+                      visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod2 <- semireg_tmb(respirInfec ~ age + vitAdefic + sex + height +
+                      stunted + visit2 + visit3 + visit4 + visit5 +
+                      visit6 + (1|idnum),
+                    smoothZ = list(grp = smZ(age, k = 25, by = sex,
+                                             group = TRUE)),
+                    family = binomial, data = indonRespir)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod2 <- semireg_tmb(respirInfec ~ s(age, by = sex, bs = "os", k = 25) +
+                      vitAdefic + height + stunted + visit2 + visit3 +
+                      visit4 + visit5 + visit6 + (1 | idnum),
+                    family = binomial, data = indonRespir)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod <- semireg_tmb(pollenCount ~ rain + year + temperatureResidual +
+                     dayInSeason + windSpeed,
+                   smoothZ = list(
+                     s_day = smZ(dayInSeason, by = year, group = TRUE),
+                     s_temp = smZ(temperatureResidual),
+                     s_wind = smZ(windSpeed)),
+                   family = nbinom1, data = ragweed)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod <- semireg_tmb(pollenCount ~ rain +
+                     s(dayInSeason, by = year, bs = "os") +
+                     s(temperatureResidual, bs = "os") +
+                     s(windSpeed, bs = "os"),
+                   family = nbinom1, data = ragweed)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+mod <- semireg(log(grade) ~ (xcoord + ycoord + zcoord)^2,
+               smoothZ = list(grp_z = smZ(zcoord),
+                              grp_geo = smZ(cbind(xcoord, ycoord),
+                                            type = "Ztps")),
+               data = copper)
+```
+
+</div><div>
+
+2.0
+
+```r
+mod <- semireg(log(grade) ~ s(zcoord, bs = "os") +
+                 s(xcoord, ycoord, bs = "ztps", k = 6) +
+                 xcoord:ycoord + xcoord:zcoord + ycoord:zcoord,
+               data = copper)
+```
+
+</div></div>
+
+<div class="pm-cols"><div>
+
+1.1.1
+
+```r
+pred <- semipred(mod, covariate = c("xcoord", "ycoord"),
+                 threeD = TRUE, point = FALSE, trans = exp,
+                 prt = FALSE)
+```
+
+</div><div>
+
+2.0
+
+```r
+pred <- semipred(mod, covariate = c("xcoord", "ycoord"), trans = exp,
+                 plot_args = list(threeD = TRUE, point = FALSE))
+```
+
+</div></div>
+
+| Model | REML / ML log-likelihood, 1.1.1 code | 2.0 code | |
+|---|---|---|---|
+| Warsaw, one curve | -1772.452 | -1772.452 | the same fit |
+| Warsaw, a curve per district | -1751.525 | -1751.525 | the same fit |
+| California schools | | | not checked (package Ecdat not available) |
+| Respiratory infection, one curve | -323.509 | -323.509 | the same fit |
+| Respiratory infection, a curve per sex | -322.806 | -322.788 | 2.0 adds `sex:age`, the slope of each sex, which the 1.1.1 formula left out |
+| Pollen, a curve per year | -1168.703 | -1164.093 | 2.0 adds `year:dayInSeason`, the slope of each year, which the 1.1.1 formula left out |
+| Copper | -159.428 | -159.203 | 1.1.1 depended on the centring of the coordinates (-163.948 with `ncenter = FALSE`) |
+
+In the two models with a curve per group, the 1.1.1 formulas had the factor but not its interaction with the
+covariate. A smooth by a factor then has no unpenalised slope per group, so the groups' straight-line trends
+are shrunk towards each other. The formula form adds the slopes itself, which is why the 2.0 fits are better.
 
 ## Results that change
 

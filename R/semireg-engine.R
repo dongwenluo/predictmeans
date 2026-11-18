@@ -1,7 +1,7 @@
 ## The fitting engine of semireg() and semireg_tmb() (dev/review-semireg.md).
 ##
 ## A semi-parametric model is a mixed model in which each smooth is a block
-## of random effects with a given design Z (from smZ()) and iid coefficients.
+## of random effects with a given design Z (from the smooth basis) and iid coefficients.
 ## Both front ends:
 ##   1. pm_sr_setup(): the data (complete cases, numeric covariates centred
 ##      or scaled), the smooth designs, and the formula with one placeholder
@@ -16,44 +16,30 @@
 
 ## The data, the smooth designs and the formula with placeholders.
 ##   mc         the front end's match.call() (formula already set)
-##   smoothZ    the unevaluated smoothZ argument
+##   smoothZ    the unevaluated smoothZ argument of the workers: the smooth
+##              blocks of a fit, already built (the package's refits)
 ##   env        where the front end was called
 ## Returns list(data, fomul_vars, sm_vars, smoothZm (as given, by name),
-## smoothZN (blocks: a smZ(group = TRUE) list is split into its levels),
+## smoothZN (blocks: a list of blocks is split into its elements),
 ## Zt (transposed blocks), formula (with placeholders, or NULL without
 ## smooths)).
-pm_sr_setup <- function(mc, data, smoothZ, env, ncenter = FALSE, nscale = FALSE, resp_scale = FALSE) {
+pm_sr_setup <- function(mc, data, smoothZ, env) {
   formula <- mc$formula
   # smooths written in the formula (R/semireg-smooth.R)
   sm_f <- pm_sm_parse(formula, data)
   fomul_vars <- all.vars(stats::terms(if (is.null(sm_f)) formula else sm_f$formula))
-  sm_vars <- intersect(all.vars(smoothZ), names(data))
-  if (any(unlist(lapply(data[, setdiff(sm_vars, fomul_vars), drop = FALSE], is.factor)))) {
-    stop("Any factor in 'smoothZ' list must be in the formula!")
-  }
-  # the response may have several variables (cbind(successes, failures)):
-  # none of them is centred or scaled unless resp_scale = TRUE
-  response_vars <- all.vars(formula[[2]])
+  sm_vars <- character(0)
   fomul_vars <- fomul_vars[-1]
+  # (the variables are used as they are: 1.x centred numeric variables by
+  # default, ncenter = TRUE, which put knots given in the data's units in the
+  # wrong place; removed in 2.0)
   data <- droplevels(as.data.frame(stats::na.omit(data[, intersect(all.vars(mc), names(data)), drop = FALSE])))
-  numeric_n <- names(data)[vapply(data, is.numeric, logical(1))]
-  if (!resp_scale) numeric_n <- setdiff(numeric_n, response_vars)
-  if (!is.null(sm_f)) numeric_n <- setdiff(numeric_n, sm_f$vars)   # variables of formula smooths: as they are
-  if (any(ncenter, nscale)) {
-    for (i in numeric_n) {
-      if (!is.matrix(data[, i])) {
-        scaled_i <- scale(data[i], center = ncenter, scale = nscale)
-        data[i] <- as.numeric(scaled_i)
-        if (ncenter) attr(data, paste(i, "mean", sep = "_")) <- attr(scaled_i, "scaled:center")
-        if (nscale) attr(data, paste(i, "sd", sep = "_")) <- attr(scaled_i, "scaled:scale")
-      }
-    }
-    attr(data, "numeric_var") <- numeric_n
-  }
+  # 'smoothZ': only the package's own refits give it (the smooth blocks of a
+  # fit, already built); smooths are written in the formula
   smoothZm <- eval(smoothZ, data, env)
   smooths <- NULL
   if (!is.null(sm_f) && length(smoothZm)) {
-    stop("Give the smooths either in the formula (s(), t2()) or in 'smoothZ', not both.", call. = FALSE)
+    stop("internal: smooths both in the formula and in 'smoothZ'.", call. = FALSE)
   }
   if (!is.null(sm_f)) {
     # the smooths of the formula: random blocks, and their fixed terms added
@@ -186,7 +172,7 @@ pm_sr_fit_tmb <- function(tmbc, st, env) {
 ##   u_ind          number of columns of Z of each term, named by term
 ##   V              (optional) the covariance itself, relative to sigma^2
 ##                  (zero-inflated glmmTMB fits: from TMB's joint precision)
-pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm, V = NULL) {
+pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, V = NULL) {
   n_beta <- ncol(X)
   C <- cbind(X, Z)
   CTC <- Matrix::crossprod(C * w, C)
@@ -216,7 +202,7 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm, V = NULL
     cov_lst[[i]] <- fullCovMat[c(seq_len(n_beta), block(i, vcov_ind)), c(seq_len(n_beta), block(i, vcov_ind))]
     u_lst[[i]] <- uHat[block(i, uHat_ind)]
   }
-  # a smZ(group = TRUE) term: its blocks together
+  # a term of several blocks (named term.level): its blocks together
   vcov_indN <- vcov_ind
   names(vcov_indN) <- gsub("\\..*", "", names(vcov_ind))
   vcov_indN <- rev(vcov_indN)[unique(names(vcov_indN))]
@@ -226,24 +212,15 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, smoothZm, V = NULL
   }
   sm_idx <- c(seq_len(n_beta), unlist(lapply(Zt_name, block, ind = vcov_ind)))
   cov_lst$sm_Cov <- fullCovMat[sm_idx, sm_idx]
-
-  Z_namem <- intersect(names(vcov_indN), names(smoothZm))
-  knots_lst <- range_lst <- type_lst <- stats::setNames(vector("list", length(Z_namem)), Z_namem)
-  for (i in Z_namem) {
-    knots_lst[[i]] <- attr(smoothZm[[i]], "knots")
-    range_lst[[i]] <- attr(smoothZm[[i]], "range.x")
-    type_lst[[i]] <- attr(smoothZm[[i]], "type")
-  }
-  list(knots_lst = knots_lst, range_lst = range_lst, type_lst = type_lst, cov_lst = cov_lst, u_lst = u_lst,
-       CovMat = fullCovMat, Cov_ind = vcov_ind, Cov_indN = vcov_indN, df = df)
+  list(cov_lst = cov_lst, u_lst = u_lst, CovMat = fullCovMat, Cov_ind = vcov_ind, Cov_indN = vcov_indN, df = df)
 }
 
 ## The "semireg" result of both front ends.
 pm_sr_result <- function(semer, st, mc, info, extra) {
-  if (is.null(info)) info <- list(knots_lst = NULL, range_lst = NULL, type_lst = NULL, cov_lst = NULL, u_lst = NULL,
-                                  CovMat = NULL, Cov_ind = NULL, Cov_indN = NULL, df = NULL)
-  ans <- c(list(semer = semer, data = st$data, fomul_vars = st$fomul_vars, sm_vars = st$sm_vars,
-                smoothZ_call = mc$smoothZ), info, extra, list(smooths = st$smooths))
+  if (is.null(info)) info <- list(cov_lst = NULL, u_lst = NULL, CovMat = NULL, Cov_ind = NULL, Cov_indN = NULL,
+                                  df = NULL)
+  ans <- c(list(semer = semer, data = st$data, fomul_vars = st$fomul_vars, sm_vars = st$sm_vars), info, extra,
+           list(smooths = st$smooths))
   class(ans) <- c("semireg", "list")
   ans
 }

@@ -59,7 +59,8 @@ test_that("bs = \"user\": the basis function is checked before the fit", {
   expect_error(fit(function(x) { B <- ob(x); B[x == 3, 1] <- NA; B }), "NA or infinite values \\(first at t = 3\\)")
   expect_error(fit(function(x) ob(x) + stats::rnorm(length(x), 0, 1e-3)), "different values on two calls")
   # knots from the data: prediction would use other ones
-  expect_error(fit(function(x) as.matrix(smZ(x, k = 4))), "depends on the data it is given")
+  expect_error(fit(function(x) ZOSull(x, intKnots = stats::quantile(x, 1:4/5), range.x = range(x) + c(-0.1, 0.1))),
+               "depends on the data it is given")
   # a single value must give one row (prediction at one covariate value)
   expect_error(fit(function(x) cbind(1, ob(x))), "for 1 value it returned")
   expect_error(fit(function(x) { if (length(x) < 20) stop("needs 20 values"); ob(x) }),

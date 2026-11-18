@@ -1,6 +1,16 @@
 ## Smooths written in the formula of semireg() / semireg_tmb()
 ## (R/semireg-smooth.R): the same fits and predictions as mgcv::gam(REML),
-## the fixed parts added automatically, the own bases equal to smZ().
+## the fixed parts added automatically, the own bases equal to the mixed
+## model with the O'Sullivan or thin-plate basis (as 1.x's smZ()).
+
+## The same model fitted by nlme: y ~ fixed, coefficients of the basis Z iid.
+lme_basis <- function(fixed, Z, d) {
+  d$Z <- as.matrix(Z)
+  d$one <- factor(1)
+  nlme::lme(fixed, random = list(one = nlme::pdIdent(~ -1 + Z)), data = d, method = "REML")
+}
+os_knots <- function(x, k) stats::quantile(unique(x), seq(0, 1, length = k + 2)[-c(1, k + 2)])
+os_range <- function(x) c(1.01*min(x) - 0.01*max(x), 1.01*max(x) - 0.01*min(x))
 
 sf_data <- function(n = 400, seed = 1) {
   set.seed(seed)
@@ -39,19 +49,17 @@ test_that("formula smooths: the same fit as gam(method = 'REML'), fixed parts ad
   expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-8)
 })
 
-test_that("bs = 'os' and 'ztps' are the bases of smZ(): the same fits as the smoothZ form", {
+test_that("bs = 'os' and 'ztps': the mixed model with the O'Sullivan or thin-plate basis (as 1.x's smZ())", {
   d <- sf_data()
   q <- function(e) suppressWarnings(suppressMessages(e))
   pairs <- list(
-    list(q(semireg(y ~ x, smoothZ = list(sm = smZ(x, k = 12)), data = d)),
-         q(semireg(y ~ s(x, bs = "os", k = 12), data = d))),
-    list(q(semireg(y ~ x*f, smoothZ = list(sm = smZ(x, k = 8, by = f, group = TRUE)), data = d)),
-         q(semireg(y ~ s(x, by = f, bs = "os", k = 8), data = d))),
-    list(q(semireg(y ~ x + z, smoothZ = list(sm = smZ(cbind(x, z), k = 6, type = "Ztps")), data = d)),
-         q(semireg(y ~ s(x, z, bs = "ztps", k = 6), data = d))))
+    list(q(semireg(y ~ s(x, bs = "os", k = 12), data = d)),
+         lme_basis(y ~ x, ZOSull(d$x, intKnots = os_knots(d$x, 12), range.x = os_range(d$x)), d)),
+    list(q(semireg(y ~ s(x, z, bs = "ztps", k = 6), data = d)),
+         lme_basis(y ~ x + z, Ztps(cbind(d$x, d$z), k = 6), d)))
   for (p in pairs) {
-    expect_equal(as.numeric(logLik(p[[1]]$semer)), as.numeric(logLik(p[[2]]$semer)), tolerance = 1e-8)
-    expect_equal(unname(fitted(p[[1]]$semer)), unname(fitted(p[[2]]$semer)), tolerance = 1e-6)
+    expect_equal(as.numeric(logLik(p[[1]]$semer)), as.numeric(logLik(p[[2]])), tolerance = 1e-6)
+    expect_equal(unname(fitted(p[[1]]$semer)), unname(fitted(p[[2]])), tolerance = 1e-5, ignore_attr = TRUE)
   }
 })
 
@@ -90,14 +98,14 @@ test_that("formula smooths in GLMMs and glmmTMB; negative binomial SEs of semire
   gp <- mgcv::gam(cnt ~ s(x) + f + s(id, bs = "re"), family = poisson, data = d, method = "REML")
   expect_lt(max(abs(predict(p$semer) - predict(gp))), 0.05)      # Laplace vs LAML: close
   # glmmTMB's sigma() is theta for nbinom2: the covariance used to be scaled by theta^2
-  t1 <- q(semireg_tmb(cnt ~ x + f + (1 | id), smoothZ = list(sx = smZ(x, k = 8)), family = glmmTMB::nbinom2,
+  t1 <- q(semireg_tmb(cnt ~ s(x, bs = "os", k = 8) + f + (1 | id), family = glmmTMB::nbinom2,
                       data = d))
   # lme4 with the negative binomial of glmmTMB's theta: the same model
   th <- glmmTMB::sigma(t1$semer)
-  l1 <- q(semireg(cnt ~ x + f + (1 | id), smoothZ = list(sx = smZ(x, k = 8)),
+  l1 <- q(semireg(cnt ~ s(x, bs = "os", k = 8) + f + (1 | id),
                   family = MASS::negative.binomial(theta = th), data = d))
-  a <- semipred(t1, "f", "x", at = c(-1, 0, 1))$pred_df
-  b <- semipred(l1, "f", "x", at = c(-1, 0, 1))$pred_df
+  a <- semipred(t1, "f", "x", at = c(0.5, 1.5, 2.5))$pred_df
+  b <- semipred(l1, "f", "x", at = c(0.5, 1.5, 2.5))$pred_df
   expect_equal(a$SE_mu, b$SE_mu, tolerance = 0.05)
   t2 <- q(semireg_tmb(cnt ~ s(x) + f + (1 | id), family = glmmTMB::nbinom2, data = d))
   expect_equal(names(t2$u_lst), "s_x")
@@ -110,7 +118,7 @@ test_that("formula smooths: refusals with a message", {
   expect_s3_class(suppressWarnings(semireg(y ~ t2(x, z), data = d)), "semireg")
   expect_message(suppressWarnings(semireg(y ~ te(x, z), data = d)), "fitted as t2")
   expect_error(semireg(y ~ ti(x, z), data = d), "ti\\(\\) is not available")
-  expect_error(semireg(y ~ s(x), smoothZ = list(sm = smZ(z)), data = d), "not both")
+  expect_error(semireg(y ~ s(x), smoothZ = list(), data = d), "'smoothZ' was removed in predictmeans 2.0")
   expect_error(semireg(y ~ s(x):f, data = d), "term of its own")
 })
 
@@ -169,19 +177,14 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
 test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level with one variance", {
   d <- sf_data()
   q <- function(e) suppressWarnings(suppressMessages(e))
-  # the same model in two forms: compared at the optimum (bobyqa converges more tightly than nloptwrap)
   ctl <- lme4::lmerControl(optimizer = "bobyqa")
   a <- q(semireg(y ~ s(x, bs = "os", k = 8) + (s(x, k = 5) | id), data = d, control = ctl))
-  b <- q(semireg(y ~ x + (x | id), smoothZ = list(sm = smZ(x, k = 8), sub = smZ(x, k = 5, by = id)), data = d,
-                 ncenter = FALSE, control = ctl))
-  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-6)
-  expect_equal(unname(fitted(a$semer)), unname(fitted(b$semer)), tolerance = 1e-5)
   expect_true("s_x_id" %in% names(a$u_lst))
-  # population curve: the random curves are left out, as the smoothZ form without its 'sub' term
+  # population curve: the random curves are left out (the default is the population smooth)
   pa <- q(semipred(a, "x", "x"))$pred_df
-  pb <- q(semipred(b, "x", "x", sm_term = "sm"))$pred_df
-  expect_equal(pa[[3]], pb[[3]], tolerance = 1e-5)
-  expect_equal(pa$SE, pb$SE, tolerance = 1e-4)
+  pb <- q(semipred(a, "x", "x", sm_term = "s_x"))$pred_df
+  expect_equal(pa[[3]], pb[[3]], tolerance = 1e-10)
+  expect_equal(pa$SE, pb$SE, tolerance = 1e-10)
   expect_error(semipred(a, "x", "x", sm_term = "s_x_id"), "smooth blocks")
   expect_error(semireg(y ~ s(x) + (s(x, by = f) | id), data = d), "cannot have 'by'")
 })
@@ -191,13 +194,12 @@ test_that("xt = list(knots, range) sets the knots and range of the own bases", {
   q <- function(e) suppressWarnings(suppressMessages(e))
   kn <- c(0.5, 1, 1.5, 2, 2.5)
   a <- q(semireg(y ~ s(x, bs = "os", xt = list(knots = kn, range = c(0, 3))), data = d))
-  b <- q(semireg(y ~ x, smoothZ = list(sm = smZ(x, intKnots = kn, range.x = c(0, 3))), data = d, ncenter = FALSE))
-  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-8)
+  b <- lme_basis(y ~ x, ZOSull(d$x, intKnots = kn, range.x = c(0, 3)), d)
+  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b)), tolerance = 1e-6)
   km <- as.matrix(expand.grid(x = c(0.5, 1.5, 2.5), z = c(0.25, 0.75)))
   a <- q(semireg(y ~ s(x, z, bs = "ztps", xt = list(knots = km)), data = d))
-  b <- q(semireg(y ~ x + z, smoothZ = list(sm = smZ(cbind(x, z), intKnots = km, type = "Ztps")), data = d,
-                 ncenter = FALSE))
-  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b$semer)), tolerance = 1e-8)
+  b <- lme_basis(y ~ x + z, Ztps(cbind(d$x, d$z), knots = km), d)
+  expect_equal(as.numeric(logLik(a$semer)), as.numeric(logLik(b)), tolerance = 1e-6)
 })
 
 test_that("smooths with fewer distinct covariate values than basis columns: exact map, as gam()", {

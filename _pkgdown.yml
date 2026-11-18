@@ -77,7 +77,6 @@ reference:
   - anova.semireg
   - semipred
   - semiboundary
-  - smZ
 - title: Extending to new model classes
   contents:
   - pm_coef

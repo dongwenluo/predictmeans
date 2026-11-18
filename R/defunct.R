@@ -1,3 +1,19 @@
+#' Functions removed in predictmeans 2.0
+#'
+#' @description
+#' These functions were removed in 2.0. Each stops with what to use instead; \code{vignette("migrating")} shows
+#' the 1.1.1 code beside the 2.0 code.
+#' \tabular{ll}{
+#'   \strong{Removed} \tab \strong{Use} \cr
+#'   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
+#'     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
+#' }
+#' @param ... Not used.
+#' @name predictmeans-defunct
+#' @aliases smZ
+#' @keywords internal
+NULL
+
 ## Arguments and functions removed in 2.0 (dev/review-options.md, the
 ## maintainer's decisions D1-D10 of 2026-11-18). One table; every front end
 ## calls pm_defunct() on its call, and each removed function calls
@@ -45,8 +61,8 @@ pm_defunct_rows <- function() {
     r("permlmer", "lmer0", "model0 = %s", "same"),
     r("permlmer", "lmer1", "model1 = %s", "same"),
     # semireg (D5, D9)
-    r("semireg", "smoothZ", "smooths in the formula, e.g. y ~ x + s(x, bs = \"os\") (see ?semireg)"),
-    r("semireg", c("ncenter", "nscale", "resp_scale"), "nothing: smooths in the formula need no centring or scaling"),
+    r(c("semireg", "semireg_tmb"), "smoothZ", "smooths in the formula, e.g. y ~ s(x, bs = \"os\") for smoothZ = list(sm = smZ(x)) (see vignette(\"migrating\"))"),
+    r("semireg", c("ncenter", "nscale", "resp_scale"), "nothing: the variables are used as they are (centring moved knots given in the data's units)"),
     r("semireg", "ngbinomial", "semireg_tmb(family = glmmTMB::nbinom2) (the maximum-likelihood fit)"),
     r(c("semireg", "semireg_tmb"), "predict_info", "nothing: the prediction information is always kept"),
     r("permmodels", "fo", "nothing: the formula is read from the model")
@@ -56,7 +72,7 @@ pm_defunct_table <- pm_defunct_rows()
 
 ## Removed functions and their 2.0 replacement (D5-D9).
 pm_defunct_funs <- c(
-  smZ = "smooths in the formula of semireg(), e.g. s(x, bs = \"os\") for type = \"ZOSull\" (see ?semireg)",
+  smZ = "smooths in the formula of semireg(), e.g. y ~ s(x, bs = \"os\") for smoothZ = list(sm = smZ(x)) (see vignette(\"migrating\"))",
   permglmer = "permlmer()",
   permglmmTMB = "permlmer()",
   permanova.lmer = "permmodels(model, type = )",

@@ -128,7 +128,7 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALS
     return(eval(call("glm", fixed, family = r$family, data = quote(dd), weights = w, offset = off)))
   } else {
     cl <- call("pm_semireg_lme4", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), REML = r$REML,
-               ncenter = FALSE, nscale = FALSE, predict_info = FALSE, control = r$control)
+               predict_info = FALSE, control = r$control)
     if (!is.null(r$family)) cl$family <- r$family
     if (!is.null(r$weights) && any(r$weights != 1)) cl$weights <- quote(sr_w)
     if (!is.null(r$offset)) cl$offset <- quote(sr_off)

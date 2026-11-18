@@ -74,6 +74,20 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     against 2.80, true 3; means 1%, SEs 4% apart); use
     `semireg_tmb(family = glmmTMB::nbinom2)`. Six fits and their curves
     (`dev/snapshot-semipred.R`) are identical (tolerance 0).
+  - `smZ()` and `smoothZ` removed (step 3c): smooths are written in the formula
+    (`smZ(x)` is `s(x, bs = "os")`, `smZ(cbind(x, z), type = "Ztps")` is
+    `s(x, z, bs = "ztps", k = 6)`, ...). `vignette("migrating")` shows each
+    1.1.1 form beside its formula form, and the 1.1.1 models of the overview
+    article beside their 2.0 code; `dev/check-smz-migration.R` fitted them both
+    ways on the last build with `smZ()`: the same REML log-likelihoods and
+    curves (to 1e-5). Where they differ 2.0 is right: knots given in the data's
+    units were placed on the centred covariate in 1.x (`ncenter = TRUE`); the
+    1.1.1 article's formulas for a curve per group left out the group slopes,
+    which the formula form adds. `ncenter`, `nscale`, `resp_scale` removed: the
+    variables are used as they are (curves unchanged; the coefficients of other
+    numeric covariates are no longer centred). `fit$knots_lst`, `range_lst`,
+    `type_lst`, `smoothZ_call` removed. splines2 and lmeSplines are no longer
+    suggested.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
