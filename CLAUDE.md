@@ -5,6 +5,21 @@ and semiparametric models. Development is toward 2.0; read
 `dev/predictmeans-2.0-plan.md` first (aims, decisions, bug list, status
 table; the row marked “Next” is the current task) and `NEWS.md`.
 
+## Rule no. 1 (from the maintainer)
+
+predictmeans must be **statistically correct, accurate, robust and
+effective**. Check every change against all four before it is done: -
+Correct: each method is right on the evidence (simulation, literature)
+and checked against an outside reference (real SAS/Genstat runs,
+emmeans, …). - Accurate: numbers exact to the stated tolerance, no
+hidden approximation; every number says what it is (scale,
+pointwise/simultaneous, which mean). - Robust: works across model
+classes and edge cases; when it cannot, it stops with a clear message,
+never a silent wrong answer. - Effective in running (fast, nothing
+computed twice; benchmarks), in tokens (short output and docs, one table
+layout everywhere, no noise) and in structure (each decision in one
+place, small functions, no duplicated code).
+
 ## Aims (from the maintainer)
 
 - Statistically right first. Each default is the most reliable method on

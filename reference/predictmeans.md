@@ -569,17 +569,22 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 - means:
 
   A data frame with one row per predicted mean and fixed column names:
-  the factor (and covariate) columns, `estimate`, `std.error`, `df`,
-  `conf.low`, `conf.high` (confidence limits of each mean, not for
-  comparing means), `comparison.low` and `comparison.high` (comparison
-  intervals: two means differ at `level`, with the adjustment of `adj`
-  when it has a critical value, when these do not overlap; see
-  `letterCI`; present when the pairs are tabulated); when the means are
-  back-transformed also `response`, `response.std.error` (delta method,
-  as emmeans with `type = "response"`), `response.conf.low` and
-  `response.conf.high`; `group` (letters, when pairwise comparisons are
-  made), `n` (number of observations) and `estimable`. Values are not
-  rounded. Also returned by `tidy()` and
+  the factor (and covariate) columns, `over` (only when some mean
+  averages over empty cells: the cells it averages, e.g.
+  `"N 0, 0.2, 0.4"`; NA for the means over all their cells), `estimate`,
+  `std.error`, `df`, `conf.low`, `conf.high` (confidence limits of each
+  mean, not for comparing means), `comparison.low` and `comparison.high`
+  (comparison intervals: two means differ at `level`, with the
+  adjustment of `adj` when it has a critical value, when these do not
+  overlap; see `letterCI`; present when the pairs are tabulated; NA for
+  a mean over empty cells whose pairs are not the differences of the
+  shown means (compared on common cells, or not estimable), which no
+  interval around it can show); when the means are back-transformed also
+  `response`, `response.std.error` (delta method, as emmeans with
+  `type = "response"`), `response.conf.low` and `response.conf.high`;
+  `group` (letters, when pairwise comparisons are made), `n` (number of
+  observations) and `estimable`. Values are not rounded. Also returned
+  by `tidy()` and
   [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html).
 
 - pairs:
@@ -615,7 +620,9 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   model class and package version; `comparison`, the comparison
   intervals: the multiplier `mult` of the SE, its confidence level, the
   number of pairs and how many of them are judged differently by their
-  own tests (`disagree`; 0 and `exact = TRUE` when all SEDs are equal).
+  own tests, from the means shown (`disagree`; 0 and `exact = TRUE` when
+  all SEDs are equal), and `left_out`, the means over empty cells that
+  have none.
 
 The result has class `c("predictmeans", "pdmlist")`. Printing shows the
 same output as earlier versions; the `means`, `pairs` and `settings`
@@ -775,6 +782,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> $comparison$range
 #> [1] 0.6226041 0.6226041
 #> 
+#> $comparison$left_out
+#> character(0)
+#> 
 #> 
 #> $back_transform
 #> NULL
@@ -854,17 +864,17 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
   predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
 #>   level1 level2   estimate std.error       df statistic      p.value
-#> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656854e-05
-#> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852849 5.649186e-10
+#> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656859e-05
+#> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852848 5.649197e-10
 #> 3    0.2    0.4 -15.333333  4.435758 44.99995 -3.456756 1.205064e-03
-#> 4      0    0.6 -44.000000  4.435758 44.99995 -9.919388 6.697176e-13
-#> 5    0.2    0.6 -24.500000  4.435758 44.99995 -5.523296 1.583358e-06
-#> 6    0.4    0.6  -9.166667  4.435758 44.99995 -2.066539 4.456098e-02
+#> 4      0    0.6 -44.000000  4.435758 44.99995 -9.919388 6.697195e-13
+#> 5    0.2    0.6 -24.500000  4.435758 44.99995 -5.523295 1.583360e-06
+#> 6    0.4    0.6  -9.166667  4.435758 44.99995 -2.066539 4.456099e-02
 #>          p.adj  conf.low   conf.high      lsd p.method
-#> 1 9.985280e-05 -28.43407 -10.5659255 8.934075        t
-#> 2 1.694756e-09 -43.76741 -25.8992588 8.934075        t
-#> 3 1.446076e-03 -24.26741  -6.3992588 8.934075        t
-#> 4 4.018305e-12 -52.93407 -35.0659255 8.934075        t
-#> 5 3.166715e-06 -33.43407 -15.5659255 8.934075        t
-#> 6 4.456098e-02 -18.10074  -0.2325921 8.934075        t
+#> 1 9.985289e-05 -28.43407 -10.5659250 8.934075        t
+#> 2 1.694759e-09 -43.76741 -25.8992584 8.934075        t
+#> 3 1.446077e-03 -24.26741  -6.3992584 8.934075        t
+#> 4 4.018317e-12 -52.93407 -35.0659250 8.934075        t
+#> 5 3.166719e-06 -33.43407 -15.5659250 8.934075        t
+#> 6 4.456099e-02 -18.10074  -0.2325917 8.934075        t
 ```

@@ -121,13 +121,20 @@ Endocrinology and Metabolism</em>, 84, 4702-4712.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4    Asian    White -0.02606166 0.02163625 223.5764 -1.2045365 2.296558e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5    Black    White  0.08011684 0.02041221 223.5667  3.9249469 1.155142e-04</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 Hispanic    White -0.01289857 0.02149288 225.9151 -0.6001325 5.490194e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          p.adj p.method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 3.509784e-06    tukey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 9.294398e-01    tukey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 5.436499e-05    tukey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 6.246109e-01    tukey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 6.639323e-04    tukey</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 9.319286e-01    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          p.adj    conf.low   conf.high        lsd adj.conf.low adj.conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 3.509784e-06 -0.14688338 -0.06547363 0.04070488  -0.15964249   -0.05271452</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 9.294398e-01 -0.05581660  0.02949043 0.04265351  -0.06918677    0.04286060</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 5.436499e-05  0.05260691  0.13342393 0.04040851   0.03994201    0.14608883</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 6.246109e-01 -0.06869873  0.01657542 0.04263708  -0.08206617    0.02994286</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 6.639323e-04  0.03989189  0.12034180 0.04022495   0.02728069    0.13295300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 9.319286e-01 -0.05525072  0.02945357 0.04235215  -0.06852761    0.04273047</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   p.method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5    tukey</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    tukey</span>
 <span class="r-in"><span><span class="co"># growth of bone density: where is the curve rising?</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"age"</span>, <span class="st">"age"</span>, deriv <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pred_df</span>, <span class="st">"significant"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level from   to direction</span>

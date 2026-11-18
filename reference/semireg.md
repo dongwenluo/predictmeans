@@ -420,13 +420,13 @@ fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
                data = sp, prt = FALSE)
 predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)$pairs
 #>   level1 level2   estimate std.error       df  statistic    p.value      p.adj
-#> 1     a1     a2 -0.2449559 0.1611056 25.50375 -1.5204680 0.14069551 0.14069551
+#> 1     a1     a2 -0.2449559 0.1611056 25.50375 -1.5204680 0.14069552 0.14069552
 #> 2     a1     a3  0.1291968 0.1602868 25.01663  0.8060353 0.42781848 0.42781848
 #> 3     a2     a3  0.3741527 0.1615742 25.78521  2.3156705 0.02879782 0.02879782
-#>   p.method
-#> 1        t
-#> 2        t
-#> 3        t
+#>      conf.low  conf.high       lsd p.method
+#> 1 -0.57642702 0.08651528 0.3314711        t
+#> 2 -0.20090884 0.45930242 0.3301056        t
+#> 3  0.04189739 0.70640793 0.3322553        t
 
 ## 3. Two crossed factors: a common curve and deviation curves for f1, f2 and f1:f2, each
 ##    with its own variance; which deviations are needed?
@@ -439,7 +439,7 @@ fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx, prt = FALSE)
 varcomp(fx, test = TRUE)
 #>                         vcov     SE  2.5 %      97.5 %     LRT   p.value
 #> s_x_f1_f2.(Intercept) 0.0000     NA 0.0000          NA  0.0000 1.0000000
-#> s_x_f2.(Intercept)    0.0005 0.0011 0.0001 191055.2871  0.3757 0.2700000
+#> s_x_f2.(Intercept)    0.0005 0.0011 0.0001 191055.5255  0.3757 0.2700000
 #> s_x_f1.(Intercept)    0.0532 0.0426 0.0173      0.6851 11.6162 0.0003269
 #> s_x.(Intercept)       0.3776 0.2198 0.1559      1.8653  7.1297 0.0037910
 #> residual              0.0345 0.0039 0.0280      0.0435      NA        NA
@@ -486,7 +486,7 @@ anova(fo)$smooth          # a variance per penalty of the surface
 #> 4 t2_inversion_base_height_inversion_base_temp_3 12.919219 -1022.055
 #>   logLik.without          LRT      p.value                      test
 #> 1      -1040.213 3.631529e+01 8.392096e-10 0.5 chi2(0) + 0.5 chi2(1)
-#> 2      -1022.055 2.171419e-10 4.999941e-01 0.5 chi2(0) + 0.5 chi2(1)
+#> 2      -1022.055 2.169145e-10 4.999941e-01 0.5 chi2(0) + 0.5 chi2(1)
 #> 3      -1022.438 7.662851e-01 1.906844e-01 0.5 chi2(0) + 0.5 chi2(1)
 #> 4      -1026.259 8.407200e+00 1.868689e-03 0.5 chi2(0) + 0.5 chi2(1)
 semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
@@ -525,9 +525,9 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 }
 #>      district estimate std.error  df conf.low conf.high group
-#> 1     Mokotow 130.9224  3.510868 401 124.0204  137.8244    A 
-#> 2 Srodmiescie 138.2199  8.320740 401 121.8621  154.5776    A 
-#> 3        Wola 118.9151  3.389983 401 112.2507  125.5795     B
-#> 4    Zoliborz 131.6010  5.959415 401 119.8854  143.3166    AB
+#> 1     Mokotow 130.9225  3.510809 401 124.0207  137.8244    A 
+#> 2 Srodmiescie 138.2202  8.320780 401 121.8624  154.5780    A 
+#> 3        Wola 118.9150  3.389961 401 112.2507  125.5794     B
+#> 4    Zoliborz 131.6012  5.959483 401 119.8854  143.3169    AB
 # }
 ```

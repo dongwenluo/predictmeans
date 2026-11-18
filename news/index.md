@@ -52,6 +52,127 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Changes that affect results or scripts
 
+- **[`anova()`](https://rdrr.io/r/stats/anova.html) with empty cells.**
+  Type III tests of `lmer`, `lm` and other fits (and
+  `permmodels(type = "III")`) stopped with “there are aliased
+  coefficients in the model” when a cell had no data. Each term is now
+  tested on the cells with data (`pm_type3_map_cells()`): an interaction
+  by its contrasts that use no empty cell (one df fewer per empty cell;
+  for `lm` its sum of squares equals the comparison of the models with
+  and without it), a main effect whose means average over empty cells on
+  the cells its means share, the test of
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md);
+  the heading says so and the intercept is not tested. With no empty
+  cell the hypotheses are the sum-to-zero ones (equal F and df). `glm`
+  Type III likelihood ratio tests need a complete design and say so
+  (`test.statistic = "Wald"` works). Checked against a SAS run
+  (`dev/sas/pm-reference-emptycells.sas`, 2026-11-18: PROC GLM
+  contrasts, equal to SAS Type IV here, and PROC MIXED KR and
+  Satterthwaite agree to the printed digits) and Genstat’s REML Wald
+  test of the interaction (run of 2026-11-14).
+
+- **Means over empty cells: nothing read off them contradicts their
+  tests.** Their pairs are compared on the cells both means have, so the
+  difference of the shown means is not the difference tested. Before,
+  `letterCI = TRUE` read letters from comparison intervals around these
+  means and could call two means different when their test did not (oats
+  with Victory’s N = 0.6 plots lost: Marvellous “A”, Victory “B”, p =
+  0.07), while `settings$comparison$disagree` reported 0 because it
+  judged overlap from the pair estimates instead of the means shown.
+  Now: column `over` of `means` names the cells such a mean averages
+  (the factors with levels missing, e.g. `"N 0, 0.2, 0.4"`); when one of
+  its pairs is not the difference of the shown means (compared on common
+  cells, or NA) it has no comparison interval (`comparison.low`/`high`
+  NA, `settings$comparison$left_out`), `letterCI` takes the letters from
+  the p-values (with a message), the LSD note says to compare its pairs,
+  not the differences of the means, with the LSD, and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  draws no comparison or half-LSD bar for it; every mean over empty
+  cells is an open point. One rule decides this (`pm_misread_means()`).
+  `disagree` counts from the means shown. Means and pairs are unchanged;
+  in the snapshot of 52 calls only the four with empty cells or
+  confounded factors change (confounded factors: only `over` is added,
+  their pairs being the differences of the means).
+
+- **One layout for the comparison tables.**
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  returns class `"contrastmeans"`: the 1.x elements keep their places
+  (`[[1]]` the rounded table with the adjusted p-value in `Pr(>|t|)`,
+  `$K`, the joint test), followed by `contrasts` (unrounded: `contrast`,
+  `estimate`, `std.error`, `df`, `statistic`, `p.value` unadjusted,
+  `p.adj`, `p.equiv`, `conf.low`, `conf.high`, `adj.conf.low`,
+  `adj.conf.high` instead of `adj.lower.CL`/`adj.upper.CL`, `p.method`,
+  and `ratio` or `odds.ratio` on a log or logit scale when each
+  contrast’s weights sum to zero), `joint` (unrounded) and `settings`;
+  it prints that table, and
+  `tidy()`/[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html)
+  return it.
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md):
+  the column `slope` is now `estimate` (columns in the order of
+  `predictmeans()$pairs`); its `pairs` gain `conf.low`, `conf.high` and,
+  with tukey, bonferroni, sidak, scheffe or mvt,
+  `adj.conf.low`/`adj.conf.high`; `settings`, `tidy()` and
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) are
+  added. The pairs of
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  on `semireg` fits gain `conf.low`, `conf.high`, `lsd`, `adj.conf.*`
+  and ratios or odds ratios, as for other models. F tests use the names
+  of
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+  (`df1`, `df2`, `F.ratio`, `p.value`), also in
+  `covariatemeans()$settings$test`.
+
+- **[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  returns a classed result and draws its plot only when asked**
+  (`plot = TRUE`, `options(predictmeans.plot = TRUE)`, `plotord`, or
+  `prt = TRUE`, the 1.x name; `prt = FALSE` still never draws). The
+  result (class `c("semipred", "pm_curves")`) has the layout of
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  and
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+  `means` (curves or surfaces), `slopes` (`deriv = 1, 2`, with the t
+  test of slope = 0) or `pairs` (`contr`), with `estimate`, `std.error`,
+  `df`, pointwise `conf.low`/ `conf.high` and, with
+  `band = "simultaneous"`, the simulated band in
+  `adj.conf.low`/`adj.conf.high` with adjusted p-values `p.adj` (the
+  share of the simulated maxima at least as large, so `p.adj < 0.05`
+  exactly where the band leaves out zero); `response` columns for
+  generalized fits and `trans`; `settings` (df method, band, `deriv`,
+  `unconditional`, `boundary`, back-transformation); `significant`.
+  `tidy()`,
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html),
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  and [`print()`](https://rdrr.io/r/base/print.html) work on it. The 1.x
+  `pred_df` and `plt` are unchanged. The ranges where curves or slopes
+  differ are printed with the result instead of as messages.
+
+- **[`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  returns a classed result and draws its plot only when asked**
+  (`plot = TRUE`, `options(predictmeans.plot = TRUE)`, `plotord` or
+  `newwd = TRUE`), as
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+  The result (class `c("covariatemeans", "pm_curves")`) prints a short
+  summary and holds the tables in the layout of
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+  `means` (the curves: factor columns, the covariate under its own name,
+  `estimate`, `std.error`, `df`, `conf.low`, `conf.high`, and `response`
+  columns when back-transformed) and, with `contr`, `pairs` (`level1`,
+  `level2`, the covariate, `estimate`, `std.error`, `df`, `statistic`,
+  `p.value`, pointwise `conf.low`/`conf.high`; with
+  `band = "simultaneous"` the Scheffé `p.adj` and
+  `adj.conf.low`/`adj.conf.high`, which agree; ratio or odds-ratio and
+  response-scale columns), plus `settings` (with the joint test in
+  `settings$test`). `tidy()`,
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  return them. The 1.x fields `plt`, `pltdf`, `test` and `significant`
+  are unchanged; the summary of the difference (the joint test and where
+  the curves differ) is printed with the result instead of as messages.
+  Scripts that relied on the plot appearing need `plot = TRUE` or
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html).
+  (Before, `plot = FALSE` was taken as `plotord = FALSE` by partial
+  matching.)
+
 - **[`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   bands of gaussian
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
@@ -1530,6 +1651,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `tidy()` (generics/broom) and
   [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
   them:
+
   - `means`: one row per mean, with `estimate`, `std.error`, `df`,
     `conf.low`, `conf.high`, back-transformed `response` columns,
     `group` letters, `n` and `estimable`;
@@ -1539,6 +1661,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - `settings`. They are checked against emmeans in the tests. The
     legacy slots and the printed output are unchanged, and the result
     has class `c("predictmeans", "pdmlist")`.
+
 - [`coef()`](https://rdrr.io/r/stats/coef.html) and
   [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
@@ -1551,6 +1674,21 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   Suggests; predictmeans registers its `get_coef`/`set_coef`/`get_vcov`
   methods; recent marginaleffects versions also need
   `options(marginaleffects_model_classes = "predictmeans")`).
+
+- [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  and
+  [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+  results have the same layout: `means`, `slopes`
+  (`semipred(deriv = )`), `pairs` (with `contr`) and `settings`, with
+  `tidy()`,
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html),
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  and [`print()`](https://rdrr.io/r/base/print.html) methods
+  ([`?tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)).
+  In all of them `conf.low`/`conf.high` are pointwise and a simultaneous
+  band is in `adj.conf.low`/`adj.conf.high`, as the adjusted limits of
+  `predictmeans()$pairs`; a simultaneous `covariatemeans(contr = )` band
+  also gives the response-scale `response.adj.conf.*`.
 
 ### Plots and summaries from the result tables
 
@@ -2649,6 +2787,27 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   vignette).
 
 ### Internal
+
+- Shorter empty-cell messages: the confounding warning (about 450
+  characters) now names the two factors and the three ways to state the
+  structure in one sentence; the empty-cell warning, the message on
+  non-estimable means and the
+  [`anova()`](https://rdrr.io/r/stats/anova.html) heading point to
+  [`vignette("missing-cells")`](https://dongwenluo.github.io/predictmeans/articles/missing-cells.md)
+  /
+  [`?anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+  for the explanation.
+
+- One helper (`pm_result_table()`, `R/tidy.R`) gives the tables of every
+  classed result to `tidy()` and
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html)
+  (`predictmeans`, `covariatemeans`/`semipred`, `pm_slopes`,
+  `contrastmeans`); the error for a missing table reads “There is no
+  ‘pairs’ table in this result”.
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+  builds its table once and reads the 1.x table from it (identical at
+  tolerance 0 in 9 cases: permutations, equivalence, robust `vcov`, user
+  `Df`, empty cells).
 
 - The package’s own numerical derivatives are in one file (`R/deriv.R`)
   with one rule: central differences with the step c max(\|x\|, scale),

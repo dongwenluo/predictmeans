@@ -176,17 +176,36 @@ one-sided p-values; below <code>level</code>, the difference lies within the mar
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>There are two components in the output which are</p>
-<dl><dt>Table</dt>
-<dd><p>A table showing t-test results for the specified linear contrasts.</p></dd>
+    <p>An object of class <code>"contrastmeans"</code>, a list. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows the contrasts, <code>tidy()</code> and
+<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> return the table <code>contrasts</code> (<code>what = "joint"</code>: the joint test). Its first
+components are those of 1.x:</p>
+<dl><dt>The t tests of the specified contrasts</dt>
+<dd><p>A table (rounded to 4 decimals) of the t tests of the contrasts,
+  with the adjusted p-value in <code>Pr(&gt;|t|)</code>.</p></dd>
 
 <dt>K</dt>
 <dd><p>A contrast matrix.</p></dd>
 
-</dl><p>and, with <code>joint = TRUE</code>, a third,</p>
-<dl><dt>Joint F test of the contrasts</dt>
-<dd><p><code>df1</code>, <code>df2</code>, <code>F.ratio</code> and <code>p.value</code> of the joint test
-  (and <code>Perm_p_value</code> with <code>permlist</code>).</p></dd>
+<dt>Joint F test of the contrasts</dt>
+<dd><p>With <code>joint = TRUE</code>: <code>df1</code>, <code>df2</code>, <code>F.ratio</code> and
+  <code>p.value</code> of the joint test (and <code>Perm_p_value</code> with <code>permlist</code>).</p></dd>
+
+</dl><p>and then the tables in the layout of <code><a href="predictmeans.html">predictmeans</a></code>, unrounded:</p>
+<dl><dt>contrasts</dt>
+<dd><p>One row per contrast: <code>contrast</code> (its name), <code>over</code> (contrasts of means over empty
+  cells: the cells used), <code>estimate</code>, <code>std.error</code>, <code>df</code>, <code>statistic</code> (t),
+  <code>p.value</code> (unadjusted; with <code>permlist</code> the permutation p-value), <code>p.adj</code> (adjusted by
+  <code>adj</code>), <code>p.equiv</code> (with <code>equivalence</code>), <code>conf.low</code>, <code>conf.high</code>,
+  <code>adj.conf.low</code>, <code>adj.conf.high</code> (simultaneous, with the adjustments that have them),
+  <code>p.method</code>, and for a log or logit scale (link, or a log response) <code>ratio</code> or
+  <code>odds.ratio</code> with its limits when the weights of every contrast sum to zero.</p></dd>
+
+<dt>joint</dt>
+<dd><p>With <code>joint = TRUE</code>: the joint test, unrounded.</p></dd>
+
+<dt>settings</dt>
+<dd><p><code>modelterm</code>, <code>level</code>, <code>adjust</code>, <code>df_method</code>, <code>vcov_adjust</code>, <code>vcov</code>,
+  <code>equivalence</code>, <code>nperm</code>, <code>model_class</code>, <code>version</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -229,49 +248,32 @@ one-sided p-values; below <code>level</code>, the difference lies within the mar
 <span class="r-in"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, </span></span>
 <span class="r-in"><span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value      df Pr(&gt;|t|) lower.CL upper.CL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value &lt; 0.0001."</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $K</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]            -1            0         1               0              0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]             0            0         1               0              0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]           0               0              0           0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]           0               0             -1           0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.6:Marvellous 0.6:Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]              0           0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]              0           0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    contrast estimate std.error    df statistic   p.value     p.adj conf.low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 1    -8.50     9.715 30.23   -0.8749 3.885e-01 3.885e-01   -28.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 2   -45.67     9.715 30.23   -4.7006 5.332e-05 5.332e-05   -65.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      11.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     -25.83</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># 3. ... and both contrasts tested together (an F test with 2 numerator df)</span></span></span>
-<span class="r-in"><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span>, joint<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $`The t tests of the specified contrasts`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Estimate Std. Error t value      df Pr(&gt;|t|) lower.CL upper.CL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"Note")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value &lt; 0.0001."</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $K</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]            -1            0         1               0              0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]             0            0         1               0              0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]           0               0              0           0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]           0               0             -1           0               0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.6:Marvellous 0.6:Victory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]              0           0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]              0           0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $`Joint F test of the contrasts`</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               df1     df2 F.ratio p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> all contrasts   2 30.2307 12.4991   1e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span><span class="va">ct</span> <span class="op">&lt;-</span> <span class="fu">contrastmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span>, joint<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ct</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    contrast estimate std.error    df statistic   p.value     p.adj conf.low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 1    -8.50     9.715 30.23   -0.8749 3.885e-01 3.885e-01   -28.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 2   -45.67     9.715 30.23   -4.7006 5.332e-05 5.332e-05   -65.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      11.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     -25.83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Joint F test: F(2, 30.2) = 12.499, p = 0.000111</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">ct</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     contrast  estimate std.error       df  statistic      p.value        p.adj</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 contrast 1  -8.50000  9.715028 30.23075 -0.8749332 3.885088e-01 3.885088e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 contrast 2 -45.66667  9.715028 30.23075 -4.7006213 5.331526e-05 5.331526e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    conf.low conf.high p.method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -28.33439  11.33439        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -65.50105 -25.83228        t</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

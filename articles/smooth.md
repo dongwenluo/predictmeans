@@ -24,6 +24,7 @@ dialyzers at seven transmembrane pressures, at two blood flow rates
 ``` r
 
 library(predictmeans)
+library(ggplot2)      # autoplot()
 data(Dialyzer, package = "nlme")
 Dialyzer <- as.data.frame(Dialyzer)
 ```
@@ -90,19 +91,35 @@ anova(fm)
 
 ``` r
 
-cur <- semipred(fm, "QB", "pressure", prt = FALSE)
-head(cur$pred_df)
-#>    QB pressure        SE       df     rate        LL       UL
-#> 1 200    0.235 1.0383074 40.52855 2.720144 0.6224983 4.817789
-#> 2 200    0.240 1.0224163 38.62697 3.029839 0.9611684 5.098510
-#> 3 200    0.245 1.0080322 36.94778 3.339669 1.2971038 5.382233
-#> 4 200    0.250 0.9950291 35.46806 3.649587 1.6305231 5.668651
-#> 5 200    0.255 0.9832854 34.16605 3.959550 1.9616315 5.957469
-#> 6 200    0.260 0.9726852 33.02154 4.269514 2.2906198 6.248408
-cur$plt
+cur <- semipred(fm, "QB", "pressure")
+cur
+#> Curves of 'QB' along pressure
+#> 95% limits; Satterthwaite (fixed + smooth coefficients) df
+#>   QB pressure estimate std.error    df conf.low conf.high
+#>  200    0.235    2.720    1.0383 40.53   0.6225     4.818
+#>  200    0.240    3.030    1.0224 38.63   0.9612     5.099
+#>  200    0.245    3.340    1.0080 36.95   1.2971     5.382
+#>  200    0.250    3.650    0.9950 35.47   1.6305     5.669
+#>  200    0.255    3.960    0.9833 34.17   1.9616     5.957
+#>  200    0.260    4.270    0.9727 33.02   2.2906     6.248
+#>  200    0.280    5.508    0.9396 29.67   3.5886     7.428
+#>  200    0.285    5.818    0.9332 29.07   3.9093     7.726
+#>  200    0.290    6.127    0.9275 28.55   4.2286     8.025
+#>  200    0.292    6.253    0.9252 28.35   4.3586     8.147
+#> ... 220 more rows: as.data.frame(x) gives the table.
+#> autoplot(x) draws the plot.
+autoplot(cur)
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-5-1.png)
+
+The result prints a summary and holds its tables in the layout of
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
+`as.data.frame(cur)` (or `cur$means`) has `estimate`, `std.error`, `df`,
+`conf.low` and `conf.high` with the pressure under its own name. Nothing
+is drawn unless asked (`plot = TRUE`, or
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) as
+here). The 1.x table is still in `cur$pred_df`.
 
 The band is pointwise: at each pressure it covers the true curve with
 95% probability (`level = 0.05`). Before version 2.0 these limits were
@@ -116,25 +133,28 @@ its whole range:
 
 ``` r
 
-sim <- semipred(fm, "QB", "pressure", simultaneous = TRUE, prt = FALSE)
-p <- sim$pred_df
+sim <- semipred(fm, "QB", "pressure", band = "simultaneous")
+p <- sim$means
 head(data.frame(pressure = p$pressure, df = p$df, pointwise = qt(0.975, p$df),
-                simultaneous = (p$UL - p$rate) / p$SE))
+                simultaneous = (p$adj.conf.high - p$estimate) / p$std.error))
 #>   pressure       df pointwise simultaneous
-#> 1    0.235 40.52855  2.020255     3.091407
-#> 2    0.240 38.62697  2.023316     3.100775
-#> 3    0.245 36.94778  2.026289     3.109898
-#> 4    0.250 35.46806  2.029151     3.118699
-#> 5    0.255 34.16605  2.031881     3.127113
-#> 6    0.260 33.02154  2.034465     3.135096
-sim$plt
+#> 1    0.235 40.52855  2.020255     3.096108
+#> 2    0.240 38.62697  2.023316     3.105515
+#> 3    0.245 36.94778  2.026289     3.114675
+#> 4    0.250 35.46806  2.029151     3.123511
+#> 5    0.255 34.16605  2.031881     3.131961
+#> 6    0.260 33.02154  2.034465     3.139976
+autoplot(sim)
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-6-1.png)
 
 The critical values come from 10,000 draws of the estimates’
 distribution (a multivariate t), with a fixed seed, so the band is the
-same each time.
+same each time. In the table the pointwise limits stay in
+`conf.low`/`conf.high` and the simultaneous band is in
+`adj.conf.low`/`adj.conf.high`, as the adjusted limits of
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
 ## Where do the curves differ?
 
@@ -146,28 +166,37 @@ ultrafiltration rate from a pressure of about 1.2 upwards:
 
 ``` r
 
-dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), simultaneous = TRUE, prt = FALSE)
-dif$plt
+dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), band = "simultaneous")
+dif$significant
+#>       from   to direction
+#> 1 1.204694 3.03         >
+autoplot(dif)
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-7-1.png)
+
+`as.data.frame(dif)` has the difference at each pressure in the columns
+of `predictmeans()$pairs`, with `p.adj`: the share of the simulated
+maxima at least as large, below 0.05 exactly where the simultaneous band
+leaves out zero.
 
 ## Slopes and curvature: `deriv`
 
 `deriv = 1` gives the slope of each curve along the covariate,
 `deriv = 2` its curvature, with the same bands and df. Where the band
 lies above zero the rate still rises with pressure; the ranges are
-printed and kept in `attr(pred_df, "significant")` (here with a
-simultaneous band, which holds over the whole range at once):
+printed with the result and kept in `significant` (here with a
+simultaneous band, which holds over the whole range at once). The table
+`slp$slopes` adds the t test of slope = 0:
 
 ``` r
 
-slp <- semipred(fm, "QB", "pressure", deriv = 1, simultaneous = TRUE, prt = FALSE)
-attr(slp$pred_df, "significant")
+slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
+slp$significant
 #>   level  from       to direction
 #> 1   200 0.235 1.661020       > 0
 #> 2   300 0.235 2.060306       > 0
-slp$plt
+autoplot(slp)
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-8-1.png)
@@ -200,8 +229,10 @@ predictmeans(fm, "QB")
 #> 
 #> Pairwise comparisons (t tests, Satterthwaite df; p.adj: none)
 #> 
-#>  level1 level2 estimate std.error    df statistic   p.value     p.adj p.method
-#>     200    300   -6.557     1.376 29.36    -4.764 4.748e-05 4.748e-05        t
+#>  level1 level2 estimate std.error    df statistic   p.value     p.adj conf.low
+#>     200    300   -6.557     1.376 29.36    -4.764 4.748e-05 4.748e-05    -9.37
+#>  conf.high   lsd p.method
+#>     -3.744 2.813        t
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 #>    QB estimate std.error       df conf.low conf.high group
 #> 1 200 36.30263 0.9244804 36.54632 34.42867  38.17659     A
@@ -246,7 +277,7 @@ fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
 pm <- predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)
 pm$means
 #>    A estimate std.error       df conf.low conf.high group
-#> 1 a1 2.353834 0.2423023 8.659083 1.802401  2.905267     A
+#> 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A
 #> 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A
 #> 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A
 pm$pairs[c("level1", "level2", "estimate", "std.error", "df", "p.value")]
@@ -279,10 +310,10 @@ dd$y <- sin(2*pi*dd$x) + (dd$f1 == "q")*1.5*sin(pi*dd$x)^2 +
 fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd, prt = FALSE)
 anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 #>        term     variance        LRT      p.value
-#> 1       s_x 0.3163567534  5.7060123 8.453451e-03
-#> 2    s_x_f1 0.0927791411 26.9861474 1.024594e-07
+#> 1       s_x 0.3163539389  5.7060123 8.453451e-03
+#> 2    s_x_f1 0.0927799765 26.9861474 1.024594e-07
 #> 3    s_x_f2 0.0000000000  0.0000000 1.000000e+00
-#> 4 s_x_f1_f2 0.0002386665  0.1328028 3.577718e-01
+#> 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01
 ```
 
 The test is conservative: in 200 simulated data sets like these, with no
@@ -308,11 +339,11 @@ cn$y <- rnbinom(nrow(cn), size = 3,
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
-rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
-attr(rr$pred_df, "significant")
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
+rr$significant
 #>        from to direction
 #> 1 0.7241379  3         >
-rr$plt
+autoplot(rr)
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-12-1.png)
@@ -334,7 +365,7 @@ fg <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) 
                 (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb, prt = FALSE)
 logLik(fg$semer)
 #> 'log Lik.' -935.7451 (df=8)
-semipred(fg, "age", "age", prt = FALSE)$plt
+autoplot(semipred(fg, "age", "age"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-13-1.png)
@@ -360,7 +391,7 @@ anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
 #>     term   variance      LRT      p.value
 #> 1   s_x1 0.03875716 122.8299 7.596575e-29
 #> 2 s_x2_z 0.33715120 188.0839 4.164359e-43
-semipred(fa, covariate = "x1", prt = FALSE)$plt
+autoplot(semipred(fa, covariate = "x1"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-14-1.png)
@@ -374,7 +405,7 @@ on the log scale, back-transformed for the plots:
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
                data = copper, prt = FALSE)
-semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-15-1.png)
@@ -391,22 +422,22 @@ db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x 
                                      rnorm(12, 0, 0.5)[db$cl]))
 fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial,
                 data = db, prt = FALSE)
-semipred(fbin, "g", "x", prt = FALSE)$plt
+autoplot(semipred(fbin, "g", "x"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-16-1.png)
 
 ``` r
 
-head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df[
-  c("x", "odds.ratio", "odds.ratio.LL", "odds.ratio.UL")])
-#>            x odds.ratio odds.ratio.LL odds.ratio.UL
-#> 1 0.00000000  0.6341654     0.1769871      2.272289
-#> 2 0.02040816  0.7152452     0.2422917      2.111404
-#> 3 0.04081633  0.8012505     0.3169543      2.025536
-#> 4 0.04166667  0.8049156     0.3201933      2.023431
-#> 5 0.06122449  0.8903096     0.3949808      2.006809
-#> 6 0.08163265  0.9798775     0.4675019      2.053810
+head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a")))[
+  c("x", "odds.ratio", "odds.ratio.conf.low", "odds.ratio.conf.high")])
+#>            x odds.ratio odds.ratio.conf.low odds.ratio.conf.high
+#> 1 0.00000000  0.6345286           0.1770954             2.273501
+#> 2 0.02040816  0.7156140           0.2424221             2.112445
+#> 3 0.04081633  0.8016197           0.3171040             2.026446
+#> 4 0.04166667  0.8052848           0.3203437             2.024337
+#> 5 0.06122449  0.8906737           0.3951446             2.007619
+#> 6 0.08163265  0.9802307           0.4676728             2.054540
 ```
 
 **Repeated measures with serial correlation.** Curves over time for
@@ -428,10 +459,10 @@ far <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | 
                    dispformula = ~0, data = dr, prt = FALSE)
 predictmeans(far, "A", covariate = c(t = 4), pairwise = TRUE)$pairs[
   c("level1", "level2", "estimate", "std.error", "df", "p.value")]
-#>   level1 level2   estimate std.error       df   p.value
-#> 1     a1     a2 -0.2146406 0.3486284 20.51249 0.5448827
-#> 2     a1     a3 -0.3028874 0.3191386 17.43094 0.3555549
-#> 3     a2     a3 -0.0882468 0.3358240 19.17360 0.7955254
+#>   level1 level2    estimate std.error       df   p.value
+#> 1     a1     a2 -0.21464779 0.3486296 20.14254 0.5449940
+#> 2     a1     a3 -0.30286816 0.3191345 17.10317 0.3558238
+#> 3     a2     a3 -0.08822037 0.3358213 19.06262 0.7955997
 ```
 
 **A tensor-product surface.** Two covariates on different scales
@@ -448,7 +479,7 @@ fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
 anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
 #>                                             term  variance          LRT
 #> 1                    s_daggett_pressure_gradient  4.591269 3.631529e+01
-#> 2 t2_inversion_base_height_inversion_base_temp_1  0.000000 2.171419e-10
+#> 2 t2_inversion_base_height_inversion_base_temp_1  0.000000 2.169145e-10
 #> 3 t2_inversion_base_height_inversion_base_temp_2  1.124284 7.662851e-01
 #> 4 t2_inversion_base_height_inversion_base_temp_3 12.919219 8.407200e+00
 #>        p.value
@@ -456,7 +487,7 @@ anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
 #> 2 4.999941e-01
 #> 3 1.906844e-01
 #> 4 1.868689e-03
-semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
+autoplot(semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp")))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-18-1.png)
@@ -475,7 +506,7 @@ ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
               data = ds, prt = FALSE)
-semipred(fs, covariate = "day", prt = FALSE)$plt
+autoplot(semipred(fs, covariate = "day"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-19-1.png)
@@ -518,8 +549,8 @@ data(scallop); data(scallopKnots); data(scallopBdry)
 fsc <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
                                    xt = list(knots = as.matrix(scallopKnots))),
                data = scallop, prt = FALSE)
-semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
-         trans = sinh, prt = FALSE)$plt
+autoplot(semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
+                  trans = sinh))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-21-1.png)
@@ -532,7 +563,7 @@ logistic regression, the probability with its band:
 data(wageTUnion)
 fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
               data = wageTUnion, prt = FALSE)
-semipred(fw, "wage", "wage", prt = FALSE)$plt
+autoplot(semipred(fw, "wage", "wage"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-22-1.png)

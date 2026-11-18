@@ -34,7 +34,13 @@ An `anova` table.
 ## Details
 
 Type III hypotheses do not depend on the contrasts the model was fitted
-with (sum-to-zero coding, as SAS Type 3); Type II are those of
+with (sum-to-zero coding, as SAS Type 3). With empty cells (aliased
+coefficients) each term is tested on the cells with data: an interaction
+by its contrasts that use no empty cell (one df fewer per empty cell), a
+main effect whose means average over empty cells on the cells its means
+share, as
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md);
+the table says so, and the intercept is not tested; Type II are those of
 [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html); Type I
 (sequential) are lmerTest's, always with Satterthwaite df. Kenward-Roger
 F tests use the adjusted covariance of the fixed effects (`pbkrtest`'s,

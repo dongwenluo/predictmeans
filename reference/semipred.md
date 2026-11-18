@@ -1,7 +1,15 @@
 # Predicted Means of a Semi Paramatric Model with Covariate Variable(s)
 
-This function produces predicted means with graph for a semi paramatric
-model with new set of covariate values.
+Predicted curves (or surfaces) of a semiparametric model along a
+covariate, with pointwise or simultaneous bands; their slopes (`deriv`),
+or the difference between two curves (`contr`). The result holds the
+tables in the layout of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+(see
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md))
+and the plot, which
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+returns.
 
 ## Usage
 
@@ -9,11 +17,11 @@ model with new set of covariate values.
 semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
        scales=c("fixed", "free", "free_x", "free_y"),
-       plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=TRUE,
+       plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
        simultaneous=FALSE, contr_scale=c("model", "response"),
        band=c("pointwise", "simultaneous"),
        unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-       mean_type=c("conditional", "overall"))
+       mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 ```
 
 ## Arguments
@@ -153,8 +161,16 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
 - prt:
 
-  A logical scalar to indicate whether to produce plots on the screen or
-  not. The default value is TRUE.
+  The name of `plot` before 2.0: `TRUE` draws the plot, `FALSE` does not
+  (whatever `plot` says). The default `NULL` leaves it to `plot`.
+
+- plot:
+
+  Draw the plot now? The default is `FALSE` (since 2.0; 1.x drew it):
+  the plot is in the result
+  ([`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  returns it). `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for
+  a whole session, draws it; so does `plotord`.
 
 - band:
 
@@ -214,17 +230,59 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
 ## Value
 
+An object of class `c("semipred", "pm_curves")`, a list. `tidy()` and
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
+its table,
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+the plot, and [`print()`](https://rdrr.io/r/base/print.html) shows a
+summary (see
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)).
+
+- means:
+
+  The curves: the factor columns of `modelterm`, the covariate(s),
+  `estimate`, `std.error`, `df`, `conf.low`, `conf.high` on the model
+  scale (pointwise limits), with a simultaneous band `adj.conf.low`,
+  `adj.conf.high`; for generalized fits and with `trans` also
+  `response`, `response.std.error`, `response.conf.low`,
+  `response.conf.high` (and `response.adj.conf.*`). `NULL` with `contr`
+  or `deriv`.
+
+- slopes:
+
+  With `deriv = 1` (`2`): the slopes (curvatures) in the same columns,
+  with `statistic`, `p.value` and, with a simultaneous band, `p.adj`.
+
+- pairs:
+
+  With `contr`: the difference of the two curves, as
+  `covariatemeans()$pairs`; with a simultaneous band `p.adj` is the
+  share of the simulated maxima at least as large (below 0.05 exactly
+  where the band leaves out zero; the smallest value is 1/10000).
+
+- settings:
+
+  The options: `df_method`, `band`, `deriv`, `unconditional`,
+  `back_transform`, ...
+
+- significant:
+
+  With `contr` or `deriv`: the ranges of the covariate where the band
+  asked for leaves out zero.
+
 - plt:
 
-  A ggplot object.
+  A ggplot object (a list of plotly plots for `threeD` surfaces by
+  group); drawn only when `plot = TRUE`.
 
 - pred_df:
 
-  A data.frame with the predicted values, their limits `LL` and `UL`,
-  `SE` and `df`; for generalized fits the means and limits are on the
-  response scale (limits `h(eta -+ crit SE)`), `SE` on the link scale
-  and `SE_mu` on the response scale (delta method), `df` when the limits
-  are t; with `contr` the columns described in Details.
+  The 1.x table: a data.frame with the predicted values, their limits
+  `LL` and `UL` (the band asked for), `SE` and `df`; for generalized
+  fits the means and limits are on the response scale (limits
+  `h(eta -+ crit SE)`), `SE` on the link scale and `SE_mu` on the
+  response scale (delta method), `df` when the limits are t; with
+  `contr` the columns described in Details.
 
 ## Details
 
@@ -281,11 +339,14 @@ or `odds.ratio` with its limits and `..includes1`; `response.diff`,
 the response scale; and `significant` (the link scale). Before 2.0 the
 band of a generalized model's difference used the standard error of the
 link-scale difference multiplied by a weight evaluated at the difference
-of the means, which is not a standard error of any difference. The
-ranges of the covariate where the curves differ are printed and kept in
-`attr(pred_df, "significant")`; with `simultaneous = TRUE` they hold for
-the whole curve, and the curves differ somewhere at level `level` when
-there is such a range. (A joint F test, as
+of the means, which is not a standard error of any difference. The same
+difference is in the table `pairs` in the layout of
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+The ranges of the covariate where the curves differ are printed with the
+result and kept in `significant` and `attr(pred_df, "significant")`;
+with `simultaneous = TRUE` they hold for the whole curve, and the curves
+differ somewhere at level `level` when there is such a range. (A joint F
+test, as
 [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
 gives, is not given: Wald tests of penalised smooth coefficients are not
 reliable.)
@@ -304,13 +365,15 @@ simultaneous bands are computed as for the curves; generalized models
 give the slopes of the linear predictor (link scale). `pred_df` holds
 the slopes in the column of the response, with `includes0` and
 `significant`; the ranges of the covariate where the band lies above or
-below zero (the curve rises or falls) are printed and kept in
-`attr(pred_df, "significant")`. A covariate scaled by
-`semireg(nscale = TRUE)` is differentiated in its own units. In a
-simulation (`dev/sim-semipred-deriv.R`; \\y = \sin(x/1.5)\\ plus noise,
-150 points, 500 data sets) the bands covered the true slope 0.97
-pointwise and over the whole range with the default 6 knots, 0.99-1.00
-with 15; the curvature 0.98-1.00.
+below zero (the curve rises or falls) are printed with the result and
+kept in `attr(pred_df, "significant")`. A covariate scaled by
+`semireg(nscale = TRUE)` is differentiated in its own units. The table
+`slopes` of the result has the slopes with `statistic` and `p.value` of
+slope = 0 (and `p.adj` with a simultaneous band), and `significant` the
+ranges. In a simulation (`dev/sim-semipred-deriv.R`; \\y = \sin(x/1.5)\\
+plus noise, 150 points, 500 data sets) the bands covered the true slope
+0.97 pointwise and over the whole range with the default 6 knots,
+0.99-1.00 with 15; the curvature 0.98-1.00.
 
 ## Zero inflation (glmmTMB)
 
@@ -373,42 +436,65 @@ anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 
 # the curves with pointwise bands (t limits with Satterthwaite df), then simultaneous ones
 out <- semipred(fm, "QB", "pressure")
+out
+#> Curves of 'QB' along pressure
+#> 95% limits; Satterthwaite (fixed + smooth coefficients) df
+#>   QB pressure estimate std.error    df conf.low conf.high
+#>  200    0.235    2.720    1.0383 40.53   0.6225     4.818
+#>  200    0.240    3.030    1.0224 38.63   0.9612     5.099
+#>  200    0.245    3.340    1.0080 36.95   1.2971     5.382
+#>  200    0.250    3.650    0.9950 35.47   1.6305     5.669
+#>  200    0.255    3.960    0.9833 34.17   1.9616     5.957
+#>  200    0.260    4.270    0.9727 33.02   2.2906     6.248
+#>  200    0.280    5.508    0.9396 29.67   3.5886     7.428
+#>  200    0.285    5.818    0.9332 29.07   3.9093     7.726
+#>  200    0.290    6.127    0.9275 28.55   4.2286     8.025
+#>  200    0.292    6.253    0.9252 28.35   4.3586     8.147
+#> ... 220 more rows: as.data.frame(x) gives the table.
+#> autoplot(x) draws the plot.
+autoplot(out)
 
-head(out$pred_df)
-#>    QB pressure        SE       df     rate        LL       UL
-#> 1 200    0.235 1.0383074 40.52855 2.720144 0.6224983 4.817789
-#> 2 200    0.240 1.0224163 38.62697 3.029839 0.9611684 5.098510
-#> 3 200    0.245 1.0080322 36.94778 3.339669 1.2971038 5.382233
-#> 4 200    0.250 0.9950291 35.46806 3.649587 1.6305231 5.668651
-#> 5 200    0.255 0.9832854 34.16605 3.959550 1.9616315 5.957469
-#> 6 200    0.260 0.9726852 33.02154 4.269514 2.2906198 6.248408
-semipred(fm, "QB", "pressure", band = "simultaneous")
+autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 
 # at given pressures
-semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2), prt = FALSE)$pred_df
-#>    QB pressure        SE       df     rate       LL       UL
-#> 1 200      0.5 0.9328556 34.53976 18.27716 16.38246 20.17186
-#> 2 200      1.0 0.9244804 36.54632 36.30263 34.42867 38.17659
-#> 3 200      1.5 0.9639014 29.53873 44.33622 42.36638 46.30606
-#> 4 200      2.0 1.1325886 28.62332 46.05764 43.73991 48.37536
-#> 5 300      0.5 0.9226699 33.10338 18.14433 16.26737 20.02130
-#> 6 300      1.0 0.9262667 36.79558 38.81293 36.93578 40.69007
-#> 7 300      1.5 0.9626107 29.39138 50.58195 48.61432 52.54957
-#> 8 300      2.0 1.1303367 28.41027 56.63624 54.32236 58.95013
+semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+#> Curves of 'QB' along pressure
+#> 95% limits; Satterthwaite (fixed + smooth coefficients) df
+#>   QB pressure estimate std.error    df conf.low conf.high
+#>  200      0.5    18.28    0.9329 34.54    16.38     20.17
+#>  200      1.0    36.30    0.9245 36.55    34.43     38.18
+#>  200      1.5    44.34    0.9639 29.54    42.37     46.31
+#>  200      2.0    46.06    1.1326 28.62    43.74     48.38
+#>  300      0.5    18.14    0.9227 33.10    16.27     20.02
+#>  300      1.0    38.81    0.9263 36.80    36.94     40.69
+#>  300      1.5    50.58    0.9626 29.39    48.61     52.55
+#>  300      2.0    56.64    1.1303 28.41    54.32     58.95
+#> autoplot(x) draws the plot.
 
 # the difference of the two curves, and where they differ
 dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
-#> 300 differs from 200 (simultaneous band, level 0.05) for pressure: 1.205 to 3.03 (>).
-
-attr(dif$pred_df, "significant")
+dif$significant
 #>       from   to direction
 #> 1 1.204694 3.03         >
+head(as.data.frame(dif))
+#>   level1 level2 pressure   estimate std.error       df  statistic   p.value
+#> 1    300    200    0.235 -1.0449653  1.527457 45.91274 -0.6841208 0.4973376
+#> 2    300    200    0.240 -1.0298933  1.501755 43.65666 -0.6857933 0.4964694
+#> 3    300    200    0.245 -1.0147676  1.478069 41.61607 -0.6865494 0.4961745
+#> 4    300    200    0.250 -0.9995865  1.456254 39.77410 -0.6864096 0.4964372
+#> 5    300    200    0.255 -0.9843485  1.436166 38.11365 -0.6854001 0.4972393
+#> 6    300    200    0.260 -0.9690517  1.417671 36.61803 -0.6835519 0.4985610
+#>    p.adj  conf.low conf.high adj.conf.low adj.conf.high
+#> 1 0.9813 -4.119735  2.029805    -5.272979      3.183048
+#> 2 0.9812 -4.057153  1.997367    -5.196513      3.136726
+#> 3 0.9811 -3.998448  1.968912    -5.125290      3.095755
+#> 4 0.9811 -3.943306  1.944133    -5.058868      3.059695
+#> 5 0.9813 -3.891430  1.922733    -4.996828      3.028131
+#> 6 0.9815 -3.842538  1.904434    -4.938770      3.000667
 
 # slopes of the curves, and where they differ from zero over the whole range
 slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
-#> Slope of rate (simultaneous band, level 0.05): 200: 0.235 to 1.661 (> 0); 300: 0.235 to 2.060 (> 0).
-
-attr(slp$pred_df, "significant")
+slp$significant
 #>   level  from       to direction
 #> 1   200 0.235 1.661020       > 0
 #> 2   300 0.235 2.060306       > 0
@@ -417,9 +503,9 @@ attr(slp$pred_df, "significant")
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
                data = copper, prt = FALSE)
-semipred(fcu, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
 
-semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 
 
 # a binary response: the probability scale, and the odds ratio of two curves
@@ -429,29 +515,29 @@ db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x 
                                      rnorm(12, 0, 0.5)[db$cl]))
 fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
                 prt = FALSE)
-semipred(fbin, "g", "x", prt = FALSE)$plt
+autoplot(semipred(fbin, "g", "x"))
 
-head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df)
-#>            x        diff       ses         LL        UL includes0 odds.ratio
-#> 1 0.00000000 -0.45544553 0.6498042 -1.7316787 0.8207876      TRUE  0.6341654
-#> 2 0.02040816 -0.33512989 0.5511548 -1.4176131 0.7473533      TRUE  0.7152452
-#> 3 0.04081633 -0.22158170 0.4722011 -1.1489976 0.7058342      TRUE  0.8012505
-#> 4 0.04166667 -0.21701785 0.4693481 -1.1388304 0.7047947      TRUE  0.8049156
-#> 5 0.06122449 -0.11618598 0.4138089 -0.9289181 0.6965461      TRUE  0.8903096
-#> 6 0.08163265 -0.02032772 0.3767891 -0.7603519 0.7196965      TRUE  0.9798775
-#>   odds.ratio.LL odds.ratio.UL odds.ratio.includes1 response.diff response.ses
-#> 1     0.1769871      2.272289                 TRUE  -0.085658253   0.11998578
-#> 2     0.2422917      2.111404                 TRUE  -0.068798133   0.11203980
-#> 3     0.3169543      2.025536                 TRUE  -0.048869676   0.10372380
-#> 4     0.3201933      2.023431                 TRUE  -0.047989164   0.10338662
-#> 5     0.3949808      2.006809                 TRUE  -0.027076246   0.09632543
-#> 6     0.4675019      2.053810                 TRUE  -0.004923197   0.09124626
-#>   response.LL response.UL response.includes0 significant  SE_contr
-#> 1  -0.3213136   0.1499971               TRUE       FALSE 0.6498042
-#> 2  -0.2888474   0.1512511               TRUE       FALSE 0.5511548
-#> 3  -0.2525861   0.1548467               TRUE       FALSE 0.4722011
-#> 4  -0.2510433   0.1550650               TRUE       FALSE 0.4693481
-#> 5  -0.2162620   0.1621095               TRUE       FALSE 0.4138089
-#> 6  -0.1841334   0.1742870               TRUE       FALSE 0.3767891
+head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
+#>   level1 level2          x    estimate std.error  df  statistic   p.value
+#> 1      b      a 0.00000000 -0.45487296 0.6497841 585 -0.7000371 0.4841824
+#> 2      b      a 0.02040816 -0.33461434 0.5511433 585 -0.6071277 0.5440018
+#> 3      b      a 0.04081633 -0.22112093 0.4721953 585 -0.4682828 0.6397568
+#> 4      b      a 0.04166667 -0.21655930 0.4693425 585 -0.4614099 0.6446760
+#> 5      b      a 0.06122449 -0.11577712 0.4138061 585 -0.2797859 0.7797407
+#> 6      b      a 0.08163265 -0.01996728 0.3767866 585 -0.0529936 0.9577551
+#>     conf.low conf.high odds.ratio odds.ratio.conf.low odds.ratio.conf.high
+#> 1 -1.7310667 0.8213208  0.6345286           0.1770954             2.273501
+#> 2 -1.4170749 0.7478462  0.7156140           0.2424221             2.112445
+#> 3 -1.1485255 0.7062836  0.8016197           0.3171040             2.026446
+#> 4 -1.1383609 0.7052423  0.8052848           0.3203437             2.024337
+#> 5 -0.9285036 0.6969494  0.8906737           0.3951446             2.007619
+#> 6 -0.7599864 0.7200518  0.9802307           0.4676728             2.054540
+#>       response response.std.error response.conf.low response.conf.high
+#> 1 -0.085549307         0.11998383        -0.3212008          0.1501022
+#> 2 -0.068691318         0.11203816        -0.2887373          0.1513547
+#> 3 -0.048767398         0.10372240        -0.2524810          0.1549462
+#> 4 -0.047887124         0.10338522        -0.2509385          0.1551643
+#> 5 -0.026980641         0.09632419        -0.2161640          0.1622027
+#> 6 -0.004835853         0.09124495        -0.1840434          0.1743717
 # }
 ```

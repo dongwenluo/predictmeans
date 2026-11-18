@@ -344,29 +344,13 @@ means; <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code
 <span>  N_effect_Victory_vs_others <span class="op">=</span> <span class="op">(</span><span class="va">`0.6:Victory`</span> <span class="op">-</span> <span class="va">`0:Victory`</span><span class="op">)</span> <span class="op">-</span></span>
 <span>    <span class="op">(</span><span class="op">(</span><span class="va">`0.6:Golden Rain`</span> <span class="op">-</span> <span class="va">`0:Golden Rain`</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">`0.6:Marvellous`</span> <span class="op">-</span> <span class="va">`0:Marvellous`</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $`The t tests of the specified contrasts`</span></span>
-<span><span class="co">#&gt;                            Estimate Std. Error t value      df Pr(&gt;|t|)</span></span>
-<span><span class="co">#&gt; N_effect_Victory               47.0     7.6829  6.1174 45.0001   0.0000</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others      4.5     9.4097  0.4782 45.0001   0.6348</span></span>
-<span><span class="co">#&gt;                            lower.CL upper.CL</span></span>
-<span><span class="co">#&gt; N_effect_Victory            31.5257  62.4743</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others -14.4520  23.4520</span></span>
-<span><span class="co">#&gt; attr(,"Note")</span></span>
-<span><span class="co">#&gt; [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value &lt; 0.0001."</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $K</span></span>
-<span><span class="co">#&gt;                            0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain</span></span>
-<span><span class="co">#&gt; N_effect_Victory                     0.0          0.0        -1               0</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others           0.5          0.5        -1               0</span></span>
-<span><span class="co">#&gt;                            0.2:Marvellous 0.2:Victory 0.4:Golden Rain</span></span>
-<span><span class="co">#&gt; N_effect_Victory                        0           0               0</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others              0           0               0</span></span>
-<span><span class="co">#&gt;                            0.4:Marvellous 0.4:Victory 0.6:Golden Rain</span></span>
-<span><span class="co">#&gt; N_effect_Victory                        0           0             0.0</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others              0           0            -0.5</span></span>
-<span><span class="co">#&gt;                            0.6:Marvellous 0.6:Victory</span></span>
-<span><span class="co">#&gt; N_effect_Victory                      0.0           1</span></span>
-<span><span class="co">#&gt; N_effect_Victory_vs_others           -0.5           1</span></span></code></pre></div>
+<span><span class="co">#&gt; Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)</span></span>
+<span><span class="co">#&gt;                    contrast estimate std.error df statistic   p.value     p.adj</span></span>
+<span><span class="co">#&gt;            N_effect_Victory     47.0     7.683 45    6.1174 2.090e-07 2.090e-07</span></span>
+<span><span class="co">#&gt;  N_effect_Victory_vs_others      4.5     9.410 45    0.4782 6.348e-01 6.348e-01</span></span>
+<span><span class="co">#&gt;  conf.low conf.high</span></span>
+<span><span class="co">#&gt;     31.53     62.47</span></span>
+<span><span class="co">#&gt;    -14.45     23.45</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="models-with-covariates">Models with covariates<a class="anchor" aria-label="anchor" href="#models-with-covariates"></a>

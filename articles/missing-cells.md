@@ -17,6 +17,14 @@ In short:
 - **Its comparisons** with other means are made on the cells both means
   have (column `over` of `pairs`), not as the difference of two averages
   over different cells.
+- **The table says so**: column `over` of `means` names the cells such a
+  mean averages. Nothing read off the means can contradict the pair
+  tests: when its pairs are not the differences of the shown means, such
+  a mean has no comparison interval, `letterCI` takes the letters from
+  the p-values, and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  draws no comparison or half-LSD bar for it (an open point marks every
+  such mean).
 - **A cell** is a combination of the factors of one interaction term of
   the model. Factors that do not interact do not make cells together: a
   combination of them without data is not an empty cell, because an
@@ -76,14 +84,14 @@ warns:
 
 pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
 #> Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only
-#> its observed cells; comparisons with it use only the cells that the compared
-#> means all have (column 'over' of the pairs).
-pm_n$means[, c("N", "estimate", "std.error", "n")]
-#>     N  estimate std.error  n
-#> 1   0  79.38889  6.972348 18
-#> 2 0.2  98.88889  6.972348 18
-#> 3 0.4 114.22222  6.972348 18
-#> 4 0.6 125.83333  7.471667 12
+#> its observed cells; its pairs use the cells both means have (column 'over').
+#> See vignette("missing-cells").
+pm_n$means[, c("N", "over", "estimate", "std.error", "n")]
+#>     N                            over  estimate std.error  n
+#> 1   0                            <NA>  79.38889  6.972348 18
+#> 2 0.2                            <NA>  98.88889  6.972348 18
+#> 3 0.4                            <NA> 114.22222  6.972348 18
+#> 4 0.6 Variety Golden Rain, Marvellous 125.83333  7.471667 12
 ```
 
 That mean leaves out Victory, the lowest-yielding variety at the other
@@ -127,6 +135,45 @@ When two means have no cell in common their difference is NA
 tests a term on the cells common to all its means, and
 [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
 compares on the cells the means of each contrast have in common.
+[`anova()`](https://rdrr.io/r/stats/anova.html) does the same for its
+Type III tests: the interaction keeps the contrasts that use no empty
+cell (5 df here, not 6), and the main effects are the
+[`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+tests:
+
+``` r
+
+anova(fm)
+#> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
+#> 
+#> Response: yield
+#> 
+#> Empty cells: each term is tested on the cells with data (see ?anova.lmerMod)
+#>                 F Df Df.res    Pr(>F)    
+#> N         22.3912  3 40.064 1.123e-08 ***
+#> Variety    1.9414  2 11.843    0.1865    
+#> N:Variety  0.3295  5 40.064    0.8922    
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+The mean of N = 0.6 stays in the table, labelled by `over`, because it
+is the honest estimate of its own quantity (the average over the
+varieties that have it). A table of means over the cells common to all
+levels would not be better: it would change the means of complete levels
+whenever another level loses a cell, and with scattered empty cells the
+cells common to all can shrink to one or none. Readings that treat the
+means as comparable are switched off for it instead: no comparison
+interval (its pairs are on common cells), letters from the p-values with
+`letterCI = TRUE`, an open point in
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html):
+
+``` r
+
+ggplot2::autoplot(pm_n2, interval = "comparison")
+```
+
+![](missing-cells_files/figure-html/unnamed-chunk-8-1.png)
 
 Other comparisons that stay within the observed cells are sound too,
 e.g. nitrogen levels within each variety:
@@ -228,15 +275,12 @@ so:
 
 fs <- lm(y ~ droplet + conc + vol, data = spray)
 pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
-#> Warning: 'droplet' and 'vol' are confounded in the data (not all their
-#> combinations occur and the model has no term with both), so a mean over all
-#> their combinations cannot be estimated: the means average over the combinations
-#> that exist. To say this in the model, write the nesting in the formula
-#> (droplet/vol) or leave out the factor that adds nothing; weights = "cells"
-#> weights the combinations by their numbers of observations. No data for
-#> droplet:vol fine:130, fine:200, medium:400. The means of vol = 130, 200, 400
-#> average only their observed cells; comparisons with them use only the cells
-#> that the compared means all have (column 'over' of the pairs).
+#> Warning: 'droplet' and 'vol' are confounded in the data: the means average over
+#> the combinations that exist (to say so: droplet/vol in the formula, leave one
+#> factor out, or weights = "cells"). No data for droplet:vol fine:130, fine:200,
+#> medium:400. The means of vol = 130, 200, 400 average only their observed cells;
+#> their pairs use the cells both means have (column 'over'). See
+#> vignette("missing-cells").
 pv$means[, c("vol", "estimate", "std.error", "n", "group")]
 #>   vol estimate  std.error  n group
 #> 1 130 5.030309 0.06844537 20    A 
@@ -295,17 +339,14 @@ past$y <- as.integer(past$date) + as.integer(past$pasture)/2 + 0.5*(past$trt == 
   rnorm(nrow(past), 0, 0.3)
 fp <- lm(y ~ date/farm + date/(trt + pasture)^2, data = past)
 pp <- predictmeans(fp, "date:trt", plot = FALSE, prtnum = FALSE)
-#> Warning: 'farm' and 'pasture' are confounded in the data (not all their
-#> combinations occur and the model has no term with both), so a mean over all
-#> their combinations cannot be estimated: the means average over the combinations
-#> that exist. To say this in the model, write the nesting in the formula
-#> (farm/pasture) or leave out the factor that adds nothing; weights = "cells"
-#> weights the combinations by their numbers of observations. No data for
-#> date:farm d3:F1, d3:F2, d1:F3, d2:F3, d1:F4, d2:F4; date:trt:pasture d3:A:P2,
-#> d3:B:P2, d3:A:P3, d3:B:P3; farm:pasture F2:P1, F4:P1, F2:P2, F3:P2, F4:P2,
-#> F2:P3, .... The means of date:trt = d1:A, d1:B, d2:A, d2:B, d3:A, d3:B average
-#> only their observed cells; comparisons with them use only the cells that the
-#> compared means all have (column 'over' of the pairs).
+#> Warning: 'farm' and 'pasture' are confounded in the data: the means average
+#> over the combinations that exist (to say so: farm/pasture in the formula, leave
+#> one factor out, or weights = "cells"). No data for date:farm d3:F1, d3:F2,
+#> d1:F3, d2:F3, d1:F4, d2:F4; date:trt:pasture d3:A:P2, d3:B:P2, d3:A:P3,
+#> d3:B:P3; farm:pasture F2:P1, F4:P1, F2:P2, F3:P2, F4:P2, F2:P3, .... The means
+#> of date:trt = d1:A, d1:B, d2:A, d2:B, d3:A, d3:B average only their observed
+#> cells; their pairs use the cells both means have (column 'over'). See
+#> vignette("missing-cells").
 ```
 
 Farm and pasture do not interact in the model, and at each date the farm

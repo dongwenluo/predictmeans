@@ -93,7 +93,10 @@ unchanged.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3);
+    <p>Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3).
+With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
+contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
+cells on the cells its means share, as <code><a href="pm_joint.html">pm_joint</a></code>; the table says so, and the intercept is not tested;
 Type II are those of <code><a href="https://rdrr.io/pkg/car/man/Anova.html" class="external-link">car::Anova()</a></code>; Type I (sequential) are lmerTest's, always with Satterthwaite df.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (<code>pbkrtest</code>'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. <code>ddf = "lme4"</code> gives lme4's

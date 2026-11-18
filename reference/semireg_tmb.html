@@ -304,22 +304,22 @@ means and their ratios.</p>
 <span class="r-in"><span>                  dispformula <span class="op">=</span> <span class="op">~</span><span class="fl">0</span>, data <span class="op">=</span> <span class="va">d</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')</span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fa</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2   estimate std.error       df  statistic   p.value     p.adj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.2146406 0.3486284 20.51249 -0.6156717 0.5448827 0.5448827</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.3028874 0.3191386 17.43094 -0.9490782 0.3555549 0.3555549</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.0882468 0.3358240 19.17360 -0.2627769 0.7955254 0.7955254</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   p.method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1        t</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2        t</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2    estimate std.error       df  statistic   p.value     p.adj</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.21464779 0.3486296 20.14254 -0.6156900 0.5449940 0.5449940</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.30286816 0.3191345 17.10317 -0.9490298 0.3558238 0.3558238</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.08822037 0.3358213 19.06262 -0.2627004 0.7955997 0.7955997</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     conf.low conf.high       lsd p.method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.9415467 0.5122511 0.7268989        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.9758738 0.3701375 0.6730057        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -0.7909461 0.6145053 0.7027257        t</span>
 <span class="r-in"><span><span class="fu"><a href="varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fa</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                       vcov     SE  2.5 %       97.5 %</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> id.(Intercept)      0.0000     NA 0.0000           NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> id.1.var            0.3314 0.0850 0.2122 5.893000e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cor.id.1            0.7043 0.0773 0.5191 8.264000e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.807443e+02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432300e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.658432e+16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cor.id.1            0.7044 0.0773 0.5191 8.264000e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.808692e+02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432200e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.787244e+16</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> residual            0.0000     NA 0.0000           NA</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Binary responses with a random intercept per child (HRW::indonRespir)</span></span></span>

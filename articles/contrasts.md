@@ -58,8 +58,12 @@ its own. The step-down and false discovery rate methods (`"holm"`,
 `"BH"`, …) have no simultaneous limits, so their pairs have no such
 columns.
 [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
-gives the same limits as `adj.lower.CL` and `adj.upper.CL` (below, for
-the comparisons with a control).
+and
+[`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md)
+give their contrasts in the same columns (`estimate`, `std.error`, `df`,
+`statistic`, `p.value`, `p.adj`, `conf.low`, `conf.high`,
+`adj.conf.low`, `adj.conf.high`), as below for the comparisons with a
+control.
 
 ``` r
 
@@ -75,9 +79,9 @@ pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
 #> 6    0.4    0.6  -9.166667 -18.10073  -0.2326042    -20.99992      2.666585
 #>          p.adj
 #> 1 3.764251e-04
-#> 2 3.362209e-09
+#> 2 3.362210e-09
 #> 3 6.390152e-03
-#> 4 4.263923e-12
+#> 4 4.263701e-12
 #> 5 9.244650e-06
 #> 6 1.797189e-01
 ```
@@ -107,17 +111,16 @@ dunnett
 
 ``` r
 
-contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
-#>         Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
-#> 0.2 - 0  19.5000     4.4358  4.3961 45.0001    2e-04  10.5659  28.4341
-#> 0.4 - 0  34.8333     4.4358  7.8529 45.0001    0e+00  25.8993  43.7674
-#> 0.6 - 0  44.0000     4.4358  9.9194 45.0001    0e+00  35.0659  52.9341
-#>         adj.lower.CL adj.upper.CL
-#> 0.2 - 0       8.7182      30.2818
-#> 0.4 - 0      24.0516      45.6151
-#> 0.6 - 0      33.2182      54.7818
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by 'mvt' method, if p-value = 0 means p-value < 0.0001."
+contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")
+#> Contrasts of 'N' (95% limits; p.adj: mvt; Kenward-Roger df)
+#>  contrast estimate std.error df statistic   p.value     p.adj conf.low
+#>   0.2 - 0    19.50     4.436 45     4.396 6.657e-05 2.200e-04    10.57
+#>   0.4 - 0    34.83     4.436 45     7.853 5.649e-10 3.368e-09    25.90
+#>   0.6 - 0    44.00     4.436 45     9.919 6.697e-13 8.626e-14    35.07
+#>  conf.high adj.conf.low adj.conf.high
+#>      28.43        8.718         30.28
+#>      43.77       24.052         45.62
+#>      52.93       33.218         54.78
 ```
 
 Linear and quadratic trends in nitrogen within each variety (`by`), with
@@ -128,24 +131,29 @@ equally spaced):
 
 K2 <- Kmatrix(fm, "N:Variety")
 trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
-contrastmeans(fm, "N:Variety", ctrmatrix = trends)[[1]]
-#>                        Estimate Std. Error t value      df Pr(>|t|) lower.CL
-#> Golden Rain: linear    150.6667    24.2956  6.2014 45.0001   0.0000 101.7328
-#> Golden Rain: quadratic  -8.3333    10.8653 -0.7670 45.0001   0.4471 -30.2172
-#> Marvellous: linear     129.1667    24.2956  5.3165 45.0001   0.0000  80.2328
-#> Marvellous: quadratic  -12.1667    10.8653 -1.1198 45.0001   0.2688 -34.0506
-#> Victory: linear        162.1667    24.2956  6.6747 45.0001   0.0000 113.2328
-#> Victory: quadratic     -10.5000    10.8653 -0.9664 45.0001   0.3390 -32.3839
-#>                        upper.CL
-#> Golden Rain: linear    199.6005
-#> Golden Rain: quadratic  13.5506
-#> Marvellous: linear     178.1005
-#> Marvellous: quadratic    9.7172
-#> Victory: linear        211.1005
-#> Victory: quadratic      11.3839
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
+contrastmeans(fm, "N:Variety", ctrmatrix = trends)
+#> Contrasts of 'N:Variety' (95% limits; p.adj: none; Kenward-Roger df)
+#>                contrast estimate std.error df statistic   p.value     p.adj
+#>     Golden Rain: linear  150.667     24.30 45    6.2014 1.568e-07 1.568e-07
+#>  Golden Rain: quadratic   -8.333     10.87 45   -0.7670 4.471e-01 4.471e-01
+#>      Marvellous: linear  129.167     24.30 45    5.3165 3.186e-06 3.186e-06
+#>   Marvellous: quadratic  -12.167     10.87 45   -1.1198 2.688e-01 2.688e-01
+#>         Victory: linear  162.167     24.30 45    6.6747 3.099e-08 3.099e-08
+#>      Victory: quadratic  -10.500     10.87 45   -0.9664 3.390e-01 3.390e-01
+#>  conf.low conf.high
+#>    101.73   199.601
+#>    -30.22    13.551
+#>     80.23   178.101
+#>    -34.05     9.717
+#>    113.23   211.101
+#>    -32.38    11.384
 ```
+
+The result prints its table;
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) (or
+`$contrasts`) returns it unrounded, with `p.value` unadjusted and
+`p.adj` adjusted. The 1.x table (rounded, with the adjusted p-value in
+`Pr(>|t|)`) is still the first element, `[[1]]`.
 
 [`specify_contrast()`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md)
 (see the getting-started vignette) writes any other contrast by the
@@ -197,9 +205,9 @@ p-value of the joint F):
 
 ``` r
 
-contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)[["Joint F test of the contrasts"]]
-#>               df1     df2 F.ratio p.value
-#> all contrasts   2 45.0001  1.3669  0.2653
+contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)$joint
+#>   df1      df2  F.ratio   p.value
+#> 1   2 45.00014 1.366873 0.2652818
 ```
 
 ## Slopes of a covariate
@@ -215,19 +223,23 @@ and compares them (as
 
 fm2 <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 pm_slopes(fm2, "nitro", "Variety", adj = "tukey")
-#> Slopes of 'nitro' at 0.3 
+#> Slopes of 'nitro' at 0.3 (95% limits; Kenward-Roger df) 
 #> 
-#>      Variety slope std.error df conf.low conf.high statistic   p.value
-#>  Golden Rain 75.33     11.86 51    51.53     99.14     6.353 5.726e-08
-#>   Marvellous 64.58     11.86 51    40.78     88.39     5.446 1.490e-06
-#>      Victory 81.08     11.86 51    57.28    104.89     6.838 9.828e-09
+#>      Variety estimate std.error df statistic   p.value conf.low conf.high
+#>  Golden Rain    75.33     11.86 51     6.353 5.726e-08    51.53     99.14
+#>   Marvellous    64.58     11.86 51     5.446 1.490e-06    40.78     88.39
+#>      Victory    81.08     11.86 51     6.838 9.828e-09    57.28    104.89
 #> 
 #> Pairwise differences of slopes (p.adj: tukey)
 #> 
-#>       level1     level2 estimate std.error df statistic p.value  p.adj
-#>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.7982
-#>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.9373
-#>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.5903
+#>       level1     level2 estimate std.error df statistic p.value  p.adj conf.low
+#>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.7982   -22.92
+#>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.9373   -39.42
+#>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.5903   -50.17
+#>  conf.high adj.conf.low adj.conf.high
+#>      44.42       -29.73         51.23
+#>      27.92       -46.23         34.73
+#>      17.17       -56.98         23.98
 ```
 
 The slopes are in yield per unit of nitrogen. With
@@ -321,12 +333,15 @@ pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 #> 6    0.4    0.6  -9.166667  6.151535 1.413395e-01
 pmh$settings$vcov
 #> [1] "HC3"
-contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)[[1]]
-#>      Estimate Std. Error t value df Pr(>|t|) lower.CL upper.CL
-#> [1,]  19.5000     4.3162  4.5179 61        0  10.8693  28.1307
-#> [2,]  15.3333     2.5716  5.9627 61        0  10.1912  20.4755
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001. Standard errors from the covariance given by 'vcov' (CR1, clusters: Block)."
+contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)
+#> Contrasts of 'N' (95% limits; p.adj: none; residual df)
+#>    contrast estimate std.error df statistic   p.value     p.adj conf.low
+#>  contrast 1    19.50     4.316 61     4.518 2.924e-05 2.924e-05    10.87
+#>  contrast 2    15.33     2.572 61     5.963 1.350e-07 1.350e-07    10.19
+#>  conf.high
+#>      28.13
+#>      20.48
+#> Standard errors from the covariance given by 'vcov' (CR1, clusters: Block).
 ```
 
 For any model, including mixed models, `vcov` also takes a covariance

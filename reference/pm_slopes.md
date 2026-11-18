@@ -55,19 +55,31 @@ pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 
 ## Value
 
-A list of two data frames:
+An object of class `"pm_slopes"`, a list in the layout of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+(`tidy()` and
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
+its tables, `what = "slopes"` or `"pairs"`):
 
 - slopes:
 
-  one row per level of `modelterm`: the factor columns, `slope`,
-  `std.error`, `df`, `conf.low`, `conf.high`, `statistic` (t) and
-  `p.value` (of slope = 0).
+  one row per level of `modelterm`: the factor columns, `estimate` (the
+  slope), `std.error`, `df`, `statistic` (t), `p.value` (of slope = 0),
+  `conf.low` and `conf.high`.
 
 - pairs:
 
   one row per pair of levels: `level1`, `level2`, `estimate` (slope of
   `level1` minus slope of `level2`), `std.error`, `df`, `statistic`,
-  `p.value` and `p.adj`.
+  `p.value`, `p.adj`, `conf.low`, `conf.high` and, with the adjustments
+  that have them (tukey, bonferroni, sidak, scheffe, mvt),
+  `adj.conf.low`, `adj.conf.high`: simultaneous limits that leave out 0
+  exactly when `p.adj` is below `level`.
+
+- settings:
+
+  `modelterm`, `covariate`, `at`, `level`, `adjust`, `df_method`,
+  `vcov_adjust`, `vcov`, `model_class`, `version`.
 
 ## Details
 
@@ -97,18 +109,32 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   library(predictmeans)
   Oats <- as.data.frame(nlme::Oats)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-  pm_slopes(fm, "nitro", "Variety")
-#> Slopes of ‘nitro’ at 0.3 
+  sl <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
+  sl
+#> Slopes of ‘nitro’ at 0.3 (95% limits; Kenward-Roger df) 
 #> 
-#>      Variety slope std.error df conf.low conf.high statistic   p.value
-#>  Golden Rain 75.33     11.86 51    51.53     99.14     6.353 5.726e-08
-#>   Marvellous 64.58     11.86 51    40.78     88.39     5.446 1.490e-06
-#>      Victory 81.08     11.86 51    57.28    104.89     6.838 9.828e-09
+#>      Variety estimate std.error df statistic   p.value conf.low conf.high
+#>  Golden Rain    75.33     11.86 51     6.353 5.726e-08    51.53     99.14
+#>   Marvellous    64.58     11.86 51     5.446 1.490e-06    40.78     88.39
+#>      Victory    81.08     11.86 51     6.838 9.828e-09    57.28    104.89
 #> 
-#> Pairwise differences of slopes (p.adj: none)
+#> Pairwise differences of slopes (p.adj: tukey)
 #> 
-#>       level1     level2 estimate std.error df statistic p.value  p.adj
-#>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.5244
-#>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.7331
-#>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.3298
+#>       level1     level2 estimate std.error df statistic p.value  p.adj conf.low
+#>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.7982   -22.92
+#>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.9373   -39.42
+#>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.5903   -50.17
+#>  conf.high adj.conf.low adj.conf.high
+#>      44.42       -29.73         51.23
+#>      27.92       -46.23         34.73
+#>      17.17       -56.98         23.98
+  as.data.frame(sl, what = "pairs")
+#>        level1     level2 estimate std.error       df  statistic   p.value
+#> 1 Golden Rain Marvellous    10.75  16.77051 50.99999  0.6410061 0.5243889
+#> 2 Golden Rain    Victory    -5.75  16.77051 50.99999 -0.3428637 0.7331102
+#> 3  Marvellous    Victory   -16.50  16.77051 50.99999 -0.9838699 0.3298242
+#>       p.adj conf.low conf.high adj.conf.low adj.conf.high
+#> 1 0.7982489 -22.9182   44.4182    -29.73367      51.23367
+#> 2 0.9373365 -39.4182   27.9182    -46.23367      34.73367
+#> 3 0.5903123 -50.1682   17.1682    -56.98367      23.98367
 ```

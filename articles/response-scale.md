@@ -230,7 +230,7 @@ marked.
 |----|----|
 | Do the lines differ at one covariate value chosen beforehand? | the pointwise band (`band = "pointwise"`) |
 | Over which range of the covariate do they differ? | the simultaneous band (`band = "simultaneous"`, Scheffé; for straight lines the Working–Hotelling band) |
-| Do they differ anywhere? | the joint F test (`test` in the result) |
+| Do they differ anywhere? | the joint F test (`settings$test` in the result) |
 
 ``` r
 
@@ -240,19 +240,68 @@ dose$count <- rpois(80, exp(1 + 0.2*dose$x + 0.6*dose$x*(dose$trt == "treated"))
 fm_dose <- glm(count ~ trt*x, family = poisson, data = dose)
 cmp <- covariatemeans(fm_dose, "trt", covariate = "x", contr = c("treated", "control"),
                       band = "simultaneous")
+cmp
+#> Difference treated - control of 'trt' along x
+#> 95% limits; adj.conf.*: 95% simultaneous band; asymptotic (z) df
+#> Curves equal: F(2, Inf) = 28.353, p = 4.86e-13
+#> They differ (simultaneous band) for x: 0.5859 to 1.984 (>)
+#> response: back-transformed by the inverse link; mean
+#>        x estimate std.error  df statistic p.value  p.adj conf.low conf.high
+#>  0.02678  0.05425    0.2532 Inf    0.2142  0.8304 0.9773  -0.4421    0.5506
+#>  0.04666  0.06624    0.2496 Inf    0.2654  0.7907 0.9654  -0.4230    0.5555
+#>  0.06672  0.07834    0.2460 Inf    0.3185  0.7501 0.9505  -0.4037    0.5604
+#>  0.10666  0.10242    0.2387 Inf    0.4290  0.6679 0.9121  -0.3655    0.5703
+#>  0.12357  0.11262    0.2357 Inf    0.4778  0.6328 0.8921  -0.3493    0.5746
+#>  0.14136  0.12335    0.2325 Inf    0.5305  0.5957 0.8687  -0.3323    0.5790
+#>  0.14660  0.12651    0.2316 Inf    0.5463  0.5848 0.8614  -0.3273    0.5804
+#>  0.16849  0.13971    0.2277 Inf    0.6137  0.5394 0.8284  -0.3065    0.5859
+#>  0.18654  0.15059    0.2245 Inf    0.6709  0.5023 0.7985  -0.2893    0.5905
+#>  0.19893  0.15807    0.2223 Inf    0.7112  0.4770 0.7765  -0.2776    0.5937
+#>  adj.conf.low adj.conf.high ratio ratio.conf.low ratio.conf.high response
+#>       -0.5656        0.6741 1.056         0.6427           1.734   0.1462
+#>       -0.5447        0.6772 1.068         0.6551           1.743   0.1804
+#>       -0.5237        0.6804 1.081         0.6678           1.751   0.2155
+#>       -0.4819        0.6868 1.108         0.6939           1.769   0.2877
+#>       -0.4643        0.6895 1.119         0.7052           1.776   0.3192
+#>       -0.4458        0.6925 1.131         0.7172           1.784   0.3528
+#>       -0.4403        0.6933 1.135         0.7208           1.787   0.3628
+#>       -0.4175        0.6970 1.150         0.7360           1.797   0.4053
+#>       -0.3988        0.7000 1.163         0.7488           1.805   0.4410
+#>       -0.3860        0.7021 1.171         0.7576           1.811   0.4659
+#>  response.std.error response.conf.low response.conf.high response.adj.conf.low
+#>              0.6803           -1.1872              1.480                -1.519
+#>              0.6772           -1.1470              1.508                -1.477
+#>              0.6740           -1.1056              1.537                -1.434
+#>              0.6676           -1.0208              1.596                -1.346
+#>              0.6648           -0.9839              1.622                -1.308
+#>              0.6619           -0.9444              1.650                -1.267
+#>              0.6610           -0.9327              1.658                -1.255
+#>              0.6573           -0.8829              1.694                -1.204
+#>              0.6542           -0.8411              1.723                -1.160
+#>              0.6520           -0.8120              1.744                -1.130
+#>  response.adj.conf.high
+#>                   1.811
+#>                   1.838
+#>                   1.865
+#>                   1.922
+#>                   1.946
+#>                   1.973
+#>                   1.981
+#>                   2.014
+#>                   2.042
+#>                   2.062
+#> ... 118 more rows: as.data.frame(x) gives the table.
+#> autoplot(x) draws the plot.
+ggplot2::autoplot(cmp)
 ```
 
 ![](response-scale_files/figure-html/unnamed-chunk-11-1.png)
 
-``` r
-
-cmp$test
-#>        numDF        denDF            F      p.value 
-#> 2.000000e+00          Inf 2.835273e+01 4.859206e-13
-cmp$significant
-#>        from       to direction
-#> 1 0.5859325 1.983812         >
-```
+The table has the columns of `predictmeans()$pairs`: `estimate` (the log
+ratio), `conf.low`/`conf.high` (pointwise), `p.adj` with
+`adj.conf.low`/`adj.conf.high` (the simultaneous band), `ratio` with its
+limits, and the response-scale difference (`response`, …);
+`as.data.frame(cmp)` returns it.
 
 The pointwise band is narrower and would call a longer range
 significant; it is right only for a single value of the covariate chosen

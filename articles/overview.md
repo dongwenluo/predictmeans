@@ -538,7 +538,7 @@ system.time(
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 
     ##    user  system elapsed 
-    ##  35.771   0.091  35.863
+    ##  32.562   0.174  32.651
 
 ``` r
 
@@ -629,23 +629,10 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 ```
 
-    ## $`The t tests of the specified contrasts`
-    ##      Estimate Std. Error t value Permuted Pr(>|t|) lower.CL upper.CL
-    ## [1,]  -8.5000      9.715 -0.8749             0.380 -29.6778  12.6778
-    ## [2,] -45.6667      9.715 -4.7006             0.001 -66.8981 -24.4352
-    ## attr(,"Note")
-    ## [1] "The permuted p-value is obtained using '999' permutations."
-    ## 
-    ## $K
-    ##      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
-    ## [1,]            -1            0         1               0              0
-    ## [2,]             0            0         1               0              0
-    ##      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
-    ## [1,]           0               0              0           0               0
-    ## [2,]           0               0             -1           0               0
-    ##      0.6:Marvellous 0.6:Victory
-    ## [1,]              0           0
-    ## [2,]              0           0
+    ## Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 999 permutations)
+    ##    contrast estimate std.error df statistic p.value p.adj conf.low conf.high
+    ##  contrast 1    -8.50     9.715 NA   -0.8749   0.380 0.380   -29.68     12.68
+    ##  contrast 2   -45.67     9.715 NA   -4.7006   0.001 0.001   -66.90    -24.44
 
 ## Example_2 Repeated Measurements (ATP data)
 
@@ -1643,12 +1630,11 @@ kable(car::Anova(mod))
 ``` r
 
 covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                level = 0.166, # get 83.4% CI
-                                newwd = TRUE) 
-covariate_out$pltdf %>%
-  select(Drug, xvar, Mean, ses, LL, UL) %>% 
+                                level = 0.166) # get 83.4% CI
+as.data.frame(covariate_out) %>%
+  select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
-  rename(log10Dose=xvar, Probability=Mean) %>% 
+  rename(Probability=response, LL=response.conf.low, UL=response.conf.high) %>% 
   arrange(log10Dose, Drug) %>% 
   group_by(log10Dose) %>% 
   mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
@@ -1658,8 +1644,7 @@ covariate_out$pltdf %>%
 
 ``` r
 
-covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trellis = FALSE)
+autoplot(covariate_out)
 ```
 
 ![](overview_files/figure-html/unnamed-chunk-44-1.png)
@@ -1667,10 +1652,46 @@ covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
 ``` r
 
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trans=I, trellis = FALSE, ci=F)
+               level = 0.166, trellis = FALSE, plot = TRUE)
 ```
 
 ![](overview_files/figure-html/unnamed-chunk-44-2.png)
+
+    ## Curves of 'Drug' along log10Dose
+    ## 83.4% limits; asymptotic (z) df
+    ## response: back-transformed by the inverse link; mean
+    ##      Drug log10Dose estimate std.error  df conf.low conf.high response
+    ##  Morphine -0.124939   -1.533    0.2061 Inf   -1.819   -1.2474  0.06264
+    ##  Morphine -0.095837   -1.468    0.1979 Inf   -1.742   -1.1941  0.07102
+    ##  Morphine -0.066736   -1.403    0.1896 Inf   -1.666   -1.1408  0.08025
+    ##  Morphine -0.037635   -1.339    0.1815 Inf   -1.590   -1.0873  0.09034
+    ##  Morphine -0.008533   -1.274    0.1733 Inf   -1.514   -1.0337  0.10136
+    ##  Morphine  0.020568   -1.209    0.1653 Inf   -1.438   -0.9801  0.11331
+    ##  Morphine  0.049670   -1.144    0.1574 Inf   -1.362   -0.9263  0.12625
+    ##  Morphine  0.078771   -1.080    0.1495 Inf   -1.287   -0.8724  0.14018
+    ##  Morphine  0.107872   -1.015    0.1418 Inf   -1.211   -0.8183  0.15511
+    ##  Morphine  0.136974   -0.950    0.1342 Inf   -1.136   -0.7640  0.17106
+    ##  response.std.error response.conf.low response.conf.high
+    ##             0.02540           0.03449             0.1061
+    ##             0.02686           0.04073             0.1162
+    ##             0.02826           0.04785             0.1270
+    ##             0.02955           0.05592             0.1385
+    ##             0.03072           0.06502             0.1506
+    ##             0.03175           0.07521             0.1635
+    ##             0.03262           0.08655             0.1771
+    ##             0.03331           0.09911             0.1915
+    ##             0.03381           0.11291             0.2066
+    ##             0.03411           0.12800             0.2224
+    ## ... 218 more rows: as.data.frame(x) gives the table.
+    ## autoplot(x) draws the plot.
+
+``` r
+
+covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
+               level = 0.166, trans=I, trellis = FALSE, ci=F)$plt
+```
+
+![](overview_files/figure-html/unnamed-chunk-44-3.png)
 
 ### Highlights
 
@@ -1841,7 +1862,7 @@ mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os",
     ## REML criterion at convergence: 3503.051
     ## Random effects:
     ##  Groups                                  Name        Std.Dev.
-    ##  s_construction_date_districtMokotow     (Intercept) 29.894  
+    ##  s_construction_date_districtMokotow     (Intercept) 29.892  
     ##  s_construction_date_districtSrodmiescie (Intercept) 40.159  
     ##  s_construction_date_districtWola        (Intercept)  2.871  
     ##  s_construction_date_districtZoliborz    (Intercept)  7.162  
@@ -1850,11 +1871,11 @@ mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os",
     ## s_construction_date_districtMokotow, 12; s_construction_date_districtSrodmiescie, 12; s_construction_date_districtWola, 12; s_construction_date_districtZoliborz, 12
     ## Fixed Effects:
     ##                           (Intercept)                    districtSrodmiescie  
-    ##                             -73.03858                              453.93920  
+    ##                             -73.03295                              453.93382  
     ##                          districtWola                       districtZoliborz  
-    ##                             686.45142                              352.75138  
+    ##                             686.43152                              352.74843  
     ##     districtMokotow:construction.date  districtSrodmiescie:construction.date  
-    ##                               0.09294                               -0.14199  
+    ##                               0.09293                               -0.14199  
     ##        districtWola:construction.date     districtZoliborz:construction.date  
     ##                              -0.25325                               -0.08855
 
@@ -1876,9 +1897,9 @@ kable(anova(mod2$semer))
 
 |                            |        F |  Df |   Df.res |   Pr(\>F) |
 |:---------------------------|---------:|----:|---------:|----------:|
-| (Intercept)                | 3.387549 |   1 | 15.38809 | 0.0850560 |
-| district                   | 1.548635 |   3 | 19.12871 | 0.2343749 |
-| district:construction.date | 1.219447 |   4 | 26.47655 | 0.3261956 |
+| (Intercept)                | 3.387350 |   1 | 15.38446 | 0.0850689 |
+| district                   | 1.548545 |   3 | 19.12489 | 0.2344030 |
+| district:construction.date | 1.219377 |   4 | 26.47155 | 0.3262278 |
 
 - **Tests of the smooth terms**
 
@@ -1889,10 +1910,10 @@ kable(anova(mod2)$smooth)
 
 | term | variance | logLik | logLik.without | LRT | p.value | test |
 |:---|---:|---:|---:|---:|---:|:---|
-| s_construction_date_districtMokotow | 893.678898 | -1751.525 | -1800.940 | 98.829583 | 0.0000000 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtSrodmiescie | 1612.747676 | -1751.525 | -1761.894 | 20.737475 | 0.0000026 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtWola | 8.240899 | -1751.525 | -1752.495 | 1.939841 | 0.0818429 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtZoliborz | 51.291075 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtMokotow | 893.505120 | -1751.525 | -1800.940 | 98.829582 | 0.0000000 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtSrodmiescie | 1612.708831 | -1751.525 | -1761.894 | 20.737475 | 0.0000026 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtWola | 8.241983 | -1751.525 | -1752.495 | 1.939841 | 0.0818429 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtZoliborz | 51.292604 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 
@@ -1908,7 +1929,7 @@ R2_glmm(mod2$semer)
     ##                                  Random     s_construction_date_districtMokotow 
     ##                                "89.29%"                                "31.79%" 
     ## s_construction_date_districtSrodmiescie        s_construction_date_districtWola 
-    ##                                "55.41%"                                 "0.27%" 
+    ##                                "55.42%"                                 "0.27%" 
     ##    s_construction_date_districtZoliborz 
     ##                                 "1.81%"
 
@@ -2498,8 +2519,8 @@ mod <- semireg_tmb(pollenCount ~ rain + s(dayInSeason, by = year, bs = "os") +
     ##  s_dayInSeason_year1992 (Intercept) 1.000e+00
     ##  s_dayInSeason_year1993 (Intercept) 1.033e+00
     ##  s_dayInSeason_year1994 (Intercept) 7.563e-01
-    ##  s_temperatureResidual  (Intercept) 1.805e-05
-    ##  s_windSpeed            (Intercept) 8.023e-06
+    ##  s_temperatureResidual  (Intercept) 2.061e-05
+    ##  s_windSpeed            (Intercept) 1.053e-05
     ## 
     ## Number of obs: 334 / Conditional model: s_dayInSeason_year1991, 8; s_dayInSeason_year1992, 8; s_dayInSeason_year1993, 8; s_dayInSeason_year1994, 8; s_temperatureResidual, 8; s_windSpeed, 8
     ## 
@@ -2535,11 +2556,11 @@ kable(car::Anova(mod$semer))
 
 |                     |    Chisq |  Df | Pr(\>Chisq) |
 |:--------------------|---------:|----:|------------:|
-| rain                | 29.05128 |   1 |     1.0e-07 |
+| rain                | 29.05127 |   1 |     1.0e-07 |
 | year                | 25.70815 |   3 |     1.1e-05 |
 | temperatureResidual | 72.10172 |   1 |     0.0e+00 |
-| windSpeed           | 76.13483 |   1 |     0.0e+00 |
-| year:dayInSeason    | 45.61101 |   4 |     0.0e+00 |
+| windSpeed           | 76.13481 |   1 |     0.0e+00 |
+| year:dayInSeason    | 45.61102 |   4 |     0.0e+00 |
 
 - **$`R^2`$**
 
@@ -2668,10 +2689,10 @@ kable(anova(mod$semer))
 
 |               |          F |  Df |    Df.res |   Pr(\>F) |
 |:--------------|-----------:|----:|----------:|----------:|
-| (Intercept)   |  0.8534314 |   1 |  14.25096 | 0.3709616 |
-| zcoord        | 26.5094686 |   1 | 417.28577 | 0.0000004 |
+| (Intercept)   |  0.8534313 |   1 |  14.25096 | 0.3709616 |
+| zcoord        | 26.5094687 |   1 | 417.28577 | 0.0000004 |
 | xcoord        |  0.0247375 |   1 |  13.95960 | 0.8772752 |
-| ycoord        |  1.4111370 |   1 |  14.17006 | 0.2543982 |
+| ycoord        |  1.4111369 |   1 |  14.17006 | 0.2543982 |
 | xcoord:ycoord |  0.2820408 |   1 |  15.46128 | 0.6029130 |
 | xcoord:zcoord |  3.9173411 |   1 | 416.02554 | 0.0484493 |
 | ycoord:zcoord | 25.9679209 |   1 | 413.16877 | 0.0000005 |
@@ -2686,7 +2707,7 @@ kable(anova(mod)$smooth)
 | term | variance | logLik | logLik.without | LRT | p.value | test |
 |:---|---:|---:|---:|---:|---:|:---|
 | s_zcoord | 0.0789849 | -159.2031 | -199.6525 | 80.89885 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_xcoord_ycoord | 1.7857080 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_xcoord_ycoord | 1.7857081 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 

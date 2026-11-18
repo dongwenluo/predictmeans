@@ -304,21 +304,21 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 9.715029 7.682957 9.160827 
+#> 9.715028 7.682958 9.160827 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.SED 9.715029 7.682957
-#> Min.SED  9.715029 7.682957
-#> Max.SED  9.715029 7.682957
+#> Aveg.SED 9.715028 7.682958
+#> Min.SED  9.715028 7.682958
+#> Max.SED  9.715028 7.682958
 #> 
 #> $`Approximated LSD`
 #>  Max.LSD  Min.LSD Aveg.LSD 
-#> 19.43006 15.36591 18.32165 
+#> 19.43006 15.36592 18.32165 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.LSD 19.43006 15.36591
-#> Min.LSD  19.43006 15.36591
-#> Max.LSD  19.43006 15.36591
+#> Aveg.LSD 19.43006 15.36592
+#> Min.LSD  19.43006 15.36592
+#> Max.LSD  19.43006 15.36592
 #> attr(,"Note")
 #> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
 #> 
@@ -371,24 +371,10 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
-#> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value Permuted Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749              0.37 -31.6879  14.6879
-#> [2,] -45.6667      9.715 -4.7006              0.01 -68.1443 -23.1890
-#> attr(,"Note")
-#> [1] "The permuted p-value is obtained using ‘99’ permutations."
-#> 
-#> $K
-#>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
-#> [1,]            -1            0         1               0              0
-#> [2,]             0            0         1               0              0
-#>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
-#> [1,]           0               0              0           0               0
-#> [2,]           0               0             -1           0               0
-#>      0.6:Marvellous 0.6:Victory
-#> [1,]              0           0
-#> [2,]              0           0
-#> 
+#> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 99 permutations)
+#>    contrast estimate std.error df statistic p.value p.adj conf.low conf.high
+#>  contrast 1    -8.50     9.715 NA   -0.8749    0.37  0.37   -31.69     14.69
+#>  contrast 2   -45.67     9.715 NA   -4.7006    0.01  0.01   -68.14    -23.19
 
 ## The same by lmer, type II tests; refit = FALSE is much faster (no refits)
 fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)

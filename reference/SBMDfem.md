@@ -75,13 +75,20 @@ predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "
 #> 4    Asian    White -0.02606166 0.02163625 223.5764 -1.2045365 2.296558e-01
 #> 5    Black    White  0.08011684 0.02041221 223.5667  3.9249469 1.155142e-04
 #> 6 Hispanic    White -0.01289857 0.02149288 225.9151 -0.6001325 5.490194e-01
-#>          p.adj p.method
-#> 1 3.509784e-06    tukey
-#> 2 9.294398e-01    tukey
-#> 3 5.436499e-05    tukey
-#> 4 6.246109e-01    tukey
-#> 5 6.639323e-04    tukey
-#> 6 9.319286e-01    tukey
+#>          p.adj    conf.low   conf.high        lsd adj.conf.low adj.conf.high
+#> 1 3.509784e-06 -0.14688338 -0.06547363 0.04070488  -0.15964249   -0.05271452
+#> 2 9.294398e-01 -0.05581660  0.02949043 0.04265351  -0.06918677    0.04286060
+#> 3 5.436499e-05  0.05260691  0.13342393 0.04040851   0.03994201    0.14608883
+#> 4 6.246109e-01 -0.06869873  0.01657542 0.04263708  -0.08206617    0.02994286
+#> 5 6.639323e-04  0.03989189  0.12034180 0.04022495   0.02728069    0.13295300
+#> 6 9.319286e-01 -0.05525072  0.02945357 0.04235215  -0.06852761    0.04273047
+#>   p.method
+#> 1    tukey
+#> 2    tukey
+#> 3    tukey
+#> 4    tukey
+#> 5    tukey
+#> 6    tukey
 # growth of bone density: where is the curve rising?
 attr(semipred(fit, "age", "age", deriv = 1, prt = FALSE)$pred_df, "significant")
 #>   level from   to direction

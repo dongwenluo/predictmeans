@@ -98,6 +98,14 @@ observed cells, with a warning naming it.</li>
 cells both means have (column <code>over</code> of <code>pairs</code>),
 not as the difference of two averages over different cells.</li>
 <li>
+<strong>The table says so</strong>: column <code>over</code> of
+<code>means</code> names the cells such a mean averages. Nothing read
+off the means can contradict the pair tests: when its pairs are not the
+differences of the shown means, such a mean has no comparison interval,
+<code>letterCI</code> takes the letters from the p-values, and
+<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> draws no comparison or half-LSD bar for it (an
+open point marks every such mean).</li>
+<li>
 <strong>A cell</strong> is a combination of the factors of one
 interaction term of the model. Factors that do not interact do not make
 cells together: a combination of them without data is not an empty cell,
@@ -147,14 +155,14 @@ warns:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm_n</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only</span></span>
-<span><span class="co">#&gt; its observed cells; comparisons with it use only the cells that the compared</span></span>
-<span><span class="co">#&gt; means all have (column 'over' of the pairs).</span></span>
-<span><span class="va">pm_n</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"N"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;     N  estimate std.error  n</span></span>
-<span><span class="co">#&gt; 1   0  79.38889  6.972348 18</span></span>
-<span><span class="co">#&gt; 2 0.2  98.88889  6.972348 18</span></span>
-<span><span class="co">#&gt; 3 0.4 114.22222  6.972348 18</span></span>
-<span><span class="co">#&gt; 4 0.6 125.83333  7.471667 12</span></span></code></pre></div>
+<span><span class="co">#&gt; its observed cells; its pairs use the cells both means have (column 'over').</span></span>
+<span><span class="co">#&gt; See vignette("missing-cells").</span></span>
+<span><span class="va">pm_n</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"N"</span>, <span class="st">"over"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;     N                            over  estimate std.error  n</span></span>
+<span><span class="co">#&gt; 1   0                            &lt;NA&gt;  79.38889  6.972348 18</span></span>
+<span><span class="co">#&gt; 2 0.2                            &lt;NA&gt;  98.88889  6.972348 18</span></span>
+<span><span class="co">#&gt; 3 0.4                            &lt;NA&gt; 114.22222  6.972348 18</span></span>
+<span><span class="co">#&gt; 4 0.6 Variety Golden Rain, Marvellous 125.83333  7.471667 12</span></span></code></pre></div>
 <p>That mean leaves out Victory, the lowest-yielding variety at the
 other nitrogen levels, so it is too high compared with the others;
 emmeans calls it non-estimable. The difference 125.8 − 79.4 = 46.4 would
@@ -189,10 +197,39 @@ hypotheses when the other factor had an effect; comparing on the common
 cells 4–6%. When two means have no cell in common their difference is NA
 (<code>over = "none"</code>). <code><a href="../reference/pm_joint.html">pm_joint()</a></code> tests a term on
 the cells common to all its means, and <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>
-compares on the cells the means of each contrast have in common.</p>
+compares on the cells the means of each contrast have in common.
+<code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> does the same for its Type III tests: the
+interaction keeps the contrasts that use no empty cell (5 df here, not
+6), and the main effects are the <code><a href="../reference/pm_joint.html">pm_joint()</a></code> tests:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Response: yield</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Empty cells: each term is tested on the cells with data (see ?anova.lmerMod)</span></span>
+<span><span class="co">#&gt;                 F Df Df.res    Pr(&gt;F)    </span></span>
+<span><span class="co">#&gt; N         22.3912  3 40.064 1.123e-08 ***</span></span>
+<span><span class="co">#&gt; Variety    1.9414  2 11.843    0.1865    </span></span>
+<span><span class="co">#&gt; N:Variety  0.3295  5 40.064    0.8922    </span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p>The mean of N = 0.6 stays in the table, labelled by
+<code>over</code>, because it is the honest estimate of its own quantity
+(the average over the varieties that have it). A table of means over the
+cells common to all levels would not be better: it would change the
+means of complete levels whenever another level loses a cell, and with
+scattered empty cells the cells common to all can shrink to one or none.
+Readings that treat the means as comparable are switched off for it
+instead: no comparison interval (its pairs are on common cells), letters
+from the p-values with <code>letterCI = TRUE</code>, an open point in
+<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm_n2</span>, interval <span class="op">=</span> <span class="st">"comparison"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="missing-cells_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="480"></p>
 <p>Other comparisons that stay within the observed cells are sound too,
 e.g. nitrogen levels within each variety:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                     prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">within</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pm_v</span><span class="op">$</span><span class="va">pairs</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">by</span><span class="op">)</span><span class="op">)</span></span>
@@ -206,7 +243,7 @@ e.g. nitrogen levels within each variety:</p>
 <span><span class="co">#&gt; 23    0:Marvellous  0.4:Marvellous  Marvellous -30.50000 0.0017427519</span></span></code></pre></div>
 <p>or contrasts written with <code><a href="../reference/specify_contrast.html">specify_contrast()</a></code>, which
 refuses means that cannot be estimated:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/specify_contrast.html">specify_contrast</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span>,</span>
 <span>  N_effect_GR_and_M <span class="op">=</span> <span class="op">(</span><span class="va">`0.6:Golden Rain`</span> <span class="op">+</span> <span class="va">`0.6:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span> <span class="op">-</span> <span class="op">(</span><span class="va">`0:Golden Rain`</span> <span class="op">+</span> <span class="va">`0:Marvellous`</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">cm</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
@@ -224,7 +261,7 @@ refuses means that cannot be estimated:</p>
 <code>y ~ date/farm + date*trt</code> the cells are date × farm and date
 × treatment; farm and treatment do not interact. Suppose treatment B has
 no data on farm F2 at date d2:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
 <span><span class="va">dft</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span><span class="op">)</span>, farm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"F1"</span>, <span class="st">"F2"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                   date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d1"</span>, <span class="st">"d2"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -251,7 +288,7 @@ cell, and the rule of the first section applies.</p>
 </h2>
 <p>In this spray trial the highest spray volume was used only with fine
 droplets, and the other two volumes only with medium droplets:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">spray</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  droplet <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"medium"</span>, <span class="st">"fine"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"medium"</span>, <span class="st">"fine"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -269,18 +306,15 @@ factors, the effect of volume 400 cannot be told apart from that of fine
 droplets. A volume mean averaged over both droplet sizes needs both, so
 it cannot be estimated. <code><a href="../reference/predictmeans.html">predictmeans()</a></code> then averages over
 the droplet–volume combinations that exist and says so:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">droplet</span> <span class="op">+</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">vol</span>, data <span class="op">=</span> <span class="va">spray</span><span class="op">)</span></span>
 <span><span class="va">pv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fs</span>, <span class="st">"vol"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: 'droplet' and 'vol' are confounded in the data (not all their</span></span>
-<span><span class="co">#&gt; combinations occur and the model has no term with both), so a mean over all</span></span>
-<span><span class="co">#&gt; their combinations cannot be estimated: the means average over the combinations</span></span>
-<span><span class="co">#&gt; that exist. To say this in the model, write the nesting in the formula</span></span>
-<span><span class="co">#&gt; (droplet/vol) or leave out the factor that adds nothing; weights = "cells"</span></span>
-<span><span class="co">#&gt; weights the combinations by their numbers of observations. No data for</span></span>
-<span><span class="co">#&gt; droplet:vol fine:130, fine:200, medium:400. The means of vol = 130, 200, 400</span></span>
-<span><span class="co">#&gt; average only their observed cells; comparisons with them use only the cells</span></span>
-<span><span class="co">#&gt; that the compared means all have (column 'over' of the pairs).</span></span>
+<span><span class="co">#&gt; Warning: 'droplet' and 'vol' are confounded in the data: the means average over</span></span>
+<span><span class="co">#&gt; the combinations that exist (to say so: droplet/vol in the formula, leave one</span></span>
+<span><span class="co">#&gt; factor out, or weights = "cells"). No data for droplet:vol fine:130, fine:200,</span></span>
+<span><span class="co">#&gt; medium:400. The means of vol = 130, 200, 400 average only their observed cells;</span></span>
+<span><span class="co">#&gt; their pairs use the cells both means have (column 'over'). See</span></span>
+<span><span class="co">#&gt; vignette("missing-cells").</span></span>
 <span><span class="va">pv</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vol"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"n"</span>, <span class="st">"group"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   vol estimate  std.error  n group</span></span>
 <span><span class="co">#&gt; 1 130 5.030309 0.06844537 20    A </span></span>
@@ -326,7 +360,7 @@ factors</td>
 <p>The first two change the formula, not the fit: the fitted values and
 the likelihood are the same. Stating the structure in the model is the
 better record of the design:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">conc</span> <span class="op">+</span> <span class="va">droplet</span><span class="op">/</span><span class="va">vol</span>, data <span class="op">=</span> <span class="va">spray</span><span class="op">)</span></span>
 <span><span class="va">pn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fs2</span>, <span class="st">"vol"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 'vol' is not a term of the model: its factors do not interact there, so these means are the sums of their effects (the differences between the levels of one factor are the same at every level of the others).</span></span>
@@ -344,7 +378,7 @@ better record of the design:</p>
 grazing trial sampled on several dates, each pasture type is on one farm
 at a date, but a pasture type can be on another farm at a later
 date:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">past</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d1"</span>, <span class="st">"d2"</span><span class="op">)</span>, pasture <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P1"</span>, <span class="st">"P2"</span>, <span class="st">"P3"</span>, <span class="st">"P4"</span><span class="op">)</span>,</span>
 <span>                          trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, rep <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span>,</span>
@@ -356,17 +390,14 @@ date:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">past</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span></span>
 <span><span class="va">fp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">date</span><span class="op">/</span><span class="va">farm</span> <span class="op">+</span> <span class="va">date</span><span class="op">/</span><span class="op">(</span><span class="va">trt</span> <span class="op">+</span> <span class="va">pasture</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span>, data <span class="op">=</span> <span class="va">past</span><span class="op">)</span></span>
 <span><span class="va">pp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fp</span>, <span class="st">"date:trt"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: 'farm' and 'pasture' are confounded in the data (not all their</span></span>
-<span><span class="co">#&gt; combinations occur and the model has no term with both), so a mean over all</span></span>
-<span><span class="co">#&gt; their combinations cannot be estimated: the means average over the combinations</span></span>
-<span><span class="co">#&gt; that exist. To say this in the model, write the nesting in the formula</span></span>
-<span><span class="co">#&gt; (farm/pasture) or leave out the factor that adds nothing; weights = "cells"</span></span>
-<span><span class="co">#&gt; weights the combinations by their numbers of observations. No data for</span></span>
-<span><span class="co">#&gt; date:farm d3:F1, d3:F2, d1:F3, d2:F3, d1:F4, d2:F4; date:trt:pasture d3:A:P2,</span></span>
-<span><span class="co">#&gt; d3:B:P2, d3:A:P3, d3:B:P3; farm:pasture F2:P1, F4:P1, F2:P2, F3:P2, F4:P2,</span></span>
-<span><span class="co">#&gt; F2:P3, .... The means of date:trt = d1:A, d1:B, d2:A, d2:B, d3:A, d3:B average</span></span>
-<span><span class="co">#&gt; only their observed cells; comparisons with them use only the cells that the</span></span>
-<span><span class="co">#&gt; compared means all have (column 'over' of the pairs).</span></span></code></pre></div>
+<span><span class="co">#&gt; Warning: 'farm' and 'pasture' are confounded in the data: the means average</span></span>
+<span><span class="co">#&gt; over the combinations that exist (to say so: farm/pasture in the formula, leave</span></span>
+<span><span class="co">#&gt; one factor out, or weights = "cells"). No data for date:farm d3:F1, d3:F2,</span></span>
+<span><span class="co">#&gt; d1:F3, d2:F3, d1:F4, d2:F4; date:trt:pasture d3:A:P2, d3:B:P2, d3:A:P3,</span></span>
+<span><span class="co">#&gt; d3:B:P3; farm:pasture F2:P1, F4:P1, F2:P2, F3:P2, F4:P2, F2:P3, .... The means</span></span>
+<span><span class="co">#&gt; of date:trt = d1:A, d1:B, d2:A, d2:B, d3:A, d3:B average only their observed</span></span>
+<span><span class="co">#&gt; cells; their pairs use the cells both means have (column 'over'). See</span></span>
+<span><span class="co">#&gt; vignette("missing-cells").</span></span></code></pre></div>
 <p>Farm and pasture do not interact in the model, and at each date the
 farm is known from the pasture: the farm terms add nothing to the fit
 (their coefficients are aliased). The package finds the pair of factors
@@ -374,7 +405,7 @@ by trying: it leaves out the combinations without data of one pair at a
 time (first pairs among the factors averaged over) and keeps the first
 choice with which every mean can be estimated. The means equal those of
 the model without <code>farm</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fp0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">date</span><span class="op">/</span><span class="op">(</span><span class="va">trt</span> <span class="op">+</span> <span class="va">pasture</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span>, data <span class="op">=</span> <span class="va">past</span><span class="op">)</span></span>
 <span><span class="va">p0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fp0</span>, <span class="st">"date:trt"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">pp</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"trt"</span>, <span class="st">"estimate"</span><span class="op">)</span><span class="op">]</span>, without_farm <span class="op">=</span> <span class="va">p0</span><span class="op">$</span><span class="va">means</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span></span>

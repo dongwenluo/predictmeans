@@ -376,22 +376,22 @@ fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | i
                   dispformula = ~0, data = d, prt = FALSE)
 #> Warning: Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')
 predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
-#>   level1 level2   estimate std.error       df  statistic   p.value     p.adj
-#> 1     a1     a2 -0.2146406 0.3486284 20.51249 -0.6156717 0.5448827 0.5448827
-#> 2     a1     a3 -0.3028874 0.3191386 17.43094 -0.9490782 0.3555549 0.3555549
-#> 3     a2     a3 -0.0882468 0.3358240 19.17360 -0.2627769 0.7955254 0.7955254
-#>   p.method
-#> 1        t
-#> 2        t
-#> 3        t
+#>   level1 level2    estimate std.error       df  statistic   p.value     p.adj
+#> 1     a1     a2 -0.21464779 0.3486296 20.14254 -0.6156900 0.5449940 0.5449940
+#> 2     a1     a3 -0.30286816 0.3191345 17.10317 -0.9490298 0.3558238 0.3558238
+#> 3     a2     a3 -0.08822037 0.3358213 19.06262 -0.2627004 0.7955997 0.7955997
+#>     conf.low conf.high       lsd p.method
+#> 1 -0.9415467 0.5122511 0.7268989        t
+#> 2 -0.9758738 0.3701375 0.6730057        t
+#> 3 -0.7909461 0.6145053 0.7027257        t
 varcomp(fa)
 #>                       vcov     SE  2.5 %       97.5 %
 #> id.(Intercept)      0.0000     NA 0.0000           NA
 #> id.1.var            0.3314 0.0850 0.2122 5.893000e-01
-#> cor.id.1            0.7043 0.0773 0.5191 8.264000e-01
-#> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.807443e+02
-#> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432300e+00
-#> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.658432e+16
+#> cor.id.1            0.7044 0.0773 0.5191 8.264000e-01
+#> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.808692e+02
+#> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432200e+00
+#> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.787244e+16
 #> residual            0.0000     NA 0.0000           NA
 
 ## Binary responses with a random intercept per child (HRW::indonRespir)

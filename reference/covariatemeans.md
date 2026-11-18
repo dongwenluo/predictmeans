@@ -1,7 +1,10 @@
 # Predicted Means of a Linear Model with Covariate Variable(s)
 
-This function obtains predicted means with graph for a new set of
-covariate values.
+Predicted means along a covariate for each level of a factor term
+(curves) with their confidence limits, or the difference between two of
+the curves with its band. The result holds the tables in the layout of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+and the plot, which `autoplot()` returns.
 
 ## Usage
 
@@ -14,7 +17,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-  mean_type=c("conditional", "overall"))
+  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
 ```
 
 ## Arguments
@@ -92,8 +95,8 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 
 - trellis:
 
-  A logical variable. If set to TRUE (default), a trellis plots of
-  predicted means with CI will be drawn.
+  A logical variable. If set to TRUE (default), the plot is a trellis
+  plot (one panel per level).
 
 - plotord:
 
@@ -203,6 +206,13 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   coefficients (delta method), and with `contr` the ratio and the
   difference of the overall means. Log-link count families only.
 
+- plot:
+
+  Draw the plot now? The default is `FALSE` (since 2.0; 1.x drew it):
+  the plot is in the result (`autoplot()` returns it). `plot = TRUE`, or
+  `options(predictmeans.plot = TRUE)` for a whole session, draws it as
+  1.x did; `plotord` and `newwd = TRUE` also draw it.
+
 - bias_adjust, sigma:
 
   For back-transformed lines (a link, a transformed response or
@@ -224,15 +234,41 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 
 ## Value
 
+An object of class `c("covariatemeans", "pm_curves")`, a list. Its
+tables have the layout of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+(columns `estimate`, `std.error`, `df`, `conf.low`, `conf.high`, ...,
+the covariate under its own name; see
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md));
+`tidy()` and
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
+them, `autoplot()` the plot, and
+[`print()`](https://rdrr.io/r/base/print.html) shows a summary.
+
+- means:
+
+  The curves: one row per level of `modelterm` and covariate value
+  (`NULL` with `contr`).
+
+- pairs:
+
+  With `contr`: the difference of the two curves at each covariate
+  value.
+
+- settings:
+
+  The options that produced them (df method, level, band,
+  back-transformation, ...).
+
 - plt:
 
-  The plot (a `ggplot`).
+  The plot (a `ggplot`); drawn only with `plot = TRUE`.
 
 - pltdf:
 
-  The data of the plot: the fitted values with their limits, or with
-  `contr` the differences on the model scale and, when there is a
-  back-transformation, on the response scale.
+  The data of the plot as in 1.x: the fitted values with their limits,
+  or with `contr` the differences on the model scale and, when there is
+  a back-transformation, on the response scale.
 
 - test, significant:
 
@@ -324,39 +360,43 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 # library(lme4)
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-  covariatemeans(fm, "Variety", covariate="nitro")
+  cm <- covariatemeans(fm, "Variety", covariate="nitro")
+  ggplot2::autoplot(cm)
 
-  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.1))$pltdf
-
-#>        Variety xvar      ses      Mean        LL        UL     factors
-#> 1  Golden Rain  0.0 8.570714  81.90000  63.36196 100.43804 Golden Rain
-#> 2  Golden Rain  0.1 8.150208  89.43333  71.40550 107.46116 Golden Rain
-#> 3  Golden Rain  0.2 7.887150  96.96667  79.20736 114.72597 Golden Rain
-#> 4  Golden Rain  0.3 7.797492 104.50000  86.82111 122.17889 Golden Rain
-#> 5  Golden Rain  0.4 7.887150 112.03333  94.27403 129.79264 Golden Rain
-#> 6  Golden Rain  0.5 8.150208 119.56667 101.53884 137.59450 Golden Rain
-#> 7  Golden Rain  0.6 8.570714 127.10000 108.56196 145.63804 Golden Rain
-#> 8   Marvellous  0.0 8.570714  90.41667  71.87863 108.95470  Marvellous
-#> 9   Marvellous  0.1 8.150208  96.87500  78.84717 114.90283  Marvellous
-#> 10  Marvellous  0.2 7.887150 103.33333  85.57403 121.09264  Marvellous
-#> 11  Marvellous  0.3 7.797492 109.79167  92.11278 127.47056  Marvellous
-#> 12  Marvellous  0.4 7.887150 116.25000  98.49069 134.00931  Marvellous
-#> 13  Marvellous  0.5 8.150208 122.70833 104.68050 140.73616  Marvellous
-#> 14  Marvellous  0.6 8.570714 129.16667 110.62863 147.70470  Marvellous
-#> 15     Victory  0.0 8.570714  73.30000  54.76196  91.83804     Victory
-#> 16     Victory  0.1 8.150208  81.40833  63.38050  99.43616     Victory
-#> 17     Victory  0.2 7.887150  89.51667  71.75736 107.27597     Victory
-#> 18     Victory  0.3 7.797492  97.62500  79.94611 115.30389     Victory
-#> 19     Victory  0.4 7.887150 105.73333  87.97403 123.49264     Victory
-#> 20     Victory  0.5 8.150208 113.84167  95.81384 131.86950     Victory
-#> 21     Victory  0.6 8.570714 121.95000 103.41196 140.48804     Victory
+  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.3))
+#> Curves of 'Variety' along nitro
+#> 95% limits; Kenward-Roger df
+#>      Variety nitro estimate std.error     df conf.low conf.high
+#>  Golden Rain   0.0    81.90     8.571 12.849    63.36    100.44
+#>  Golden Rain   0.3   104.50     7.797  8.869    86.82    122.18
+#>  Golden Rain   0.6   127.10     8.571 12.849   108.56    145.64
+#>   Marvellous   0.0    90.42     8.571 12.849    71.88    108.95
+#>   Marvellous   0.3   109.79     7.797  8.869    92.11    127.47
+#>   Marvellous   0.6   129.17     8.571 12.849   110.63    147.70
+#>      Victory   0.0    73.30     8.571 12.849    54.76     91.84
+#>      Victory   0.3    97.62     7.797  8.869    79.95    115.30
+#>      Victory   0.6   121.95     8.571 12.849   103.41    140.49
+#> autoplot(x) draws the plot.
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
-  covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
-                 band="simultaneous")$test
-
-#> Lines equal along nitro: F(2, 21.6) = 0.515, p = 0.605.
-#> The simultaneous band (level 0.05) includes no difference at every value of nitro shown.
-#>      numDF      denDF          F    p.value 
-#>  2.0000000 21.5970557  0.5146028  0.6048848 
+  cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
+                       band="simultaneous")
+  cd$settings$test
+#>   df1      df2   F.ratio   p.value
+#> 1   2 21.59705 0.5146026 0.6048849
+  head(as.data.frame(cd))
+#>        level1  level2      nitro estimate std.error       df statistic
+#> 1 Golden Rain Victory 0.00000000 8.600000  8.684676 21.57462 0.9902500
+#> 2 Golden Rain Victory 0.01224490 8.529592  8.567347 20.58273 0.9955931
+#> 3 Golden Rain Victory 0.02448980 8.459184  8.453379 19.63654 1.0006867
+#> 4 Golden Rain Victory 0.03673469 8.388776  8.342909 18.73710 1.0054976
+#> 5 Golden Rain Victory 0.04897959 8.318367  8.236079 17.88507 1.0099912
+#> 6 Golden Rain Victory 0.06122449 8.247959  8.133031 17.08076 1.0141310
+#>     p.value     p.adj  conf.low conf.high adj.conf.low adj.conf.high
+#> 1 0.3330287 0.6191042 -9.431527  26.63153    -14.22282      31.42282
+#> 2 0.3310091 0.6162890 -9.309200  26.36838    -14.06393      31.12311
+#> 3 0.3291509 0.6136450 -9.195202  26.11357    -13.91598      30.83435
+#> 4 0.3274667 0.6111909 -9.089732  25.86728    -13.77922      30.55677
+#> 5 0.3259693 0.6089456 -8.992966  25.62970    -13.65382      30.29056
+#> 6 0.3246712 0.6069286 -8.905059  25.40098    -13.53996      30.03588
 ```

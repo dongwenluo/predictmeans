@@ -235,29 +235,13 @@ cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
   N_effect_Victory_vs_others = (`0.6:Victory` - `0:Victory`) -
     ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`)) / 2)
 contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
-#> $`The t tests of the specified contrasts`
-#>                            Estimate Std. Error t value      df Pr(>|t|)
-#> N_effect_Victory               47.0     7.6829  6.1174 45.0001   0.0000
-#> N_effect_Victory_vs_others      4.5     9.4097  0.4782 45.0001   0.6348
-#>                            lower.CL upper.CL
-#> N_effect_Victory            31.5257  62.4743
-#> N_effect_Victory_vs_others -14.4520  23.4520
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by 'none' method, if p-value = 0 means p-value < 0.0001."
-#> 
-#> $K
-#>                            0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain
-#> N_effect_Victory                     0.0          0.0        -1               0
-#> N_effect_Victory_vs_others           0.5          0.5        -1               0
-#>                            0.2:Marvellous 0.2:Victory 0.4:Golden Rain
-#> N_effect_Victory                        0           0               0
-#> N_effect_Victory_vs_others              0           0               0
-#>                            0.4:Marvellous 0.4:Victory 0.6:Golden Rain
-#> N_effect_Victory                        0           0             0.0
-#> N_effect_Victory_vs_others              0           0            -0.5
-#>                            0.6:Marvellous 0.6:Victory
-#> N_effect_Victory                      0.0           1
-#> N_effect_Victory_vs_others           -0.5           1
+#> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)
+#>                    contrast estimate std.error df statistic   p.value     p.adj
+#>            N_effect_Victory     47.0     7.683 45    6.1174 2.090e-07 2.090e-07
+#>  N_effect_Victory_vs_others      4.5     9.410 45    0.4782 6.348e-01 6.348e-01
+#>  conf.low conf.high
+#>     31.53     62.47
+#>    -14.45     23.45
 ```
 
 ## Models with covariates

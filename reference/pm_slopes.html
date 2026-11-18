@@ -103,14 +103,23 @@ non-linearly); the default is its mean.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list of two data frames:</p>
+    <p>An object of class <code>"pm_slopes"</code>, a list in the layout of <code><a href="predictmeans.html">predictmeans</a></code> (<code>tidy()</code> and
+<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> return its tables, <code>what = "slopes"</code> or <code>"pairs"</code>):</p>
 <dl><dt>slopes</dt>
-<dd><p>one row per level of <code>modelterm</code>: the factor columns, <code>slope</code>, <code>std.error</code>, <code>df</code>,
-  <code>conf.low</code>, <code>conf.high</code>, <code>statistic</code> (t) and <code>p.value</code> (of slope = 0).</p></dd>
+<dd><p>one row per level of <code>modelterm</code>: the factor columns, <code>estimate</code> (the slope),
+  <code>std.error</code>, <code>df</code>, <code>statistic</code> (t), <code>p.value</code> (of slope = 0), <code>conf.low</code> and
+  <code>conf.high</code>.</p></dd>
 
 <dt>pairs</dt>
 <dd><p>one row per pair of levels: <code>level1</code>, <code>level2</code>, <code>estimate</code> (slope of <code>level1</code> minus
-  slope of <code>level2</code>), <code>std.error</code>, <code>df</code>, <code>statistic</code>, <code>p.value</code> and <code>p.adj</code>.</p></dd>
+  slope of <code>level2</code>), <code>std.error</code>, <code>df</code>, <code>statistic</code>, <code>p.value</code>, <code>p.adj</code>,
+  <code>conf.low</code>, <code>conf.high</code> and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
+  mvt), <code>adj.conf.low</code>, <code>adj.conf.high</code>: simultaneous limits that leave out 0 exactly when
+  <code>p.adj</code> is below <code>level</code>.</p></dd>
+
+<dt>settings</dt>
+<dd><p><code>modelterm</code>, <code>covariate</code>, <code>at</code>, <code>level</code>, <code>adjust</code>, <code>df_method</code>,
+  <code>vcov_adjust</code>, <code>vcov</code>, <code>model_class</code>, <code>version</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -134,20 +143,34 @@ residual df.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">Oats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">nlme</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/nlme/man/Oats.html" class="external-link">Oats</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu">pm_slopes</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, <span class="st">"Variety"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Slopes of ‘nitro’ at 0.3 </span>
+<span class="r-in"><span>  <span class="va">sl</span> <span class="op">&lt;-</span> <span class="fu">pm_slopes</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">sl</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Slopes of ‘nitro’ at 0.3 (95% limits; Kenward-Roger df) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Variety slope std.error df conf.low conf.high statistic   p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain 75.33     11.86 51    51.53     99.14     6.353 5.726e-08</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Marvellous 64.58     11.86 51    40.78     88.39     5.446 1.490e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Victory 81.08     11.86 51    57.28    104.89     6.838 9.828e-09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Variety estimate std.error df statistic   p.value conf.low conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain    75.33     11.86 51     6.353 5.726e-08    51.53     99.14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Marvellous    64.58     11.86 51     5.446 1.490e-06    40.78     88.39</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Victory    81.08     11.86 51     6.838 9.828e-09    57.28    104.89</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Pairwise differences of slopes (p.adj: none)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Pairwise differences of slopes (p.adj: tukey)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       level1     level2 estimate std.error df statistic p.value  p.adj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.5244</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.7331</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.3298</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       level1     level2 estimate std.error df statistic p.value  p.adj conf.low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain Marvellous    10.75     16.77 51    0.6410  0.5244 0.7982   -22.92</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Golden Rain    Victory    -5.75     16.77 51   -0.3429  0.7331 0.9373   -39.42</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Marvellous    Victory   -16.50     16.77 51   -0.9839  0.3298 0.5903   -50.17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  conf.high adj.conf.low adj.conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      44.42       -29.73         51.23</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      27.92       -46.23         34.73</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      17.17       -56.98         23.98</span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">sl</span>, what <span class="op">=</span> <span class="st">"pairs"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        level1     level2 estimate std.error       df  statistic   p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Golden Rain Marvellous    10.75  16.77051 50.99999  0.6410061 0.5243889</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Golden Rain    Victory    -5.75  16.77051 50.99999 -0.3428637 0.7331102</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  Marvellous    Victory   -16.50  16.77051 50.99999 -0.9838699 0.3298242</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       p.adj conf.low conf.high adj.conf.low adj.conf.high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.7982489 -22.9182   44.4182    -29.73367      51.23367</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.9373365 -39.4182   27.9182    -46.23367      34.73367</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.5903123 -50.1682   17.1682    -56.98367      23.98367</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

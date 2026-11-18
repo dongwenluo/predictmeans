@@ -27,6 +27,11 @@
   [`coef(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   [`vcov(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md)
   : Predicted Means and Pairwise Comparisons as Data Frames
+- [`tidy(`*`<pm_curves>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)
+  [`as.data.frame(`*`<pm_curves>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)
+  [`autoplot(`*`<pm_curves>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)
+  [`print(`*`<pm_curves>`*`)`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)
+  : Curves and Their Differences as Data Frames
 - [`autoplot(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)
   [`summary(`*`<predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)
   [`print(`*`<summary.predictmeans>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)

@@ -157,22 +157,51 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
 ## Value
 
-There are two components in the output which are
+An object of class `"contrastmeans"`, a list.
+[`print()`](https://rdrr.io/r/base/print.html) shows the contrasts,
+`tidy()` and
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
+the table `contrasts` (`what = "joint"`: the joint test). Its first
+components are those of 1.x:
 
-- Table:
+- The t tests of the specified contrasts:
 
-  A table showing t-test results for the specified linear contrasts.
+  A table (rounded to 4 decimals) of the t tests of the contrasts, with
+  the adjusted p-value in `Pr(>|t|)`.
 
 - K:
 
   A contrast matrix.
 
-and, with `joint = TRUE`, a third,
-
 - Joint F test of the contrasts:
 
-  `df1`, `df2`, `F.ratio` and `p.value` of the joint test (and
-  `Perm_p_value` with `permlist`).
+  With `joint = TRUE`: `df1`, `df2`, `F.ratio` and `p.value` of the
+  joint test (and `Perm_p_value` with `permlist`).
+
+and then the tables in the layout of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+unrounded:
+
+- contrasts:
+
+  One row per contrast: `contrast` (its name), `over` (contrasts of
+  means over empty cells: the cells used), `estimate`, `std.error`,
+  `df`, `statistic` (t), `p.value` (unadjusted; with `permlist` the
+  permutation p-value), `p.adj` (adjusted by `adj`), `p.equiv` (with
+  `equivalence`), `conf.low`, `conf.high`, `adj.conf.low`,
+  `adj.conf.high` (simultaneous, with the adjustments that have them),
+  `p.method`, and for a log or logit scale (link, or a log response)
+  `ratio` or `odds.ratio` with its limits when the weights of every
+  contrast sum to zero.
+
+- joint:
+
+  With `joint = TRUE`: the joint test, unrounded.
+
+- settings:
+
+  `modelterm`, `level`, `adjust`, `df_method`, `vcov_adjust`, `vcov`,
+  `equivalence`, `nperm`, `model_class`, `version`.
 
 ## References
 
@@ -215,47 +244,30 @@ if (interactive()) contrastmeans(fm, "nitro:Variety")
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
-#> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344
-#> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
-#> 
-#> $K
-#>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
-#> [1,]            -1            0         1               0              0
-#> [2,]             0            0         1               0              0
-#>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
-#> [1,]           0               0              0           0               0
-#> [2,]           0               0             -1           0               0
-#>      0.6:Marvellous 0.6:Victory
-#> [1,]              0           0
-#> [2,]              0           0
-#> 
+#> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)
+#>    contrast estimate std.error    df statistic   p.value     p.adj conf.low
+#>  contrast 1    -8.50     9.715 30.23   -0.8749 3.885e-01 3.885e-01   -28.33
+#>  contrast 2   -45.67     9.715 30.23   -4.7006 5.332e-05 5.332e-05   -65.50
+#>  conf.high
+#>      11.33
+#>     -25.83
 
 # 3. ... and both contrasts tested together (an F test with 2 numerator df)
-contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
-#> $`The t tests of the specified contrasts`
-#>      Estimate Std. Error t value      df Pr(>|t|) lower.CL upper.CL
-#> [1,]  -8.5000      9.715 -0.8749 30.2307   0.3885 -28.3344  11.3344
-#> [2,] -45.6667      9.715 -4.7006 30.2307   0.0001 -65.5011 -25.8323
-#> attr(,"Note")
-#> [1] "The p-value is adjusted by ‘none’ method, if p-value = 0 means p-value < 0.0001."
-#> 
-#> $K
-#>      0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain 0.2:Marvellous
-#> [1,]            -1            0         1               0              0
-#> [2,]             0            0         1               0              0
-#>      0.2:Victory 0.4:Golden Rain 0.4:Marvellous 0.4:Victory 0.6:Golden Rain
-#> [1,]           0               0              0           0               0
-#> [2,]           0               0             -1           0               0
-#>      0.6:Marvellous 0.6:Victory
-#> [1,]              0           0
-#> [2,]              0           0
-#> 
-#> $`Joint F test of the contrasts`
-#>               df1     df2 F.ratio p.value
-#> all contrasts   2 30.2307 12.4991   1e-04
-#> 
+ct <- contrastmeans(fm, "nitro:Variety", ctrmatrix=cm, joint=TRUE)
+ct
+#> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)
+#>    contrast estimate std.error    df statistic   p.value     p.adj conf.low
+#>  contrast 1    -8.50     9.715 30.23   -0.8749 3.885e-01 3.885e-01   -28.33
+#>  contrast 2   -45.67     9.715 30.23   -4.7006 5.332e-05 5.332e-05   -65.50
+#>  conf.high
+#>      11.33
+#>     -25.83
+#> Joint F test: F(2, 30.2) = 12.499, p = 0.000111
+as.data.frame(ct)
+#>     contrast  estimate std.error       df  statistic      p.value        p.adj
+#> 1 contrast 1  -8.50000  9.715028 30.23075 -0.8749332 3.885088e-01 3.885088e-01
+#> 2 contrast 2 -45.66667  9.715028 30.23075 -4.7006213 5.331526e-05 5.331526e-05
+#>    conf.low conf.high p.method
+#> 1 -28.33439  11.33439        t
+#> 2 -65.50105 -25.83228        t
 ```
