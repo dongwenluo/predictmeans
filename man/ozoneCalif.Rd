@@ -33,5 +33,5 @@ fit <- semireg(ozone ~ s(inversion.base.height, bs = "os", k = 15) +
                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
 anova(fit)$smooth     # is each curve more than a straight line?
 # the effect of one covariate, the others at their means
-semipred(fit, covariate = "inversion.base.temp", prt = FALSE)$plt
+semipred(fit, covariate = "inversion.base.temp")$plt
 }

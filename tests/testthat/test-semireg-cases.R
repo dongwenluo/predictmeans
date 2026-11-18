@@ -39,13 +39,13 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
   expect_equal(gm$pairs$df, rep(10, 3))
   expect_equal(gm$settings$df_method, "inner-outer (design strata; smooths within)")
   expect_equal(gm$pairs$p.value, 2*pt(-abs(gm$pairs$estimate/gm$pairs$std.error), 10))
-  sp <- q(semipred(gf, "A", "t", prt = FALSE))$pred_df
+  sp <- q(semipred(gf, "A", "t"))$pred_df
   expect_equal(sp$df, rep(10, nrow(sp)))
   g0 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6), family = poisson, data = d, prt = FALSE))
   g0m <- q(predictmeans(g0, "A", covariate = c(t = 5), pairwise = TRUE))
   expect_true(all(is.infinite(g0m$means$df)))
   expect_equal(g0m$settings$df_method, "normal (semireg)")
-  expect_null(q(semipred(g0, "A", "t", prt = FALSE))$pred_df$df)
+  expect_null(q(semipred(g0, "A", "t"))$pred_df$df)
 })
 
 test_that("s(x, f1*f2): a variance per deviation term; anova() tests which deviation curves are needed", {
@@ -75,7 +75,7 @@ test_that("counts with a negative binomial and zero inflation (glmmTMB engine): 
   d$y[runif(nrow(d)) < 0.1] <- 0
   fit <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
                        family = glmmTMB::nbinom2, data = d, prt = FALSE))
-  out <- q(semipred(fit, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE))$pred_df
+  out <- q(semipred(fit, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous"))$pred_df
   expect_true(all(c("ratio", "ratio.LL", "ratio.UL", "ratio.includes1", "significant") %in% names(out)))
   expect_equal(out$ratio, exp(out$diff), tolerance = 1e-10)
   expect_equal(out$ratio.includes1, out$includes0)

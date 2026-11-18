@@ -70,7 +70,7 @@ test_that("golden example growthIndiana: mean curve + subject curves (s(age) | i
   vc <- as.data.frame(lme4::VarCorr(fm$semer))
   expect_true(any(vc$grp == "idnum" & vc$var1 == "(Intercept)" & vc$var2 %in% "age"))
   # the subject curves are random effects: the population curve leaves them out
-  sp <- q(semipred(fm, "age", "age", prt = FALSE))
+  sp <- q(semipred(fm, "age", "age"))
   expect_true(all(is.finite(sp$pred_df$SE)))
 })
 

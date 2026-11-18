@@ -6,47 +6,41 @@
 #' tables in the layout of \code{\link{predictmeans}} (see \code{\link{tidy.pm_curves}}) and the plot, which
 #' \code{autoplot()} returns.
 #' @usage
-#' semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
-#'            covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
-#' 		   scales=c("fixed", "free", "free_x", "free_y"),
-#' 		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
-#' 		   simultaneous=FALSE, contr_scale=c("model", "response"),
-#' 		   band=c("pointwise", "simultaneous"),
-#' 		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-#' 		   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
-#' @param semireg A list object returned by \code{semireg}.
+#' semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
+#'          conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+#'          band=c("pointwise", "simultaneous"),
+#'          unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+#'          mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
+#' @param model A fit returned by \code{semireg} (\code{semireg} before 2.0).
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
 #' @param covariate Name (in "quotes") of one or two (for \code{Ztps} smooth) the covariate variables in the \code{semireg} shuch as "x1" or c("x1", "x2").
 #' @param sm_term Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.
 #' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
-#' @param covariateV A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.
+#' @param at The values of \code{covariate} to predict at (\code{covariateV} before 2.0): a numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth); each row of the matrix is one prediction point.
 #' @param boundary For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
 #'   columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
 #'   by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
 #'   as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
 #'   the data cover, following their shape). \code{NULL} (default): the whole grid.
-#' @param level Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
-#'   version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
+#' @param conf.level Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
+#'   before 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 #'   with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
 #'   df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
 #'   besides the smooths.
 #' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
-#' @param trellis A logical scalar. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.
-#' @param scales Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?
-#' @param plotord A numeric vector specifying the order of plotting for two way interaction (e.g. 
-#'   \code{plotord = c(2, 1)} will put the second variable in \code{modelterm} on the \code{X} 
-#'   axis, the first variable as the grouping variable, and the third one as the panel variable). 
-#'   The defaults are \code{c(1, 2)} for two way interactions.
-#' @param ci A logical scalar to indicate whether to print confidence interval. The default value is TRUE.
-#' @param point A logical scalar to indicate whether to print raw data points. The default value is TRUE.
 #' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
 #'   for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
 #'   \code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
 #'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
 #'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 #'   overall means. Log-link count families only.
-#' @param plot_args A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+#' @param plot_args A named list of plot settings (before 2.0 arguments of their own; given so they stop with this
+#'   spelling): \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
+#'   default, \code{"free"}, \code{"free_x"}, \code{"free_y"}: the axes of the panels), \code{plotord} (the order
+#'   of the two factors of a two-way term, e.g. \code{c(2, 1)}; giving it draws the plot), \code{ci} (draw the
+#'   bands, \code{TRUE}), \code{point} (draw the data, \code{TRUE}), \code{jitterv} (jitter of the points, 0),
+#'   \code{threeD} (a 3-D surface with \pkg{plotly}, \code{FALSE}); and colours and sizes, any of: \code{line} and \code{band} (one
 #'   curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
 #'   dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
 #'   difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
@@ -55,13 +49,11 @@
 #'   \code{surface_points} (the data on surfaces: red). Bands are drawn first and their lines on top. For
 #'   example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
 #'   be added to it.
-#' @param jitterv A degree of jitter in x and y direction in the graph. The default is zero.
-#' @param threeD A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.
-#' @param prt The name of \code{plot} before 2.0: \code{TRUE} draws the plot, \code{FALSE} does not (whatever
-#'   \code{plot} says). The default \code{NULL} leaves it to \code{plot}.
 #' @param plot Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
 #'   (\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
-#'   session, draws it; so does \code{plotord}.
+#'   session, draws it; so does \code{plot_args = list(plotord = )}.
+#' @param ... Not used: arguments removed in 2.0 (\code{semireg}, \code{covariateV}, \code{level}, \code{prt},
+#'   \code{simultaneous}, the plot settings) stop with their 2.0 spelling (see \code{vignette("migrating")}).
 #' @param band \code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
 #'   whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
 #'   standardised deviation over the predicted points, from 10000 draws of the estimates' distribution (Ruppert,
@@ -77,7 +69,6 @@
 #'   0.89-0.91 over the whole curve for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it; for gaussian
 #'   data 0.97 without it (0.98 with it). \code{options(predictmeans.semi_unconditional = TRUE)} (or \code{FALSE}) sets
 #'   it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.
-#' @param simultaneous \code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).
 #' @param deriv \code{0} (the default): the curves; \code{1}: their slopes, \code{2}: their curvatures (first and
 #'   second derivatives along \code{covariate}, one covariate), with bands as for the curves, and with \code{contr}
 #'   the difference of the slopes (curvatures) of two curves. See \sQuote{Slopes and curvature}.
@@ -198,7 +189,7 @@
 #' autoplot(out)
 #' autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 #' # at given pressures
-#' semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+#' semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 #'
 #' # the difference of the two curves, and where they differ
 #' dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
@@ -229,15 +220,22 @@
 #' @name semipred
 NULL
 
-semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
-                     covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
-                     scales=c("fixed", "free", "free_x", "free_y"), 
-                     plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL, simultaneous=FALSE,
-                     contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
+semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
+                     conf.level=0.95, trans=NULL, contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
                      unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-                     mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE)) {
+                     mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("semipred", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  semireg <- model
+  covariateV <- at
+  level <- pm_conf_alpha(conf.level)
   if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
-  sty <- pm_curve_style(plot_args)                 # colours and sizes (R/plot-style.R)
+  # plot settings and colours (R/plot-style.R), one list
+  pa <- pm_plot_args(plot_args, c(pm_semi_plot_defaults, pm_curve_style_defaults))
+  sty <- pa[names(pm_curve_style_defaults)]
+  trellis <- pa$trellis; plotord <- pa$plotord; ci <- pa$ci; point <- pa$point; jitterv <- pa$jitterv
+  threeD <- pa$threeD
+  scales <- match.arg(pa$scales, c("fixed", "free", "free_x", "free_y"))
   mean_type <- pm_zi_check(semireg, match.arg(mean_type), deriv)      # R/zero-inflation.R
   pm_zi_message(semireg, mean_type)
   if (deriv > 0) {
@@ -246,18 +244,13 @@ semipred <- function(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NUL
     point <- FALSE
   }
   contr_scale <- match.arg(contr_scale)
-  # band = "simultaneous" as in covariatemeans(); simultaneous = TRUE (1.x) still works
   band <- match.arg(band)
-  if (isTRUE(simultaneous)) band <- "simultaneous"
   simultaneous <- band == "simultaneous"
-  # draw the plot now? only when asked, as predictmeans(): plot = TRUE (or
-  # prt = TRUE, the name before 2.0) or a plot order; the plot is in the
-  # result either way
-  draw <- if (!is.null(prt)) isTRUE(prt) else isTRUE(plot) || (!is.null(plotord) && !all(plotord %in% c("NULL", "")))
-  
-  stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))  
-  scales <- as.character(scales)
-  scales <- match.arg(scales)
+  # draw the plot now? only when asked, as predictmeans(): plot = TRUE or a
+  # plot order; the plot is in the result either way
+  draw <- isTRUE(plot) || (!is.null(plotord) && !all(plotord %in% c("NULL", "")))
+
+  stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))
   
   if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {  
     modelterm <- covariate

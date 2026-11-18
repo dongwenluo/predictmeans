@@ -98,7 +98,7 @@ test_that("semipred(): the layout of predictmeans(); the simultaneous band in ad
   data(Dialyzer, package = "nlme")
   fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer, prt = FALSE)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
-  out <- semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+  out <- semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
   expect_null(grDevices::dev.list())                     # nothing drawn
   expect_s3_class(out, c("semipred", "pm_curves"))
   m <- out$means
@@ -149,7 +149,7 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
   db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x + rnorm(12, 0, 0.5)[db$cl]))
   fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db, prt = FALSE)
-  b <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8))
+  b <- semipred(fb, "g", "x", at = c(0.2, 0.5, 0.8))
   m <- b$means
   expect_equal(m$response, plogis(m$estimate))
   expect_equal(m$response, b$pred_df$y)
@@ -157,7 +157,7 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   expect_equal(m$response.std.error, b$pred_df$SE_mu)
   expect_equal(b$settings$back_transform$estimate, "typical cluster (random effects at zero)")
   expect_true(b$settings$unconditional)
-  bc <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8), contr = c("b", "a"))
+  bc <- semipred(fb, "g", "x", at = c(0.2, 0.5, 0.8), contr = c("b", "a"))
   expect_equal(bc$pairs$odds.ratio, bc$pred_df$odds.ratio)
   expect_equal(bc$pairs$odds.ratio.conf.low, bc$pred_df$odds.ratio.LL)
   expect_equal(bc$pairs$response, bc$pred_df$response.diff)

@@ -33,11 +33,11 @@ data(copperKnots)
 mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
 anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
-semipred(mod, covariate = c("xcoord", "ycoord"), prt = FALSE)$plt
+semipred(mod, covariate = c("xcoord", "ycoord"))$plt
 \donttest{
 # on the log scale, with the pairwise interactions of the coordinates
 mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
-semipred(mod2, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+semipred(mod2, covariate = "zcoord", trans = exp)$plt
 }
 }

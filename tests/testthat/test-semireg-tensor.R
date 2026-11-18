@@ -19,14 +19,14 @@ test_that("t2(): the same model as gam() with the unconstrained t2 basis and its
   expect_lt(max(abs(fitted(fs$semer) - fitted(gm)))/sd(d$y), 1e-5)
   nd <- data.frame(x = c(0.2, 0.5, 0.8), z = c(0.3, 0.5, 0.7))
   pg <- as.numeric(mgcv::PredictMat(sm, nd) %*% coef(gm)[seq_len(ncol(X))])
-  ps <- semipred(fs, covariate = c("x", "z"), covariateV = cbind(x = nd$x, z = nd$z), prt = FALSE)$pred_df$y
+  ps <- semipred(fs, covariate = c("x", "z"), at = cbind(x = nd$x, z = nd$z))$pred_df$y
   expect_equal(ps, pg, tolerance = 1e-4)
   # without other random effects it is also gam()'s own t2() (mgcv's constraint on the whole
   # product then makes no difference to the fit)
   f0 <- q(semireg(y ~ t2(x, z), data = d, prt = FALSE))
   g0 <- mgcv::gam(y ~ t2(x, z), data = d, method = "REML")
   expect_lt(max(abs(fitted(f0$semer) - fitted(g0)))/sd(d$y), 1e-5)
-  expect_equal(semipred(f0, covariate = c("x", "z"), covariateV = cbind(x = nd$x, z = nd$z), prt = FALSE)$pred_df$y,
+  expect_equal(semipred(f0, covariate = c("x", "z"), at = cbind(x = nd$x, z = nd$z))$pred_df$y,
                as.numeric(predict(g0, newdata = nd)), tolerance = 1e-5)
   # the glmmTMB engine
   ft <- q(semireg_tmb(y ~ t2(x, z) + (1 | g), data = d, prt = FALSE))

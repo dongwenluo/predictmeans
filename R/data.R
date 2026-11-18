@@ -148,12 +148,12 @@ NULL
 #' mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
 #'                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
 #' anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
-#' semipred(mod, covariate = c("xcoord", "ycoord"), prt = FALSE)$plt
+#' semipred(mod, covariate = c("xcoord", "ycoord"))$plt
 #' \donttest{
 #' # on the log scale, with the pairwise interactions of the coordinates
 #' mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
 #'                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
-#' semipred(mod2, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+#' semipred(mod2, covariate = "zcoord", trans = exp)$plt
 #' }
 #' @aliases copperKnots
 #' @name copper
@@ -194,7 +194,7 @@ NULL
 #' fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
 #'                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm, prt = FALSE)
 #' anova(fit)$smooth       # are the boys' curves straight lines?
-#' semipred(fit, "age", "age", prt = FALSE)$plt
+#' semipred(fit, "age", "age")$plt
 #' \dontrun{
 #' # (about 30 s: 2257 measurements, 130 boys' curves)
 #' # all boys: a common curve and a black-white deviation curve (the contrast curve of
@@ -204,9 +204,9 @@ NULL
 #' gm$race <- factor(ifelse(gm$black == 1, "black", "white"))
 #' fit2 <- semireg(height ~ s(age, race, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
 #'                   (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm, prt = FALSE)
-#' dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous", prt = FALSE)
+#' dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous")
 #' attr(dif$pred_df, "significant")
-#' semipred(fit2, "race", "age", deriv = 1, prt = FALSE)$plt     # growth rates
+#' semipred(fit2, "race", "age", deriv = 1)$plt     # growth rates
 #' predictmeans(fit2, "race", covariate = c(age = 12))$means
 #' }
 #' @name growthIndiana
@@ -243,7 +243,7 @@ NULL
 #' # the ethnic groups at age 15, compared in pairs
 #' predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")$pairs
 #' # growth of bone density: where is the curve rising?
-#' attr(semipred(fit, "age", "age", deriv = 1, prt = FALSE)$pred_df, "significant")
+#' attr(semipred(fit, "age", "age", deriv = 1)$pred_df, "significant")
 #' @name SBMDfem
 #' @docType data
 NULL
@@ -275,7 +275,7 @@ NULL
 #'                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
 #' anova(fit)$smooth     # is each curve more than a straight line?
 #' # the effect of one covariate, the others at their means
-#' semipred(fit, covariate = "inversion.base.temp", prt = FALSE)$plt
+#' semipred(fit, covariate = "inversion.base.temp")$plt
 #' @name ozoneCalif
 #' @docType data
 NULL
@@ -343,7 +343,7 @@ NULL
 #' # the probability of union membership as a smooth function of the wage
 #' fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion, prt = FALSE)
 #' anova(fit)$smooth
-#' semipred(fit, "wage", "wage", prt = FALSE)$plt
+#' semipred(fit, "wage", "wage")$plt
 #' @name wageTUnion
 #' @docType data
 NULL

@@ -43,7 +43,7 @@ test_that("semireg(): a smooth with its variance at zero (a straight line) and a
   expect_s3_class(fit, "semireg")
   expect_true(grepl("Negative Binomial", stats::family(fit$semer)$family))
   expect_true(all(is.finite(as.matrix(fit$CovMat))))
-  sp <- semipred(fit, "g", "x", prt = FALSE)$pred_df
+  sp <- semipred(fit, "g", "x")$pred_df
   expect_true(all(is.finite(sp$SE_mu)))
   # a variance estimated as zero: its coefficients have zero covariance
   th <- lme4::getME(fit$semer, "theta")
@@ -105,8 +105,8 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
   g <- mgcv::gam(y ~ f + s(x, by = f), data = d, method = "REML")
   xs <- c(0.2, 1.5, 2.8)
   nd <- expand.grid(x = xs, f = levels(d$f))
-  a <- semipred(fit, "f", "x", covariateV = xs, prt = FALSE)$pred_df
-  b <- semipred(fit, "f", "x", covariateV = xs, prt = FALSE, unconditional = TRUE)$pred_df
+  a <- semipred(fit, "f", "x", at = xs)$pred_df
+  b <- semipred(fit, "f", "x", at = xs, unconditional = TRUE)$pred_df
   a <- a[order(a$f, a$x), ]
   b <- b[order(b$f, b$x), ]
   pu <- as.numeric(predict(g, nd, se.fit = TRUE, unconditional = TRUE)$se.fit)
@@ -123,9 +123,9 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
   d$cnt <- rpois(n, exp(0.5 + sin(2*d$x)))
   p <- q(semireg(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
   t1 <- q(semireg_tmb(cnt ~ s(x), family = poisson, data = d, prt = FALSE))
-  pb <- q(semipred(p, NULL, "x", covariateV = xs, prt = FALSE, unconditional = TRUE))$pred_df
-  tb <- q(semipred(t1, NULL, "x", covariateV = xs, prt = FALSE, unconditional = TRUE))$pred_df
-  pa <- semipred(p, NULL, "x", covariateV = xs, prt = FALSE)$pred_df
+  pb <- q(semipred(p, NULL, "x", at = xs, unconditional = TRUE))$pred_df
+  tb <- q(semipred(t1, NULL, "x", at = xs, unconditional = TRUE))$pred_df
+  pa <- semipred(p, NULL, "x", at = xs)$pred_df
   expect_true(all(pb$SE_mu >= pa$SE_mu))
   expect_equal(pb$SE_mu, tb$SE_mu, tolerance = 0.01)
 })
@@ -182,10 +182,10 @@ test_that("semireg(): the deviance function cannot move the fitted model (df, va
   V <- as.matrix(vcov(f$semer))
   d1 <- predictmeans(f, "A", covariate = c(t = 5))$means$df
   v1 <- varcomp(f)
-  p1 <- semipred(f, "A", "t", prt = FALSE)$pred_df$df
+  p1 <- semipred(f, "A", "t")$pred_df$df
   expect_equal(predictmeans(f, "A", covariate = c(t = 5))$means$df, d1)
   expect_equal(varcomp(f), v1)
-  expect_equal(semipred(f, "A", "t", prt = FALSE)$pred_df$df, p1)
+  expect_equal(semipred(f, "A", "t")$pred_df$df, p1)
   expect_equal(lme4::getME(f$semer, "theta"), th)
   expect_equal(as.matrix(vcov(f$semer)), V)
 })

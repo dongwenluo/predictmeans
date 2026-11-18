@@ -15,6 +15,10 @@ pm_curve_style_defaults <- list(
   surface_points = "red"
 )
 
+## The plot settings of semipred() ('plot_args', with the colours above).
+pm_semi_plot_defaults <- list(trellis = TRUE, scales = "fixed", plotord = NULL, ci = TRUE, point = TRUE, jitterv = 0,
+                              threeD = FALSE)
+
 pm_curve_style <- function(plot_args = list()) {
   if (!is.list(plot_args) || (length(plot_args) && (is.null(names(plot_args)) || !all(nzchar(names(plot_args)))))) {
     stop("'plot_args' must be a named list, e.g. plot_args = list(line = \"black\", band = \"grey70\").", call. = FALSE)

@@ -18,7 +18,7 @@ test_that("a removed argument stops with its 2.0 spelling and the value given", 
   expect_error(d("contrastmeans", quote(contrastmeans(m, "A", Df = 10))), "use df_method = 10", fixed = TRUE)
   k <- 12
   expect_error(d("covariatemeans", quote(covariatemeans(m, covariateV = list(x = k))), env = environment()),
-               "use at = list(x = 12)", fixed = TRUE)
+               "use at = list(x = k)", fixed = TRUE)
   expect_error(d("permlmer", quote(permlmer(lmer0 = a, lmer1 = b))), "model0 = a.*\n.*model1 = b")
   expect_error(d("semireg", quote(semireg(y ~ x, smoothZ = list()))), "smooths in the formula")
   expect_error(d("predictmeans", quote(predictmeans(m, "A", newwd = TRUE))), "vignette(\"migrating\")", fixed = TRUE)

@@ -47,7 +47,7 @@ test_that("pure AR1 residuals (dispformula = ~0): curves and means with finite S
   fit <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d,
                        prt = FALSE))
   expect_true("ar1" %in% struct_codes(fit$semer))
-  cur <- q(semipred(fit, "trt", "time", prt = FALSE))$pred_df
+  cur <- q(semipred(fit, "trt", "time"))$pred_df
   expect_true(all(is.finite(cur$SE) & cur$SE > 0))
   pm <- q(predictmeans(fit, "trt", covariate = c(time = 6), pairwise = TRUE))
   expect_true(all(is.finite(pm$means$std.error) & pm$means$std.error > 0))

@@ -100,7 +100,10 @@ pm_defunct <- function(fun, call, env = parent.frame(2), strict = FALSE, formals
   if (length(hit)) {
     msgs <- vapply(hit, function(h) {
       row <- tab[k[h], , drop = FALSE]
-      value <- if (nzchar(row$value)) tryCatch(eval(call[[given[h]]], env), error = function(e) call[[given[h]]]) else NULL
+      expr <- call[[given[h]]]
+      value <- if (nzchar(row$value)) tryCatch(eval(expr, env), error = function(e) expr) else NULL
+      # the value when it is short (level = a -> conf.level = 0.95), else what was written (model = fit)
+      if (!(is.atomic(value) && length(value) <= 10)) value <- expr
       pm_defunct_msg(row, value)
     }, character(1))
     stop(paste0(fun, "(): ", paste(msgs, collapse = "\n  "),

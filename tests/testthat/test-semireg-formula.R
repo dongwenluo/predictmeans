@@ -60,7 +60,7 @@ test_that("semipred() and predictmeans() on formula smooths equal predict.gam():
   fit <- suppressMessages(semireg(y ~ s(x, by = f) + s(z), data = d, prt = FALSE))
   g <- mgcv::gam(y ~ f + s(x, by = f) + s(z), data = d, method = "REML")
   xs <- c(0.5, 1.5, 2.5)
-  sp <- semipred(fit, "f", "x", covariateV = xs, prt = FALSE)$pred_df
+  sp <- semipred(fit, "f", "x", at = xs)$pred_df
   sp <- sp[order(sp$f, sp$x), ]
   nd <- expand.grid(x = xs, f = levels(d$f))
   nd$z <- mean(d$z)
@@ -69,7 +69,7 @@ test_that("semipred() and predictmeans() on formula smooths equal predict.gam():
   expect_equal(sp$SE, as.numeric(pg$se.fit), tolerance = 1e-4)
   pm <- predictmeans(fit, "f", covariate = c(x = 1.5))
   expect_equal(pm$means$estimate, as.numeric(pg$fit[c(2, 5)]), tolerance = 1e-5)
-  dc <- semipred(fit, "f", "x", covariateV = xs, contr = c("b", "a"), prt = FALSE)$pred_df
+  dc <- semipred(fit, "f", "x", at = xs, contr = c("b", "a"))$pred_df
   Xp <- predict(g, nd, type = "lpmatrix")
   L <- Xp[4:6, ] - Xp[1:3, ]
   expect_equal(dc$y, as.numeric(L %*% coef(g)), tolerance = 1e-5)
@@ -94,12 +94,12 @@ test_that("formula smooths in GLMMs and glmmTMB; negative binomial SEs of semire
                       data = d, prt = FALSE))
   l1 <- q(semireg(cnt ~ x + f + (1 | id), smoothZ = list(sx = smZ(x, k = 8)), ngbinomial = TRUE, data = d,
                   prt = FALSE))
-  a <- semipred(t1, "f", "x", covariateV = c(-1, 0, 1), prt = FALSE)$pred_df
-  b <- semipred(l1, "f", "x", covariateV = c(-1, 0, 1), prt = FALSE)$pred_df
+  a <- semipred(t1, "f", "x", at = c(-1, 0, 1))$pred_df
+  b <- semipred(l1, "f", "x", at = c(-1, 0, 1))$pred_df
   expect_equal(a$SE_mu, b$SE_mu, tolerance = 0.1)
   t2 <- q(semireg_tmb(cnt ~ s(x) + f + (1 | id), family = glmmTMB::nbinom2, data = d, prt = FALSE))
   expect_equal(names(t2$u_lst), "s_x")
-  expect_true(all(is.finite(semipred(t2, "f", "x", prt = FALSE)$pred_df$SE_mu)))
+  expect_true(all(is.finite(semipred(t2, "f", "x")$pred_df$SE_mu)))
 })
 
 test_that("formula smooths: refusals with a message", {
@@ -132,7 +132,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
                   method = "REML")
   expect_equal(as.numeric(logLik(fit$semer)), as.numeric(logLik(fl)), tolerance = 1e-6)
   # each level's curve is fixed part + common curve + its deviation
-  sp <- semipred(fit, "f1", "x", covariateV = 1.5, prt = FALSE)$pred_df
+  sp <- semipred(fit, "f1", "x", at = 1.5)$pred_df
   b <- lme4::fixef(fit$semer)
   Zn <- predictmeans:::pm_sm_predict(fit$smooths, data.frame(x = 1.5, f1 = factor(c("a", "b"), levels = c("a", "b"))))
   by_hand <- b[1] + b["x"]*1.5 + c(0, b["f1b"] + b["x:f1b"]*1.5) +
@@ -151,7 +151,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
   d$cell <- interaction(d$f1, d$f2, sep = ":")
   f3b <- q(semireg(y ~ s(x, cell, k = 8), data = d, prt = FALSE))
   expect_equal(as.numeric(logLik(f3$semer)), as.numeric(logLik(f3b$semer)), tolerance = 1e-8)
-  expect_equal(nrow(semipred(f3, "f1:f2", "x", covariateV = c(1, 2), prt = FALSE)$pred_df), 12)
+  expect_equal(nrow(semipred(f3, "f1:f2", "x", at = c(1, 2))$pred_df), 12)
   # surfaces: s(x, z, f)
   d$z <- runif(n)
   f4 <- q(semireg(y ~ s(x, z, f1, k = 12), data = d, prt = FALSE))
@@ -176,11 +176,11 @@ test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level w
   expect_equal(unname(fitted(a$semer)), unname(fitted(b$semer)), tolerance = 1e-5)
   expect_true("s_x_id" %in% names(a$u_lst))
   # population curve: the random curves are left out, as the smoothZ form without its 'sub' term
-  pa <- q(semipred(a, "x", "x", prt = FALSE))$pred_df
-  pb <- q(semipred(b, "x", "x", sm_term = "sm", prt = FALSE))$pred_df
+  pa <- q(semipred(a, "x", "x"))$pred_df
+  pb <- q(semipred(b, "x", "x", sm_term = "sm"))$pred_df
   expect_equal(pa[[3]], pb[[3]], tolerance = 1e-5)
   expect_equal(pa$SE, pb$SE, tolerance = 1e-4)
-  expect_error(semipred(a, "x", "x", sm_term = "s_x_id", prt = FALSE), "smooth blocks")
+  expect_error(semipred(a, "x", "x", sm_term = "s_x_id"), "smooth blocks")
   expect_error(semireg(y ~ s(x) + (s(x, by = f) | id), data = d, prt = FALSE), "cannot have 'by'")
 })
 
@@ -207,7 +207,7 @@ test_that("smooths with fewer distinct covariate values than basis columns: exac
   g1 <- mgcv::gam(y ~ s(xr, bs = "os", k = 10), data = d, method = "REML")
   expect_equal(unname(fitted(s1$semer)), unname(fitted(g1)), tolerance = 1e-4)
   nd <- data.frame(xr = seq(0, 3, by = 0.25))
-  p1 <- q(semipred(s1, "xr", "xr", prt = FALSE))$pred_df
+  p1 <- q(semipred(s1, "xr", "xr"))$pred_df
   i <- match(nd$xr, round(p1$xr, 8))
   expect_gt(sum(!is.na(i)), 5)
   expect_equal(p1$y[i][!is.na(i)], as.numeric(predict(g1, nd))[!is.na(i)], tolerance = 1e-3)
@@ -228,10 +228,10 @@ test_that("objects of the session in xt or k of random curves and t2() are not t
   fm <- suppressMessages(semireg(y ~ s(x, by = g, bs = "os", k = 6, xt = list(range = rg)) +
                                    (s(x, bs = "os", k = kk, xt = list(range = rg)) | id), data = d, prt = FALSE))
   expect_false(any(c("rg", "kk") %in% fm$sm_vars))
-  expect_true(all(is.finite(semipred(fm, "g", "x", prt = FALSE)$pred_df$SE)))
-  expect_true(all(is.finite(semipred(fm, "g", "x", contr = c("2", "1"), prt = FALSE)$pred_df$SE_contr)))
+  expect_true(all(is.finite(semipred(fm, "g", "x")$pred_df$SE)))
+  expect_true(all(is.finite(semipred(fm, "g", "x", contr = c("2", "1"))$pred_df$SE_contr)))
   expect_true(all(is.finite(predictmeans(fm, "g", covariate = c(x = 0.5))$means$std.error)))
   ft <- suppressMessages(semireg(y ~ t2(x, z, k = kk) + (1 | id), data = d, prt = FALSE))
   expect_false("kk" %in% ft$sm_vars)
-  expect_true(all(is.finite(semipred(ft, covariate = c("x", "z"), prt = FALSE)$pred_df$SE)))
+  expect_true(all(is.finite(semipred(ft, covariate = c("x", "z"))$pred_df$SE)))
 })

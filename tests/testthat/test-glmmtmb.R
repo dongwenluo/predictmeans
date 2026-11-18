@@ -93,7 +93,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date,
            smoothZ = list(grp = smZ(construction.date, k = 25)),
            data = W, prt = FALSE))
-  sp <- semipred(fit, covariate = "construction.date", prt = FALSE)$pred_df
+  sp <- semipred(fit, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp$SE)) && all(sp$SE > 0))
   r2 <- R2_glmm(fit$semer)
   expect_true(all(is.finite(as.numeric(sub("%", "", r2)))))
@@ -101,7 +101,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   W$surf <- as.numeric(scale(W$surface))
   fit2 <- suppressWarnings(semireg_tmb(areaPerMzloty ~ construction.date + surf + (surf | district),
            smoothZ = list(grp = smZ(construction.date, k = 10)), data = W, prt = FALSE))
-  sp2 <- semipred(fit2, covariate = "construction.date", prt = FALSE)$pred_df
+  sp2 <- semipred(fit2, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp2$SE)) && all(sp2$SE > 0))
 })
 
@@ -203,12 +203,11 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
   # semipred() on semireg_tmb(): the overall curve is (1 - pi) x the conditional one
   f <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~trt, family = poisson, data = d,
                      prt = FALSE))
-  pc <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, prt = FALSE))$pred_df
-  po <- q(semipred(f, "trt", "x", covariateV = xs, unconditional = FALSE, mean_type = "overall", prt = FALSE))$pred_df
+  pc <- q(semipred(f, "trt", "x", at = xs, unconditional = FALSE))$pred_df
+  po <- q(semipred(f, "trt", "x", at = xs, unconditional = FALSE, mean_type = "overall"))$pred_df
   bz <- glmmTMB::fixef(f$semer)$zi
   expect_equal(po$y, (1 - plogis(bz[1] + bz[2] * (po$trt == "b"))) * pc$y, tolerance = 1e-8)
-  cr <- q(semipred(f, "trt", "x", covariateV = xs, contr = c("b", "a"), unconditional = FALSE, mean_type = "overall",
-                   prt = FALSE))$pred_df
+  cr <- q(semipred(f, "trt", "x", at = xs, contr = c("b", "a"), unconditional = FALSE, mean_type = "overall"))$pred_df
   expect_equal(cr$ratio, po$y[po$trt == "b"] / po$y[po$trt == "a"], tolerance = 1e-8)
-  expect_error(q(semipred(f, "trt", "x", deriv = 1, mean_type = "overall", prt = FALSE)), "not their derivatives")
+  expect_error(q(semipred(f, "trt", "x", deriv = 1, mean_type = "overall")), "not their derivatives")
 })

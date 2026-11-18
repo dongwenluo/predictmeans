@@ -60,6 +60,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     variable is read from the formula). `as.is` stays (each line over its
     group's observed range). 15 calls of `dev/snapshot-covariatemeans.R`
     written both ways give identical results, except `transOff` (as above).
+  - `semipred()` (step 3a): the first argument is `model` (was `semireg`);
+    `covariateV` -> `at`; `level` -> `conf.level`; `simultaneous = TRUE` ->
+    `band = "simultaneous"`; `prt` -> `plot`; `trellis`, `scales`, `plotord`,
+    `ci`, `point`, `jitterv`, `threeD` -> `plot_args = list(...)` (with the
+    colours). 13 calls of `dev/snapshot-semipred.R` written both ways give
+    identical results.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

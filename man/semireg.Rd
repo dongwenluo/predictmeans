@@ -172,7 +172,7 @@ fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subjec
 anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test of each smooth
 varcomp(fm)     # variance components, the smooths' among them
 predictmeans(fm, "QB", covariate = c(pressure = 1))$means
-semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous", prt = FALSE)$plt
+semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")$plt
 
 ## 2. A designed experiment: treatments on the whole plots of six blocks, curves over time;
 ##    treatment means at a time get Satterthwaite df from the whole-plot stratum
@@ -208,14 +208,14 @@ ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
               data = ds, prt = FALSE)
-semipred(fs, covariate = "day", prt = FALSE)$plt
+semipred(fs, covariate = "day")$plt
 ## 6. A tensor-product surface for two covariates on different scales (data(ozoneCalif)),
 ##    and a curve in a third
 data(ozoneCalif)
 fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
                 s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
 anova(fo)$smooth          # a variance per penalty of the surface
-semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
+semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"))$plt
 \donttest{
 ## 7. Binary responses with a random intercept per child (HRW::indonRespir): the probability
 ##    of a respiratory infection over age
@@ -224,7 +224,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   fb <- semireg(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height + stunted +
                   visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
                 family = binomial, data = indonRespir, prt = FALSE)
-  semipred(fb, "age", "age", prt = FALSE)$plt
+  semipred(fb, "age", "age")$plt
 }
 
 ## 8. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
@@ -239,7 +239,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   WarsawApts$district <- factor(WarsawApts$district)
   fw <- semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
                 data = WarsawApts, prt = FALSE)
-  semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
+  semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"))$plt
   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 }
 }

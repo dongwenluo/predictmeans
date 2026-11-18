@@ -36,5 +36,5 @@ anova(fit)       # ethnicity: F test with Kenward-Roger df; the smooth: likeliho
 # the ethnic groups at age 15, compared in pairs
 predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")$pairs
 # growth of bone density: where is the curve rising?
-attr(semipred(fit, "age", "age", deriv = 1, prt = FALSE)$pred_df, "significant")
+attr(semipred(fit, "age", "age", deriv = 1)$pred_df, "significant")
 }

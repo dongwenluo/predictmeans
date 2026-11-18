@@ -659,7 +659,7 @@ R2_glmm(mod1$semer)
 #### Predict Table
 
 ```{r}
-pred_out1 <- semipred(mod1, covariate="construction.date", prt=FALSE)
+pred_out1 <- semipred(mod1, covariate="construction.date")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -716,7 +716,7 @@ R2_glmm(mod2$semer)
 #### Predict Table
 
 ```{r}
-pred_out2_1 <- semipred(mod2, "district", "construction.date", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "district", "construction.date")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -734,7 +734,7 @@ pred_out2_1$plt
 Mean Contrast table for District 'Mokotow' vs 'Srodmiescie' 
 
 ```{r}
-pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -810,7 +810,7 @@ R2_glmm(mod$semer)
 #### calwpct
 
 ```{r}
-pred_out1 <- semipred(mod, covariate = "calwpct", prt=FALSE)
+pred_out1 <- semipred(mod, covariate = "calwpct")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out1$plt
@@ -819,7 +819,7 @@ pred_out1$plt
 #### log.avginc
 
 ```{r}
-pred_out2 <- semipred(mod, covariate = "log.avginc", prt=FALSE)
+pred_out2 <- semipred(mod, covariate = "log.avginc")
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out2$plt
@@ -828,7 +828,7 @@ pred_out2$plt
 #### compstu
 
 ```{r}
-pred_out3 <- semipred(mod, covariate = "compstu", prt=FALSE)
+pred_out3 <- semipred(mod, covariate = "compstu")
 DT_df(pred_out3$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out3$plt
@@ -903,7 +903,7 @@ R2_glmm(mod1$semer)
 #### Predict Table
 
 ```{r}
-pred_out1 <- semipred(mod1, "age", "age", prt=FALSE)
+pred_out1 <- semipred(mod1, "age", "age")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -957,7 +957,7 @@ R2_glmm(mod2$semer)
 #### Predict Table
 
 ```{r}
-pred_out2_1 <- semipred(mod2, "sex", "age", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "sex", "age")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -978,7 +978,7 @@ pred_out2_1$plt+
 Mean Contrast table for Sex 'male' vs 'female'
 
 ```{r}
-pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -1053,7 +1053,7 @@ R2_glmm(mod$semer)
 #### Predict Table
 
 ```{r}
-pred_out1_1 <- semipred(mod, "year", "dayInSeason", prt=FALSE)   # other covariates at their means
+pred_out1_1 <- semipred(mod, "year", "dayInSeason")   # other covariates at their means
 DT_df(pred_out1_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1138,7 +1138,7 @@ R2_glmm(mod$semer)
 #### Z Table
 
 ```{r}
-pred_out1 <- semipred(mod, covariate="zcoord", trans=exp, prt=FALSE)
+pred_out1 <- semipred(mod, covariate="zcoord", trans=exp)
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1154,7 +1154,7 @@ pred_out1$plt
 #### X, Y Table
 
 ```{r}
-pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, point = TRUE, prt=FALSE)
+pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = TRUE))
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1168,7 +1168,7 @@ pred_out2$plt
 #### X, Y 3D Plot
 
 ```{r}
-pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), threeD = TRUE, point=FALSE, trans=exp, prt=FALSE)
+pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = FALSE, threeD = TRUE))
 pred_out3$plt
 ```
 

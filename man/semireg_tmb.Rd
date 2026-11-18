@@ -156,7 +156,7 @@ cn$y <- rnbinom(nrow(cn), size = 3,
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
-rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
 attr(rr$pred_df, "significant")
 predictmeans(fc, "trt", covariate = c(x = 1.5))$means
 \donttest{
@@ -179,7 +179,7 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
                       stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
                     family = binomial, data = indonRespir, prt = FALSE)
-  semipred(fb, "age", "age", prt = FALSE)$plt
+  semipred(fb, "age", "age")$plt
 }
 }
 }

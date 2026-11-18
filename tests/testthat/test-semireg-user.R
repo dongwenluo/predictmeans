@@ -18,8 +18,8 @@ test_that("bs = \"user\" with the O'Sullivan basis is the bs = \"os\" fit (curve
   expect_equal(as.numeric(logLik(fu$semer)), as.numeric(logLik(fo$semer)), tolerance = 1e-8)
   expect_true(all(c("A", "A:t") %in% attr(terms(fu$semer, fixed.only = TRUE), "term.labels")))
   for (dv in 0:1) {
-    po <- semipred(fo, "A", "t", deriv = dv, prt = FALSE)$pred_df
-    pu <- semipred(fu, "A", "t", deriv = dv, prt = FALSE)$pred_df
+    po <- semipred(fo, "A", "t", deriv = dv)$pred_df
+    pu <- semipred(fu, "A", "t", deriv = dv)$pred_df
     expect_equal(pu$y, po$y, tolerance = 1e-8)
     expect_equal(pu$SE, po$SE, tolerance = 1e-8)
   }
@@ -44,8 +44,8 @@ test_that("bs = \"user\" with two covariates: the Ztps basis gives the bs = \"zt
   fu <- q(semireg(w ~ g + s(u, v, bs = "user", xt = list(basis = zb)), data = s2, prt = FALSE))
   expect_equal(as.numeric(logLik(fu$semer)), as.numeric(logLik(fz$semer)), tolerance = 1e-8)
   pts <- cbind(u = c(0.2, 0.5, 0.8), v = c(0.3, 0.5, 0.7))
-  expect_equal(semipred(fu, "g", c("u", "v"), covariateV = pts, prt = FALSE)$pred_df$w,
-               semipred(fz, "g", c("u", "v"), covariateV = pts, prt = FALSE)$pred_df$w, tolerance = 1e-8)
+  expect_equal(semipred(fu, "g", c("u", "v"), at = pts)$pred_df$w,
+               semipred(fz, "g", c("u", "v"), at = pts)$pred_df$w, tolerance = 1e-8)
 })
 
 test_that("bs = \"user\": the basis function is checked before the fit", {
