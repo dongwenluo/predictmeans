@@ -1974,6 +1974,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* `dev/review-options.md`: inventory of every argument of 1.1.1 and 2.0 (keep, rename, merge, remove) for the clean-up of the options before 2.0.
 * Shorter empty-cell messages: the confounding warning (about 450
   characters) now names the two factors and the three ways to state the
   structure in one sentence; the empty-cell warning, the message on
