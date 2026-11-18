@@ -124,7 +124,7 @@ test_that("adjusted limits of the pairs match emmeans' confint() and agree with 
 
 test_that("conf.low uses the user's level with adj = \"bonferroni\"; level can be given", {
   fm <- lm(yield ~ Block + nitro*Variety, data = oats_unbal())
-  pm <- predictmeans(fm, "nitro", adj = "bonferroni", level = 0.1, plot = FALSE)$pairs
+  pm <- predictmeans(fm, "nitro", adj = "bonferroni", conf.level = 0.9, plot = FALSE)$pairs
   m <- nrow(pm)
   expect_equal(pm$conf.high - pm$estimate, qt(0.95, pm$df) * pm$std.error)
   expect_equal(pm$adj.conf.high - pm$estimate, qt(1 - 0.1/(2*m), pm$df) * pm$std.error)

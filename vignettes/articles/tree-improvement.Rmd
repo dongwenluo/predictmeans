@@ -98,7 +98,8 @@ kable(anova(fmtab2.3), digits = 4)
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -189,7 +190,8 @@ kable(anova(fmtab2.5), digits = 4)
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -252,7 +254,8 @@ residplot(fmtab3.3)
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -337,7 +340,8 @@ residplot(fmtab3.8)
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -414,7 +418,8 @@ residplot(fm4.2)
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -437,7 +442,8 @@ predm_out$predictmeansBarPlot
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -468,7 +474,8 @@ predm_out$predictmeansBarPlot
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fm4.2, "treat", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.2, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -499,7 +506,8 @@ predm_out$predictmeansBarPlot
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, groupname_col ="contcomp",
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -531,7 +539,8 @@ predm_out$predictmeansBarPlot
 
 -   Mean
 ```{r}
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, groupname_col ="treat",
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -590,7 +599,8 @@ residplot(fm4.4)
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.4, "treat", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.4, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -622,7 +632,8 @@ predm_out$predictmeansBarPlot
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -659,7 +670,8 @@ predm_out$predictmeansBarPlot
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "treat"))
+#| fig.show: hide
+predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "treat")))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -742,7 +754,8 @@ residplot(fm4.6)
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.6, "irrig", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.6, "irrig", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -764,7 +777,8 @@ predm_out$predictmeansBarPlot
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.6, "fert", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.6, "fert", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -786,7 +800,8 @@ predm_out$predictmeansBarPlot
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", bar=TRUE, lineplot = FALSE, prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -818,7 +833,8 @@ predm_out$predictmeansBarPlot
 #### Mean Table
 
 ```{r}
-predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "fert"))
+#| fig.show: hide
+predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "fert")))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -999,7 +1015,7 @@ autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALS
 
 -   Table of seedlot mean and regression coefficients
 ```{r}
-predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE)$mean_table
 predm_seedlot$reg_coef <- c(NA, coef(mod_5.1)[-1:-31])
 gt(predm_seedlot)
 ```
@@ -1140,7 +1156,7 @@ autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALS
 
 -   Table of seedlot mean and regression coefficients
 ```{r}
-predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE)$mean_table
 predm_seedlotN$reg_coef <- c(NA, coef(mod_5.2)[-1:-43])
 gt(predm_seedlotN)
 ```

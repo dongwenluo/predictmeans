@@ -42,7 +42,7 @@ test_that("bootmodels() for lm, aov, glm, gls, lme and glmmTMB; lm p-values appr
   gp <- glm(breaks ~ wool*tension, poisson, warpbreaks)
   bg <- bootmodels(gp, nsim = 19, seed = 1, prt = FALSE)
   expect_equal(rownames(bg$ANOVA), c("wool", "tension", "wool:tension"))
-  r <- predictmeans(gp, "tension", permlist = bg, plot = FALSE, prtnum = FALSE)
+  r <- predictmeans(gp, "tension", permlist = bg, plot = FALSE)
   expect_true(all(r$pairs$p.method == "bootstrap"))
   expect_length(bootmodels(glm(cbind(incidence, size - incidence) ~ period, binomial, lme4::cbpp), nsim = 9, seed = 1,
                            prt = FALSE)$permlist, 9)

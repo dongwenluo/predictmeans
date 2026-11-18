@@ -14,18 +14,19 @@
 #' term (containment, between-within, \pkg{nlme}'s df) the smallest df of the terms with the covariate; otherwise the
 #' residual df.
 #' @usage
-#' pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
+#' pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
 #'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'           vcov_adjust = TRUE,
-#'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
+#'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param covariate Name (in "quotes") of the numeric covariate.
 #' @param modelterm Name (in "quotes") of the factor term whose levels get a slope each, e.g. \code{"Variety"}.
 #' @param at The value of the covariate where the slopes are taken (matters only when the covariate enters the model
 #'   non-linearly); the default is its mean.
-#' @param level Significance level for the confidence limits, the default is 0.05.
+#' @param conf.level Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).
 #' @param adj Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.
 #' @param df_method,vcov_adjust,weights,vcov As in \code{\link{predictmeans}}.
+#' @param ... Not used: \code{level} (before 2.0) stops with its 2.0 spelling.
 #' @return
 #' An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predictmeans}} (\code{tidy()} and
 #' \code{as.data.frame()} return its tables, \code{what = "slopes"} or \code{"pairs"}):
@@ -36,7 +37,7 @@
 #'   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
 #'   \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
 #'   mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
-#'   \code{p.adj} is below \code{level}.}
+#'   \code{p.adj} is below \code{1 - conf.level}.}
 #' \item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
 #'   \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
 #' @author
@@ -51,10 +52,12 @@
 #' @name pm_slopes
 NULL
 
-pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
+pm_slopes <- function(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
                       df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                       vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
-                      vcov = NULL) {
+                      vcov = NULL, ...) {
+  pm_defunct("pm_slopes", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  level <- pm_conf_alpha(conf.level)
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -68,8 +71,8 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   x <- dat[[covariate]]
   if (is.null(at)) at <- mean(x, na.rm = TRUE)
   h <- pm_fd_h(0, if (isTRUE(stats::sd(x, na.rm = TRUE) > 0)) stats::sd(x, na.rm = TRUE) else 1)   # R/deriv.R
-  kp <- Kmatrix(model, modelterm, covariate, covariateV = at + h, weights = weights)
-  km <- suppressWarnings(Kmatrix(model, modelterm, covariate, covariateV = at - h, weights = weights))   # (warned once)
+  kp <- Kmatrix(model, modelterm, covariate, at = at + h, weights = weights)
+  km <- suppressWarnings(Kmatrix(model, modelterm, covariate, at = at - h, weights = weights))   # (warned once)
   vars <- unlist(strsplit(modelterm, ":"))
   lab <- kp$fctnames[vars]
   rownames(lab) <- NULL

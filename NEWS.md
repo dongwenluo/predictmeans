@@ -36,6 +36,27 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Arguments removed or renamed in 2.0 (step 2a: `predictmeans()`,
+  `contrastmeans()`, `pm_slopes()`, `Kmatrix()`, `df_term()`).** A 1.1.1
+  spelling stops with the 2.0 one, e.g. `'level' was removed in predictmeans
+  2.0: use conf.level = 0.95.` (`R/defunct.R`); abbreviated 1.x names too.
+  - `level` (a significance level) -> `conf.level = 1 - level` (default 0.95).
+  - `Df` -> `df_method = <number>`.
+  - `which.plots`, `mplot`, `barplot`, `pplot`, `bkplot` -> `plot = c("mean",
+    "bar", "pval", "back")`; plot settings as arguments of their own
+    (`plottitle`, `plotord`, `lsd_bar`, ...) -> `plot_args = list(...)`;
+    `prtplt`, `newwd` and `plot_args$responsen` removed.
+  - `prtnum`, `ndecimal` removed: nothing is printed during the call; the
+    `means`/`pairs` tables are unrounded.
+  - `transOff` -> the offset inside `trans` (`trans = function(x) exp(x) - 1`);
+    the pairs then have no `ratio` columns (with an offset they were ratios of
+    y + 1, labelled as ratios of y). `count` removed (Poisson and negative
+    binomial means are detected).
+  - `Kmatrix(covariateV =)` -> `at =`; `df_term(type =)` -> `df_method =`.
+  - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
+    identical results (tolerance 0), except `trans = exp, transOff = 1`
+    (above; `response.std.error` within 4e-10, from a numerical derivative).
+
 * **`anova()` with empty cells.** Type III tests of `lmer`, `lm` and other
   fits (and `permmodels(type = "III")`) stopped with "there are aliased
   coefficients in the model" when a cell had no data. Each term is now

@@ -102,7 +102,7 @@ test_that("Freedman-Lane p-values of pairs and contrasts equal direct refits", {
   expect_equal(pm_perm_fl_t(r$perm, L, fm)[1], unname(r$COEFFICENTS["A2", "Perm_p_value"]), tolerance = 1e-4)
 
   # predictmeans() and contrastmeans() use it
-  pm <- predictmeans(fm, "A", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(fm, "A", permlist = r, plot = FALSE, ncore = 1)
   expect_identical(pm$pairs$p.method, rep("permutation", 3))
   expect_identical(pm$settings$nperm, 99L)
   key <- paste(pm$pairs$level1, pm$pairs$level2)
@@ -110,7 +110,7 @@ test_that("Freedman-Lane p-values of pairs and contrasts equal direct refits", {
   cm <- contrastmeans(fm, "A", ctrmatrix = rbind(c(0, -1, 1)), permlist = r)
   expect_equal(unname(cm[[1]][1, "Permuted Pr(>|t|)"]), round(p23, 4))
   # a different model
-  expect_error(predictmeans(lm(y ~ A, data = d), "A", permlist = r, plot = FALSE, prtnum = FALSE),
+  expect_error(predictmeans(lm(y ~ A, data = d), "A", permlist = r, plot = FALSE),
                "different model")
 })
 
@@ -119,10 +119,10 @@ test_that("with a permlist, observed t statistics use the unadjusted covariance"
   Om <- Oats[-c(1, 5, 9, 20, 33), ]
   m <- lme4::lmer(yield ~ nitro + Variety + (1 | Block/Variety), data = Om)
   pl <- permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
-  a <- predictmeans(m, "nitro", permlist = pl, plot = FALSE, prtnum = FALSE, ncore = 1)
-  b <- predictmeans(m, "nitro", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE, ncore = 1)
+  a <- predictmeans(m, "nitro", permlist = pl, plot = FALSE, ncore = 1)
+  b <- predictmeans(m, "nitro", vcov_adjust = FALSE, plot = FALSE, ncore = 1)
   expect_equal(a$pairs$std.error, b$pairs$std.error)
   expect_false(a$settings$vcov_adjust)
-  expect_warning(predictmeans(m, "nitro", permlist = pl, vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE, ncore = 1),
+  expect_warning(predictmeans(m, "nitro", permlist = pl, vcov_adjust = TRUE, plot = FALSE, ncore = 1),
                  "unadjusted covariance")
 })

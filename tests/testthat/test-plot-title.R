@@ -27,7 +27,7 @@ test_that("the plots of the package wrap their titles", {
   fm <- lm(yield ~ Block + nitrogen_fertiliser_rate_applied * oat_variety_grown_in_the_field_trial, data = O)
   term <- "nitrogen_fertiliser_rate_applied:oat_variety_grown_in_the_field_trial"
   grDevices::pdf(NULL); on.exit(grDevices::dev.off())
-  pm <- predictmeans(fm, term, adj = "tukey", which.plots = c("mean", "pval"), prtnum = FALSE)
+  pm <- predictmeans(fm, term, adj = "tukey", plot = c("mean", "pval"))
   multi <- function(g) grepl("\n.", g$labels$title)
   expect_true(multi(pm$predictmeansPlot$meanPlot))
   expect_true(multi(ggplot2::autoplot(pm)))

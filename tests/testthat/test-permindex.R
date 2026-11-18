@@ -45,7 +45,7 @@ test_that("permmodels() and permlmer() use the permutations given in 'perms'", {
   # Freedman-Lane with the same permutations, and its pairs
   rf <- permmodels(fm, perms = idx, prt = FALSE, method = "freedman-lane")
   expect_identical(rf$perm$nperm, ncol(idx))
-  pm <- predictmeans(fm, "nitro", permlist = rf, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(fm, "nitro", permlist = rf, plot = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value[1], unname(rf$COEFFICENTS["nitro0.2", "Perm_p_value"]), tolerance = 1e-4)
   expect_error(permmodels(fm, method = "raw", perms = idx[-1, ], prt = FALSE, ncore = 1), "one row per observation")
   bad <- idx; bad[1, 1] <- bad[2, 1]

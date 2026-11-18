@@ -30,7 +30,7 @@ reference_cases <- function() {
   }
   pmo <- function(...) {
     extra <- old_df(predictmeans, list(...)[[1]])
-    p <- do.call(predictmeans, c(list(...), plot = FALSE, prtnum = FALSE, extra))
+    p <- do.call(predictmeans, c(list(...), plot = FALSE, extra))
     # legacy slots only (the stable means/pairs/settings slots are newer)
     p[!grepl("Plot|plot", names(p)) & !names(p) %in% c("means", "pairs", "settings")]
   }
@@ -39,7 +39,7 @@ reference_cases <- function() {
   fm_lme_num <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
   cap("ex_K1", km(fm_lme_num, "Variety"))
   cap("ex_K2", km(fm_lme_num, "Variety", 0.5))
-  cap("ex_K3", km(fm_lme_num, "Variety", "nitro", covariateV = seq(0, 0.6, 0.1)))
+  cap("ex_K3", km(fm_lme_num, "Variety", "nitro", at = seq(0, 0.6, 0.1)))
   cap("ex_K4", km(fm_lme_num, "Variety", "nitro"))
   cap("ex_cov1", cvm(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
   cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
@@ -98,8 +98,8 @@ reference_cases <- function() {
   fm_ax <- lm(y ~ A*x + B + z, d)
   cap("sim_K_cov50", km(fm_ax, "A", "x"))
   cap("sim_K_covnum", km(fm_ax, "A:B", c(2, 0.5)))
-  cap("sim_K_covlist", km(fm_ax, "A", c("x","z"), covariateV = list(c(2,5), c(-1,1))))
-  cap("sim_K_x_only", km(fm_ax, "x", "x", covariateV = c(2,4,6)))
+  cap("sim_K_covlist", km(fm_ax, "A", c("x","z"), at = list(c(2,5), c(-1,1))))
+  cap("sim_K_x_only", km(fm_ax, "x", "x", at = c(2,4,6)))
 
   data("WarsawApts", package = "HRW", envir = environment())
   W <- WarsawApts; W$district <- factor(W$district)

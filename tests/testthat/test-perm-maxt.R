@@ -23,21 +23,20 @@ test_that("predictmeans(): permutation Tukey and Westfall with a permlist", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
   r <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
-  tk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, prtnum = FALSE, ncore = 1)
-  wy <- predictmeans(fm, "nitro", permlist = r, adj = "westfall", plot = FALSE, prtnum = FALSE, ncore = 1)
-  pt <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE, prtnum = FALSE)
+  tk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, ncore = 1)
+  wy <- predictmeans(fm, "nitro", permlist = r, adj = "westfall", plot = FALSE, ncore = 1)
+  pt <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE)
   # the single-step max-|t| is the permutation version of Tukey's test
   expect_lt(max(abs(tk$pairs$p.adj - pt$pairs$p.adj)), 0.02)
   expect_true(all(wy$pairs$p.adj <= tk$pairs$p.adj + 1e-12))
   expect_true(all(wy$pairs$p.adj >= wy$pairs$p.value - 1e-12))
   # within each atvar group
-  pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", permlist = r, adj = "westfall", plot = FALSE,
-                     prtnum = FALSE, ncore = 1)
+  pa <- predictmeans(fm, "nitro:Variety", atvar = "Variety", permlist = r, adj = "westfall", plot = FALSE, ncore = 1)
   w <- !is.na(pa$pairs$by)
   expect_true(all(!is.na(pa$pairs$p.adj[w])))
   expect_true(all(pa$pairs$p.adj[w] >= pa$pairs$p.value[w] - 1e-12))
-  expect_error(predictmeans(fm, "nitro", adj = "westfall", plot = FALSE, prtnum = FALSE), "needs permutation")
-  expect_error(predictmeans(fm, "nitro", permlist = r, adj = "scheffe", plot = FALSE, prtnum = FALSE), "scheffe")
+  expect_error(predictmeans(fm, "nitro", adj = "westfall", plot = FALSE), "needs permutation")
+  expect_error(predictmeans(fm, "nitro", permlist = r, adj = "scheffe", plot = FALSE), "scheffe")
 })
 
 test_that("contrastmeans(): max-|t| from the refits of a permlist, and other adjustments", {

@@ -45,30 +45,30 @@ test_that("the transformation of the response in the formula is found, with its 
 test_that("predictmeans() back-transforms a transformed response by default; trans = I keeps the model scale", {
   O <- bt_oats()
   m <- lm(log(yield) ~ Block + nitro, data = O)
-  expect_message(r <- predictmeans(m, "nitro", pairwise = TRUE, prtnum = FALSE), "The response is log\\(yield\\)")
+  expect_message(r <- predictmeans(m, "nitro", pairwise = TRUE), "The response is log\\(yield\\)")
   expect_equal(r$means$response, exp(r$means$estimate))
   expect_true("Bk_Mean" %in% names(r$mean_table$Table))
   expect_true("ratio" %in% names(r$pairs))                              # differences of logs as ratios
   expect_identical(r$settings$back_transform$estimate, "median of the original scale (bias_adjust = TRUE gives the mean)")
   expect_match(r$settings$back_transform$by, "inverse of log\\(yield\\)")
   # the same as giving trans
-  r2 <- predictmeans(m, "nitro", pairwise = TRUE, trans = exp, prtnum = FALSE)
+  r2 <- predictmeans(m, "nitro", pairwise = TRUE, trans = exp)
   expect_equal(r$means, r2$means)
-  expect_silent(r0 <- predictmeans(m, "nitro", trans = I, prtnum = FALSE))
+  expect_silent(r0 <- predictmeans(m, "nitro", trans = I))
   expect_null(r0$means$response)
   expect_null(r0$settings$back_transform)
   # an offset in the formula; other transformations
-  r1 <- suppressMessages(predictmeans(lm(log(yield + 10) ~ Block + nitro, data = O), "nitro", prtnum = FALSE))
+  r1 <- suppressMessages(predictmeans(lm(log(yield + 10) ~ Block + nitro, data = O), "nitro"))
   expect_equal(r1$means$response, exp(r1$means$estimate) - 10)
-  rs <- suppressMessages(predictmeans(lm(sqrt(yield) ~ Block + nitro, data = O), "nitro", prtnum = FALSE))
+  rs <- suppressMessages(predictmeans(lm(sqrt(yield) ~ Block + nitro, data = O), "nitro"))
   expect_equal(rs$means$response, rs$means$estimate^2)
-  rb <- suppressMessages(predictmeans(lm(pm_boxcox(yield, 0.3) ~ Block + nitro, data = O), "nitro", prtnum = FALSE))
+  rb <- suppressMessages(predictmeans(lm(pm_boxcox(yield, 0.3) ~ Block + nitro, data = O), "nitro"))
   expect_equal(rb$means$response, (0.3*rb$means$estimate + 1)^(1/0.3))
   # an untransformed response, and a link: as before
-  expect_silent(ru <- predictmeans(lm(yield ~ Block + nitro, data = O), "nitro", prtnum = FALSE))
+  expect_silent(ru <- predictmeans(lm(yield ~ Block + nitro, data = O), "nitro"))
   expect_null(ru$means$response)
   # mixed model, and covariatemeans()
-  rl <- suppressMessages(predictmeans(lme4::lmer(log(yield) ~ nitro + (1 | Block), data = O), "nitro", prtnum = FALSE))
+  rl <- suppressMessages(predictmeans(lme4::lmer(log(yield) ~ nitro + (1 | Block), data = O), "nitro"))
   expect_equal(rl$means$response, exp(rl$means$estimate))
   O$nit <- as.numeric(as.character(O$nitro))
   expect_message(cm <- covariatemeans(lm(log(yield) ~ nit * Variety, data = O), "Variety", covariate = "nit", plot = FALSE),
@@ -84,12 +84,12 @@ test_that("bias_adjust gives the mean of the back-transformed response: exact fo
   O <- bt_oats()
   ml <- lm(log(yield) ~ Block + nitro, data = O)
   s2 <- sigma(ml)^2
-  r <- suppressMessages(predictmeans(ml, "nitro", bias_adjust = TRUE, prtnum = FALSE))
+  r <- suppressMessages(predictmeans(ml, "nitro", bias_adjust = TRUE))
   expect_equal(r$means$response, exp(r$means$estimate + s2/2), tolerance = 1e-9)
   expect_equal(r$means$response.std.error, exp(r$means$estimate + s2/2)*r$means$std.error, tolerance = 1e-9)
   expect_identical(r$settings$back_transform$estimate, "mean (bias adjusted)")
   ms <- lm(sqrt(yield) ~ Block + nitro, data = O)
-  rs <- suppressMessages(predictmeans(ms, "nitro", bias_adjust = TRUE, prtnum = FALSE))
+  rs <- suppressMessages(predictmeans(ms, "nitro", bias_adjust = TRUE))
   expect_equal(rs$means$response, rs$means$estimate^2 + sigma(ms)^2, tolerance = 1e-9)
   # Gauss-Hermite: E f(Z) for a standard normal Z
   gh <- pm_gauss_hermite()
@@ -110,7 +110,7 @@ test_that("bias_adjust gives the mean of the back-transformed response: exact fo
 
 test_that("summary() says what the back-transformed means are", {
   O <- bt_oats()
-  out <- function(m, ...) capture.output(print(summary(suppressMessages(predictmeans(m, "nitro", prtnum = FALSE, ...)))))
+  out <- function(m, ...) capture.output(print(summary(suppressMessages(predictmeans(m, "nitro", ...)))))
   expect_true(any(grepl("'response' is the median of the original scale", out(lm(log(yield) ~ Block + nitro, data = O)))))
   O$cnt <- round(O$yield/10)
   expect_true(any(grepl("the inverse link: 'response' is the mean\\.", out(glm(cnt ~ Block + nitro, poisson, data = O)))))
@@ -225,8 +225,8 @@ test_that("an aov model with Error() and a covariate: covariatemeans() by strata
   expect_equal(ac[c("diff", "ses", "Df", "LL", "UL")], lc[c("diff", "ses", "Df", "LL", "UL")], tolerance = 1e-4)
   expect_equal(unique(round(ac$Df)), 21)                       # the subject stratum: 24 - 2 groups - 1 covariate
   # predictmeans() at a chosen baseline
-  pa <- suppressMessages(predictmeans(ma, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
-  pl <- suppressMessages(predictmeans(ml, "group", covariate = list(baseline = 12), prtnum = FALSE))$means
+  pa <- suppressMessages(predictmeans(ma, "group", covariate = list(baseline = 12)))$means
+  pl <- suppressMessages(predictmeans(ml, "group", covariate = list(baseline = 12)))$means
   expect_equal(pa[c("estimate", "std.error")], pl[c("estimate", "std.error")], tolerance = 1e-4)
 })
 
@@ -285,8 +285,7 @@ test_that("covariatemeans(bias_adjust = ): the mean of the response, as predictm
   f <- exp(sigma(ml)^2/2)
   expect_equal(b$Mean, a$Mean*f, tolerance = 1e-8)
   expect_equal(b$LL, a$LL*f, tolerance = 1e-8)
-  pm <- suppressMessages(predictmeans(ml, "Variety", covariate = c(nitro = 0.3), bias_adjust = TRUE, plot = FALSE,
-                                      prtnum = FALSE))
+  pm <- suppressMessages(predictmeans(ml, "Variety", covariate = c(nitro = 0.3), bias_adjust = TRUE, plot = FALSE))
   expect_equal(b$Mean[b$xvar == 0.3], pm$means$response, tolerance = 1e-8)
   # a square root in a mixed model: + the total variance; "taylor" is exact for a square
   mm <- lme4::lmer(sqrt(yield) ~ nitro*Variety + (1 | Block), O)

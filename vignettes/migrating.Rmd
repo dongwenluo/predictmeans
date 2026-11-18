@@ -35,8 +35,8 @@ To reproduce 1.x numbers, use `vcov_adjust = FALSE`:
 ```{r}
 Om <- Oats[-c(1, 2, 30), ]   # unbalanced
 fm_u <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Om)
-new <- predictmeans(fm_u, "Variety", plot = FALSE, prtnum = FALSE)
-old <- predictmeans(fm_u, "Variety", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)
+new <- predictmeans(fm_u, "Variety", plot = FALSE)
+old <- predictmeans(fm_u, "Variety", vcov_adjust = FALSE, plot = FALSE)
 cbind(SE_2.0 = new$means$std.error, SE_1.x = old$means$std.error)
 ```
 
@@ -95,7 +95,7 @@ The 1.x list elements are still there, so code that reads `pm$"Predicted Means"`
 `pm$"Pairwise p-value"` keeps working:
 
 ```{r}
-pm <- predictmeans(fm, "nitro", adj = "BH", plot = FALSE, prtnum = FALSE)
+pm <- predictmeans(fm, "nitro", adj = "BH", plot = FALSE)
 names(pm)
 pm$`Predicted Means`
 pm$means

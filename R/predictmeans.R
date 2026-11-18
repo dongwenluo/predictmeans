@@ -6,11 +6,10 @@
 #'   \code{glm}, \code{gls}, \code{lme}, and \code{lmer}. The function also perfomrs pairwise comparisons
 #'   and permutation tests.
 #' @usage
-#' predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-#'   level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff = 0,
-#'   count=FALSE, which.plots = c("mean", "pval", "back"),
-#'   plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE, permlist=NULL,
-#'   ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+#' predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", conf.level=0.95,
+#'   covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
+#'   plot=getOption("predictmeans.plot", FALSE), plot_args=list(), permlist=NULL,
+#'   ncore=1, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
 #'   weights=c("equal", "proportional", "outer", "cells", "flat"),
 #'   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
@@ -69,8 +68,8 @@
 #'   p-value is below \code{level}. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
 #'   critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
 #'   "bonferroni" adjusted the LSDs, with all the pairs as family also with \code{atvar}.)
-#' @param Df A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.
-#' @param level A significant level for calculating LSD, CI etc. The default value is 0.05.
+#' @param conf.level The confidence level of the confidence limits; the tests, LSDs and letters are at the
+#'   significance level \code{1 - conf.level}. The default is 0.95 (\code{level = 0.05} before 2.0).
 #' @param covariate The values of covariates at which the means are predicted: a named list or vector, e.g.
 #'   \code{list(x = 2, z = 0.3)} (covariates not named are at their means), or an unnamed numerical vector with one
 #'   value for each covariate of the model, in their order. The default values are the means of the covariates
@@ -100,17 +99,12 @@
 #'   cluster (random effects at zero); for a transformed response the median of the original scale (the geometric
 #'   mean for a log). \code{bias_adjust = TRUE} gives the mean in the last two cases;
 #'   \code{settings$back_transform} and \code{summary()} say which it is.
-#' @param transOff When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0. (Not needed when
-#'   the transformation is taken from the formula.)
-#' @param count An option for indicating the back transformed mean values are counts or not. The default is FALSE.
-#' @param which.plots Which plots to draw: any of \code{"mean"} (means plot), \code{"bar"} (bar chart), \code{"pval"}
-#'   (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed plot).
-#'   The default is \code{c("mean", "pval", "back")}.
 #' @param plot Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
 #'   tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
-#'   \code{options(predictmeans.plot = TRUE)} for a whole session, draws them as 1.x did; asking for plots with
-#'   \code{which.plots}, \code{plotord} or the old \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}
-#'   also draws them.
+#'   \code{options(predictmeans.plot = TRUE)} for a whole session, draws \code{"mean"} (means plot),
+#'   \code{"pval"} (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed
+#'   plot); name the plots wanted to choose them, including \code{"bar"} (bar chart), e.g.
+#'   \code{plot = c("mean", "bar")}.
 #' @param plot_args A named list of settings for the plots, e.g.
 #'   \code{plot_args = list(plottitle = "Yield", basesz = 14)}:
 #'   \describe{
@@ -120,25 +114,19 @@
 #'     \item{\code{plotord}}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in  \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way  interactions.}
 #'     \item{\code{lineplot}}{An option for drawing a line chart, or dot chart. The default is TRUE.}
 #'     \item{\code{lsd_bar}}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
-#'     \item{\code{responsen}}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
 #'     \item{\code{jitterv}}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
 #'     \item{\code{basesz}}{The base font size. The default is 12.}
-#'     \item{\code{prtplt}}{An option for printing plots on the screen, or not. The default is TRUE.}
-#'     \item{\code{newwd}}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
 #'   }
-#'   As in 1.x these may also be given as arguments of their own (\code{plottitle = "Yield"}).
-#' @param \dots The settings of \code{plot_args} given by name as in 1.x, and the 1.x choices of plots
-#'   \code{mplot}, \code{barplot}, \code{pplot} and \code{bkplot}, which still work with a warning that names
-#'   the \code{which.plots} to use. Other names are an error.
-#' @param prtnum An option for printing covariate information on the screen, or not. The default is TRUE.
+#' @param \dots Not used: arguments removed in 2.0 (e.g. \code{level}, \code{Df}, \code{which.plots},
+#'   \code{plottitle} as an argument of its own) stop with their 2.0 spelling (see \code{vignette("migrating")});
+#'   other names are an error.
 #' @param permlist A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
-#'   the option \code{Df} will be non-functional. This is a key option for pairwise comparisons via 
+#'   \code{df_method} is not used. This is a key option for pairwise comparisons via 
 #'   permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
 #'   models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
 #'   With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
 #'   permuted refits, which use the unadjusted covariance.
 #' @param ncore Number of cores for parallel computing when \code{permlist != NULL}, the default value is 1 (before predictmeans 2.0: 3).
-#' @param ndecimal An option for specifying number of decimal point to be print at predicted means table. The default is 4.
 #' @param cov_reduce How covariates that are not varied are handled when building the predicted means: a function such as
 #'   \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
 #'   observed covariate values (e.g. means adjusted for a spatial smooth in a \code{gam}). See \code{\link{Kmatrix}}.
@@ -172,7 +160,8 @@
 #'   without the factor that adds nothing give the same means (equal weights over the combinations that exist);
 #'   \code{weights = "cells"} weights the combinations by their numbers of observations. See
 #'   \code{vignette("missing-cells", package = "predictmeans")}.
-#' @param df_method Denominator degrees of freedom for \code{lmer} models. \code{"auto"} (the default) uses Kenward-Roger for
+#' @param df_method Denominator degrees of freedom, by method or as one number (a fixed df, \code{Df} before
+#'   2.0), e.g. \code{df_method = 10}. For \code{lmer} models \code{"auto"} (the default) uses Kenward-Roger for
 #'   REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
 #'   parameters, as SAS PROC MIXED \code{DDFM=KR}; it stays valid with missing values, where the expected information
 #'   (\code{"KR-expected"}, as \pkg{pbkrtest} and \pkg{emmeans}) is not: in simulations (\code{dev/sim-df/} in the
@@ -360,7 +349,7 @@
 #'   summary(pm)
 #'   ## Means within each variety, Tukey-adjusted pairs, plots
 #'   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
-#'     which.plots=c("mean", "bar", "pval", "back"), line=FALSE)
+#'     plot=c("mean", "bar", "pval", "back"), plot_args=list(lineplot=FALSE))
 #'   names(predictout)
 #'   print(predictout$predictmeansPlot)
 #'   print(predictout$predictmeansBarPlot)
@@ -370,16 +359,17 @@
 #' @name predictmeans
 NULL
 
-predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-                          level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff=0,
-                          count=FALSE, which.plots = c("mean", "pval", "back"),
-                          plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE,
-                          permlist=NULL, ncore=1, ndecimal=4,
-                          cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", conf.level=0.95,
+                          covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
+                          plot=getOption("predictmeans.plot", FALSE), plot_args=list(),
+                          permlist=NULL, ncore=1, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
                           mean_type=c("conditional", "overall"), ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("predictmeans", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  level <- pm_conf_alpha(conf.level)
   average <- match.arg(average)
   mean_type <- match.arg(mean_type)
   pm_equiv_margins(equivalence)                  # check early
@@ -395,26 +385,28 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=FALSE, atvar=NUL
 
   # semireg() fits: means with the smooth terms included (see semireg-means.R)
   if (inherits(model, "semireg")) {
-    return(pm_semireg_means(model, modelterm, covariate = covariate, level = if (is.null(level)) 0.05 else level,
-                            adj = adj, atvar = atvar))
+    return(pm_semireg_means(model, modelterm, covariate = covariate, level = level, adj = adj, atvar = atvar))
   }
 
   weights <- match.arg(weights)
-  df_method <- match.arg(df_method)
-  # the plot settings: plot_args, or the same names given as arguments (1.x)
-  pa <- pm_plot_args(plot_args, list(...))
-  # plots asked for by name are drawn, whatever the default of 'plot'
-  if (missing(plot) && (!missing(which.plots) || length(pa$legacy))) plot <- TRUE
+  dfa <- pm_df_arg(df_method, eval(formals(sys.function())$df_method))
+  # 'plot': TRUE (the default plots) or the plots wanted by name
+  which.plots <- c("mean", "pval", "back")
+  if (is.character(plot)) {
+    which.plots <- plot
+    plot <- TRUE
+  }
+  pa <- pm_plot_args(plot_args)
 
   # The stages (R/predictmeans-stages.R): each takes the results of those
   # before it and returns a named list.
   opt <- pm_setup(list(model = model, modelterm = modelterm, data = data, pairwise = pairwise, atvar = atvar,
-                       adj = adj, Df = Df, level = level, covariate = covariate, meandecr = meandecr,
-                       letterCI = letterCI, trans = trans, trans_default = missing(trans), transOff = transOff,
-                       count = count, which.plots = which.plots, plot = plot, prtnum = prtnum,
-                       permlist = permlist, ncore = ncore, ndecimal = ndecimal, cov_reduce = cov_reduce,
+                       adj = adj, Df = dfa$Df, level = level, covariate = covariate, meandecr = meandecr,
+                       letterCI = letterCI, trans = trans, trans_default = missing(trans),
+                       which.plots = which.plots, plot = isTRUE(plot),
+                       permlist = permlist, ncore = ncore, cov_reduce = cov_reduce,
                        exclude = exclude, vcov_adjust = vcov_adjust, vcov_adjust_default = missing(vcov_adjust),
-                       weights = weights, df_method = df_method, vcov = vcov, equivalence = equivalence,
+                       weights = weights, df_method = dfa$method, vcov = vcov, equivalence = equivalence,
                        bias_adjust = bias_adjust, sigma = sigma, average = average, mean_type = mean_type), pa)
   est <- pm_estimate(opt)                        # K matrix, means, SEs
   cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals

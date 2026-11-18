@@ -24,9 +24,8 @@
 #'   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
 #'   or through smooth terms (\code{s(x)}, \code{te(x, z)}, \code{s(x, by = A)}) of a \code{gam}.
 #' @usage
-#' Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
-#'         cov_reduce=mean, exclude=NULL,
-#'         weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
+#' Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
+#'         weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #' \code{glmer}, \code{glmmTMB}, \code{gam}/\code{bam} (package \pkg{mgcv}; for \code{gamm} use its
 #' \code{$gam} component) or \code{semireg}.
@@ -46,17 +45,17 @@
 #'     the model. With another length this is an error (before 2.0 the values were recycled, and names were
 #'     ignored).
 #'   \item The name of one or more covariates, in which case predictions are made over a range of values of those
-#'     covariates (see \code{covariateV}).
+#'     covariates (see \code{at}).
 #'   }
 #' For a \code{semireg} model this may also be a covariate that only appears in the smooth terms.
-#' @param covariateV Values for the covariate(s) named in \code{covariate}. For one covariate, a numeric vector. For several covariates,
+#' @param at Values for the covariate(s) named in \code{covariate} (\code{covariateV} before 2.0). For one covariate, a numeric vector. For several covariates,
 #'   either a list of numeric vectors (all combinations are used; named by covariate, or in the order of
 #'   \code{covariate}) or a matrix with one named column per covariate,
 #'   where each row is one prediction point (e.g. a set of locations for a two-dimensional smooth).
-#'   When \code{covariateV} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.
+#'   When \code{at} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.
 #' @param data In some cases, you need to provide the data set used in model fitting, for example when the data
 #' used to fit the model can no longer be found. Usually the data are recovered from the model.
-#' @param prtnum An option for printing covariate info on the screen or not. The default is FALSE.
+#' @param ... Not used: arguments removed in 2.0 (\code{covariateV}, \code{prtnum}) stop with their 2.0 spelling.
 #' @param cov_reduce How covariates that are not varied are handled. A function returning a single value, applied to each covariate
 #' (the default \code{mean}; \code{median} is another choice), or the string \code{"average"}, which averages the
 #' predictions over the observed values of those covariates instead of fixing them at one value. With
@@ -102,10 +101,10 @@
 #'   data(Oats, package="nlme")
 #' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#'   Kmatrix(fm, "Variety", prtnum=TRUE)$K
-#'   Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
+#'   Kmatrix(fm, "Variety")$K
+#'   Kmatrix(fm, "Variety", 0.5)$K
 #'   Kmatrix(fm, "Variety", "nitro")$K
-#'   Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
+#'   Kmatrix(fm, "Variety", "nitro", at=seq(0, 0.6, 0.1))$K
 #'   Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
 #'   Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
 #'
@@ -113,7 +112,7 @@
 #'   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
 #'   Kmatrix(fm2, "Variety")$K
 #'   fm3 <- lm(yield ~ Variety + Variety:nitro, data=Oats)
-#'   Kmatrix(fm3, "Variety", "nitro", covariateV=c(0, 0.3, 0.6))$K
+#'   Kmatrix(fm3, "Variety", "nitro", at=c(0, 0.3, 0.6))$K
 #'
 #'   # A smooth term in an mgcv model, averaged over the observed nitro values
 #'   if (requireNamespace("mgcv", quietly = TRUE)) {
@@ -123,9 +122,9 @@
 #' @name Kmatrix
 NULL
 
-Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL,
-                    prtnum=FALSE, cov_reduce=mean, exclude=NULL,
-                    weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE) {
+Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
+                    weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...) {
+  pm_defunct("Kmatrix", match.call(), strict = TRUE, formals_of = formals(sys.function()))
 
   weights <- match.arg(weights)
   if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
@@ -148,7 +147,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
   if (!average_cov && !is.function(cov_reduce)) {
     stop("'cov_reduce' must be a function such as mean or median, or \"average\".")
   }
-  cv <- pm_cov_values(covariate, covariateV, pv$covariates, X)
+  cv <- pm_cov_values(covariate, at, pv$covariates, X)
   baselevs <- pm_base_values(pv, cv, cov_reduce)
   facs <- c(term_vars, setdiff(cv$varied, term_vars))
 
@@ -167,18 +166,6 @@ Kmatrix <- function(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL
       prof_w <- as.vector(table(factor(pkey, levels = pkey[first]))) / length(pkey)
     }
   }
-  if (prtnum && length(pv$covariates) != 0) {
-    fixed_cov <- setdiff(pv$covariates, c(facs, avg_vars))
-    if (length(fixed_cov)) {
-      message("\n The predicted means are estimated at \n")
-      message(paste(utils::capture.output(print(round(unlist(baselevs[fixed_cov]), 4))), collapse = "\n"))
-    }
-    if (length(avg_vars)) {
-      message("\n The predicted means are averaged over the observed values of ",
-              paste(avg_vars, collapse = ", "))
-    }
-  }
-
   ## 3. The weights of the cells averaged over
   factor_names <- pv$factors
   by_factor <- any(term_vars %in% factor_names)
@@ -393,13 +380,13 @@ pm_check_term_vars <- function(term_labels, term_vars, pv) {
 ##     its rows (per level combination);
 ##   an unnamed numeric vector with one value for each covariate of the
 ##     model, in their order;
-##   covariate names, with their values in 'covariateV' (a vector for one
+##   covariate names, with their values in 'at' (a vector for one
 ##     covariate; a list, by name or in the order of 'covariate', or a matrix
-##     of joint points for several); without 'covariateV', 50 (one covariate)
+##     of joint points for several); without 'at', 50 (one covariate)
 ##     or 30 values over the observed range.
 ## Returns list(fixed (named list of single values), values (named list of
 ## the values that define rows), varied (their names, in order), joint).
-pm_cov_values <- function(covariate, covariateV, covs, X) {
+pm_cov_values <- function(covariate, at, covs, X) {
   out <- list(fixed = list(), values = list(), varied = character(0), joint = NULL)
   if (pm_is_null(covariate)) return(out)
   known <- function(nm) {
@@ -443,27 +430,27 @@ pm_cov_values <- function(covariate, covariateV, covs, X) {
     }
   } else if (is.character(covariate)) {
     known(covariate)
-    if (!pm_is_null(covariateV) && (is.matrix(covariateV) || is.data.frame(covariateV)) && length(covariate) > 1) {
+    if (!pm_is_null(at) && (is.matrix(at) || is.data.frame(at)) && length(covariate) > 1) {
       # joint points, one row per prediction point
-      joint <- as.data.frame(covariateV)
-      if (is.matrix(covariateV) && is.null(colnames(covariateV))) names(joint) <- covariate
+      joint <- as.data.frame(at)
+      if (is.matrix(at) && is.null(colnames(at))) names(joint) <- covariate
       if (!all(covariate %in% names(joint))) {
-        stop("The columns of 'covariateV' must be named ", paste(covariate, collapse = ", "))
+        stop("The columns of 'at' must be named ", paste(covariate, collapse = ", "))
       }
       out$joint <- joint[covariate]
-    } else if (!pm_is_null(covariateV)) {
-      if (!is.list(covariateV)) covariateV <- list(covariateV)
-      if (length(covariateV) != length(covariate)) {
-        stop("'covariateV' must have the values of ", length(covariate), " covariate(s): ",
+    } else if (!pm_is_null(at)) {
+      if (!is.list(at)) at <- list(at)
+      if (length(at) != length(covariate)) {
+        stop("'at' must have the values of ", length(covariate), " covariate(s): ",
              paste(covariate, collapse = ", "), ".", call. = FALSE)
       }
-      by_name <- !is.null(names(covariateV)) && all(nzchar(names(covariateV)))
-      if (by_name && !setequal(names(covariateV), covariate)) {
-        stop("The names of 'covariateV' must be those in 'covariate': ", paste(covariate, collapse = ", "), ".",
+      by_name <- !is.null(names(at)) && all(nzchar(names(at)))
+      if (by_name && !setequal(names(at), covariate)) {
+        stop("The names of 'at' must be those in 'covariate': ", paste(covariate, collapse = ", "), ".",
              call. = FALSE)
       }
       for (i in seq_along(covariate)) {
-        v <- num(covariateV[[if (by_name) covariate[i] else i]], covariate[i])
+        v <- num(at[[if (by_name) covariate[i] else i]], covariate[i])
         out$values[[covariate[i]]] <- if (length(covariate) == 1) v else sort(unique(v))
       }
     } else if (length(covariate) == 1) {

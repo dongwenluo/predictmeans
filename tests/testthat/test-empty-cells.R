@@ -16,7 +16,7 @@ test_that("lm: pairs of means over empty cells use the cells both means have", {
   d <- ec_factorial("A1:B4")
   fm <- lm(y ~ A * B, data = d)
   cm <- tapply(d$y, list(d$A, d$B), mean)
-  expect_warning(p <- predictmeans(fm, "A", pairwise = TRUE, plot = FALSE, prtnum = FALSE),
+  expect_warning(p <- predictmeans(fm, "A", pairwise = TRUE, plot = FALSE),
                  "No data for A:B A1:B4. The mean of A = A1 averages only its observed cells")
   expect_equal(p$means$estimate, unname(rowMeans(cm, na.rm = TRUE)), tolerance = 1e-8)     # means: 1.x
   pr <- p$pairs
@@ -45,7 +45,7 @@ test_that("lm: pairs of means over empty cells use the cells both means have", {
 test_that("no cell in common: the pair is NA", {
   d <- ec_factorial(c("A1:B3", "A1:B4", "A3:B1", "A3:B2"))
   fm <- lm(y ~ A * B, data = d)
-  p <- suppressWarnings(predictmeans(fm, "A", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  p <- suppressWarnings(predictmeans(fm, "A", pairwise = TRUE, plot = FALSE))
   r <- p$pairs[p$pairs$level1 == "A1" & p$pairs$level2 == "A3", ]
   expect_true(is.na(r$estimate) && is.na(r$std.error))
   expect_identical(r$over, "none")
@@ -56,12 +56,12 @@ test_that("no cell in common: the pair is NA", {
 test_that("no warning and no change where no mean averages over an empty cell", {
   d <- ec_factorial("A1:B4")
   fm <- lm(y ~ A * B, data = d)
-  expect_no_warning(p <- predictmeans(fm, "A:B", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  expect_no_warning(p <- predictmeans(fm, "A:B", pairwise = TRUE, plot = FALSE))
   expect_equal(nrow(p$means), 11)
   expect_null(p$pairs$over)
   # an additive model: the means average over all cells, estimable, no warning
   fa <- lm(y ~ A + B, data = d)
-  expect_no_warning(pa <- predictmeans(fa, "A", plot = FALSE, prtnum = FALSE))
+  expect_no_warning(pa <- predictmeans(fa, "A", plot = FALSE))
   expect_null(pa$pairs$over)
 })
 
@@ -71,7 +71,7 @@ test_that("lmer split plot with a lost cell: the comparisons on the varieties bo
   O$Variety <- factor(O$Variety, ordered = FALSE)
   Om <- subset(O, !(Variety == "Victory" & N == "0.6"))
   fm <- suppressMessages(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Om))
-  expect_warning(p <- predictmeans(fm, "N", pairwise = TRUE, plot = FALSE, prtnum = FALSE), "N = 0.6")
+  expect_warning(p <- predictmeans(fm, "N", pairwise = TRUE, plot = FALSE), "N = 0.6")
   K <- Kmatrix(fm, "N:Variety")$K
   gm <- c("Golden Rain", "Marvellous")
   L <- colMeans(K[paste0("0.6:", gm), ] - K[paste0("0:", gm), ])
@@ -95,7 +95,7 @@ test_that("a combination without data is not an empty cell when its factors do n
   d <- d[!(d$date == "d2" & d$farm == "F2" & d$trt == "B"), ]
   d$y <- 5 + as.integer(d$farm) * as.integer(d$date) + 0.5 * (d$trt == "B") + rnorm(nrow(d), 0, 0.3)
   fm <- lm(y ~ date/farm + date * trt, data = d)
-  expect_no_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  expect_no_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE))
   pr <- p$pairs
   expect_null(pr$over)
   pred <- function(dt, f, t) unname(predict(fm, data.frame(date = dt, farm = f, trt = t)))
@@ -109,7 +109,7 @@ test_that("a combination without data is not an empty cell when its factors do n
   expect_equal(r$estimate, over_farms("d1", "B") - over_farms("d2", "B"), tolerance = 1e-8)
   # with a farm x treatment interaction in the model it is an empty cell
   fm3 <- lm(y ~ date/farm * trt, data = d)
-  expect_warning(p3 <- predictmeans(fm3, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE), "d2:F2:B")
+  expect_warning(p3 <- predictmeans(fm3, "date:trt", pairwise = TRUE, plot = FALSE), "d2:F2:B")
   expect_equal(p3$means$estimate[4], unname(predict(fm3, data.frame(date = "d2", farm = "F1", trt = "B"))),
                tolerance = 1e-8)
   r <- p3$pairs[p3$pairs$level1 == "d2:A" & p3$pairs$level2 == "d2:B", ]
@@ -146,11 +146,11 @@ test_that("factors confounded within another factor (each pasture on one farm): 
   d$y <- as.integer(d$date) + as.integer(d$past)/2 + 0.5*(d$trt == "B") + rnorm(nrow(d), 0, 0.3)
   fm <- lm(y ~ date/farm + date/(trt + past)^2, data = d)
   expect_true(anyNA(coef(fm)))
-  expect_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE),
+  expect_warning(p <- predictmeans(fm, "date:trt", pairwise = TRUE, plot = FALSE),
                  "'farm' and 'past' are confounded in the data.*farm/past")
   expect_false(anyNA(p$means$estimate))
   f0 <- lm(y ~ date/(trt + past)^2, data = d)                    # without the aliased factor
-  p0 <- suppressWarnings(predictmeans(f0, "date:trt", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  p0 <- suppressWarnings(predictmeans(f0, "date:trt", pairwise = TRUE, plot = FALSE))
   expect_equal(p$means$estimate, p0$means$estimate, tolerance = 1e-8)
   expect_equal(p$means$std.error, p0$means$std.error, tolerance = 1e-8)
   ok <- !is.na(p0$pairs$estimate)
@@ -160,7 +160,7 @@ test_that("factors confounded within another factor (each pasture on one farm): 
   expect_equal(p$means$estimate, aggregate(y ~ date + trt, cm, mean)$y[order(rep(1:3, 2), rep(1:2, each = 3))],
                tolerance = 1e-8)
   # weights = "cells": no warning, the combinations weighted by their numbers
-  expect_no_warning(pw <- suppressMessages(predictmeans(fm, "date:trt", weights = "cells", plot = FALSE, prtnum = FALSE)))
+  expect_no_warning(pw <- suppressMessages(predictmeans(fm, "date:trt", weights = "cells", plot = FALSE)))
   expect_false(anyNA(pw$means$estimate))
 })
 
@@ -169,7 +169,7 @@ test_that("means over empty cells are labelled, and nothing read off them contra
   Oats <- as.data.frame(nlme::Oats); Oats$N <- factor(Oats$nitro)
   Om <- subset(Oats, !(Variety == "Victory" & N == "0.6"))
   fm <- q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Om))
-  pm <- q(predictmeans(fm, "Variety", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  pm <- q(predictmeans(fm, "Variety", pairwise = TRUE, plot = FALSE))
   m <- pm$means
   # the cells each mean averages, as 'over' of the pairs
   expect_equal(m$over, c(NA, NA, "N 0, 0.2, 0.4"))
@@ -184,7 +184,7 @@ test_that("means over empty cells are labelled, and nothing read off them contra
   p <- pm$pairs[1, ]
   expect_equal(cmp$mult, qt(0.975, p$df)*p$std.error/sum(m$std.error[1:2]), tolerance = 1e-10)
   # letterCI: letters from the p-values instead (Marvellous vs Victory: p = 0.07)
-  expect_message(pl <- suppressWarnings(predictmeans(fm, "Variety", letterCI = TRUE, plot = FALSE, prtnum = FALSE)),
+  expect_message(pl <- suppressWarnings(predictmeans(fm, "Variety", letterCI = TRUE, plot = FALSE)),
                  "letters are from the p-values")
   expect_equal(pl$means$group, pm$means$group)
   expect_equal(pm$means$group, c("A", "A", "A"))
@@ -198,7 +198,7 @@ test_that("means over empty cells are labelled, and nothing read off them contra
   expect_equal(nrow(ggplot2::ggplot_build(ggplot2::autoplot(pm))$data[[3]]), 3)   # confidence limits: all
   # complete data: no 'over' column, no caption, intervals for all
   pf <- q(predictmeans(q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Oats)), "Variety",
-                       pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+                       pairwise = TRUE, plot = FALSE))
   expect_null(pf$means$over)
   expect_length(pf$settings$comparison$left_out, 0)
   expect_null(ggplot2::autoplot(pf, interval = "comparison")$labels$caption)
@@ -210,7 +210,7 @@ test_that("confounded factors: means labelled; intervals kept where the pairs ar
   dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
   dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))
   dc$y <- as.numeric(dc$vol) + as.numeric(dc$C) + rnorm(nrow(dc))
-  pv <- q(predictmeans(lm(y ~ C*vol + drop, data = dc), "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  pv <- q(predictmeans(lm(y ~ C*vol + drop, data = dc), "vol", pairwise = TRUE, plot = FALSE))
   expect_equal(pv$means$over, c("drop coarse", "drop coarse", "drop fine", "drop coarse"))
   # each pair is the difference of the shown means: the intervals stay
   m <- setNames(pv$means$estimate, pv$means$vol)

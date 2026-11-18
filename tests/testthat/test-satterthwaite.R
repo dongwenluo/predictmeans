@@ -13,6 +13,6 @@ test_that("vectorised Satterthwaite df equal lmerTest", {
     ref <- apply(L, 1, function(l) lmerTest::contest1D(mt, l)$df)
     new <- predictmeans:::pm_satt_ddf(L, predictmeans:::pm_satt_parts(m))
     expect_equal(unname(new), ref, tolerance = 1e-8)
-    expect_equal(unname(df_term(m, ctrmatrix = L, type = "Satterthwaite")), ref, tolerance = 1e-8)
+    expect_equal(unname(df_term(m, ctrmatrix = L, df_method = "Satterthwaite")), ref, tolerance = 1e-8)
   }
 })

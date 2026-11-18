@@ -15,7 +15,7 @@ test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
   r2 <- permmodels(m2, nperm = 49, type = "II", seed = 1, prt = FALSE, method = "freedman-lane", refit = FALSE)
   expect_equal(r2$ANOVA[, "F value"], r1$ANOVA[, "F value"], tolerance = 1e-3)
   # a pair that is one coefficient: the same test as that coefficient's
-  pm <- predictmeans(m1, "nitro", permlist = r1, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(m1, "nitro", permlist = r1, plot = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value[1], unname(r1$COEFFICENTS["nitro0.2", "Perm_p_value"]), tolerance = 1e-4)
   # lme with shuffled rows and the matching permutations: the same p-values
   o <- sample(nrow(Om))
@@ -49,7 +49,7 @@ test_that("Freedman-Lane on the working scale for glm, glmer and glmmTMB", {
   expect_equal(rg$ANOVA$Perm_p_value, rt$ANOVA$Perm_p_value)
   expect_match(attr(rg$ANOVA, "heading"), "working")
   expect_error(permmodels(gm, method = "raw", nperm = 9, prt = FALSE), "freedman-lane")
-  pm <- predictmeans(gm, "Treatment", permlist = rg, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(gm, "Treatment", permlist = rg, plot = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value, unname(rg$COEFFICENTS["Treatmentdrug", "Perm_p_value"]), tolerance = 1e-4)
 })
 

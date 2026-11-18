@@ -45,7 +45,7 @@ io_clusters <- function() {
 test_that("GLMMs: inner-outer by default; a treatment on whole clusters gets the cluster df", {
   d <- io_clusters()
   g <- lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
-  p <- predictmeans(g, "Trt:W", plot = FALSE, prtnum = FALSE)
+  p <- predictmeans(g, "Trt:W", plot = FALSE)
   expect_identical(p$settings$df_method, "inner-outer")
   # 8 clusters, 2 treatments: 6 df between clusters; within clusters 48 - 8 - 2 = 38
   between <- p$pairs$level1 == "a:1" & p$pairs$level2 == "b:1"
@@ -56,14 +56,14 @@ test_that("GLMMs: inner-outer by default; a treatment on whole clusters gets the
   expect_equal(pm_joint(g, "Trt")$df2, 6)
   expect_equal(unname(contrastmeans(g, "Trt", ctrmatrix = rbind(c(1, -1)))[[1]][, "df"]), 6)
   # residual df (predictmeans 1.x) on request
-  r <- predictmeans(g, "Trt", df_method = "residual", plot = FALSE, prtnum = FALSE)
+  r <- predictmeans(g, "Trt", df_method = "residual", plot = FALSE)
   expect_equal(r$means$df, rep(unname(summary(g)$AICtab["df.resid"]), 2))
   expect_identical(r$settings$df_method, "residual")
   # Kenward-Roger is not available for GLMMs
-  expect_warning(k <- predictmeans(g, "Trt", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE), "GLMMs")
+  expect_warning(k <- predictmeans(g, "Trt", df_method = "Kenward-Roger", plot = FALSE), "GLMMs")
   expect_identical(k$settings$df_method, "inner-outer")
   # containment and between-within work for glmer too
-  expect_equal(unique(predictmeans(g, "Trt", df_method = "between-within", plot = FALSE, prtnum = FALSE)$pairs$df), 6)
+  expect_equal(unique(predictmeans(g, "Trt", df_method = "between-within", plot = FALSE)$pairs$df), 6)
 })
 
 test_that("glmmTMB gets the same inner-outer df as glmer", {
@@ -72,8 +72,8 @@ test_that("glmmTMB gets the same inner-outer df as glmer", {
   g <- lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
   t <- glmmTMB::glmmTMB(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
   expect_equal(unname(pm_inner_outer_df(t)), unname(pm_inner_outer_df(g)))
-  expect_equal(predictmeans(t, "Trt:W", plot = FALSE, prtnum = FALSE)$pairs$df,
-               predictmeans(g, "Trt:W", plot = FALSE, prtnum = FALSE)$pairs$df)
+  expect_equal(predictmeans(t, "Trt:W", plot = FALSE)$pairs$df,
+               predictmeans(g, "Trt:W", plot = FALSE)$pairs$df)
 })
 
 test_that("crossed random effects: a treatment on columns gets columns minus treatments", {

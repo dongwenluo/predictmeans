@@ -48,7 +48,7 @@ end.
 | model, modelterm, data, pairwise, atvar, adj, covariate, letterCI, permlist, ncore | yes | keep | |
 | Df | yes | merge (D2) | `df_method = 10` |
 | level | 0.05 | rename (D1) | `conf.level = 0.95` |
-| meandecr | yes | merge into print | `print(x, sort = "decreasing")`; letters are not changed by order |
+| meandecr | yes | keep (step 2a: it sets which letter goes to the largest mean, so it cannot move to `print()`) | |
 | trans | `I` | keep (only for a transformation outside the formula; detected from `log(y)` etc.) | |
 | transOff | yes | remove | `trans = function(x) exp(x) - 1` |
 | count | yes | remove: Poisson/neg. binomial already detected | `trans = ` for other cases |
@@ -70,7 +70,7 @@ end.
 | contrastmeans, pm_slopes | level | rename (D1) | `conf.level` |
 | pm_slopes | at | keep (D4: the name everywhere) | |
 | df_term | type | rename to the package's name | `df_method` |
-| df_term | vcov_adj | rename | `vcov_adjust` |
+| df_term | vcov_adj | remove (step 2a: it was an internal covariance matrix, now `pm_df_term()`) | none |
 | all | the rest | keep | |
 
 ### covariatemeans()

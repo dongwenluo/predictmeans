@@ -18,7 +18,7 @@ test_that("specify_contrast() builds the matrix from level names", {
   expect_identical(rownames(specify_contrast(K, x = `0.6:Victory` - `0:Victory`)), "x")
   expect_error(specify_contrast(K, y = `0.8:Victory` - `0:Victory`), "Level names are")
   expect_error(specify_contrast(K, `0.6:Victory` - `0:Victory`), "name every contrast")
-  pm <- predictmeans(lm(yield ~ nitro*Variety, data = oats_fac()), "nitro:Variety", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(lm(yield ~ nitro*Variety, data = oats_fac()), "nitro:Variety", plot = FALSE)
   expect_equal(specify_contrast(pm, a = `0.6:Victory` - `0:Victory`), cm["a", , drop = FALSE])
 })
 

@@ -13,7 +13,7 @@ test_that("treatments nested in a control/treated factor: means over the treatme
   d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"))
   d$y <- 50 + 20 * (d$treat != "control") + as.integer(d$seedlot) + rnorm(nrow(d), 0, 3)
   fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
-  pm <- function(term) expect_no_warning(predictmeans(fm, term, plot = FALSE, prtnum = FALSE))$means   # nesting: no warning
+  pm <- function(term) expect_no_warning(predictmeans(fm, term, plot = FALSE))$means   # nesting: no warning
   s <- pm("seedlot")
   expect_true(all(s$estimable))
   expect_equal(s$estimate, as.vector(tapply(d$y, d$seedlot, mean)), tolerance = 1e-8)   # each treatment weight 1/4
@@ -31,7 +31,7 @@ test_that("provenances nested in countries, crossed with a treatment: equal weig
   d[] <- lapply(d, function(v) if (is.character(v)) factor(v) else v)
   d$dbh <- 10 + as.integer(d$country) + rnorm(10)[as.integer(d$prov)] + 0.5 * (d$inoc == "yes") + rnorm(nrow(d), 0, 0.5)
   fm <- lm(dbh ~ repl + inoc * (country/prov), data = d)
-  pm <- function(term) suppressWarnings(predictmeans(fm, term, plot = FALSE, prtnum = FALSE))$means
+  pm <- function(term) suppressWarnings(predictmeans(fm, term, plot = FALSE))$means
   expect_equal(pm("inoc")$estimate, as.vector(tapply(d$dbh, d$inoc, mean)), tolerance = 1e-8)
   expect_equal(pm("country")$estimate, as.vector(tapply(d$dbh, d$country, mean)), tolerance = 1e-8)
   ic <- pm("inoc:country")
@@ -46,7 +46,7 @@ test_that("an empty cell (a combination missing from the data): the 1.x average 
   d$dbh <- 10 + as.integer(d$country) + rnorm(10)[as.integer(d$prov)] + 0.5 * (d$inoc == "yes") + rnorm(nrow(d), 0, 0.5)
   d <- d[!(d$prov == "p3" & d$inoc == "yes"), ]                      # p3 never received inoculation
   fm <- lm(dbh ~ repl + inoc * (country/prov), data = d)
-  expect_warning(p <- predictmeans(fm, "inoc", plot = FALSE, prtnum = FALSE), "No data for .*yes:B:p3")
+  expect_warning(p <- predictmeans(fm, "inoc", plot = FALSE), "No data for .*yes:B:p3")
   cells <- tapply(d$dbh, list(d$inoc, d$prov), mean)                  # repl is balanced within each cell
   expect_equal(p$means$estimate, unname(rowMeans(cells, na.rm = TRUE)), tolerance = 1e-8)
   expect_true(all(p$means$estimable))
@@ -55,7 +55,7 @@ test_that("an empty cell (a combination missing from the data): the 1.x average 
   expect_match(p$pairs$over, "country:prov")
   # provenances (nested in countries) compared over the treatments both have,
   # across countries too
-  pp <- suppressWarnings(predictmeans(fm, "country:prov", plot = FALSE, prtnum = FALSE))$pairs
+  pp <- suppressWarnings(predictmeans(fm, "country:prov", plot = FALSE))$pairs
   r <- pp[pp$level1 == "B:p3" & pp$level2 == "C:p6" | pp$level1 == "C:p6" & pp$level2 == "B:p3", ]
   expect_equal(abs(r$estimate), abs(cells["no", "p3"] - cells["no", "p6"]), tolerance = 1e-8)
   expect_identical(r$over, "inoc no")

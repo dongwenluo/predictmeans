@@ -93,8 +93,7 @@ test_that("Genstat REML: variance components, sequential Wald tests (KR-average 
     terms <- if (nl) c(Group = "Group", Time = "Time", Time.Group = "Time:Group") else
       c(Variety = "Variety", Nitro = "Nitro", Variety.Nitro = "Variety:Nitro")
     for (tg in names(terms)) {
-      p <- suppressWarnings(suppressMessages(predictmeans(m, terms[[tg]], vcov_adjust = FALSE, plot = FALSE,
-                                                           prtnum = FALSE)))
+      p <- suppressWarnings(suppressMessages(predictmeans(m, terms[[tg]], vcov_adjust = FALSE, plot = FALSE)))
       f2 <- strsplit(terms[[tg]], ":")[[1]]
       lab <- do.call(paste, c(lapply(p$means[f2], as.character), sep = ":"))
       mm <- g[g$table == "mean" & g$term == tg & g$value != "*", ]
@@ -133,12 +132,12 @@ test_that("empty cell: Genstat's PRESENT means equal predictmeans'; its SEDs are
   G <- gen_ref()
   m <- gen_fits()[["run2:YB"]]
   g <- G[G$analysis == "run2:YB", ]
-  p <- suppressWarnings(predictmeans(m, "Nitro", pairwise = TRUE, vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE))
+  p <- suppressWarnings(predictmeans(m, "Nitro", pairwise = TRUE, vcov_adjust = FALSE, plot = FALSE))
   vp <- g[g$table == "vp_pred" & g$term == "Nitro", ]
   expect_true(all(gen_agree(p$means$estimate[match(vp$key, p$means$Nitro)], vp$value)))
   vs <- g[g$table == "vp_se" & g$term == "Nitro", ]
   expect_true(all(gen_agree(p$means$std.error[match(vs$key, p$means$Nitro)], vs$value)))
-  pv <- suppressWarnings(predictmeans(m, "Variety", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE))
+  pv <- suppressWarnings(predictmeans(m, "Variety", vcov_adjust = FALSE, plot = FALSE))
   vv <- g[g$table == "vp_pred" & g$term == "Variety", ]
   expect_true(all(gen_agree(pv$means$estimate[match(vv$key, pv$means$Variety)], vv$value)))
   # Genstat's SEDs are those of the differences of the averages (0.6 averages

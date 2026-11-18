@@ -15,8 +15,8 @@ default) with covariates at their means. Results match SAS `LSMEANS` and emmeans
 ## Core call
 
 ```r
-pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
-                   pairwise = FALSE, trans = I, transOff = 0, plot = FALSE, prtnum = FALSE)
+pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf.level = 0.95,
+                   pairwise = FALSE, trans = I, plot = FALSE)
 ```
 
 - `modelterm`: a fixed-effect term written as in the model, e.g. `"A"` or `"A:B"`; its
@@ -26,10 +26,13 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   `"BY"`, `"fdr"`, `"sidak"`, `"scheffe"`, `"mvt"` (exact single-step, = SAS
   `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. Giving `adj` or `atvar` turns on
   pairwise comparisons.
-- `level`: significance level for confidence limits and LSDs, default 0.05.
+- `conf.level`: confidence level, default 0.95; tests, LSDs and letters are at the significance
+  level `level = 1 - conf.level` (stored as `settings$level`). `df_method` takes a method name or
+  one number (a fixed df). 1.1.1 arguments (`level`, `Df`, `which.plots`, `prtnum`, `ndecimal`,
+  `transOff`, `count`, plot settings as arguments) stop with their 2.0 spelling.
 - `plot`: `FALSE` by default (since 2.0); `plot = TRUE` or `options(predictmeans.plot = TRUE)` draws the
-  1.x plots, as does asking for them with `which.plots`; `autoplot(pm)` draws from the result.
-  `prtnum = FALSE` suppresses printing of the reference-grid note.
+  1.x plots, `plot = c("mean", "bar")` the plots named; settings in `plot_args`; `autoplot(pm)` draws
+  from the result. Nothing is printed during the call.
 - `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
   method, adjustment, SED range, mean LSD).
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML fits;
@@ -113,7 +116,7 @@ Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
 # means of one factor, all pairs, Tukey; letters in pm$means$group
-pm <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE, prtnum = FALSE)
+pm <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE)
 
 # nitrogen compared within each variety
 pm2 <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
@@ -188,7 +191,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   overlap (83.4% intervals for independent means with equal SEs; narrower for correlated
   means). Confidence limits of means are not for comparing means.
 - `letterCI = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
-  in `mean_table`; `level` is the significance level (default 0.05).
+  in `mean_table`, at the significance level `1 - conf.level`.
 - `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use
   `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down

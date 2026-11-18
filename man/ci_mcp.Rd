@@ -25,7 +25,7 @@ This function produces letter representations for a multiple comparison test by 
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   predictmeans(fm, "nitro", adj="BH", plot=FALSE)$mean_table
-  predictmeans(fm, "nitro", pair=TRUE, level=0.166, letterCI = TRUE, plot=FALSE)$mean_table
+  predictmeans(fm, "nitro", pairwise=TRUE, conf.level=0.834, letterCI = TRUE, plot=FALSE)$mean_table
 }
 \references{
 Vanessa, C. (05 October 2022),

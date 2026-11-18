@@ -23,7 +23,6 @@ pm_tidy_parts <- function(e) {
   if (!is.null(atvar) && all(atvar %in% c("NULL", ""))) atvar <- NULL
   slevel <- g("slevel")
   trans <- g("trans")
-  transOff <- g("transOff")
   nK <- nrow(K)
 
   ## Means
@@ -64,9 +63,9 @@ pm_tidy_parts <- function(e) {
 
   back <- function(x) {
     if (identical(trans, stats::make.link("log")$linkinv) || identical(trans, exp)) {
-      exp(x) - transOff
+      exp(x)
     } else {
-      as.numeric(trans(x)) - transOff
+      as.numeric(trans(x))
     }
   }
   resp <- if (is.function(trans)) back(est) else est

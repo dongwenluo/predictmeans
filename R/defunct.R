@@ -20,7 +20,7 @@ pm_defunct_rows <- function() {
     r(c("covariatemeans", "semipred", "Kmatrix"), "covariateV", "at = %s", "same"),
     r("covariatemeans", "as.is", "at = (the covariate values to predict at)"),
     r("df_term", "type", "df_method = %s", "same"),
-    r("df_term", "vcov_adj", "vcov_adjust = %s", "same"),
+    r("df_term", "vcov_adj", "nothing: the adjusted covariance is computed from df_method"),
     # back-transformation: detected from the formula or the family
     r(c("predictmeans", "covariatemeans"), "transOff", "trans = function(x) exp(x) - offset (the offset inside trans)"),
     r("predictmeans", "count", "nothing: Poisson and negative binomial means are detected; otherwise trans ="),
@@ -28,7 +28,6 @@ pm_defunct_rows <- function() {
     # printing (D10)
     r(c("predictmeans", "Kmatrix"), "prtnum", print_dig),
     r("predictmeans", "ndecimal", print_dig),
-    r("predictmeans", "meandecr", "print(x, sort = \"decreasing\")"),
     r(c("semipred", "semireg", "permmodels", "bootmodels"), "prt", "print(x)"),
     # plots (D10): analysis functions keep only 'plot'
     plot_set("predictmeans", c("lsd_bar", "plotord", "lineplot", "plottitle", "plotxlab", "plotylab", "jitterv", "basesz")),
@@ -94,11 +93,15 @@ pm_defunct <- function(fun, call, env = parent.frame(2), strict = FALSE, formals
   given <- given[!is.na(given) & nzchar(given)]
   if (!length(given)) return(invisible(NULL))
   tab <- pm_defunct_table[pm_defunct_table$fun == fun, , drop = FALSE]
-  hit <- given[given %in% tab$arg]
+  # match.call() gives the function's own arguments in full; the other names
+  # (in '...') may abbreviate a removed one, as R allowed (bar = for barplot =)
+  own <- if (is.null(formals_of)) character(0) else names(formals_of)
+  k <- ifelse(given %in% own, NA_integer_, pmatch(given, tab$arg, duplicates.ok = TRUE))
+  hit <- which(!is.na(k))
   if (length(hit)) {
-    msgs <- vapply(hit, function(a) {
-      row <- tab[tab$arg == a, , drop = FALSE][1, ]
-      value <- if (nzchar(row$value)) tryCatch(eval(call[[a]], env), error = function(e) call[[a]]) else NULL
+    msgs <- vapply(hit, function(h) {
+      row <- tab[k[h], , drop = FALSE]
+      value <- if (nzchar(row$value)) tryCatch(eval(call[[given[h]]], env), error = function(e) call[[given[h]]]) else NULL
       pm_defunct_msg(row, value)
     }, character(1))
     stop(paste0(fun, "(): ", paste(msgs, collapse = "\n  "),

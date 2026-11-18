@@ -16,7 +16,7 @@ test_that("Freedman-Lane with refits equals a direct computation (lmer, type III
   expect_equal(r$ANOVA["Variety", "Perm_p_value"],
                round((sum(round(Fs, 6) >= round(Fv(m), 6)) + 1) / 20, 4))
   # pairs of Variety: the family null is the term's null, so pair 1 v 2 is the coefficient's test
-  pm <- predictmeans(m, "Variety", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(m, "Variety", permlist = r, plot = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value[1], unname(r$COEFFICENTS["VarietyMarvellous", "Perm_p_value"]), tolerance = 1e-4)
   expect_match(attr(r$ANOVA, "heading"), "refitted")
 })
@@ -34,7 +34,7 @@ test_that("Freedman-Lane with refits for lme and gls; refit = FALSE holds V", {
   g <- nlme::gls(yield ~ nitro + Variety, correlation = nlme::corCompSymm(form = ~ 1 | Block), data = Oats)
   rg <- permmodels(g, nperm = 19, type = "III", seed = 1, prt = FALSE, ncore = 1)
   expect_identical(rownames(rg$ANOVA), c("nitro", "Variety"))
-  pmg <- predictmeans(g, "nitro", permlist = rg, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pmg <- predictmeans(g, "nitro", permlist = rg, plot = FALSE, ncore = 1)
   expect_true(all(pmg$pairs$p.value > 0 & pmg$pairs$p.value <= 1))
 })
 
@@ -51,7 +51,7 @@ test_that("Freedman-Lane with refits for GLMMs uses the working linear mixed mod
   wl <- lme4::lmer(z ~ Treatment + (1 | Clinic), data = dz, weights = w)
   expect_equal(unname(lme4::fixef(r$perm$wmodel)), unname(lme4::fixef(wl)), tolerance = 1e-6)
   # the pair (two levels) is the coefficient's test
-  pm <- predictmeans(gm, "Treatment", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)
+  pm <- predictmeans(gm, "Treatment", permlist = r, plot = FALSE, ncore = 1)
   expect_equal(pm$pairs$p.value, unname(r$COEFFICENTS["Treatmentdrug", "Perm_p_value"]), tolerance = 1e-4)
   expect_equal(permmodels(gm, nperm = 19, seed = 1, prt = FALSE, refit = FALSE)$perm$scheme, "freedman-lane")
 })

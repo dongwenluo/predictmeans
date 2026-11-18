@@ -32,15 +32,15 @@ test_that("the observed information equals the Hessian of the REML log-likelihoo
 test_that("predictmeans(), contrastmeans() and pm_joint() with df_method = \"Kenward-Roger\" equal SAS DDFM=KR", {
   d <- oats71()
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = d)
-  pv <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)
+  pv <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE)
   expect_equal(pv$means$df, c(8.58, 8.58, 8.7), tolerance = 2e-3)
   expect_equal(pv$pairs$df, c(9.79, 9.97, 9.97), tolerance = 2e-3)
   expect_equal(pv$pairs$std.error, c(6.8298, 6.8647, 6.8647), tolerance = 2e-4)
   expect_identical(pv$settings$df_method, "Kenward-Roger")
   expect_true(pv$settings$vcov_adjust)
   # it is the default; pbkrtest's version ("KR-expected") differs here by about 1%
-  expect_identical(predictmeans(m, "Variety", plot = FALSE, prtnum = FALSE)$pairs, pv$pairs)
-  pk <- predictmeans(m, "Variety", df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
+  expect_identical(predictmeans(m, "Variety", plot = FALSE)$pairs, pv$pairs)
+  pk <- predictmeans(m, "Variety", df_method = "KR-expected", plot = FALSE)
   expect_true(all(abs(pk$pairs$df / pv$pairs$df - 1) > 0.005))
   cn <- rbind(c(-1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0), c(-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
   ct <- contrastmeans(m, "Variety:nitro", ctrmatrix = cn, df_method = "Kenward-Roger")[[1]]
@@ -52,12 +52,12 @@ test_that("predictmeans(), contrastmeans() and pm_joint() with df_method = \"Ken
   # balanced data: the same as pbkrtest's
   dd <- as.data.frame(nlme::Oats); dd$nitro <- factor(dd$nitro)
   mb <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = dd)
-  expect_equal(predictmeans(mb, "nitro", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)$pairs[, c("std.error", "df")],
-               predictmeans(mb, "nitro", df_method = "KR-expected", plot = FALSE, prtnum = FALSE)$pairs[, c("std.error", "df")],
+  expect_equal(predictmeans(mb, "nitro", df_method = "Kenward-Roger", plot = FALSE)$pairs[, c("std.error", "df")],
+               predictmeans(mb, "nitro", df_method = "KR-expected", plot = FALSE)$pairs[, c("std.error", "df")],
                tolerance = 1e-5)
   L <- rbind(c(0, -1, 0, rep(0, 9)))
-  expect_equal(df_term(m, ctrmatrix = L, type = "Kenward-Roger"),
-               df_term(m, ctrmatrix = L, vcov_adj = pm_vcov_kr(m, "observed")))
+  expect_equal(df_term(m, ctrmatrix = L, df_method = "Kenward-Roger"),
+               pm_df_term(m, ctrmatrix = L, vcov_adj = pm_vcov_kr(m, "observed")))
 })
 
 ## "KR-average": Kenward-Roger with the average information of the REML
@@ -102,7 +102,7 @@ test_that("KR-average for gls with AR(1): the average information y'P G_i P G_j 
   ddf <- vapply(c("KR-expected", "KR-average", "Kenward-Roger"), function(dm)
     pm_joint(g, "Group:Time", df_method = dm, ctrmatrix = C)$df2, numeric(1))
   expect_true(ddf[1] < ddf[2] && ddf[2] < ddf[3])
-  p <- predictmeans(g, "Group", df_method = "KR-average", vcov_adjust = FALSE, plot = FALSE, prtnum = FALSE)
+  p <- predictmeans(g, "Group", df_method = "KR-average", vcov_adjust = FALSE, plot = FALSE)
   expect_identical(p$settings$df_method, "KR-average")
   expect_false(p$settings$vcov_adjust)
 })

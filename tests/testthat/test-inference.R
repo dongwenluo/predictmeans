@@ -29,7 +29,7 @@ test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() 
     dfms <- if (nm == "lm") "auto" else c("auto", "Kenward-Roger", "Satterthwaite", "between-within", "KR-expected", "KR-average",
                                          if (nm == "lmer") "containment")
     for (d in dfms) {
-      pm <- suppressWarnings(suppressMessages(predictmeans(m, term, df_method = d, plot = FALSE, prtnum = FALSE)))
+      pm <- suppressWarnings(suppressMessages(predictmeans(m, term, df_method = d, plot = FALSE)))
       pr <- pm$pairs
       lev <- levels(factor(pm$means[[term]]))
       C <- t(vapply(seq_len(nrow(pr)), function(i) (lev == pr$level1[i]) - (lev == pr$level2[i]), numeric(length(lev))))
@@ -47,7 +47,7 @@ test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() 
 test_that("settings$vcov_adjust says whether the Kenward-Roger covariance was used", {
   ms <- inf_models()
   s <- function(m, ...) suppressWarnings(suppressMessages(
-    predictmeans(m, "Variety", plot = FALSE, prtnum = FALSE, ...)))$settings$vcov_adjust
+    predictmeans(m, "Variety", plot = FALSE, ...)))$settings$vcov_adjust
   expect_true(s(ms$lmer$m))
   expect_false(s(ms$lmer$m, df_method = "Satterthwaite"))
   expect_false(s(ms$lmer$m, df_method = "containment"))
@@ -56,12 +56,12 @@ test_that("settings$vcov_adjust says whether the Kenward-Roger covariance was us
   expect_false(s(ms$lm$m))
   expect_true(s(ms$lme$m))                                   # Kenward-Roger by default for REML lme/gls
   expect_false(s(ms$lme$m, df_method = "containment"))       # nlme's df, as 1.x
-  expect_true(suppressMessages(predictmeans(ms$gls$m, "Time", plot = FALSE, prtnum = FALSE))$settings$vcov_adjust)
+  expect_true(suppressMessages(predictmeans(ms$gls$m, "Time", plot = FALSE))$settings$vcov_adjust)
 })
 
 test_that("the legacy p-value matrix uses each pair's df (gls with Kenward-Roger)", {
   m <- inf_models()$gls$m
-  pm <- predictmeans(m, "Group:Time", df_method = "Kenward-Roger", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(m, "Group:Time", df_method = "Kenward-Roger", pairwise = TRUE, plot = FALSE)
   P <- pm$`Pairwise p-value`
   expect_gt(length(unique(round(pm$pairs$df, 6))), 1)
   expect_equal(unname(t(P)[upper.tri(P)]), round(pm$pairs$p.value, 4), tolerance = 1e-4)   # p-values below the diagonal
@@ -88,7 +88,7 @@ test_that("covariatemeans() follows the same defaults: Kenward-Roger df per poin
   a <- covariatemeans(m, "Variety", covariate = "nitro", covariateV = c(0, 0.3, 0.6))$pltdf
   u <- covariatemeans(m, "Variety", covariate = "nitro", covariateV = c(0, 0.3, 0.6), vcov_adjust = FALSE)$pltdf
   inf <- pm_inference(m)
-  K <- Kmatrix(m, "Variety", "nitro", covariateV = c(0, 0.3, 0.6))$K
+  K <- Kmatrix(m, "Variety", "nitro", at = c(0, 0.3, 0.6))$K
   expect_equal(a$ses, unname(sqrt(diag(K %*% inf$mp$vcov %*% t(K)))), tolerance = 1e-8)
   expect_false(isTRUE(all.equal(a$ses, u$ses)))
   crit <- (a$UL - a$Mean) / a$ses
@@ -98,11 +98,11 @@ test_that("covariatemeans() follows the same defaults: Kenward-Roger df per poin
 test_that("glm with a known dispersion: z tests; df_method = \"residual\" keeps the t tests of 1.x", {
   data(Drug, envir = environment())
   g <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-  p <- predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+  p <- predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)
   expect_identical(p$settings$df_method, "asymptotic (z)")
   expect_true(all(is.infinite(p$pairs$df)))
   expect_equal(p$pairs$p.value, 2 * pnorm(-abs(p$pairs$estimate / p$pairs$std.error)), tolerance = 1e-10)
-  pr <- predictmeans(g, "Drug", df_method = "residual", plot = FALSE, prtnum = FALSE)
+  pr <- predictmeans(g, "Drug", df_method = "residual", plot = FALSE)
   expect_equal(unique(pr$pairs$df), df.residual(g))
   jt <- pm_joint(g, "Drug")
   expect_true(is.infinite(jt$df2))
@@ -110,5 +110,5 @@ test_that("glm with a known dispersion: z tests; df_method = \"residual\" keeps 
   expect_equal(jt$F.ratio, drop(t(b) %*% solve(vcov(g)[2:4, 2:4], b)) / 3, tolerance = 1e-8)
   # a quasi family estimates the dispersion: t with the residual df
   q <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = quasibinomial, data = Drug)
-  expect_equal(unique(predictmeans(q, "Drug", plot = FALSE, prtnum = FALSE)$pairs$df), df.residual(q))
+  expect_equal(unique(predictmeans(q, "Drug", plot = FALSE)$pairs$df), df.residual(q))
 })

@@ -89,7 +89,7 @@ model, in which that pair's means are equal, so its p-value does not depend on t
 means:
 
 ```{r}
-pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, prtnum = FALSE, ncore = 1)
+pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)
 pm$pairs[, c("level1", "level2", "estimate", "statistic", "p.value", "p.method")]
 ```
 
@@ -226,7 +226,7 @@ boot <- bootmodels(fm_clin, nsim = 99, seed = 1)
 Its result is used as a `permlist`; the `pairs` table then says `"bootstrap"`:
 
 ```{r}
-pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE, prtnum = FALSE,
+pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE,
                     ncore = 1)
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 ```

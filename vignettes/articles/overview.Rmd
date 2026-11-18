@@ -166,7 +166,8 @@ R2_glmm(mod)
 ##### Mean Table
 
 ```{r}
-predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -204,7 +205,8 @@ PMplot(predm_out$p_valueMatrix)
 ##### Mean Table
 
 ```{r}
-predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")

@@ -4,8 +4,8 @@
 \alias{df_term}
 \title{Calculate degree of freedom of a modelterm (contrast) for a lmer model}
 \usage{
-df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), vcov_adj=NULL)
+df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
+          df_method=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{lmer}.}
@@ -20,7 +20,7 @@ and calculate degree of freedom for the \code{ctrmatrix}.}
 
 \item{ctrnames}{Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)}
 
-\item{type}{Name (in "quote") for indicating a method for claculating degree of freedom. 
+\item{df_method}{The method for the degrees of freedom (called \code{type} before 2.0). 
 The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
 Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
@@ -28,9 +28,7 @@ Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used w
 observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
 information, as \pkg{pbkrtest} and \pkg{emmeans}; "KR-average" the average information, as Genstat.}
 
-\item{vcov_adj}{Optional Kenward-Roger adjusted covariance matrix of the fixed effects, as returned by
-\code{pbkrtest::vcovAdj(model)}, to avoid computing it again when \code{df_term} is called several times
-for the same model.}
+\item{...}{Arguments removed in 2.0 (\code{type}, \code{vcov_adj}) stop with their 2.0 spelling.}
 }
 \description{
 Calculate the degree of freedom of a modelterm (contrast) for a \code{lmer} model 
@@ -62,7 +60,7 @@ if (interactive()) df_term(fm, "nitro:Variety")
 # 2. Construct the contrast matrix directly
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
-df_term(fm, ctrmatrix=cm, type="Satterthwaite")
+df_term(fm, ctrmatrix=cm, df_method="Satterthwaite")
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

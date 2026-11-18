@@ -10,7 +10,7 @@ test_that("permlist works with atvar", {
   m <- oats_lmer()
   perm <- suppressWarnings(permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1))
   r <- predictmeans(m, "nitro:Variety", permlist = perm, atvar = "Variety", ncore = 1,
-                    plot = FALSE, prtnum = FALSE)
+                    plot = FALSE)
   expect_equal(nrow(r$means), 12)
   expect_true(all(is.na(r$means$df)))
   expect_true(all(r$pairs$p.method == "permutation"))
@@ -22,13 +22,13 @@ test_that("permlist works with atvar", {
 
 test_that("a user-supplied Df is used for every pair of an lmer model", {
   m <- oats_lmer()
-  r <- predictmeans(m, "nitro", Df = 20, adj = "BH", plot = FALSE, prtnum = FALSE)
+  r <- predictmeans(m, "nitro", df_method = 20, adj = "BH", plot = FALSE)
   pv <- r$`Pairwise p-value`
   tv <- pv[upper.tri(pv)]
   expect_equal(t(pv)[upper.tri(pv)], round(p.adjust(2 * pt(-abs(tv), 20), "BH"), 4),
                tolerance = 1e-4)
   expect_true(all(r$means$df == 20))
-  r_t <- predictmeans(m, "nitro", Df = 20, adj = "tukey", plot = FALSE, prtnum = FALSE)
+  r_t <- predictmeans(m, "nitro", df_method = 20, adj = "tukey", plot = FALSE)
   pt_ <- r_t$`Pairwise p-value`
   expect_false(anyNA(t(pt_)[upper.tri(pt_)]))
   expect_equal(t(pt_)[upper.tri(pt_)],
@@ -52,8 +52,8 @@ test_that("factor levels containing ':' give the same results (B4)", {
   for (args in list(list(modelterm = "nitro:Variety", pairwise = TRUE),
                     list(modelterm = "nitro:Variety", atvar = "Variety", adj = "BH"),
                     list(modelterm = "nitro:Variety", atvar = "nitro", adj = "tukey"))) {
-    r1 <- expect_silent(do.call(predictmeans, c(list(m1), args, plot = FALSE, prtnum = FALSE)))
-    r2 <- expect_silent(do.call(predictmeans, c(list(m2), args, plot = FALSE, prtnum = FALSE)))
+    r1 <- expect_silent(do.call(predictmeans, c(list(m1), args, plot = FALSE)))
+    r2 <- expect_silent(do.call(predictmeans, c(list(m2), args, plot = FALSE)))
     keep <- !grepl("Plot|plot|settings|^Golden|^Marv|^Vic", names(r1))
     expect_equal(strip(r2[!grepl("Plot|plot|settings|^Golden|^Marv|^Vic", names(r2))]), strip(r1[keep]))
     expect_equal(r2$pairs[c("estimate", "std.error", "df", "p.value", "p.adj")],
@@ -61,7 +61,7 @@ test_that("factor levels containing ':' give the same results (B4)", {
     expect_equal(r2$means$group, r1$means$group)
   }
   pdf(NULL); on.exit(dev.off())
-  expect_no_error(predictmeans(m2, "nitro:Variety", atvar = "Variety", adj = "BH", prtnum = FALSE, prtplt = FALSE))
+  expect_no_error(predictmeans(m2, "nitro:Variety", atvar = "Variety", adj = "BH"))
 })
 
 test_that("atvar groups with one or no observed level get letters without error", {
@@ -72,7 +72,7 @@ test_that("atvar groups with one or no observed level get letters without error"
   d$y <- as.numeric(d$treat) * 10 + as.numeric(d$seedlot) + rnorm(nrow(d))
   fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
   pm <- suppressWarnings(predictmeans(fm, "contcomp:seedlot:treat", atvar = c("treat", "contcomp"),
-                                      adj = "BH", plot = FALSE, prtnum = FALSE))
+                                      adj = "BH", plot = FALSE))
   expect_equal(nrow(pm$mean_table$Table), 12)
   expect_false(anyNA(pm$mean_table$Table$LetterGrp))
   # p-values go to the groups with data: none for the empty control : Treated
@@ -89,21 +89,20 @@ test_that("atvar groups with a single observed level get a letter", {
   d$y <- as.numeric(d$trt) + rnorm(nrow(d))
   fm <- lm(y ~ date * trt, data = d)
   pm <- suppressWarnings(predictmeans(fm, "date:trt", atvar = "date", adj = "BH",
-                                      plot = FALSE, prtnum = FALSE))
+                                      plot = FALSE))
   expect_equal(nrow(pm$mean_table$Table), 5)
   expect_false(anyNA(pm$mean_table$Table$LetterGrp))
 })
 
-test_that("deprecated bar = TRUE keeps the other plots (mean plot not NULL)", {
+test_that("asking for the bar chart keeps the other plots (mean plot not NULL)", {
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
   pdf(NULL); on.exit(dev.off())
-  expect_warning(pm <- predictmeans(fm, "nitro", adj = "BH", bar = TRUE, prtplt = FALSE, prtnum = FALSE),
-                 'which.plots = c\\("mean", "bar", "pval", "back"\\)')
+  pm <- predictmeans(fm, "nitro", adj = "BH", plot = c("mean", "bar", "pval", "back"))
   expect_s3_class(pm$predictmeansPlot$meanPlot, "ggplot")
   expect_s3_class(pm$predictmeansBarPlot, "ggplot")
-  pm2 <- suppressWarnings(predictmeans(fm, "nitro", adj = "BH", bar = FALSE, prtplt = FALSE, prtnum = FALSE))
+  pm2 <- predictmeans(fm, "nitro", adj = "BH", plot = TRUE)
   expect_s3_class(pm2$predictmeansPlot$meanPlot, "ggplot")
   expect_null(pm2$predictmeansBarPlot)
 })
@@ -116,24 +115,24 @@ test_that("confounded factors: means over the combinations that exist, with a wa
                   conc = factor(rep(c("none", "half"), 25)))
   d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
   fm <- lm(y ~ droplet + conc + vol, data = d)
-  expect_warning(pv <- predictmeans(fm, "vol", adj = "BH", plot = FALSE, prtnum = FALSE),
+  expect_warning(pv <- predictmeans(fm, "vol", adj = "BH", plot = FALSE),
                  "'droplet' and 'vol' are confounded in the data.*droplet/vol.*weights = \"cells\"")
   # as the model with the nesting in the formula
   fn <- lm(y ~ conc + droplet/vol, data = d)
-  pn <- suppressWarnings(predictmeans(fn, "vol", adj = "BH", plot = FALSE, prtnum = FALSE))
+  pn <- suppressWarnings(predictmeans(fn, "vol", adj = "BH", plot = FALSE))
   expect_equal(pv$means$estimate, pn$means$estimate, tolerance = 1e-8)
   expect_equal(pv$means$std.error, pn$means$std.error, tolerance = 1e-8)
   expect_equal(pv$pairs$estimate, pn$pairs$estimate, tolerance = 1e-8)
   expect_equal(sum(!is.na(pv$mean_table$Table$LetterGrp)), 3)
-  pd <- suppressWarnings(predictmeans(fm, "droplet", adj = "BH", plot = FALSE, prtnum = FALSE))
+  pd <- suppressWarnings(predictmeans(fm, "droplet", adj = "BH", plot = FALSE))
   expect_false(anyNA(pd$pairs$estimate))
   # another factor: its means average over droplet and vol, so they have the warning too;
   # its differences never depended on it
-  expect_warning(pc <- predictmeans(fm, "conc", adj = "BH", plot = FALSE, prtnum = FALSE), "'droplet' and 'vol' are confounded")
+  expect_warning(pc <- predictmeans(fm, "conc", adj = "BH", plot = FALSE), "'droplet' and 'vol' are confounded")
   expect_false(anyNA(pc$means$estimate))
   expect_equal(pc$pairs$estimate, unname(coef(fm)[["concnone"]])*-1, tolerance = 1e-8)
   # weights = "cells": the combinations weighted by their numbers of observations
-  pw <- suppressMessages(predictmeans(fm, "vol", weights = "cells", plot = FALSE, prtnum = FALSE))
+  pw <- suppressMessages(predictmeans(fm, "vol", weights = "cells", plot = FALSE))
   expect_false(anyNA(pw$means$estimate))
 })
 
@@ -155,8 +154,7 @@ test_that("letters: one helper handles NA p-values overall and within atvar grou
                   conc = factor(c(rep(c("none", "none", "half", "half"), 10), rep(c("none", "half"), 5))))
   d$y <- 5 + 0.3 * (d$conc == "half") - 0.4 * (d$droplet == "fine") + rnorm(50, sd = 0.2)
   fm <- lm(y ~ droplet + conc * vol, data = d)
-  pm <- suppressWarnings(suppressMessages(predictmeans(fm, "conc:vol", atvar = "conc", adj = "BH", plot = FALSE,
-                                                         prtnum = FALSE)))
+  pm <- suppressWarnings(suppressMessages(predictmeans(fm, "conc:vol", atvar = "conc", adj = "BH", plot = FALSE)))
   tab <- pm$mean_table$Table
   expect_equal(nrow(tab), 6)
   expect_false(anyNA(tab$LetterGrp))
@@ -171,18 +169,18 @@ test_that("trans is used for identity-link models (gaussian glm and glmmTMB)", {
   m_glm <- glm(lyield ~ Variety, data = d)
   m_tmb <- glmmTMB::glmmTMB(lyield ~ Variety + (1 | Block), data = d)
   for (m in list(m_glm, m_tmb)) {
-    tab <- predictmeans(m, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
+    tab <- predictmeans(m, "Variety", trans = exp, plot = FALSE)$mean_table
     expect_true("Bk_Mean" %in% names(tab))
     expect_equal(tab$Bk_Mean, exp(tab$Mean), tolerance = 1e-4)   # Mean is rounded
   }
   # same back-transformed means as lm, which always used 'trans'
-  tab_lm <- predictmeans(m_lm, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
-  tab_glm <- predictmeans(m_glm, "Variety", trans = exp, plot = FALSE, prtnum = FALSE)$mean_table
+  tab_lm <- predictmeans(m_lm, "Variety", trans = exp, plot = FALSE)$mean_table
+  tab_glm <- predictmeans(m_glm, "Variety", trans = exp, plot = FALSE)$mean_table
   expect_equal(tab_glm$Bk_Mean, tab_lm$Bk_Mean)
   # a model with a link still uses the inverse link
   data(Drug, package = "predictmeans", envir = environment())
   m_bin <- glm(cbind(R, N - R) ~ Drug + log10Dose, binomial, Drug)
-  tab_bin <- predictmeans(m_bin, "Drug", plot = FALSE, prtnum = FALSE)$mean_table
+  tab_bin <- predictmeans(m_bin, "Drug", plot = FALSE)$mean_table
   expect_equal(tab_bin$Bk_Mean, round(plogis(tab_bin$Mean), 4), tolerance = 1e-3)
 })
 
@@ -191,12 +189,12 @@ test_that("glmer Poisson means are counts, like glm and glmmTMB", {
   dp <- expand.grid(A = factor(c("a1", "a2", "a3")), g = factor(1:6), rep = 1:3)
   dp$y <- rpois(nrow(dp), exp(1 + as.numeric(dp$A)/2 + rnorm(6, sd = 0.3)[dp$g]))
   m <- lme4::glmer(y ~ A + (1 | g), family = poisson, data = dp)
-  tab <- predictmeans(m, "A", plot = FALSE, prtnum = FALSE)$mean_table
+  tab <- predictmeans(m, "A", plot = FALSE)$mean_table
   bk <- unlist(tab[, grep("^Bk_", names(tab))])
   expect_equal(bk, round(bk))
 })
 
-test_that("back-transformed data points are shifted by transOff, like the means", {
+test_that("back-transformed data points are shifted by the offset in trans, like the means", {
   d <- as.data.frame(nlme::Oats)
   d$Variety <- factor(d$Variety, ordered = FALSE)
   d$Block <- factor(d$Block, ordered = FALSE)
@@ -204,8 +202,8 @@ test_that("back-transformed data points are shifted by transOff, like the means"
   d$ly1 <- log(d$yield + 1)
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off())
-  invisible(predictmeans(lm(ly1 ~ Variety + Block, data = d), "Variety", trans = exp, transOff = 1,
-                         which.plots = "back", prtnum = FALSE))
+  invisible(predictmeans(lm(ly1 ~ Variety + Block, data = d), "Variety", trans = function(x) exp(x) - 1,
+                         plot = "back"))
   p <- ggplot2::last_plot()
   pts <- ggplot2::layer_data(p, 3)    # data points (jittered by up to 0.2 * resolution)
   expect_equal(nrow(pts), nrow(d))
@@ -218,15 +216,15 @@ test_that("back-transformed data points are shifted by transOff, like the means"
 test_that("clear messages for a misspelled 'adj' or a term in the wrong order or case", {
   m <- oats_lmer()
   # the factors of a term in another order: the same means, rows in that order
-  vn <- predictmeans(m, "Variety:nitro", plot = FALSE, prtnum = FALSE)$means
-  nv <- predictmeans(m, "nitro:Variety", plot = FALSE, prtnum = FALSE)$means
+  vn <- predictmeans(m, "Variety:nitro", plot = FALSE)$means
+  nv <- predictmeans(m, "nitro:Variety", plot = FALSE)$means
   expect_equal(vn$estimate[order(vn$nitro, vn$Variety)], nv$estimate)
   expect_error(predictmeans(m, "variety", plot = FALSE), "Did you mean 'Variety'")
   expect_error(predictmeans(m, "Bloc", plot = FALSE), "Their variables are: nitro, Variety")
   expect_error(predictmeans(m, "Variety", adj = "holms", plot = FALSE), "'adj' must be one of")
   # any letter case
-  r1 <- predictmeans(m, "Variety", adj = "Tukey", plot = FALSE, prtnum = FALSE)
-  r2 <- predictmeans(m, "Variety", adj = "tukey", plot = FALSE, prtnum = FALSE)
+  r1 <- predictmeans(m, "Variety", adj = "Tukey", plot = FALSE)
+  r2 <- predictmeans(m, "Variety", adj = "tukey", plot = FALSE)
   expect_identical(r1$pairs, r2$pairs)
   cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
   expect_identical(contrastmeans(m, "nitro", ctrmatrix = cm, adj = "bh"),

@@ -30,11 +30,11 @@ test_that("Kenward-Roger df and SEs in predictmeans() don't need pbkrtest", {
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-  pm <- predictmeans(fm, "nitro", vcov_adjust = TRUE, plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro", vcov_adjust = TRUE, plot = FALSE)
   expect_equal(pm$settings$df_method, "Kenward-Roger")
   expect_true(all(pm$means$df > 0))
   # balanced: the observed and the expected information give the same df
-  pe <- predictmeans(fm, "nitro", df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
+  pe <- predictmeans(fm, "nitro", df_method = "KR-expected", plot = FALSE)
   expect_equal(pe$pairs$df, pm$pairs$df, tolerance = 1e-4)
   expect_equal(pe$settings$df_method, "KR-expected")
 })
