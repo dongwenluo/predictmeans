@@ -13,14 +13,14 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 ```
 
 `R2_model()` computes an adjusted coefficient of determination (R²) for linear and
-generalized linear mixed models with Piepho's (2023) method (`R2_model()` before 2.0, which printed the same
+generalized linear mixed models with Piepho's (2023) method (`R2_glmm()` before 2.0, which printed the same
 values as percentages). It works for `lmer`,
 `glmer` and `glmmTMB` fits and picks the residual (distribution-specific) variance for
 the model's family and link automatically.
 
 ```{r}
 library(predictmeans)
-args(R2_glmm)
+args(R2_model)
 ```
 
 With `over_disp = TRUE`, an observation-level random effect (one level per observation)
