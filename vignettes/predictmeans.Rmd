@@ -17,6 +17,10 @@ comparisons for `lm`, `glm`, `aov`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and
 models, with Kenward–Roger or Satterthwaite degrees of freedom for mixed models, and
 permutation tests.
 
+```{r, echo = FALSE, out.width = "100%", fig.alt = "From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots"}
+knitr::include_graphics("../man/figures/workflow.png")
+```
+
 ## A split-plot experiment
 
 The oats data (Yates 1935) are a split plot: three varieties on whole plots within six

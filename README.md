@@ -1,10 +1,14 @@
-# predictmeans
+# predictmeans <img src="man/figures/logo.png" align="right" height="139" alt="predictmeans logo" />
 
 Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and
 contrasts for linear, generalized linear and mixed models — `aov`, `lm`, `glm`, `gls`,
 `lme`, `lmer`, `glmer`, `glmmTMB`, `gam` and semiparametric `semireg` models — with
 Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap
 tests, R² for mixed models and diagnostics. Results match SAS `LSMEANS` and emmeans.
+
+## Workflow
+
+![From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots](man/figures/workflow.png)
 
 ## Installation
 

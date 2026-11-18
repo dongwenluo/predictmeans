@@ -1951,6 +1951,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Documentation
 
+* A package logo (`man/figures/logo.png`: the README, the website and the
+  package help page) and a workflow chart from the fitted model to the report
+  (`man/figures/workflow.png`: the README, `?predictmeans-package` and
+  `vignette("predictmeans")`).
+
 * Letter groups, overall and within `atvar` groups, now come from one
   function (`pm_letter_groups()`) that handles unavailable p-values
   (missing levels or non-estimable differences) the same way everywhere.
