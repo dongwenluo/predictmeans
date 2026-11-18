@@ -209,7 +209,7 @@ test_that("back-transformed data points are shifted by the offset in trans, like
   expect_equal(nrow(pts), nrow(d))
   expect_equal(range(pts$x), range(d$yield), tolerance = 0.02)
   cm <- covariatemeans(lm(ly1 ~ Variety * nitro, data = d), "Variety", covariate = "nitro",
-                       trans = exp, transOff = 1)$plt
+                       trans = function(x) exp(x) - 1)$plt
   expect_equal(range(ggplot2::layer_data(cm, 3)$y), range(d$yield))
 })
 

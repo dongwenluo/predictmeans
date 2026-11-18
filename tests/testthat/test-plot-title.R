@@ -34,6 +34,7 @@ test_that("the plots of the package wrap their titles", {
   expect_true(multi(ggplot2::autoplot(pm, type = "pvalue")))
   expect_true(multi(PMplot(pm$p_valueMatrix, mtitle = paste(rep("a long title for the level plot", 4), collapse = " "))))
   cm <- covariatemeans(lm(yield ~ nitro * oat_variety_grown_in_the_field_trial, data = O), "oat_variety_grown_in_the_field_trial",
-                       covariate = "nitro", mtitle = paste(rep("a long title for the fitted lines", 4), collapse = " "))
+                       covariate = "nitro",
+                       plot_args = list(mtitle = paste(rep("a long title for the fitted lines", 4), collapse = " ")))
   expect_true(multi(cm$plt))
 })

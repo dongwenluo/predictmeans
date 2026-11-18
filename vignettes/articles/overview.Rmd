@@ -555,7 +555,7 @@ kable(car::Anova(mod))
 
 ```{r}
 covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                level = 0.166) # get 83.4% CI
+                                conf.level = 0.834) # get 83.4% CI
 as.data.frame(covariate_out) %>%
   select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -574,9 +574,9 @@ as.data.frame(covariate_out) %>%
 #| fig-height: 7
 autoplot(covariate_out)
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trellis = FALSE, plot = TRUE)
+               conf.level = 0.834, plot = TRUE, plot_args = list(trellis = FALSE))
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trans=I, trellis = FALSE, ci=F)$plt
+               conf.level = 0.834, trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
 ```
 
 
@@ -584,7 +584,7 @@ covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
 
 Options in function 'covariatemeans':
 
--   **{level = 0.166}** produces 83.4% confidence interval (CI) for predicted means. If a straightforward multiple comparison between predicted means is not feasible, an alternative method involves utilizing predicted means with 83.4% CIs. When the CIs of two predicted means overlap, the associated means are not significantly different at the 0.05 level; otherwise, they are considered significant. This holds for independent means with equal standard errors. When the means are correlated (blocks, repeated measures, mixed models) or their standard errors differ, the level that makes overlap agree with the test is different: `predictmeans()` computes it from the model (`letterCI = TRUE`, or `autoplot(pm, interval = "comparison")`). The function **'ci_mcp(LL, UL)'** is used to produce indicating letters.
+-   **{conf.level = 0.834}** produces 83.4% confidence interval (CI) for predicted means. If a straightforward multiple comparison between predicted means is not feasible, an alternative method involves utilizing predicted means with 83.4% CIs. When the CIs of two predicted means overlap, the associated means are not significantly different at the 0.05 level; otherwise, they are considered significant. This holds for independent means with equal standard errors. When the means are correlated (blocks, repeated measures, mixed models) or their standard errors differ, the level that makes overlap agree with the test is different: `predictmeans()` computes it from the model (`letterCI = TRUE`, or `autoplot(pm, interval = "comparison")`). The function **'ci_mcp(LL, UL)'** is used to produce indicating letters.
 
 **DT_df** is a function for producing data table in html with 'CSV' download button. To download the whole data, you need to select 'All' entries.
 

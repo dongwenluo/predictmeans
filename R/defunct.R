@@ -18,7 +18,6 @@ pm_defunct_rows <- function() {
     r(means, "Df", "df_method = %s", "same"),
     r(c(means, "pm_slopes", "semipred", "varcomp", "permstats", "PMplot"), "level", "conf.level = %s", "one_minus"),
     r(c("covariatemeans", "semipred", "Kmatrix"), "covariateV", "at = %s", "same"),
-    r("covariatemeans", "as.is", "at = (the covariate values to predict at)"),
     r("df_term", "type", "df_method = %s", "same"),
     r("df_term", "vcov_adj", "nothing: the adjusted covariance is computed from df_method"),
     # back-transformation: detected from the formula or the family

@@ -5,7 +5,7 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   fm <- lm(yield ~ Block + nitro * Variety, data = O)
   xs <- c(0, 0.3, 0.6)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
-  r <- covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs)
+  r <- covariatemeans(fm, "Variety", covariate = "nitro", at = xs)
   expect_null(grDevices::dev.list())                     # nothing drawn
   expect_s3_class(r, c("covariatemeans", "pm_curves"))
   expect_named(r, c("means", "pairs", "settings", "plt", "pltdf"))
@@ -34,7 +34,7 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   grDevices::pdf(NULL)
   n0 <- length(grDevices::dev.list())
   on.exit(grDevices::dev.off())
-  r2 <- covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs, plot = TRUE)
+  r2 <- covariatemeans(fm, "Variety", covariate = "nitro", at = xs, plot = TRUE)
   expect_equal(r2$means, m)
 })
 
@@ -44,7 +44,7 @@ test_that("covariatemeans(): back-transformed curves have response columns, as p
   d <- expand.grid(x = seq(0, 10, length = 11), A = factor(c("a1", "a2", "a3")), site = factor(1:8))
   d$y <- rpois(nrow(d), exp(0.5 + 0.1*d$x + 0.2*(d$A == "a2") + rnorm(8, 0, 0.3)[d$site]))
   g <- glm(y ~ A*x, poisson, data = d)
-  r <- suppressMessages(covariatemeans(g, "A", covariate = "x", covariateV = c(2, 5)))
+  r <- suppressMessages(covariatemeans(g, "A", covariate = "x", at = c(2, 5)))
   m <- r$means
   expect_true(all(c("response", "response.std.error", "response.conf.low", "response.conf.high") %in% names(m)))
   expect_equal(m$response, exp(m$estimate))
@@ -65,8 +65,8 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
   d$cnt <- rpois(120, exp(1 + 0.6*d$x*(d$A == "a3") + 0.2*d$x))
   g <- glm(cnt ~ A*x, poisson, d)
   xs <- seq(0, 2, 0.1)
-  rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs)
-  rs <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs, band = "simultaneous")
+  rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), at = xs)
+  rs <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), at = xs, band = "simultaneous")
   expect_null(rp$means)
   p <- rp$pairs
   expect_named(p, c("level1", "level2", "x", "estimate", "std.error", "df", "statistic", "p.value", "conf.low",

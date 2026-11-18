@@ -79,7 +79,7 @@ end.
 |---|---|---|
 | model, modelterm, covariate, data, contr, contr_scale, band, cov_reduce, exclude, weights, df_method, vcov_adjust, bias_adjust, sigma, mean_type, plot | keep | |
 | covariateV | rename (D4) | `at` |
-| as.is (graph over the observed range) | merge | `at` (values to predict at); default range unchanged |
+| as.is (each line over its group's observed range) | keep (step 2b: `at` cannot do it; it changes the rows of the result) | |
 | level | rename (D1) | `conf.level` |
 | Df | merge (D2) | `df_method = 10` |
 | trans, transOff, responsen | as `predictmeans()` | `trans` only |

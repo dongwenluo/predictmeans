@@ -24,16 +24,17 @@ pm_plot_defaults <- list(lsd_bar = TRUE, plotord = NULL, lineplot = TRUE, plotti
                          plotxlab = NULL, plotylab = NULL, jitterv = 0.2, basesz = 12)
 
 ## The plot settings of a call ('plot_args'; names may be abbreviated).
-## Returns the settings with the defaults for those not given.
-pm_plot_args <- function(plot_args = list()) {
-  nms <- names(pm_plot_defaults)
+## Returns the settings with the defaults ('defaults': those of the calling
+## function) for those not given.
+pm_plot_args <- function(plot_args = list(), defaults = pm_plot_defaults) {
+  nms <- names(defaults)
   if (!is.list(plot_args) || (length(plot_args) && (is.null(names(plot_args)) || !all(nzchar(names(plot_args)))))) {
     stop("'plot_args' must be a named list, e.g. plot_args = list(plottitle = \"Yield\", basesz = 14).", call. = FALSE)
   }
   k <- pmatch(names(plot_args), nms, duplicates.ok = TRUE)
   if (anyNA(k)) stop("'plot_args' can hold ", paste(nms, collapse = ", "), "; not ",
                      paste(names(plot_args)[is.na(k)], collapse = ", "), call. = FALSE)
-  out <- pm_plot_defaults
+  out <- defaults
   for (i in seq_along(k)) out[nms[k[i]]] <- list(plot_args[[i]])
   out
 }

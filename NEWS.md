@@ -36,8 +36,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
-* **Arguments removed or renamed in 2.0 (step 2a: `predictmeans()`,
-  `contrastmeans()`, `pm_slopes()`, `Kmatrix()`, `df_term()`).** A 1.1.1
+* **Arguments removed or renamed in 2.0 (steps 2a, 2b: `predictmeans()`,
+  `contrastmeans()`, `pm_slopes()`, `Kmatrix()`, `df_term()`,
+  `covariatemeans()`).** A 1.1.1
   spelling stops with the 2.0 one, e.g. `'level' was removed in predictmeans
   2.0: use conf.level = 0.95.` (`R/defunct.R`); abbreviated 1.x names too.
   - `level` (a significance level) -> `conf.level = 1 - level` (default 0.95).
@@ -53,6 +54,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     y + 1, labelled as ratios of y). `count` removed (Poisson and negative
     binomial means are detected).
   - `Kmatrix(covariateV =)` -> `at =`; `df_term(type =)` -> `df_method =`.
+  - `covariatemeans()`: `level`, `Df`, `covariateV` (-> `at`), `transOff`
+    as above; `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` ->
+    `plot_args = list(...)`; `responsen`, `newwd` removed (the response
+    variable is read from the formula). `as.is` stays (each line over its
+    group's observed range). 15 calls of `dev/snapshot-covariatemeans.R`
+    written both ways give identical results, except `transOff` (as above).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

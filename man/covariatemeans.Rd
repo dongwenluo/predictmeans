@@ -4,15 +4,14 @@
 \alias{covariatemeans}
 \title{Predicted Means of a Linear Model with Covariate Variable(s)}
 \usage{
-covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, 
-  data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
-  plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
-  cov_reduce=mean, exclude=NULL,
+covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL,
+  conf.level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
+  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE),
+  plot_args=list(), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -22,20 +21,20 @@ The \code{modelterm} must be given exactly as it appears in the printed model, e
 
 \item{covariate}{Name (in "quotes") of one the covariate variables in the \code{model}.}
 
-\item{as.is}{A logic value to specify wheather or not using original covariate values' rage for graph, the default is FALSE.}
+\item{as.is}{\code{TRUE}: each line only over the range of the covariate observed in its group (rows outside it are
+left out of the result); the default \code{FALSE} uses the values of \code{at} for every group.}
 
-\item{covariateV}{A numeric vector when as.is is FALSE, then covariatemeans will produce the result for \code{covariate} at value of \code{covariateV}.}
+\item{at}{The values of \code{covariate} at which the lines are predicted (\code{covariateV} before 2.0); by
+default 50 values over the observed range. See \code{\link{Kmatrix}}.}
 
 \item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.}
 
-\item{level}{A significant level for calculating confident interval. The default value is 0.05. The limits
+\item{conf.level}{The confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0). The limits
 are for each line on its own: whether the bands of two groups overlap is not a test of their difference
 (the lines are estimated from the same model and are correlated; see \code{letterCI} in
 \code{\link{predictmeans}}). Use \code{contr} for the band of the difference between two groups, or compare
 groups at chosen covariate values with \code{\link{predictmeans}} (\code{covariate = }) and their slopes
 with \code{\link{pm_slopes}}.}
-
-\item{Df}{A degree of freedom for calculating CI of predicted means (you can manually specified ddf here). For the above models, ddf is obtained from the function automatically.}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}. When it is
 not given, the inverse link of the model is used, or the inverse of a transformation of the response in the
@@ -43,27 +42,20 @@ model formula (\code{log(y)}, \code{sqrt(y)}, ...; see \code{\link{predictmeans}
 \code{trans = I} keeps the model scale. The back-transformed line is the back-transformed fitted value.
 (Before 2.0 half the standard error of the fitted value was added inside \code{exp()} for a log.)}
 
-\item{transOff}{When you use \code{trans=exp(x+1)}, then \code{transOff=1}, the default is 0.}
+\item{plot_args}{A named list of plot settings (names may be abbreviated):
+\describe{
+  \item{\code{trellis}}{\code{TRUE} (default): one panel per level.}
+  \item{\code{plotord}}{The order of the factors for two or three way terms (e.g. \code{c(2, 1)} or
+    \code{c("B", "A")}): the first gives the colours, the second (and third) the panels. Giving it draws the plot.}
+  \item{\code{mtitle}}{The main title.}
+  \item{\code{ci}}{Draw the confidence band (default \code{TRUE}).}
+  \item{\code{point}}{Draw the data points (default \code{TRUE}).}
+  \item{\code{jitterv}}{Jitter of the points in x and y (default 0).}
+}
+Before 2.0 these were arguments of their own; given so they stop with this spelling.}
 
-\item{responsen}{Name (in "quotes") of the back transformed response variable in the \code{model}.}
-
-\item{trellis}{A logical variable. If set to TRUE (default), the plot is a trellis plot (one panel per level).}
-
-\item{plotord}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g. 
-\code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in 
-\code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one 
-'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way 
-interactions.}
-
-\item{mtitle}{The main title in the graph.}
-
-\item{ci}{A logical variable to indicate whether to print confidence interval. The default value is TRUE.}
-
-\item{point}{A logical variable to indicate whether to print raw data points. The default value is TRUE.}
-
-\item{jitterv}{A degree of jitter in x and y direction in the graph. The default is zero.}
-
-\item{newwd}{A logical variable to indicate whether to print graph in a new window. The default value is FALSE.}
+\item{...}{Not used: arguments removed in 2.0 (\code{level}, \code{Df}, \code{covariateV}, \code{transOff},
+\code{responsen}, \code{newwd}, the plot settings) stop with their 2.0 spelling (see \code{vignette("migrating")}).}
 
 \item{cov_reduce}{How covariates that are not varied are handled when building the predicted means: a function such as
 \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
@@ -78,7 +70,7 @@ those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
 
-\item{df_method, vcov_adjust}{As in \code{\link{predictmeans}}: by default Kenward-Roger df (each point of the curves
+\item{df_method, vcov_adjust}{As in \code{\link{predictmeans}} (a number in \code{df_method} is a fixed df, \code{Df} before 2.0): by default Kenward-Roger df (each point of the curves
 has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).
 predictmeans 1.x used the unadjusted covariance and, for \code{lmer}, one df per term; \code{vcov_adjust = FALSE}
 and, for \code{lme} and \code{gls}, \code{df_method = "containment"} give its results.}
@@ -94,7 +86,7 @@ of the two lines and for a logit link as the odds ratio (exact: exp of the diffe
 \code{"response"} is the difference of the back-transformed lines, in the units of the response, with a
 delta-method band; it describes the size of the difference, the test stays on the model scale.}
 
-\item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the level \code{level} for
+\item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the confidence level \code{conf.level} for
 each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
 values together, for saying over which range of the covariate the lines differ.}
 
@@ -107,7 +99,7 @@ overall means. Log-link count families only.}
 
 \item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
 (\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
-session, draws it as 1.x did; \code{plotord} and \code{newwd = TRUE} also draw it.}
+session, draws it as 1.x did; \code{plot_args = list(plotord = )} also draws it.}
 
 \item{bias_adjust, sigma}{For back-transformed lines (a link, a transformed response or \code{trans}), as in
 \code{\link{predictmeans}}. By default a line is the back-transformed fitted value: the median of the response
@@ -168,7 +160,7 @@ model it is the difference for a typical cluster (random effects at zero), as th
 \emph{Significance at a level.} Three questions have three answers:
 \enumerate{
 \item At one covariate value chosen beforehand: the pointwise band (\code{band = "pointwise"}); the lines
-  differ at level \code{level} when it leaves out zero (one for a ratio).
+  differ at the level \code{1 - conf.level} when it leaves out zero (one for a ratio).
 \item Over which range of the covariate: looking at many values needs wider limits. \code{band =
   "simultaneous"} uses Scheffe's critical value \eqn{c = \sqrt{r F_{1-\alpha;\,r,\,df}}}, \eqn{r} the rank
   of the contrasts along the covariate (2 for straight lines: the Working-Hotelling band). It holds for
@@ -202,7 +194,7 @@ means and their ratios.
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   cm <- covariatemeans(fm, "Variety", covariate="nitro")
   ggplot2::autoplot(cm)
-  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.3))
+  covariatemeans(fm, "Variety", covariate="nitro", at=seq(0, 0.6, 0.3))
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
   cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),

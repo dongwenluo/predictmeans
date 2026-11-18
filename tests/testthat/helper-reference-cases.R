@@ -42,7 +42,7 @@ reference_cases <- function() {
   cap("ex_K3", km(fm_lme_num, "Variety", "nitro", at = seq(0, 0.6, 0.1)))
   cap("ex_K4", km(fm_lme_num, "Variety", "nitro"))
   cap("ex_cov1", cvm(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
-  cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.1))$pltdf)
+  cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", at = seq(0, 0.6, 0.1))$pltdf)
 
   Oats$nitro <- factor(Oats$nitro); Oats$Whole_plot <- Oats$Variety
   fm_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)

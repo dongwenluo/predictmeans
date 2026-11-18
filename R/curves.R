@@ -24,10 +24,10 @@
 ## the fitted values (or slopes) on the model scale with their SEs and df;
 ## crit: the pointwise critical values; crit_s: those of a simultaneous band
 ## (NULL: none); h, d: the back-transformation and its derivative (NULL:
-## none), off: transOff. The response limits are h of the model-scale limits,
+## none). The response limits are h of the model-scale limits,
 ## the response SE by the delta method. test = TRUE (slopes): statistic and
 ## p.value of estimate = 0, and p_adj (with crit_s) the adjusted p-values.
-pm_curve_means <- function(lab, eta, se, df, crit, h = NULL, d = NULL, off = 0, crit_s = NULL, test = FALSE,
+pm_curve_means <- function(lab, eta, se, df, crit, h = NULL, d = NULL, crit_s = NULL, test = FALSE,
                            p_adj = NULL) {
   out <- lab
   rownames(out) <- NULL
@@ -50,11 +50,11 @@ pm_curve_means <- function(lab, eta, se, df, crit, h = NULL, d = NULL, off = 0, 
   }
   if (!is.null(h)) {
     hl <- function(lo, hi) {
-      lo <- as.numeric(h(lo)) - off
-      hi <- as.numeric(h(hi)) - off
+      lo <- as.numeric(h(lo))
+      hi <- as.numeric(h(hi))
       list(pmin(lo, hi), pmax(lo, hi))
     }
-    out$response <- as.numeric(h(est)) - off
+    out$response <- as.numeric(h(est))
     out$response.std.error <- abs(as.numeric(d(est)))*se
     l <- hl(out$conf.low, out$conf.high)
     out$response.conf.low <- l[[1]]
