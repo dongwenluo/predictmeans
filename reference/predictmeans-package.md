@@ -20,6 +20,12 @@ compact description of the result tables, defaults and common recipes.
 | Date:    | 2024-04-03   |
 | License: | GPL (\>= 2)  |
 
+## Workflow
+
+![From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and
+plots](figures/workflow.png)
+
 ## References
 
 Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
@@ -40,6 +46,6 @@ Useful links:
 
 ## Author
 
-Dongwen Luo, Siva Ganesh and John Koolaard; contributor: James Curran
+Dongwen Luo, Siva Ganesh, John Koolaard and James Curran
 
 Maintainer: Dongwen Luo \<dongwen.luo@agresearch.co.nz\>

@@ -134,7 +134,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   library(predictmeans)
   data(Oats, package="nlme")
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  cm <- covariatemeans(fm, "Variety", covariate="nitro", covariateV=c(0, 0.3, 0.6))
+  cm <- covariatemeans(fm, "Variety", covariate="nitro", at=c(0, 0.3, 0.6))
   cm
 #> Curves of 'Variety' along nitro
 #> 95% limits; Kenward-Roger df

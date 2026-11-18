@@ -67,8 +67,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Migrating from predictmeans 1.x</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Migrating from predictmeans 1.x</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/vignettes/migrating.Rmd" class="external-link"><code>vignettes/migrating.Rmd</code></a></small>
@@ -77,32 +76,1065 @@
 
     
     
-<p>Most scripts written for predictmeans 1.x run unchanged. This page
-lists what gives different numbers, what is new, and how to get the old
-results back.</p>
+<p>predictmeans 2.0 removes options that did the same thing under two
+names, the printing and plot settings in the calls of the analysis
+functions, five functions, and the 1.x smooth interface
+(<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code>, <code>smoothZ</code>). The means functions share
+one vocabulary: <code>conf.level</code>, <code>df_method</code>,
+<code>at</code>, <code>weights</code>, <code>vcov</code>,
+<code>plot</code>.</p>
+<p><strong>To update a 1.1.1 script, run it.</strong> A removed argument
+or function stops with its 2.0 spelling, the value you gave filled
+in:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span>
 <span><span class="va">Oats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">nlme</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/nlme/man/Oats.html" class="external-link">Oats</a></span><span class="op">)</span></span>
 <span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span>
-<span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, level <span class="op">=</span> <span class="fl">0.1</span>, Df <span class="op">=</span> <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error : predictmeans(): 'level' was removed in predictmeans 2.0: use conf.level = 0.9.</span></span>
+<span><span class="co">#&gt;   'Df' was removed in predictmeans 2.0: use df_method = 30.</span></span>
+<span><span class="co">#&gt; See vignette("migrating") for every change from 1.1.1.</span></span></code></pre></div>
+<p>Nothing is silently ignored. A rewritten call gives the same numbers
+as 1.1.1, apart from the changes listed under <a href="#defaults-that-change">Defaults that change</a> and <a href="#results-that-change">Results that change</a>. The package sources
+check this for every rewrite (<code>dev/snapshot-*.R</code>,
+<code>dev/check-smz-migration.R</code>).</p>
+<style>
+.pm-cols { display: flex; flex-wrap: wrap; gap: 0 1em; margin-bottom: 0.4em; }
+.pm-cols > div { flex: 1 1 18em; min-width: 0; }
+.pm-cols pre, .pm-cols pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.pm-cols pre { margin-top: 0.1em; }
+.pm-cols p { margin: 0.6em 0 0; font-size: 0.85em; color: #666; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+</style>
+<div class="section level2">
+<h2 id="code-side-by-side">Code side by side<a class="anchor" aria-label="anchor" href="#code-side-by-side"></a>
+</h2>
+<p>The models: <code>fm</code> above; <code>fm0</code>, the same model
+without the interaction; <code>fmc</code>, with <code>nitro</code> as a
+covariate; <code>fs</code>, a smooth model; <code>fit</code> stands for
+any model. Every 2.0 line below is run by
+<code>dev/check-migrating.R</code> in the package sources, and every
+1.1.1 line checked to stop with the 2.0 spelling.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fm0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">+</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
+<span><span class="va">fmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="fu">nlme</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/nlme/man/Oats.html" class="external-link">Oats</a></span><span class="op">)</span></span>
+<span><span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">pressure</span>, by <span class="op">=</span> <span class="va">QB</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">pressure</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>,</span>
+<span>              data <span class="op">=</span> <span class="fu">nlme</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/nlme/man/Dialyzer.html" class="external-link">Dialyzer</a></span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="means-and-comparisons">Means and comparisons<a class="anchor" aria-label="anchor" href="#means-and-comparisons"></a>
+</h3>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>,</span>
+<span>  pairwise <span class="op">=</span> <span class="cn">TRUE</span>, level <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  plotord <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, plottitle <span class="op">=</span> <span class="st">"Yield"</span>,</span>
+<span>  prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, Df <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  mplot <span class="op">=</span> <span class="cn">FALSE</span>, barplot <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  pplot <span class="op">=</span> <span class="cn">FALSE</span>, bkplot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"A"</span>, trans <span class="op">=</span> <span class="va">exp</span>,</span>
+<span>  transOff <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit_pois</span>, <span class="st">"A"</span>, count <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, ctrmatrix <span class="op">=</span> <span class="va">K</span>,</span>
+<span>  Df <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/df_term.html">df_term</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"Satterthwaite"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>,</span>
+<span>  pairwise <span class="op">=</span> <span class="cn">TRUE</span>, conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, plotord <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  plottitle <span class="op">=</span> <span class="st">"Yield"</span><span class="op">)</span></span>
+<span><span class="co"># or plot = TRUE, plot_args = list(...)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, df_method <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  plot <span class="op">=</span> <span class="st">"bar"</span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"A"</span>,</span>
+<span>  trans <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit_pois</span>, <span class="st">"A"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, ctrmatrix <span class="op">=</span> <span class="va">K</span>,</span>
+<span>  df_method <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/df_term.html">df_term</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>,</span>
+<span>  df_method <span class="op">=</span> <span class="st">"Satterthwaite"</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<ul>
+<li>Nothing is printed and no plot is drawn during the call:
+<code>print(pm)</code> (or <code>pm</code> at the prompt) shows the
+tables, <code>autoplot(pm)</code> draws, and <code>plot = TRUE</code>
+draws the 1.x default plots in the call.</li>
+<li>
+<code>trans</code> is needed only for a transformation outside the
+formula: <code>log(y + 1)</code> in the formula is detected and
+back-transformed, constant included. Poisson and negative binomial means
+need no <code>count = TRUE</code>.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="covariates-and-curves">Covariates and curves<a class="anchor" aria-label="anchor" href="#covariates-and-curves"></a>
+</h3>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fmc</span>, <span class="st">"Variety"</span>,</span>
+<span>  covariate <span class="op">=</span> <span class="st">"nitro"</span>,</span>
+<span>  covariateV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.6</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>  level <span class="op">=</span> <span class="fl">0.1</span>, trellis <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mtitle <span class="op">=</span> <span class="st">"Yield by nitrogen"</span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span>semireg <span class="op">=</span> <span class="va">fs</span>, modelterm <span class="op">=</span> <span class="st">"QB"</span>,</span>
+<span>  covariate <span class="op">=</span> <span class="st">"pressure"</span>,</span>
+<span>  covariateV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span>,</span>
+<span>  trellis <span class="op">=</span> <span class="cn">FALSE</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fmc</span>, <span class="st">"Variety"</span>, covariate <span class="op">=</span> <span class="st">"nitro"</span>,</span>
+<span>  covariateV <span class="op">=</span> <span class="fl">0.3</span>, prtnum <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fmc</span>, <span class="st">"Variety"</span>,</span>
+<span>  covariate <span class="op">=</span> <span class="st">"nitro"</span>,</span>
+<span>  at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.6</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>  conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cm</span>, trellis <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mtitle <span class="op">=</span> <span class="st">"Yield by nitrogen"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fs</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>,</span>
+<span>  at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">sp</span>, trellis <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fmc</span>, <span class="st">"Variety"</span>, covariate <span class="op">=</span> <span class="st">"nitro"</span>,</span>
+<span>  at <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="permutation-tests">Permutation tests<a class="anchor" aria-label="anchor" href="#permutation-tests"></a>
+</h3>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans-defunct.html">permanova.lmer</a></span><span class="op">(</span><span class="va">fm</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span>lmer0 <span class="op">=</span> <span class="va">fm0</span>, lmer1 <span class="op">=</span> <span class="va">fm</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/predictmeans-defunct.html">permglmer</a></span><span class="op">(</span><span class="va">glmer0</span>, <span class="va">glmer1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/predictmeans-defunct.html">permglmmTMB</a></span><span class="op">(</span><span class="va">tmb0</span>, <span class="va">tmb1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fit</span>, fo <span class="op">=</span> <span class="va">f</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">...</span>, level <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">fm0</span>, <span class="va">fm</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">glmer0</span>, <span class="va">glmer1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">tmb0</span>, <span class="va">tmb1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>; <span class="va">res</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">...</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<p><code><a href="../reference/permmodels.html">permmodels()</a></code> uses Freedman–Lane permutations, so its
+p-values are not those of <code><a href="../reference/predictmeans-defunct.html">permanova.lmer()</a></code>’s refits (<a href="#results-that-change">Results that change</a>).</p>
+</div>
+<div class="section level3">
+<h3 id="diagnostics-r²-and-letters">Diagnostics, R² and letters<a class="anchor" aria-label="anchor" href="#diagnostics-r%C2%B2-and-letters"></a>
+</h3>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/residplot.html">residplot</a></span><span class="op">(</span><span class="va">fm</span>, level <span class="op">=</span> <span class="fl">2</span>, id <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  newwd <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/CookD.html">CookD</a></span><span class="op">(</span><span class="va">fm</span>, idn <span class="op">=</span> <span class="fl">5</span>, newwd <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/PMplot.html">PMplot</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">p_valueMatrix</span>, level <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  legendx <span class="op">=</span> <span class="fl">0.7</span>, newwd <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm</span>, level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans-defunct.html">R2_glmm</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># LL, UL: limits of the means</span></span>
+<span><span class="fu"><a href="../reference/predictmeans-defunct.html">ci_mcp</a></span><span class="op">(</span><span class="va">LL</span>, <span class="va">UL</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/residplot.html">residplot</a></span><span class="op">(</span><span class="va">fm</span>, re_level <span class="op">=</span> <span class="fl">2</span>, id <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/CookD.html">CookD</a></span><span class="op">(</span><span class="va">fm</span>, id <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/PMplot.html">PMplot</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">p_valueMatrix</span>,</span>
+<span>  conf.level <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm</span>, conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/R2_model.html">R2_model</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  letterCI <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">mean_table</span></span></code></pre></div>
+</div>
+</div>
+<ul>
+<li>
+<code>varcomp(level = 0.9)</code> was a confidence level already:
+the value stays.</li>
+<li>
+<code><a href="../reference/R2_model.html">R2_model()</a></code> gives the values of <code><a href="../reference/predictmeans-defunct.html">R2_glmm()</a></code>
+as numbers, not as text with a <code>%</code> sign.</li>
+<li>
+<code><a href="../reference/predictmeans-defunct.html">ci_mcp()</a></code> gave letters from the overlap of the intervals
+it was given. Overlap of 95% (or 83.4%) confidence intervals does not
+answer the pairwise tests; <code>letterCI = TRUE</code> gives letters
+from comparison intervals, which overlap exactly when a pair is not
+significant (<code><a href="../articles/predictmeans.html">vignette("predictmeans")</a></code>).</li>
+</ul>
+</div>
+</div>
+<div class="section level2">
+<h2 id="every-argument-and-function">Every argument and function<a class="anchor" aria-label="anchor" href="#every-argument-and-function"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Function</th>
+<th>1.1.1</th>
+<th>2.0</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
+<code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>, <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code>,
+<code><a href="../reference/semipred.html">semipred()</a></code>, <code><a href="../reference/permstats.html">permstats()</a></code>,
+<code><a href="../reference/PMplot.html">PMplot()</a></code>
+</td>
+<td>
+<code>level = 0.05</code> (a significance level)</td>
+<td><code>conf.level = 0.95</code></td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/varcomp.html">varcomp()</a></code></td>
+<td>
+<code>level = 0.9</code> (a confidence level)</td>
+<td><code>conf.level = 0.9</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
+<code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>
+</td>
+<td><code>Df = 10</code></td>
+<td><code>df_method = 10</code></td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/df_term.html">df_term()</a></code></td>
+<td><code>type =</code></td>
+<td><code>df_method =</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>, <code><a href="../reference/semipred.html">semipred()</a></code>,
+<code><a href="../reference/Kmatrix.html">Kmatrix()</a></code>
+</td>
+<td><code>covariateV =</code></td>
+<td><code>at =</code></td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>
+</td>
+<td><code>trans = exp, transOff = 1</code></td>
+<td><code>trans = function(x) exp(x) - 1</code></td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>
+</td>
+<td><code>responsen =</code></td>
+<td>removed: the response is read from the model</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
+<td><code>count = TRUE</code></td>
+<td>removed: Poisson and negative binomial means are detected</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
+<td>
+<code>mplot</code>, <code>barplot</code>, <code>pplot</code>,
+<code>bkplot</code>
+</td>
+<td>
+<code>plot = c("mean", "bar", "pval", "back")</code>, the plots
+wanted</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
+<td>
+<code>lsd_bar</code>, <code>plotord</code>, <code>lineplot</code>,
+<code>plottitle</code>, <code>plotxlab</code>, <code>plotylab</code>,
+<code>jitterv</code>, <code>basesz</code>
+</td>
+<td>
+<code>autoplot(pm, ...)</code> or
+<code>plot_args = list(...)</code>
+</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/Kmatrix.html">Kmatrix()</a></code>
+</td>
+<td>
+<code>prtnum</code>, <code>ndecimal</code>, <code>prtplt</code>
+</td>
+<td>removed: <code>print(pm, digits = )</code>;
+<code>autoplot(pm)</code>
+</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/covariatemeans.html">covariatemeans()</a></code></td>
+<td>
+<code>trellis</code>, <code>plotord</code>, <code>mtitle</code>,
+<code>ci</code>, <code>point</code>, <code>jitterv</code>
+</td>
+<td>
+<code>autoplot(cm, ...)</code> or
+<code>plot_args = list(...)</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/semipred.html">semipred()</a></code></td>
+<td><code>semipred(semireg = fit)</code></td>
+<td>
+<code>semipred(fit)</code> (<code>model =</code>, as in every
+function)</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/semipred.html">semipred()</a></code></td>
+<td>
+<code>trellis</code>, <code>scales</code>, <code>plotord</code>,
+<code>ci</code>, <code>point</code>, <code>jitterv</code>,
+<code>threeD</code>
+</td>
+<td>
+<code>autoplot(sp, ...)</code> or
+<code>plot_args = list(...)</code>
+</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/semipred.html">semipred()</a></code>, <code><a href="../reference/semireg.html">semireg()</a></code>,
+<code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>, <code><a href="../reference/permmodels.html">permmodels()</a></code>,
+<code><a href="../reference/bootmodels.html">bootmodels()</a></code>
+</td>
+<td><code>prt</code></td>
+<td>removed: <code>print(x)</code>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>,
+<code><a href="../reference/residplot.html">residplot()</a></code>, <code><a href="../reference/CookD.html">CookD()</a></code>,
+<code><a href="../reference/PMplot.html">PMplot()</a></code>
+</td>
+<td><code>newwd</code></td>
+<td>removed: ggplot2 draws in the current device</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/semireg.html">semireg()</a></code>, <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>
+</td>
+<td><code>smoothZ = list(sm = smZ(x))</code></td>
+<td>smooths in the formula: <code>s(x, bs = "os")</code> (<a href="#smooth-models-smz-and-smoothz">below</a>)</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/semireg.html">semireg()</a></code></td>
+<td>
+<code>ncenter</code>, <code>nscale</code>,
+<code>resp_scale</code>
+</td>
+<td>removed: variables are used as they are</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/semireg.html">semireg()</a></code></td>
+<td><code>ngbinomial = TRUE</code></td>
+<td><code>semireg_tmb(family = glmmTMB::nbinom2)</code></td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/semireg.html">semireg()</a></code>, <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>
+</td>
+<td><code>predict_info</code></td>
+<td>removed: always kept</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/permlmer.html">permlmer()</a></code></td>
+<td>
+<code>lmer0 =</code>, <code>lmer1 =</code>
+</td>
+<td>
+<code>model0 =</code>, <code>model1 =</code> (any class: lmer,
+glmer, glmmTMB)</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/permmodels.html">permmodels()</a></code></td>
+<td>
+<code>fo = f</code> (the formula in a variable)</td>
+<td>removed: read from the model</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/residplot.html">residplot()</a></code></td>
+<td>
+<code>level = 2</code> (the random-effect term); <code>newwd</code>,
+<code>ask</code>
+</td>
+<td>
+<code>re_level = 2</code>; removed</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/CookD.html">CookD()</a></code></td>
+<td><code>idn = 5</code></td>
+<td>
+<code>id = 5</code>, as <code><a href="../reference/residplot.html">residplot()</a></code>
+</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/PMplot.html">PMplot()</a></code></td>
+<td>
+<code>margin</code>, <code>legendx</code>
+</td>
+<td>removed: ggplot2 sizes the margins and the legend</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/predictmeans-defunct.html">smZ()</a></code></td>
+<td></td>
+<td>removed: smooths in the formula</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans-defunct.html">permglmer()</a></code>, <code><a href="../reference/predictmeans-defunct.html">permglmmTMB()</a></code>
+</td>
+<td></td>
+<td>removed: <code><a href="../reference/permlmer.html">permlmer()</a></code> (they were the same function)</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/predictmeans-defunct.html">permanova.lmer()</a></code></td>
+<td></td>
+<td>removed: <code>permmodels(model, type = )</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/predictmeans-defunct.html">R2_glmm()</a></code></td>
+<td></td>
+<td>removed: <code>R2_model(model)</code>
+</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/predictmeans-defunct.html">ci_mcp()</a></code></td>
+<td></td>
+<td>removed: <code>predictmeans(..., letterCI = TRUE)</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Every other argument of 1.1.1 is kept, with its meaning.</p>
+</div>
+<div class="section level2">
+<h2 id="smooth-models-smz-and-smoothz">Smooth models: <code>smZ()</code> and <code>smoothZ</code><a class="anchor" aria-label="anchor" href="#smooth-models-smz-and-smoothz"></a>
+</h2>
+<p>Smooths are written in the formula. Their fixed terms (the covariate,
+and with <code>by = f</code> the factor and its slopes) are added
+automatically, so they need not be written, and cannot be forgotten.
+Each form below was fitted both ways on the last build that had
+<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code> (<code>dev/check-smz-migration.R</code> in the
+package sources): the REML log-likelihoods are equal and the fitted
+values and curves agree to 1e-5 or better, unless a note says
+otherwise.</p>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, k <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">*</span><span class="va">f</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>,</span>
+<span>                          group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">*</span><span class="va">f</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># one variance for all levels</span></span>
+<span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>, bs <span class="op">=</span> <span class="st">"os"</span>, id <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sx <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, sz <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">s</span><span class="op">(</span><span class="va">z</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">z</span><span class="op">)</span>,</span>
+<span>                          type <span class="op">=</span> <span class="st">"Ztps"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, <span class="va">z</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">cnt</span> <span class="op">~</span> <span class="va">x</span><span class="op">*</span><span class="va">f</span>, family <span class="op">=</span> <span class="va">poisson</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>,</span>
+<span>                          group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">cnt</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">poisson</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span><span class="va">cnt</span> <span class="op">~</span> <span class="va">x</span><span class="op">*</span><span class="va">f</span>, family <span class="op">=</span> <span class="va">poisson</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>,</span>
+<span>                          group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span><span class="va">cnt</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">f</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">poisson</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sm <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">x</span>, intKnots <span class="op">=</span> <span class="va">kn</span>,</span>
+<span>                          range.x <span class="op">=</span> <span class="va">r</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, bs <span class="op">=</span> <span class="st">"os"</span>,</span>
+<span>  xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knots <span class="op">=</span> <span class="va">kn</span>, range <span class="op">=</span> <span class="va">r</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<p>Notes:</p>
+<ul>
+<li>
+<code>bs = "os"</code> is the O’Sullivan spline of
+<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code> (<code>k</code> interior knots, 6 by default as
+<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code>); <code>bs = "ztps"</code> is its thin-plate basis
+(<code>k = 6</code> knots per axis as <code><a href="../reference/predictmeans-defunct.html">smZ()</a></code>; the default of
+<code>bs = "ztps"</code> is 10).</li>
+<li>Knots of your own (the last pair above): here the fits differ, and
+2.0 is right: 1.x centred <code>x</code> before <code><a href="../reference/predictmeans-defunct.html">smZ()</a></code> saw
+it (<code>ncenter = TRUE</code>, the default), so knots given in the
+units of the data were in the wrong place (in the check: REML
+log-likelihood -398.53 against -389.12; 1.x with
+<code>ncenter = FALSE</code> gives -389.12).</li>
+<li>The Poisson fit through lme4 agrees to the optimizer’s tolerance
+(log-likelihood within 1e-6, fitted counts within 0.003); through
+glmmTMB to 1e-6.</li>
+<li>
+<code>smZ(x, drv = 1)</code> (the derivative of the basis) is
+<code>semipred(fit, ..., deriv = 1)</code>.</li>
+<li>Any other basis:
+<code>s(x, bs = "user", xt = list(basis = f))</code>, with
+<code>f(x)</code> returning the basis matrix; its columns must not be in
+the span of the constant and <code>x</code> (the fixed part). The other
+<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code> types (<code>"bs"</code>, <code>"ns"</code>, the
+splines2 types, <code>"smspline"</code>) gave their B-spline or
+natural-spline columns iid random coefficients, which shrinks the curve
+towards zero rather than towards a straight line; they have no formula
+form that gives the same fit. <code>bs = "os"</code> is the penalised
+B-spline that does the same job properly.</li>
+<li>
+<code>fit$knots_lst</code>, <code>fit$range_lst</code>,
+<code>fit$type_lst</code> and <code>fit$smoothZ_call</code> are no
+longer in the result; a fit made with <code><a href="../reference/predictmeans-defunct.html">smZ()</a></code> and saved
+before 2.0 cannot be used by <code><a href="../reference/semipred.html">semipred()</a></code> (it says so): refit
+it.</li>
+</ul>
+<div class="section level3">
+<h3 id="the-models-of-the-overview-article">The models of the overview article<a class="anchor" aria-label="anchor" href="#the-models-of-the-overview-article"></a>
+</h3>
+<p>The smooth models of the overview article
+(<code>vignettes/articles/overview.Rmd</code>), in its 1.1.1 version and
+in 2.0:</p>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="va">apartment.price</span> <span class="op">~</span> <span class="va">construction.date</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span></span>
+<span>    <span class="va">construction.date</span>, k <span class="op">=</span> <span class="fl">25</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">WarsawApts</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="va">apartment.price</span> <span class="op">~</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">construction.date</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">WarsawApts</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="va">apartment.price</span> <span class="op">~</span></span>
+<span>    <span class="va">construction.date</span><span class="op">*</span><span class="va">district</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span></span>
+<span>    <span class="va">construction.date</span>, k <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    by <span class="op">=</span> <span class="va">district</span>, group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">WarsawApts</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="va">apartment.price</span> <span class="op">~</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">construction.date</span>, by <span class="op">=</span> <span class="va">district</span>,</span>
+<span>      bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">WarsawApts</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">mathscr</span> <span class="op">~</span> <span class="va">calwpct</span> <span class="op">+</span> <span class="va">log.avginc</span> <span class="op">+</span></span>
+<span>    <span class="va">compstu</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">county</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">grspan</span><span class="op">)</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    cal_grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">calwpct</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>,</span>
+<span>    avg_grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">log.avginc</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>    comp_grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">compstu</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">Caschool</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">mathscr</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">calwpct</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">log.avginc</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">compstu</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">county</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">grspan</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">Caschool</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">respirInfec</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">vitAdefic</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span></span>
+<span>    <span class="va">height</span> <span class="op">+</span> <span class="va">stunted</span> <span class="op">+</span> <span class="va">visit2</span> <span class="op">+</span> <span class="va">visit3</span> <span class="op">+</span></span>
+<span>    <span class="va">visit4</span> <span class="op">+</span> <span class="va">visit5</span> <span class="op">+</span> <span class="va">visit6</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">idnum</span><span class="op">)</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">age</span>, k <span class="op">=</span> <span class="fl">25</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">indonRespir</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">respirInfec</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">age</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="va">vitAdefic</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">height</span> <span class="op">+</span> <span class="va">stunted</span> <span class="op">+</span></span>
+<span>    <span class="va">visit2</span> <span class="op">+</span> <span class="va">visit3</span> <span class="op">+</span> <span class="va">visit4</span> <span class="op">+</span> <span class="va">visit5</span> <span class="op">+</span></span>
+<span>    <span class="va">visit6</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">indonRespir</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">respirInfec</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">vitAdefic</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span></span>
+<span>    <span class="va">height</span> <span class="op">+</span> <span class="va">stunted</span> <span class="op">+</span> <span class="va">visit2</span> <span class="op">+</span> <span class="va">visit3</span> <span class="op">+</span></span>
+<span>    <span class="va">visit4</span> <span class="op">+</span> <span class="va">visit5</span> <span class="op">+</span> <span class="va">visit6</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">idnum</span><span class="op">)</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">age</span>, k <span class="op">=</span> <span class="fl">25</span>,</span>
+<span>    by <span class="op">=</span> <span class="va">sex</span>, group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">indonRespir</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">respirInfec</span> <span class="op">~</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">age</span>, by <span class="op">=</span> <span class="va">sex</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="va">vitAdefic</span> <span class="op">+</span> <span class="va">height</span> <span class="op">+</span> <span class="va">stunted</span> <span class="op">+</span></span>
+<span>    <span class="va">visit2</span> <span class="op">+</span> <span class="va">visit3</span> <span class="op">+</span> <span class="va">visit4</span> <span class="op">+</span> <span class="va">visit5</span> <span class="op">+</span></span>
+<span>    <span class="va">visit6</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">indonRespir</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">pollenCount</span> <span class="op">~</span> <span class="va">rain</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span></span>
+<span>    <span class="va">temperatureResidual</span> <span class="op">+</span> <span class="va">dayInSeason</span> <span class="op">+</span></span>
+<span>    <span class="va">windSpeed</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    s_day <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">dayInSeason</span>, by <span class="op">=</span> <span class="va">year</span>,</span>
+<span>                group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    s_temp <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">temperatureResidual</span><span class="op">)</span>,</span>
+<span>    s_wind <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">windSpeed</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">nbinom1</span>, data <span class="op">=</span> <span class="va">ragweed</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg_tmb.html">semireg_tmb</a></span><span class="op">(</span></span>
+<span>  <span class="va">pollenCount</span> <span class="op">~</span> <span class="va">rain</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">dayInSeason</span>, by <span class="op">=</span> <span class="va">year</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">temperatureResidual</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">windSpeed</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="va">nbinom1</span>, data <span class="op">=</span> <span class="va">ragweed</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="op">(</span><span class="va">xcoord</span> <span class="op">+</span> <span class="va">ycoord</span> <span class="op">+</span> <span class="va">zcoord</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span>,</span>
+<span>  smoothZ <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    grp_z <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="va">zcoord</span><span class="op">)</span>,</span>
+<span>    grp_geo <span class="op">=</span> <span class="fu"><a href="../reference/predictmeans-defunct.html">smZ</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span><span class="op">)</span>,</span>
+<span>                  type <span class="op">=</span> <span class="st">"Ztps"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="va">xcoord</span><span class="op">:</span><span class="va">ycoord</span> <span class="op">+</span> <span class="va">xcoord</span><span class="op">:</span><span class="va">zcoord</span> <span class="op">+</span></span>
+<span>    <span class="va">ycoord</span><span class="op">:</span><span class="va">zcoord</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="pm-cols">
+<div>
+<p>1.1.1</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod</span>,</span>
+<span>  covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>,</span>
+<span>  threeD <span class="op">=</span> <span class="cn">TRUE</span>, point <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  trans <span class="op">=</span> <span class="va">exp</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div>
+<p>2.0</p>
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod</span>,</span>
+<span>  covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>,</span>
+<span>  trans <span class="op">=</span> <span class="va">exp</span>,</span>
+<span>  plot_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>threeD <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                   point <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Model</th>
+<th>REML / ML log-likelihood, 1.1.1 code</th>
+<th>2.0 code</th>
+<th></th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Warsaw, one curve</td>
+<td>-1772.452</td>
+<td>-1772.452</td>
+<td>the same fit</td>
+</tr>
+<tr class="even">
+<td>Warsaw, a curve per district</td>
+<td>-1751.525</td>
+<td>-1751.525</td>
+<td>the same fit</td>
+</tr>
+<tr class="odd">
+<td>California schools</td>
+<td>-1601.803</td>
+<td>-1601.803</td>
+<td>the same fit</td>
+</tr>
+<tr class="even">
+<td>Respiratory infection, one curve</td>
+<td>-323.509</td>
+<td>-323.509</td>
+<td>the same fit</td>
+</tr>
+<tr class="odd">
+<td>Respiratory infection, a curve per sex</td>
+<td>-322.806</td>
+<td>-322.788</td>
+<td>2.0 adds <code>sex:age</code>, the slope of each sex, which the
+1.1.1 formula left out</td>
+</tr>
+<tr class="even">
+<td>Pollen, a curve per year</td>
+<td>-1168.703</td>
+<td>-1164.093</td>
+<td>2.0 adds <code>year:dayInSeason</code>, the slope of each year,
+which the 1.1.1 formula left out</td>
+</tr>
+<tr class="odd">
+<td>Copper</td>
+<td>-159.428</td>
+<td>-159.203</td>
+<td>1.1.1 depended on the centring of the coordinates (-163.948 with
+<code>ncenter = FALSE</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>In the two models with a curve per group, the 1.1.1 formulas had the
+factor but not its interaction with the covariate. A smooth by a factor
+then has no unpenalised slope per group, so the groups’ straight-line
+trends are shrunk towards each other. The formula form adds the slopes
+itself, which is why the 2.0 fits are better.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="defaults-that-change">Defaults that change<a class="anchor" aria-label="anchor" href="#defaults-that-change"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Function</th>
+<th>Setting</th>
+<th>1.1.1</th>
+<th>2.0</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code><a href="https://dongwenluo.github.io/predictmeans/">library(predictmeans)</a></code></td>
+<td>packages attached</td>
+<td>glmmTMB, lme4, nlme, lmerTest</td>
+<td>lme4, nlme: add <code><a href="https://github.com/glmmTMB/glmmTMB" class="external-link">library(glmmTMB)</a></code> to call
+<code>glmmTMB()</code> or <code>nbinom1</code>, and
+<code><a href="https://github.com/runehaubo/lmerTestR" class="external-link">library(lmerTest)</a></code> for its <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> p-values
+and <code>ranova()</code>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>,
+<code><a href="../reference/semipred.html">semipred()</a></code>
+</td>
+<td>plots</td>
+<td>drawn</td>
+<td>
+<code>plot = FALSE</code>: <code>autoplot(x)</code>,
+<code>plot = TRUE</code>, or
+<code>options(predictmeans.plot = TRUE)</code> for a session</td>
+</tr>
+<tr class="odd">
+<td>every function</td>
+<td>printing</td>
+<td>tables printed during the call</td>
+<td>nothing printed: <code>print(x)</code>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>
+</td>
+<td>standard errors of REML <code>lmer</code> fits</td>
+<td>unadjusted, with Kenward–Roger df</td>
+<td>Kenward–Roger adjusted (below); <code>vcov_adjust = FALSE</code> for
+1.x</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
+<code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>
+</td>
+<td>df</td>
+<td>per model class</td>
+<td>
+<code>df_method = "auto"</code> (table in
+<code><a href="../articles/predictmeans.html">vignette("predictmeans")</a></code>)</td>
+</tr>
+<tr class="even">
+<td>
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/permlmer.html">permlmer()</a></code>,
+<code><a href="../reference/permmodels.html">permmodels()</a></code>
+</td>
+<td><code>ncore</code></td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/semireg.html">semireg()</a></code></td>
+<td><code>control</code></td>
+<td><code>lmerControl(optimizer = "bobyqa")</code></td>
+<td>
+<code>lmerControl(optimizer = "nloptwrap")</code>: the same fit to
+the optimizer’s tolerance</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/semireg.html">semireg()</a></code></td>
+<td>centring</td>
+<td>
+<code>ncenter = TRUE</code> centred every covariate</td>
+<td>variables used as they are</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/residplot.html">residplot()</a></code></td>
+<td><code>id</code></td>
+<td><code>FALSE</code></td>
+<td>3: the three largest residuals are labelled</td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="section level2">
 <h2 id="results-that-change">Results that change<a class="anchor" aria-label="anchor" href="#results-that-change"></a>
 </h2>
 <div class="section level3">
-<h3 id="kenwardroger-adjusted-standard-errors-are-the-default">Kenward–Roger adjusted standard errors are the default<a class="anchor" aria-label="anchor" href="#kenwardroger-adjusted-standard-errors-are-the-default"></a>
+<h3 id="kenwardroger-adjusted-standard-errors">Kenward–Roger adjusted standard errors<a class="anchor" aria-label="anchor" href="#kenwardroger-adjusted-standard-errors"></a>
 </h3>
 <p>For <code>lmer</code> models fitted by REML, standard errors,
-confidence limits, LSDs and p-values now use the Kenward–Roger adjusted
-covariance, as SAS <code>DDFM=KR</code> and emmeans do. In 1.x the
-unadjusted covariance was used with Kenward–Roger df. For balanced
-designs the two agree; for unbalanced ones the adjusted SEs are slightly
-larger.</p>
-<p>To reproduce 1.x numbers, use <code>vcov_adjust = FALSE</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+confidence limits, LSDs and p-values use the Kenward–Roger adjusted
+covariance, as SAS <code>DDFM=KR</code> and emmeans do; 1.x used the
+unadjusted covariance with Kenward–Roger df. For balanced designs the
+two agree; for unbalanced ones the adjusted SEs are slightly larger.
+<code>vcov_adjust = FALSE</code> gives the 1.x numbers:</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Om</span> <span class="op">&lt;-</span> <span class="va">Oats</span><span class="op">[</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">30</span><span class="op">)</span>, <span class="op">]</span>   <span class="co"># unbalanced</span></span>
 <span><span class="va">fm_u</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Om</span><span class="op">)</span></span>
-<span><span class="va">new</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_u</span>, <span class="st">"Variety"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_u</span>, <span class="st">"Variety"</span>, vcov_adjust <span class="op">=</span> <span class="cn">FALSE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">new</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_u</span>, <span class="st">"Variety"</span><span class="op">)</span></span>
+<span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_u</span>, <span class="st">"Variety"</span>, vcov_adjust <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>SE_2.0 <span class="op">=</span> <span class="va">new</span><span class="op">$</span><span class="va">means</span><span class="op">$</span><span class="va">std.error</span>, SE_1.x <span class="op">=</span> <span class="va">old</span><span class="op">$</span><span class="va">means</span><span class="op">$</span><span class="va">std.error</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        SE_2.0   SE_1.x</span></span>
 <span><span class="co">#&gt; [1,] 8.086340 8.085432</span></span>
@@ -112,102 +1144,71 @@ larger.</p>
 <div class="section level3">
 <h3 id="means-that-cannot-be-estimated-are-na">Means that cannot be estimated are NA<a class="anchor" aria-label="anchor" href="#means-that-cannot-be-estimated-are-na"></a>
 </h3>
-<p>A mean that depends on aliased (non-estimable) coefficients used to
-be printed as a number that depended on which coefficient R happened to
-drop. It is now <code>NA</code>, with a message; pairwise differences
-that are estimable are still shown. Means over empty cells keep the 1.x
-rule: the average of the observed cells, with a warning.</p>
+<p>A mean that depends on aliased coefficients used to be a number that
+depended on which coefficient R dropped. It is now <code>NA</code>, with
+a message; estimable pairwise differences are still shown. Means over
+empty cells keep the 1.x rule: the average of the observed cells, with a
+warning.</p>
 </div>
 <div class="section level3">
-<h3 id="permutation-tests">Permutation tests<a class="anchor" aria-label="anchor" href="#permutation-tests"></a>
+<h3 id="permutation-tests-1">Permutation tests<a class="anchor" aria-label="anchor" href="#permutation-tests-1"></a>
 </h3>
-<p><code><a href="../reference/permmodels.html">permmodels()</a></code> now uses Freedman–Lane permutations by
-default (<code>method = "auto"</code>): each term, coefficient or pair
-is tested with the model without it, so the other terms keep their
-effects. It also works for <code>glm</code>, <code>glmer</code> and
-<code>glmmTMB</code> models, and needs no refits. Mixed-model residuals
-are decorrelated with the symmetric square root of their covariance
-instead of the Cholesky factor, whose results depended on the order of
-the data. For the 1.x scheme use <code>method = "raw"</code>; its
-p-values for mixed models still differ slightly from 1.x because of the
-new square root.</p>
+<ul>
+<li>
+<code><a href="../reference/permmodels.html">permmodels()</a></code> uses Freedman–Lane permutations
+(<code>method = "auto"</code>): each term, coefficient or pair is tested
+against the model without it, so the other terms keep their effects. It
+works for <code>glm</code>, <code>glmer</code> and <code>glmmTMB</code>
+too, without refits. <code>method = "raw"</code> is the 1.x scheme.</li>
+<li>Mixed-model residuals are decorrelated with the symmetric square
+root of their covariance; the Cholesky factor of 1.x gave results that
+depended on the order of the data. So <code>method = "raw"</code>
+p-values for mixed models also differ slightly from 1.x.</li>
+<li>
+<code><a href="../reference/predictmeans-defunct.html">permanova.lmer()</a></code> refitted each model with and without
+the term through <code><a href="../reference/permlmer.html">permlmer()</a></code>; <code><a href="../reference/permmodels.html">permmodels()</a></code>
+tests the same hypotheses, with other permutation p-values.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="other-changes-in-numbers">Other changes in numbers<a class="anchor" aria-label="anchor" href="#other-changes-in-numbers"></a>
+</h3>
+<ul>
+<li>
+<code>trans = function(x) exp(x) - 1</code>: the pairs have no
+<code>ratio</code> columns. With an offset, 1.x gave ratios of
+<code>y + 1</code> labelled as ratios of <code>y</code>.</li>
+<li>
+<code>semireg(ngbinomial = TRUE)</code> took theta from a Poisson
+fit, which is not the maximum-likelihood fit (on a test data set
+log-likelihood -1133.60 against -1132.98 for
+<code>semireg_tmb(family = glmmTMB::nbinom2)</code>; theta 3.31 against
+2.80, true value 3).</li>
+<li>Smooth models with knots given in the data’s units, or whose 1.x
+formula left out the slope of each group: see the <a href="#the-models-of-the-overview-article">table above</a>.</li>
+</ul>
 </div>
 <div class="section level3">
 <h3 id="bugs-fixed">Bugs fixed<a class="anchor" aria-label="anchor" href="#bugs-fixed"></a>
 </h3>
-<p>Some 1.x results were wrong and are now correct, for example
-<code>permlist</code> together with <code>atvar</code>, a user-supplied
-<code>Df</code> for lmer models, factor levels containing
-<code>":"</code>, and several <code><a href="../reference/Kmatrix.html">Kmatrix()</a></code> cases with
-transformed covariates. See <code>NEWS.md</code> for the full list.</p>
+<p>Some 1.x results were wrong and are now right: <code>permlist</code>
+with <code>atvar</code>, a user-supplied <code>Df</code> for
+<code>lmer</code> models, factor levels containing <code>":"</code>,
+several <code><a href="../reference/Kmatrix.html">Kmatrix()</a></code> cases with transformed covariates, and
+others listed in <code>NEWS.md</code>.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="new-in-2-0">New in 2.0<a class="anchor" aria-label="anchor" href="#new-in-2-0"></a>
-</h2>
-<ul>
-<li>
-<strong>Stable tables</strong> <code>means</code>,
-<code>pairs</code> and <code>settings</code> in every result, with
-<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>, <code>tidy()</code>,
-<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">ggplot2::autoplot()</a></code>.</li>
-<li>
-<strong>Degrees of freedom</strong>:
-<code>df_method = "Kenward-Roger"</code>, <code>"Satterthwaite"</code>
-or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>).</li>
-<li>
-<strong>Averaging weights</strong>:
-<code>weights = "proportional"</code> (SAS <code>OM</code>),
-<code>"outer"</code>, <code>"cells"</code>, <code>"flat"</code>.</li>
-<li>
-<strong><code><a href="../reference/specify_contrast.html">specify_contrast()</a></code></strong> to write contrasts
-by the names of the means.</li>
-<li>
-<strong>Covariates</strong>: <code><a href="../reference/Kmatrix.html">Kmatrix()</a></code> handles
-<code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code>, <code>ns()</code>, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code>, smooth terms
-of <code>gam</code> and covariates that enter only through interactions;
-<code>cov_reduce</code> and <code>exclude</code> pass through
-<code><a href="../reference/predictmeans.html">predictmeans()</a></code> and <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>.</li>
-<li>
-<strong>More comparisons</strong>: <code>adj = "sidak"</code>,
-<code>"scheffe"</code> and <code>"mvt"</code> (exact single-step, as SAS
-<code>ADJUST=SIMULATE</code>); <code><a href="../reference/contrast_family.html">contrast_family()</a></code> (Dunnett,
-polynomial trends, …); <code><a href="../reference/pm_joint.html">pm_joint()</a></code> for joint F tests and
-slices; <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code> for slopes by group;
-<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> of the means. See
-<code><a href="../articles/contrasts.html">vignette("contrasts")</a></code>.</li>
-<li>
-<strong>Response scale</strong>: delta-method standard errors of
-back-transformed means, and ratios or odds ratios for log and logit
-models.</li>
-<li>
-<strong><code><a href="../reference/R2_model.html">R2_model()</a></code></strong> (R² as numbers, Piepho or
-Nakagawa), <strong><code><a href="../reference/bootmodels.html">bootmodels()</a></code></strong> (parametric
-bootstrap), and <code><a href="../reference/predictmeans.html">predictmeans()</a></code> on <code><a href="../reference/semireg.html">semireg()</a></code>
-fits.</li>
-<li>
-<strong>Permutation tests for GLMs and GLMMs</strong>:
-<code><a href="../reference/permmodels.html">permmodels()</a></code> on the working scale, <code><a href="../reference/permlmer.html">permlmer()</a></code>
-(also <code><a href="../reference/permlmer.html">permglmer()</a></code>, <code><a href="../reference/permlmer.html">permglmmTMB()</a></code>) for nested
-GLMMs, and <code>perms</code> for permutations restricted by the design
-(<code><a href="../reference/permindex.html">permindex()</a></code>). See
-<code><a href="../articles/resampling.html">vignette("resampling")</a></code>.</li>
-<li>
-<strong>Other model classes</strong> can be added with a few methods
-(see <code><a href="../reference/pm_coef.html">?pm_coef</a></code>).</li>
-<li>
-<strong>Fewer dependencies</strong> and faster Kenward–Roger and
-Satterthwaite computations.</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="old-and-new-output-side-by-side">Old and new output side by side<a class="anchor" aria-label="anchor" href="#old-and-new-output-side-by-side"></a>
+<h2 id="the-result-of-predictmeans">The result of <code>predictmeans()</code><a class="anchor" aria-label="anchor" href="#the-result-of-predictmeans"></a>
 </h2>
 <p>The 1.x list elements are still there, so code that reads
 <code>pm$"Predicted Means"</code> or <code>pm$"Pairwise p-value"</code>
-keeps working:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, adj <span class="op">=</span> <span class="st">"BH"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+keeps working. The tables <code>means</code>, <code>pairs</code> and
+<code>settings</code> hold the same numbers in one layout for every
+function (<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>, <code>tidy()</code>,
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>):</p>
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, adj <span class="op">=</span> <span class="st">"BH"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "Predicted Means"               "Standard Error of Means"      </span></span>
 <span><span class="co">#&gt;  [3] "Standard Error of Differences" "LSD"                          </span></span>
@@ -231,6 +1232,48 @@ keeps working:</p>
 <span><span class="co">#&gt; 3       118.68925    C  18      TRUE</span></span>
 <span><span class="co">#&gt; 4       127.85592     D 18      TRUE</span></span></code></pre></div>
 </div>
+<div class="section level2">
+<h2 id="new-in-2-0">New in 2.0<a class="anchor" aria-label="anchor" href="#new-in-2-0"></a>
+</h2>
+<ul>
+<li>
+<strong>Degrees of freedom</strong>:
+<code>df_method = "Kenward-Roger"</code>, <code>"Satterthwaite"</code>,
+<code>"containment"</code>, <code>"between-within"</code>,
+<code>"inner-outer"</code>, or a number.</li>
+<li>
+<strong>Averaging weights</strong>:
+<code>weights = "proportional"</code> (SAS <code>OM</code>),
+<code>"outer"</code>, <code>"cells"</code>, <code>"flat"</code>.</li>
+<li>
+<strong>Comparisons</strong>: <code>adj = "sidak"</code>,
+<code>"scheffe"</code>, <code>"mvt"</code> (exact single-step);
+<code><a href="../reference/contrast_family.html">contrast_family()</a></code>, <code><a href="../reference/specify_contrast.html">specify_contrast()</a></code>,
+<code><a href="../reference/pm_joint.html">pm_joint()</a></code>, <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code>; comparison intervals
+and <code>letterCI</code>. See <code><a href="../articles/contrasts.html">vignette("contrasts")</a></code>.</li>
+<li>
+<strong>Response scale</strong>: back-transformation detected from
+the formula or the link, delta-method SEs, ratios and odds ratios.</li>
+<li>
+<strong>Smooth models</strong>: smooths in the formula
+(<code>s()</code>, <code>t2()</code>, <code>by =</code>),
+<code><a href="../reference/semipred.html">semipred()</a></code> with simultaneous bands, derivatives and curve
+differences, <code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code> of smooth terms.</li>
+<li>
+<strong>Resampling</strong>: Freedman–Lane permutations for GLMs and
+GLMMs, restricted permutations (<code><a href="../reference/permindex.html">permindex()</a></code>),
+<code><a href="../reference/bootmodels.html">bootmodels()</a></code>. See <code><a href="../articles/resampling.html">vignette("resampling")</a></code>.</li>
+<li>
+<strong>Checks</strong>: <code><a href="../reference/pm_check.html">pm_check()</a></code>,
+<code><a href="../reference/residplot.html">residplot()</a></code> and <code><a href="../reference/CookD.html">CookD()</a></code> for every model class,
+<code><a href="../reference/varcomp.html">varcomp()</a></code> with intervals and tests,
+<code><a href="../reference/R2_model.html">R2_model()</a></code>.</li>
+<li>
+<strong>Other model classes</strong> with a few methods
+(<code><a href="../reference/pm_coef.html">?pm_coef</a></code>); fewer dependencies; faster Kenward–Roger and
+Satterthwaite.</li>
+</ul>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
@@ -238,7 +1281,7 @@ keeps working:</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

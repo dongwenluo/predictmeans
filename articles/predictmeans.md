@@ -6,6 +6,10 @@ LSDs and pairwise comparisons for `lm`, `glm`, `aov`, `gls`, `lme`,
 Satterthwaite degrees of freedom for mixed models, and permutation
 tests.
 
+![From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and
+plots](../reference/figures/workflow.png)
+
 ## A split-plot experiment
 
 The oats data (Yates 1935) are a split plot: three varieties on whole
@@ -24,7 +28,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ``` r
 
 pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
-                   plot = FALSE, prtnum = FALSE)
+                   plot = FALSE)
 summary(pm)
 #> Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
 #> Confidence limits: 95%
@@ -129,14 +133,14 @@ head(as.data.frame(pm, what = "pairs"), 3)
 ggplot2::autoplot(pm)
 ```
 
-![](predictmeans_files/figure-html/unnamed-chunk-6-1.png)
+![](predictmeans_files/figure-html/unnamed-chunk-7-1.png)
 
 ``` r
 
 ggplot2::autoplot(pm, type = "pvalue")
 ```
 
-![](predictmeans_files/figure-html/unnamed-chunk-6-2.png)
+![](predictmeans_files/figure-html/unnamed-chunk-7-2.png)
 
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
 draws its classic plots with `plot = TRUE` (since 2.0 the default is
@@ -164,9 +168,9 @@ Other choices:
 ``` r
 
 # Satterthwaite df
-pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
+pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE)
 # SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors
-pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE, prtnum = FALSE)
+pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE)
 rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 #>                    [,1]
 #> Satterthwaite  8.868755
@@ -208,7 +212,7 @@ definitions as emmeans.
 
 ``` r
 
-predictmeans(fm, "nitro", weights = "proportional", plot = FALSE, prtnum = FALSE)$means
+predictmeans(fm, "nitro", weights = "proportional", plot = FALSE)$means
 #>   nitro  estimate std.error       df  conf.low conf.high comparison.low
 #> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186
 #> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186
@@ -257,7 +261,7 @@ through transformations such as
 
 data(Drug)
 fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$means
+predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE)$means
 #>          Drug log10Dose   estimate std.error  df    conf.low  conf.high
 #> 1    Morphine  0.603011  0.1739917 0.1223041 Inf -0.06571997  0.4137034
 #> 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398

@@ -32,7 +32,7 @@ four drugs at several doses.
 
 data(Drug)
 fm_drug <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE, plot = FALSE)
 pm_drug$means[, c("Drug", "estimate", "response", "response.std.error",
                   "response.conf.low", "response.conf.high")]
 #>          Drug   estimate  response response.std.error response.conf.low
@@ -88,7 +88,7 @@ innermost random effect (one level per female) models overdispersion.
 data(Poisson_ind)
 fm_egg <- glmer(Egg ~ Treatment + Habitat + (1 | Population/Container/individual),
                 family = poisson, data = Poisson_ind)
-pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE, plot = FALSE)
 pm_egg$means[, c("Treatment", "estimate", "response", "response.std.error",
                  "response.conf.low", "response.conf.high")]
 #>   Treatment estimate response response.std.error response.conf.low
@@ -121,7 +121,7 @@ back-transforming the average on the link scale:
 ``` r
 
 pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "response",
-                       plot = FALSE, prtnum = FALSE)
+                       plot = FALSE)
 pm_pop$means[, c("Treatment", "response", "response.std.error")]
 #>   Treatment response response.std.error
 #> 1       Exp 7.428952          1.2188717
@@ -147,7 +147,7 @@ data(Body_length)
 fm_len <- lmer(log(BodyL) ~ Treatment + Habitat + Sex + (1 | Population/Container),
                data = Body_length)
 pm_len <- predictmeans(fm_len, "Treatment", pairwise = TRUE, trans = exp,
-                       plot = FALSE, prtnum = FALSE)
+                       plot = FALSE)
 pm_len$means[, c("Treatment", "estimate", "response", "response.std.error")]
 #>   Treatment estimate response response.std.error
 #> 1      Cont 2.621319 13.75386          0.3655397
@@ -167,7 +167,7 @@ patients in each treatment group at each of eight clinics.
 data(Clinical)
 fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
                  family = binomial, data = Clinical)
-pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE, plot = FALSE)
 pm_clin$means[, c("Treatment", "response", "response.conf.low", "response.conf.high")]
 #>   Treatment  response response.conf.low response.conf.high
 #> 1   control 0.2321034        0.07559056          0.5276915
@@ -180,9 +180,7 @@ pm_clin$pairs[, c("level1", "level2", "p.value", "odds.ratio",
 
 [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
 gives the share of the variance explained, as numbers: Piepho’s R² (the
-default, also printed by
-[`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md))
-or Nakagawa and Schielzeth’s marginal and conditional R².
+default) or Nakagawa and Schielzeth’s marginal and conditional R².
 
 ``` r
 

@@ -67,8 +67,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Checking the model</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Checking the model</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/vignettes/checking.Rmd" class="external-link"><code>vignettes/checking.Rmd</code></a></small>
@@ -290,7 +289,7 @@ mean:</p>
 wools within each tension:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm_nb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">nb</span>, <span class="st">"wool:tension"</span>, atvar <span class="op">=</span> <span class="st">"tension"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>                      plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                      plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pm_nb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">pm_nb</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">by</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"ratio"</span>, <span class="st">"ratio.conf.low"</span>,</span>
 <span>                                      <span class="st">"ratio.conf.high"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    level1 level2     ratio ratio.conf.low ratio.conf.high     p.value</span></span>
@@ -349,7 +348,7 @@ with <code>weights</code>), a different distribution (negative binomial,
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

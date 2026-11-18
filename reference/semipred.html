@@ -5,7 +5,7 @@ tables in the layout of predictmeans (see tidy.pm_curves) and the plot, which
 autoplot() returns."><meta property="og:description" content="Predicted curves (or surfaces) of a semiparametric model along a covariate, with pointwise or simultaneous
 bands; their slopes (deriv), or the difference between two curves (contr). The result holds the
 tables in the layout of predictmeans (see tidy.pm_curves) and the plot, which
-autoplot() returns."></head><body>
+autoplot() returns."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -50,8 +50,7 @@ autoplot() returns."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Predicted Means of a Semi Paramatric Model with Covariate Variable(s)</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Predicted Means of a Semi Paramatric Model with Covariate Variable(s)</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/semipred.R" class="external-link"><code>R/semipred.R</code></a></small>
       <div class="d-none name"><code>semipred.Rd</code></div>
     </div>
@@ -65,22 +64,19 @@ tables in the layout of <code><a href="predictmeans.html">predictmeans</a></code
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">semipred</span><span class="op">(</span><span class="va">semireg</span>, modelterm<span class="op">=</span><span class="cn">NULL</span>, <span class="va">covariate</span>, sm_term<span class="op">=</span><span class="cn">NULL</span>, contr<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>           covariateV<span class="op">=</span><span class="cn">NULL</span>, boundary<span class="op">=</span><span class="cn">NULL</span>, level<span class="op">=</span><span class="fl">0.05</span>, trans<span class="op">=</span><span class="cn">NULL</span>, trellis<span class="op">=</span><span class="cn">TRUE</span>, </span>
-<span>       scales<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixed"</span>, <span class="st">"free"</span>, <span class="st">"free_x"</span>, <span class="st">"free_y"</span><span class="op">)</span>,</span>
-<span>       plotord<span class="op">=</span><span class="cn">NULL</span>, ci<span class="op">=</span><span class="cn">TRUE</span>, point<span class="op">=</span><span class="cn">TRUE</span>, jitterv<span class="op">=</span><span class="fl">0</span>, threeD<span class="op">=</span><span class="cn">FALSE</span>, prt<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>       simultaneous<span class="op">=</span><span class="cn">FALSE</span>, contr_scale<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"model"</span>, <span class="st">"response"</span><span class="op">)</span>,</span>
-<span>       band<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pointwise"</span>, <span class="st">"simultaneous"</span><span class="op">)</span>,</span>
-<span>       unconditional<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.semi_unconditional"</span><span class="op">)</span>, deriv<span class="op">=</span><span class="fl">0</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>       mean_type<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conditional"</span>, <span class="st">"overall"</span><span class="op">)</span>, plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">semipred</span><span class="op">(</span><span class="va">model</span>, modelterm<span class="op">=</span><span class="cn">NULL</span>, <span class="va">covariate</span>, sm_term<span class="op">=</span><span class="cn">NULL</span>, contr<span class="op">=</span><span class="cn">NULL</span>, at<span class="op">=</span><span class="cn">NULL</span>, boundary<span class="op">=</span><span class="cn">NULL</span>,</span>
+<span>         conf.level<span class="op">=</span><span class="fl">0.95</span>, trans<span class="op">=</span><span class="cn">NULL</span>, contr_scale<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"model"</span>, <span class="st">"response"</span><span class="op">)</span>,</span>
+<span>         band<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pointwise"</span>, <span class="st">"simultaneous"</span><span class="op">)</span>,</span>
+<span>         unconditional<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.semi_unconditional"</span><span class="op">)</span>, deriv<span class="op">=</span><span class="fl">0</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>         mean_type<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conditional"</span>, <span class="st">"overall"</span><span class="op">)</span>, plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-semireg">semireg<a class="anchor" aria-label="anchor" href="#arg-semireg"></a></dt>
-<dd><p>A list object returned by <code>semireg</code>.</p></dd>
+<dl><dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>A fit returned by <code>semireg</code> (<code>semireg</code> before 2.0).</p></dd>
 
 
 <dt id="arg-modelterm">modelterm<a class="anchor" aria-label="anchor" href="#arg-modelterm"></a></dt>
@@ -100,8 +96,8 @@ The <code>modelterm</code> must be given exactly as it appears in <code>semireg<
 <dd><p>A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between <code>modelterm</code> level 4 ("d") vs level 1 ("a") along <code>covariate</code>.</p></dd>
 
 
-<dt id="arg-covariatev">covariateV<a class="anchor" aria-label="anchor" href="#arg-covariatev"></a></dt>
-<dd><p>A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a <code>Ztps</code> smooth), then semipred will produce the result for <code>covariate</code> at value of <code>covariateV</code>. Each row of the matrix is one prediction point.</p></dd>
+<dt id="arg-at">at<a class="anchor" aria-label="anchor" href="#arg-at"></a></dt>
+<dd><p>The values of <code>covariate</code> to predict at (<code>covariateV</code> before 2.0): a numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a <code>Ztps</code> smooth); each row of the matrix is one prediction point.</p></dd>
 
 
 <dt id="arg-boundary">boundary<a class="anchor" aria-label="anchor" href="#arg-boundary"></a></dt>
@@ -112,9 +108,9 @@ as <code><a href="semiboundary.html">semiboundary()</a></code> returns; or <code
 the data cover, following their shape). <code>NULL</code> (default): the whole grid.</p></dd>
 
 
-<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>Significance level of the two-sided confidence limits: the default 0.05 gives 95% limits (before
-version 2.0 the limits used <code>qnorm(1 - level)</code>, i.e. 90%). For gaussian fits the limits are t limits
+<dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
+<dd><p>Confidence level of the two-sided limits, default 0.95 (<code>level = 0.05</code> before 2.0;
+before 2.0 the limits used <code>qnorm(1 - level)</code>, i.e. 90%). For gaussian fits the limits are t limits
 with Satterthwaite df at each point (column <code>df</code>; see Details); for generalized fits t limits with the
 df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
 besides the smooths.</p></dd>
@@ -122,29 +118,6 @@ besides the smooths.</p></dd>
 
 <dt id="arg-trans">trans<a class="anchor" aria-label="anchor" href="#arg-trans"></a></dt>
 <dd><p>A function object for calculating the back transformed means, e.g. <code>trans=exp</code>.</p></dd>
-
-
-<dt id="arg-trellis">trellis<a class="anchor" aria-label="anchor" href="#arg-trellis"></a></dt>
-<dd><p>A logical scalar. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.</p></dd>
-
-
-<dt id="arg-scales">scales<a class="anchor" aria-label="anchor" href="#arg-scales"></a></dt>
-<dd><p>Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?</p></dd>
-
-
-<dt id="arg-plotord">plotord<a class="anchor" aria-label="anchor" href="#arg-plotord"></a></dt>
-<dd><p>A numeric vector specifying the order of plotting for two way interaction (e.g.
-<code>plotord = c(2, 1)</code> will put the second variable in <code>modelterm</code> on the <code>X</code>
-axis, the first variable as the grouping variable, and the third one as the panel variable).
-The defaults are <code>c(1, 2)</code> for two way interactions.</p></dd>
-
-
-<dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>
-<dd><p>A logical scalar to indicate whether to print confidence interval. The default value is TRUE.</p></dd>
-
-
-<dt id="arg-point">point<a class="anchor" aria-label="anchor" href="#arg-point"></a></dt>
-<dd><p>A logical scalar to indicate whether to print raw data points. The default value is TRUE.</p></dd>
 
 
 <dt id="arg-mean-type">mean_type<a class="anchor" aria-label="anchor" href="#arg-mean-type"></a></dt>
@@ -157,7 +130,12 @@ overall means. Log-link count families only.</p></dd>
 
 
 <dt id="arg-plot-args">plot_args<a class="anchor" aria-label="anchor" href="#arg-plot-args"></a></dt>
-<dd><p>A named list of colours and sizes for the plots, any of: <code>line</code> and <code>band</code> (one
+<dd><p>A named list of plot settings (before 2.0 arguments of their own; given so they stop with this
+spelling): <code>trellis</code> (<code>TRUE</code>, default: one panel per level), <code>scales</code> (<code>"fixed"</code>,
+default, <code>"free"</code>, <code>"free_x"</code>, <code>"free_y"</code>: the axes of the panels), <code>plotord</code> (the order
+of the two factors of a two-way term, e.g. <code>c(2, 1)</code>; giving it draws the plot), <code>ci</code> (draw the
+bands, <code>TRUE</code>), <code>point</code> (draw the data, <code>TRUE</code>), <code>jitterv</code> (jitter of the points, 0),
+<code>threeD</code> (a 3-D surface with <span class="pkg">plotly</span>, <code>FALSE</code>); and colours and sizes, any of: <code>line</code> and <code>band</code> (one
 curve; dark and light blue), <code>diff_line</code> and <code>diff_band</code> (a difference of two curves, <code>contr</code>;
 dark and light green), <code>ref</code> (the dashed reference line at 0, or 1 for ratios, and the marks under a
 difference where its band leaves out the reference; red), <code>alpha</code> (of the bands, 0.35), <code>linewidth</code>
@@ -168,23 +146,15 @@ example <code>plot_args = list(line = "black", band = "grey70")</code>; the plot
 be added to it.</p></dd>
 
 
-<dt id="arg-jitterv">jitterv<a class="anchor" aria-label="anchor" href="#arg-jitterv"></a></dt>
-<dd><p>A degree of jitter in x and y direction in the graph. The default is zero.</p></dd>
-
-
-<dt id="arg-threed">threeD<a class="anchor" aria-label="anchor" href="#arg-threed"></a></dt>
-<dd><p>A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package <span class="pkg">plotly</span>.</p></dd>
-
-
-<dt id="arg-prt">prt<a class="anchor" aria-label="anchor" href="#arg-prt"></a></dt>
-<dd><p>The name of <code>plot</code> before 2.0: <code>TRUE</code> draws the plot, <code>FALSE</code> does not (whatever
-<code>plot</code> says). The default <code>NULL</code> leaves it to <code>plot</code>.</p></dd>
-
-
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
 <dd><p>Draw the plot now? The default is <code>FALSE</code> (since 2.0; 1.x drew it): the plot is in the result
 (<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> returns it). <code>plot = TRUE</code>, or <code>options(predictmeans.plot = TRUE)</code> for a whole
-session, draws it; so does <code>plotord</code>.</p></dd>
+session, draws it; so does <code>plot_args = list(plotord = )</code>.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Not used: arguments removed in 2.0 (<code>semireg</code>, <code>covariateV</code>, <code>level</code>, <code>prt</code>,
+<code>simultaneous</code>, the plot settings) stop with their 2.0 spelling (see <code><a href="../articles/migrating.html">vignette("migrating")</a></code>).</p></dd>
 
 
 <dt id="arg-band">band<a class="anchor" aria-label="anchor" href="#arg-band"></a></dt>
@@ -206,10 +176,6 @@ for generalized models and <code>FALSE</code> for gaussian ones: in a simulation
 0.89-0.91 over the whole curve for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it; for gaussian
 data 0.97 without it (0.98 with it). <code>options(predictmeans.semi_unconditional = TRUE)</code> (or <code>FALSE</code>) sets
 it for <code>semipred()</code> and <code><a href="predictmeans.html">predictmeans()</a></code> on <code>semireg</code> fits.</p></dd>
-
-
-<dt id="arg-simultaneous">simultaneous<a class="anchor" aria-label="anchor" href="#arg-simultaneous"></a></dt>
-<dd><p><code>TRUE</code> is the same as <code>band = "simultaneous"</code> (the name before 2.0).</p></dd>
 
 
 <dt id="arg-deriv">deriv<a class="anchor" aria-label="anchor" href="#arg-deriv"></a></dt>
@@ -302,7 +268,7 @@ evaluated at the difference of the means, which is not a standard error of any d
 is in the table <code>pairs</code> in the layout of <code><a href="predictmeans.html">predictmeans()</a></code>. The ranges of the
 covariate where the curves differ are printed with the result and kept in <code>significant</code> and
 <code>attr(pred_df, "significant")</code>; with
-<code>simultaneous = TRUE</code> they hold for the whole curve, and the curves differ somewhere at level <code>level</code>
+<code>band = "simultaneous"</code> they hold for the whole curve, and the curves differ somewhere at level <code>1 - conf.level</code>
 when there is such a range. (A joint F test, as <code><a href="covariatemeans.html">covariatemeans()</a></code> gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)</p>
     </div>
@@ -313,7 +279,7 @@ penalised smooth coefficients are not reliable.)</p>
 <p>With <code>deriv = 1</code> (<code>2</code>) each row of the prediction design is replaced by its first (second) derivative
 along the covariate, by central differences of the whole design (the fixed part and every smooth basis, on the
 same grid), so the slopes are those of the fitted curves for any basis; for the O'Sullivan basis (<code>bs = "os"</code>,
-<code><a href="smZ.html">smZ()</a></code>) they equal the exact derivatives of the basis, <code>ZOSull(drv = )</code> (as <code>smZ(drv = )</code>),
+<code><a href="predictmeans-defunct.html">smZ()</a></code>) they equal the exact derivatives of the basis, <code>ZOSull(drv = )</code> (as <code>smZ(drv = )</code>),
 to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
 models give the slopes of the linear predictor (link scale). <code>pred_df</code> holds the slopes in the column of the
 response, with <code>includes0</code> and <code>significant</code>; the ranges of the covariate where the band lies above or
@@ -358,7 +324,7 @@ means and their ratios.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># a curve per blood flow rate, a random intercept and slope per dialyzer</span></span></span>
 <span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">rate</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">pressure</span>, by <span class="op">=</span> <span class="va">QB</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">pressure</span> <span class="op">|</span> <span class="va">Subject</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>              data <span class="op">=</span> <span class="va">Dialyzer</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>              data <span class="op">=</span> <span class="va">Dialyzer</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="residplot.html">residplot</a></span><span class="op">(</span><span class="va">fm</span><span class="op">$</span><span class="va">semer</span>, group <span class="op">=</span> <span class="st">"QB"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="semipred-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span>   <span class="co"># fixed effects (Kenward-Roger) and a test of each smooth term</span></span></span>
@@ -404,7 +370,7 @@ means and their ratios.</p>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, band <span class="op">=</span> <span class="st">"simultaneous"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="semipred-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># at given pressures</span></span></span>
-<span class="r-in"><span><span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, covariateV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">1.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Curves of 'QB' along pressure</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 95% limits; Satterthwaite (fixed + smooth coefficients) df</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   QB pressure estimate std.error    df conf.low conf.high</span>
@@ -449,7 +415,7 @@ means and their ratios.</p>
 <span class="r-in"><span><span class="co"># a surface: copper grade over the plane and a smooth in depth (data(copper))</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">copper</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fcu</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>               data <span class="op">=</span> <span class="va">copper</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>               data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fcu</span>, covariate <span class="op">=</span> <span class="st">"zcoord"</span>, trans <span class="op">=</span> <span class="va">exp</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="semipred-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fcu</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>, trans <span class="op">=</span> <span class="va">exp</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -460,8 +426,7 @@ means and their ratios.</p>
 <span class="r-in"><span><span class="va">db</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>, g <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span><span class="op">)</span>, cl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">db</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">plogis</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">pi</span><span class="op">*</span><span class="va">db</span><span class="op">$</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.8</span><span class="op">*</span><span class="op">(</span><span class="va">db</span><span class="op">$</span><span class="va">g</span> <span class="op">==</span> <span class="st">"b"</span><span class="op">)</span><span class="op">*</span><span class="va">db</span><span class="op">$</span><span class="va">x</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>                                     <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">[</span><span class="va">db</span><span class="op">$</span><span class="va">cl</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fbin</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">g</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">cl</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">db</span>,</span></span>
-<span class="r-in"><span>                prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fbin</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">g</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">cl</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">db</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="semipred-7.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b"</span>, <span class="st">"a"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -494,7 +459,7 @@ means and their ratios.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -8,15 +8,9 @@ predictmeans has:
 - [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md):
   permutation tests of the terms and coefficients of `lm`, `aov`, `glm`,
   `gls`, `lme`, `lmer`, `glmer` and `glmmTMB` models;
-- [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  (also as
-  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  and
-  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md))
-  and
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md):
-  permutation likelihood-ratio tests comparing two nested mixed models,
-  including tests of random effects;
+- [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md):
+  permutation likelihood-ratio tests comparing two nested mixed models
+  (`lmer`, `glmer`, `glmmTMB`), including tests of random effects;
 - [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md):
   permutations restricted by the design (within blocks, of whole plots),
   for randomisation tests;
@@ -85,6 +79,7 @@ has two schemes.
 ``` r
 
 perm <- permmodels(fm, nperm = 199, seed = 1, ncore = 1)
+perm
 #> 
 #> Coefficients of (fixed) effects:
 #>                            Estimate Std. Error t value Perm_p_value
@@ -134,8 +129,7 @@ permmodels(fm_cars, nperm = 999, type = "II", seed = 1)
 #> 
 #> ANOVA:
 #> Anova Table (Type II tests)
-#> 
-#>  Response: mpg
+#> Response: mpg
 #>               Sum Sq Df F value Pr(>F) Perm_p_value
 #> wt          118.2039  1 18.0801 0.0002        0.001
 #> factor(cyl)  95.2633  2  7.2856 0.0028        0.005
@@ -153,7 +147,7 @@ are equal, so its p-value does not depend on the other means:
 
 ``` r
 
-pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, prtnum = FALSE, ncore = 1)
+pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)
 pm$pairs[, c("level1", "level2", "estimate", "statistic", "p.value", "p.method")]
 #>   level1 level2   estimate statistic p.value    p.method
 #> 1      0    0.2 -19.500000 -4.396098   0.005 permutation
@@ -192,7 +186,7 @@ test does.
 ``` r
 
 pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall", plot = FALSE,
-                    prtnum = FALSE, ncore = 1)
+                    ncore = 1)
 pmw$pairs[, c("level1", "level2", "p.value", "p.adj")]
 #>   level1 level2 p.value p.adj
 #> 1      0    0.2   0.005 0.005
@@ -221,6 +215,7 @@ data(Clinical)
 fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
                  family = binomial, data = Clinical)
 perm_clin <- permmodels(fm_clin, nperm = 199, seed = 1, ncore = 1)
+perm_clin
 #> 
 #> Coefficients of (fixed) effects:
 #>               Estimate Std. Error t value Perm_p_value
@@ -324,22 +319,18 @@ permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 #> lmer1    6 1755.6 1774.8 -871.81    1743.6 42.837  2   4.99e-10   0.01
 ```
 
-For GLMMs (`glmer` or `glmmTMB`, also as
-[`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-and
-[`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md))
-the same is done on the working scale. For 0/1 responses, where the
-working scale fails with rare events or tiny clusters, randomised
-quantile residuals are permuted instead and the GLMMs refitted
-(`method = "quantile"`, chosen automatically). Do tick counts vary
-between locations, beyond the variation between broods?
+For GLMMs (`glmer` or `glmmTMB`) the same is done on the working scale.
+For 0/1 responses, where the working scale fails with rare events or
+tiny clusters, randomised quantile residuals are permuted instead and
+the GLMMs refitted (`method = "quantile"`, chosen automatically). Do
+tick counts vary between locations, beyond the variation between broods?
 
 ``` r
 
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson,
              data = lme4::grouseticks)
 gm2 <- update(gm1, . ~ . + (1 | LOCATION))
-permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
+permlmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 #> Data: lme4::grouseticks
 #> Models:
 #> m0: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD)
@@ -349,10 +340,10 @@ permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 #> m1    6 1987.9 2011.9 -987.94    1975.9 2.1992  1    0.13809   0.08
 ```
 
-[`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
-applies the same test to each fixed term of an `lmer` or `glmer` model
-in turn (Type I, II or III), for an ANOVA table with permutation
-p-values.
+For an ANOVA table of the fixed terms of an `lmer` or `glmer` model with
+permutation p-values, use
+[`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+(above).
 
 ## Permutations restricted by the design: `permindex()`
 
@@ -371,31 +362,6 @@ use them through `perms` (a randomisation test):
 fm_rcb <- lm(yield ~ Block + nitro, data = Oats)
 idx <- permindex(Oats, block = "Block", nsim = 999, seed = 1)
 permmodels(fm_rcb, perms = idx)$ANOVA
-#> 
-#> Coefficients of (fixed) effects:
-#>             Estimate Std. Error t value Pr(>|t|) Perm_p_value
-#> (Intercept)  79.3889     3.7668 21.0759   0.0000           NA
-#> Block.L      29.4823     4.6134  6.3906   0.0000        0.069
-#> Block.Q      20.0124     4.6134  4.3379   0.0001        1.000
-#> Block.C       5.3728     4.6134  1.1646   0.2486        0.001
-#> Block^4       4.7718     4.6134  1.0343   0.3049        1.000
-#> Block^5      -1.2651     4.6134 -0.2742   0.7848        0.001
-#> nitro0.2     19.5000     5.3271  3.6605   0.0005        0.002
-#> nitro0.4     34.8333     5.3271  6.5389   0.0000        0.001
-#> nitro0.6     44.0000     5.3271  8.2597   0.0000        0.001
-#> 
-#> Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.
-#> 
-#> ANOVA:
-#> Analysis of Variance Table
-#> 
-#>  Response: yield
-#>           Df   Sum Sq   Mean Sq F value Pr(>F) Perm_p_value
-#> Block      5 15875.28 3175.0556 12.4317      0            1
-#> nitro      3 20020.50 6673.5000 26.1297      0        0.001
-#> Residuals 63 16090.17  255.3995                            
-#> 
-#> Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
 #>           Df   Sum Sq   Mean Sq F value Pr(>F) Perm_p_value
 #> Block      5 15875.28 3175.0556 12.4317      0            1
 #> nitro      3 20020.50 6673.5000 26.1297      0        0.001
@@ -413,6 +379,7 @@ clinical trial data:
 ``` r
 
 boot <- bootmodels(fm_clin, nsim = 99, seed = 1)
+boot
 #> 
 #> Coefficients of (fixed) effects:
 #>               Estimate Std. Error z value Pr(>|z|) Boot_p_value
@@ -420,6 +387,7 @@ boot <- bootmodels(fm_clin, nsim = 99, seed = 1)
 #> Treatmentdrug   0.7382     0.3004  2.4575   0.0140         0.03
 #> 
 #> ANOVA:
+#> Analysis of Variance Table
 #>           npar Sum Sq Mean Sq F value Boot_p_value
 #> Treatment    1 6.2054  6.2054  6.2054         0.03
 #> 
@@ -431,7 +399,7 @@ Its result is used as a `permlist`; the `pairs` table then says
 
 ``` r
 
-pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE, prtnum = FALSE,
+pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE,
                     ncore = 1)
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 #>    level1 level2   estimate p.value  p.method
@@ -494,7 +462,7 @@ small here.
 
 ``` r
 
-p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1, prt = FALSE)
+p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1)
 permstats(p_mpg)
 #>           statistic df1 df2      p.param p.perm       ses param.size
 #> wt        18.080056   1  28 0.0002130435  0.001 11.695665 0.04904905
@@ -516,8 +484,7 @@ without a multivariate model.
 
 ``` r
 
-p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1,
-                     prt = FALSE)
+p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1)
 permcombine(mpg = p_mpg, qsec = p_qsec)
 #>             mpg  qsec combined adj.mpg adj.qsec
 #> wt        0.001 0.002    0.001   0.002    0.003

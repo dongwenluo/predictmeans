@@ -3,7 +3,7 @@
 for each pair of levels, like a correlation plot: the lower triangle only,
 the tiles coloured by the size of the p-value."><meta property="og:description" content="Plots the p-values of pairwise comparisons as a square grid of tiles, one
 for each pair of levels, like a correlation plot: the lower triangle only,
-the tiles coloured by the size of the p-value."></head><body>
+the tiles coloured by the size of the p-value."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,7 @@ the tiles coloured by the size of the p-value."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Level Plot of a Matrix of p-values.</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Level Plot of a Matrix of p-values.</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/PMplot.R" class="external-link"><code>R/PMplot.R</code></a></small>
       <div class="d-none name"><code>PMplot.Rd</code></div>
     </div>
@@ -62,8 +61,7 @@ the tiles coloured by the size of the p-value.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">PMplot</span><span class="op">(</span><span class="va">pmatrix</span>, level<span class="op">=</span><span class="fl">0.05</span>, mtitle<span class="op">=</span><span class="cn">NULL</span>, xylabel<span class="op">=</span><span class="cn">NULL</span>, margin<span class="op">=</span><span class="fl">5</span>, legendx<span class="op">=</span><span class="fl">0.73</span>,</span>
-<span>  newwd<span class="op">=</span><span class="cn">FALSE</span>, values<span class="op">=</span><span class="cn">FALSE</span>, basesz<span class="op">=</span><span class="fl">12</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">PMplot</span><span class="op">(</span><span class="va">pmatrix</span>, conf.level<span class="op">=</span><span class="fl">0.95</span>, mtitle<span class="op">=</span><span class="cn">NULL</span>, xylabel<span class="op">=</span><span class="cn">NULL</span>, values<span class="op">=</span><span class="cn">FALSE</span>, basesz<span class="op">=</span><span class="fl">12</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -77,10 +75,10 @@ triangle is used), or a list of such matrices (e.g. <code>p_valueMatrix</code> o
 down the diagonal of one plot.</p></dd>
 
 
-<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>The level of p-value to be highlighted. With the default 0.05
-the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other
-value two (up to <code>level</code> and above).</p></dd>
+<dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
+<dd><p>The p-values below <code>1 - conf.level</code> are highlighted (<code>level = 0.05</code> before 2.0).
+With the default 0.95 the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other value two
+(up to <code>1 - conf.level</code> and above).</p></dd>
 
 
 <dt id="arg-mtitle">mtitle<a class="anchor" aria-label="anchor" href="#arg-mtitle"></a></dt>
@@ -93,19 +91,9 @@ matrix (or of the list's matrices together). The default uses the row
 names of the matrix, else the row numbers.</p></dd>
 
 
-<dt id="arg-margin">margin<a class="anchor" aria-label="anchor" href="#arg-margin"></a></dt>
-<dd><p>Not used since 2.0 (ggplot2 sizes the margins from the
-labels); kept so that 1.x calls still run.</p></dd>
-
-
-<dt id="arg-legendx">legendx<a class="anchor" aria-label="anchor" href="#arg-legendx"></a></dt>
-<dd><p>The x coordinate of the left side of the legend, as a
-proportion of the plot's width. The default value is 0.73; the legend sits
-in the empty upper triangle.</p></dd>
-
-
-<dt id="arg-newwd">newwd<a class="anchor" aria-label="anchor" href="#arg-newwd"></a></dt>
-<dd><p>A logical variable to indicate whether to print graph in a new window. The default is FALSE.</p></dd>
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Not used: <code>level</code>, <code>margin</code>, <code>legendx</code>, <code>newwd</code> (before 2.0) stop with their 2.0
+spelling. (ggplot2 sizes the margins; the legend sits in the empty upper triangle.)</p></dd>
 
 
 <dt id="arg-values">values<a class="anchor" aria-label="anchor" href="#arg-values"></a></dt>
@@ -164,7 +152,7 @@ and nothing was returned: inside a function or a loop, wrap the call in
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

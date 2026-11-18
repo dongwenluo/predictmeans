@@ -163,7 +163,11 @@ kable(anova(fmtab2.3), digits = 4)
 
 ``` r
 
-predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -379,7 +383,11 @@ kable(anova(fmtab2.5), digits = 4)
 
 ``` r
 
-predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -536,7 +544,11 @@ residplot(fmtab3.3)
 
 ``` r
 
-predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -749,7 +761,11 @@ residplot(fmtab3.8)
 
 ``` r
 
-predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -943,7 +959,11 @@ residplot(fm4.2)
 
 ``` r
 
-predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1013,7 +1033,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1110,7 +1134,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.2, "treat", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.2, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1203,7 +1231,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1337,7 +1369,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", lineplot=FALSE, bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1553,7 +1589,11 @@ residplot(fm4.4)
 
 ``` r
 
-predm_out <- predictmeans(fm4.4, "treat", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.4, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1640,7 +1680,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1710,7 +1754,7 @@ quarto-bootstrap="false"}
 
 ``` r
 
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 ![](tree-improvement_files/figure-html/unnamed-chunk-62-1.png)
@@ -1740,7 +1784,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "treat"))
+predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "treat")))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1849,7 +1897,7 @@ quarto-bootstrap="false"}
 
 ``` r
 
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 ![](tree-improvement_files/figure-html/unnamed-chunk-66-1.png)
@@ -1989,7 +2037,11 @@ residplot(fm4.6)
 
 ``` r
 
-predm_out <- predictmeans(fm4.6, "irrig", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.6, "irrig", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -2056,7 +2108,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.6, "fert", adj="BH", lineplot = FALSE, bar=TRUE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.6, "fert", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -2123,7 +2179,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", bar=TRUE, lineplot = FALSE, prtplt=FALSE)
+predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -2212,7 +2272,11 @@ predm_out$predictmeansBarPlot
 
 ``` r
 
-predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", bar=TRUE, prtplt=FALSE, plotord = c("seedlot", "fert"))
+predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "fert")))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -2299,7 +2363,7 @@ quarto-bootstrap="false"}
 
 ``` r
 
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 ![](tree-improvement_files/figure-html/unnamed-chunk-81-1.png)
@@ -2698,7 +2762,7 @@ kable(Table_5.8, digits = 4)
 
 ``` r
 
-autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALSE))
+autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))
 ```
 
 ![](tree-improvement_files/figure-html/unnamed-chunk-97-1.png)
@@ -2707,7 +2771,7 @@ autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", trellis = FALSE, ci=FALS
 
 ``` r
 
-predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE)$mean_table
 predm_seedlot$reg_coef <- c(NA, coef(mod_5.1)[-1:-31])
 gt(predm_seedlot)
 ```
@@ -3110,7 +3174,7 @@ kable(Table_5.10, digits = 4)
 
 ``` r
 
-autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALSE))
+autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))
 ```
 
 ![](tree-improvement_files/figure-html/unnamed-chunk-112-1.png)
@@ -3119,7 +3183,7 @@ autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", trellis = FALSE, ci=FALS
 
 ``` r
 
-predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE, prtnum=FALSE)$mean_table
+predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE)$mean_table
 predm_seedlotN$reg_coef <- c(NA, coef(mod_5.2)[-1:-43])
 gt(predm_seedlotN)
 ```
@@ -3662,13 +3726,12 @@ kable(anova(fm8.4, type=1, ddf = "Kenward-Roger"), digits = 4)
 
 ``` r
 
-R2_glmm(fm8.4)
+R2_model(fm8.4)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##    Total    Fixed   Random repl:col repl:row 
-    ## "75.93%" "62.79%" "13.14%"  "5.54%"   "7.6%"
+    ##   75.93%   62.79%   13.14%    5.54%    7.60%
 
 - Varcomp
 
@@ -4123,15 +4186,14 @@ kable(anova(fm8.7, type=1), digits=4)
 
 ``` r
 
-R2_glmm(fm8.7)
+R2_model(fm8.7)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##           Total           Fixed          Random contcompv:clone        repl:row 
-    ##        "67.93%"        "18.38%"        "49.55%"         "39.1%"         "6.34%" 
+    ##          67.93%          18.38%          49.55%          39.10%           6.34% 
     ##     repl:column 
-    ##         "4.12%"
+    ##           4.12%
 
 - Varcomp
 

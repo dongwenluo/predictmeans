@@ -7,7 +7,7 @@ or [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html).
 ## Usage
 
 ``` r
-CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
+CookD(model, group=NULL, plot=TRUE, id=3, ...)
 ```
 
 ## Arguments
@@ -29,15 +29,16 @@ CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
   A logical variable; if it is true, a plot of Cook's distance will be
   presented. The default is TRUE.
 
-- idn:
+- id:
 
-  An integer indicating the number of top Cook's distances to be
-  labelled in the plot. The default value is 3.
+  The number of the largest Cook's distances labelled in the plot (`idn`
+  before 2.0, now as in
+  [`residplot`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)).
+  The default value is 3.
 
-- newwd:
+- ...:
 
-  A logical variable to indicate whether to print graph in a new window.
-  The default value is FALSE.
+  Not used: `idn`, `newwd` (before 2.0) stop with their 2.0 spelling.
 
 ## Value
 

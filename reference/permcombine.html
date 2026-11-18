@@ -5,7 +5,7 @@ coefficient, one p-value for the hypothesis that it has no effect on any of the 
 adjusted for testing it on every response."><meta property="og:description" content="Nonparametric combination (NPC) of permutation tests made with the same permutations, for example the same
 model fitted to several responses (traits, time points) measured on the same units: for each term or
 coefficient, one p-value for the hypothesis that it has no effect on any of the responses, and p-values
-adjusted for testing it on every response."></head><body>
+adjusted for testing it on every response."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -50,8 +50,7 @@ adjusted for testing it on every response."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Combine Permutation Tests of Several Responses</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Combine Permutation Tests of Several Responses</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/perm-stats.R" class="external-link"><code>R/perm-stats.R</code></a></small>
       <div class="d-none name"><code>permcombine.Rd</code></div>
     </div>
@@ -93,9 +92,9 @@ one that all the results have.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame with one row per test: the permutation p-value of each response, the combined
-p-value (<code>combined</code>), and the p-values adjusted for the number of responses (columns
-<code>adj.&lt;response&gt;</code>): single-step min-p adjusted p-values (Westfall and Young 1993), which control the
-familywise error rate over the responses and allow for their correlation.</p>
+  p-value (<code>combined</code>), and the p-values adjusted for the number of responses (columns
+  <code>adj.&lt;response&gt;</code>): single-step min-p adjusted p-values (Westfall and Young 1993), which control the
+  familywise error rate over the responses and allow for their correlation.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -118,6 +117,10 @@ Non-parametric combination and related permutation tests for neuroimaging. <em>H
 37, 1486-1511.</p>
     </div>
     <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="permmodels.html">permmodels</a></code>, <code><a href="permstats.html">permstats</a></code></p></div>
+    </div>
+    <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Dongwen Luo, Siva Ganesh and John Koolaard</p>
     </div>
@@ -125,8 +128,8 @@ Non-parametric combination and related permutation tests for neuroimaging. <em>H
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">permcombine</span><span class="op">(</span>mpg <span class="op">=</span> <span class="va">p1</span>, qsec <span class="op">=</span> <span class="va">p2</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             mpg  qsec combined adj.mpg adj.qsec</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> wt        0.001 0.002    0.001   0.002    0.003</span>
@@ -141,7 +144,7 @@ Non-parametric combination and related permutation tests for neuroimaging. <em>H
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

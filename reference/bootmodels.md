@@ -12,7 +12,7 @@ GLMMs and small samples, where Wald or F tests can be poor.
 
 ``` r
 bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
-           ncore = 1, prt = TRUE)
+           ncore = 1, ...)
 ```
 
 ## Arguments
@@ -48,9 +48,11 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 
   Number of cores for refitting, the default is 1.
 
-- prt:
+- ...:
 
-  Logical: print the tables? The default is TRUE.
+  Not used: `prt` (before 2.0) stops with its 2.0 spelling;
+  [`print()`](https://rdrr.io/r/base/print.html) of the result shows the
+  tables.
 
 ## Value
 
@@ -92,30 +94,6 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   # \donttest{
   bt <- bootmodels(fm, nsim = 99, seed = 1)   # use 999 or more in practice
-#> 
-#> Coefficients of (fixed) effects:
-#>                            Estimate Std. Error t value Boot_p_value
-#> (Intercept)                 80.0000     9.1070  8.7844           NA
-#> nitro0.2                    18.5000     7.6829  2.4079         0.03
-#> nitro0.4                    34.6667     7.6829  4.5122         0.01
-#> nitro0.6                    44.8333     7.6829  5.8354         0.01
-#> VarietyMarvellous            6.6667     9.7150  0.6862         0.44
-#> VarietyVictory              -8.5000     9.7150 -0.8749         0.34
-#> nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068         0.76
-#> nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835         0.67
-#> nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295         0.63
-#> nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307         0.97
-#> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295         0.72
-#> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994         0.85
-#> 
-#> ANOVA:
-#>               npar     Sum Sq   Mean Sq F value Boot_p_value
-#> nitro            3 20020.5000 6673.5000 37.6857         0.01
-#> Variety          2   526.0575  263.0288  1.4853         0.30
-#> nitro:Variety    6   321.7500   53.6250  0.3028         0.89
-#> 
-#> Note: Boot_p_value is from ‘99’ parametric bootstrap samples under the global null model.
-#> 
   predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
 #>   level1 level2   estimate std.error df statistic p.value p.adj  conf.low
 #> 1      0    0.2 -19.500000  4.435752 NA -4.396098    0.01  0.01 -29.32367

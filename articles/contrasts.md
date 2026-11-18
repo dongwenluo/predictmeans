@@ -33,8 +33,8 @@ package mvtnorm.
 ``` r
 
 p <- sapply(c("none", "tukey", "mvt", "sidak", "scheffe", "holm"), function(a)
-  predictmeans(fm, "N", adj = a, plot = FALSE, prtnum = FALSE)$pairs$p.adj)
-pm <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+  predictmeans(fm, "N", adj = a, plot = FALSE)$pairs$p.adj)
+pm <- predictmeans(fm, "N", plot = FALSE)
 data.frame(pair = paste(pm$pairs$level1, "-", pm$pairs$level2), signif(p, 3))
 #>        pair     none    tukey      mvt    sidak  scheffe     holm
 #> 1   0 - 0.2 6.66e-05 3.76e-04 3.66e-04 3.99e-04 1.01e-03 2.00e-04
@@ -67,7 +67,7 @@ control.
 
 ``` r
 
-pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE, prtnum = FALSE)$pairs
+pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE)$pairs
 pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
      "adj.conf.high", "p.adj")]
 #>   level1 level2   estimate  conf.low   conf.high adj.conf.low adj.conf.high
@@ -258,7 +258,7 @@ them:
 
 ``` r
 
-pmv <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+pmv <- predictmeans(fm, "N:Variety", plot = FALSE)
 b <- coef(pmv)
 L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
 c(estimate = sum(L * b), SE = sqrt(drop(L %*% vcov(pmv) %*% L)))
@@ -293,7 +293,7 @@ then has `p.equiv`, the p-value of two one-sided t tests (TOST): below
 
 ``` r
 
-pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE, prtnum = FALSE)
+pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE)
 pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
 #>   level1 level2   estimate std.error    p.equiv
 #> 1      0    0.2 -19.500000  4.435752 0.84211224
@@ -322,7 +322,7 @@ the df stay the model’s:
 ``` r
 
 fl <- lm(yield ~ Block + N + Variety, data = Oats)
-pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE, prtnum = FALSE)
+pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE)
 pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 #>   level1 level2   estimate std.error      p.value
 #> 1      0    0.2 -19.500000  4.864548 1.688713e-04

@@ -7,8 +7,7 @@ only, the tiles coloured by the size of the p-value.
 ## Usage
 
 ``` r
-PMplot(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73,
-  newwd=FALSE, values=FALSE, basesz=12)
+PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
 ```
 
 ## Arguments
@@ -21,11 +20,12 @@ PMplot(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73,
   with `atvar`), which are drawn as blocks down the diagonal of one
   plot.
 
-- level:
+- conf.level:
 
-  The level of p-value to be highlighted. With the default 0.05 the
-  tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any
-  other value two (up to `level` and above).
+  The p-values below `1 - conf.level` are highlighted (`level = 0.05`
+  before 2.0). With the default 0.95 the tiles show four bands (up to
+  0.01, 0.05, 0.1 and above); with any other value two (up to
+  `1 - conf.level` and above).
 
 - mtitle:
 
@@ -37,21 +37,11 @@ PMplot(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73,
   the list's matrices together). The default uses the row names of the
   matrix, else the row numbers.
 
-- margin:
+- ...:
 
-  Not used since 2.0 (ggplot2 sizes the margins from the labels); kept
-  so that 1.x calls still run.
-
-- legendx:
-
-  The x coordinate of the left side of the legend, as a proportion of
-  the plot's width. The default value is 0.73; the legend sits in the
-  empty upper triangle.
-
-- newwd:
-
-  A logical variable to indicate whether to print graph in a new window.
-  The default is FALSE.
+  Not used: `level`, `margin`, `legendx`, `newwd` (before 2.0) stop with
+  their 2.0 spelling. (ggplot2 sizes the margins; the legend sits in the
+  empty upper triangle.)
 
 - values:
 

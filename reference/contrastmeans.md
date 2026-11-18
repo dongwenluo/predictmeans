@@ -7,10 +7,10 @@ models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
 ## Usage
 
 ``` r
-contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
+contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
-                level=0.05, vcov=NULL, equivalence=NULL)
+                conf.level=0.95, vcov=NULL, equivalence=NULL, ...)
 ```
 
 ## Arguments
@@ -50,21 +50,15 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   (Westfall and Young, 1993); "westfall" needs `permlist`, and "scheffe"
   is not available with it. The default method is "none".
 
-- Df:
-
-  A denominator degree of freedom for `modelterm`. (For `glmer` models
-  the `Df` needs to be specified, while for the other models, `Df` is
-  obtained from the fitted model automatically).
-
 - permlist:
 
   A model parameter list containing `nsim` parameters produced by the
-  function `permmodels`. When `permlist != NULL`, the option `Df` will
-  be non-functional. This is a key option for the permutation test. With
-  the result of `permmodels(method = "freedman-lane")` (`lm` and `aov`
-  models), each contrast is tested by Freedman-Lane permutations of the
-  model in which that contrast is 0. With a `permlist`, `vcov_adjust` is
-  not used (the permuted refits use the unadjusted covariance).
+  function `permmodels`. When `permlist != NULL`, `df_method` is not
+  used. This is a key option for the permutation test. With the result
+  of `permmodels(method = "freedman-lane")` (`lm` and `aov` models),
+  each contrast is tested by Freedman-Lane permutations of the model in
+  which that contrast is 0. With a `permlist`, `vcov_adjust` is not used
+  (the permuted refits use the unadjusted covariance).
 
 - vcov_adjust:
 
@@ -85,8 +79,9 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
 
 - df_method:
 
-  Denominator df: `"auto"` (Kenward-Roger for REML fits of `lmer`, `lme`
-  and `gls`, Satterthwaite for ML fits), `"Kenward-Roger"`,
+  Denominator df, by method or as one number (a fixed df, `Df` before
+  2.0): `"auto"` (Kenward-Roger for REML fits of `lmer`, `lme` and
+  `gls`, Satterthwaite for ML fits), `"Kenward-Roger"`,
   `"Satterthwaite"` or `"containment"` (SAS `DDFM=CONTAIN`), and for
   `lmer`, `lme` and `gls` models `"between-within"` (SAS
   `DDFM=BETWITHIN`), and `"KR-expected"` (Kenward-Roger with the
@@ -110,14 +105,15 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   same permutations (for Freedman-Lane, the model with all the contrasts
   zero). The default is `FALSE`.
 
-- level:
+- conf.level:
 
-  Significance level for the confidence limits of the contrasts
-  (`lower.CL`, `upper.CL`); the default 0.05 gives 95% limits. They are
-  t limits of each contrast, or with `permlist` permutation-t limits:
-  estimate +- c SE, with c the critical value of the permutation test
-  (the k-th largest permuted \|t\|, k = floor(level (nperm + 1))). With
-  `adj` "bonferroni", "sidak", "scheffe" or "mvt" (with `permlist`:
+  Confidence level of the limits of the contrasts (`lower.CL`,
+  `upper.CL`; `level = 0.05` before 2.0); the tests are at the
+  significance level `level = 1 - conf.level`. They are t limits of each
+  contrast, or with `permlist` permutation-t limits: estimate +- c SE,
+  with c the critical value of the permutation test (the k-th largest
+  permuted \|t\|, k = floor(level (nperm + 1))). With `adj`
+  "bonferroni", "sidak", "scheffe" or "mvt" (with `permlist`:
   "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted
   \|t\| of the contrasts) the table also has `adj.lower.CL` and
   `adj.upper.CL`: simultaneous limits that exclude 0 exactly when the
@@ -150,10 +146,15 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permli
   tests, TOST) of the contrasts: a positive number \\d\\ (equivalence
   region \\-d\\ to \\d\\) or `c(lower, upper)`, on the scale of the
   comparisons (the link scale for GLMs: e.g. log ratios). The TOST
-  p-value is the larger of the two one-sided p-values; below `level`,
-  the difference lies within the margins (as emmeans'
+  p-value is the larger of the two one-sided p-values; below
+  `1 - conf.level`, the difference lies within the margins (as emmeans'
   `test(..., side = "equivalence")`). Not adjusted for multiplicity;
   with a `permlist` it is t-based (normal-based in `contrastmeans`).
+
+- ...:
+
+  Not used: arguments removed in 2.0 (`Df`, `level`) stop with their 2.0
+  spelling.
 
 ## Value
 

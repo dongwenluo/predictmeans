@@ -67,8 +67,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Permutation and bootstrap tests</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Permutation and bootstrap tests</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/vignettes/resampling.Rmd" class="external-link"><code>vignettes/resampling.Rmd</code></a></small>
@@ -88,10 +87,10 @@ coefficients of <code>lm</code>, <code>aov</code>, <code>glm</code>,
 <code>gls</code>, <code>lme</code>, <code>lmer</code>,
 <code>glmer</code> and <code>glmmTMB</code> models;</li>
 <li>
-<code><a href="../reference/permlmer.html">permlmer()</a></code> (also as <code><a href="../reference/permlmer.html">permglmer()</a></code> and
-<code><a href="../reference/permlmer.html">permglmmTMB()</a></code>) and <code><a href="../reference/permanova.lmer.html">permanova.lmer()</a></code>:
-permutation likelihood-ratio tests comparing two nested mixed models,
-including tests of random effects;</li>
+<code><a href="../reference/permlmer.html">permlmer()</a></code>: permutation likelihood-ratio tests
+comparing two nested mixed models (<code>lmer</code>,
+<code>glmer</code>, <code>glmmTMB</code>), including tests of random
+effects;</li>
 <li>
 <code><a href="../reference/permindex.html">permindex()</a></code>: permutations restricted by the design
 (within blocks, of whole plots), for randomisation tests;</li>
@@ -154,6 +153,7 @@ Anderson and Legendre 1999 found the same for linear models).</li>
 </ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm</span>, nperm <span class="op">=</span> <span class="fl">199</span>, seed <span class="op">=</span> <span class="fl">1</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">perm</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;                            Estimate Std. Error t value Perm_p_value</span></span>
@@ -200,8 +200,7 @@ data fixed at the fit).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Anova Table (Type II tests)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Response: mpg</span></span>
+<span><span class="co">#&gt; Response: mpg</span></span>
 <span><span class="co">#&gt;               Sum Sq Df F value Pr(&gt;F) Perm_p_value</span></span>
 <span><span class="co">#&gt; wt          118.2039  1 18.0801 0.0002        0.001</span></span>
 <span><span class="co">#&gt; factor(cyl)  95.2633  2  7.2856 0.0028        0.005</span></span>
@@ -218,7 +217,7 @@ Freedman–Lane each pair is tested with its own reduced model, in which
 that pair’s means are equal, so its p-value does not depend on the other
 means:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"statistic"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate statistic p.value    p.method</span></span>
 <span><span class="co">#&gt; 1      0    0.2 -19.500000 -4.396098   0.005 permutation</span></span>
@@ -249,7 +248,7 @@ powerful. In a simulation study this kept the familywise error rate as
 Tukey’s test does.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pmw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, adj <span class="op">=</span> <span class="st">"westfall"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>                    prtnum <span class="op">=</span> <span class="cn">FALSE</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmw</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"p.value"</span>, <span class="st">"p.adj"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2 p.value p.adj</span></span>
 <span><span class="co">#&gt; 1      0    0.2   0.005 0.005</span></span>
@@ -275,6 +274,7 @@ GLMM):</p>
 <span><span class="va">fm_clin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">Favorable</span>, <span class="va">Total</span> <span class="op">-</span> <span class="va">Favorable</span><span class="op">)</span> <span class="op">~</span> <span class="va">Treatment</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Clinic</span><span class="op">)</span>,</span>
 <span>                 family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">Clinical</span><span class="op">)</span></span>
 <span><span class="va">perm_clin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_clin</span>, nperm <span class="op">=</span> <span class="fl">199</span>, seed <span class="op">=</span> <span class="fl">1</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">perm_clin</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;               Estimate Std. Error t value Perm_p_value</span></span>
@@ -364,8 +364,7 @@ the slope for <code>Days</code> vary between subjects?</p>
 <span><span class="co">#&gt;       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
 <span><span class="co">#&gt; lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span></span>
 <span><span class="co">#&gt; lmer1    6 1755.6 1774.8 -871.81    1743.6 42.837  2   4.99e-10   0.01</span></span></code></pre></div>
-<p>For GLMMs (<code>glmer</code> or <code>glmmTMB</code>, also as
-<code><a href="../reference/permlmer.html">permglmer()</a></code> and <code><a href="../reference/permlmer.html">permglmmTMB()</a></code>) the same is
+<p>For GLMMs (<code>glmer</code> or <code>glmmTMB</code>) the same is
 done on the working scale. For 0/1 responses, where the working scale
 fails with rare events or tiny clusters, randomised quantile residuals
 are permuted instead and the GLMMs refitted
@@ -375,7 +374,7 @@ vary between locations, beyond the variation between broods?</p>
 <code class="sourceCode R"><span><span class="va">gm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="va">TICKS</span> <span class="op">~</span> <span class="va">YEAR</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">HEIGHT</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">BROOD</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">poisson</span>,</span>
 <span>             data <span class="op">=</span> <span class="fu">lme4</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lme4/man/grouseticks.html" class="external-link">grouseticks</a></span><span class="op">)</span></span>
 <span><span class="va">gm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">gm1</span>, <span class="va">.</span> <span class="op">~</span> <span class="va">.</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">LOCATION</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/permlmer.html">permglmer</a></span><span class="op">(</span><span class="va">gm1</span>, <span class="va">gm2</span>, nperm <span class="op">=</span> <span class="fl">99</span>, ncore <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permlmer.html">permlmer</a></span><span class="op">(</span><span class="va">gm1</span>, <span class="va">gm2</span>, nperm <span class="op">=</span> <span class="fl">99</span>, ncore <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Data: lme4::grouseticks</span></span>
 <span><span class="co">#&gt; Models:</span></span>
 <span><span class="co">#&gt; m0: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD)</span></span>
@@ -383,9 +382,9 @@ vary between locations, beyond the variation between broods?</p>
 <span><span class="co">#&gt;    npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
 <span><span class="co">#&gt; m0    5 1988.1 2008.1 -989.04    1978.1                            </span></span>
 <span><span class="co">#&gt; m1    6 1987.9 2011.9 -987.94    1975.9 2.1992  1    0.13809   0.08</span></span></code></pre></div>
-<p><code><a href="../reference/permanova.lmer.html">permanova.lmer()</a></code> applies the same test to each fixed
-term of an <code>lmer</code> or <code>glmer</code> model in turn (Type
-I, II or III), for an ANOVA table with permutation p-values.</p>
+<p>For an ANOVA table of the fixed terms of an <code>lmer</code> or
+<code>glmer</code> model with permutation p-values, use
+<code><a href="../reference/permmodels.html">permmodels()</a></code> (above).</p>
 </div>
 <div class="section level2">
 <h2 id="permutations-restricted-by-the-design-permindex">Permutations restricted by the design: <code>permindex()</code><a class="anchor" aria-label="anchor" href="#permutations-restricted-by-the-design-permindex"></a>
@@ -399,31 +398,6 @@ use them through <code>perms</code> (a randomisation test):</p>
 <code class="sourceCode R"><span><span class="va">fm_rcb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">nitro</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permindex.html">permindex</a></span><span class="op">(</span><span class="va">Oats</span>, block <span class="op">=</span> <span class="st">"Block"</span>, nsim <span class="op">=</span> <span class="fl">999</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_rcb</span>, perms <span class="op">=</span> <span class="va">idx</span><span class="op">)</span><span class="op">$</span><span class="va">ANOVA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
-<span><span class="co">#&gt;             Estimate Std. Error t value Pr(&gt;|t|) Perm_p_value</span></span>
-<span><span class="co">#&gt; (Intercept)  79.3889     3.7668 21.0759   0.0000           NA</span></span>
-<span><span class="co">#&gt; Block.L      29.4823     4.6134  6.3906   0.0000        0.069</span></span>
-<span><span class="co">#&gt; Block.Q      20.0124     4.6134  4.3379   0.0001        1.000</span></span>
-<span><span class="co">#&gt; Block.C       5.3728     4.6134  1.1646   0.2486        0.001</span></span>
-<span><span class="co">#&gt; Block^4       4.7718     4.6134  1.0343   0.3049        1.000</span></span>
-<span><span class="co">#&gt; Block^5      -1.2651     4.6134 -0.2742   0.7848        0.001</span></span>
-<span><span class="co">#&gt; nitro0.2     19.5000     5.3271  3.6605   0.0005        0.002</span></span>
-<span><span class="co">#&gt; nitro0.4     34.8333     5.3271  6.5389   0.0000        0.001</span></span>
-<span><span class="co">#&gt; nitro0.6     44.0000     5.3271  8.2597   0.0000        0.001</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ANOVA:</span></span>
-<span><span class="co">#&gt; Analysis of Variance Table</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Response: yield</span></span>
-<span><span class="co">#&gt;           Df   Sum Sq   Mean Sq F value Pr(&gt;F) Perm_p_value</span></span>
-<span><span class="co">#&gt; Block      5 15875.28 3175.0556 12.4317      0            1</span></span>
-<span><span class="co">#&gt; nitro      3 20020.50 6673.5000 26.1297      0        0.001</span></span>
-<span><span class="co">#&gt; Residuals 63 16090.17  255.3995                            </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.</span></span>
 <span><span class="co">#&gt;           Df   Sum Sq   Mean Sq F value Pr(&gt;F) Perm_p_value</span></span>
 <span><span class="co">#&gt; Block      5 15875.28 3175.0556 12.4317      0            1</span></span>
 <span><span class="co">#&gt; nitro      3 20020.50 6673.5000 26.1297      0        0.001</span></span>
@@ -438,6 +412,7 @@ effects: the global null hypothesis), refits the full model to each and
 compares the statistics. For the clinical trial data:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bootmodels.html">bootmodels</a></span><span class="op">(</span><span class="va">fm_clin</span>, nsim <span class="op">=</span> <span class="fl">99</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">boot</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;               Estimate Std. Error z value Pr(&gt;|z|) Boot_p_value</span></span>
@@ -445,6 +420,7 @@ compares the statistics. For the clinical trial data:</p>
 <span><span class="co">#&gt; Treatmentdrug   0.7382     0.3004  2.4575   0.0140         0.03</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
+<span><span class="co">#&gt; Analysis of Variance Table</span></span>
 <span><span class="co">#&gt;           npar Sum Sq Mean Sq F value Boot_p_value</span></span>
 <span><span class="co">#&gt; Treatment    1 6.2054  6.2054  6.2054         0.03</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -452,7 +428,7 @@ compares the statistics. For the clinical trial data:</p>
 <p>Its result is used as a <code>permlist</code>; the <code>pairs</code>
 table then says <code>"bootstrap"</code>:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, prtnum <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    level1 level2   estimate p.value  p.method</span></span>
@@ -508,7 +484,7 @@ which the term has no effect) where the parametric test rejects at
 <code>level</code>. Near <code>level</code>, the parametric test suits
 these data; well above it, its p-values are too small here.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_mpg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">p_mpg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fm_mt</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">p_mpg</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           statistic df1 df2      p.param p.perm       ses param.size</span></span>
 <span><span class="co">#&gt; wt        18.080056   1  28 0.0002130435  0.001 11.695665 0.04904905</span></span>
@@ -526,8 +502,7 @@ every response (min-p; Westfall and Young 1993). The responses’
 correlation is kept by the shared permutations, without a multivariate
 model.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_qsec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>                     prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">p_qsec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">qsec</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mt</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/permcombine.html">permcombine</a></span><span class="op">(</span>mpg <span class="op">=</span> <span class="va">p_mpg</span>, qsec <span class="op">=</span> <span class="va">p_qsec</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             mpg  qsec combined adj.mpg adj.qsec</span></span>
 <span><span class="co">#&gt; wt        0.001 0.002    0.001   0.002    0.003</span></span>
@@ -677,7 +652,7 @@ the longitudinal mixed effects model. <em>Biometrics</em> 50,
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -3,7 +3,7 @@
 area. Used in the overview article to fit a semiparametric model with a smooth in Z and a
 thin-plate spline in X and Y."><meta property="og:description" content="Copper grade at sampling points with their X, Y and Z coordinates within a designated
 area. Used in the overview article to fit a semiparametric model with a smooth in Z and a
-thin-plate spline in X and Y."></head><body>
+thin-plate spline in X and Y."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,7 @@ thin-plate spline in X and Y."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1><code>copper</code> data</h1>
+      <img src="../logo.png" class="logo" alt=""><h1><code>copper</code> data</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>copper.Rd</code></div>
     </div>
@@ -92,7 +91,7 @@ fit of these data (a geoadditive model fitted by <code><a href="https://rdrr.io/
 <span class="r-in"><span><span class="co"># M. P. Wand's geoadditive model: a thin-plate surface over the plane with the given knots,</span></span></span>
 <span class="r-in"><span><span class="co"># and an O'Sullivan spline in depth (their linear terms are added to the fixed effects)</span></span></span>
 <span class="r-in"><span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">grade</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">copperKnots</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>                 <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">80</span>, <span class="fl">120</span>, by <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">copper</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                 <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">80</span>, <span class="fl">120</span>, by <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">mod</span><span class="op">)</span>   <span class="co"># fixed effects (Kenward-Roger) and a test of each smooth term</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -113,13 +112,13 @@ fit of these data (a geoadditive model fitted by <code><a href="https://rdrr.io/
 <span class="r-out co"><span class="r-pr">#&gt;</span>                       test</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  0.5 chi2(0) + 0.5 chi2(1)</span>
-<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
 <span class="r-plt img"><img src="copper-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="co"># on the log scale, with the pairwise interactions of the coordinates</span></span></span>
 <span class="r-in"><span><span class="va">mod2</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>                  <span class="va">xcoord</span><span class="op">:</span><span class="va">ycoord</span> <span class="op">+</span> <span class="va">xcoord</span><span class="op">:</span><span class="va">zcoord</span> <span class="op">+</span> <span class="va">ycoord</span><span class="op">:</span><span class="va">zcoord</span>, data <span class="op">=</span> <span class="va">copper</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod2</span>, covariate <span class="op">=</span> <span class="st">"zcoord"</span>, trans <span class="op">=</span> <span class="va">exp</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
+<span class="r-in"><span>                  <span class="va">xcoord</span><span class="op">:</span><span class="va">ycoord</span> <span class="op">+</span> <span class="va">xcoord</span><span class="op">:</span><span class="va">zcoord</span> <span class="op">+</span> <span class="va">ycoord</span><span class="op">:</span><span class="va">zcoord</span>, data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">mod2</span>, covariate <span class="op">=</span> <span class="st">"zcoord"</span>, trans <span class="op">=</span> <span class="va">exp</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
 <span class="r-plt img"><img src="copper-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
@@ -129,7 +128,7 @@ fit of these data (a geoadditive model fitted by <code><a href="https://rdrr.io/
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

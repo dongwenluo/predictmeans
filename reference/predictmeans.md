@@ -8,11 +8,10 @@ pairwise comparisons and permutation tests.
 ## Usage
 
 ``` r
-predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", Df=NULL,
-  level=NULL, covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I, transOff = 0,
-  count=FALSE, which.plots = c("mean", "pval", "back"),
-  plot=getOption("predictmeans.plot", FALSE), plot_args=list(), prtnum=TRUE, permlist=NULL,
-  ncore=1, ndecimal=4, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
+predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", conf.level=0.95,
+  covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
+  plot=getOption("predictmeans.plot", FALSE), plot_args=list(), permlist=NULL,
+  ncore=1, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
@@ -122,15 +121,11 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   "bonferroni" adjusted the LSDs, with all the pairs as family also with
   `atvar`.)
 
-- Df:
+- conf.level:
 
-  A degree of freedom for calculating LSD. For the above models, Df is
-  obtained from the function automatically.
-
-- level:
-
-  A significant level for calculating LSD, CI etc. The default value is
-  0.05.
+  The confidence level of the confidence limits; the tests, LSDs and
+  letters are at the significance level `1 - conf.level`. The default is
+  0.95 (`level = 0.05` before 2.0).
 
 - covariate:
 
@@ -187,31 +182,15 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   gives the mean in the last two cases; `settings$back_transform` and
   [`summary()`](https://rdrr.io/r/base/summary.html) say which it is.
 
-- transOff:
-
-  When you use `trans=exp(x+1)`, then `transOff=1`, the default is 0.
-  (Not needed when the transformation is taken from the formula.)
-
-- count:
-
-  An option for indicating the back transformed mean values are counts
-  or not. The default is FALSE.
-
-- which.plots:
-
-  Which plots to draw: any of `"mean"` (means plot), `"bar"` (bar
-  chart), `"pval"` (p-value plot, when there are more than six p-values)
-  and `"back"` (back-transformed plot). The default is
-  `c("mean", "pval", "back")`.
-
 - plot:
 
   Draw the plots now? The default is `FALSE` (since 2.0; 1.x drew them):
   the result holds the tables, and `autoplot()` draws the plots from it.
   `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a whole
-  session, draws them as 1.x did; asking for plots with `which.plots`,
-  `plotord` or the old `mplot`, `barplot`, `pplot` and `bkplot` also
-  draws them.
+  session, draws `"mean"` (means plot), `"pval"` (p-value plot, when
+  there are more than six p-values) and `"back"` (back-transformed
+  plot); name the plots wanted to choose them, including `"bar"` (bar
+  chart), e.g. `plot = c("mean", "bar")`.
 
 - plot_args:
 
@@ -253,11 +232,6 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   :   A logical variable to indicate to print an average LSD or SED bar
       on the means plot. The default is TRUE.
 
-  `responsen`
-
-  :   Name (in "quotes") of the back transformed response variable in
-      the `model`.
-
   `jitterv`
 
   :   A degree of jitter in x and y direction in the back transformed
@@ -267,51 +241,29 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
   :   The base font size. The default is 12.
 
-  `prtplt`
-
-  :   An option for printing plots on the screen, or not. The default is
-      TRUE.
-
-  `newwd`
-
-  :   A logical variable to indicate whether to print graph in a new
-      window. The default is FALSE.
-
-  As in 1.x these may also be given as arguments of their own
-  (`plottitle = "Yield"`).
-
 - ...:
 
-  The settings of `plot_args` given by name as in 1.x, and the 1.x
-  choices of plots `mplot`, `barplot`, `pplot` and `bkplot`, which still
-  work with a warning that names the `which.plots` to use. Other names
-  are an error.
-
-- prtnum:
-
-  An option for printing covariate information on the screen, or not.
-  The default is TRUE.
+  Not used: arguments removed in 2.0 (e.g. `level`, `Df`, `which.plots`,
+  `plottitle` as an argument of its own) stop with their 2.0 spelling
+  (see
+  [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md));
+  other names are an error.
 
 - permlist:
 
   A model parameter list produced by the function `permmodels`. When
-  `permlist != NULL`, the option `Df` will be non-functional. This is a
-  key option for pairwise comparisons via permutation tests. With the
-  result of `permmodels(method = "freedman-lane")` (`lm` and `aov`
-  models), each pair is tested by Freedman-Lane permutations of the
-  model in which that pair's means are equal. With a `permlist`,
-  `vcov_adjust` is not used: the observed t statistics are compared with
-  those of the permuted refits, which use the unadjusted covariance.
+  `permlist != NULL`, `df_method` is not used. This is a key option for
+  pairwise comparisons via permutation tests. With the result of
+  `permmodels(method = "freedman-lane")` (`lm` and `aov` models), each
+  pair is tested by Freedman-Lane permutations of the model in which
+  that pair's means are equal. With a `permlist`, `vcov_adjust` is not
+  used: the observed t statistics are compared with those of the
+  permuted refits, which use the unadjusted covariance.
 
 - ncore:
 
   Number of cores for parallel computing when `permlist != NULL`, the
   default value is 1 (before predictmeans 2.0: 3).
-
-- ndecimal:
-
-  An option for specifying number of decimal point to be print at
-  predicted means table. The default is 4.
 
 - cov_reduce:
 
@@ -381,38 +333,39 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - df_method:
 
-  Denominator degrees of freedom for `lmer` models. `"auto"` (the
-  default) uses Kenward-Roger for REML fits and Satterthwaite for ML
-  fits. Kenward-Roger uses the observed information of the variance
-  parameters, as SAS PROC MIXED `DDFM=KR`; it stays valid with missing
-  values, where the expected information (`"KR-expected"`, as pbkrtest
-  and emmeans) is not: in simulations (`dev/sim-df/` in the package
-  sources) F tests of repeated measures with missing values rejected 6%
-  of true hypotheses at the 5% level with the observed information and
-  8.5% with the expected. The two agree in balanced designs.
-  `"KR-average"` uses the average information of the REML iterations of
-  Genstat and ASReml (Gilmour, Thompson and Cullis 1995) and gives
-  Genstat's REML df; Genstat's SEDs are the unadjusted ones
-  (`vcov_adjust = FALSE`). `"containment"` gives the SAS `DDFM=CONTAIN`
-  df: the smallest rank contribution to \\\[X Z\]\\ of the random
-  effects that contain `modelterm`, or the residual df when none does;
-  all means and comparisons of the term then share that df, and the
-  unadjusted covariance is used unless `vcov_adjust = TRUE` is given.
-  `"between-within"` gives the SAS `DDFM=BETWITHIN` df, for `lmer`,
-  `lme` and `gls` models: the subject is the coarsest random-effect
-  grouping (`lmer`, `lme`) or the grouping of the correlation structure
-  (`gls`); an effect constant within subjects gets the between-subject
-  df, and the others the df of their subject-by-effect interaction (for
-  example Block x Variety in a split plot); with an unstructured
-  covariance (`gls` with `corSymm`) and no random effects every effect
-  gets the between-subject df, as in SAS. Checked against SAS PROC
-  MIXED. As for containment, the unadjusted covariance is used unless
-  `vcov_adjust = TRUE` is given. For `lme` and `gls` models fitted by
-  REML, `"auto"` is Kenward-Roger too (with adjusted standard errors),
-  for any correlation and variance structure: in simulations the
-  residual df (`gls`) rejected 16% of true hypotheses in F tests of
-  unstructured repeated measures (24% with missing values),
-  Kenward-Roger 4-6%. `"Satterthwaite"` is also available (the
+  Denominator degrees of freedom, by method or as one number (a fixed
+  df, `Df` before 2.0), e.g. `df_method = 10`. For `lmer` models
+  `"auto"` (the default) uses Kenward-Roger for REML fits and
+  Satterthwaite for ML fits. Kenward-Roger uses the observed information
+  of the variance parameters, as SAS PROC MIXED `DDFM=KR`; it stays
+  valid with missing values, where the expected information
+  (`"KR-expected"`, as pbkrtest and emmeans) is not: in simulations
+  (`dev/sim-df/` in the package sources) F tests of repeated measures
+  with missing values rejected 6% of true hypotheses at the 5% level
+  with the observed information and 8.5% with the expected. The two
+  agree in balanced designs. `"KR-average"` uses the average information
+  of the REML iterations of Genstat and ASReml (Gilmour, Thompson and
+  Cullis 1995) and gives Genstat's REML df; Genstat's SEDs are the
+  unadjusted ones (`vcov_adjust = FALSE`). `"containment"` gives the SAS
+  `DDFM=CONTAIN` df: the smallest rank contribution to \\\[X Z\]\\ of
+  the random effects that contain `modelterm`, or the residual df when
+  none does; all means and comparisons of the term then share that df,
+  and the unadjusted covariance is used unless `vcov_adjust = TRUE` is
+  given. `"between-within"` gives the SAS `DDFM=BETWITHIN` df, for
+  `lmer`, `lme` and `gls` models: the subject is the coarsest
+  random-effect grouping (`lmer`, `lme`) or the grouping of the
+  correlation structure (`gls`); an effect constant within subjects gets
+  the between-subject df, and the others the df of their
+  subject-by-effect interaction (for example Block x Variety in a split
+  plot); with an unstructured covariance (`gls` with `corSymm`) and no
+  random effects every effect gets the between-subject df, as in SAS.
+  Checked against SAS PROC MIXED. As for containment, the unadjusted
+  covariance is used unless `vcov_adjust = TRUE` is given. For `lme` and
+  `gls` models fitted by REML, `"auto"` is Kenward-Roger too (with
+  adjusted standard errors), for any correlation and variance structure:
+  in simulations the residual df (`gls`) rejected 16% of true hypotheses
+  in F tests of unstructured repeated measures (24% with missing
+  values), Kenward-Roger 4-6%. `"Satterthwaite"` is also available (the
   covariance of the variance parameters from the Hessian of the REML
   log-likelihood, as SAS; its F tests are liberal when the covariance
   has several parameters), and `"containment"` gives nlme's df (`lme`)
@@ -830,7 +783,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> Comparison intervals: mean +/- 0.6226 SE (44.6% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.
   ## Means within each variety, Tukey-adjusted pairs, plots
   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
-    which.plots=c("mean", "bar", "pval", "back"), line=FALSE)
+    plot=c("mean", "bar", "pval", "back"), plot_args=list(lineplot=FALSE))
 
 
 

@@ -3,7 +3,7 @@
   obtained from functions aov, lm, glm, gls, lme,
   or lmer."><meta property="og:description" content="Performs t-tests (or permuted t-tests) of specified contrasts for linear models
   obtained from functions aov, lm, glm, gls, lme,
-  or lmer."></head><body>
+  or lmer."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,7 @@
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Linear Contrast Tests for a Linear Model</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Linear Contrast Tests for a Linear Model</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/contrastmeans.R" class="external-link"><code>R/contrastmeans.R</code></a></small>
       <div class="d-none name"><code>contrastmeans.Rd</code></div>
     </div>
@@ -62,10 +61,10 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">Df</span>, <span class="va">permlist</span>,</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">contrastmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, <span class="va">ctrmatrix</span>, ctrnames<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, <span class="va">permlist</span>,</span>
 <span>                vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>, weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
 <span>                df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>, joint<span class="op">=</span><span class="cn">FALSE</span>,</span>
-<span>                level<span class="op">=</span><span class="fl">0.05</span>, vcov<span class="op">=</span><span class="cn">NULL</span>, equivalence<span class="op">=</span><span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<span>                conf.level<span class="op">=</span><span class="fl">0.95</span>, vcov<span class="op">=</span><span class="cn">NULL</span>, equivalence<span class="op">=</span><span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -99,13 +98,8 @@ single-step and "westfall" the step-down max-|t| adjustment of the permutation p
 The default method is "none".</p></dd>
 
 
-<dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
-<dd><p>A denominator degree of freedom for <code>modelterm</code>. (For <code>glmer</code> models
-the <code>Df</code> needs to be specified, while for the other models, <code>Df</code> is obtained from the fitted model automatically).</p></dd>
-
-
 <dt id="arg-permlist">permlist<a class="anchor" aria-label="anchor" href="#arg-permlist"></a></dt>
-<dd><p>A model parameter list containing <code>nsim</code> parameters produced by the function <code>permmodels</code>. When <code>permlist != NULL</code>, the option <code>Df</code> will be non-functional. This is a key
+<dd><p>A model parameter list containing <code>nsim</code> parameters produced by the function <code>permmodels</code>. When <code>permlist != NULL</code>, <code>df_method</code> is not used. This is a key
   option for the permutation test. With the result of <code>permmodels(method = "freedman-lane")</code> (<code>lm</code> and
 <code>aov</code> models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
 0. With a <code>permlist</code>, <code>vcov_adjust</code> is not used (the permuted refits use the unadjusted covariance).</p></dd>
@@ -124,7 +118,7 @@ over them (<code>"equal"</code>, the default, <code>"proportional"</code>, <code
 
 
 <dt id="arg-df-method">df_method<a class="anchor" aria-label="anchor" href="#arg-df-method"></a></dt>
-<dd><p>Denominator df: <code>"auto"</code> (Kenward-Roger for REML fits of <code>lmer</code>, <code>lme</code> and <code>gls</code>,
+<dd><p>Denominator df, by method or as one number (a fixed df, <code>Df</code> before 2.0): <code>"auto"</code> (Kenward-Roger for REML fits of <code>lmer</code>, <code>lme</code> and <code>gls</code>,
 Satterthwaite for ML fits), <code>"Kenward-Roger"</code>, <code>"Satterthwaite"</code> or <code>"containment"</code> (SAS <code>DDFM=CONTAIN</code>), and
 for <code>lmer</code>, <code>lme</code> and <code>gls</code> models <code>"between-within"</code> (SAS <code>DDFM=BETWITHIN</code>), and
 <code>"KR-expected"</code> (Kenward-Roger with the expected information, as <span class="pkg">pbkrtest</span>; <code>"Kenward-Roger"</code> uses
@@ -142,9 +136,9 @@ of <code>ctrmatrix</code>. With <code>permlist</code>, also a permutation p-valu
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is <code>FALSE</code>.</p></dd>
 
 
-<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>Significance level for the confidence limits of the contrasts (<code>lower.CL</code>, <code>upper.CL</code>); the
-default 0.05 gives 95% limits. They are t limits of each contrast, or with <code>permlist</code> permutation-t limits:
+<dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
+<dd><p>Confidence level of the limits of the contrasts (<code>lower.CL</code>, <code>upper.CL</code>; <code>level =
+0.05</code> before 2.0); the tests are at the significance level <code>level = 1 - conf.level</code>. They are t limits of each contrast, or with <code>permlist</code> permutation-t limits:
 estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
 k = floor(level (nperm + 1))). With <code>adj</code> "bonferroni", "sidak", "scheffe" or "mvt" (with <code>permlist</code>:
 "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
@@ -169,9 +163,13 @@ covariance.</p></dd>
 <dd><p>Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
 contrasts: a positive number \(d\) (equivalence region \(-d\) to \(d\)) or <code>c(lower, upper)</code>, on the
 scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
-one-sided p-values; below <code>level</code>, the difference lies within the margins (as emmeans'
+one-sided p-values; below <code>1 - conf.level</code>, the difference lies within the margins (as emmeans'
 <code>test(..., side = "equivalence")</code>). Not adjusted for multiplicity; with a <code>permlist</code> it is t-based
 (normal-based in <code>contrastmeans</code>).</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Not used: arguments removed in 2.0 (<code>Df</code>, <code>level</code>) stop with their 2.0 spelling.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -281,7 +279,7 @@ components are those of 1.x:</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

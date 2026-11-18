@@ -3,7 +3,7 @@
 data of Breiman and Friedman (1985); the data of M. P. Wand's additive model examples (fitted by lme()
 and by gam())."><meta property="og:description" content="Daily ozone concentration with three meteorological variables (345 days), a version of the Los Angeles ozone
 data of Breiman and Friedman (1985); the data of M. P. Wand's additive model examples (fitted by lme()
-and by gam())."></head><body>
+and by gam())."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,7 @@ and by gam())."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Ozone Concentration and Meteorology in California</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Ozone Concentration and Meteorology in California</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>ozoneCalif.Rd</code></div>
     </div>
@@ -93,7 +92,7 @@ correlation. <em>Journal of the American Statistical Association</em>, 80, 580-5
 <span class="r-in"><span><span class="co"># an additive model: three O'Sullivan splines</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="semireg.html">semireg</a></span><span class="op">(</span><span class="va">ozone</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">inversion.base.height</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>                 <span class="fu">s</span><span class="op">(</span><span class="va">daggett.pressure.gradient</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>                 <span class="fu">s</span><span class="op">(</span><span class="va">inversion.base.temp</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">ozoneCalif</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                 <span class="fu">s</span><span class="op">(</span><span class="va">inversion.base.temp</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">ozoneCalif</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span>     <span class="co"># is each curve more than a straight line?</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                          term  variance    logLik logLik.without      LRT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     s_inversion_base_height 12.286694 -1017.003      -1024.002 13.99700</span>
@@ -104,7 +103,7 @@ correlation. <em>Journal of the American Statistical Association</em>, 80, 580-5
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 1.397650e-09 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3 1.615225e-05 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-in"><span><span class="co"># the effect of one covariate, the others at their means</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit</span>, covariate <span class="op">=</span> <span class="st">"inversion.base.temp"</span>, prt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fit</span>, covariate <span class="op">=</span> <span class="st">"inversion.base.temp"</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
 <span class="r-plt img"><img src="ozoneCalif-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
@@ -113,7 +112,7 @@ correlation. <em>Journal of the American Statistical Association</em>, 80, 580-5
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

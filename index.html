@@ -12,6 +12,7 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="predictmeans: predicted means for linear and mixed models">
 <meta name="description" content="Providing functions to diagnose and make inferences from various linear models, such as those obtained from aov, lm, glm, gls, lme, lmer, glmmTMB, gam and semireg. Inferences include predicted means and standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square and graphs.">
 <meta property="og:description" content="Providing functions to diagnose and make inferences from various linear models, such as those obtained from aov, lm, glm, gls, lme, lmer, glmmTMB, gam and semireg. Inferences include predicted means and standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square and graphs.">
+<meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -65,9 +66,18 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="predictmeans">predictmeans<a class="anchor" aria-label="anchor" href="#predictmeans"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="predictmeans-">predictmeans <a class="anchor" aria-label="anchor" href="#predictmeans-"></a>
+</h1>
+</div>
 <p>Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and contrasts for linear, generalized linear and mixed models — <code>aov</code>, <code>lm</code>, <code>glm</code>, <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>, <code>glmmTMB</code>, <code>gam</code> and semiparametric <code>semireg</code> models — with Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap tests, R² for mixed models and diagnostics. Results match SAS <code>LSMEANS</code> and emmeans.</p>
+<div class="section level2">
+<h2 id="workflow">Workflow<a class="anchor" aria-label="anchor" href="#workflow"></a>
+</h2>
+<div class="float">
+<img src="reference/figures/workflow.png" alt="From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots"><div class="figcaption">From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots</div>
+</div>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -124,7 +134,7 @@
 <tr>
 <td>Resampling tests</td>
 <td>
-<code><a href="reference/permmodels.html">permmodels()</a></code>, <code><a href="reference/permlmer.html">permlmer()</a></code>, <code><a href="reference/permanova.lmer.html">permanova.lmer()</a></code>, <code><a href="reference/bootmodels.html">bootmodels()</a></code>
+<code><a href="reference/permmodels.html">permmodels()</a></code>, <code><a href="reference/permlmer.html">permlmer()</a></code>, <code><a href="reference/bootmodels.html">bootmodels()</a></code>
 </td>
 </tr>
 <tr>
@@ -136,7 +146,7 @@
 <tr>
 <td>R², variance components, diagnostics</td>
 <td>
-<code><a href="reference/R2_model.html">R2_model()</a></code>, <code><a href="reference/R2_glmm.html">R2_glmm()</a></code>, <code><a href="reference/varcomp.html">varcomp()</a></code>, <code><a href="reference/pm_check.html">pm_check()</a></code>, <code><a href="reference/residplot.html">residplot()</a></code>, <code><a href="reference/CookD.html">CookD()</a></code>
+<code><a href="reference/R2_model.html">R2_model()</a></code>, <code><a href="reference/varcomp.html">varcomp()</a></code>, <code><a href="reference/pm_check.html">pm_check()</a></code>, <code><a href="reference/residplot.html">residplot()</a></code>, <code><a href="reference/CookD.html">CookD()</a></code>
 </td>
 </tr>
 <tr>
@@ -183,7 +193,7 @@
 <li>Dongwen Luo <br><small class="roles"> Author, maintainer </small>   </li>
 <li>Siva Ganesh <br><small class="roles"> Author </small>   </li>
 <li>John Koolaard <br><small class="roles"> Author </small>   </li>
-<li><a href="authors.html">More about authors...</a></li>
+<li>James Curran <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
 
@@ -194,7 +204,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

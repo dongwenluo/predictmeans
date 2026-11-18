@@ -236,15 +236,14 @@ kable(anova(mod))
 
 ``` r
 
-R2_glmm(mod)
+R2_model(mod)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##            Total            Fixed           Random Whole_plot:Block 
-    ##         "75.81%"         "37.19%"         "38.63%"         "13.87%" 
+    ##           75.81%           37.19%           38.63%           13.87% 
     ##            Block 
-    ##         "24.75%"
+    ##           24.75%
 
 ### Predicted Means
 
@@ -256,7 +255,11 @@ R2_glmm(mod)
 
 ``` r
 
-predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -356,7 +359,11 @@ PMplot(predm_out$p_valueMatrix)
 
 ``` r
 
-predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -479,16 +486,17 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function ‘predictmens’:
+Options in function ‘predictmeans’:
 
-- **{pair=TRUE}** is for multiple comparison without p-value adjusted
-  (‘adj’ has default value ‘none’).
+- **{pairwise=TRUE}** is for multiple comparison without p-value
+  adjusted (‘adj’ has default value ‘none’).
 
 - **{adj=“BH”}** is for multiple comparison with p-value adjusted by
-  “BH” method (‘pair’ with be TRUE automatically when ‘adj’ is not
+  “BH” method (‘pairwise’ will be TRUE automatically when ‘adj’ is not
   none).
 
-- **{bar=TRUE}** is for producing bar chart.
+- **{plot=c(“mean”, “bar”, “pval”, “back”)}** draws the plots named,
+  including the bar chart (`plot = TRUE`: the default plots).
 
 - **{meandecr=TRUE}** is for descending means in ‘mean_table’.
 
@@ -510,20 +518,28 @@ system.time(
 )
 ```
 
+    ##    user  system elapsed 
+    ##  26.707   0.066  26.708
+
+``` r
+
+permlme
+```
+
     ## 
     ## Coefficients of (fixed) effects:
     ##                            Estimate Std. Error t value Perm_p_value
     ## (Intercept)                 80.0000     9.1070  8.7844           NA
-    ## nitro0.2                    18.5000     7.6829  2.4079        0.026
+    ## nitro0.2                    18.5000     7.6829  2.4079        0.027
     ## nitro0.4                    34.6667     7.6829  4.5122        0.001
     ## nitro0.6                    44.8333     7.6829  5.8354        0.001
-    ## VarietyMarvellous            6.6667     9.7150  0.6862        0.533
-    ## VarietyVictory              -8.5000     9.7150 -0.8749        0.394
-    ## nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068        0.732
-    ## nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835        0.694
+    ## VarietyMarvellous            6.6667     9.7150  0.6862        0.535
+    ## VarietyVictory              -8.5000     9.7150 -0.8749        0.397
+    ## nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068        0.731
+    ## nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835        0.696
     ## nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295        0.684
     ## nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307        0.967
-    ## nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.659
+    ## nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.657
     ## nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.868
     ## 
     ## Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.
@@ -536,9 +552,6 @@ system.time(
     ## nitro:Variety  6  0.3028        0.927
     ## 
     ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
-
-    ##    user  system elapsed 
-    ##  32.562   0.174  32.651
 
 ``` r
 
@@ -582,25 +595,25 @@ predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", pe
     ## [1] "For variable 'nitro' at each level of 'Variety'"
     ## 
     ## $`Golden Rain`
-    ##     0     0.2    0.4   0.6 Group
+    ##     0      0.2   0.4   0.6 Group
     ## 0   1                      A    
-    ## 0.2 0.036 1                 B   
-    ## 0.4 0.003 0.0528 1          BC  
-    ## 0.6 0.003 0.006  0.195 1     C  
+    ## 0.2 0.0375 1                B   
+    ## 0.4 0.003  0.054 1          BC  
+    ## 0.6 0.003  0.006 0.195 1     C  
     ## 
     ## $Marvellous
     ##     0     0.2    0.4    0.6 Group
     ## 0   1                       A    
     ## 0.2 0.016 1                  B   
-    ## 0.4 0.003 0.266  1           BC  
-    ## 0.6 0.003 0.0375 0.2556 1     C  
+    ## 0.4 0.003 0.267  1           BC  
+    ## 0.6 0.003 0.0375 0.2568 1     C  
     ## 
     ## $Victory
     ##     0      0.2    0.4   0.6 Group
     ## 0   1                       A    
     ## 0.2 0.0336 1                 B   
     ## 0.4 0.003  0.0105 1           C  
-    ## 0.6 0.003  0.004  0.288 1     C  
+    ## 0.6 0.003  0.004  0.291 1     C  
     ## 
     ## $mean_table
     ## $mean_table$Table
@@ -631,7 +644,7 @@ contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=perml
 
     ## Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 999 permutations)
     ##    contrast estimate std.error df statistic p.value p.adj conf.low conf.high
-    ##  contrast 1    -8.50     9.715 NA   -0.8749   0.380 0.380   -29.68     12.68
+    ##  contrast 1    -8.50     9.715 NA   -0.8749   0.382 0.382   -29.68     12.68
     ##  contrast 2   -45.67     9.715 NA   -4.7006   0.001 0.001   -66.90    -24.44
 
 ## Example_2 Repeated Measurements (ATP data)
@@ -826,13 +839,12 @@ kable(anova(mod))
 
 ``` r
 
-R2_glmm(mod)
+R2_model(mod)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
-    ##    Total    Fixed   Random    heart 
-    ## "74.28%" "64.23%" "10.04%" "10.04%"
+    ## # Adjusted R2 for mixed models (Piepho)
+    ##  Total  Fixed Random  heart 
+    ## 74.28% 64.23% 10.04% 10.04%
 
 ### Predicted Means
 
@@ -845,9 +857,12 @@ R2_glmm(mod)
 ``` r
 
 predm_out <- predictmeans(mod, "A:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1052,9 +1067,12 @@ for (i in 6:15){
 ``` r
 
 predm_out <- predictmeans(mod, "B:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1260,9 +1278,12 @@ for (i in 6:15){
 ``` r
 
 predm_out <- predictmeans(mod, "A:B:time", 
-                          atvar="time", adj="BH", 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = TRUE, 
+                          trans=function(x) x^(1/1.5))
+```
+
+``` r
+
 print(predm_out[1:4])
 ```
 
@@ -1378,14 +1399,14 @@ quarto-disable-processing="false" quarto-bootstrap="false"}
 predm_out$predictmeansPlot$meanPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-35-1.png)
 
 ``` r
 
 predm_out$predictmeansPlot$ciPlot
 ```
 
-    ## NULL
+![](overview_files/figure-html/unnamed-chunk-35-2.png)
 
 - **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
   the diagonal at each ‘time’**
@@ -1502,7 +1523,7 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function ‘predictmens’:
+Options in function ‘predictmeans’:
 
 - **{atvar=“time”}** sets multiple comparison within each level of
   ‘time’, it also infects the mean_table and mean plots arrangement.
@@ -1629,88 +1650,101 @@ kable(car::Anova(mod))
 
 ``` r
 
-covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                level = 0.166) # get 83.4% CI
+covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose")
 as.data.frame(covariate_out) %>%
   select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
   rename(Probability=response, LL=response.conf.low, UL=response.conf.high) %>% 
   arrange(log10Dose, Drug) %>% 
-  group_by(log10Dose) %>% 
-  mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
-  ungroup() %>% 
   DT_df()
 ```
+
+Letters for the drugs at one dose: from comparison intervals, whose
+overlap agrees with the pairwise tests (overlap of 95% or 83.4%
+confidence intervals does not):
+
+``` r
+
+predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterCI = TRUE)$mean_table
+```
+
+    ## $Table
+    ##          Drug    Mean      SE  Df LL(86.5%) UL(86.5%) Bk_Mean Bk_LL(86.5%)
+    ## 1    Morphine  0.9711 0.16486 Inf    0.7246    1.2176  0.8342       0.7657
+    ## 2     Amidone  1.4402 0.20103 Inf    1.1397    1.7408  0.9251       0.8728
+    ## 3 Phenadoxone  2.6555 0.33079 Inf    2.1610    3.1501  0.9960       0.9847
+    ## 4   Pethidine -0.0885 0.06973 Inf   -0.1927    0.0158  0.4648       0.4236
+    ##   Bk_UL(86.5%) LetterGrp
+    ## 1       0.8883       A  
+    ## 2       0.9591       A  
+    ## 3       0.9992        B 
+    ## 4       0.5063         C
+    ## 
+    ## $Note
+    ## [1] "Letter-based representation of pairwise comparisons by overlap of the comparison intervals (LL, UL: mean +/- 1.495 SE, 86.5% intervals): two means differ at significant level '0.05' when their intervals do not overlap (the SEDs differ: approximate, but every pair here agrees with its test)"
 
 ``` r
 
 autoplot(covariate_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-44-1.png)
+![](overview_files/figure-html/unnamed-chunk-45-1.png)
 
 ``` r
 
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trellis = FALSE, plot = TRUE)
+               plot = TRUE, plot_args = list(trellis = FALSE))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-44-2.png)
+![](overview_files/figure-html/unnamed-chunk-45-2.png)
 
     ## Curves of 'Drug' along log10Dose
-    ## 83.4% limits; asymptotic (z) df
+    ## 95% limits; asymptotic (z) df
     ## response: back-transformed by the inverse link; mean
     ##      Drug log10Dose estimate std.error  df conf.low conf.high response
-    ##  Morphine -0.124939   -1.533    0.2061 Inf   -1.819   -1.2474  0.06264
-    ##  Morphine -0.095837   -1.468    0.1979 Inf   -1.742   -1.1941  0.07102
-    ##  Morphine -0.066736   -1.403    0.1896 Inf   -1.666   -1.1408  0.08025
-    ##  Morphine -0.037635   -1.339    0.1815 Inf   -1.590   -1.0873  0.09034
-    ##  Morphine -0.008533   -1.274    0.1733 Inf   -1.514   -1.0337  0.10136
-    ##  Morphine  0.020568   -1.209    0.1653 Inf   -1.438   -0.9801  0.11331
-    ##  Morphine  0.049670   -1.144    0.1574 Inf   -1.362   -0.9263  0.12625
-    ##  Morphine  0.078771   -1.080    0.1495 Inf   -1.287   -0.8724  0.14018
-    ##  Morphine  0.107872   -1.015    0.1418 Inf   -1.211   -0.8183  0.15511
-    ##  Morphine  0.136974   -0.950    0.1342 Inf   -1.136   -0.7640  0.17106
+    ##  Morphine -0.124939   -1.533    0.2061 Inf   -1.937   -1.1290  0.06264
+    ##  Morphine -0.095837   -1.468    0.1979 Inf   -1.856   -1.0804  0.07102
+    ##  Morphine -0.066736   -1.403    0.1896 Inf   -1.775   -1.0318  0.08025
+    ##  Morphine -0.037635   -1.339    0.1815 Inf   -1.694   -0.9830  0.09034
+    ##  Morphine -0.008533   -1.274    0.1733 Inf   -1.614   -0.9341  0.10136
+    ##  Morphine  0.020568   -1.209    0.1653 Inf   -1.533   -0.8851  0.11331
+    ##  Morphine  0.049670   -1.144    0.1574 Inf   -1.453   -0.8359  0.12625
+    ##  Morphine  0.078771   -1.080    0.1495 Inf   -1.373   -0.7864  0.14018
+    ##  Morphine  0.107872   -1.015    0.1418 Inf   -1.293   -0.7368  0.15511
+    ##  Morphine  0.136974   -0.950    0.1342 Inf   -1.213   -0.6869  0.17106
     ##  response.std.error response.conf.low response.conf.high
-    ##             0.02540           0.03449             0.1061
-    ##             0.02686           0.04073             0.1162
-    ##             0.02826           0.04785             0.1270
-    ##             0.02955           0.05592             0.1385
-    ##             0.03072           0.06502             0.1506
-    ##             0.03175           0.07521             0.1635
-    ##             0.03262           0.08655             0.1771
-    ##             0.03331           0.09911             0.1915
-    ##             0.03381           0.11291             0.2066
-    ##             0.03411           0.12800             0.2224
+    ##             0.02540           0.02637             0.1295
+    ##             0.02686           0.03173             0.1400
+    ##             0.02826           0.03794             0.1511
+    ##             0.02955           0.04511             0.1628
+    ##             0.03072           0.05330             0.1751
+    ##             0.03175           0.06262             0.1881
+    ##             0.03262           0.07314             0.2016
+    ##             0.03331           0.08494             0.2158
+    ##             0.03381           0.09806             0.2306
+    ##             0.03411           0.11255             0.2461
     ## ... 218 more rows: as.data.frame(x) gives the table.
     ## autoplot(x) draws the plot.
 
 ``` r
 
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trans=I, trellis = FALSE, ci=F)$plt
+               trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-44-3.png)
+![](overview_files/figure-html/unnamed-chunk-45-3.png)
 
 ### Highlights
 
 Options in function ‘covariatemeans’:
 
-- **{level = 0.166}** produces 83.4% confidence interval (CI) for
-  predicted means. If a straightforward multiple comparison between
-  predicted means is not feasible, an alternative method involves
-  utilizing predicted means with 83.4% CIs. When the CIs of two
-  predicted means overlap, the associated means are not significantly
-  different at the 0.05 level; otherwise, they are considered
-  significant. This holds for independent means with equal standard
-  errors. When the means are correlated (blocks, repeated measures,
-  mixed models) or their standard errors differ, the level that makes
-  overlap agree with the test is different:
-  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
-  computes it from the model (`letterCI = TRUE`, or
-  `autoplot(pm, interval = "comparison")`). The function **‘ci_mcp(LL,
-  UL)’** is used to produce indicating letters.
+- The confidence bands of the lines are for each line on its own:
+  whether two bands overlap is not a test of the two drugs.
+  `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letterCI = TRUE)`
+  gives letters at a dose that agree with the pairwise tests, and
+  `contr = c("Morphine", "Amidone")` in
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  gives the difference of two drugs along the dose with its band.
 
 **DT_df** is a function for producing data table in html with ‘CSV’
 download button. To download the whole data, you need to select ‘All’
@@ -1750,7 +1784,7 @@ ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
   theme_bw(15)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-46-1.png)
+![](overview_files/figure-html/unnamed-chunk-47-1.png)
 
 ### Smooth without Group
 
@@ -1765,25 +1799,12 @@ mod1 <- semireg(apartment.price ~ s(construction.date, bs = "os", k = 25),
                 data = WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: apartment.price ~ 1 + construction.date + (1 | s_construction_date)
-    ##    Data: WarsawApts
-    ## REML criterion at convergence: 3544.905
-    ## Random effects:
-    ##  Groups              Name        Std.Dev.
-    ##  s_construction_date (Intercept) 45.81   
-    ##  Residual                        17.81   
-    ## Number of obs: 409, groups:  s_construction_date, 27
-    ## Fixed Effects:
-    ##       (Intercept)  construction.date  
-    ##         -22.63914            0.06692
-
 ``` r
 
 residplot(mod1$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-48-1.png)
+![](overview_files/figure-html/unnamed-chunk-49-1.png)
 
 ### ANOVA, RANOVA and $`R^2`$
 
@@ -1814,13 +1835,12 @@ kable(anova(mod1)$smooth)
 
 ``` r
 
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##               Total               Fixed              Random s_construction_date 
-    ##            "86.14%"             "0.03%"            "86.11%"            "86.11%"
+    ##              86.14%               0.03%              86.11%              86.11%
 
 ### Prediction
 
@@ -1829,7 +1849,7 @@ R2_glmm(mod1$semer)
 
 ``` r
 
-pred_out1 <- semipred(mod1, covariate="construction.date", prt=FALSE)
+pred_out1 <- semipred(mod1, covariate="construction.date")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1839,7 +1859,7 @@ DT_df(pred_out1$pred_df %>%
 pred_out1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-53-1.png)
+![](overview_files/figure-html/unnamed-chunk-54-1.png)
 
 ### Smooth with Group
 
@@ -1854,37 +1874,12 @@ mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os",
                 data = WarsawApts)
 ```
 
-    ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: apartment.price ~ 1 + district + district:construction.date +  
-    ##     (1 | s_construction_date_districtMokotow) + (1 | s_construction_date_districtSrodmiescie) +  
-    ##     (1 | s_construction_date_districtWola) + (1 | s_construction_date_districtZoliborz)
-    ##    Data: WarsawApts
-    ## REML criterion at convergence: 3503.051
-    ## Random effects:
-    ##  Groups                                  Name        Std.Dev.
-    ##  s_construction_date_districtMokotow     (Intercept) 29.892  
-    ##  s_construction_date_districtSrodmiescie (Intercept) 40.159  
-    ##  s_construction_date_districtWola        (Intercept)  2.871  
-    ##  s_construction_date_districtZoliborz    (Intercept)  7.162  
-    ##  Residual                                            16.624  
-    ## Number of obs: 409, groups:  
-    ## s_construction_date_districtMokotow, 12; s_construction_date_districtSrodmiescie, 12; s_construction_date_districtWola, 12; s_construction_date_districtZoliborz, 12
-    ## Fixed Effects:
-    ##                           (Intercept)                    districtSrodmiescie  
-    ##                             -73.03295                              453.93382  
-    ##                          districtWola                       districtZoliborz  
-    ##                             686.43152                              352.74843  
-    ##     districtMokotow:construction.date  districtSrodmiescie:construction.date  
-    ##                               0.09293                               -0.14199  
-    ##        districtWola:construction.date     districtZoliborz:construction.date  
-    ##                              -0.25325                               -0.08855
-
 ``` r
 
 residplot(mod2$semer, group="district")  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-55-1.png)
+![](overview_files/figure-html/unnamed-chunk-56-1.png)
 
 ### ANOVA, RANOVA and $`R^2`$
 
@@ -1919,19 +1914,18 @@ kable(anova(mod2)$smooth)
 
 ``` r
 
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##                                   Total                                   Fixed 
-    ##                                "89.98%"                                 "0.69%" 
+    ##                                  89.98%                                   0.69% 
     ##                                  Random     s_construction_date_districtMokotow 
-    ##                                "89.29%"                                "31.79%" 
+    ##                                  89.29%                                  31.79% 
     ## s_construction_date_districtSrodmiescie        s_construction_date_districtWola 
-    ##                                "55.42%"                                 "0.27%" 
+    ##                                  55.42%                                   0.27% 
     ##    s_construction_date_districtZoliborz 
-    ##                                 "1.81%"
+    ##                                   1.81%
 
 ### Prediction with Group
 
@@ -1942,7 +1936,7 @@ R2_glmm(mod2$semer)
 
 ``` r
 
-pred_out2_1 <- semipred(mod2, "district", "construction.date", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "district", "construction.date")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1952,13 +1946,13 @@ DT_df(pred_out2_1$pred_df %>%
 pred_out2_1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-60-1.png)
+![](overview_files/figure-html/unnamed-chunk-61-1.png)
 
 Mean Contrast table for District ‘Mokotow’ vs ‘Srodmiescie’
 
 ``` r
 
-pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -1970,7 +1964,7 @@ pred_out2_2$pred_df %>%
 pred_out2_2$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-62-1.png)
+![](overview_files/figure-html/unnamed-chunk-63-1.png)
 
 ## Example_5 Semiparametric Regression with Multiple Covariates (Caschool data)
 
@@ -1986,7 +1980,7 @@ math score.
 
 ``` r
 
-data(Caschool, package="Ecdat")
+data(Caschool, package="predictmeans")
 Caschool <- Caschool %>% 
   select(county, grspan, calwpct, compstu, avginc, mathscr) %>% 
   mutate(log.avginc = log(Caschool$avginc))
@@ -2036,39 +2030,12 @@ mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = 
                    data = Caschool)
 ```
 
-    ## Formula:          
-    ## mathscr ~ 1 + (1 | county) + (1 | grspan) + calwpct + log.avginc +  
-    ##     compstu + (1 | s_calwpct) + (1 | s_log_avginc) + (1 | s_compstu)
-    ## Data: .pm_sr_data
-    ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  3223.605  3264.008 -1601.803  3203.605       410 
-    ## Random-effects (co)variances:
-    ## 
-    ## Conditional model:
-    ##  Groups       Name        Std.Dev.
-    ##  county       (Intercept)  5.9013 
-    ##  grspan       (Intercept)  0.6581 
-    ##  s_calwpct    (Intercept)  6.1400 
-    ##  s_log_avginc (Intercept)  5.1887 
-    ##  s_compstu    (Intercept)  1.9127 
-    ##  Residual                 10.1824 
-    ## 
-    ## Number of obs: 420 / Conditional model: county, 45; grspan, 2; s_calwpct, 14; s_log_avginc, 7; s_compstu, 14
-    ## 
-    ## Dispersion estimate for gaussian family (sigma^2):  104 
-    ## 
-    ## Fixed Effects:
-    ## 
-    ## Conditional model:
-    ## (Intercept)      calwpct   log.avginc      compstu  
-    ##    594.6222      -0.4925      24.6536      19.1168
-
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-66-1.png)
+![](overview_files/figure-html/unnamed-chunk-67-1.png)
 
 ### ANOVA and $`R^2`$
 
@@ -2089,15 +2056,14 @@ kable(Anova(mod$semer))
 
 ``` r
 
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##        Total        Fixed       Random       county       grspan    s_calwpct 
-    ##      "72.6%"     "50.87%"     "21.73%"       "8.9%"      "0.03%"      "9.12%" 
+    ##       72.60%       50.87%       21.73%        8.90%        0.03%        9.12% 
     ## s_log_avginc    s_compstu 
-    ##      "2.97%"      "0.72%"
+    ##        2.97%        0.72%
 
 ### Prediction
 
@@ -2108,7 +2074,7 @@ R2_glmm(mod$semer)
 
 ``` r
 
-pred_out1 <- semipred(mod, covariate = "calwpct", prt=FALSE)
+pred_out1 <- semipred(mod, covariate = "calwpct")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2118,11 +2084,11 @@ DT_df(pred_out1$pred_df %>%
 pred_out1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-69-2.png)
+![](overview_files/figure-html/unnamed-chunk-70-2.png)
 
 ``` r
 
-pred_out2 <- semipred(mod, covariate = "log.avginc", prt=FALSE)
+pred_out2 <- semipred(mod, covariate = "log.avginc")
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2132,11 +2098,11 @@ DT_df(pred_out2$pred_df %>%
 pred_out2$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-70-2.png)
+![](overview_files/figure-html/unnamed-chunk-71-2.png)
 
 ``` r
 
-pred_out3 <- semipred(mod, covariate = "compstu", prt=FALSE)
+pred_out3 <- semipred(mod, covariate = "compstu")
 DT_df(pred_out3$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2146,14 +2112,14 @@ DT_df(pred_out3$pred_df %>%
 pred_out3$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-71-2.png)
+![](overview_files/figure-html/unnamed-chunk-72-2.png)
 
 ``` r
 
 gridExtra::grid.arrange(pred_out1$plt, pred_out2$plt, pred_out3$plt, nrow = 1)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-72-1.png)
+![](overview_files/figure-html/unnamed-chunk-73-1.png)
 
 ## Example_6 Semiparametric Regression with Binomial Distribution (indonRespir data)
 
@@ -2232,35 +2198,12 @@ mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic + sex + 
                     family = binomial, data = indonRespir)
 ```
 
-    ## Formula:          
-    ## respirInfec ~ vitAdefic + sex + height + stunted + visit2 + visit3 +  
-    ##     visit4 + visit5 + visit6 + (1 | idnum) + age + (1 | s_age)
-    ## Data: .pm_sr_data
-    ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  673.0182  739.1892 -323.5091  647.0182      1187 
-    ## Random-effects (co)variances:
-    ## 
-    ## Conditional model:
-    ##  Groups Name        Std.Dev.
-    ##  idnum  (Intercept) 0.8353  
-    ##  s_age  (Intercept) 0.3839  
-    ## 
-    ## Number of obs: 1200 / Conditional model: idnum, 275; s_age, 27
-    ## 
-    ## Fixed Effects:
-    ## 
-    ## Conditional model:
-    ## (Intercept)    vitAdefic    sexfemale       height      stunted       visit2  
-    ##   -0.856596     0.655028    -0.509131    -0.033264     0.459970    -1.109032  
-    ##      visit3       visit4       visit5       visit6          age  
-    ##   -0.570441    -1.274461     0.477797    -0.002907    -0.514188
-
 ``` r
 
 residplot(mod1$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-76-1.png)
+![](overview_files/figure-html/unnamed-chunk-77-1.png)
 
 ### ANOVA and $`R^2`$
 
@@ -2288,13 +2231,12 @@ kable(car::Anova(mod1$semer))
 
 ``` r
 
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
-    ##    Total    Fixed   Random    idnum    s_age 
-    ##  "33.8%" "17.33%" "16.47%" "13.99%"  "2.48%"
+    ## # Adjusted R2 for mixed models (Piepho)
+    ##  Total  Fixed Random  idnum  s_age 
+    ## 33.80% 17.33% 16.47% 13.99%  2.48%
 
 ### Prediction
 
@@ -2303,7 +2245,7 @@ R2_glmm(mod1$semer)
 
 ``` r
 
-pred_out1 <- semipred(mod1, "age", "age", prt=FALSE)
+pred_out1 <- semipred(mod1, "age", "age")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2316,7 +2258,7 @@ pred_out1$plt+
   ylim(0, 0.18)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-80-1.png)
+![](overview_files/figure-html/unnamed-chunk-81-1.png)
 
 ### Smooth with Group
 
@@ -2331,39 +2273,12 @@ mod2 <- semireg_tmb(respirInfec ~ s(age, by = sex, bs = "os", k = 25) + vitAdefi
                     family = binomial, data = indonRespir)
 ```
 
-    ## Formula:          
-    ## respirInfec ~ vitAdefic + height + stunted + visit2 + visit3 +  
-    ##     visit4 + visit5 + visit6 + (1 | idnum) + sex + sex:age +  
-    ##     (1 | s_age_sexmale) + (1 | s_age_sexfemale)
-    ## Data: .pm_sr_data
-    ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  675.5755  751.9267 -322.7878  645.5755      1185 
-    ## Random-effects (co)variances:
-    ## 
-    ## Conditional model:
-    ##  Groups          Name        Std.Dev. 
-    ##  idnum           (Intercept) 8.553e-01
-    ##  s_age_sexmale   (Intercept) 3.786e-01
-    ##  s_age_sexfemale (Intercept) 4.134e-05
-    ## 
-    ## Number of obs: 1200 / Conditional model: idnum, 275; s_age_sexmale, 27; s_age_sexfemale, 27
-    ## 
-    ## Fixed Effects:
-    ## 
-    ## Conditional model:
-    ##   (Intercept)      vitAdefic         height        stunted         visit2  
-    ##      -0.95732        0.62528       -0.03509        0.46323       -1.09441  
-    ##        visit3         visit4         visit5         visit6      sexfemale  
-    ##      -0.53190       -1.22243        0.53727        0.06550       -0.16396  
-    ##   sexmale:age  sexfemale:age  
-    ##      -0.50650       -0.54696
-
 ``` r
 
 residplot(mod2$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-82-1.png)
+![](overview_files/figure-html/unnamed-chunk-83-1.png)
 
 ### ANOVA and $`R^2`$
 
@@ -2391,15 +2306,14 @@ kable(Anova(mod2$semer))
 
 ``` r
 
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##           Total           Fixed          Random           idnum   s_age_sexmale 
-    ##        "33.67%"        "16.27%"         "17.4%"         "14.7%"          "2.7%" 
+    ##          33.67%          16.27%          17.40%          14.70%           2.70% 
     ## s_age_sexfemale 
-    ##            "0%"
+    ##           0.00%
 
 ### Prediction with Group
 
@@ -2410,7 +2324,7 @@ R2_glmm(mod2$semer)
 
 ``` r
 
-pred_out2_1 <- semipred(mod2, "sex", "age", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "sex", "age")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2423,13 +2337,13 @@ pred_out2_1$plt+
   ylim(0, 0.24)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-86-1.png)
+![](overview_files/figure-html/unnamed-chunk-87-1.png)
 
 Mean Contrast table for Sex ‘male’ vs ‘female’
 
 ``` r
 
-pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -2441,7 +2355,7 @@ pred_out2_2$pred_df %>%
 pred_out2_2$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-88-1.png)
+![](overview_files/figure-html/unnamed-chunk-89-1.png)
 
 ## Example_7 Semiparametric Regression with Negtive Binomial Distribution (ragweed data)
 
@@ -2503,47 +2417,12 @@ mod <- semireg_tmb(pollenCount ~ rain + s(dayInSeason, by = year, bs = "os") +
                    family = nbinom1, data = ragweed)
 ```
 
-    ## Formula:          
-    ## pollenCount ~ rain + year + year:dayInSeason + temperatureResidual +  
-    ##     windSpeed + (1 | s_dayInSeason_year1991) + (1 | s_dayInSeason_year1992) +  
-    ##     (1 | s_dayInSeason_year1993) + (1 | s_dayInSeason_year1994) +  
-    ##     (1 | s_temperatureResidual) + (1 | s_windSpeed)
-    ## Data: .pm_sr_data
-    ##       AIC       BIC    logLik -2*log(L)  df.resid 
-    ##  2364.185  2432.786 -1164.093  2328.185       316 
-    ## Random-effects (co)variances:
-    ## 
-    ## Conditional model:
-    ##  Groups                 Name        Std.Dev. 
-    ##  s_dayInSeason_year1991 (Intercept) 1.076e+00
-    ##  s_dayInSeason_year1992 (Intercept) 1.000e+00
-    ##  s_dayInSeason_year1993 (Intercept) 1.033e+00
-    ##  s_dayInSeason_year1994 (Intercept) 7.563e-01
-    ##  s_temperatureResidual  (Intercept) 2.061e-05
-    ##  s_windSpeed            (Intercept) 1.053e-05
-    ## 
-    ## Number of obs: 334 / Conditional model: s_dayInSeason_year1991, 8; s_dayInSeason_year1992, 8; s_dayInSeason_year1993, 8; s_dayInSeason_year1994, 8; s_temperatureResidual, 8; s_windSpeed, 8
-    ## 
-    ## Dispersion parameter for nbinom1 family ():   11 
-    ## 
-    ## Fixed Effects:
-    ## 
-    ## Conditional model:
-    ##          (Intercept)                  rain              year1992  
-    ##              1.95165               0.80200               1.57098  
-    ##             year1993              year1994   temperatureResidual  
-    ##              0.03111               0.84614               0.04792  
-    ##            windSpeed  year1991:dayInSeason  year1992:dayInSeason  
-    ##              0.07958              -0.02430              -0.07432  
-    ## year1993:dayInSeason  year1994:dayInSeason  
-    ##             -0.02775              -0.05606
-
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-92-1.png)
+![](overview_files/figure-html/unnamed-chunk-93-1.png)
 
 ### ANOVA and $`R^2`$
 
@@ -2566,17 +2445,16 @@ kable(car::Anova(mod$semer))
 
 ``` r
 
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##                  Total                  Fixed                 Random 
-    ##               "60.26%"               "16.37%"               "43.89%" 
+    ##                 60.26%                 16.37%                 43.89% 
     ## s_dayInSeason_year1991 s_dayInSeason_year1992 s_dayInSeason_year1993 
-    ##               "13.61%"               "11.43%"               "12.32%" 
+    ##                 13.61%                 11.43%                 12.32% 
     ## s_dayInSeason_year1994  s_temperatureResidual            s_windSpeed 
-    ##                "6.53%"                   "0%"                   "0%"
+    ##                  6.53%                  0.00%                  0.00%
 
 ### Prediction by Day in Season
 
@@ -2585,7 +2463,7 @@ R2_glmm(mod$semer)
 
 ``` r
 
-pred_out1_1 <- semipred(mod, "year", "dayInSeason", prt=FALSE)   # other covariates at their means
+pred_out1_1 <- semipred(mod, "year", "dayInSeason")   # other covariates at their means
 DT_df(pred_out1_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2595,7 +2473,7 @@ DT_df(pred_out1_1$pred_df %>%
 pred_out1_1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-96-1.png)
+![](overview_files/figure-html/unnamed-chunk-97-1.png)
 
 ## Example_8 Semiparametric Regression with Spatial Smooth (copper data)
 
@@ -2651,32 +2529,12 @@ mod <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps"
                data = copper)
 ```
 
-    ## Linear mixed model fit by REML ['semerMod']
-    ## Formula: log(grade) ~ xcoord:ycoord + xcoord:zcoord + ycoord:zcoord +  
-    ##     zcoord + xcoord + ycoord + (1 | s_zcoord) + (1 | s_xcoord_ycoord)
-    ##    Data: copper
-    ## REML criterion at convergence: 318.4061
-    ## Random effects:
-    ##  Groups          Name        Std.Dev.
-    ##  s_xcoord_ycoord (Intercept) 1.3363  
-    ##  s_zcoord        (Intercept) 0.2810  
-    ##  Residual                    0.2894  
-    ## Number of obs: 439, groups:  s_xcoord_ycoord, 36; s_zcoord, 8
-    ## Fixed Effects:
-    ##   (Intercept)         zcoord         xcoord         ycoord  xcoord:ycoord  
-    ##    -2.312e+00      2.637e-02      7.141e-04      5.194e-03     -2.455e-06  
-    ## xcoord:zcoord  ycoord:zcoord  
-    ##    -1.394e-05     -4.048e-05  
-    ## fit warnings:
-    ## Some predictor variables are on very different scales: consider rescaling. 
-    ## You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
-
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-101-1.png)
+![](overview_files/figure-html/unnamed-chunk-102-1.png)
 
 ### ANOVA, RANOVA and $`R^2`$
 
@@ -2713,13 +2571,12 @@ kable(anova(mod)$smooth)
 
 ``` r
 
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
-    ## # Adjusted R2 for Mixed Models
-
+    ## # Adjusted R2 for mixed models (Piepho)
     ##           Total           Fixed          Random s_xcoord_ycoord        s_zcoord 
-    ##         "79.2%"      "-135.63%"       "214.83%"       "196.83%"           "18%"
+    ##          79.20%        -135.63%         214.83%         196.83%          18.00%
 
 ### Semiparametric prediction
 
@@ -2731,7 +2588,7 @@ R2_glmm(mod$semer)
 
 ``` r
 
-pred_out1 <- semipred(mod, covariate="zcoord", trans=exp, prt=FALSE)
+pred_out1 <- semipred(mod, covariate="zcoord", trans=exp)
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2741,11 +2598,11 @@ DT_df(pred_out1$pred_df %>%
 pred_out1$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-106-1.png)
+![](overview_files/figure-html/unnamed-chunk-107-1.png)
 
 ``` r
 
-pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, point = TRUE, prt=FALSE)
+pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = TRUE))
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -2755,11 +2612,11 @@ DT_df(pred_out2$pred_df %>%
 pred_out2$plt
 ```
 
-![](overview_files/figure-html/unnamed-chunk-108-1.png)
+![](overview_files/figure-html/unnamed-chunk-109-1.png)
 
 ``` r
 
-pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), threeD = TRUE, point=FALSE, trans=exp, prt=FALSE)
+pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = FALSE, threeD = TRUE))
 pred_out3$plt
 ```
 

@@ -8,6 +8,15 @@ Satterthwaite or containment degrees of freedom, permutation and
 bootstrap tests, R² for mixed models and diagnostics. Results match SAS
 `LSMEANS` and emmeans.
 
+## Workflow
+
+![From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and
+plots](reference/figures/workflow.png)
+
+From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and plots
+
 ## Installation
 
 ``` r
@@ -46,9 +55,9 @@ with fixed column names;
 | Means and pairwise comparisons | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) |
 | Contrasts | [`specify_contrast()`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md), [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md) |
 | Joint tests (slices) and slopes | [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md), [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md) |
-| Resampling tests | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) |
+| Resampling tests | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) |
 | Semiparametric models | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md), [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) |
-| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
+| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
 | Reference grid / K matrix | [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md) |
 
 ## Documentation

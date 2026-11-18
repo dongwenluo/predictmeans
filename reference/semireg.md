@@ -6,11 +6,9 @@ Fit a semi parametric model based on lme4 ecosystem including `lmer`,
 ## Usage
 
 ``` r
-semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE, 
-        smoothZ = list(), ncenter=TRUE, nscale=FALSE, resp_scale=FALSE, 
-        control = lmerControl(optimizer="nloptwrap"), start = NULL, 
-        verbose = FALSE, drop.unused.levels=TRUE, subset, weights, 
-        offset, contrasts = NULL,  prt=TRUE, predict_info=TRUE, ...)
+semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
+        start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+        offset, contrasts = NULL, ...)
 ```
 
 ## Arguments
@@ -27,46 +25,17 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 
   A data frame or list containing the model response variable and
   covariates required by the formula. By default the variables are taken
-  from environment(formula and smoothZ), typically the environment from
-  which semireg is called.
+  from environment(formula), typically the environment from which
+  semireg is called.
 
 - family:
 
   A GLM family, see glm and family.
 
-- ngbinomial:
-
-  Logical scalar - Should a negative binomial GLMMs be used? .
-
 - REML:
 
   Logical scalar - Should the estimates be chosen to optimize the REML
   criterion (as opposed to the log-likelihood)?
-
-- smoothZ:
-
-  Superseded since 2.0 (kept so that 1.x code runs; no new features):
-  write the smooths in the formula instead (see ‘Smooth terms in the
-  formula’). The older form of the smooths: a list includes a set of
-  smooth Z matrixs (called 'smooth term') used in the mixed effects
-  model, the name of 'smooth term' should be different any variables in
-  the model, each 'smooth term' is the result of function `smZ`. e.g.
-  smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2,
-  group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in
-  the `data`, and x1 to x3 are covariates, and f1, f2 are factors.
-
-- ncenter:
-
-  Logical scalar - Should the numeric predictors to be centered or not?
-
-- nscale:
-
-  Logical scalar - Should the numeric predictors to be scaled or not?
-
-- resp_scale:
-
-  Logical scalar - Should the response be involved in the scaling action
-  or not?
 
 - control:
 
@@ -117,20 +86,25 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 
   An optional list. See the contrasts.arg of model.matrix.default.
 
-- prt:
-
-  Logical scalar - Should the info to be print on screen in the middle
-  of the process or not?
-
-- predict_info:
-
-  Logical scalar - Should provide the info for function semipred or not?
-
 - ...:
 
-  Further arguments for passing on to model setup routines.
+  Further arguments for passing on to model setup routines. Arguments
+  removed in 2.0 (`smoothZ`, `ncenter`, `nscale`, `resp_scale`, `prt`,
+  `predict_info`, `ngbinomial`) stop with their 2.0 spelling; nothing is
+  printed during the fit (`print(fit$semer)`). For a negative binomial
+  model use
+  [`semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)`(family = glmmTMB::nbinom2)`:
+  the 1.x `ngbinomial = TRUE` estimated theta from a Poisson fit, which
+  is not the maximum-likelihood fit.
 
 ## Value
+
+A list of class `semireg`;
+[`print()`](https://rdrr.io/r/base/print.html) shows the fitted model
+and the random-effect term of each smooth,
+[`summary()`](https://rdrr.io/r/base/summary.html) the summary of the
+fitted model, [`anova()`](https://rdrr.io/r/stats/anova.html) tests of
+its terms. Its elements:
 
 - semer:
 
@@ -146,19 +120,7 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 
 - sm_vars:
 
-  Name of variables in the smoothZ list.
-
-- smoothZ_call:
-
-  A call used to produce smooth terms in the fitting.
-
-- knots_lst:
-
-  Knots used in each smooth term in the fitting.
-
-- range_lst:
-
-  Range of covariate used in each smooth term in the fitting.
+  Names of the variables of the smooths.
 
 - cov_lst:
 
@@ -167,10 +129,6 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 - u_lst:
 
   Random effects list for each smooth term.
-
-- type_lst:
-
-  Smooth type list of smooth terms.
 
 - CovMat:
 
@@ -182,8 +140,8 @@ semireg(formula, data, family = NULL, ngbinomial=FALSE, REML = TRUE,
 
 - Cov_indN:
 
-  Covariance matrix index for each smooth term when `group=TRUE` in
-  `smoothZ` argument.
+  Covariance matrix index for each smooth term of several blocks (e.g.
+  `s(x, by = f)`).
 
 - df:
 
@@ -274,8 +232,7 @@ line). The fits equal `gam(..., method = "REML")` for gaussian models
 and
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
 give the curves, means and their standard errors of `predict.gam()`. The
-variables of formula smooths are not centred or scaled (`ncenter` and
-`nscale` apply to the other numeric covariates). Tensor products:
+variables are used as they are (not centred or scaled). Tensor products:
 `t2(x1, x2)` (Wood, Scheipl and Faraway 2013), a surface for covariates
 on different scales, whose penalties (one per product of the marginal
 penalised and unpenalised parts; `full = TRUE` for more) are independent
@@ -287,9 +244,8 @@ so its fixed part is exactly those terms; the fit equals `gam()` with
 that basis and its penalties, and `gam()`'s own `t2()` when there are no
 other random effects. `te()` is fitted as `t2()` (with a message): its
 overlapping penalties cannot be written as random effects; `ti()` is not
-available. Smooths are given either in the formula or in `smoothZ`, not
-both. Objects named in `s()` (e.g. `xt = list(knots = kn)`) are taken
-from the environment of the formula.
+available. Objects named in `s()` (e.g. `xt = list(knots = kn)`) are
+taken from the environment of the formula.
 
 A basis of your own (`bs = "user"`) must give the same row for the same
 covariate value whatever data it is given, as prediction evaluates it on
@@ -329,21 +285,15 @@ block reported by
 [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
 is on that scale.
 
-Moving from the `smoothZ` form:
-`y ~ x, smoothZ = list(sm = smZ(x, k = 10))` is
-`y ~ s(x, bs = "os", k = 10)`; `smZ(x, by = f, group = TRUE)` is
-`s(x, by = f, bs = "os")`; `smZ(x, by = f)` (one variance) is
-`s(x, by = f, bs = "os", id = 1)`; `smZ(cbind(x1, x2), type = "Ztps")`
-is `s(x1, x2, bs = "ztps", k = 6)`
-([`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)'s
-default of 6 knots per axis; the default of `bs = "ztps"` is 10);
-`smZ(x, intKnots = kn, range.x = r)` is
-`s(x, bs = "os", xt = list(knots = kn, range = r))`; any other
-matrix-valued function of the covariate is
-`s(x, bs = "user", xt = list(basis = f))`; `smZ(x, drv = 1)` (the
-derivative of the basis) is `semipred(..., deriv = 1)`. The fits are the
-same
-([`vignette("smooth")`](https://dongwenluo.github.io/predictmeans/articles/smooth.md)).
+Moving from 1.x:
+[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+and `smoothZ` were removed in 2.0;
+[`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)
+shows each `smoothZ = list(sm = smZ(...))` form beside its formula form,
+which gives the same fit (checked in `dev/check-smz-migration.R`). The
+variables are no longer centred (1.x's `ncenter = TRUE`), which put
+knots given in the data's units (`smZ(x, intKnots = )`) in the wrong
+place.
 
 ## References
 
@@ -375,7 +325,7 @@ library(predictmeans)
 ##    fixed terms QB + QB:pressure are added automatically
 data(Dialyzer, package = "nlme")
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test of each smooth
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
@@ -407,7 +357,7 @@ predictmeans(fm, "QB", covariate = c(pressure = 1))$means
 #>    QB estimate std.error       df conf.low conf.high group
 #> 1 200 36.30263 0.9244804 36.54632 34.42867  38.17659     A
 #> 2 300 38.81293 0.9262667 36.79558 36.93578  40.69007     A
-semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous", prt = FALSE)$plt
+semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")$plt
 
 
 ## 2. A designed experiment: treatments on the whole plots of six blocks, curves over time;
@@ -417,7 +367,7 @@ sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6)
 sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] +
   rnorm(18, 0, 0.3)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
 fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
-               data = sp, prt = FALSE)
+               data = sp)
 predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)$pairs
 #>   level1 level2   estimate std.error       df  statistic    p.value      p.adj
 #> 1     a1     a2 -0.2449559 0.1611056 25.50375 -1.5204680 0.14069552 0.14069552
@@ -434,7 +384,7 @@ set.seed(1)
 dx <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = factor(c("u", "v")),
                   rep = 1:3)
 dx$y <- sin(2*pi*dx$x) + (dx$f1 == "q")*sin(pi*dx$x)^2 + rnorm(nrow(dx), 0, 0.2)
-fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx, prt = FALSE)
+fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx)
 #> Warning: number of items to replace is not a multiple of replacement length
 varcomp(fx, test = TRUE)
 #>                         vcov     SE  2.5 %      97.5 %     LRT   p.value
@@ -455,7 +405,7 @@ varcomp(fx, test = TRUE)
 set.seed(2)
 da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
 da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
-fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da)
 anova(fa)$smooth
 #>     term   variance   logLik logLik.without      LRT      p.value
 #> 1   s_x1 0.03875716 -65.4386      -126.8535 122.8299 7.596575e-29
@@ -470,14 +420,14 @@ ds <- data.frame(day = 1:730)
 ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
-              data = ds, prt = FALSE)
-semipred(fs, covariate = "day", prt = FALSE)$plt
+              data = ds)
+semipred(fs, covariate = "day")$plt
 
 ## 6. A tensor-product surface for two covariates on different scales (data(ozoneCalif)),
 ##    and a curve in a third
 data(ozoneCalif)
 fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
-                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif)
 anova(fo)$smooth          # a variance per penalty of the surface
 #>                                             term  variance    logLik
 #> 1                    s_daggett_pressure_gradient  4.591269 -1022.055
@@ -489,7 +439,7 @@ anova(fo)$smooth          # a variance per penalty of the surface
 #> 2      -1022.055 2.169145e-10 4.999941e-01 0.5 chi2(0) + 0.5 chi2(1)
 #> 3      -1022.438 7.662851e-01 1.906844e-01 0.5 chi2(0) + 0.5 chi2(1)
 #> 4      -1026.259 8.407200e+00 1.868689e-03 0.5 chi2(0) + 0.5 chi2(1)
-semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
+semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"))$plt
 
 # \donttest{
 ## 7. Binary responses with a random intercept per child (HRW::indonRespir): the probability
@@ -498,15 +448,15 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
   fb <- semireg(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height + stunted +
                   visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-                family = binomial, data = indonRespir, prt = FALSE)
-  semipred(fb, "age", "age", prt = FALSE)$plt
+                family = binomial, data = indonRespir)
+  semipred(fb, "age", "age")$plt
 }
 
 
 ## 8. Subject-specific curves: each subject's own straight line, (Days | Subject), and its
 ##    own spline deviation, one variance for all; are the subjects' curves straight lines?
 fr <- semireg(Reaction ~ s(Days, bs = "os", k = 4) + (s(Days, k = 4) | Subject),
-              data = lme4::sleepstudy, prt = FALSE)
+              data = lme4::sleepstudy)
 anova(fr)$smooth
 #>             term     variance    logLik logLik.without      LRT      p.value
 #> 1         s_Days 3.055837e-07 -862.9684      -862.9684  0.00000 1.000000e+00
@@ -520,8 +470,8 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(WarsawApts, package = "HRW")
   WarsawApts$district <- factor(WarsawApts$district)
   fw <- semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
-                data = WarsawApts, prt = FALSE)
-  semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"), prt = FALSE)$plt
+                data = WarsawApts)
+  semipred(fw, "district", "construction.date", contr = c("Srodmiescie", "Mokotow"))$plt
   predictmeans(fw, "district", covariate = c(construction.date = 1980))$means
 }
 #>      district estimate std.error  df conf.low conf.high group

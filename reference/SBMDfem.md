@@ -50,7 +50,7 @@ Endocrinology and Metabolism*, 84, 4702-4712.
 data(SBMDfem)
 SBMDfem$idnum <- factor(SBMDfem$idnum)
 # a curve over age, ethnicity as a fixed effect, a random intercept per girl
-fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem, prt = FALSE)
+fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem)
 anova(fit)       # ethnicity: F test with Kenward-Roger df; the smooth: likelihood ratio test
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
@@ -90,7 +90,7 @@ predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "
 #> 5    tukey
 #> 6    tukey
 # growth of bone density: where is the curve rising?
-attr(semipred(fit, "age", "age", deriv = 1, prt = FALSE)$pred_df, "significant")
+attr(semipred(fit, "age", "age", deriv = 1)$pred_df, "significant")
 #>   level from   to direction
 #> 1        8.9 16.4       > 0
 ```

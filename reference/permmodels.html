@@ -3,7 +3,7 @@
 for the terms in a linear model such as aov, lm, glm, gls, lme, lmer,
 glmer and glmmTMB."><meta property="og:description" content="This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests
 for the terms in a linear model such as aov, lm, glm, gls, lme, lmer,
-glmer and glmmTMB."></head><body>
+glmer and glmmTMB."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -48,8 +48,7 @@ glmer and glmmTMB."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Permutation Test of Linear Model</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Permutation Test of Linear Model</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/permmodels.R" class="external-link"><code>R/permmodels.R</code></a></small>
       <div class="d-none name"><code>permmodels.Rd</code></div>
     </div>
@@ -63,9 +62,8 @@ for the terms in a linear model such as <code>aov</code>, <code>lm</code>, <code
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">permmodels</span><span class="op">(</span><span class="va">model</span>, nperm<span class="op">=</span><span class="fl">4999</span>, type<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"I"</span>, <span class="st">"II"</span>, <span class="st">"III"</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>, </span>
-<span>  test.statistic<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chisq"</span>, <span class="st">"F"</span>, <span class="st">"LR"</span>, <span class="st">"Wald"</span><span class="op">)</span>, exact<span class="op">=</span><span class="cn">FALSE</span>, data<span class="op">=</span><span class="cn">NULL</span>, </span>
-<span>  fo<span class="op">=</span><span class="cn">NULL</span>, prt<span class="op">=</span><span class="cn">TRUE</span>, ncore<span class="op">=</span><span class="fl">1</span>, <span class="va">seed</span>, method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"raw"</span>, <span class="st">"freedman-lane"</span><span class="op">)</span>, perms<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>  refit<span class="op">=</span><span class="cn">TRUE</span>, robust<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span>  test.statistic<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chisq"</span>, <span class="st">"F"</span>, <span class="st">"LR"</span>, <span class="st">"Wald"</span><span class="op">)</span>, exact<span class="op">=</span><span class="cn">FALSE</span>, data<span class="op">=</span><span class="cn">NULL</span>, ncore<span class="op">=</span><span class="fl">1</span>, <span class="va">seed</span>,</span>
+<span>  method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"raw"</span>, <span class="st">"freedman-lane"</span><span class="op">)</span>, perms<span class="op">=</span><span class="cn">NULL</span>, refit<span class="op">=</span><span class="cn">TRUE</span>, robust<span class="op">=</span><span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -104,12 +102,10 @@ for balanced data).</p></dd>
 <dd><p>In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.</p></dd>
 
 
-<dt id="arg-fo">fo<a class="anchor" aria-label="anchor" href="#arg-fo"></a></dt>
-<dd><p>A model formula used in the <code>model</code>; <code>fo!=NULL</code> when the formula is specified by function <code>formula</code>.</p></dd>
-
-
-<dt id="arg-prt">prt<a class="anchor" aria-label="anchor" href="#arg-prt"></a></dt>
-<dd><p>A logical variable to indicate whether or not to print output on the screen. The default is TRUE.</p></dd>
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Not used: <code>prt</code> and <code>fo</code> (before 2.0) stop with their 2.0 spelling. Nothing is printed during
+the call: <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> of the result shows the tables. A model whose formula is held in a variable
+(<code>lm(f, data)</code>; 1.x's <code>fo</code>) is detected and refitted in this session only.</p></dd>
 
 
 <dt id="arg-ncore">ncore<a class="anchor" aria-label="anchor" href="#arg-ncore"></a></dt>
@@ -242,33 +238,6 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-in"><span><span class="co">## Permutation test for model terms (99 permutations to keep the example</span></span></span>
 <span class="r-in"><span><span class="co">## quick; use the default or more in practice)</span></span></span>
 <span class="r-in"><span><span class="va">permlme</span> <span class="op">&lt;-</span> <span class="fu">permmodels</span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients of (fixed) effects:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                            Estimate Std. Error t value Perm_p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)                 80.0000     9.1070  8.7845           NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2                    18.5000     7.6830  2.4079         0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4                    34.6667     7.6830  4.5122         0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6                    44.8333     7.6830  5.8354         0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VarietyMarvellous            6.6667     9.7150  0.6862         0.48</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VarietyVictory              -8.5000     9.7150 -0.8749         0.39</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068         0.73</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835         0.67</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295         0.69</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307         0.96</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295         0.70</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994         0.84</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of t test is obtained using ‘99’ Freedman-Lane permutations.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ANOVA:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Type I F tests (Freedman-Lane permutations; the model refitted to each permuted data set)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               Df F value Perm_p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro          3 37.6856         0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Variety        2  1.4853         0.30</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> nitro:Variety  6  0.3028         0.96</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of F test is obtained using ‘99’ Freedman-Lane permutations.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Permutation test for multiple comparisons</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, modelterm<span class="op">=</span><span class="st">"nitro:Variety"</span>, atvar<span class="op">=</span><span class="st">"Variety"</span>, adj<span class="op">=</span><span class="st">"BH"</span>,</span></span>
@@ -313,21 +282,21 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                    A    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.015 1               B   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.015 0.048 1          C  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.015 0.015 0.15 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.015 0.015 0.13 1     C  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Marvellous</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0    0.2   0.4  0.6 Group</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                   A    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.02 1               B   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.02 0.23  1         BC  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.02 0.045 0.23 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0    0.2  0.4  0.6 Group</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                  A    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.06 1             AB   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.03 0.23 1         B   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.03 0.06 0.23 1    B   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Victory</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0     0.2   0.4  0.6 Group</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 0   1                    A    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.036 1               B   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.015 0.015 1          C  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.015 0.015 0.27 1     C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2 0.015 1               B   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4 0.015 0.024 1          C  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.6 0.015 0.015 0.33 1     C  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_table$Table</span>
@@ -336,10 +305,10 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806       A  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        B </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806        BC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         C</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806        A </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        AB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806         B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         B</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C</span>
@@ -356,8 +325,8 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-in"><span><span class="fu"><a href="contrastmeans.html">contrastmeans</a></span><span class="op">(</span>model<span class="op">=</span><span class="va">fm</span>, modelterm<span class="op">=</span><span class="st">"nitro:Variety"</span>, ctrmatrix<span class="op">=</span><span class="va">cm</span>, permlist<span class="op">=</span><span class="va">permlme</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 99 permutations)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    contrast estimate std.error df statistic p.value p.adj conf.low conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 1    -8.50     9.715 NA   -0.8749    0.37  0.37   -31.69     14.69</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 2   -45.67     9.715 NA   -4.7006    0.01  0.01   -68.14    -23.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 1    -8.50     9.715 NA   -0.8749    0.38  0.38   -28.04     11.04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  contrast 2   -45.67     9.715 NA   -4.7006    0.01  0.01   -65.22    -26.12</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## The same by lmer, type II tests; refit = FALSE is much faster (no refits)</span></span></span>
 <span class="r-in"><span><span class="va">fm3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span></span>
@@ -423,33 +392,8 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 <span class="r-in"><span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">cyl</span>, data <span class="op">=</span> <span class="va">mtcars</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pfl</span> <span class="op">&lt;-</span> <span class="fu">permmodels</span><span class="op">(</span><span class="va">fm2</span>, nperm <span class="op">=</span> <span class="fl">999</span>, type <span class="op">=</span> <span class="st">"II"</span>, seed <span class="op">=</span> <span class="fl">1</span>, method <span class="op">=</span> <span class="st">"freedman-lane"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients of (fixed) effects:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             Estimate Std. Error t value Pr(&gt;|t|) Perm_p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  33.9908     1.8878 18.0056   0.0000           NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> wt           -3.2056     0.7539 -4.2521   0.0002        0.001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cyl6         -4.2556     1.3861 -3.0702   0.0047        0.009</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cyl8         -6.0709     1.6523 -3.6742   0.0010        0.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ANOVA:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Anova Table (Type II tests)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Response: mpg</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             Sum Sq Df F value Pr(&gt;F) Perm_p_value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> wt        118.2039  1 18.0801 0.0002        0.001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cyl        95.2633  2  7.2856 0.0028        0.005</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Residuals 183.0586 28                            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co">## ... and for the pairwise comparisons of the cyl means</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm2</span>, <span class="st">"cyl"</span>, permlist <span class="op">=</span> <span class="va">pfl</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>  The predicted means are estimated at </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     wt </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> 3.2172 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2 estimate std.error df statistic p.value p.adj  conf.low</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1      4      6 4.255582  1.386073 NA  3.070244   0.009 0.009  1.281825</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2      4      8 6.070860  1.652288 NA  3.674214   0.003 0.003  2.625644</span>
@@ -485,7 +429,7 @@ regression coefficients in a linear model. <em>Journal of Statistical Computatio
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

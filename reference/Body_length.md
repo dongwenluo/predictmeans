@@ -50,10 +50,10 @@ in Ecology and Evolution*, 4, 133–142.
 ``` r
 data(Body_length)
 fm <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container), data = Body_length)
-R2_glmm(fm)
-#> # Adjusted R2 for Mixed Models
+R2_model(fm)
+#> # Adjusted R2 for mixed models (Piepho)
 #>                Total                Fixed               Random 
-#>             "73.39%"             "40.09%"              "33.3%" 
+#>               73.39%               40.09%               33.30% 
 #> Container:Population           Population 
-#>              "5.18%"             "28.13%" 
+#>                5.18%               28.13% 
 ```

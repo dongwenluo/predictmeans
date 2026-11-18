@@ -9,7 +9,7 @@ predictmeans: means (one row per point of a curve or surface), slopes
 (semipred(deriv = )) and, with contr, pairs (the difference of two curves at each
 covariate value), with the same column names (estimate, std.error, df, conf.low,
 conf.high, ...) and the covariates under their own names. tidy() and as.data.frame() return
-them, autoplot() returns the plot and print() shows a short summary."></head><body>
+them, autoplot() returns the plot and print() shows a short summary."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -54,8 +54,7 @@ them, autoplot() returns the plot and print() shows a short summary."></head><bo
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Curves and Their Differences as Data Frames</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Curves and Their Differences as Data Frames</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/curves.R" class="external-link"><code>R/curves.R</code></a></small>
       <div class="d-none name"><code>tidy.pm_curves.Rd</code></div>
     </div>
@@ -162,7 +161,7 @@ holds the ranges of the covariate where the band asked for leaves out zero.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dongwenluo.github.io/predictmeans/">predictmeans</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Oats</span>, package<span class="op">=</span><span class="st">"nlme"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span>, random<span class="op">=</span><span class="op">~</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, covariate<span class="op">=</span><span class="st">"nitro"</span>, covariateV<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, covariate<span class="op">=</span><span class="st">"nitro"</span>, at<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">cm</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Curves of 'Variety' along nitro</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 95% limits; Kenward-Roger df</span>
@@ -214,7 +213,7 @@ holds the ranges of the covariate where the band asked for leaves out zero.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

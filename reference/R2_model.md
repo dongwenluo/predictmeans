@@ -3,7 +3,7 @@
 The R-squared of a model as a numeric result, for every model class of
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 `method = "piepho"` (the default) gives the same values as
-[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
 (Piepho, 2023), as proportions: total, fixed, random and each
 random-effect component. `method = "nakagawa"` gives the marginal (fixed
 effects) and conditional (fixed and random effects) R-squared of
@@ -37,7 +37,7 @@ R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 - over_disp:
 
   For `"piepho"` with `lmer`, `glmer` and `glmmTMB` models: as in
-  [`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md).
+  [`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md).
 
 ## Value
 

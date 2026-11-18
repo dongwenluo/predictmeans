@@ -52,6 +52,150 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ### Changes that affect results or scripts
 
+- **Arguments removed or renamed in 2.0 (steps 2a, 2b:
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md),
+  [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
+  [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md),
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)).**
+  A 1.1.1 spelling stops with the 2.0 one,
+  e.g. `'level' was removed in predictmeans 2.0: use conf.level = 0.95.`
+  (`R/defunct.R`); abbreviated 1.x names too.
+
+  - `level` (a significance level) -\> `conf.level = 1 - level` (default
+    0.95).
+  - `Df` -\> `df_method = <number>`.
+  - `which.plots`, `mplot`, `barplot`, `pplot`, `bkplot` -\>
+    `plot = c("mean", "bar", "pval", "back")`; plot settings as
+    arguments of their own (`plottitle`, `plotord`, `lsd_bar`, …) -\>
+    `plot_args = list(...)`; `prtplt`, `newwd` and `plot_args$responsen`
+    removed.
+  - `prtnum`, `ndecimal` removed: nothing is printed during the call;
+    the `means`/`pairs` tables are unrounded.
+  - `transOff` -\> the offset inside `trans`
+    (`trans = function(x) exp(x) - 1`); the pairs then have no `ratio`
+    columns (with an offset they were ratios of y + 1, labelled as
+    ratios of y). `count` removed (Poisson and negative binomial means
+    are detected).
+  - `Kmatrix(covariateV =)` -\> `at =`; `df_term(type =)` -\>
+    `df_method =`.
+  - [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md):
+    `level`, `Df`, `covariateV` (-\> `at`), `transOff` as above;
+    `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` -\>
+    `plot_args = list(...)`; `responsen`, `newwd` removed (the response
+    variable is read from the formula). `as.is` stays (each line over
+    its group’s observed range). 15 calls of
+    `dev/snapshot-covariatemeans.R` written both ways give identical
+    results, except `transOff` (as above).
+  - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+    (step 3a): the first argument is `model` (was `semireg`);
+    `covariateV` -\> `at`; `level` -\> `conf.level`;
+    `simultaneous = TRUE` -\> `band = "simultaneous"`; `prt` -\> `plot`;
+    `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD`
+    -\> `plot_args = list(...)` (with the colours). 13 calls of
+    `dev/snapshot-semipred.R` written both ways give identical results.
+  - [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+    [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+    (step 3b; both kept: their options differ by engine): `prt` and
+    `predict_info` removed (nothing is printed during the fit; the
+    prediction information is always kept). `ngbinomial` removed: it
+    took theta from a Poisson fit, which is not the maximum-likelihood
+    fit (on a test data set log-likelihood -1133.60 against -1132.98,
+    theta 3.31 against 2.80, true 3; means 1%, SEs 4% apart); use
+    `semireg_tmb(family = glmmTMB::nbinom2)`. Six fits and their curves
+    (`dev/snapshot-semipred.R`) are identical (tolerance 0).
+  - [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+    and `smoothZ` removed (step 3c): smooths are written in the formula
+    (`smZ(x)` is `s(x, bs = "os")`, `smZ(cbind(x, z), type = "Ztps")` is
+    `s(x, z, bs = "ztps", k = 6)`, …).
+    [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)
+    shows each 1.1.1 form beside its formula form, and the 1.1.1 models
+    of the overview article beside their 2.0 code;
+    `dev/check-smz-migration.R` fitted them both ways on the last build
+    with
+    [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md):
+    the same REML log-likelihoods and curves (to 1e-5). Where they
+    differ 2.0 is right: knots given in the data’s units were placed on
+    the centred covariate in 1.x (`ncenter = TRUE`); the 1.1.1 article’s
+    formulas for a curve per group left out the group slopes, which the
+    formula form adds. `ncenter`, `nscale`, `resp_scale` removed: the
+    variables are used as they are (curves unchanged; the coefficients
+    of other numeric covariates are no longer centred). `fit$knots_lst`,
+    `range_lst`, `type_lst`, `smoothZ_call` removed. splines2 and
+    lmeSplines are no longer suggested.
+  - Permutation functions (step 4): `permlmer(lmer0, lmer1)` -\>
+    `permlmer(model0, model1)`;
+    [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
+    [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+    (the same function) and
+    [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+    (use `permmodels(model, type = )`, Freedman-Lane, other permutation
+    p-values) removed;
+    [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+    and
+    [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+    lose `prt` (their results are class `"pm_permmodels"` and print
+    their tables; one print method for the five places that printed
+    them) and
+    [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+    loses `fo` (a formula held in a variable is detected);
+    `permstats(level =)` -\> `conf.level`. 12 calls of
+    `dev/snapshot-perm.R` written both ways give identical results.
+  - Plots, diagnostics and small functions (step 5):
+    `residplot(level =)` -\> `re_level` (the random-effect term),
+    `newwd`, `ask` removed; `CookD(idn =)` -\> `id`, `newwd` removed;
+    `PMplot(level =)` -\> `conf.level`, `margin`, `legendx`, `newwd`
+    removed; `varcomp(level =)` -\> `conf.level` (the same value: it was
+    a confidence level).
+    [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+    removed:
+    [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
+    gives the same values as numbers.
+    [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+    removed: letters from overlapping confidence intervals do not answer
+    the pairwise tests; `predictmeans(letterCI = TRUE)` gives letters
+    from comparison intervals (its engine is now internal). The overview
+    article’s 83.4% letters along the dose became letters at a dose from
+    `letterCI`. 12 calls of `dev/snapshot-diag.R` written both ways give
+    identical results.
+  - The migration guide in full (step 6):
+    [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)
+    shows the 1.1.1 and 2.0 code side by side for every changed call
+    (means, covariates and curves, permutation tests, diagnostics,
+    smooth models), one table of every changed argument and function,
+    the defaults and the numbers that change. `dev/check-migrating.R`
+    runs each 2.0 line and checks that each 1.1.1 line stops with the
+    2.0 spelling.
+  - Release checks (step 7): the migration guide also lists the packages
+    [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/)
+    no longer attaches (glmmTMB, lmerTest); `cran-comments.md` describes
+    the removed functions and changed dependencies.
+  - [`print()`](https://rdrr.io/r/base/print.html) of a
+    [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+    or
+    [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+    fit shows the fitted model (as 1.x printed it during the fit with
+    `prt = TRUE`) and the random-effect term of each smooth; it printed
+    the whole list, data and matrices included.
+    [`summary()`](https://rdrr.io/r/base/summary.html) gives the summary
+    of the fitted model.
+
+- James Curran (University of Auckland) is an author of the package (he
+  was listed as a contributor).
+
+- [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  keeps to one core for any model whose formula is not written in the
+  call: R-devel’s [`lm()`](https://rdrr.io/r/stats/lm.html) records more
+  than the name of a formula held in a variable, which the check missed.
+  Help pages: package anchors for the glmmTMB links, the workflow figure
+  sized in pixels.
+
+  - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways
+    give identical results (tolerance 0), except
+    `trans = exp, transOff = 1` (above; `response.std.error` within
+    4e-10, from a numerical derivative).
+
 - **[`anova()`](https://rdrr.io/r/stats/anova.html) with empty cells.**
   Type III tests of `lmer`, `lm` and other fits (and
   `permmodels(type = "III")`) stopped with “there are aliased
@@ -440,7 +584,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   with a 0/1 response: standard errors were 15-25% too small.** The
   covariance of the fixed and smooth coefficients used the constant
   3/pi^2 (logit; the latent variance that
-  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   uses for variance shares) instead of the working weights of the fit.
   It now uses the working weights for every family, and its fixed-effect
   block equals `vcov(model, use.hessian = FALSE)` for gaussian, Poisson
@@ -722,9 +866,8 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   and loops. The result holds the same tables, and
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   draws from it. `plot = TRUE`, or `options(predictmeans.plot = TRUE)`
-  for a session, draws the 1.x plots; so does asking for plots by name
-  (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
-  `bkplot`).
+  for a session, draws the 1.x plots; `plot = c("mean", "bar")` chooses
+  them.
 
 - **lmerTest is no longer needed**: it moved from Depends to Suggests
   (used only in the tests, to compare against). predictmeans’ own df and
@@ -1119,9 +1262,9 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   (and
-  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
-  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)),
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
+  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
+  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   and
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   (it was 3;
@@ -1154,7 +1297,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   for `lme`, `gls` and `lmer` models and
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   (so
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)).
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)).
   The Cholesky factor depends on the order of the data (it treats the
   first unit of each block differently), so results changed when the
   data were sorted differently, and tests of terms that vary within
@@ -1200,8 +1343,8 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/);
   it moved from Depends to Imports. Scripts that fit models with
   `glmmTMB()` need
-  [`library(glmmTMB)`](https://github.com/glmmTMB/glmmTMB). lme4, nlme
-  and lmerTest are still attached.
+  [`library(glmmTMB)`](https://github.com/glmmTMB/glmmTMB). lme4 and
+  nlme are still attached (lmerTest: see above).
 
 - [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
   gives the same tables (including Satterthwaite df and p-values)
@@ -1229,6 +1372,12 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the note is one line (“at each level of A:B”) instead of two.
 
 ### New features
+
+- **`Caschool`**: the California test score data (420 school districts,
+  1998-1999; Stock and Watson; as in package Ecdat), the data of the
+  overview article’s example with several smooth terms, now in the
+  package (`data(Caschool)`). Its 1.1.1 and 2.0 models give the same fit
+  (`dev/check-smz-migration.R`).
 
 - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   on generalized fits: the table of the curves has the SE on the link
@@ -1308,10 +1457,10 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (tested). `te()` is fitted as `t2()` with a message (its overlapping
   penalties cannot be random effects); `ti()` is refused with a message.
 
-- **[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
+- **[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   and `smoothZ` are superseded** (maintainer’s decision of 2026-11-17):
   they keep working, so that 1.x code runs, but get no new features;
-  [`?smZ`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
+  [`?smZ`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   has the table of their formula equivalents. Every help page, vignette
   and article now writes smooths in the formula, with more examples of
   the semi-parametric system: curves in a mixed model, a split-plot
@@ -1373,7 +1522,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `attr(pred_df, "significant")`. Central differences of the whole
   prediction design, so any basis works; for the O’Sullivan basis
   (`bs = "os"`,
-  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md))
+  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md))
   they equal the exact derivatives of `ZOSull(drv = )` to 1e-8 (tested).
   Generalized models: link scale. The bands covered the true slope and
   curvature 0.97-1.00 at the 95% level (`dev/sim-semipred-deriv.R`).
@@ -1593,7 +1742,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
       (Harezlak, Ruppert and Wand).
   - The package’s own bases as `bs = "os"` (O’Sullivan, `k` interior
     knots) and `bs = "ztps"`: the same fits as
-    [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
+    [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
     in `smoothZ`.
   - Fits equal `gam(method = "REML")` (fitted values within 3e-5 in 11
     cases), and
@@ -1998,14 +2147,14 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 - **[`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   tests GLMMs** (`glmer` or `glmmTMB` models; also as
-  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   and
-  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)),
+  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
   random effects and fixed effects. By default counts and binomial data
   with several trials are permuted on the working (link) scale: the H0
   model is linearised (working response and variances, the covariance of
   the data also having the random effects, as in
-  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)),
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
   the decorrelated working residuals are permuted, and the statistic is
   the likelihood-ratio statistic of weighted linear mixed models of the
   working responses. 0/1 responses use randomised quantile residuals
@@ -2018,7 +2167,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   glmmTMB families: poisson, binomial, nbinom1, nbinom2, Gamma,
   gaussian, beta (no zero inflation or dispersion model).
 
-- [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
+- [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   also tests the terms of `glmer` models (each term by
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   on the working scale), and builds the reduced models where the model
@@ -2030,7 +2179,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   and
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   (so
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md))
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md))
   take a matrix of permutations, `perms`, e.g. from
   [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md):
   permutations within blocks or of whole plots, for tests that permute
@@ -2074,12 +2223,12 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md):
   R-squared of a mixed model as numbers (class `"pm_r2"`, printed as
   percentages). `method = "piepho"` (default) gives the values of
-  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   as proportions; `method = "nakagawa"` gives Nakagawa and Schielzeth’s
   marginal and conditional R-squared, with random slopes as Johnson
   (2014), for gaussian and binomial models (sleepstudy: 0.279 and 0.799,
   as `performance::r2_nakagawa()`).
-  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   is unchanged.
 
 - New
@@ -2275,7 +2424,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   lmerTest’s type I table and the permuted refits compute the same type
   I F (Wald tests of the same hypotheses). Balanced data are unchanged.
 
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   (and
   [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md))
   for `glmmTMB` models with families `nbinom1`, `nbinom2` and `beta`
@@ -2309,7 +2458,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 - [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   (and so
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)):
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)):
   when the tested variance is estimated at 0, the likelihood-ratio
   statistic is 0 up to optimizer noise (e.g. 3e-14). Permuted statistics
   of 0 then counted as smaller than the observed one, giving a small
@@ -2333,7 +2482,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   transformed before modelling (e.g. a column holding `log(y + 1)`, with
   `transOff = 1`), so they sat `transOff` above the means.
 
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md):
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md):
 
   - for `glmmTMB` models with correlated random effects, e.g.
     `(Days | Subject)`, the random-effect variance was wrong (84.32%
@@ -2393,7 +2542,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     ([`ranef()`](https://rdrr.io/pkg/nlme/man/random.effects.html) lists
     them by component, Z by level).
 
-- [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/ci_mcp.md)
+- [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   stopped when a lower and upper limit were equal (a mean with SE 0).
 
 - The internal
@@ -2414,7 +2563,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 - [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   with `predict_info = TRUE`: the random-effect covariance was wrong for
   correlated terms (same cause as in
-  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)).
+  [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)).
   A singular covariance is detected without computing all eigenvalues,
   and a system that is not positive definite falls back to `nearPD()`
   instead of failing.
@@ -2470,7 +2619,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 - [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
   failed for `gls` models without a correlation structure.
 
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md):
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md):
 
   - for `glmmTMB` models it now finds data that are not in the global
     environment;
@@ -2594,7 +2743,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   type III: 4.3 s -\> 3.5 s), with identical results. The nine copies of
   the per-refit code are now one internal function.
 
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   computes its traces without n x n matrices. For n = 4,000 it goes from
   4.4 s and 529 MB to 0.01 s with identical results; n = 100,000 now
   takes 0.02 s.
@@ -2641,6 +2790,12 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   were computed). The given `Df` is now used for every pair.
 
 ### Documentation
+
+- A package logo (`man/figures/logo.png`: the README, the website and
+  the package help page) and a workflow chart from the fitted model to
+  the report (`man/figures/workflow.png`: the README,
+  `?predictmeans-package` and
+  [`vignette("predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md)).
 
 - Letter groups, overall and within `atvar` groups, now come from one
   function (`pm_letter_groups()`) that handles unavailable p-values
@@ -2693,7 +2848,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 - The examples of
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md),
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
   [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   and
@@ -2742,7 +2897,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   for a random slope,
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md),
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
   and
   [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
   for a binomial GLMM, with advice on which to use.
@@ -2777,7 +2932,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   works with glmmTMB \>= 1.1.12, which no longer stores `Lambdat`,
   `Lind` and `lower` (they are rebuilt when missing).
 
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
+- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   failed for gaussian glmmTMB fits (including
   [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md))
   with glmmTMB \>= 1.1.12, whose dispersion parameter is named
@@ -2787,6 +2942,16 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   vignette).
 
 ### Internal
+
+- `R/defunct.R`: one table of the arguments and functions removed in 2.0
+  with their 2.0 spelling; `pm_defunct()` stops a call that names one
+  (with the value given, e.g. `level = 0.05` -\> `conf.level = 0.95`),
+  `pm_defunct_fun()` is the body of a removed function. A test checks
+  that no removed name can be partially matched to a remaining argument.
+
+- `dev/review-options.md`: inventory of every argument of 1.1.1 and 2.0
+  (keep, rename, merge, remove) for the clean-up of the options before
+  2.0.
 
 - Shorter empty-cell messages: the confounding warning (about 450
   characters) now names the two factors and the three ways to state the
@@ -2833,7 +2998,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)’s
   delta method).
 
-- [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md):
+- [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md):
   the code that puts back rows with a missing covariate (7 copies) and
   splits a basis by the levels of `by` (4 copies) is one helper each
   (`pm_smz_na()`, `pm_smz_by()`); the results of 114 argument
@@ -2847,7 +3012,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   (so
-  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)),
+  [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
   [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
   and the permutation p-values of pairs and contrasts in
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
@@ -2996,7 +3161,7 @@ checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - lmeSplines: `smZ(type = "smspline")`;
   - plotly: `semipred(threeD = TRUE)`;
   - splines2: the splines2 spline types in
-    [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md).
+    [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md).
     A clear message asks for the package when such a feature is used.
     Installing predictmeans now pulls in 76 packages instead of 112.
     This also avoids current HRW’s requirement of R \>= 4.5.

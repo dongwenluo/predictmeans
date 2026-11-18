@@ -85,7 +85,7 @@ conditions. *Journal of the American Statistical Association*, 82,
 ``` r
 library(predictmeans)
 data(Dialyzer, package = "nlme")
-fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer, prt = FALSE)
+fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer)
 anova(fm)
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 

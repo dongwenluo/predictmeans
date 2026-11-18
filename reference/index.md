@@ -38,8 +38,6 @@
   : Plots and Summary of Predicted Means
 - [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md)
   : Level Plot of a Matrix of p-values.
-- [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/ci_mcp.md)
-  : Multiple Comparisons Based on the Confidence Intervals
 
 ## Degrees of freedom, tests and diagnostics
 
@@ -48,9 +46,6 @@
 - [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   : Calculate degree of freedom of a modelterm (contrast) for a lmer
   model
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
-  : An adjusted coefficient of determination (R2) for generalized linear
-  mixed models
 - [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
   : R-squared of a Model as Numbers
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
@@ -73,17 +68,10 @@
   : Permutation Test of Linear Model
 
 - [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   :
 
   Permutation Test of random or fixed effects for `lmer`, `glmer` and
   `glmmTMB` models.
-
-- [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
-  :
-
-  Permutation ANOVA for `lmer` Model
 
 - [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)
   : Permutation Index
@@ -110,8 +98,6 @@
   Variable(s)
 - [`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md)
   : Boundary of the region covered by two-dimensional data
-- [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
-  : Generate Sparse Matrix Z for penalized spline smoothing
 
 ## Extending to new model classes
 
@@ -139,6 +125,9 @@
   :
 
   `Clinical` data
+
+- [`Caschool`](https://dongwenluo.github.io/predictmeans/reference/Caschool.md)
+  : California Test Score Data
 
 - [`copper`](https://dongwenluo.github.io/predictmeans/reference/copper.md)
   [`copperKnots`](https://dongwenluo.github.io/predictmeans/reference/copper.md)

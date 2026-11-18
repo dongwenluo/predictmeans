@@ -9,15 +9,14 @@ and the plot, which `autoplot()` returns.
 ## Usage
 
 ``` r
-covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL, 
-  data=NULL, level=0.05, Df=NULL, trans=NULL, transOff=0, responsen=NULL, trellis=TRUE, 
-  plotord=NULL, mtitle=NULL, ci=TRUE, point=TRUE, jitterv=0, newwd=FALSE,
-  cov_reduce=mean, exclude=NULL,
+covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL,
+  conf.level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
   df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
-  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
+  mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE),
+  plot_args=list(), ...)
 ```
 
 ## Arguments
@@ -38,13 +37,16 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 
 - as.is:
 
-  A logic value to specify wheather or not using original covariate
-  values' rage for graph, the default is FALSE.
+  `TRUE`: each line only over the range of the covariate observed in its
+  group (rows outside it are left out of the result); the default
+  `FALSE` uses the values of `at` for every group.
 
-- covariateV:
+- at:
 
-  A numeric vector when as.is is FALSE, then covariatemeans will produce
-  the result for `covariate` at value of `covariateV`.
+  The values of `covariate` at which the lines are predicted
+  (`covariateV` before 2.0); by default 50 values over the observed
+  range. See
+  [`Kmatrix`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md).
 
 - data:
 
@@ -52,25 +54,19 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   especially when you have applied some variable trnasformation in the
   model.
 
-- level:
+- conf.level:
 
-  A significant level for calculating confident interval. The default
-  value is 0.05. The limits are for each line on its own: whether the
-  bands of two groups overlap is not a test of their difference (the
-  lines are estimated from the same model and are correlated; see
-  `letterCI` in
+  The confidence level of the limits, the default is 0.95
+  (`level = 0.05` before 2.0). The limits are for each line on its own:
+  whether the bands of two groups overlap is not a test of their
+  difference (the lines are estimated from the same model and are
+  correlated; see `letterCI` in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
   Use `contr` for the band of the difference between two groups, or
   compare groups at chosen covariate values with
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   (`covariate = `) and their slopes with
   [`pm_slopes`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md).
-
-- Df:
-
-  A degree of freedom for calculating CI of predicted means (you can
-  manually specified ddf here). For the above models, ddf is obtained
-  from the function automatically.
 
 - trans:
 
@@ -84,52 +80,45 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   2.0 half the standard error of the fitted value was added inside
   [`exp()`](https://rdrr.io/r/base/Log.html) for a log.)
 
-- transOff:
+- plot_args:
 
-  When you use `trans=exp(x+1)`, then `transOff=1`, the default is 0.
+  A named list of plot settings (names may be abbreviated):
 
-- responsen:
+  `trellis`
 
-  Name (in "quotes") of the back transformed response variable in the
-  `model`.
+  :   `TRUE` (default): one panel per level.
 
-- trellis:
+  `plotord`
 
-  A logical variable. If set to TRUE (default), the plot is a trellis
-  plot (one panel per level).
+  :   The order of the factors for two or three way terms (e.g.
+      `c(2, 1)` or `c("B", "A")`): the first gives the colours, the
+      second (and third) the panels. Giving it draws the plot.
 
-- plotord:
+  `mtitle`
 
-  A numeric (or character) vector specifying the order of plotting for
-  two or three way interaction (e.g. `plotord = c(2, 1, 3)` or
-  `plotord = c("B", "A", "C")` will put the second variable 'B' in
-  `modelterm` on the `X` axis, the first variable 'A' as the grouping
-  variable, and the third one 'C' as the panel variable). The defaults
-  are `c(1, 2)` and `c(1, 2, 3)` for two and three way interactions.
+  :   The main title.
 
-- mtitle:
+  `ci`
 
-  The main title in the graph.
+  :   Draw the confidence band (default `TRUE`).
 
-- ci:
+  `point`
 
-  A logical variable to indicate whether to print confidence interval.
-  The default value is TRUE.
+  :   Draw the data points (default `TRUE`).
 
-- point:
+  `jitterv`
 
-  A logical variable to indicate whether to print raw data points. The
-  default value is TRUE.
+  :   Jitter of the points in x and y (default 0).
 
-- jitterv:
+  Before 2.0 these were arguments of their own; given so they stop with
+  this spelling.
 
-  A degree of jitter in x and y direction in the graph. The default is
-  zero.
+- ...:
 
-- newwd:
-
-  A logical variable to indicate whether to print graph in a new window.
-  The default value is FALSE.
+  Not used: arguments removed in 2.0 (`level`, `Df`, `covariateV`,
+  `transOff`, `responsen`, `newwd`, the plot settings) stop with their
+  2.0 spelling (see
+  [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)).
 
 - cov_reduce:
 
@@ -161,12 +150,13 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 - df_method, vcov_adjust:
 
   As in
-  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
-  by default Kenward-Roger df (each point of the curves has its own) and
-  adjusted standard errors for models fitted by REML (`lmer`, `lme`,
-  `gls`). predictmeans 1.x used the unadjusted covariance and, for
-  `lmer`, one df per term; `vcov_adjust = FALSE` and, for `lme` and
-  `gls`, `df_method = "containment"` give its results.
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  (a number in `df_method` is a fixed df, `Df` before 2.0): by default
+  Kenward-Roger df (each point of the curves has its own) and adjusted
+  standard errors for models fitted by REML (`lmer`, `lme`, `gls`).
+  predictmeans 1.x used the unadjusted covariance and, for `lmer`, one
+  df per term; `vcov_adjust = FALSE` and, for `lme` and `gls`,
+  `df_method = "containment"` give its results.
 
 - contr:
 
@@ -190,10 +180,11 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
 
 - band:
 
-  With `contr`: `"pointwise"` (the default) gives limits at the level
-  `level` for each covariate value on its own; `"simultaneous"` gives
-  Scheffe limits that hold for all covariate values together, for saying
-  over which range of the covariate the lines differ.
+  With `contr`: `"pointwise"` (the default) gives limits at the
+  confidence level `conf.level` for each covariate value on its own;
+  `"simultaneous"` gives Scheffe limits that hold for all covariate
+  values together, for saying over which range of the covariate the
+  lines differ.
 
 - mean_type:
 
@@ -211,7 +202,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, covariateV=NULL,
   Draw the plot now? The default is `FALSE` (since 2.0; 1.x drew it):
   the plot is in the result (`autoplot()` returns it). `plot = TRUE`, or
   `options(predictmeans.plot = TRUE)` for a whole session, draws it as
-  1.x did; `plotord` and `newwd = TRUE` also draw it.
+  1.x did; `plot_args = list(plotord = )` also draws it.
 
 - bias_adjust, sigma:
 
@@ -312,8 +303,8 @@ cluster (random effects at zero), as the lines are.
 *Significance at a level.* Three questions have three answers:
 
 1.  At one covariate value chosen beforehand: the pointwise band
-    (`band = "pointwise"`); the lines differ at level `level` when it
-    leaves out zero (one for a ratio).
+    (`band = "pointwise"`); the lines differ at the level
+    `1 - conf.level` when it leaves out zero (one for a ratio).
 
 2.  Over which range of the covariate: looking at many values needs
     wider limits. `band = "simultaneous"` uses Scheffe's critical value
@@ -363,7 +354,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   cm <- covariatemeans(fm, "Variety", covariate="nitro")
   ggplot2::autoplot(cm)
 
-  covariatemeans(fm, "Variety", covariate="nitro", covariateV=seq(0, 0.6, 0.3))
+  covariatemeans(fm, "Variety", covariate="nitro", at=seq(0, 0.6, 0.3))
 #> Curves of 'Variety' along nitro
 #> 95% limits; Kenward-Roger df
 #>      Variety nitro estimate std.error     df conf.low conf.high

@@ -5,11 +5,10 @@ Fit a semi parametric model based on glmmTMB.
 ## Usage
 
 ``` r
-semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0, 
-        dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, 
-    se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), 
-    REML = TRUE, start = NULL, map = NULL, sparseX = NULL, prt=TRUE, 
-    predict_info=TRUE)
+semireg_tmb(formula, data, family = gaussian(), ziformula = ~0,
+        dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action,
+        se = TRUE, verbose = FALSE, doFit = TRUE, control = glmmTMBControl(),
+        REML = TRUE, start = NULL, map = NULL, sparseX = NULL, ...)
 ```
 
 ## Arguments
@@ -37,20 +36,9 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
   a family function, a character string naming a family function, or the
   result of a call to a family function (variance/link function)
   information. See [`family`](https://rdrr.io/r/stats/family.html) for a
-  generic discussion of families or `family_glmmTMB` for details of
-  `glmmTMB`-specific families.
-
-- smoothZ:
-
-  Superseded since 2.0 (kept so that 1.x code runs; no new features):
-  write the smooths in the formula instead (see ‘Smooth terms in the
-  formula’). The older form of the smooths: a list includes a set of
-  smooth Z matrixs (called 'smooth term') used in the mixed effects
-  model, the name of 'smooth term' should be different any variables in
-  the model, each 'smooth term' is the result of function `smZ`. e.g.
-  smoothZ=list(sm1=smZ(x1), sm2=smZ(x2, by=f1), sm3=smZ(x3, by=f2,
-  group=TRUE), ...) where 'sm1' to 'sm3' should be new variable names in
-  the `data`, and x1 to x3 are covariates, and f1, f2 are factors.
+  generic discussion of families or
+  [`family_glmmTMB`](https://rdrr.io/pkg/glmmTMB/man/nbinom2.html) for
+  details of `glmmTMB`-specific families.
 
 - ziformula:
 
@@ -118,7 +106,8 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 - control:
 
-  control parameters, see `glmmTMBControl`.
+  control parameters, see
+  [`glmmTMBControl`](https://rdrr.io/pkg/glmmTMB/man/glmmTMBControl.html).
 
 - REML:
 
@@ -160,18 +149,20 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
   particular model components should be generated as sparse matrices,
   e.g. `c(cond=TRUE)`. Default is all `FALSE`
 
-- prt:
+- ...:
 
-  Logical scalar - Should the info to be print on screen in the middle
-  of the process or not?
-
-- predict_info:
-
-  Logical scalar - Should provide the info for function semipred or not?
-  In case of there is a correlation theta parameter appearing, you may
-  set predict=FALSE.
+  Not used: arguments removed in 2.0 (`smoothZ`, `prt`, `predict_info`)
+  stop with their 2.0 spelling; nothing is printed during the fit
+  (`print(fit$semer)`).
 
 ## Value
+
+A list of class `semireg`;
+[`print()`](https://rdrr.io/r/base/print.html) shows the fitted model
+and the random-effect term of each smooth,
+[`summary()`](https://rdrr.io/r/base/summary.html) the summary of the
+fitted model, [`anova()`](https://rdrr.io/r/stats/anova.html) tests of
+its terms. Its elements:
 
 - semer:
 
@@ -187,19 +178,7 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 - sm_vars:
 
-  Name of variables in the smoothZ list.
-
-- smoothZ_call:
-
-  A call used to produce smooth terms in the fitting.
-
-- knots_lst:
-
-  Knots used in each smooth term in the fitting.
-
-- range_lst:
-
-  Range of covariate used in each smooth term in the fitting.
+  Names of the variables of the smooths.
 
 - cov_lst:
 
@@ -208,10 +187,6 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 - u_lst:
 
   Random effects list for each smooth term.
-
-- type_lst:
-
-  Smooth type list of smooth terms.
 
 - CovMat:
 
@@ -223,8 +198,8 @@ semireg_tmb(formula, data, family = gaussian(), smoothZ = list(), ziformula = ~0
 
 - Cov_indN:
 
-  Covariance matrix index for each smooth term when `group=TRUE` in
-  `smoothZ` argument.
+  Covariance matrix index for each smooth term of several blocks (e.g.
+  `s(x, by = f)`).
 
 - df:
 
@@ -304,12 +279,10 @@ models (with `s(g, bs = "re")` for a random intercept), and
 and
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
 give the curves, means and their standard errors of `predict.gam()`. The
-variables of formula smooths are not centred or scaled (`ncenter` and
-`nscale` apply to the other numeric covariates). Tensor products:
+variables are used as they are (not centred or scaled). Tensor products:
 `t2(x1, x2)`, as in
 [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
-(`te()` is fitted as `t2()`; `ti()` is not available). Smooths are given
-either in the formula or in `smoothZ`, not both.
+(`te()` is fitted as `t2()`; `ti()` is not available).
 
 ## Zero inflation (glmmTMB)
 
@@ -349,8 +322,8 @@ cn$y <- rnbinom(nrow(cn), size = 3,
                 mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
-                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
-rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
+                  family = glmmTMB::nbinom2, data = cn)
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
 #> The model has zero inflation (ziformula ~1): the means are those of the conditional (count) part, mu, as emmeans and predict(type = "conditional") give; the overall mean is (1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall means only when pi is the same). mean_type = "overall" gives the overall means.
 attr(rr$pred_df, "significant")
 #>        from to direction
@@ -373,7 +346,7 @@ d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
   unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
 d$tf <- factor(d$t)
 fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
-                  dispformula = ~0, data = d, prt = FALSE)
+                  dispformula = ~0, data = d)
 #> Warning: Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')
 predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
 #>   level1 level2    estimate std.error       df  statistic   p.value     p.adj
@@ -399,8 +372,8 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   data(indonRespir, package = "HRW")
   fb <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 10) + vitAdefic + female + height +
                       stunted + visit2 + visit3 + visit4 + visit5 + visit6 + (1 | idnum),
-                    family = binomial, data = indonRespir, prt = FALSE)
-  semipred(fb, "age", "age", prt = FALSE)$plt
+                    family = binomial, data = indonRespir)
+  semipred(fb, "age", "age")$plt
 }
 
 # }

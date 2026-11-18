@@ -6,8 +6,8 @@ model using "Kenward-Roger" or "Satterthwaite" method.
 ## Usage
 
 ``` r
-df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL, 
-          type=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), vcov_adj=NULL)
+df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
+          df_method=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), ...)
 ```
 
 ## Arguments
@@ -36,26 +36,25 @@ df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
 
   Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 
-- type:
+- df_method:
 
-  Name (in "quote") for indicating a method for claculating degree of
-  freedom. The choices are "Kenward-Roger", "Satterthwaite" and
-  "containment". The default method is "Kenward-Roger". Kenward-Roger
-  needs a REML fit; for models fitted by ML, Satterthwaite is used with
-  a warning. "containment" gives the SAS `DDFM=CONTAIN` df of
-  `modelterm` (needed then) for every row, and "between-within" the SAS
-  `DDFM=BETWITHIN` df (see
+  The method for the degrees of freedom (called `type` before 2.0). The
+  choices are "Kenward-Roger", "Satterthwaite" and "containment". The
+  default method is "Kenward-Roger". Kenward-Roger needs a REML fit; for
+  models fitted by ML, Satterthwaite is used with a warning.
+  "containment" gives the SAS `DDFM=CONTAIN` df of `modelterm` (needed
+  then) for every row, and "between-within" the SAS `DDFM=BETWITHIN` df
+  (see
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
   "Kenward-Roger" uses the observed information of the variance
   parameters, as SAS `DDFM=KR`; "KR-expected" the expected information,
   as pbkrtest and emmeans; "KR-average" the average information, as
   Genstat.
 
-- vcov_adj:
+- ...:
 
-  Optional Kenward-Roger adjusted covariance matrix of the fixed
-  effects, as returned by `pbkrtest::vcovAdj(model)`, to avoid computing
-  it again when `df_term` is called several times for the same model.
+  Arguments removed in 2.0 (`type`, `vcov_adj`) stop with their 2.0
+  spelling.
 
 ## Author
 
@@ -95,6 +94,6 @@ if (interactive()) df_term(fm, "nitro:Variety")
 # 2. Construct the contrast matrix directly
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
-df_term(fm, ctrmatrix=cm, type="Satterthwaite")
+df_term(fm, ctrmatrix=cm, df_method="Satterthwaite")
 #> [1] 47.32750 45.00004
 ```

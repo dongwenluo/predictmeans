@@ -10,10 +10,10 @@ and SAS `ESTIMATE` statements on slope terms.
 ## Usage
 
 ``` r
-pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
+pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
+          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
 ```
 
 ## Arguments
@@ -38,9 +38,10 @@ pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
   when the covariate enters the model non-linearly); the default is its
   mean.
 
-- level:
+- conf.level:
 
-  Significance level for the confidence limits, the default is 0.05.
+  Confidence level of the limits, the default is 0.95 (`level = 0.05`
+  before 2.0).
 
 - adj:
 
@@ -52,6 +53,10 @@ pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 
   As in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+
+- ...:
+
+  Not used: `level` (before 2.0) stops with its 2.0 spelling.
 
 ## Value
 
@@ -74,7 +79,7 @@ its tables, `what = "slopes"` or `"pairs"`):
   `p.value`, `p.adj`, `conf.low`, `conf.high` and, with the adjustments
   that have them (tukey, bonferroni, sidak, scheffe, mvt),
   `adj.conf.low`, `adj.conf.high`: simultaneous limits that leave out 0
-  exactly when `p.adj` is below `level`.
+  exactly when `p.adj` is below `1 - conf.level`.
 
 - settings:
 

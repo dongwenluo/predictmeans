@@ -14,21 +14,18 @@ returns.
 ## Usage
 
 ``` r
-semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
-           covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
-       scales=c("fixed", "free", "free_x", "free_y"),
-       plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
-       simultaneous=FALSE, contr_scale=c("model", "response"),
-       band=c("pointwise", "simultaneous"),
-       unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-       mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
+semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
+         conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+         band=c("pointwise", "simultaneous"),
+         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+         mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
 ```
 
 ## Arguments
 
-- semireg:
+- model:
 
-  A list object returned by `semireg`.
+  A fit returned by `semireg` (`semireg` before 2.0).
 
 - modelterm:
 
@@ -60,12 +57,12 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   difference between `modelterm` level 4 ("d") vs level 1 ("a") along
   `covariate`.
 
-- covariateV:
+- at:
 
-  A numeric vector (one covariate) or a matrix with one named column per
-  covariate (two covariates, e.g. for a `Ztps` smooth), then semipred
-  will produce the result for `covariate` at value of `covariateV`. Each
-  row of the matrix is one prediction point.
+  The values of `covariate` to predict at (`covariateV` before 2.0): a
+  numeric vector (one covariate) or a matrix with one named column per
+  covariate (two covariates, e.g. for a `Ztps` smooth); each row of the
+  matrix is one prediction point.
 
 - boundary:
 
@@ -80,48 +77,19 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   of the model's data (the region the data cover, following their
   shape). `NULL` (default): the whole grid.
 
-- level:
+- conf.level:
 
-  Significance level of the two-sided confidence limits: the default
-  0.05 gives 95% limits (before version 2.0 the limits used
-  `qnorm(1 - level)`, i.e. 90%). For gaussian fits the limits are t
-  limits with Satterthwaite df at each point (column `df`; see Details);
-  for generalized fits t limits with the df of the design's strata
-  (inner-outer, as for GLMMs), normal limits when the model has no
-  random term besides the smooths.
+  Confidence level of the two-sided limits, default 0.95 (`level = 0.05`
+  before 2.0; before 2.0 the limits used `qnorm(1 - level)`, i.e. 90%).
+  For gaussian fits the limits are t limits with Satterthwaite df at
+  each point (column `df`; see Details); for generalized fits t limits
+  with the df of the design's strata (inner-outer, as for GLMMs), normal
+  limits when the model has no random term besides the smooths.
 
 - trans:
 
   A function object for calculating the back transformed means, e.g.
   `trans=exp`.
-
-- trellis:
-
-  A logical scalar. If set to TRUE (default), a trellis plots of
-  predicted means with CI will be drawn.
-
-- scales:
-
-  Should scales be fixed ("fixed", the default), free ("free"), or free
-  in one dimension ("free_x", "free_y") in a trellis graph?
-
-- plotord:
-
-  A numeric vector specifying the order of plotting for two way
-  interaction (e.g. `plotord = c(2, 1)` will put the second variable in
-  `modelterm` on the `X` axis, the first variable as the grouping
-  variable, and the third one as the panel variable). The defaults are
-  `c(1, 2)` for two way interactions.
-
-- ci:
-
-  A logical scalar to indicate whether to print confidence interval. The
-  default value is TRUE.
-
-- point:
-
-  A logical scalar to indicate whether to print raw data points. The
-  default value is TRUE.
 
 - mean_type:
 
@@ -136,7 +104,14 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
 
 - plot_args:
 
-  A named list of colours and sizes for the plots, any of: `line` and
+  A named list of plot settings (before 2.0 arguments of their own;
+  given so they stop with this spelling): `trellis` (`TRUE`, default:
+  one panel per level), `scales` (`"fixed"`, default, `"free"`,
+  `"free_x"`, `"free_y"`: the axes of the panels), `plotord` (the order
+  of the two factors of a two-way term, e.g. `c(2, 1)`; giving it draws
+  the plot), `ci` (draw the bands, `TRUE`), `point` (draw the data,
+  `TRUE`), `jitterv` (jitter of the points, 0), `threeD` (a 3-D surface
+  with plotly, `FALSE`); and colours and sizes, any of: `line` and
   `band` (one curve; dark and light blue), `diff_line` and `diff_band`
   (a difference of two curves, `contr`; dark and light green), `ref`
   (the dashed reference line at 0, or 1 for ratios, and the marks under
@@ -149,28 +124,20 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   `plot_args = list(line = "black", band = "grey70")`; the plot is a
   ggplot, so anything else can be added to it.
 
-- jitterv:
-
-  A degree of jitter in x and y direction in the graph. The default is
-  zero.
-
-- threeD:
-
-  A logical scalar to indicate whether to produce a 3-D plot or not. The
-  default value is FALSE. 3-D plots need package plotly.
-
-- prt:
-
-  The name of `plot` before 2.0: `TRUE` draws the plot, `FALSE` does not
-  (whatever `plot` says). The default `NULL` leaves it to `plot`.
-
 - plot:
 
   Draw the plot now? The default is `FALSE` (since 2.0; 1.x drew it):
   the plot is in the result
   ([`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   returns it). `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for
-  a whole session, draws it; so does `plotord`.
+  a whole session, draws it; so does `plot_args = list(plotord = )`.
+
+- ...:
+
+  Not used: arguments removed in 2.0 (`semireg`, `covariateV`, `level`,
+  `prt`, `simultaneous`, the plot settings) stop with their 2.0 spelling
+  (see
+  [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)).
 
 - band:
 
@@ -205,10 +172,6 @@ semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   for `semipred()` and
   [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
   on `semireg` fits.
-
-- simultaneous:
-
-  `TRUE` is the same as `band = "simultaneous"` (the name before 2.0).
 
 - deriv:
 
@@ -344,9 +307,9 @@ difference is in the table `pairs` in the layout of
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 The ranges of the covariate where the curves differ are printed with the
 result and kept in `significant` and `attr(pred_df, "significant")`;
-with `simultaneous = TRUE` they hold for the whole curve, and the curves
-differ somewhere at level `level` when there is such a range. (A joint F
-test, as
+with `band = "simultaneous"` they hold for the whole curve, and the
+curves differ somewhere at level `1 - conf.level` when there is such a
+range. (A joint F test, as
 [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
 gives, is not given: Wald tests of penalised smooth coefficients are not
 reliable.)
@@ -358,7 +321,7 @@ its first (second) derivative along the covariate, by central
 differences of the whole design (the fixed part and every smooth basis,
 on the same grid), so the slopes are those of the fitted curves for any
 basis; for the O'Sullivan basis (`bs = "os"`,
-[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md))
+[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md))
 they equal the exact derivatives of the basis, `ZOSull(drv = )` (as
 `smZ(drv = )`), to 1e-8. Standard errors, df and pointwise or
 simultaneous bands are computed as for the curves; generalized models
@@ -411,7 +374,7 @@ ggplot(Dialyzer, aes(x = pressure, y = rate, col = QB)) +
 
 # a curve per blood flow rate, a random intercept and slope per dialyzer
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 residplot(fm$semer, group = "QB")
 
 anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
@@ -457,7 +420,7 @@ autoplot(out)
 autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 
 # at given pressures
-semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 #> Curves of 'QB' along pressure
 #> 95% limits; Satterthwaite (fixed + smooth coefficients) df
 #>   QB pressure estimate std.error    df conf.low conf.high
@@ -502,7 +465,7 @@ slp$significant
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
-               data = copper, prt = FALSE)
+               data = copper)
 autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
 
 autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
@@ -513,8 +476,7 @@ set.seed(4)
 db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
 db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
                                      rnorm(12, 0, 0.5)[db$cl]))
-fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
-                prt = FALSE)
+fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db)
 autoplot(semipred(fbin, "g", "x"))
 
 head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))

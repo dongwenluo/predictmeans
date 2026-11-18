@@ -8,6 +8,15 @@ Satterthwaite or containment degrees of freedom, permutation and
 bootstrap tests, R² for mixed models and diagnostics. Results match SAS
 `LSMEANS` and emmeans.
 
+## Workflow
+
+![From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and
+plots](reference/figures/workflow.png)
+
+From a fitted model to the report: diagnostics, tests, means and
+contrasts, variance components, then tables and plots
+
 ## Installation
 
 ``` r
@@ -46,9 +55,9 @@ with fixed column names;
 | Means and pairwise comparisons | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) |
 | Contrasts | [`specify_contrast()`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md), [`contrast_family()`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md) |
 | Joint tests (slices) and slopes | [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md), [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md) |
-| Resampling tests | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) |
+| Resampling tests | [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) |
 | Semiparametric models | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md), [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) |
-| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
+| R², variance components, diagnostics | [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md), [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md), [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) |
 | Reference grid / K matrix | [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md) |
 
 ## Documentation
@@ -104,8 +113,6 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   : Plots and Summary of Predicted Means
 - [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md)
   : Level Plot of a Matrix of p-values.
-- [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/ci_mcp.md)
-  : Multiple Comparisons Based on the Confidence Intervals
 
 ## Degrees of freedom, tests and diagnostics
 
@@ -114,9 +121,6 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
 - [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   : Calculate degree of freedom of a modelterm (contrast) for a lmer
   model
-- [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)
-  : An adjusted coefficient of determination (R2) for generalized linear
-  mixed models
 - [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)
   : R-squared of a Model as Numbers
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
@@ -139,17 +143,10 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   : Permutation Test of Linear Model
 
 - [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
   :
 
   Permutation Test of random or fixed effects for `lmer`, `glmer` and
   `glmmTMB` models.
-
-- [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/permanova.lmer.md)
-  :
-
-  Permutation ANOVA for `lmer` Model
 
 - [`permindex()`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)
   : Permutation Index
@@ -176,8 +173,6 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   Variable(s)
 - [`semiboundary()`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md)
   : Boundary of the region covered by two-dimensional data
-- [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)
-  : Generate Sparse Matrix Z for penalized spline smoothing
 
 ## Extending to new model classes
 
@@ -205,6 +200,9 @@ GitHub](https://github.com/dongwenluo/predictmeans/blob/main/inst/llms-context.m
   :
 
   `Clinical` data
+
+- [`Caschool`](https://dongwenluo.github.io/predictmeans/reference/Caschool.md)
+  : California Test Score Data
 
 - [`copper`](https://dongwenluo.github.io/predictmeans/reference/copper.md)
   [`copperKnots`](https://dongwenluo.github.io/predictmeans/reference/copper.md)

@@ -17,9 +17,9 @@ variance, dispersion, or the negative binomial \\\theta\\).
 ## Usage
 
 ``` r
-varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
         information = c("observed", "average", "expected"), test = FALSE,
-        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
 ```
 
 ## Arguments
@@ -32,9 +32,14 @@ varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "
 
   `TRUE` (the default): add confidence intervals.
 
-- level:
+- conf.level:
 
-  Confidence level of the intervals; the default is 0.95.
+  Confidence level of the intervals; the default is 0.95 (`level` before
+  2.0).
+
+- ...:
+
+  Not used: `level` (before 2.0) stops with its 2.0 spelling.
 
 - ci_method:
 

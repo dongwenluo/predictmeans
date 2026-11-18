@@ -114,7 +114,7 @@ place, small functions, no duplicated code).
   `scallopBdry`, `copperKnots`, `wageTUnion`; built by
   `dev/semireg-golden/make-data.R`), checked by
   `tests/testthat/test-semireg-golden.R`.
-  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/smZ.md)/`smoothZ`
+  [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)/`smoothZ`
   are superseded (maintainer, 2026-11-17): kept for 1.x code, no new
   features; help pages, vignettes and articles use the formula syntax.
 - Help pages: edit the roxygen2 block above each function (data sets in

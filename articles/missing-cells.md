@@ -71,7 +71,7 @@ it). The cell means are those of the 11 combinations with data:
 
 ``` r
 
-pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE)
 nrow(pm_cells$means)
 #> [1] 11
 ```
@@ -82,7 +82,7 @@ warns:
 
 ``` r
 
-pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+pm_n <- predictmeans(fm, "N", plot = FALSE)
 #> Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only
 #> its observed cells; its pairs use the cells both means have (column 'over').
 #> See vignette("missing-cells").
@@ -106,7 +106,7 @@ usual:
 
 ``` r
 
-pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE))
 pm_n2$pairs[, c("level1", "level2", "over", "estimate", "std.error", "p.value")]
 #>   level1 level2                            over   estimate std.error
 #> 1      0    0.2                            <NA> -19.500000  4.469636
@@ -180,8 +180,7 @@ e.g. nitrogen levels within each variety:
 
 ``` r
 
-pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE,
-                     prtnum = FALSE)
+pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
 within <- subset(pm_v$pairs, !is.na(by))
 head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
 #>             level1          level2          by  estimate        p.adj
@@ -226,7 +225,7 @@ dft <- dft[!(dft$date == "d2" & dft$farm == "F2" & dft$trt == "B"), ]
 dft$y <- 5 + as.integer(dft$farm) * as.integer(dft$date) + 0.5 * (dft$trt == "B") +
   rnorm(nrow(dft), 0, 0.3)
 fd <- lm(y ~ date/farm + date*trt, data = dft)
-predictmeans(fd, "date:trt", plot = FALSE, prtnum = FALSE)$means[, c("date", "trt", "estimate", "n")]
+predictmeans(fd, "date:trt", plot = FALSE)$means[, c("date", "trt", "estimate", "n")]
 #>   date trt estimate n
 #> 1   d1   A 6.491091 6
 #> 2   d1   B 6.835039 6
@@ -274,7 +273,7 @@ so:
 ``` r
 
 fs <- lm(y ~ droplet + conc + vol, data = spray)
-pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE)
 #> Warning: 'droplet' and 'vol' are confounded in the data: the means average over
 #> the combinations that exist (to say so: droplet/vol in the formula, leave one
 #> factor out, or weights = "cells"). No data for droplet:vol fine:130, fine:200,
@@ -310,10 +309,10 @@ better record of the design:
 ``` r
 
 fs2 <- lm(y ~ conc + droplet/vol, data = spray)
-pn <- predictmeans(fs2, "vol", plot = FALSE, prtnum = FALSE)
+pn <- predictmeans(fs2, "vol", plot = FALSE)
 #> 'vol' is not a term of the model: its factors do not interact there, so these means are the sums of their effects (the differences between the levels of one factor are the same at every level of the others).
 cbind(pn$means[, c("vol", "estimate")], fallback = pv$means$estimate,
-      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE, prtnum = FALSE)$means$estimate)
+      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE)$means$estimate)
 #>   vol estimate fallback    cells
 #> 1 130 5.030309 5.030309 4.987406
 #> 2 200 5.246957 5.246957 5.289860
@@ -338,7 +337,7 @@ for (v in c("date", "pasture", "trt", "farm")) past[[v]] <- factor(past[[v]])
 past$y <- as.integer(past$date) + as.integer(past$pasture)/2 + 0.5*(past$trt == "B") +
   rnorm(nrow(past), 0, 0.3)
 fp <- lm(y ~ date/farm + date/(trt + pasture)^2, data = past)
-pp <- predictmeans(fp, "date:trt", plot = FALSE, prtnum = FALSE)
+pp <- predictmeans(fp, "date:trt", plot = FALSE)
 #> Warning: 'farm' and 'pasture' are confounded in the data: the means average
 #> over the combinations that exist (to say so: farm/pasture in the formula, leave
 #> one factor out, or weights = "cells"). No data for date:farm d3:F1, d3:F2,
@@ -360,7 +359,7 @@ the model without `farm`:
 ``` r
 
 fp0 <- lm(y ~ date/(trt + pasture)^2, data = past)
-p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE, prtnum = FALSE))
+p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE))
 cbind(pp$means[, c("date", "trt", "estimate")], without_farm = p0$means$estimate)
 #>   date trt estimate without_farm
 #> 1   d1   A 2.301947     2.301947

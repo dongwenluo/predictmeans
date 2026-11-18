@@ -198,7 +198,7 @@ within each tension:
 ``` r
 
 pm_nb <- predictmeans(nb, "wool:tension", atvar = "tension", pairwise = TRUE,
-                      plot = FALSE, prtnum = FALSE)
+                      plot = FALSE)
 pm_nb$pairs[!is.na(pm_nb$pairs$by), c("level1", "level2", "ratio", "ratio.conf.low",
                                       "ratio.conf.high", "p.value")]
 #>    level1 level2     ratio ratio.conf.low ratio.conf.high     p.value

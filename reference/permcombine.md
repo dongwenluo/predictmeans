@@ -76,6 +76,11 @@ and Nichols, T. E. (2016). Non-parametric combination and related
 permutation tests for neuroimaging. *Human Brain Mapping*, 37,
 1486-1511.
 
+## See also
+
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+[`permstats`](https://dongwenluo.github.io/predictmeans/reference/permstats.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -84,8 +89,8 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 ``` r
 mtcars$cyl <- factor(mtcars$cyl)
-p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
-p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
+p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
+p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
 permcombine(mpg = p1, qsec = p2)
 #>             mpg  qsec combined adj.mpg adj.qsec
 #> wt        0.001 0.002    0.001   0.002    0.003

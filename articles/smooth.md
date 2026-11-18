@@ -36,7 +36,7 @@ slope for each dialyzer:
 ``` r
 
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 ```
 
 `bs = "os"` is the O’Sullivan penalized spline (Wand and Ormerod 2008)
@@ -203,10 +203,11 @@ autoplot(slp)
 
 `contr` with `deriv` compares the slopes of two curves. The derivatives
 are those of the whole fitted curve (fixed and smooth parts), for any
-basis, and for the O’Sullivan basis equal the exact derivatives of
-`smZ(drv = )`. For generalized models they are on the link scale. In a
-simulation (`dev/sim-semipred-deriv.R` in the package sources) their
-bands covered the true slope and curvature 0.97-1.00 at the 95% level.
+basis, and for the O’Sullivan basis equal the exact derivatives of the
+basis (`ZOSull(drv = )`). For generalized models they are on the link
+scale. In a simulation (`dev/sim-semipred-deriv.R` in the package
+sources) their bands covered the true slope and curvature 0.97-1.00 at
+the 95% level.
 
 ## Means of factor levels
 
@@ -273,7 +274,7 @@ sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6)
 sp$y <- 2 + sin(sp$t/2) + c(0, 0.5, 1)[sp$A]*sp$t/10 + rnorm(6, 0, 0.5)[sp$Block] +
   rnorm(18, 0, 0.4)[interaction(sp$Block, sp$A)] + rnorm(nrow(sp), 0, 0.3)
 fsp <- semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A),
-               data = sp, prt = FALSE)
+               data = sp)
 pm <- predictmeans(fsp, "A", covariate = c(t = 5), pairwise = TRUE)
 pm$means
 #>    A estimate std.error       df conf.low conf.high group
@@ -307,7 +308,7 @@ dd <- expand.grid(x = seq(0, 1, length = 25), f1 = factor(c("p", "q")),
 dd$id <- interaction(dd$f1, dd$f2, dd$rep)
 dd$y <- sin(2*pi*dd$x) + (dd$f1 == "q")*1.5*sin(pi*dd$x)^2 +
   rnorm(nlevels(dd$id), 0, 0.2)[dd$id] + rnorm(nrow(dd), 0, 0.25)
-fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd, prt = FALSE)
+fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd)
 anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 #>        term     variance        LRT      p.value
 #> 1       s_x 0.3163539389  5.7060123 8.453451e-03
@@ -338,7 +339,7 @@ cn$y <- rnbinom(nrow(cn), size = 3,
                 mu = exp(1 + sin(cn$x) + (cn$trt == "trt")*0.5*cn$x + rnorm(8, 0, 0.3)[cn$site]))
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
-                  family = glmmTMB::nbinom2, data = cn, prt = FALSE)
+                  family = glmmTMB::nbinom2, data = cn)
 rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
 rr$significant
 #>        from to direction
@@ -362,7 +363,7 @@ data(growthIndiana)
 gb <- subset(growthIndiana, male == 1 & black == 1)
 gb$idnum <- factor(gb$idnum)
 fg <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-                (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb, prt = FALSE)
+                (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb)
 logLik(fg$semer)
 #> 'log Lik.' -935.7451 (df=8)
 autoplot(semipred(fg, "age", "age"))
@@ -386,7 +387,7 @@ curve in `x1`, and an effect of `z` that changes smoothly with `x2`
 set.seed(2)
 da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
 da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
-fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
+fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da)
 anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
 #>     term   variance      LRT      p.value
 #> 1   s_x1 0.03875716 122.8299 7.596575e-29
@@ -404,7 +405,7 @@ on the log scale, back-transformed for the plots:
 
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
-               data = copper, prt = FALSE)
+               data = copper)
 autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 ```
 
@@ -421,7 +422,7 @@ db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = fact
 db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
                                      rnorm(12, 0, 0.5)[db$cl]))
 fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial,
-                data = db, prt = FALSE)
+                data = db)
 autoplot(semipred(fbin, "g", "x"))
 ```
 
@@ -456,7 +457,7 @@ dr$y <- sin(dr$t/3) + rnorm(12, 0, 0.4)[dr$id] +
   unlist(lapply(1:12, function(i) as.numeric(arima.sim(list(ar = 0.6), 8, sd = 0.4))))
 dr$tf <- factor(dr$t)
 far <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
-                   dispformula = ~0, data = dr, prt = FALSE)
+                   dispformula = ~0, data = dr)
 predictmeans(far, "A", covariate = c(t = 4), pairwise = TRUE)$pairs[
   c("level1", "level2", "estimate", "std.error", "df", "p.value")]
 #>   level1 level2    estimate std.error       df   p.value
@@ -475,7 +476,7 @@ of its penalties is a random effect with its own variance, and
 
 data(ozoneCalif)
 fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
-                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+                s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif)
 anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
 #>                                             term  variance          LRT
 #> 1                    s_daggett_pressure_gradient  4.591269 3.631529e+01
@@ -505,7 +506,7 @@ ds <- data.frame(day = 1:730)
 ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
-              data = ds, prt = FALSE)
+              data = ds)
 autoplot(semipred(fs, covariate = "day"))
 ```
 
@@ -529,7 +530,7 @@ compared at age 15:
 data(SBMDfem)
 SBMDfem$idnum <- factor(SBMDfem$idnum)
 fsb <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum),
-               data = SBMDfem, prt = FALSE)
+               data = SBMDfem)
 pm_sb <- predictmeans(fsb, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")
 pm_sb$means
 #>   ethnicity  estimate  std.error       df  conf.low conf.high group
@@ -548,7 +549,7 @@ survey area on the scale of the catch:
 data(scallop); data(scallopKnots); data(scallopBdry)
 fsc <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
                                    xt = list(knots = as.matrix(scallopKnots))),
-               data = scallop, prt = FALSE)
+               data = scallop)
 autoplot(semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
                   trans = sinh))
 ```
@@ -562,30 +563,19 @@ logistic regression, the probability with its band:
 
 data(wageTUnion)
 fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
-              data = wageTUnion, prt = FALSE)
+              data = wageTUnion)
 autoplot(semipred(fw, "wage", "wage"))
 ```
 
 ![](smooth_files/figure-html/unnamed-chunk-22-1.png)
 
-## From the `smoothZ` form
+## From 1.x
 
-Code written for 1.x, with the smooths in `smoothZ = list(smZ(...))` and
-their straight lines written in the formula, still runs and gives the
-same fits. The formula form gives the same model and adds the fixed
-terms itself:
-
-| 1.x | 2.0 |
-|----|----|
-| `y ~ x, smoothZ = list(sm = smZ(x, k = 10))` | `y ~ s(x, bs = "os", k = 10)` |
-| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f, group = TRUE))` | `y ~ s(x, by = f, bs = "os", k = 10)` |
-| `y ~ x*f, smoothZ = list(sm = smZ(x, k = 10, by = f))` | `y ~ s(x, by = f, bs = "os", k = 10, id = 1)` |
-| `y ~ x1 + x2, smoothZ = list(sm = smZ(cbind(x1, x2), type = "Ztps"))` | `y ~ s(x1, x2, bs = "ztps", k = 6)` |
-| `smZ(x, intKnots = kn, range.x = r)` | `s(x, bs = "os", xt = list(knots = kn, range = r))` |
-| `smoothZ = list(sm = myZ(x))`, a matrix of your own | `s(x, bs = "user", xt = list(basis = myZ))` |
-| `smZ(x, drv = 1)` (derivative of the basis) | `semipred(fit, ..., deriv = 1)` |
-
-Smooths are given either in the formula or in `smoothZ`, not both. Other
+[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+and `smoothZ` were removed in 2.0:
+[`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)
+shows each 1.x form beside its formula form (they give the same fits)
+and the 1.x models of the overview article beside their 2.0 code. Other
 changes since 1.x: the optimizer is `nloptwrap`
 (`control = lmerControl(optimizer = "bobyqa")` gives 1.x’s),
 [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
@@ -596,8 +586,7 @@ their bands.
 ## More
 
 - [`?semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
-  [`?semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
-  [`?smZ`](https://dongwenluo.github.io/predictmeans/reference/smZ.md);
+  [`?semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md);
   [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   fits the same models with glmmTMB, which also allows negative binomial
   and other families.

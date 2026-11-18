@@ -15,8 +15,8 @@ its row of the data.
 ## Usage
 
 ``` r
-residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE,
-    ask = FALSE, interactive = FALSE, plot = TRUE)
+residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
+    interactive = FALSE, plot = TRUE, ...)
 ```
 
 ## Arguments
@@ -31,10 +31,10 @@ residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE
   variable in the data of the model, or a vector with one value per
   observation. The default `"none"` uses one colour.
 
-- level:
+- re_level:
 
-  For mixed models: which random-effect term the random-effect plot
-  shows, 1, 2, ... (in the order of
+  For mixed models (`level` before 2.0): which random-effect term the
+  random-effect plot shows, 1, 2, ... (in the order of
   [`ranef()`](https://rdrr.io/pkg/nlme/man/random.effects.html): for
   `lme` the outermost grouping first, for `lmer` the innermost first).
 
@@ -51,14 +51,10 @@ residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE
   on points; now `TRUE` labels 3 points, and `interactive = TRUE` shows
   every point's row name.
 
-- newwd:
+- ...:
 
-  Open a new graphics device first.
-
-- ask:
-
-  `TRUE`: draw the plots one per page, asking before each new page
-  (interactive sessions).
+  Not used: `level`, `newwd`, `ask` (before 2.0) stop with their 2.0
+  spelling.
 
 - interactive:
 
@@ -129,11 +125,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-residplot(fm, level=2)    # lme: level=2 for random effect "Block:Variety"
+residplot(fm, re_level = 2)    # lme: re_level = 2 for random effect "Block:Variety"
 
 
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-residplot(fm, group = "Variety") # lmer: level=1 for random effect "Block:Variety"
+residplot(fm, group = "Variety") # lmer: re_level = 1 for random effect "Block:Variety"
 
 
 # a Poisson GLM: randomized quantile residuals

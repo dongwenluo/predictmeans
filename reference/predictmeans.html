@@ -5,7 +5,7 @@
   and permutation tests."><meta property="og:description" content="This function obtains predicted means, SE of means, SED of means, LSDs and plots of means
   with SE bar or LSD bar for parametric models such as aov, lm,
   glm, gls, lme, and lmer. The function also perfomrs pairwise comparisons
-  and permutation tests."></head><body>
+  and permutation tests."><meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -50,8 +50,7 @@
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Predicted Means of a Linear Model</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Predicted Means of a Linear Model</h1>
       <small class="dont-index">Source: <a href="https://github.com/dongwenluo/predictmeans/blob/main/R/predictmeans.R" class="external-link"><code>R/predictmeans.R</code></a></small>
       <div class="d-none name"><code>predictmeans.Rd</code></div>
     </div>
@@ -65,11 +64,10 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">predictmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, data<span class="op">=</span><span class="cn">NULL</span>, pairwise<span class="op">=</span><span class="cn">FALSE</span>, atvar<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, Df<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>  level<span class="op">=</span><span class="cn">NULL</span>, covariate<span class="op">=</span><span class="cn">NULL</span>, meandecr<span class="op">=</span><span class="cn">NULL</span>, letterCI<span class="op">=</span><span class="cn">FALSE</span>, trans <span class="op">=</span> <span class="va">I</span>, transOff <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  count<span class="op">=</span><span class="cn">FALSE</span>, which.plots <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>,</span>
-<span>  plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, prtnum<span class="op">=</span><span class="cn">TRUE</span>, permlist<span class="op">=</span><span class="cn">NULL</span>,</span>
-<span>  ncore<span class="op">=</span><span class="fl">1</span>, ndecimal<span class="op">=</span><span class="fl">4</span>, cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>, vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>,</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">predictmeans</span><span class="op">(</span><span class="va">model</span>, <span class="va">modelterm</span>, data<span class="op">=</span><span class="cn">NULL</span>, pairwise<span class="op">=</span><span class="cn">FALSE</span>, atvar<span class="op">=</span><span class="cn">NULL</span>, adj<span class="op">=</span><span class="st">"none"</span>, conf.level<span class="op">=</span><span class="fl">0.95</span>,</span>
+<span>  covariate<span class="op">=</span><span class="cn">NULL</span>, meandecr<span class="op">=</span><span class="cn">NULL</span>, letterCI<span class="op">=</span><span class="cn">FALSE</span>, trans <span class="op">=</span> <span class="va">I</span>,</span>
+<span>  plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"predictmeans.plot"</span>, <span class="cn">FALSE</span><span class="op">)</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, permlist<span class="op">=</span><span class="cn">NULL</span>,</span>
+<span>  ncore<span class="op">=</span><span class="fl">1</span>, cov_reduce<span class="op">=</span><span class="va">mean</span>, exclude<span class="op">=</span><span class="cn">NULL</span>, vcov_adjust<span class="op">=</span><span class="cn">TRUE</span>,</span>
 <span>  weights<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"equal"</span>, <span class="st">"proportional"</span>, <span class="st">"outer"</span>, <span class="st">"cells"</span>, <span class="st">"flat"</span><span class="op">)</span>,</span>
 <span>  df_method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"KR-expected"</span>, <span class="st">"KR-average"</span>, <span class="st">"inner-outer"</span>, <span class="st">"residual"</span><span class="op">)</span>, vcov<span class="op">=</span><span class="cn">NULL</span>,</span>
 <span>  equivalence<span class="op">=</span><span class="cn">NULL</span>, bias_adjust<span class="op">=</span><span class="cn">FALSE</span>, sigma<span class="op">=</span><span class="cn">NULL</span>, average<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"link"</span>, <span class="st">"response"</span><span class="op">)</span>,</span>
@@ -152,12 +150,9 @@ critical value for all pairs: their LSDs are not adjusted and a note with the LS
 "bonferroni" adjusted the LSDs, with all the pairs as family also with <code>atvar</code>.)</p></dd>
 
 
-<dt id="arg-df">Df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
-<dd><p>A degree of freedom for calculating LSD. For the above models, Df is obtained from the function automatically.</p></dd>
-
-
-<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
-<dd><p>A significant level for calculating LSD, CI etc. The default value is 0.05.</p></dd>
+<dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
+<dd><p>The confidence level of the confidence limits; the tests, LSDs and letters are at the
+significance level <code>1 - conf.level</code>. The default is 0.95 (<code>level = 0.05</code> before 2.0).</p></dd>
 
 
 <dt id="arg-covariate">covariate<a class="anchor" aria-label="anchor" href="#arg-covariate"></a></dt>
@@ -201,27 +196,13 @@ mean for a log). <code>bias_adjust = TRUE</code> gives the mean in the last two 
 <code>settings$back_transform</code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> say which it is.</p></dd>
 
 
-<dt id="arg-transoff">transOff<a class="anchor" aria-label="anchor" href="#arg-transoff"></a></dt>
-<dd><p>When you use <code>trans=exp(x+1)</code>, then <code>transOff=1</code>, the default is 0. (Not needed when
-the transformation is taken from the formula.)</p></dd>
-
-
-<dt id="arg-count">count<a class="anchor" aria-label="anchor" href="#arg-count"></a></dt>
-<dd><p>An option for indicating the back transformed mean values are counts or not. The default is FALSE.</p></dd>
-
-
-<dt id="arg-which-plots">which.plots<a class="anchor" aria-label="anchor" href="#arg-which-plots"></a></dt>
-<dd><p>Which plots to draw: any of <code>"mean"</code> (means plot), <code>"bar"</code> (bar chart), <code>"pval"</code>
-(p-value plot, when there are more than six p-values) and <code>"back"</code> (back-transformed plot).
-The default is <code>c("mean", "pval", "back")</code>.</p></dd>
-
-
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
 <dd><p>Draw the plots now? The default is <code>FALSE</code> (since 2.0; 1.x drew them): the result holds the
 tables, and <code>autoplot()</code> draws the plots from it. <code>plot = TRUE</code>, or
-<code>options(predictmeans.plot = TRUE)</code> for a whole session, draws them as 1.x did; asking for plots with
-<code>which.plots</code>, <code>plotord</code> or the old <code>mplot</code>, <code>barplot</code>, <code>pplot</code> and <code>bkplot</code>
-also draws them.</p></dd>
+<code>options(predictmeans.plot = TRUE)</code> for a whole session, draws <code>"mean"</code> (means plot),
+<code>"pval"</code> (p-value plot, when there are more than six p-values) and <code>"back"</code> (back-transformed
+plot); name the plots wanted to choose them, including <code>"bar"</code> (bar chart), e.g.
+<code>plot = c("mean", "bar")</code>.</p></dd>
 
 
 <dt id="arg-plot-args">plot_args<a class="anchor" aria-label="anchor" href="#arg-plot-args"></a></dt>
@@ -244,38 +225,25 @@ also draws them.</p></dd>
   <dt><code>lsd_bar</code></dt>
 <dd><p>A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.</p></dd>
 
-  <dt><code>responsen</code></dt>
-<dd><p>Name (in "quotes") of the back transformed response variable in the <code>model</code>.</p></dd>
-
   <dt><code>jitterv</code></dt>
 <dd><p>A degree of jitter in x and y direction in the back transformed means graph. The default is zero.</p></dd>
 
   <dt><code>basesz</code></dt>
 <dd><p>The base font size. The default is 12.</p></dd>
 
-  <dt><code>prtplt</code></dt>
-<dd><p>An option for printing plots on the screen, or not. The default is TRUE.</p></dd>
 
-  <dt><code>newwd</code></dt>
-<dd><p>A logical variable to indicate whether to print graph in a new window. The default is FALSE.</p></dd>
-
-
-</dl><p>As in 1.x these may also be given as arguments of their own (<code>plottitle = "Yield"</code>).</p></dd>
+</dl></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>The settings of <code>plot_args</code> given by name as in 1.x, and the 1.x choices of plots
-<code>mplot</code>, <code>barplot</code>, <code>pplot</code> and <code>bkplot</code>, which still work with a warning that names
-the <code>which.plots</code> to use. Other names are an error.</p></dd>
-
-
-<dt id="arg-prtnum">prtnum<a class="anchor" aria-label="anchor" href="#arg-prtnum"></a></dt>
-<dd><p>An option for printing covariate information on the screen, or not. The default is TRUE.</p></dd>
+<dd><p>Not used: arguments removed in 2.0 (e.g. <code>level</code>, <code>Df</code>, <code>which.plots</code>,
+<code>plottitle</code> as an argument of its own) stop with their 2.0 spelling (see <code><a href="../articles/migrating.html">vignette("migrating")</a></code>);
+other names are an error.</p></dd>
 
 
 <dt id="arg-permlist">permlist<a class="anchor" aria-label="anchor" href="#arg-permlist"></a></dt>
 <dd><p>A model parameter list produced by the function <code>permmodels</code>. When <code>permlist != NULL</code>,
-the option <code>Df</code> will be non-functional. This is a key option for pairwise comparisons via
+<code>df_method</code> is not used. This is a key option for pairwise comparisons via
 permutation tests. With the result of <code>permmodels(method = "freedman-lane")</code> (<code>lm</code> and <code>aov</code>
 models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
 With a <code>permlist</code>, <code>vcov_adjust</code> is not used: the observed t statistics are compared with those of the
@@ -284,10 +252,6 @@ permuted refits, which use the unadjusted covariance.</p></dd>
 
 <dt id="arg-ncore">ncore<a class="anchor" aria-label="anchor" href="#arg-ncore"></a></dt>
 <dd><p>Number of cores for parallel computing when <code>permlist != NULL</code>, the default value is 1 (before predictmeans 2.0: 3).</p></dd>
-
-
-<dt id="arg-ndecimal">ndecimal<a class="anchor" aria-label="anchor" href="#arg-ndecimal"></a></dt>
-<dd><p>An option for specifying number of decimal point to be print at predicted means table. The default is 4.</p></dd>
 
 
 <dt id="arg-cov-reduce">cov_reduce<a class="anchor" aria-label="anchor" href="#arg-cov-reduce"></a></dt>
@@ -336,7 +300,8 @@ without the factor that adds nothing give the same means (equal weights over the
 
 
 <dt id="arg-df-method">df_method<a class="anchor" aria-label="anchor" href="#arg-df-method"></a></dt>
-<dd><p>Denominator degrees of freedom for <code>lmer</code> models. <code>"auto"</code> (the default) uses Kenward-Roger for
+<dd><p>Denominator degrees of freedom, by method or as one number (a fixed df, <code>Df</code> before
+2.0), e.g. <code>df_method = 10</code>. For <code>lmer</code> models <code>"auto"</code> (the default) uses Kenward-Roger for
 REML fits and Satterthwaite for ML fits. Kenward-Roger uses the observed information of the variance
 parameters, as SAS PROC MIXED <code>DDFM=KR</code>; it stays valid with missing values, where the expected information
 (<code>"KR-expected"</code>, as <span class="pkg">pbkrtest</span> and <span class="pkg">emmeans</span>) is not: in simulations (<code>dev/sim-df/</code> in the
@@ -698,7 +663,7 @@ ratios of overall means only when \(\pi\) is the same. A message says so and <co
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparison intervals: mean +/- 0.6226 SE (44.6% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.</span>
 <span class="r-in"><span>  <span class="co">## Means within each variety, Tukey-adjusted pairs, plots</span></span></span>
 <span class="r-in"><span>  <span class="va">predictout</span> <span class="op">&lt;-</span> <span class="fu">predictmeans</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar<span class="op">=</span><span class="st">"Variety"</span>, adj<span class="op">=</span><span class="st">"tukey"</span>,</span></span>
-<span class="r-in"><span>    which.plots<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"bar"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>, line<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    plot<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"bar"</span>, <span class="st">"pval"</span>, <span class="st">"back"</span><span class="op">)</span>, plot_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lineplot<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="predictmeans-1.png" alt="" width="700" height="433"></span>
 <span class="r-plt img"><img src="predictmeans-2.png" alt="" width="700" height="433"></span>
 <span class="r-plt img"><img src="predictmeans-3.png" alt="" width="700" height="433"></span>
@@ -752,7 +717,7 @@ ratios of overall means only when \(\pi\) is the same. A message says so and <co
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard.</p>
+  <p>Developed by Dongwen Luo, Siva Ganesh, John Koolaard, James Curran.</p>
 </div>
 
 <div class="pkgdown-footer-right">

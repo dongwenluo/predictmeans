@@ -33,9 +33,8 @@ without `x`, or `x:z`), or through smooth terms (`s(x)`, `te(x, z)`,
 ## Usage
 
 ``` r
-Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
-        cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
+Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
+        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
 ```
 
 ## Arguments
@@ -73,21 +72,21 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
     ignored).
 
   - The name of one or more covariates, in which case predictions are
-    made over a range of values of those covariates (see `covariateV`).
+    made over a range of values of those covariates (see `at`).
 
   For a `semireg` model this may also be a covariate that only appears
   in the smooth terms.
 
-- covariateV:
+- at:
 
-  Values for the covariate(s) named in `covariate`. For one covariate, a
-  numeric vector. For several covariates, either a list of numeric
-  vectors (all combinations are used; named by covariate, or in the
-  order of `covariate`) or a matrix with one named column per covariate,
-  where each row is one prediction point (e.g. a set of locations for a
-  two-dimensional smooth). When `covariateV` is `NULL`, 50 (one
-  covariate) or 30 (several covariates) equally spaced values over the
-  observed range are used.
+  Values for the covariate(s) named in `covariate` (`covariateV` before
+  2.0). For one covariate, a numeric vector. For several covariates,
+  either a list of numeric vectors (all combinations are used; named by
+  covariate, or in the order of `covariate`) or a matrix with one named
+  column per covariate, where each row is one prediction point (e.g. a
+  set of locations for a two-dimensional smooth). When `at` is `NULL`,
+  50 (one covariate) or 30 (several covariates) equally spaced values
+  over the observed range are used.
 
 - data:
 
@@ -95,10 +94,10 @@ Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FAL
   for example when the data used to fit the model can no longer be
   found. Usually the data are recovered from the model.
 
-- prtnum:
+- ...:
 
-  An option for printing covariate info on the screen or not. The
-  default is FALSE.
+  Not used: arguments removed in 2.0 (`covariateV`, `prtnum`) stop with
+  their 2.0 spelling.
 
 - cov_reduce:
 
@@ -198,11 +197,7 @@ This function heavily depends on the codes from package "lsmeans".
   data(Oats, package="nlme")
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  Kmatrix(fm, "Variety", prtnum=TRUE)$K
-#> 
-#>  The predicted means are estimated at 
-#> nitro 
-#>   0.3 
+  Kmatrix(fm, "Variety")$K
 #>             (Intercept) nitro VarietyMarvellous VarietyVictory
 #> Golden Rain           1   0.3                 0              0
 #> Marvellous            1   0.3                 1              0
@@ -214,11 +209,7 @@ This function heavily depends on the codes from package "lsmeans".
 #> attr(,"estimable")
 #> Golden Rain  Marvellous     Victory 
 #>        TRUE        TRUE        TRUE 
-  Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
-#> 
-#>  The predicted means are estimated at 
-#> nitro 
-#>   0.5 
+  Kmatrix(fm, "Variety", 0.5)$K
 #>             (Intercept) nitro VarietyMarvellous VarietyVictory
 #> Golden Rain           1   0.5                 0              0
 #> Marvellous            1   0.5                 1              0
@@ -859,7 +850,7 @@ This function heavily depends on the codes from package "lsmeans".
 #>                           TRUE                           TRUE 
 #>      Victory:0.587755102040816                    Victory:0.6 
 #>                           TRUE                           TRUE 
-  Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
+  Kmatrix(fm, "Variety", "nitro", at=seq(0, 0.6, 0.1))$K
 #>                 (Intercept) nitro VarietyMarvellous VarietyVictory
 #> Golden Rain:0             1   0.0                 0              0
 #> Golden Rain:0.1           1   0.1                 0              0
@@ -981,7 +972,7 @@ This function heavily depends on the codes from package "lsmeans".
 #> Golden Rain  Marvellous     Victory 
 #>        TRUE        TRUE        TRUE 
   fm3 <- lm(yield ~ Variety + Variety:nitro, data=Oats)
-  Kmatrix(fm3, "Variety", "nitro", covariateV=c(0, 0.3, 0.6))$K
+  Kmatrix(fm3, "Variety", "nitro", at=c(0, 0.3, 0.6))$K
 #>                 (Intercept) VarietyMarvellous VarietyVictory
 #> Golden Rain:0             1                 0              0
 #> Golden Rain:0.3           1                 0              0

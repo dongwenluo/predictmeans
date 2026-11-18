@@ -44,7 +44,7 @@ data(ozoneCalif)
 # an additive model: three O'Sullivan splines
 fit <- semireg(ozone ~ s(inversion.base.height, bs = "os", k = 15) +
                  s(daggett.pressure.gradient, bs = "os", k = 15) +
-                 s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+                 s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif)
 anova(fit)$smooth     # is each curve more than a straight line?
 #>                          term  variance    logLik logLik.without      LRT
 #> 1     s_inversion_base_height 12.286694 -1017.003      -1024.002 13.99700
@@ -55,5 +55,5 @@ anova(fit)$smooth     # is each curve more than a straight line?
 #> 2 1.397650e-09 0.5 chi2(0) + 0.5 chi2(1)
 #> 3 1.615225e-05 0.5 chi2(0) + 0.5 chi2(1)
 # the effect of one covariate, the others at their means
-semipred(fit, covariate = "inversion.base.temp", prt = FALSE)$plt
+semipred(fit, covariate = "inversion.base.temp")$plt
 ```

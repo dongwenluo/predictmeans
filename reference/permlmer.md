@@ -2,30 +2,34 @@
 
 This function provides permutation tests for the terms in a linear mixed
 model of `lmer`, and in a generalized linear mixed model of `glmer` or
-`glmmTMB` (also as `permglmer()` and `permglmmTMB()`).
+`glmmTMB`.
 
 ## Usage
 
 ``` r
-permlmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-         method=c("auto", "working", "quantile"))
-permglmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-          method=c("auto", "working", "quantile"))
-permglmmTMB(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-            method=c("auto", "working", "quantile"))
+permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
+         method=c("auto", "working", "quantile"), ...)
 ```
 
 ## Arguments
 
-- lmer0:
+- model0:
 
-  `lmer` (or `glmer`, `glmmTMB`) model under H0, note that `lmer0` model
-  must nest within `lmer1` model.
+  `lmer` (or `glmer`, `glmmTMB`) model under H0 (`model0` before 2.0);
+  it must be nested within `model1`.
 
-- lmer1:
+- model1:
 
-  `lmer` (or `glmer`, `glmmTMB`) model under H1, note that `lmer0` model
-  must nest within `lmer1` model.
+  `lmer` (or `glmer`, `glmmTMB`) model under H1 (`model1` before 2.0).
+
+- ...:
+
+  Not used: `lmer0`, `lmer1` (before 2.0) stop with their 2.0 spelling.
+  [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+  and
+  [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
+  the same function under other names before 2.0, were removed: use
+  `permlmer()`.
 
 - nperm:
 
@@ -69,21 +73,22 @@ attribute `"method"` says which method was used, and attribute
 
 ## Details
 
-The residuals of `lmer0` are decorrelated with the symmetric square root
-of their covariance under `lmer0`, permuted, correlated again and added
-to the fitted values of `lmer0` (Lee and Braun, 2012); both models are
-refitted to each permuted data set. The likelihood-ratio statistics are
-compared after rounding to 4 decimals, so an observed statistic of 0
-(the tested variance estimated at 0) gives a p-value of 1. Since
-predictmeans 2.0 the square root is symmetric, so the results do not
-depend on the order of the data (1.x used the Cholesky factor).
+The residuals of `model0` are decorrelated with the symmetric square
+root of their covariance under `model0`, permuted, correlated again and
+added to the fitted values of `model0` (Lee and Braun, 2012); both
+models are refitted to each permuted data set. The likelihood-ratio
+statistics are compared after rounding to 4 decimals, so an observed
+statistic of 0 (the tested variance estimated at 0) gives a p-value
+of 1. Since predictmeans 2.0 the square root is symmetric, so the
+results do not depend on the order of the data (1.x used the Cholesky
+factor).
 
 For GLMMs (`glmer` or `glmmTMB`; since predictmeans 2.0),
-`method = "working"` does the same on the working (link) scale: `lmer0`
+`method = "working"` does the same on the working (link) scale: `model0`
 is linearised at its fit (working response \\z = \eta + (y - \mu)
 d\eta/d\mu\\, working variance \\\phi V(\mu)/(a (d\mu/d\eta)^2)\\; the
 covariance of z also has the random effects, as in
-[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/R2_glmm.md)),
+[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
 the decorrelated working residuals are permuted, and the statistic is
 the likelihood-ratio statistic of weighted linear mixed models fitted to
 the working responses (REML when the two models have the same fixed
@@ -93,7 +98,7 @@ the usual likelihood-ratio test when counts were overdispersed. For 0/1
 responses the working scale fails when events are rare or clusters tiny
 (36% rejections at the 5% level), so `method = "quantile"` is used:
 randomised quantile residuals (Dunn and Smyth, 1996) of the response
-given the conditional means of `lmer0` are permuted and mapped back to
+given the conditional means of `model0` are permuted and mapped back to
 0/1 responses, and both models are refitted (`glmer` fits with
 `nAGQ = 0`, for the observed data too, so the statistic can differ from
 the `Chisq` column); it kept the level (5.6-6.2%). A random effect with
@@ -155,7 +160,7 @@ permlmer(fm2, fm1, nperm=99, ncore=1)
 #> lmer1: Reaction ~ Days + (Days | Subject)
 #>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    5 1753.7 1769.6 -871.83    1743.7                           
-#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.91
+#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.86
 # }
 
 ## Test fixed effects
@@ -171,13 +176,13 @@ permlmer(fm0, fm, nperm=99, ncore=1)
 #> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)
 #>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    9 616.04 636.53 -299.02    598.04                            
-#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.96
+#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.98
 
 ## A GLMM: do tick counts vary between locations, beyond broods?
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)
 gm2 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION), family = poisson,
              data = lme4::grouseticks)
-permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
+permlmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 #> Data: lme4::grouseticks
 #> Models:
 #> m0: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD)
