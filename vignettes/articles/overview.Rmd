@@ -240,13 +240,13 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmens':
+Options in function 'predictmeans':
 
--   **{pair=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
+-   **{pairwise=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
 
--   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pair' with be TRUE automatically when 'adj' is not none).
+-   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pairwise' will be TRUE automatically when 'adj' is not none).
 
--   **{bar=TRUE}** is for producing bar chart.
+-   **{plot=c("mean", "bar", "pval", "back")}** draws the plots named, including the bar chart (`plot = TRUE`: the default plots).
 
 -   **{meandecr=TRUE}** is for descending means in 'mean_table'.
 
@@ -365,10 +365,10 @@ R2_glmm(mod)
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "A:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -407,10 +407,10 @@ for (i in 6:15){
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "B:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -449,10 +449,10 @@ for (i in 6:15){
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "A:B:time", 
-                          atvar="time", adj="BH", 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = TRUE, 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -494,7 +494,7 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmens':
+Options in function 'predictmeans':
 
 -   **{atvar="time"}** sets multiple comparison within each level of 'time', it also infects the mean_table and mean plots arrangement. When 'atvar' is not NULL 'pair' turns to be TRUE automatically. Please try to see any effects for 'atvar=c("A", "B")' or 'atvar=c("B", "A")'.
 

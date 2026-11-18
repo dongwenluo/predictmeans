@@ -110,7 +110,7 @@ familywise error rate as Tukey's test does.
 
 ```{r}
 pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall", plot = FALSE,
-                    prtnum = FALSE, ncore = 1)
+                    ncore = 1)
 pmw$pairs[, c("level1", "level2", "p.value", "p.adj")]
 ```
 

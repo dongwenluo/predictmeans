@@ -119,8 +119,7 @@ Other comparisons that stay within the observed cells are sound too, e.g. nitrog
 within each variety:
 
 ```{r, warning = FALSE}
-pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE,
-                     prtnum = FALSE)
+pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
 within <- subset(pm_v$pairs, !is.na(by))
 head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
 ```
