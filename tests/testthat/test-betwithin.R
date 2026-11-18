@@ -35,7 +35,7 @@ test_that("pm_betwithin_df() equals SAS DDFM=BETWITHIN (split plot, one plot mis
 test_that("predictmeans(), contrastmeans() and pm_joint() use the between-within df and the model's covariance", {
   d <- oats_f()
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = d)
-  pm <- predictmeans(m, "nitro", df_method = "between-within", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(m, "nitro", df_method = "between-within", plot = FALSE)
   expect_equal(unique(pm$means$df), 15)
   expect_equal(unique(pm$pairs$df), 15)
   expect_equal(pm$means$std.error, rep(7.1747, 4), tolerance = 1e-4)          # SAS (model-based SE)
@@ -52,13 +52,13 @@ test_that("predictmeans(), contrastmeans() and pm_joint() use the between-within
   r <- rep_data()
   g <- nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
-  pg <- predictmeans(g, "Group:Time", df_method = "between-within", plot = FALSE, prtnum = FALSE)
+  pg <- predictmeans(g, "Group:Time", df_method = "between-within", plot = FALSE)
   expect_equal(unique(pg$means$df), 10)
   expect_equal(unique(pg$pairs$df), 10)
   # crossed random effects have no subject; other classes ignore it
   d$Plot <- factor(rep(1:12, 6))
   mc <- lme4::lmer(yield ~ nitro + (1 | Block) + (1 | Plot), data = d)
-  expect_error(predictmeans(mc, "nitro", df_method = "between-within", plot = FALSE, prtnum = FALSE), "subject")
+  expect_error(predictmeans(mc, "nitro", df_method = "between-within", plot = FALSE), "subject")
   expect_warning(predictmeans(lm(yield ~ nitro, data = d), "nitro", df_method = "between-within",
-                              plot = FALSE, prtnum = FALSE), "lmer, lme and gls")
+                              plot = FALSE), "lmer, lme and gls")
 })

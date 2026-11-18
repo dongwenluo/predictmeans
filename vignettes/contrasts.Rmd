@@ -40,8 +40,8 @@ is computed by package mvtnorm.
 
 ```{r, eval = has_mvt}
 p <- sapply(c("none", "tukey", "mvt", "sidak", "scheffe", "holm"), function(a)
-  predictmeans(fm, "N", adj = a, plot = FALSE, prtnum = FALSE)$pairs$p.adj)
-pm <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+  predictmeans(fm, "N", adj = a, plot = FALSE)$pairs$p.adj)
+pm <- predictmeans(fm, "N", plot = FALSE)
 data.frame(pair = paste(pm$pairs$level1, "-", pm$pairs$level2), signif(p, 3))
 ```
 
@@ -61,7 +61,7 @@ each comparison on its own. The step-down and false discovery rate methods (`"ho
 control.
 
 ```{r}
-pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE, prtnum = FALSE)$pairs
+pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE)$pairs
 pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
      "adj.conf.high", "p.adj")]
 ```
@@ -156,7 +156,7 @@ matrix (Kenward–Roger adjusted for REML `lmer` fits), named by the levels. Any
 can be computed from them:
 
 ```{r}
-pmv <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+pmv <- predictmeans(fm, "N:Variety", plot = FALSE)
 b <- coef(pmv)
 L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
 c(estimate = sum(L * b), SE = sqrt(drop(L %*% vcov(pmv) %*% L)))
@@ -181,7 +181,7 @@ give the margin with `equivalence` (a number `d` for the region `-d` to `d`, or
 tests (TOST): below `level`, the difference lies within the margin.
 
 ```{r}
-pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE, prtnum = FALSE)
+pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE)
 pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
 ```
 
@@ -197,7 +197,7 @@ the model's:
 
 ```{r}
 fl <- lm(yield ~ Block + N + Variety, data = Oats)
-pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE, prtnum = FALSE)
+pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE)
 pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 pmh$settings$vcov
 contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)

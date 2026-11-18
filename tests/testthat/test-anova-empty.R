@@ -67,7 +67,7 @@ test_that("lm with an empty cell: Type III interaction = the model comparison; p
   expect_equal(a["N:Variety", "Sum Sq"], cmpr[2, "Sum of Sq"], tolerance = 1e-8)
   expect_equal(a["N:Variety", "Df"], 5)
   expect_equal(a["Variety", "F value"], q(pm_joint(fl, "Variety"))$F.ratio, tolerance = 1e-8)
-  pr <- q(permmodels(fl, nperm = 19, type = "III", seed = 1, prt = FALSE, ncore = 1))
+  pr <- q(permmodels(fl, nperm = 19, type = "III", seed = 1, ncore = 1))
   expect_true(all(c("N", "Variety", "N:Variety") %in% rownames(pr$ANOVA)))
   # glm: Wald tests on the cells; likelihood ratio tests need a complete design
   g <- glm(round(yield) ~ N * Variety, family = poisson, data = e)

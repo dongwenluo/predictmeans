@@ -51,7 +51,7 @@ test_that("the printed LSDs go with the adjusted p-values: the critical value of
   O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
   df <- df.residual(fm)
-  q <- function(...) predictmeans(fm, ..., plot = FALSE, prtnum = FALSE)
+  q <- function(...) predictmeans(fm, ..., plot = FALSE)
   sed <- q("nitro")[["Standard Error of Differences"]][["Aveg.SED"]]
   lsd <- function(a) q("nitro", adj = a)$LSD[["Aveg.LSD"]]
   expect_equal(lsd("none"), round(qt(0.975, df)*sed, 5))
@@ -87,7 +87,7 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
   d$x <- as.numeric(d$A == "a3") * 2 + as.numeric(d$B == "b2")   # aliased with A + B
   d$y <- rnorm(nrow(d))
   m <- lm(y ~ A + B + x, d)
-  expect_message(r <- predictmeans(m, "A", pairwise = TRUE, plot = FALSE, prtnum = FALSE),
+  expect_message(r <- predictmeans(m, "A", pairwise = TRUE, plot = FALSE),
                  "cannot be estimated")
   expect_true(all(is.na(r$means$estimate)) && all(!r$means$estimable))
   expect_true(all(is.na(r$`Predicted Means`)))
@@ -96,7 +96,7 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
   expect_equal(r$pairs$estimate[1], unname(-coef(m)["Aa2"]))
   expect_true(all(is.na(r$pairs$estimate[2:3])))
   pdf(NULL); on.exit(dev.off())
-  expect_message(predictmeans(m, "A", plot = TRUE, prtnum = FALSE, prtplt = FALSE), "no mean plots")
+  expect_message(predictmeans(m, "A", plot = TRUE), "no mean plots")
 })
 
 test_that("plots only when asked: plot = TRUE, the option, or plots named", {
@@ -110,9 +110,9 @@ test_that("plots only when asked: plot = TRUE, the option, or plots named", {
     # PDF page objects, read as bytes (the file is not text in a UTF-8 locale)
     length(grepRaw("/Type /Page[^s]", readBin(f, "raw", file.size(f)), all = TRUE))
   }
-  expect_equal(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
-  expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE, prtnum = FALSE)), 0)
-  expect_gt(pages(predictmeans(fm, "nitro", which.plots = "mean", prtnum = FALSE)), 0)
+  expect_equal(pages(predictmeans(fm, "nitro")), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro", plot = "mean")), 0)
   op <- options(predictmeans.plot = TRUE); on.exit(options(op), add = TRUE)
-  expect_gt(pages(predictmeans(fm, "nitro", prtnum = FALSE)), 0)
+  expect_gt(pages(predictmeans(fm, "nitro")), 0)
 })

@@ -90,9 +90,9 @@ pm_fl_design <- function(model) {
        call. = FALSE)
 }
 
-pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit = FALSE, ncore = 1) {
+pm_perm_fl <- function(model, nperm, type, exact, seed, perms = NULL, refit = FALSE, ncore = 1) {
   if (refit && inherits(model, c("lmerMod", "lme", "gls", "glmerMod", "glmmTMB"))) {
-    return(pm_perm_fl_refit(model, nperm, type, exact, seed, prt, perms, ncore))
+    return(pm_perm_fl_refit(model, nperm, type, exact, seed, perms, ncore))
   }
   des <- pm_fl_design(model)
   X <- des$X
@@ -177,17 +177,6 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
   tabs <- if (des$kind == "lm") pm_fl_tables_lm(model, type, pval) else pm_fl_tables(X, z, df_res, tests, pval, type, des$kind)
   COEF <- tabs$COEF
   ANOVA <- tabs$ANOVA
-  if (prt) {
-    if (!is.null(COEF)) {
-      cat("\nCoefficients of (fixed) effects:\n")
-      print(COEF)
-      cat("\nNote: Perm_p_value of t test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n")
-    }
-    cat("\nANOVA:\n")
-    if (!is.null(attr(ANOVA, "heading"))) cat(paste(attr(ANOVA, "heading"), "\n", sep = ""))
-    print(ANOVA)
-    cat("\nNote: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations.\n\n")
-  }
   perm <- pm_perm_fl_object(X, z, nperm, exact, attr(perms, "start"), colnames(X), attr(perms, "matrix"))
   # coefficients: |t| (the F of one column is t^2)
   cf <- startsWith(names(tests), "coef:")
@@ -196,7 +185,9 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, prt, perms = NULL, refit
   Tm[cf, ] <- sqrt(pmax(Tm[cf, ], 0))
   perm$stats <- pm_perm_statset(model, obs, Tm, pval, vapply(tests, `[[`, numeric(1), "df"),
                                 ifelse(cf, "t", "F"), Ls, df_res, n)
-  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
+  pm_permmodels_result(list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm),
+                       paste("Note: Perm_p_value of t test is obtained using", sQuote(nperm), "Freedman-Lane permutations."),
+                       paste("Note: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations."))
 }
 
 ## Tables for lm and aov: the model's own coefficient and ANOVA tables with

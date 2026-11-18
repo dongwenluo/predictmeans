@@ -76,7 +76,7 @@ sas_run <- function(S) {
   for (eff in names(terms)) {
     mt <- terms[[eff]]
     two <- grepl(":", mt)
-    pm <- predictmeans(m, mt, df_method = dfm, plot = FALSE, prtnum = FALSE)
+    pm <- predictmeans(m, mt, df_method = dfm, plot = FALSE)
     L <- S[S$table == "lsmeans" & S$effect == eff, ]
     key <- if (two) paste(L$level1, L$level2, sep = ":") else L$level1
     mm <- pm$means
@@ -131,8 +131,8 @@ test_that("pbkrtest's Kenward-Roger (KR-expected) differs from SAS's when a whol
   d <- droplevels(sas_oats()[!(sas_oats()$Block == "I" & sas_oats()$Variety == "GoldenRain"), ])
   m <- lme4::lmer(Yield ~ Variety * Nitro + (1 | Block) + (1 | Block:Variety), data = d)
   D <- ref[ref$ddfm == "KR" & ref$data == "OATS_MISSWP" & ref$table == "diffs" & ref$effect == "Variety", ]
-  s <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)$pairs$df
-  k <- predictmeans(m, "Variety", df_method = "KR-expected", plot = FALSE, prtnum = FALSE)$pairs$df
+  s <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE)$pairs$df
+  k <- predictmeans(m, "Variety", df_method = "KR-expected", plot = FALSE)$pairs$df
   expect_equal(s, as.numeric(D$df), tolerance = 2e-3)                      # 8.35, 8.35, 8.1
   expect_true(all(k / as.numeric(D$df) > 1.08))                            # 9.25, 9.25, 9.01
 })

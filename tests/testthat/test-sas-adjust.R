@@ -26,8 +26,7 @@ test_that("adj = \"tukey\" equals SAS Tukey-Kramer with ADJDFE=ROW: estimates, S
   skip_on_cran()
   S <- read.csv(test_path("_data", "sas", "proc-mixed-adjust.csv.gz"), colClasses = "character")
   fm <- adj_fit()
-  pp <- function(term) suppressWarnings(predictmeans(fm, term, pairwise = TRUE, adj = "tukey", plot = FALSE,
-                                                     prtnum = FALSE))$pairs
+  pp <- function(term) suppressWarnings(predictmeans(fm, term, pairwise = TRUE, adj = "tukey", plot = FALSE))$pairs
   cols <- c("level1", "level2", "estimate", "std.error", "df", "p.value", "p.adj", "conf.low", "conf.high",
             "adj.conf.low", "adj.conf.high")
   P <- rbind(cbind(effect = "Variety", pp("Variety")[, cols]),

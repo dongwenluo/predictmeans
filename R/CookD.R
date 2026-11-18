@@ -16,13 +16,14 @@
 #' for every observation takes time; \code{group} deletes whole clusters, usually the more useful check for
 #' mixed models.
 #' @usage
-#' CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
+#' CookD(model, group=NULL, plot=TRUE, id=3, ...)
 #' @param model Model object returned by \code{aov} (without \code{Error()}), \code{lm}, \code{glm}, \code{gls},
 #'   \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{gam}.
 #' @param group Name (in "quotes") for indicating how observations are deleted for Cook's distance calculation. If \code{group!=NULL} then deletions will be along levels of \code{group} variable, otherwise, will be along individual observations.
 #' @param plot A logical variable; if it is true, a plot of Cook's distance will be presented. The default is TRUE.
-#' @param idn An integer indicating the number of top Cook's distances to be labelled in the plot. The default value is 3.
-#' @param newwd A logical variable to indicate whether to print graph in a new window. The default value is FALSE.
+#' @param id The number of the largest Cook's distances labelled in the plot (\code{idn} before 2.0, now as in
+#'   \code{\link{residplot}}). The default value is 3.
+#' @param ... Not used: \code{idn}, \code{newwd} (before 2.0) stop with their 2.0 spelling.
 #' @return Invisibly, the Cook's distances (named by observation or group).
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
@@ -36,7 +37,9 @@
 #' @name CookD
 NULL
 
-CookD <- function (model, group=NULL, plot=TRUE, idn=3, newwd=FALSE) {
+CookD <- function (model, group=NULL, plot=TRUE, id=3, ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("CookD", match.call(), strict = TRUE, formals_of = formals(sys.function()))
 
   if (inherits(model, "aovlist")) {
     stop("CookD() does not handle aov models with Error(): fit the error strata as random effects (lmer or lme).",
@@ -99,10 +102,7 @@ CookD <- function (model, group=NULL, plot=TRUE, idn=3, newwd=FALSE) {
   }
   names(CookD) <- rn
   if (plot) {
-    if (newwd) {
-      dev.new()
-    }
-    outD <- !is.na(CookD) & CookD >= sort(CookD, decreasing =TRUE)[min(idn, sum(!is.na(CookD)))]   # Outlying Di's
+    outD <- !is.na(CookD) & CookD >= sort(CookD, decreasing =TRUE)[min(id, sum(!is.na(CookD)))]   # Outlying Di's
     labid <- names(CookD)
     plot(CookD,  xlab="Obs. number", col="blue", ylim=c(0, max(CookD, na.rm = TRUE)+0.005),
          main="Cook's Distance", ylab = "Cook's distance", type = "h")

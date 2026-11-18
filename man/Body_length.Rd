@@ -26,7 +26,7 @@ treatments in two habitats, of the kind used by Nakagawa and Schielzeth (2013) t
 \examples{
 data(Body_length)
 fm <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container), data = Body_length)
-R2_glmm(fm)
+R2_model(fm)
 }
 \references{
 Nakagawa, S. and Schielzeth, H. (2013), A general and simple method for obtaining

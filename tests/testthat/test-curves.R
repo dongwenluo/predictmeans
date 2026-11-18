@@ -5,7 +5,7 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   fm <- lm(yield ~ Block + nitro * Variety, data = O)
   xs <- c(0, 0.3, 0.6)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
-  r <- covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs)
+  r <- covariatemeans(fm, "Variety", covariate = "nitro", at = xs)
   expect_null(grDevices::dev.list())                     # nothing drawn
   expect_s3_class(r, c("covariatemeans", "pm_curves"))
   expect_named(r, c("means", "pairs", "settings", "plt", "pltdf"))
@@ -34,7 +34,7 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   grDevices::pdf(NULL)
   n0 <- length(grDevices::dev.list())
   on.exit(grDevices::dev.off())
-  r2 <- covariatemeans(fm, "Variety", covariate = "nitro", covariateV = xs, plot = TRUE)
+  r2 <- covariatemeans(fm, "Variety", covariate = "nitro", at = xs, plot = TRUE)
   expect_equal(r2$means, m)
 })
 
@@ -44,7 +44,7 @@ test_that("covariatemeans(): back-transformed curves have response columns, as p
   d <- expand.grid(x = seq(0, 10, length = 11), A = factor(c("a1", "a2", "a3")), site = factor(1:8))
   d$y <- rpois(nrow(d), exp(0.5 + 0.1*d$x + 0.2*(d$A == "a2") + rnorm(8, 0, 0.3)[d$site]))
   g <- glm(y ~ A*x, poisson, data = d)
-  r <- suppressMessages(covariatemeans(g, "A", covariate = "x", covariateV = c(2, 5)))
+  r <- suppressMessages(covariatemeans(g, "A", covariate = "x", at = c(2, 5)))
   m <- r$means
   expect_true(all(c("response", "response.std.error", "response.conf.low", "response.conf.high") %in% names(m)))
   expect_equal(m$response, exp(m$estimate))
@@ -65,8 +65,8 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
   d$cnt <- rpois(120, exp(1 + 0.6*d$x*(d$A == "a3") + 0.2*d$x))
   g <- glm(cnt ~ A*x, poisson, d)
   xs <- seq(0, 2, 0.1)
-  rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs)
-  rs <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), covariateV = xs, band = "simultaneous")
+  rp <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), at = xs)
+  rs <- covariatemeans(g, "A", covariate = "x", contr = c(3, 1), at = xs, band = "simultaneous")
   expect_null(rp$means)
   p <- rp$pairs
   expect_named(p, c("level1", "level2", "x", "estimate", "std.error", "df", "statistic", "p.value", "conf.low",
@@ -96,9 +96,9 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
 
 test_that("semipred(): the layout of predictmeans(); the simultaneous band in adj.conf.*, with p.adj that agrees", {
   data(Dialyzer, package = "nlme")
-  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer, prt = FALSE)
+  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
-  out <- semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+  out <- semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
   expect_null(grDevices::dev.list())                     # nothing drawn
   expect_s3_class(out, c("semipred", "pm_curves"))
   m <- out$means
@@ -148,8 +148,8 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   set.seed(4)
   db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
   db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x + rnorm(12, 0, 0.5)[db$cl]))
-  fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db, prt = FALSE)
-  b <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8))
+  fb <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db)
+  b <- semipred(fb, "g", "x", at = c(0.2, 0.5, 0.8))
   m <- b$means
   expect_equal(m$response, plogis(m$estimate))
   expect_equal(m$response, b$pred_df$y)
@@ -157,15 +157,14 @@ test_that("semipred(): generalized fits have response columns; surfaces keep the
   expect_equal(m$response.std.error, b$pred_df$SE_mu)
   expect_equal(b$settings$back_transform$estimate, "typical cluster (random effects at zero)")
   expect_true(b$settings$unconditional)
-  bc <- semipred(fb, "g", "x", covariateV = c(0.2, 0.5, 0.8), contr = c("b", "a"))
+  bc <- semipred(fb, "g", "x", at = c(0.2, 0.5, 0.8), contr = c("b", "a"))
   expect_equal(bc$pairs$odds.ratio, bc$pred_df$odds.ratio)
   expect_equal(bc$pairs$odds.ratio.conf.low, bc$pred_df$odds.ratio.LL)
   expect_equal(bc$pairs$response, bc$pred_df$response.diff)
   expect_equal(bc$pairs$response.conf.high, bc$pred_df$response.UL)
   # a surface inside semiboundary(): the rows of pred_df
   data(copper)
-  fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6), data = copper,
-                 prt = FALSE)
+  fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6), data = copper)
   s2 <- semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, boundary = TRUE)
   expect_equal(nrow(s2$means), nrow(s2$pred_df))
   expect_equal(s2$means$response, s2$pred_df$Trans_y)

@@ -4,10 +4,10 @@
 \alias{contrastmeans}
 \title{Linear Contrast Tests for a Linear Model}
 \usage{
-contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", Df, permlist,
+contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
-                level=0.05, vcov=NULL, equivalence=NULL)
+                conf.level=0.95, vcov=NULL, equivalence=NULL, ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
@@ -27,10 +27,7 @@ single-step and "westfall" the step-down max-|t| adjustment of the permutation p
 1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 The default method is "none".}
 
-\item{Df}{A denominator degree of freedom for \code{modelterm}. (For \code{glmer} models 
-the \code{Df} needs to be specified, while for the other models, \code{Df} is obtained from the fitted model automatically).}
-
-\item{permlist}{A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, the option \code{Df} will be non-functional. This is a key 
+\item{permlist}{A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, \code{df_method} is not used. This is a key 
   option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
 \code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
 0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).}
@@ -43,7 +40,7 @@ predictmeans 1.x. It has no effect for other models.}
 \item{weights}{Passed to \code{\link{Kmatrix}}: how the cells of factors not in \code{modelterm} are weighted when averaging
 over them (\code{"equal"}, the default, \code{"proportional"}, \code{"outer"}, \code{"cells"} or \code{"flat"}).}
 
-\item{df_method}{Denominator df: \code{"auto"} (Kenward-Roger for REML fits of \code{lmer}, \code{lme} and \code{gls},
+\item{df_method}{Denominator df, by method or as one number (a fixed df, \code{Df} before 2.0): \code{"auto"} (Kenward-Roger for REML fits of \code{lmer}, \code{lme} and \code{gls},
 Satterthwaite for ML fits), \code{"Kenward-Roger"}, \code{"Satterthwaite"} or \code{"containment"} (SAS \code{DDFM=CONTAIN}), and
 for \code{lmer}, \code{lme} and \code{gls} models \code{"between-within"} (SAS \code{DDFM=BETWITHIN}), and
 \code{"KR-expected"} (Kenward-Roger with the expected information, as \pkg{pbkrtest}; \code{"Kenward-Roger"} uses
@@ -58,8 +55,8 @@ df1, when there is none). Contrasts that are linear combinations of others are d
 of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.}
 
-\item{level}{Significance level for the confidence limits of the contrasts (\code{lower.CL}, \code{upper.CL}); the
-default 0.05 gives 95\% limits. They are t limits of each contrast, or with \code{permlist} permutation-t limits:
+\item{conf.level}{Confidence level of the limits of the contrasts (\code{lower.CL}, \code{upper.CL}; \code{level =
+0.05} before 2.0); the tests are at the significance level \code{level = 1 - conf.level}. They are t limits of each contrast, or with \code{permlist} permutation-t limits:
 estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
 k = floor(level (nperm + 1))). With \code{adj} "bonferroni", "sidak", "scheffe" or "mvt" (with \code{permlist}:
 "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
@@ -80,9 +77,11 @@ covariance.}
 \item{equivalence}{Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
 contrasts: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
 scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
-one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+one-sided p-values; below \code{1 - conf.level}, the difference lies within the margins (as emmeans'
 \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 (normal-based in \code{contrastmeans}).}
+
+\item{...}{Not used: arguments removed in 2.0 (\code{Df}, \code{level}) stop with their 2.0 spelling.}
 }
 \value{
 An object of class \code{"contrastmeans"}, a list. \code{print()} shows the contrasts, \code{tidy()} and

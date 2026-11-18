@@ -11,7 +11,7 @@ test_that("permstats(): parametric and permutation p-values, effect sizes, size 
   fm <- lm(mpg ~ wt + cyl, data = d)
   set.seed(7)
   P <- replicate(199, sample(nrow(d)))
-  r <- permmodels(fm, perms = P, type = "II", prt = FALSE)
+  r <- permmodels(fm, perms = P, type = "II")
   s <- permstats(r)
   expect_equal(rownames(s), c("wt", "cyl", "coef:wt", "coef:cyl6", "coef:cyl8"))
   dr <- drop1(fm, test = "F")
@@ -28,25 +28,25 @@ test_that("permstats(): parametric and permutation p-values, effect sizes, size 
   Fo <- s["cyl", "statistic"]
   expect_equal(s["cyl", "ses"], (Fo - mean(Fs)) / sd(Fs), tolerance = 1e-6)
   expect_equal(s["cyl", "param.size"], mean(pf(Fs, 2, df.residual(fm), lower.tail = FALSE) <= 0.05), tolerance = 1e-6)
-  expect_equal(permstats(r, level = 0.5)["cyl", "param.size"],
+  expect_equal(permstats(r, conf.level = 0.5)["cyl", "param.size"],
                mean(pf(Fs, 2, df.residual(fm), lower.tail = FALSE) <= 0.5), tolerance = 1e-6)
-  expect_error(permstats(permmodels(fm, nperm = 9, method = "raw", prt = FALSE)), "Freedman-Lane")
+  expect_error(permstats(permmodels(fm, nperm = 9, method = "raw")), "Freedman-Lane")
 })
 
 test_that("permstats(): df of the parametric tests of mixed models", {
   skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fl <- lme4::lmer(yield ~ nitro + Variety + (1 | Block/Variety), data = Oats)
-  s <- permstats(permmodels(fl, nperm = 19, type = "III", seed = 1, prt = FALSE, refit = FALSE))
+  s <- permstats(permmodels(fl, nperm = 19, type = "III", seed = 1, refit = FALSE))
   at <- anova(lmerTest::as_lmerModLmerTest(fl), type = "III")
   expect_equal(s[c("nitro", "Variety"), "df2"], at[c("nitro", "Variety"), "DenDF"], tolerance = 1e-4)
   ct <- coef(summary(lmerTest::as_lmerModLmerTest(fl)))
   expect_equal(s["coef:nitro0.2", "df2"], ct["nitro0.2", "df"], tolerance = 1e-4)
   fe <- nlme::lme(yield ~ nitro + Variety, random = ~ 1 | Block/Variety, data = Oats)
-  se <- permstats(permmodels(fe, nperm = 19, seed = 1, prt = FALSE, refit = FALSE))
+  se <- permstats(permmodels(fe, nperm = 19, seed = 1, refit = FALSE))
   expect_equal(se[c("nitro", "Variety"), "df2"], anova(fe)[c("nitro", "Variety"), "denDF"])
   # refits: the p-values of the table
-  rr <- permmodels(fl, nperm = 9, seed = 1, prt = FALSE)
+  rr <- permmodels(fl, nperm = 9, seed = 1)
   expect_equal(permstats(rr)[c("nitro", "Variety"), "p.perm"], rr$ANOVA[c("nitro", "Variety"), "Perm_p_value"])
 })
 
@@ -54,8 +54,8 @@ test_that("permcombine(): Fisher and Tippett combination and min-p adjustment by
   d <- cars_data()
   set.seed(8)
   P <- replicate(99, sample(nrow(d)))
-  r1 <- permmodels(lm(mpg ~ wt + cyl, data = d), perms = P, type = "II", prt = FALSE)
-  r2 <- permmodels(lm(qsec ~ wt + cyl, data = d), perms = P, type = "II", prt = FALSE)
+  r1 <- permmodels(lm(mpg ~ wt + cyl, data = d), perms = P, type = "II")
+  r2 <- permmodels(lm(qsec ~ wt + cyl, data = d), perms = P, type = "II")
   cf <- permcombine(mpg = r1, qsec = r2)
   expect_equal(rownames(cf), rownames(permstats(r1)))
   expect_equal(cf["cyl", "mpg"], as.numeric(r1$ANOVA["cyl", "Perm_p_value"]))
@@ -74,7 +74,7 @@ test_that("permcombine(): Fisher and Tippett combination and min-p adjustment by
   ct <- permcombine(list(mpg = r1, qsec = r2), method = "tippett", tests = "cyl")
   expect_equal(ct["cyl", "combined"], (sum(-apply(Pm[-1, ], 1, min) >= -min(Pm[1, ])) + 1) / 100)
   # different permutations are refused
-  r3 <- permmodels(lm(qsec ~ wt + cyl, data = d), nperm = 99, seed = 1, type = "II", prt = FALSE)
+  r3 <- permmodels(lm(qsec ~ wt + cyl, data = d), nperm = 99, seed = 1, type = "II")
   expect_error(permcombine(r1, r3), "same permutations")
   expect_error(permcombine(r1, r2, tests = "carb"), "not in every result")
 })

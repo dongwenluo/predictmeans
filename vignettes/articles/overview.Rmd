@@ -155,7 +155,7 @@ kable(anova(mod))
 
 -   **$R^2$**
 ```{r}
-R2_glmm(mod)
+R2_model(mod)
 ```
 
 ### Predicted Means
@@ -166,7 +166,8 @@ R2_glmm(mod)
 ##### Mean Table
 
 ```{r}
-predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -204,7 +205,8 @@ PMplot(predm_out$p_valueMatrix)
 ##### Mean Table
 
 ```{r}
-predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, bar=TRUE, adj="BH", prtplt=FALSE)
+#| fig.show: hide
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -238,13 +240,13 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmens':
+Options in function 'predictmeans':
 
--   **{pair=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
+-   **{pairwise=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
 
--   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pair' with be TRUE automatically when 'adj' is not none).
+-   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pairwise' will be TRUE automatically when 'adj' is not none).
 
--   **{bar=TRUE}** is for producing bar chart.
+-   **{plot=c("mean", "bar", "pval", "back")}** draws the plots named, including the bar chart (`plot = TRUE`: the default plots).
 
 -   **{meandecr=TRUE}** is for descending means in 'mean_table'.
 
@@ -261,6 +263,7 @@ Options in function 'predictmens':
 system.time(
   permlme <- permmodels(model=mod, nperm=999)
 )
+permlme
 ```
 
 #### For Multiple Comparisons
@@ -353,7 +356,7 @@ kable(anova(mod))
 
 -   **$R^2$**
 ```{r}
-R2_glmm(mod)
+R2_model(mod)
 ```
 
 ### Predicted Means
@@ -363,10 +366,10 @@ R2_glmm(mod)
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "A:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -405,10 +408,10 @@ for (i in 6:15){
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "B:time", 
-                          atvar="time", adj="BH", bar=TRUE, 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -447,10 +450,10 @@ for (i in 6:15){
 ##### Mean Table
 
 ```{r}
+#| fig.show: hide
 predm_out <- predictmeans(mod, "A:B:time", 
-                          atvar="time", adj="BH", 
-                          trans=function(x) x^(1/1.5), 
-                          prtplt=FALSE)
+                          atvar="time", adj="BH", plot = TRUE, 
+                          trans=function(x) x^(1/1.5))
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
@@ -492,7 +495,7 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmens':
+Options in function 'predictmeans':
 
 -   **{atvar="time"}** sets multiple comparison within each level of 'time', it also infects the mean_table and mean plots arrangement. When 'atvar' is not NULL 'pair' turns to be TRUE automatically. Please try to see any effects for 'atvar=c("A", "B")' or 'atvar=c("B", "A")'.
 
@@ -552,17 +555,20 @@ kable(car::Anova(mod))
 ##### Mean Table
 
 ```{r}
-covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                level = 0.166) # get 83.4% CI
+covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose")
 as.data.frame(covariate_out) %>%
   select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
   rename(Probability=response, LL=response.conf.low, UL=response.conf.high) %>% 
   arrange(log10Dose, Drug) %>% 
-  group_by(log10Dose) %>% 
-  mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
-  ungroup() %>% 
   DT_df()
+```
+
+Letters for the drugs at one dose: from comparison intervals, whose overlap agrees with the pairwise tests
+(overlap of 95% or 83.4% confidence intervals does not):
+
+```{r}
+predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterCI = TRUE)$mean_table
 ```
 
 ##### Mean Plot
@@ -572,9 +578,9 @@ as.data.frame(covariate_out) %>%
 #| fig-height: 7
 autoplot(covariate_out)
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trellis = FALSE, plot = TRUE)
+               plot = TRUE, plot_args = list(trellis = FALSE))
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trans=I, trellis = FALSE, ci=F)$plt
+               trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
 ```
 
 
@@ -582,7 +588,10 @@ covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
 
 Options in function 'covariatemeans':
 
--   **{level = 0.166}** produces 83.4% confidence interval (CI) for predicted means. If a straightforward multiple comparison between predicted means is not feasible, an alternative method involves utilizing predicted means with 83.4% CIs. When the CIs of two predicted means overlap, the associated means are not significantly different at the 0.05 level; otherwise, they are considered significant. This holds for independent means with equal standard errors. When the means are correlated (blocks, repeated measures, mixed models) or their standard errors differ, the level that makes overlap agree with the test is different: `predictmeans()` computes it from the model (`letterCI = TRUE`, or `autoplot(pm, interval = "comparison")`). The function **'ci_mcp(LL, UL)'** is used to produce indicating letters.
+-   The confidence bands of the lines are for each line on its own: whether two bands overlap is not a test
+    of the two drugs. `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letterCI = TRUE)` gives letters
+    at a dose that agree with the pairwise tests, and `contr = c("Morphine", "Amidone")` in `covariatemeans()`
+    gives the difference of two drugs along the dose with its band.
 
 **DT_df** is a function for producing data table in html with 'CSV' download button. To download the whole data, you need to select 'All' entries.
 
@@ -649,7 +658,7 @@ kable(anova(mod1)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -657,7 +666,7 @@ R2_glmm(mod1$semer)
 #### Predict Table
 
 ```{r}
-pred_out1 <- semipred(mod1, covariate="construction.date", prt=FALSE)
+pred_out1 <- semipred(mod1, covariate="construction.date")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -706,7 +715,7 @@ kable(anova(mod2)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
 ### Prediction with Group {.tabset .tabset-pills}
@@ -714,7 +723,7 @@ R2_glmm(mod2$semer)
 #### Predict Table
 
 ```{r}
-pred_out2_1 <- semipred(mod2, "district", "construction.date", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "district", "construction.date")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -732,7 +741,7 @@ pred_out2_1$plt
 Mean Contrast table for District 'Mokotow' vs 'Srodmiescie' 
 
 ```{r}
-pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -757,7 +766,7 @@ A data is collected from 420 schools in United States cross-section from 1998-19
 #### Structure
 
 ```{r}
-data(Caschool, package="Ecdat")
+data(Caschool, package="predictmeans")
 Caschool <- Caschool %>% 
   select(county, grspan, calwpct, compstu, avginc, mathscr) %>% 
   mutate(log.avginc = log(Caschool$avginc))
@@ -800,7 +809,7 @@ kable(Anova(mod$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -808,7 +817,7 @@ R2_glmm(mod$semer)
 #### calwpct
 
 ```{r}
-pred_out1 <- semipred(mod, covariate = "calwpct", prt=FALSE)
+pred_out1 <- semipred(mod, covariate = "calwpct")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out1$plt
@@ -817,7 +826,7 @@ pred_out1$plt
 #### log.avginc
 
 ```{r}
-pred_out2 <- semipred(mod, covariate = "log.avginc", prt=FALSE)
+pred_out2 <- semipred(mod, covariate = "log.avginc")
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out2$plt
@@ -826,7 +835,7 @@ pred_out2$plt
 #### compstu
 
 ```{r}
-pred_out3 <- semipred(mod, covariate = "compstu", prt=FALSE)
+pred_out3 <- semipred(mod, covariate = "compstu")
 DT_df(pred_out3$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 pred_out3$plt
@@ -893,7 +902,7 @@ kable(car::Anova(mod1$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -901,7 +910,7 @@ R2_glmm(mod1$semer)
 #### Predict Table
 
 ```{r}
-pred_out1 <- semipred(mod1, "age", "age", prt=FALSE)
+pred_out1 <- semipred(mod1, "age", "age")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -947,7 +956,7 @@ kable(Anova(mod2$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
 ### Prediction with Group {.tabset .tabset-pills}
@@ -955,7 +964,7 @@ R2_glmm(mod2$semer)
 #### Predict Table
 
 ```{r}
-pred_out2_1 <- semipred(mod2, "sex", "age", prt=FALSE)
+pred_out2_1 <- semipred(mod2, "sex", "age")
 DT_df(pred_out2_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -976,7 +985,7 @@ pred_out2_1$plt+
 Mean Contrast table for Sex 'male' vs 'female'
 
 ```{r}
-pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'), prt=FALSE)
+pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'))
 pred_out2_2$pred_df %>% 
   mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
   mutate_if(is.numeric, round, digits = 4) %>% 
@@ -1043,7 +1052,7 @@ kable(car::Anova(mod$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 ### Prediction by Day in Season {.tabset .tabset-pills}
@@ -1051,7 +1060,7 @@ R2_glmm(mod$semer)
 #### Predict Table
 
 ```{r}
-pred_out1_1 <- semipred(mod, "year", "dayInSeason", prt=FALSE)   # other covariates at their means
+pred_out1_1 <- semipred(mod, "year", "dayInSeason")   # other covariates at their means
 DT_df(pred_out1_1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1126,7 +1135,7 @@ kable(anova(mod)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 
@@ -1136,7 +1145,7 @@ R2_glmm(mod$semer)
 #### Z Table
 
 ```{r}
-pred_out1 <- semipred(mod, covariate="zcoord", trans=exp, prt=FALSE)
+pred_out1 <- semipred(mod, covariate="zcoord", trans=exp)
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1152,7 +1161,7 @@ pred_out1$plt
 #### X, Y Table
 
 ```{r}
-pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, point = TRUE, prt=FALSE)
+pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = TRUE))
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1166,7 +1175,7 @@ pred_out2$plt
 #### X, Y 3D Plot
 
 ```{r}
-pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), threeD = TRUE, point=FALSE, trans=exp, prt=FALSE)
+pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = FALSE, threeD = TRUE))
 pred_out3$plt
 ```
 

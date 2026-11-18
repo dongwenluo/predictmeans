@@ -33,7 +33,7 @@ test_that("Exam 4.3, treatments nested in control/treated: Genstat's means and S
   d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"), levels = c("control", "Treated"))
   d[c("repl", "seedlot")] <- lapply(d[c("repl", "seedlot")], factor)
   fm <- aov(percent ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
-  pm <- function(term) suppressWarnings(predictmeans(fm, term, plot = FALSE, prtnum = FALSE))
+  pm <- function(term) suppressWarnings(predictmeans(fm, term, plot = FALSE))
   # Genstat: averages over the treatments that exist, equal weights (SAS and emmeans give the control half the
   # weight of a seedlot mean: 38.67 for seedlot 18211)
   s <- pm("seedlot")
@@ -55,7 +55,7 @@ test_that("Exam 4.4, split plot: Genstat's means, SEDs and df across strata (TAB
   d <- tree_data("ex4.4.csv")
   d[c("repl", "mainpl", "irrig", "fert", "seedlot")] <- lapply(d[c("repl", "mainpl", "irrig", "fert", "seedlot")], factor)
   m <- lme4::lmer(ht ~ irrig * fert * seedlot + (1 | repl) + (1 | repl:mainpl), data = d)
-  pm <- function(term) predictmeans(m, term, plot = FALSE, prtnum = FALSE)
+  pm <- function(term) predictmeans(m, term, plot = FALSE)
   ir <- pm("irrig")
   expect_printed(ir$means$estimate, c(9.95, 10.06), 2)
   expect_printed(ir$pairs$std.error, 0.296, 3)
@@ -82,7 +82,7 @@ test_that("Exam 5.2, incomplete site-by-seedlot table: SAS LS-means and SEs (TAB
   ref <- read.csv(test_path("_data", "tree", "ex5.2-sas-lsmeans.csv"), colClasses = c("character", "character",
                                                                                      "numeric", "numeric"))
   for (eff in c("site", "seedlot")) {
-    p <- predictmeans(f, eff, plot = FALSE, prtnum = FALSE)$means
+    p <- predictmeans(f, eff, plot = FALSE)$means
     r <- ref[ref$effect == eff, ]
     i <- match(r$level, as.character(p[[eff]]))
     expect_false(anyNA(i))
@@ -100,7 +100,7 @@ test_that("Exam 6.2, families within a provenance (random): SAS PROC MIXED (TABD
   vc <- as.data.frame(lme4::VarCorr(m))
   expect_equal(vc$vcov, c(0.2584, 1.1667), tolerance = 2e-4)       # family(prov), Residual
   # SAS's default df here are containment (120), with the unadjusted covariance
-  p <- predictmeans(m, "repl", df_method = "containment", plot = FALSE, prtnum = FALSE)
+  p <- predictmeans(m, "repl", df_method = "containment", plot = FALSE)
   expect_equal(p$means$estimate, c(14.3883, 14.2327, 13.7788, 14.4402), tolerance = 5e-5)
   expect_equal(p$means$std.error, rep(0.1864, 4), tolerance = 5e-4)
   expect_equal(unique(p$means$df), 120)
@@ -121,7 +121,7 @@ test_that("Exam 3.1, trees within plots (multistratum aov): Genstat's means and 
     # by ANOVA; analysed by strata the seedlots are still compared with the plot stratum (REML, which fixes that
     # variance at zero, gave SED 1.5 on 75 df)
     fm <- aov(stats::as.formula(paste(v, "~ seedlot + Error(repl/plot)")), data = d)
-    p <- suppressWarnings(predictmeans(fm, "seedlot", plot = FALSE, prtnum = FALSE))
+    p <- suppressWarnings(predictmeans(fm, "seedlot", plot = FALSE))
     expect_printed(p$means$estimate, ref[[v]]$m, 2, info = v)
     expect_printed(p$pairs$std.error, ref[[v]]$sed, 3, info = v)
     expect_printed(p$pairs$df, 4, 2, info = v)            # the plot stratum
@@ -133,7 +133,7 @@ test_that("Exam 4.4 as aov(... + Error(repl/mainpl)): Genstat's SEDs and df by s
   d <- tree_data("ex4.4.csv")
   d[c("repl", "mainpl")] <- lapply(d[c("repl", "mainpl")], factor)
   fa <- aov(ht ~ irrig * fert * seedlot + Error(repl/mainpl), data = d)
-  pm <- function(term) predictmeans(fa, term, plot = FALSE, prtnum = FALSE)
+  pm <- function(term) predictmeans(fa, term, plot = FALSE)
   ir <- pm("irrig")
   expect_printed(ir$means$estimate, c(9.95, 10.06), 2)
   expect_printed(ir$pairs$std.error, 0.296, 3)
@@ -162,7 +162,7 @@ test_that("Exam 8.1, inoculation (on whole replicates) x provenances within coun
   d <- tree_data("ex8.1a.csv")
   d$repl <- factor(d$repl); d$prov <- factor(d$prov)
   fa <- aov(dbh ~ inoc * (country/prov) + Error(repl), data = d)
-  pm <- function(term) expect_no_warning(predictmeans(fa, term, plot = FALSE, prtnum = FALSE))   # nesting: no warning
+  pm <- function(term) expect_no_warning(predictmeans(fa, term, plot = FALSE))   # nesting: no warning
   i <- pm("inoc")
   expect_printed(i$means$estimate, c(3.183, 3.625), 3)
   expect_printed(i$pairs$std.error, 0.1306, 4)                         # replicate stratum, 2 df
@@ -199,11 +199,11 @@ test_that("Exam 8.2, clone trial with standards (REML; random rows, columns and 
   vv <- setNames(vc$vcov, vc$grp)
   expect_equal(unname(vv[c("repl:row", "repl:column", "clone", "Residual")]), c(0.08023, 0.05284, 0.4950, 0.3992),
                tolerance = 2e-3)
-  p <- expect_no_warning(predictmeans(m, "contcompf:standard", plot = FALSE, prtnum = FALSE))
+  p <- expect_no_warning(predictmeans(m, "contcompf:standard", plot = FALSE))
   expect_equal(p$means$estimate, c(7.7027, 6.0842, 6.5544, 8.9710, 8.9076), tolerance = 2e-5)   # 4 standards, clones
   expect_equal(p$means$std.error, c(0.3146, 0.3125, 0.3134, 0.3137, 0.1168), tolerance = 5e-4)
   expect_equal(p$means$df, c(221, 224, 224, 223, 63.6), tolerance = 4e-3)
-  cf <- predictmeans(m, "contcompf", plot = FALSE, prtnum = FALSE)
+  cf <- predictmeans(m, "contcompf", plot = FALSE)
   expect_equal(cf$means$estimate, c(7.3281, 8.9076), tolerance = 2e-5)       # standards averaged with equal weights
   expect_equal(cf$means$std.error, c(0.1648, 0.1168), tolerance = 5e-4)
   expect_equal(cf$means$df, c(215, 63.6), tolerance = 4e-3)

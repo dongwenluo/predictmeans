@@ -30,8 +30,8 @@ m_nest <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot 
 ds <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")), rep = 1:4)
 ds <- ds[!(ds$date == "d2" & ds$trt == "a"), ]; ds$y <- as.numeric(ds$trt) + rnorm(nrow(ds))
 m_single <- lm(y ~ date * trt, data = ds)
-perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1, method = "raw"))
-perm_lm <- suppressWarnings(permmodels(m_lm, nperm = 99, prt = FALSE, ncore = 1, seed = 1))
+perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, ncore = 1, seed = 1, method = "raw"))
+perm_lm <- suppressWarnings(permmodels(m_lm, nperm = 99, ncore = 1, seed = 1))
 # confounded factors (drop "fine" only and always with v3): means and pairs that cannot be estimated
 set.seed(9); dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
 dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))
@@ -90,13 +90,31 @@ calls <- list(
   confounded = quote(predictmeans(m_conf, "C:vol", pairwise = TRUE, adj = "tukey")),
   confounded_at = quote(predictmeans(m_conf, "C:vol", atvar = "C", adj = "tukey")),
   confounded_sch = quote(predictmeans(m_conf, "C:vol", atvar = "C", adj = "scheffe")))
+# The 1.1.1 spellings above, rewritten as vignette("migrating") says when the
+# library is 2.0 (conf.level etc.): the same analysis must give the same
+# result, so a snapshot of the old build compares with one of the new.
+pm2 <- function(cl) {
+  if (!"conf.level" %in% names(formals(predictmeans))) return(cl)
+  a <- as.list(cl); n <- names(a)
+  if ("level" %in% n) { a$conf.level <- 1 - a$level; a$level <- NULL }
+  if ("Df" %in% n) { a$df_method <- a$Df; a$Df <- NULL }
+  if ("count" %in% n) a$count <- NULL
+  if ("transOff" %in% n) {
+    off <- a$transOff; a$transOff <- NULL
+    a$trans <- eval(bquote(function(x) .(a$trans)(x) - .(off)))
+  }
+  if ("which.plots" %in% n) { a$plot <- a$which.plots; a$which.plots <- NULL }
+  pl <- intersect(n, c("plotord", "lsd_bar", "lineplot", "plottitle", "plotxlab", "plotylab", "jitterv", "basesz"))
+  if (length(pl)) { a$plot_args <- as.call(c(as.name("list"), a[pl])); a[pl] <- NULL }
+  as.call(a)
+}
 plotdata <- function(p) if (inherits(p, "ggplot")) lapply(seq_along(p$layers), function(i) ggplot2::layer_data(p, i)) else p
 R <- list()
 for (nm in names(calls)) {
   set.seed(42); f <- tempfile(fileext = ".pdf"); grDevices::pdf(f)
   printed <- NULL
   r <- tryCatch({
-    res <- suppressWarnings(eval(calls[[nm]]))
+    res <- suppressWarnings(eval(pm2(calls[[nm]])))
     printed <- capture.output(print(res))
     res
   }, error = function(e) paste("ERROR:", conditionMessage(e)))

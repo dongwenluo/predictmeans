@@ -27,7 +27,8 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
   # other parts (estimates, SEs, ANOVA tables) are still compared.
   rewhitened <- c("perm_lmer", "perm_lmer_III")
   strip_perm <- function(x) {
-    x <- x[setdiff(names(x), "permlist")]
+    # (since 2.0 the result also has the notes print() shows under its tables)
+    x <- x[setdiff(names(x), c("permlist", "notes"))]
     lapply(x, function(tab) tab[, setdiff(colnames(tab), "Perm_p_value"), drop = FALSE])
   }
   # Since 2.0 contrastmeans() tables also have confidence limits; the 1.1.1

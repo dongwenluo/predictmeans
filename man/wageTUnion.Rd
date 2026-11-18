@@ -24,9 +24,9 @@ the data of M. P. Wand's penalised spline logistic regression example.
 \examples{
 data(wageTUnion)
 # the probability of union membership as a smooth function of the wage
-fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion, prt = FALSE)
+fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion)
 anova(fit)$smooth
-semipred(fit, "wage", "wage", prt = FALSE)$plt
+semipred(fit, "wage", "wage")$plt
 }
 \references{
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003). \emph{Semiparametric Regression}. Cambridge University Press.

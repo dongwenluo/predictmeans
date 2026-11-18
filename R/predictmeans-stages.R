@@ -20,55 +20,31 @@
 
 ## The plot settings of predictmeans(): its argument 'plot_args', a named list
 ## of these (the defaults are those of 1.x).
-pm_plot_defaults <- list(lsd_bar = TRUE, responsen = NULL, plotord = NULL, lineplot = TRUE, plottitle = NULL,
-                         plotxlab = NULL, plotylab = NULL, jitterv = 0.2, basesz = 12, prtplt = TRUE, newwd = FALSE)
+pm_plot_defaults <- list(lsd_bar = TRUE, plotord = NULL, lineplot = TRUE, plottitle = NULL,
+                         plotxlab = NULL, plotylab = NULL, jitterv = 0.2, basesz = 12)
 
-## The plot settings of a call: 'plot_args', and the same names given as
-## arguments of their own as in 1.x ('dots': the ... of predictmeans()), where
-## the four choices of plots replaced by which.plots (mplot, barplot, pplot,
-## bkplot) are still taken. Names may be abbreviated. Returns the settings and
-## 'legacy', the plot choices given.
-pm_plot_args <- function(plot_args = list(), dots = list()) {
-  nms <- names(pm_plot_defaults)
-  old <- c("mplot", "barplot", "pplot", "bkplot")
-  named <- function(x) !length(x) || (!is.null(names(x)) && all(nzchar(names(x))))
-  if (!is.list(plot_args) || !named(plot_args)) {
+## The plot settings of a call ('plot_args'; names may be abbreviated).
+## Returns the settings with the defaults ('defaults': those of the calling
+## function) for those not given.
+pm_plot_args <- function(plot_args = list(), defaults = pm_plot_defaults) {
+  nms <- names(defaults)
+  if (!is.list(plot_args) || (length(plot_args) && (is.null(names(plot_args)) || !all(nzchar(names(plot_args)))))) {
     stop("'plot_args' must be a named list, e.g. plot_args = list(plottitle = \"Yield\", basesz = 14).", call. = FALSE)
   }
-  full <- function(given, choices, what) {
-    k <- pmatch(given, choices, duplicates.ok = TRUE)
-    if (anyNA(k)) stop(what, paste(given[is.na(k)], collapse = ", "), call. = FALSE)
-    choices[k]
-  }
-  if (!named(dots)) stop("predictmeans(): arguments after the options must be named.", call. = FALSE)
-  dn <- full(names(dots), c(nms, old), "unused argument(s) in predictmeans(): ")
-  pn <- full(names(plot_args), nms, paste0("'plot_args' can hold ", paste(nms, collapse = ", "), "; not "))
-  out <- pm_plot_defaults
-  for (i in which(dn %in% nms)) out[dn[i]] <- list(dots[[i]])
-  for (i in seq_along(pn)) out[pn[i]] <- list(plot_args[[i]])
-  legacy <- stats::setNames(dots[dn %in% old], dn[dn %in% old])
-  out$legacy <- legacy[!vapply(legacy, is.null, logical(1))]
+  k <- pmatch(names(plot_args), nms, duplicates.ok = TRUE)
+  if (anyNA(k)) stop("'plot_args' can hold ", paste(nms, collapse = ", "), "; not ",
+                     paste(names(plot_args)[is.na(k)], collapse = ", "), call. = FALSE)
+  out <- defaults
+  for (i in seq_along(k)) out[nms[k[i]]] <- list(plot_args[[i]])
   out
 }
 
-## Which plots: which.plots, or the 1.x arguments mplot, barplot, pplot and
-## bkplot ('legacy'), which still work, with a warning naming which.plots.
-pm_which_plots <- function(which.plots, legacy = list()) {
+## Which plots: 'plot' as a vector of plot kinds ("mean", "bar", "pval",
+## "back"); the flags the plot code reads.
+pm_which_plots <- function(which.plots) {
   kinds <- c("mean", "bar", "pval", "back")
   which.plots <- match.arg(which.plots, choices = kinds, several.ok = TRUE)
-  out <- stats::setNames(as.list(kinds %in% which.plots), c("mplot", "barplot", "pplot", "bkplot"))
-  if (length(legacy)) {
-    # arguments not given keep their which.plots setting (the default draws
-    # all plots), so e.g. 'bar = TRUE' does not turn the mean plot off
-    out[names(legacy)] <- legacy
-    notnull <- names(legacy)
-    nn <- length(notnull)
-    arg_list <- if (nn == 1) notnull else paste(paste(notnull[-nn], collapse = ", "), "and", notnull[nn])
-    wp_now <- kinds[vapply(out, isTRUE, logical(1))]
-    warning(arg_list, " ", if (nn == 1) "is" else "are", " deprecated: use which.plots = c(",
-            paste0('"', wp_now, '"', collapse = ", "), ") instead.", call. = FALSE)
-  }
-  out
+  stats::setNames(as.list(kinds %in% which.plots), c("mplot", "barplot", "pplot", "bkplot"))
 }
 
 ## Arguments, options, link function and plot choices: the arguments of
@@ -80,7 +56,7 @@ pm_setup <- function(a, pa) {
   pm_check_modelterm(model, modelterm)
   pm_note_not_a_term(model, modelterm)
   adj <- pm_match_adj(a$adj, westfall = TRUE)
-  wp <- pm_which_plots(a$which.plots, pa$legacy)
+  wp <- pm_which_plots(a$which.plots)
 
   trans <- if (is.null(a$trans)) I else a$trans
   if (inherits(model, "aovlist")){
@@ -110,7 +86,7 @@ pm_setup <- function(a, pa) {
   }
 
   # Poisson models: the back-transformed means are counts
-  count <- a$count
+  count <- FALSE
   if (inherits(model, c("glm", "glmerMod", "glmmTMB")) &&
       stats::family(model)$family %in% c("poisson", "quasipoisson")) {
     count <- TRUE
@@ -163,7 +139,7 @@ pm_setup <- function(a, pa) {
   # 'level' and 'slevel' are the user's level everywhere; the printed LSDs
   # take the critical value of 'adj' at this level (pm_lsd_crit()) and the
   # mean table with a permlist (limits +- 2 SE) 'ci_level' (pm_tables())
-  level <- if (is.null(a$level)) 0.05 else a$level
+  level <- a$level
 
   # an order for the plot asks for the mean plot
   plot <- a$plot
@@ -205,21 +181,21 @@ pm_setup <- function(a, pa) {
        pairwise = pairwise, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
        meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letterCI = a$letterCI,
-       trans = trans, transOff = a$transOff, trans_by = trans_by, link_scale = link_scale, count = count,
+       trans = trans, trans_by = trans_by, link_scale = link_scale, count = count,
        bias_adjust = a$bias_adjust, sigma = a$sigma, average = a$average,
-       permlist = permlist, ncore = a$ncore, ndecimal = a$ndecimal, prtnum = a$prtnum,
+       permlist = permlist, ncore = a$ncore, ndecimal = 4L,
        df_method = a$df_method, vcov = a$vcov, vcov_adjust = a$vcov_adjust,
        vcov_adjust_default = a$vcov_adjust_default, equivalence = a$equivalence,
        plot = plot, mplot = wp$mplot, barplot = wp$barplot, pplot = wp$pplot, bkplot = wp$bkplot,
-       plotord = plotord, lsd_bar = pa$lsd_bar, responsen = pa$responsen, lineplot = pa$lineplot,
+       plotord = plotord, lsd_bar = pa$lsd_bar, lineplot = pa$lineplot,
        plottitle = pa$plottitle, plotxlab = pa$plotxlab, plotylab = pa$plotylab, jitterv = pa$jitterv,
-       basesz = pa$basesz, prtplt = pa$prtplt, newwd = pa$newwd && pa$prtplt)
+       basesz = pa$basesz)
 }
 
 ## K matrix, predicted means, standard errors and the legacy mean/SE tables.
 pm_estimate <- function(opt) {
   # (the grid of all combinations is only needed to average on the response scale)
-  ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data, prtnum=opt$prtnum,
+  ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data,
                         cov_reduce=opt$cov_reduce, exclude=opt$exclude, weights=opt$weights,
                         refgrid=identical(opt$average, "response") || identical(opt$mean_type, "overall"))
   KK <- ctr.matrix$K
@@ -854,7 +830,7 @@ pm_tables <- function(opt, est, cmp) {
   mt_res <- pm_mean_table(cmp$mt, opt$vars, perm = perm, slevel = opt$slevel, ndecimal = opt$ndecimal,
                           cmp = cmp_shown)
   ci_level <- mt_res$ci_level     # level of the table's limits (0.05 with a permlist: +- 2 SE)
-  bkmt <- pm_back_transform(cmp$bkmt, opt$trans, opt$transOff, perm = perm, slevel = opt$slevel,
+  bkmt <- pm_back_transform(cmp$bkmt, opt$trans, perm = perm, slevel = opt$slevel,
                             ndecimal = opt$ndecimal, count = opt$count, cmp = cmp_shown)
   meanTable <- pm_final_mean_table(mt_res$table, bkmt, opt$vars, cmp$atvar, cmp$resvar, opt$pairwise, opt$meandecr,
                                    letterCI, opt$slevel, opt$ndecimal, cmp$t.p.valuemGrp, cmp$pmlistLetter,
@@ -904,22 +880,22 @@ pm_mean_table <- function(mt, vars, perm, slevel, ndecimal, cmp = NULL) {
 ## Means and confidence limits on the response scale (pure function).
 ## bkmt has columns pm, ses, Df (absent with permutation p-values) and the
 ## factors; returns the factors with Mean, LL and UL.
-pm_back_transform <- function(bkmt, trans, transOff, perm, slevel, ndecimal, count, cmp = NULL) {
-  bkmt$Mean <- trans(bkmt$pm)-transOff
+pm_back_transform <- function(bkmt, trans, perm, slevel, ndecimal, count, cmp = NULL) {
+  bkmt$Mean <- trans(bkmt$pm)
 
   if (identical(trans, make.link("log")$linkinv) || identical(trans, exp)){
-    bkmt$Mean <- exp(bkmt$pm)-transOff
+    bkmt$Mean <- exp(bkmt$pm)
   }
 
   if (!is.null(cmp)) {                       # comparison intervals (letterCI)
-    bkmt$LL <- trans(bkmt$pm - cmp$mult * bkmt$ses)-transOff
-    bkmt$UL <- trans(bkmt$pm + cmp$mult * bkmt$ses)-transOff
+    bkmt$LL <- trans(bkmt$pm - cmp$mult * bkmt$ses)
+    bkmt$UL <- trans(bkmt$pm + cmp$mult * bkmt$ses)
   } else if (!perm) {
-    bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
-    bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)-transOff
+    bkmt$LL <- trans(bkmt$pm - qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)
+    bkmt$UL <- trans(bkmt$pm + qt(1 - slevel/2, df = bkmt$Df) * bkmt$ses)
   } else {
-    bkmt$LL <- trans(bkmt$pm - 2 * bkmt$ses)-transOff
-    bkmt$UL <- trans(bkmt$pm + 2 * bkmt$ses)-transOff
+    bkmt$LL <- trans(bkmt$pm - 2 * bkmt$ses)
+    bkmt$UL <- trans(bkmt$pm + 2 * bkmt$ses)
   }
 
   bkmt$pm <- bkmt$ses <- bkmt$Df <- NULL
@@ -990,15 +966,15 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
   meanTable
 }
 
-## Letters from CI overlap (ci_mcp()) for the rows of a mean table; means
+## Letters from CI overlap (pm_ci_mcp()) for the rows of a mean table; means
 ## without a CI (not estimable) get no letter.
 pm_ci_letters <- function(tab) {
   LL <- tab[[grep("^LL", names(tab))[1]]]
   UL <- tab[[grep("^UL", names(tab))[1]]]
   ok <- is.finite(LL) & is.finite(UL)
-  if (all(ok)) return(ci_mcp(LL, UL))
+  if (all(ok)) return(pm_ci_mcp(LL, UL))
   out <- rep("", length(LL))
-  if (any(ok)) out[ok] <- unname(ci_mcp(LL[ok], UL[ok]))
+  if (any(ok)) out[ok] <- unname(pm_ci_mcp(LL[ok], UL[ok]))
   out
 }
 
@@ -1026,31 +1002,31 @@ pm_make_plots <- function(x) {
   jitterv <- x[["jitterv"]]; lineplot <- x[["lineplot"]]; lsd_bar <- x[["lsd_bar"]]
   mdf <- x[["mdf"]]; model <- x[["model"]]; modelterm <- x[["modelterm"]]
   mplot <- x[["mplot"]]; mt <- x[["mt"]]; nK <- x[["nK"]]
-  nc <- x[["nc"]]; newwd <- x[["newwd"]]; nrow.pm <- x[["nrow.pm"]]
+  nc <- x[["nc"]]; nrow.pm <- x[["nrow.pm"]]
   pairwise <- x[["pairwise"]]; plot <- x[["plot"]]; plotord <- x[["plotord"]]
   plottitle <- x[["plottitle"]]; plotxlab <- x[["plotxlab"]]; plotylab <- x[["plotylab"]]
   pm <- x[["pm"]]; pmlist <- x[["pmlist"]]; pplot <- x[["pplot"]]
-  prtplt <- x[["prtplt"]]; rcnplotm <- x[["rcnplotm"]]; response <- x[["response"]]
-  responsen <- x[["responsen"]]; resvar <- x[["resvar"]]; ses <- x[["ses"]]
+  rcnplotm <- x[["rcnplotm"]]; response <- x[["response"]]
+  resvar <- x[["resvar"]]; ses <- x[["ses"]]
   slevel <- x[["slevel"]]; t.p.valuep <- x[["t.p.valuep"]]; trans <- x[["trans"]]
-  transOff <- x[["transOff"]]; link_scale <- x[["link_scale"]]; vars <- x[["vars"]]
+  link_scale <- x[["link_scale"]]; vars <- x[["vars"]]
   LL <- UL <- Mean <- Trt <- NULL                       # (columns named in the plots)
   meanPlot <- ciPlot <- predictmeansBarPlot <- NULL
 
   # p-value level plots
   if (pairwise && nK > 1) {
     if (is.null(atvar) || all(atvar%in%c("NULL", ""))) {
-      if (all(nrow(t.p.valuep) > 2, pplot, plot, prtplt)) {
+      if (all(nrow(t.p.valuep) > 2, pplot, plot)) {
         mtitle <- plottitle
 
         if (is.null(plottitle) || plottitle%in%c("NULL", "")){
           mtitle <- paste("Level Plot of p-value (adjusted by '", adj, "' method)\n for Pairwise Comparison", sep="")
         }
 
-        print(PMplot(t(t.p.valuep), level=slevel, mtitle=mtitle, newwd=newwd, basesz=basesz))
+        print(PMplot(t(t.p.valuep), conf.level=1-slevel, mtitle=mtitle, basesz=basesz))
       }
     } else {
-      if (all(nrow.pm > 2, pplot, plot, prtplt)) {
+      if (all(nrow.pm > 2, pplot, plot)) {
         mtitle <- plottitle
 
         if (is.null(plottitle) || plottitle%in%c("NULL", "")){
@@ -1058,7 +1034,7 @@ pm_make_plots <- function(x) {
                           "' method)\n for Pairwise Comparison at Each Level of '",paste(atvar, collapse =" and "), "'", sep="")
         }
 
-        print(PMplot(pmlist, level=slevel, xylabel=rcnplotm, mtitle=mtitle, newwd=newwd, basesz=basesz))
+        print(PMplot(pmlist, conf.level=1-slevel, xylabel=rcnplotm, mtitle=mtitle, basesz=basesz))
       }
     }
   }
@@ -1114,9 +1090,6 @@ pm_make_plots <- function(x) {
       }
 
       if (mplot) {
-        if (newwd){
-          dev.new()
-        }
 
         mtitle <- plottitle
 
@@ -1138,16 +1111,11 @@ pm_make_plots <- function(x) {
 
         meanPlot <- p1
 
-        if (prtplt){
-          print(p1)
-        }
+        print(p1)
       } # end of if mplot
 
       if (barplot) {
 
-        if (newwd){
-          dev.new()
-        }
 
         mtitle <- plottitle
 
@@ -1164,9 +1132,7 @@ pm_make_plots <- function(x) {
             theme(panel.border = element_blank(), axis.line = element_line(), panel.grid = element_blank())
 
         predictmeansBarPlot <- bp1
-        if (prtplt){
-          print(bp1)
-        }
+        print(bp1)
       }
     } else if (length(vars) == 2) {
       ##NB: I have changed this to an else statement because there shouldn't be any other way to get here. That is, length(vars) will not
@@ -1196,9 +1162,6 @@ pm_make_plots <- function(x) {
 
         if (mplot) {
 
-          if (newwd){
-            dev.new()
-          }
 
           mtitle <- plottitle
 
@@ -1226,16 +1189,11 @@ pm_make_plots <- function(x) {
 
           meanPlot <- p2
 
-          if (prtplt){
-            print(p2)
-          }
+          print(p2)
         } # end if mplot
 
         if (barplot) {
 
-          if (newwd) {
-            dev.new()
-          }
 
           mtitle <- plottitle
 
@@ -1256,17 +1214,12 @@ pm_make_plots <- function(x) {
             theme(legend.position = "top")+guides(fill = guide_legend(title = fact2))
           predictmeansBarPlot <- bp2
 
-          if (prtplt) {
-            print(bp2)
-          }
+          print(bp2)
         }
       } else if (all(length(vars) == 3, mplot)) {
         ## NB: I have changed this to else if, because neither length(vars)
         ## or mplot should have changed, and I believe this is just the third
         ## choice
-        if (newwd) {
-          dev.new()
-        }
 
         mtitle <- plottitle
 
@@ -1322,9 +1275,7 @@ pm_make_plots <- function(x) {
 
         meanPlot <- p3
 
-        if (prtplt){
-          print(p3)
-        }
+        print(p3)
       }
     }
 
@@ -1350,7 +1301,7 @@ pm_make_plots <- function(x) {
             }
 
           } else {
-            bky <- trans(mdf[, response]) - transOff
+            bky <- trans(mdf[, response])
           }# end of if glm or glmer
         }# end of if factor
       } else {       ## Transformed y within modelling
@@ -1358,12 +1309,12 @@ pm_make_plots <- function(x) {
 
         if (!(nresponse %in% names(mdf))) {
 
-          if (is.null(responsen) || all(responsen%in%c("NULL", ""))){
-            stop(paste("Please provide suitable name for response variable using option responsen='",
-                       names(mdf)[1], "'!", sep=""))
+          # the variable of the response in the formula (e.g. log(y + 1))
+          nresponse <- intersect(all.vars(stats::formula(model)[[2]]), names(mdf))[1]
+          if (is.na(nresponse)) {
+            stop("The back-transformed plot needs the response variable in the data; draw the means with ",
+                 "autoplot() instead.", call. = FALSE)
           }
-
-          nresponse <- responsen
         }
 
         bky <- mdf[, nresponse]
@@ -1393,9 +1344,6 @@ pm_make_plots <- function(x) {
                         modelterm, "'", "\n", sep = "")
       }
 
-      if (newwd) {
-        dev.new()
-      }
 
       xlimv <- c(xMin - xoffSet, xMax + xoffSet)
 	    bkmt[, c("Mean", "LL", "UL")] <- lapply(bkmt[, c("Mean", "LL", "UL")], as.numeric)
@@ -1409,9 +1357,7 @@ pm_make_plots <- function(x) {
         theme_bw(basesz)
       ciPlot <<- p
 
-      if (prtplt) {
-        print(p)
-      }
+      print(p)
     }
 
   })

@@ -42,7 +42,7 @@ test_that("contrastmeans(): odds ratios for a logit link when the weights sum to
   skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fl <- lm(yield ~ Block + nitro + Variety, data = Oats)
-  r <- permmodels(fl, nperm = 29, seed = 1, prt = FALSE, ncore = 1)
+  r <- permmodels(fl, nperm = 29, seed = 1, ncore = 1)
   cp <- contrastmeans(fl, "nitro", ctrmatrix = rbind(c(-1, 1, 0, 0), c(-1, 0, 0, 1)), permlist = r, adj = "holm")
   expect_equal(unique(cp$contrasts$p.method), "permutation")
   expect_true(all(is.na(cp$contrasts$df)))
@@ -71,7 +71,7 @@ test_that("predictmeans() on a semireg fit: pairs with conf.*, adj.conf.* and ra
   set.seed(3)
   d <- expand.grid(x = seq(0, 1, length = 15), A = factor(c("a1", "a2", "a3")), blk = factor(1:6))
   d$y <- rpois(nrow(d), exp(1 + sin(2*d$x) + 0.3*(d$A == "a2") + rnorm(6, 0, 0.2)[d$blk]))
-  f <- semireg(y ~ A + s(x, bs = "os", k = 6) + (1 | blk), family = poisson, data = d, prt = FALSE)
+  f <- semireg(y ~ A + s(x, bs = "os", k = 6) + (1 | blk), family = poisson, data = d)
   pm <- suppressMessages(predictmeans(f, "A", adj = "tukey"))
   p <- pm$pairs
   expect_true(all(c("conf.low", "conf.high", "lsd", "adj.conf.low", "adj.conf.high", "ratio", "ratio.conf.low",

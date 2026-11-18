@@ -27,7 +27,7 @@ test_that("every main function works on the 13 model classes, or refuses with a 
     gam = mgcv::gam(y ~ A*x + B + s(Blk, bs = "re"), data = d, method = "REML")))
   cm <- rbind(c(1, -1, 0), c(0, 1, -1))
   fns <- list(
-    predictmeans = function(m) predictmeans(m, "A", pairwise = TRUE, prtnum = FALSE),
+    predictmeans = function(m) predictmeans(m, "A", pairwise = TRUE),
     covariatemeans = function(m) covariatemeans(m, "A", covariate = "x"),
     cov_contr = function(m) covariatemeans(m, "A", covariate = "x", contr = c("a1", "a3")),
     contrastmeans = function(m) contrastmeans(m, "A", ctrmatrix = cm),
@@ -38,9 +38,9 @@ test_that("every main function works on the 13 model classes, or refuses with a 
     residplot = function(m) residplot(m),
     pm_check = function(m) pm_check(m),
     CookD = function(m) CookD(m, group = "Blk", plot = FALSE),
-    permmodels = function(m) permmodels(m, nperm = 5, prt = FALSE, ncore = 1, seed = 1),
-    bootmodels = function(m) bootmodels(m, nsim = 5, ncore = 1, seed = 1, prt = FALSE),
-    autoplot = function(m) ggplot2::autoplot(predictmeans(m, "A", pairwise = TRUE, prtnum = FALSE),
+    permmodels = function(m) permmodels(m, nperm = 5, ncore = 1, seed = 1),
+    bootmodels = function(m) bootmodels(m, nsim = 5, ncore = 1, seed = 1),
+    autoplot = function(m) ggplot2::autoplot(predictmeans(m, "A", pairwise = TRUE),
                                              interval = "comparison"),
     Kmatrix = function(m) Kmatrix(m, "A", list(x = c(0, 1))))
   refused <- c("CookD:aovlist", "permmodels:aovlist", "bootmodels:aovlist", "bootmodels:gam")

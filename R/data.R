@@ -48,7 +48,7 @@ NULL
 #' @examples
 #' data(Body_length)
 #' fm <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container), data = Body_length)
-#' R2_glmm(fm)
+#' R2_model(fm)
 #' @name Body_length
 #' @docType data
 NULL
@@ -146,14 +146,14 @@ NULL
 #' # M. P. Wand's geoadditive model: a thin-plate surface over the plane with the given knots,
 #' # and an O'Sullivan spline in depth (their linear terms are added to the fixed effects)
 #' mod <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
-#'                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper, prt = FALSE)
+#'                  s(zcoord, bs = "os", xt = list(knots = seq(80, 120, by = 5))), data = copper)
 #' anova(mod)   # fixed effects (Kenward-Roger) and a test of each smooth term
-#' semipred(mod, covariate = c("xcoord", "ycoord"), prt = FALSE)$plt
+#' semipred(mod, covariate = c("xcoord", "ycoord"))$plt
 #' \donttest{
 #' # on the log scale, with the pairwise interactions of the coordinates
 #' mod2 <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6) +
-#'                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper, prt = FALSE)
-#' semipred(mod2, covariate = "zcoord", trans = exp, prt = FALSE)$plt
+#'                   xcoord:ycoord + xcoord:zcoord + ycoord:zcoord, data = copper)
+#' semipred(mod2, covariate = "zcoord", trans = exp)$plt
 #' }
 #' @aliases copperKnots
 #' @name copper
@@ -192,9 +192,9 @@ NULL
 #' gbm <- subset(growthIndiana, male == 1 & black == 1)
 #' gbm$idnum <- factor(gbm$idnum)
 #' fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-#'                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm, prt = FALSE)
+#'                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm)
 #' anova(fit)$smooth       # are the boys' curves straight lines?
-#' semipred(fit, "age", "age", prt = FALSE)$plt
+#' semipred(fit, "age", "age")$plt
 #' \dontrun{
 #' # (about 30 s: 2257 measurements, 130 boys' curves)
 #' # all boys: a common curve and a black-white deviation curve (the contrast curve of
@@ -203,10 +203,10 @@ NULL
 #' gm$idnum <- factor(gm$idnum)
 #' gm$race <- factor(ifelse(gm$black == 1, "black", "white"))
 #' fit2 <- semireg(height ~ s(age, race, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-#'                   (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm, prt = FALSE)
-#' dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous", prt = FALSE)
+#'                   (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm)
+#' dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous")
 #' attr(dif$pred_df, "significant")
-#' semipred(fit2, "race", "age", deriv = 1, prt = FALSE)$plt     # growth rates
+#' semipred(fit2, "race", "age", deriv = 1)$plt     # growth rates
 #' predictmeans(fit2, "race", covariate = c(age = 12))$means
 #' }
 #' @name growthIndiana
@@ -238,12 +238,12 @@ NULL
 #' data(SBMDfem)
 #' SBMDfem$idnum <- factor(SBMDfem$idnum)
 #' # a curve over age, ethnicity as a fixed effect, a random intercept per girl
-#' fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem, prt = FALSE)
+#' fit <- semireg(spnbmd ~ s(age, bs = "os", k = 15) + ethnicity + (1 | idnum), data = SBMDfem)
 #' anova(fit)       # ethnicity: F test with Kenward-Roger df; the smooth: likelihood ratio test
 #' # the ethnic groups at age 15, compared in pairs
 #' predictmeans(fit, "ethnicity", covariate = c(age = 15), pairwise = TRUE, adj = "tukey")$pairs
 #' # growth of bone density: where is the curve rising?
-#' attr(semipred(fit, "age", "age", deriv = 1, prt = FALSE)$pred_df, "significant")
+#' attr(semipred(fit, "age", "age", deriv = 1)$pred_df, "significant")
 #' @name SBMDfem
 #' @docType data
 NULL
@@ -272,10 +272,10 @@ NULL
 #' # an additive model: three O'Sullivan splines
 #' fit <- semireg(ozone ~ s(inversion.base.height, bs = "os", k = 15) +
 #'                  s(daggett.pressure.gradient, bs = "os", k = 15) +
-#'                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
+#'                  s(inversion.base.temp, bs = "os", k = 15), data = ozoneCalif)
 #' anova(fit)$smooth     # is each curve more than a straight line?
 #' # the effect of one covariate, the others at their means
-#' semipred(fit, covariate = "inversion.base.temp", prt = FALSE)$plt
+#' semipred(fit, covariate = "inversion.base.temp")$plt
 #' @name ozoneCalif
 #' @docType data
 NULL
@@ -311,11 +311,10 @@ NULL
 #' # a thin-plate surface of asinh(catch) (low-rank kriging) with the given knots
 #' fit <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
 #'                                    xt = list(knots = as.matrix(scallopKnots))),
-#'                data = scallop, prt = FALSE)
+#'                data = scallop)
 #' anova(fit)$smooth
 #' # the surface inside the survey area, on the scale of the catch
-#' semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh,
-#'          prt = FALSE)$plt
+#' semipred(fit, covariate = c("longitude", "latitude"), boundary = scallopBdry, trans = sinh)$plt
 #' @aliases scallopKnots scallopBdry
 #' @name scallop
 #' @docType data
@@ -341,9 +340,59 @@ NULL
 #' @examples
 #' data(wageTUnion)
 #' # the probability of union membership as a smooth function of the wage
-#' fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion, prt = FALSE)
+#' fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion)
 #' anova(fit)$smooth
-#' semipred(fit, "wage", "wage", prt = FALSE)$plt
+#' semipred(fit, "wage", "wage")$plt
 #' @name wageTUnion
+#' @docType data
+NULL
+
+#' California Test Score Data
+#'
+#' @description
+#' Test scores, school characteristics and student demographics of 420 school districts in California, 1998-1999
+#' (kindergarten to grade 6 or 8), as used by Stock and Watson (2007) and in package \pkg{Ecdat}. The data of the
+#' semiparametric example with several smooth terms and two random intercepts in the overview article
+#' (\code{vignettes/articles/overview.Rmd}).
+#' @usage
+#' data(Caschool)
+#' @format
+#' A data frame with 420 rows and 17 columns:
+#' \describe{
+#' \item{distcod}{district code.}
+#' \item{county}{county (a factor with 45 levels).}
+#' \item{district}{district (a factor).}
+#' \item{grspan}{grade span of the district: \code{"KK-06"} or \code{"KK-08"}.}
+#' \item{enrltot}{total enrollment.}
+#' \item{teachers}{number of teachers.}
+#' \item{calwpct}{percentage of students qualifying for CalWORKs (income assistance).}
+#' \item{mealpct}{percentage of students qualifying for a reduced-price lunch.}
+#' \item{computer}{number of computers.}
+#' \item{testscr}{average test score (the mean of \code{readscr} and \code{mathscr}).}
+#' \item{compstu}{computers per student.}
+#' \item{expnstu}{expenditure per student.}
+#' \item{str}{student-teacher ratio.}
+#' \item{avginc}{district average income (in USD 1000).}
+#' \item{elpct}{percentage of English learners.}
+#' \item{readscr}{average reading score.}
+#' \item{mathscr}{average math score.}
+#' }
+#' @source
+#' California Department of Education, data of 1998-1999; package \pkg{Ecdat} (Croissant and Graves), data set
+#' \code{Caschool}.
+#' @references
+#' Stock, J. H. and Watson, M. W. (2007). \emph{Introduction to Econometrics}, 2nd edition. Addison-Wesley,
+#' chapters 4-7.
+#' @examples
+#' data(Caschool)
+#' Caschool$log.avginc <- log(Caschool$avginc)
+#' \donttest{
+#' # math scores against three covariates, each a smooth curve, with random
+#' # intercepts for counties and grade spans
+#' fit <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = "os", k = 5) +
+#'                      s(compstu, bs = "os", k = 12) + (1 | county) + (1 | grspan), data = Caschool)
+#' semipred(fit, covariate = "log.avginc")$plt
+#' }
+#' @name Caschool
 #' @docType data
 NULL

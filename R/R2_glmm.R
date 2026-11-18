@@ -1,33 +1,6 @@
-#' An adjusted coefficient of determination (R2) for generalized linear mixed models
-#'
-#' @description
-#' This function produces adjusted R2 for generalized linear mixed models which was crafted following the guidance provided by Professor Hans-Peter Piepho.
-#' @usage
-#' R2_glmm(model, over_disp=FALSE)
-#' @param model An object returned by \code{lmer}, \code{glmer} or \code{glmmTMB}.
-#' @param over_disp A logical scalar to indicate whether \code{model} with over-dispersion or not. The default value is FALSE.
-#' @return
-#' Adjusted R2 in percentage for Total (fixed + random), Fiexd, Random and individual random term.
-#' @references
-#' Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID: 37127864.
-#' @examples
-#'   library(predictmeans)
-#'   Oats$nitro <- factor(Oats$nitro)
-#'   (fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats))
-#'   R2_glmm(fm)
-#'   (gm <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
-#'               data = cbpp, family = binomial))
-#'   R2_glmm(gm)
-#' @name R2_glmm
-NULL
-
-R2_glmm <- function(model, over_disp=FALSE){
-  cod_v <- pm_r2_piepho(model, over_disp)
-  R2 <- paste(round(cod_v, 2), "%", sep="")
-  names(R2) <- names(cod_v)
-  cat("# Adjusted R2 for Mixed Models\n")
-  return(R2)
-}
+## Removed in 2.0: R2_model(model) gives the same values (as numbers; R2_glmm()
+## gave them as rounded percentages).
+R2_glmm <- function(...) pm_defunct_fun("R2_glmm")
 
 ## Piepho's R2 in percent: Total, Fixed, Random and each random component.
 pm_r2_piepho <- function(model, over_disp=FALSE){

@@ -1,10 +1,14 @@
-# predictmeans
+# predictmeans <img src="man/figures/logo.png" align="right" height="139" alt="predictmeans logo" />
 
 Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and
 contrasts for linear, generalized linear and mixed models — `aov`, `lm`, `glm`, `gls`,
 `lme`, `lmer`, `glmer`, `glmmTMB`, `gam` and semiparametric `semireg` models — with
 Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap
 tests, R² for mixed models and diagnostics. Results match SAS `LSMEANS` and emmeans.
+
+## Workflow
+
+![From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots](man/figures/workflow.png)
 
 ## Installation
 
@@ -38,9 +42,9 @@ work on it.
 | Means and pairwise comparisons | `predictmeans()`, `covariatemeans()` |
 | Contrasts | `specify_contrast()`, `contrast_family()`, `contrastmeans()` |
 | Joint tests (slices) and slopes | `pm_joint()`, `pm_slopes()` |
-| Resampling tests | `permmodels()`, `permlmer()`, `permanova.lmer()`, `bootmodels()` |
+| Resampling tests | `permmodels()`, `permlmer()`, `bootmodels()` |
 | Semiparametric models | `semireg()`, `semireg_tmb()`, `semipred()` |
-| R², variance components, diagnostics | `R2_model()`, `R2_glmm()`, `varcomp()`, `pm_check()`, `residplot()`, `CookD()` |
+| R², variance components, diagnostics | `R2_model()`, `varcomp()`, `pm_check()`, `residplot()`, `CookD()` |
 | Reference grid / K matrix | `Kmatrix()` |
 
 ## Documentation

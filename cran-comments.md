@@ -25,10 +25,18 @@ added here.
 
 ## Notes for CRAN
 
-This is a major release. Some defaults change, each documented in NEWS with
-the argument that restores the 1.x result: Kenward-Roger adjusted standard
-errors for REML mixed models (`vcov_adjust = FALSE`), degrees of freedom
-chosen by model class (`df_method = "residual"` or `"containment"`),
-Freedman-Lane permutations (`method = "raw"`), and plots drawn only when
-asked for (`plot = TRUE`). lmerTest moved from Depends to Imports. The 1.x
-functions and their printed output are kept.
+This is a major release that breaks some 1.x code on purpose, to give the
+functions one vocabulary (`conf.level`, `df_method`, `at`, `plot`). Every
+removed argument or function stops with a message giving the 2.0 spelling;
+`vignette("migrating")` shows the 1.1.1 and 2.0 code side by side.
+
+* Removed functions: `smZ()`, `permglmer()`, `permglmmTMB()`,
+  `permanova.lmer()`, `ci_mcp()`, `R2_glmm()` (each stops with its
+  replacement, `?"predictmeans-defunct"`).
+* Defaults that change, each with the argument that restores the 1.x result:
+  Kenward-Roger adjusted standard errors for REML mixed models
+  (`vcov_adjust = FALSE`), degrees of freedom chosen by model class
+  (`df_method = "residual"` or `"containment"`), Freedman-Lane permutations
+  (`method = "raw"`), and plots drawn only when asked for (`plot = TRUE`).
+* lmerTest moved from Depends to Suggests (the package computes its own
+  Kenward-Roger and Satterthwaite df); mgcv and glmmTMB are in Imports.

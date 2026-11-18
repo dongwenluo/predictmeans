@@ -4,10 +4,10 @@
 \alias{pm_slopes}
 \title{Slopes of a Covariate by Group}
 \usage{
-pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
+pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
+          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{predictmeans}}.}
@@ -19,11 +19,13 @@ pm_slopes(model, covariate, modelterm, at = NULL, level = 0.05, adj = "none",
 \item{at}{The value of the covariate where the slopes are taken (matters only when the covariate enters the model
 non-linearly); the default is its mean.}
 
-\item{level}{Significance level for the confidence limits, the default is 0.05.}
+\item{conf.level}{Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).}
 
 \item{adj}{Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.}
 
 \item{df_method, vcov_adjust, weights, vcov}{As in \code{\link{predictmeans}}.}
+
+\item{...}{Not used: \code{level} (before 2.0) stops with its 2.0 spelling.}
 }
 \value{
 An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predictmeans}} (\code{tidy()} and
@@ -35,7 +37,7 @@ An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predi
   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
   \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
   mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
-  \code{p.adj} is below \code{level}.}
+  \code{p.adj} is below \code{1 - conf.level}.}
 \item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
   \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
 }

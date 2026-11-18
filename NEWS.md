@@ -36,6 +36,102 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Changes that affect results or scripts
 
+* **Arguments removed or renamed in 2.0 (steps 2a, 2b: `predictmeans()`,
+  `contrastmeans()`, `pm_slopes()`, `Kmatrix()`, `df_term()`,
+  `covariatemeans()`).** A 1.1.1
+  spelling stops with the 2.0 one, e.g. `'level' was removed in predictmeans
+  2.0: use conf.level = 0.95.` (`R/defunct.R`); abbreviated 1.x names too.
+  - `level` (a significance level) -> `conf.level = 1 - level` (default 0.95).
+  - `Df` -> `df_method = <number>`.
+  - `which.plots`, `mplot`, `barplot`, `pplot`, `bkplot` -> `plot = c("mean",
+    "bar", "pval", "back")`; plot settings as arguments of their own
+    (`plottitle`, `plotord`, `lsd_bar`, ...) -> `plot_args = list(...)`;
+    `prtplt`, `newwd` and `plot_args$responsen` removed.
+  - `prtnum`, `ndecimal` removed: nothing is printed during the call; the
+    `means`/`pairs` tables are unrounded.
+  - `transOff` -> the offset inside `trans` (`trans = function(x) exp(x) - 1`);
+    the pairs then have no `ratio` columns (with an offset they were ratios of
+    y + 1, labelled as ratios of y). `count` removed (Poisson and negative
+    binomial means are detected).
+  - `Kmatrix(covariateV =)` -> `at =`; `df_term(type =)` -> `df_method =`.
+  - `covariatemeans()`: `level`, `Df`, `covariateV` (-> `at`), `transOff`
+    as above; `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` ->
+    `plot_args = list(...)`; `responsen`, `newwd` removed (the response
+    variable is read from the formula). `as.is` stays (each line over its
+    group's observed range). 15 calls of `dev/snapshot-covariatemeans.R`
+    written both ways give identical results, except `transOff` (as above).
+  - `semipred()` (step 3a): the first argument is `model` (was `semireg`);
+    `covariateV` -> `at`; `level` -> `conf.level`; `simultaneous = TRUE` ->
+    `band = "simultaneous"`; `prt` -> `plot`; `trellis`, `scales`, `plotord`,
+    `ci`, `point`, `jitterv`, `threeD` -> `plot_args = list(...)` (with the
+    colours). 13 calls of `dev/snapshot-semipred.R` written both ways give
+    identical results.
+  - `semireg()`, `semireg_tmb()` (step 3b; both kept: their options differ by
+    engine): `prt` and `predict_info` removed (nothing is printed during the
+    fit; the prediction information is always kept). `ngbinomial` removed: it
+    took theta from a Poisson fit, which is not the maximum-likelihood fit
+    (on a test data set log-likelihood -1133.60 against -1132.98, theta 3.31
+    against 2.80, true 3; means 1%, SEs 4% apart); use
+    `semireg_tmb(family = glmmTMB::nbinom2)`. Six fits and their curves
+    (`dev/snapshot-semipred.R`) are identical (tolerance 0).
+  - `smZ()` and `smoothZ` removed (step 3c): smooths are written in the formula
+    (`smZ(x)` is `s(x, bs = "os")`, `smZ(cbind(x, z), type = "Ztps")` is
+    `s(x, z, bs = "ztps", k = 6)`, ...). `vignette("migrating")` shows each
+    1.1.1 form beside its formula form, and the 1.1.1 models of the overview
+    article beside their 2.0 code; `dev/check-smz-migration.R` fitted them both
+    ways on the last build with `smZ()`: the same REML log-likelihoods and
+    curves (to 1e-5). Where they differ 2.0 is right: knots given in the data's
+    units were placed on the centred covariate in 1.x (`ncenter = TRUE`); the
+    1.1.1 article's formulas for a curve per group left out the group slopes,
+    which the formula form adds. `ncenter`, `nscale`, `resp_scale` removed: the
+    variables are used as they are (curves unchanged; the coefficients of other
+    numeric covariates are no longer centred). `fit$knots_lst`, `range_lst`,
+    `type_lst`, `smoothZ_call` removed. splines2 and lmeSplines are no longer
+    suggested.
+  - Permutation functions (step 4): `permlmer(lmer0, lmer1)` ->
+    `permlmer(model0, model1)`; `permglmer()`, `permglmmTMB()` (the same
+    function) and `permanova.lmer()` (use `permmodels(model, type = )`,
+    Freedman-Lane, other permutation p-values) removed; `permmodels()` and
+    `bootmodels()` lose `prt` (their results are class `"pm_permmodels"` and
+    print their tables; one print method for the five places that printed them)
+    and `permmodels()` loses `fo` (a formula held in a variable is detected);
+    `permstats(level =)` -> `conf.level`. 12 calls of `dev/snapshot-perm.R`
+    written both ways give identical results.
+  - Plots, diagnostics and small functions (step 5): `residplot(level =)` ->
+    `re_level` (the random-effect term), `newwd`, `ask` removed;
+    `CookD(idn =)` -> `id`, `newwd` removed; `PMplot(level =)` ->
+    `conf.level`, `margin`, `legendx`, `newwd` removed; `varcomp(level =)` ->
+    `conf.level` (the same value: it was a confidence level). `R2_glmm()`
+    removed: `R2_model()` gives the same values as numbers. `ci_mcp()` removed:
+    letters from overlapping confidence intervals do not answer the pairwise
+    tests; `predictmeans(letterCI = TRUE)` gives letters from comparison
+    intervals (its engine is now internal). The overview article's 83.4%
+    letters along the dose became letters at a dose from `letterCI`. 12 calls
+    of `dev/snapshot-diag.R` written both ways give identical results.
+  - The migration guide in full (step 6): `vignette("migrating")` shows the
+    1.1.1 and 2.0 code side by side for every changed call (means, covariates
+    and curves, permutation tests, diagnostics, smooth models), one table of
+    every changed argument and function, the defaults and the numbers that
+    change. `dev/check-migrating.R` runs each 2.0 line and checks that each
+    1.1.1 line stops with the 2.0 spelling.
+  - Release checks (step 7): the migration guide also lists the packages
+    `library(predictmeans)` no longer attaches (glmmTMB, lmerTest);
+    `cran-comments.md` describes the removed functions and changed
+    dependencies.
+  - `print()` of a `semireg()` or `semireg_tmb()` fit shows the fitted model
+    (as 1.x printed it during the fit with `prt = TRUE`) and the random-effect
+    term of each smooth; it printed the whole list, data and matrices
+    included. `summary()` gives the summary of the fitted model.
+* James Curran (University of Auckland) is an author of the package (he was
+  listed as a contributor).
+* `permmodels()` keeps to one core for any model whose formula is not
+  written in the call: R-devel's `lm()` records more than the name of a
+  formula held in a variable, which the check missed. Help pages: package
+  anchors for the glmmTMB links, the workflow figure sized in pixels.
+  - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
+    identical results (tolerance 0), except `trans = exp, transOff = 1`
+    (above; `response.std.error` within 4e-10, from a numerical derivative).
+
 * **`anova()` with empty cells.** Type III tests of `lmer`, `lm` and other
   fits (and `permmodels(type = "III")`) stopped with "there are aliased
   coefficients in the model" when a cell had no data. Each term is now
@@ -521,9 +617,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   0.03 s for the oats example) and put graphics pages into scripts, reports,
   Shiny apps and loops. The result holds the same tables, and `autoplot()`
   draws from it. `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a
-  session, draws the 1.x plots; so does asking for plots by name
-  (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
-  `bkplot`).
+  session, draws the 1.x plots; `plot = c("mean", "bar")` chooses them.
 * **lmerTest is no longer needed**: it moved from Depends to Suggests (used
   only in the tests, to compare against). predictmeans' own df and tests
   never used it. `anova()` of an `lmer` fit now gives F tests with df by the
@@ -863,7 +957,8 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   reproduce 1.x results.
 * **glmmTMB is no longer attached** by `library(predictmeans)`; it moved
   from Depends to Imports. Scripts that fit models with `glmmTMB()` need
-  `library(glmmTMB)`. lme4, nlme and lmerTest are still attached.
+  `library(glmmTMB)`. lme4 and nlme are still attached (lmerTest: see
+  above).
 * `permmodels()` gives the same tables (including Satterthwaite df and
   p-values) whether an lmer model was fitted with `lme4::lmer()` or
   `lmerTest::lmer()`.
@@ -884,6 +979,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 
 ## New features
+
+* **`Caschool`**: the California test score data (420 school districts,
+  1998-1999; Stock and Watson; as in package Ecdat), the data of the overview
+  article's example with several smooth terms, now in the package
+  (`data(Caschool)`). Its 1.1.1 and 2.0 models give the same fit
+  (`dev/check-smz-migration.R`).
 
 * `semipred()` on generalized fits: the table of the curves has the SE on
   the link scale (`SE`, from which the limits h(eta -+ crit SE) come) next
@@ -1889,6 +1990,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Documentation
 
+* A package logo (`man/figures/logo.png`: the README, the website and the
+  package help page) and a workflow chart from the fitted model to the report
+  (`man/figures/workflow.png`: the README, `?predictmeans-package` and
+  `vignette("predictmeans")`).
+
 * Letter groups, overall and within `atvar` groups, now come from one
   function (`pm_letter_groups()`) that handles unavailable p-values
   (missing levels or non-estimable differences) the same way everywhere.
@@ -1974,6 +2080,8 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## Internal
 
+* `R/defunct.R`: one table of the arguments and functions removed in 2.0 with their 2.0 spelling; `pm_defunct()` stops a call that names one (with the value given, e.g. `level = 0.05` -> `conf.level = 0.95`), `pm_defunct_fun()` is the body of a removed function. A test checks that no removed name can be partially matched to a remaining argument.
+* `dev/review-options.md`: inventory of every argument of 1.1.1 and 2.0 (keep, rename, merge, remove) for the clean-up of the options before 2.0.
 * Shorter empty-cell messages: the confounding warning (about 450
   characters) now names the two factors and the three ways to state the
   structure in one sentence; the empty-cell warning, the message on

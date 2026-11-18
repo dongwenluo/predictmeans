@@ -60,7 +60,7 @@ pm_hc_reduced <- function(X, z, L) {
   list(f0 = f0, e0 = z - f0)
 }
 
-pm_perm_fl_robust <- function(model, nperm, type, exact, seed, prt, perms = NULL) {
+pm_perm_fl_robust <- function(model, nperm, type, exact, seed, perms = NULL) {
   if (!inherits(model, "lm")) {
     stop("robust = TRUE is for lm, aov and glm models.", call. = FALSE)
   }
@@ -141,26 +141,18 @@ pm_perm_fl_robust <- function(model, nperm, type, exact, seed, prt, perms = NULL
   attr(ANOVA, "heading") <- paste0("Type ", tl, " robust (HC3) Wald F tests",
                                    if (des$kind == "working") " on the working (link) scale" else "",
                                    " (Freedman-Lane residuals, sign flips)")
-  if (prt) {
-    if (!is.null(COEF)) {
-      cat("\nCoefficients of (fixed) effects (robust standard errors):\n")
-      print(COEF)
-      cat("\nNote: Perm_p_value of robust t test is obtained using", sQuote(nperm),
-          "sign flips of the Freedman-Lane residuals (wild bootstrap).\n")
-    }
-    cat("\nANOVA:\n")
-    cat(attr(ANOVA, "heading"), "\n", sep = "")
-    print(ANOVA)
-    cat("\nNote: Perm_p_value of robust F test is obtained using", sQuote(nperm),
-        "sign flips of the Freedman-Lane residuals (wild bootstrap).\n\n")
-  }
   perm <- pm_perm_fl_object(X, z, nperm, exact, attr(src, "start"), colnames(X))
   perm$robust <- TRUE
   perm$flip <- TRUE
   perm$stats <- pm_perm_statset(model, obs, Tm, pval, vapply(tests, `[[`, numeric(1), "df"),
                                 ifelse(startsWith(names(tests), "coef:"), "t", "F"), lapply(tests, `[[`, "L"),
                                 P$df_res, n)
-  list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
+  pm_permmodels_result(list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm),
+                       paste("Note: Perm_p_value of robust t test is obtained using", sQuote(nperm),
+                             "sign flips of the Freedman-Lane residuals (wild bootstrap)."),
+                       paste("Note: Perm_p_value of robust F test is obtained using", sQuote(nperm),
+                             "sign flips of the Freedman-Lane residuals (wild bootstrap)."),
+                       coef_title = "Coefficients of (fixed) effects (robust standard errors):")
 }
 
 ## Pairs and contrasts from a robust permutation object: robust |t| of each

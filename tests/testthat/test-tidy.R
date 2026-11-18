@@ -14,7 +14,7 @@ test_that("means match emmeans: estimates, SEs, KR df and confidence limits", {
   Ou <- oats_fac()
   Ou <- Ou[-sample(nrow(Ou), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
-  pm <- predictmeans(fm, "nitro:Variety", vcov_adjust = TRUE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", vcov_adjust = TRUE, df_method = "KR-expected", plot = FALSE)
   em <- summary(emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger"))
   m <- tidy.predictmeans(pm)
   idx <- match(key_em(m, c("nitro", "Variety")), key_em(em, c("nitro", "Variety")))
@@ -35,7 +35,7 @@ test_that("pairs match emmeans: raw, Tukey and BH p-values", {
   fm <- lm(yield ~ Block + nitro*Variety, data = oats_fac())
   em_means <- emmeans::emmeans(fm, ~nitro)
   for (a in c("none", "tukey", "BH")) {
-    pm <- predictmeans(fm, "nitro", adj = a, plot = FALSE, prtnum = FALSE)
+    pm <- predictmeans(fm, "nitro", adj = a, plot = FALSE)
     pr <- tidy.predictmeans(pm, "pairs")
     em <- summary(pairs(em_means, adjust = if (a == "none") "none" else a))
     idx <- match(paste(pr$level1, "-", pr$level2), as.character(em$contrast))
@@ -50,7 +50,7 @@ test_that("pairs within atvar levels match emmeans 'by' comparisons", {
   skip_if_not_installed("emmeans")
   fm <- lm(yield ~ Block + nitro*Variety, data = oats_fac())
   for (a in c("tukey", "holm")) {
-    pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = a, plot = FALSE, prtnum = FALSE)
+    pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = a, plot = FALSE)
     pr <- tidy.predictmeans(pm, "pairs")
     pr <- pr[!is.na(pr$by), ]
     expect_equal(nrow(pr), 3 * 6)
@@ -66,7 +66,7 @@ test_that("back-transformed means are on the response scale", {
   skip_if_not_installed("emmeans")
   data("Drug", package = "predictmeans", envir = environment())
   fm <- glm(cbind(R, N - R) ~ Drug + log10Dose, data = Drug, family = binomial)
-  m <- tidy.predictmeans(predictmeans(fm, "Drug", plot = FALSE, prtnum = FALSE))
+  m <- tidy.predictmeans(predictmeans(fm, "Drug", plot = FALSE))
   em <- summary(emmeans::emmeans(fm, ~Drug, type = "response"))
   expect_equal(m$response, em$prob[match(m$Drug, em$Drug)], tolerance = 1e-8)
   expect_true(all(m$response.conf.low < m$response & m$response < m$response.conf.high))
@@ -74,8 +74,8 @@ test_that("back-transformed means are on the response scale", {
 
 test_that("permutation p-values in pairs equal the legacy p-value matrix", {
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_fac())
-  perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 19, prt = FALSE, ncore = 1, seed = 2))
-  pm <- predictmeans(fm, "nitro", permlist = perm, adj = "BH", plot = FALSE, prtnum = FALSE, ncore = 1)
+  perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 19, ncore = 1, seed = 2))
+  pm <- predictmeans(fm, "nitro", permlist = perm, adj = "BH", plot = FALSE, ncore = 1)
   pr <- tidy.predictmeans(pm, "pairs")
   expect_true(all(pr$p.method == "permutation"))
   legacy <- pm$`Pairwise p-value`
@@ -85,7 +85,7 @@ test_that("permutation p-values in pairs equal the legacy p-value matrix", {
 
 test_that("printing is unchanged and the stable slots have fixed names", {
   fm <- lm(yield ~ nitro*Variety, data = oats_fac())
-  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "BH", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "BH", plot = FALSE)
   expect_s3_class(pm, c("predictmeans", "pdmlist"))
   out <- capture.output(print(pm))
   expect_false(any(grepl("^\\$means|^\\$pairs|^\\$settings", out)))
@@ -104,7 +104,7 @@ test_that("coef() and vcov() of the means match emmeans and give the pairs' SEs"
   Ou <- oats_fac()
   Ou <- Ou[-sample(nrow(Ou), 9), ]
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Ou)
-  pm <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, df_method = "KR-expected", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, df_method = "KR-expected", plot = FALSE)
   em <- emmeans::emmeans(fm, ~nitro:Variety, lmer.df = "kenward-roger")
   b <- coef(pm)
   V <- vcov(pm)

@@ -24,7 +24,7 @@ ar1_compare <- function(m, S, df_method, se = TRUE) {
   add <- function(what, key, s, r) out[[length(out) + 1]] <<- data.frame(what = what, key = key, sas = s, r = r)
   for (eff in c("Group", "Time", "Group*Time")) {
     term <- sub("\\*", ":", eff)
-    p <- predictmeans(m, term, df_method = df_method, plot = FALSE, prtnum = FALSE)
+    p <- predictmeans(m, term, df_method = df_method, plot = FALSE)
     L <- S[S$table == "lsmeans" & S$effect == eff, ]
     key <- if (eff == "Group*Time") paste(L$level1, L$level2, sep = ":") else L$level1
     vars <- strsplit(term, ":")[[1]]
@@ -71,7 +71,7 @@ test_that("Kenward-Roger equals SAS DDFM=KR(FIRSTORDER) for AR(1): means, differ
   # SAS's default KR and KR2 give the same df, other standard errors (second-derivative terms)
   for (dd in c("KR", "KR2")) ar1_check(ar1_compare(m, ref[ref$ddfm == dd, ], "Kenward-Roger", se = FALSE), dd)
   kr <- ref[ref$ddfm == "KR" & ref$table == "lsmeans" & ref$effect == "Group", ]
-  ours <- predictmeans(m, "Group", plot = FALSE, prtnum = FALSE)$means$std.error
+  ours <- predictmeans(m, "Group", plot = FALSE)$means$std.error
   expect_true(all(ours > as.numeric(kr$se)))                     # 0.3538 against 0.3474
 })
 

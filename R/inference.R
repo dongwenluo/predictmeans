@@ -121,7 +121,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     }
     if (per_row_kr_satt) {
       if (nlme || aovl) return(as.numeric(pm_nlme_df(L, model, df_type, vcov_adj)))
-      return(as.numeric(df_term(model, ctrmatrix = L, type = df_type, vcov_adj = vcov_adj)))
+      return(as.numeric(pm_df_term(model, ctrmatrix = L, type = df_type, vcov_adj = vcov_adj)))
     }
     if (custom) return(rep_len(as.numeric(pm_df(model, L)), n))
     rep(resid_df, n)
@@ -298,4 +298,30 @@ pm_terms_with <- function(model, v) {
 pm_fixed_dispersion <- function(model) {
   fam <- tryCatch(stats::family(model)$family, error = function(e) "")
   fam %in% c("poisson", "binomial") || grepl("^Negative Binomial", fam)
+}
+
+## The vocabulary of 2.0 (dev/review-options.md, D1, D2), for every front
+## end. 'conf.level' gives the significance level the internal code uses;
+## rounded so that conf.level = 0.95 gives exactly 0.05 (1 - 0.95 is not).
+pm_conf_alpha <- function(conf.level) {
+  if (!is.numeric(conf.level) || length(conf.level) != 1 || is.na(conf.level) || conf.level <= 0 || conf.level >= 1) {
+    stop("'conf.level' must be one number between 0 and 1, e.g. 0.95.", call. = FALSE)
+  }
+  if (conf.level < 0.5) {
+    stop("conf.level = ", conf.level, " is a confidence level below 50%; for a significance level of ", conf.level,
+         " use conf.level = ", 1 - conf.level, ".", call. = FALSE)
+  }
+  round(1 - conf.level, 12)
+}
+
+## 'df_method' as a name or as a number (a fixed df, 1.x's 'Df'): returns
+## list(method, Df).
+pm_df_arg <- function(df_method, choices) {
+  if (is.numeric(df_method)) {
+    if (length(df_method) != 1 || is.na(df_method) || df_method <= 0) {
+      stop("'df_method' as a number is one positive df, e.g. df_method = 10.", call. = FALSE)
+    }
+    return(list(method = choices[1], Df = df_method))
+  }
+  list(method = match.arg(df_method, choices), Df = NULL)
 }

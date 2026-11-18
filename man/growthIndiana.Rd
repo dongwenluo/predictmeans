@@ -36,9 +36,9 @@ data(growthIndiana)
 gbm <- subset(growthIndiana, male == 1 & black == 1)
 gbm$idnum <- factor(gbm$idnum)
 fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-                 (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm, prt = FALSE)
+                 (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm)
 anova(fit)$smooth       # are the boys' curves straight lines?
-semipred(fit, "age", "age", prt = FALSE)$plt
+semipred(fit, "age", "age")$plt
 \dontrun{
 # (about 30 s: 2257 measurements, 130 boys' curves)
 # all boys: a common curve and a black-white deviation curve (the contrast curve of
@@ -47,10 +47,10 @@ gm <- subset(growthIndiana, male == 1)
 gm$idnum <- factor(gm$idnum)
 gm$race <- factor(ifelse(gm$black == 1, "black", "white"))
 fit2 <- semireg(height ~ s(age, race, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
-                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm, prt = FALSE)
-dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous", prt = FALSE)
+                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gm)
+dif <- semipred(fit2, "race", "age", contr = c("black", "white"), band = "simultaneous")
 attr(dif$pred_df, "significant")
-semipred(fit2, "race", "age", deriv = 1, prt = FALSE)$plt     # growth rates
+semipred(fit2, "race", "age", deriv = 1)$plt     # growth rates
 predictmeans(fit2, "race", covariate = c(age = 12))$means
 }
 }

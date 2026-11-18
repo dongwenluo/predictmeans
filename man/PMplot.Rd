@@ -4,8 +4,7 @@
 \alias{PMplot}
 \title{Level Plot of a Matrix of p-values.}
 \usage{
-PMplot(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73,
-  newwd=FALSE, values=FALSE, basesz=12)
+PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
 }
 \arguments{
 \item{pmatrix}{A matrix with p-values from pairwise comparisons (the lower
@@ -13,9 +12,9 @@ triangle is used), or a list of such matrices (e.g. \code{p_valueMatrix} of
 \code{\link{predictmeans}} with \code{atvar}), which are drawn as blocks
 down the diagonal of one plot.}
 
-\item{level}{The level of p-value to be highlighted. With the default 0.05
-the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other
-value two (up to \code{level} and above).}
+\item{conf.level}{The p-values below \code{1 - conf.level} are highlighted (\code{level = 0.05} before 2.0).
+With the default 0.95 the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other value two
+(up to \code{1 - conf.level} and above).}
 
 \item{mtitle}{The main title in the graph.}
 
@@ -23,14 +22,8 @@ value two (up to \code{level} and above).}
 matrix (or of the list's matrices together). The default uses the row
 names of the matrix, else the row numbers.}
 
-\item{margin}{Not used since 2.0 (ggplot2 sizes the margins from the
-labels); kept so that 1.x calls still run.}
-
-\item{legendx}{The x coordinate of the left side of the legend, as a
-proportion of the plot's width. The default value is 0.73; the legend sits
-in the empty upper triangle.}
-
-\item{newwd}{A logical variable to indicate whether to print graph in a new window. The default is FALSE.}
+\item{...}{Not used: \code{level}, \code{margin}, \code{legendx}, \code{newwd} (before 2.0) stop with their 2.0
+spelling. (ggplot2 sizes the margins; the legend sits in the empty upper triangle.)}
 
 \item{values}{Whether to print each p-value on its tile (the default is
 \code{FALSE}). Useful for up to about 15 levels.}

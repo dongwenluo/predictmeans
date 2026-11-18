@@ -20,18 +20,18 @@ test_that("robust tables: HC3 standard errors and Wald F tests", {
   d <- robust_data()
   fm <- lm(y ~ x + A, data = d)
   V <- hc3(fm)
-  r3 <- permmodels(fm, nperm = 99, type = "III", seed = 1, robust = TRUE, prt = FALSE)
+  r3 <- permmodels(fm, nperm = 99, type = "III", seed = 1, robust = TRUE)
   expect_equal(unname(r3$COEFFICENTS[, "Robust SE"]), unname(round(sqrt(diag(V)), 4)))
   b <- coef(fm)[c("A2", "A3")]
   FA <- drop(b %*% solve(V[c("A2", "A3"), c("A2", "A3")], b)) / 2
   expect_equal(r3$ANOVA["A", "F value"], round(FA, 4))
   # type II, as car::Anova(white.adjust = "hc3")
-  r2 <- permmodels(fm, nperm = 99, type = "II", seed = 1, robust = TRUE, prt = FALSE)
+  r2 <- permmodels(fm, nperm = 99, type = "II", seed = 1, robust = TRUE)
   expect_equal(r2$ANOVA[, "F value"], c(8.8503, 3.8582))
   expect_match(attr(r2$ANOVA, "heading"), "robust \\(HC3\\)")
   expect_true(isTRUE(r2$perm$robust))
   # type I runs (sequential hypotheses)
-  r1 <- permmodels(fm, nperm = 99, seed = 1, robust = TRUE, prt = FALSE)
+  r1 <- permmodels(fm, nperm = 99, seed = 1, robust = TRUE)
   expect_equal(rownames(r1$ANOVA), c("x", "A"))
   expect_output(print(r1$perm), "robust HC3")
 })
@@ -39,7 +39,7 @@ test_that("robust tables: HC3 standard errors and Wald F tests", {
 test_that("robust p-value of a coefficient by hand (sign flips of the reduced model's residuals)", {
   d <- robust_data()
   fm <- lm(y ~ x + A, data = d)
-  r <- permmodels(fm, nperm = 19, seed = 5, type = "III", robust = TRUE, prt = FALSE)
+  r <- permmodels(fm, nperm = 19, seed = 5, type = "III", robust = TRUE)
   expect_output(print(r$perm), "sign flips")
   SG <- pm_perm_stream(30, seed = 5, flip = TRUE)(19)
   expect_true(all(SG %in% c(-1, 1)))
@@ -57,8 +57,8 @@ test_that("robust p-value of a coefficient by hand (sign flips of the reduced mo
 test_that("pairs and contrasts with a robust permlist use robust t and robust limits", {
   d <- robust_data()
   fm <- lm(y ~ x + A, data = d)
-  r <- permmodels(fm, nperm = 199, seed = 1, robust = TRUE, prt = FALSE)
-  pr <- predictmeans(fm, "A", permlist = r, plot = FALSE, prtnum = FALSE, level = 0.1)$pairs
+  r <- permmodels(fm, nperm = 199, seed = 1, robust = TRUE)
+  pr <- predictmeans(fm, "A", permlist = r, plot = FALSE, conf.level = 0.9)$pairs
   # limits: estimate +/- critical value x robust SE of the pair
   V <- hc3(fm)
   L <- rbind(c(0, 0, -1, 0), c(0, 0, 0, -1), c(0, 0, 1, -1))
@@ -69,7 +69,7 @@ test_that("pairs and contrasts with a robust permlist use robust t and robust li
   expect_equal(pr$conf.high - pr$estimate, pr$lsd)
   # contrastmeans() gives the same limits for the same pairs
   cn <- rbind(c(-1, 1, 0), c(-1, 0, 1), c(0, -1, 1))
-  ct <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, level = 0.1)[[1]]
+  ct <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, conf.level = 0.9)[[1]]
   expect_equal(unname(abs(ct[, "upper.CL"] - ct[, "lower.CL"])), round(pr$conf.high - pr$conf.low, 4), tolerance = 1e-3)
   # joint F of the contrasts: the robust Wald F of A
   cj <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, joint = TRUE)
@@ -81,12 +81,12 @@ test_that("robust = TRUE: glm on the working scale; errors for mixed models and 
   set.seed(3)
   d$count <- rpois(30, exp(1 + 0.3 * d$x))
   g <- glm(count ~ x + A, family = poisson, data = d)
-  rg <- permmodels(g, nperm = 49, type = "III", seed = 1, robust = TRUE, prt = FALSE)
+  rg <- permmodels(g, nperm = 49, type = "III", seed = 1, robust = TRUE)
   expect_match(attr(rg$ANOVA, "heading"), "working")
   expect_true(all(rg$ANOVA$Perm_p_value > 0 & rg$ANOVA$Perm_p_value <= 1))
   fm <- lm(y ~ x + A, data = d)
-  expect_error(permmodels(fm, nperm = 9, robust = TRUE, method = "raw", prt = FALSE), "freedman-lane")
-  expect_error(permmodels(fm, perms = replicate(9, sample(30)), robust = TRUE, prt = FALSE), "perms")
+  expect_error(permmodels(fm, nperm = 9, robust = TRUE, method = "raw"), "freedman-lane")
+  expect_error(permmodels(fm, perms = replicate(9, sample(30)), robust = TRUE), "perms")
   m <- lme4::lmer(y ~ x + (1 | A), data = d)
-  expect_error(permmodels(m, nperm = 9, robust = TRUE, prt = FALSE), "lm, aov and glm")
+  expect_error(permmodels(m, nperm = 9, robust = TRUE), "lm, aov and glm")
 })

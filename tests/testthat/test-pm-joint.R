@@ -50,7 +50,7 @@ test_that("pm_joint() for lme: Kenward-Roger by default; containment is nlme's d
   expect_equal(nrow(j), 4)
   expect_identical(attr(j, "df_method"), "containment (nlme)")
   expect_equal(pm_joint(fm, "Variety", df_method = "containment")$df2, unname(terms(fm$fixDF)["Variety"]))
-  pm <- predictmeans(fm, "nitro:Variety", df_method = "containment", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", df_method = "containment", plot = FALSE)
   expect_equal(unique(pm$means$df), unique(j$df2))
   expect_identical(pm$settings$df_method, attr(j, "df_method"))
   expect_identical(attr(pm_joint(fm, "Variety"), "df_method"), "Kenward-Roger")

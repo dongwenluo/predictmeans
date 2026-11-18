@@ -63,7 +63,7 @@ The model with the interaction has one coefficient fewer (lme4 drops it). The ce
 are those of the 11 combinations with data:
 
 ```{r, warning = FALSE}
-pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE, prtnum = FALSE)
+pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE)
 nrow(pm_cells$means)
 ```
 
@@ -71,7 +71,7 @@ The nitrogen means average over the varieties. For N = 0.6 only two varieties ha
 so its mean is their average, and predictmeans warns:
 
 ```{r}
-pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
+pm_n <- predictmeans(fm, "N", plot = FALSE)
 pm_n$means[, c("N", "over", "estimate", "std.error", "n")]
 ```
 
@@ -84,7 +84,7 @@ with each other level on the varieties both have, Golden Rain and Marvellous (co
 levels are the differences of the means as usual:
 
 ```{r}
-pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE))
 pm_n2$pairs[, c("level1", "level2", "over", "estimate", "std.error", "p.value")]
 ```
 
@@ -119,8 +119,7 @@ Other comparisons that stay within the observed cells are sound too, e.g. nitrog
 within each variety:
 
 ```{r, warning = FALSE}
-pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE,
-                     prtnum = FALSE)
+pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
 within <- subset(pm_v$pairs, !is.na(by))
 head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
 ```
@@ -148,7 +147,7 @@ dft <- dft[!(dft$date == "d2" & dft$farm == "F2" & dft$trt == "B"), ]
 dft$y <- 5 + as.integer(dft$farm) * as.integer(dft$date) + 0.5 * (dft$trt == "B") +
   rnorm(nrow(dft), 0, 0.3)
 fd <- lm(y ~ date/farm + date*trt, data = dft)
-predictmeans(fd, "date:trt", plot = FALSE, prtnum = FALSE)$means[, c("date", "trt", "estimate", "n")]
+predictmeans(fd, "date:trt", plot = FALSE)$means[, c("date", "trt", "estimate", "n")]
 ```
 
 Every date × farm and every date × treatment cell has data, and the model says the
@@ -181,7 +180,7 @@ droplet–volume combinations that exist and says so:
 
 ```{r, warning = TRUE}
 fs <- lm(y ~ droplet + conc + vol, data = spray)
-pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE)
+pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE)
 pv$means[, c("vol", "estimate", "std.error", "n", "group")]
 ```
 
@@ -205,9 +204,9 @@ the same. Stating the structure in the model is the better record of the design:
 
 ```{r}
 fs2 <- lm(y ~ conc + droplet/vol, data = spray)
-pn <- predictmeans(fs2, "vol", plot = FALSE, prtnum = FALSE)
+pn <- predictmeans(fs2, "vol", plot = FALSE)
 cbind(pn$means[, c("vol", "estimate")], fallback = pv$means$estimate,
-      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE, prtnum = FALSE)$means$estimate)
+      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE)$means$estimate)
 ```
 
 ### Confounded within another factor
@@ -227,7 +226,7 @@ for (v in c("date", "pasture", "trt", "farm")) past[[v]] <- factor(past[[v]])
 past$y <- as.integer(past$date) + as.integer(past$pasture)/2 + 0.5*(past$trt == "B") +
   rnorm(nrow(past), 0, 0.3)
 fp <- lm(y ~ date/farm + date/(trt + pasture)^2, data = past)
-pp <- predictmeans(fp, "date:trt", plot = FALSE, prtnum = FALSE)
+pp <- predictmeans(fp, "date:trt", plot = FALSE)
 ```
 
 Farm and pasture do not interact in the model, and at each date the farm is known from
@@ -239,7 +238,7 @@ without `farm`:
 
 ```{r}
 fp0 <- lm(y ~ date/(trt + pasture)^2, data = past)
-p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE, prtnum = FALSE))
+p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE))
 cbind(pp$means[, c("date", "trt", "estimate")], without_farm = p0$means$estimate)
 ```
 

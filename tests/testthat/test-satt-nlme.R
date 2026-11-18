@@ -14,7 +14,7 @@ test_that("gls with an unstructured covariance: Satterthwaite df equal SAS", {
   r <- rep_data()
   g <- nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
-  pm <- predictmeans(g, "Group:Time", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(g, "Group:Time", df_method = "Satterthwaite", plot = FALSE)
   expect_equal(pm$means$df, rep(10, 6), tolerance = 1e-3)
   expect_identical(pm$settings$df_method, "Satterthwaite")
   # pairs: SAS 10 or 10.1 / 10.2 (printed to one decimal)
@@ -35,8 +35,8 @@ test_that("ML fits of lme and gls: Satterthwaite from the ML log-likelihood, as 
   od <- droplevels(o[!(o$Block == "I" & o$Variety == "Golden Rain"), ])[-c(5, 17, 30), ]
   e <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = od, method = "ML")
   f <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = od, REML = FALSE)
-  expect_message(pe <- predictmeans(e, "Variety", plot = FALSE, prtnum = FALSE), "ML: using Satterthwaite")
-  pf <- suppressMessages(predictmeans(f, "Variety", plot = FALSE, prtnum = FALSE))
+  expect_message(pe <- predictmeans(e, "Variety", plot = FALSE), "ML: using Satterthwaite")
+  pf <- suppressMessages(predictmeans(f, "Variety", plot = FALSE))
   expect_identical(pe$settings$df_method, "Satterthwaite")
   expect_equal(pe$pairs$df, pf$pairs$df, tolerance = 1e-4)          # the two optimisers differ slightly
   expect_equal(suppressMessages(pm_joint(e, "Variety"))$df2, suppressMessages(pm_joint(f, "Variety"))$df2,
@@ -45,10 +45,10 @@ test_that("ML fits of lme and gls: Satterthwaite from the ML log-likelihood, as 
   r <- rep_data()
   g <- nlme::gls(Y ~ Group * Time, data = r, method = "ML", correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
-  expect_warning(pk <- predictmeans(g, "Time", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE), "REML")
+  expect_warning(pk <- predictmeans(g, "Time", df_method = "Kenward-Roger", plot = FALSE), "REML")
   expect_identical(pk$settings$df_method, "Satterthwaite")
   # nlme's or the residual df stay available
-  pc <- predictmeans(g, "Time", df_method = "containment", plot = FALSE, prtnum = FALSE)
+  pc <- predictmeans(g, "Time", df_method = "containment", plot = FALSE)
   expect_equal(unique(pc$pairs$df), 30)
 })
 
@@ -57,7 +57,7 @@ test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lm
   g <- nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
   for (dm in c("KR-expected", "Kenward-Roger")) {
-    pk <- predictmeans(g, "Group:Time", df_method = dm, plot = FALSE, prtnum = FALSE)
+    pk <- predictmeans(g, "Group:Time", df_method = dm, plot = FALSE)
     expect_equal(pk$means$df, rep(10, 6), tolerance = 1e-3)
     expect_equal(sort(round(pk$pairs$df, 1)), sort(c(rep(10, 9), 10.1, 10.1, rep(10.2, 4))))
     jt <- rbind(pm_joint(g, "Group", df_method = dm), pm_joint(g, "Time", df_method = dm),
@@ -72,8 +72,8 @@ test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lm
   l <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = d)
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = d)
   expect_equal(unclass(pm_vcov_kr_nlme(l))[, ], unclass(pm_vcov_kr(m))[, ], tolerance = 1e-5, ignore_attr = TRUE)
-  pl <- predictmeans(l, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)
-  pr <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE, prtnum = FALSE)
+  pl <- predictmeans(l, "Variety", df_method = "Kenward-Roger", plot = FALSE)
+  pr <- predictmeans(m, "Variety", df_method = "Kenward-Roger", plot = FALSE)
   expect_equal(pl$pairs[, c("std.error", "df")], pr$pairs[, c("std.error", "df")], tolerance = 1e-5)
   expect_equal(pl$pairs$df, c(9.79, 9.97, 9.97), tolerance = 2e-3)                 # SAS DDFM=KR
 })
@@ -83,8 +83,8 @@ test_that("lme: Satterthwaite df equal lmer's (and SAS's) for the split plot wit
   d <- droplevels(subset(d, !(Block == "II" & Variety == "Victory" & nitro == "0.6")))
   l <- nlme::lme(yield ~ Variety * nitro, random = ~ 1 | Block/Variety, data = d)
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = d)
-  pl <- predictmeans(l, "Variety:nitro", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
-  pr <- predictmeans(m, "Variety:nitro", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
+  pl <- predictmeans(l, "Variety:nitro", df_method = "Satterthwaite", plot = FALSE)
+  pr <- predictmeans(m, "Variety:nitro", df_method = "Satterthwaite", plot = FALSE)
   expect_equal(pl$pairs$df, pr$pairs$df, tolerance = 1e-3)
   expect_equal(range(pl$pairs$df), c(31.3, 44.7), tolerance = 2e-3)        # SAS 31.3 ... 44.7
   # with a within-subject correlation and unequal variances: the rebuilt covariance is checked inside

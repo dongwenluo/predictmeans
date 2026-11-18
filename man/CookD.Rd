@@ -4,7 +4,7 @@
 \alias{CookD}
 \title{Calculates and plots Cook's distances for a Linear (Mixed) Model}
 \usage{
-CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
+CookD(model, group=NULL, plot=TRUE, id=3, ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov} (without \code{Error()}), \code{lm}, \code{glm}, \code{gls},
@@ -14,9 +14,10 @@ CookD(model, group=NULL, plot=TRUE, idn=3, newwd=FALSE)
 
 \item{plot}{A logical variable; if it is true, a plot of Cook's distance will be presented. The default is TRUE.}
 
-\item{idn}{An integer indicating the number of top Cook's distances to be labelled in the plot. The default value is 3.}
+\item{id}{The number of the largest Cook's distances labelled in the plot (\code{idn} before 2.0, now as in
+\code{\link{residplot}}). The default value is 3.}
 
-\item{newwd}{A logical variable to indicate whether to print graph in a new window. The default value is FALSE.}
+\item{...}{Not used: \code{idn}, \code{newwd} (before 2.0) stop with their 2.0 spelling.}
 }
 \value{
 Invisibly, the Cook's distances (named by observation or group).

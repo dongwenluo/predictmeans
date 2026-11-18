@@ -151,9 +151,8 @@ test_that("gam and semireg fits; information and ci_method choices", {
   for (x in list(c(a = 1, scale = 2), list(vc = c(a = 1, scale = 2), all = c(a = 1, b = 1, scale = 2))))
     expect_identical(pm_gam_vcomp_matrix(x), cbind(std.dev = c(a = 1, scale = 2), lower = NA_real_, upper = NA_real_))
   data(Dialyzer)
-  fm <- semireg(rate ~ pressure*QB, smoothZ = list(qb = smZ(pressure, k = 4, by = QB, group = TRUE)),
-                data = Dialyzer, prt = FALSE)
-  expect_identical(rownames(varcomp(fm)), c("qb.200.(Intercept)", "qb.300.(Intercept)", "residual"))
+  fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4), data = Dialyzer)
+  expect_identical(rownames(varcomp(fm)), c(paste0(names(fm$u_lst), ".(Intercept)"), "residual"))
   m <- lme4::lmer(yield ~ nitro + (1|Block/Variety), data = vc_oats(), REML = FALSE)
   expect_message(varcomp(m, information = "average"), "REML fits")
   expect_message(varcomp(lm(yield ~ nitro, data = vc_oats()), ci_method = "profile"), "lmer and glmer")

@@ -12,14 +12,15 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
 ```
 
-`R2_glmm()` computes an adjusted coefficient of determination (R²) for linear and
-generalized linear mixed models with Piepho's (2023) method. It works for `lmer`,
+`R2_model()` computes an adjusted coefficient of determination (R²) for linear and
+generalized linear mixed models with Piepho's (2023) method (`R2_glmm()` before 2.0, which printed the same
+values as percentages). It works for `lmer`,
 `glmer` and `glmmTMB` fits and picks the residual (distribution-specific) variance for
 the model's family and link automatically.
 
 ```{r}
 library(predictmeans)
-args(R2_glmm)
+args(R2_model)
 ```
 
 With `over_disp = TRUE`, an observation-level random effect (one level per observation)
@@ -32,7 +33,7 @@ data(Body_length)
 str(Body_length)
 mod_BodyL <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container),
                   data = Body_length)
-R2_glmm(mod_BodyL)
+R2_model(mod_BodyL)
 ```
 
 ## Example 2: egg counts (Poisson GLMM with overdispersion)
@@ -44,7 +45,7 @@ innermost random effect is observation-level and models overdispersion.
 data(Poisson_ind)
 mod_poisson <- glmer(Egg ~ Treatment + Habitat + (1|Population/Container/individual),
                      family = "poisson", data = Poisson_ind)
-R2_glmm(mod_poisson, over_disp = TRUE)
+R2_model(mod_poisson, over_disp = TRUE)
 ```
 
 ## Example 3: clinical trial (binomial GLMM, three links)
@@ -60,9 +61,9 @@ Clinical$Unfavorable <- Clinical$Total - Clinical$Favorable
 fit_grp <- function(link)
   glmer(cbind(Favorable, Unfavorable) ~ Treatment + (1|Clinic/Treatment),
         family = binomial(link = link), data = Clinical)
-R2_glmm(fit_grp("logit"))
-R2_glmm(fit_grp("probit"))
-R2_glmm(fit_grp("cloglog"))
+R2_model(fit_grp("logit"))
+R2_model(fit_grp("probit"))
+R2_model(fit_grp("cloglog"))
 ```
 
 ### Patient-level (binary) data
@@ -79,9 +80,9 @@ str(Clinical_N)
 fit_pat <- function(link)
   glmer(favour ~ Treatment + (1|Clinic/Treatment),
         family = binomial(link = link), data = Clinical_N)
-R2_glmm(fit_pat("logit"))
-R2_glmm(fit_pat("probit"))
-R2_glmm(fit_pat("cloglog"))
+R2_model(fit_pat("logit"))
+R2_model(fit_pat("probit"))
+R2_model(fit_pat("cloglog"))
 ```
 
 ## References

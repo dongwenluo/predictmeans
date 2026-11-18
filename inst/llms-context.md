@@ -15,8 +15,8 @@ default) with covariates at their means. Results match SAS `LSMEANS` and emmeans
 ## Core call
 
 ```r
-pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
-                   pairwise = FALSE, trans = I, transOff = 0, plot = FALSE, prtnum = FALSE)
+pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf.level = 0.95,
+                   pairwise = FALSE, trans = I, plot = FALSE)
 ```
 
 - `modelterm`: a fixed-effect term written as in the model, e.g. `"A"` or `"A:B"`; its
@@ -26,10 +26,13 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
   `"BY"`, `"fdr"`, `"sidak"`, `"scheffe"`, `"mvt"` (exact single-step, = SAS
   `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. Giving `adj` or `atvar` turns on
   pairwise comparisons.
-- `level`: significance level for confidence limits and LSDs, default 0.05.
+- `conf.level`: confidence level, default 0.95; tests, LSDs and letters are at the significance
+  level `level = 1 - conf.level` (stored as `settings$level`). `df_method` takes a method name or
+  one number (a fixed df). 1.1.1 arguments (`level`, `Df`, `which.plots`, `prtnum`, `ndecimal`,
+  `transOff`, `count`, plot settings as arguments) stop with their 2.0 spelling.
 - `plot`: `FALSE` by default (since 2.0); `plot = TRUE` or `options(predictmeans.plot = TRUE)` draws the
-  1.x plots, as does asking for them with `which.plots`; `autoplot(pm)` draws from the result.
-  `prtnum = FALSE` suppresses printing of the reference-grid note.
+  1.x plots, `plot = c("mean", "bar")` the plots named; settings in `plot_args`; `autoplot(pm)` draws
+  from the result. Nothing is printed during the call.
 - `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
   method, adjustment, SED range, mean LSD).
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML fits;
@@ -113,7 +116,7 @@ Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
 # means of one factor, all pairs, Tukey; letters in pm$means$group
-pm <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE, prtnum = FALSE)
+pm <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE)
 
 # nitrogen compared within each variety
 pm2 <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
@@ -144,7 +147,7 @@ predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)$pairs
 
 # permutation p-values for terms and pairs (Freedman-Lane by default, any model class:
 # lm, aov, glm, lme, gls, lmer, glmer, glmmTMB; mixed models refitted, refit = FALSE is faster)
-perm <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
+perm <- permmodels(fm, nperm = 999, seed = 1)
 predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
 # unequal error variances in lm/glm: HC3 statistics with sign flips (wild bootstrap)
 # permmodels(lm_fit, nperm = 999, seed = 1, robust = TRUE)
@@ -152,12 +155,12 @@ predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
 permstats(perm)
 # permcombine(y1 = perm1, y2 = perm2)   # same rows, same seed and nperm
 # the 1.x scheme (response / fitted values permuted, refits kept in permlist)
-perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE, method = "raw")
+perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, method = "raw")
 # random effects or any two nested mixed models (lmer, glmer, glmmTMB)
-# permlmer(fm0, fm1, nperm = 999, ncore = 1, seed = 1)    # permglmer(), permglmmTMB() too
+# permlmer(fm0, fm1, nperm = 999, ncore = 1, seed = 1)    # also glmer and glmmTMB fits
 # randomisation test: permutations within blocks
 idx <- permindex(Oats, block = "Block", nsim = 999, seed = 1)
-permmodels(lm(yield ~ Block + nitro, data = Oats), perms = idx, prt = FALSE)$ANOVA
+permmodels(lm(yield ~ Block + nitro, data = Oats), perms = idx)$ANOVA
 
 # R2 as numbers; variance components
 R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
@@ -188,8 +191,8 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   overlap (83.4% intervals for independent means with equal SEs; narrower for correlated
   means). Confidence limits of means are not for comparing means.
 - `letterCI = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
-  in `mean_table`; `level` is the significance level (default 0.05).
-- `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use
+  in `mean_table`, at the significance level `1 - conf.level`.
+- `permmodels()`, `permlmer()` and `predictmeans(permlist = )` use
   `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down
   permutation max-|t| (Westfall-Young); `"scheffe"` is not available.
@@ -212,7 +215,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `ddf = "Satterthwaite"`, `type = "I"`/`"II"`; `anova(m1, m2)` is lme4's comparison. `anova(semireg_fit)`:
   fixed effects + likelihood ratio test of each smooth term (variance = 0).
 - `semireg(y ~ A + s(x, by = A) + (1 | Block), data = d)`: smooths in the formula (mgcv bases; fixed
-  terms `A + A:x` added automatically; `bs = "os"` = `smZ()`'s O'Sullivan basis, `xt = list(knots =,
+  terms `A + A:x` added automatically; `bs = "os"` = the O'Sullivan basis (1.x `smZ()`), `xt = list(knots =,
   range =)`; numeric `by`, `bs = "fs"`, `s(x1, x2)`, `bs = "ztps"`; `bs = "user", xt = list(basis = f)` (own basis
   function, iid coefficients, fixed part 1 + x / `null = "constant"` / `"none"`; checked before the fit: a row
   per value, finite, repeatable, rows independent of the data given, full rank); `s(x, f)` / `s(x, f1*f2)` = common
@@ -220,9 +223,9 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   `(x | id)` + spline deviation (HRW's group-specific curves); `t2(x1, x2)` tensor product, a variance per
   penalty, fixed `x1 + x2 + x1:x2` (no sum-to-zero constraint; `te()` fitted as `t2()`, `ti()` refused)). Equal to
   `gam(method = "REML")` and to HRW's / Wand's `lme` fits; then `semipred()`, `predictmeans()`,
-  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` are superseded: 1.x code still
-  runs, but write smooths in the formula (table in `?smZ` and `vignette("smooth")`; `smZ(type =
-  "Ztps")` is `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
+  `varcomp()`, `R2_model()`. `smZ()` / `smoothZ = list(smZ())` were removed in 2.0 (they
+  stop with the formula form; table in `vignette("migrating")`; `smZ(type = "Ztps")` is
+  `s(x1, x2, bs = "ztps", k = 6)`). Data sets of Wand's examples: `growthIndiana`,
   `SBMDfem`, `ozoneCalif`, `scallop` (+ `scallopKnots`, `scallopBdry`), `wageTUnion`, `copper`
   (+ `copperKnots`); their help pages show the analyses in the formula syntax. Optimizer `nloptwrap` (1.x: `bobyqa`). `simultaneous = TRUE` gives
   simultaneous bands. `predictmeans()` on a gaussian `semireg()` fit gives means with the smooth
@@ -258,7 +261,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   where the band asked for leaves out 0.
   `covariatemeans(bias_adjust = TRUE)`: the mean of the response instead of the median / typical cluster.
 - `semipred(fit, "A", "x")` returns class `c("semipred", "pm_curves")` with the same tables and methods and
-  draws nothing (`plot = TRUE`; `prt = TRUE`, the 1.x name, also draws, `prt = FALSE` never): `$means` (the
+  draws nothing unless `plot = TRUE`: `$means` (the
   curves or surfaces; `NULL` with `contr` or `deriv`), `$slopes` (`deriv = 1, 2`: the same columns plus
   `statistic`, `p.value` of slope = 0), `$pairs` (`contr`: the difference of two curves). In every table
   `conf.low`/`conf.high` are pointwise t limits; with `band = "simultaneous"` the simulated band is

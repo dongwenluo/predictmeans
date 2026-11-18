@@ -4,17 +4,14 @@
 \alias{semipred}
 \title{Predicted Means of a Semi Paramatric Model with Covariate Variable(s)}
 \usage{
-semipred(semireg, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
-           covariateV=NULL, boundary=NULL, level=0.05, trans=NULL, trellis=TRUE, 
-		   scales=c("fixed", "free", "free_x", "free_y"),
-		   plotord=NULL, ci=TRUE, point=TRUE, jitterv=0, threeD=FALSE, prt=NULL,
-		   simultaneous=FALSE, contr_scale=c("model", "response"),
-		   band=c("pointwise", "simultaneous"),
-		   unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-		   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE))
+semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
+         conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+         band=c("pointwise", "simultaneous"),
+         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
+         mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
 }
 \arguments{
-\item{semireg}{A list object returned by \code{semireg}.}
+\item{model}{A fit returned by \code{semireg} (\code{semireg} before 2.0).}
 
 \item{modelterm}{Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
 The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.}
@@ -25,7 +22,7 @@ The \code{modelterm} must be given exactly as it appears in \code{semireg} model
 
 \item{contr}{A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.}
 
-\item{covariateV}{A numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth), then semipred will produce the result for \code{covariate} at value of \code{covariateV}. Each row of the matrix is one prediction point.}
+\item{at}{The values of \code{covariate} to predict at (\code{covariateV} before 2.0): a numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth); each row of the matrix is one prediction point.}
 
 \item{boundary}{For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
 columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
@@ -33,26 +30,13 @@ by a row of \code{NA} (a point is inside when it is inside an odd number of them
 as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
 the data cover, following their shape). \code{NULL} (default): the whole grid.}
 
-\item{level}{Significance level of the two-sided confidence limits: the default 0.05 gives 95\% limits (before
-version 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
+\item{conf.level}{Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
+before 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
 df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
 besides the smooths.}
 
 \item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
-
-\item{trellis}{A logical scalar. If set to TRUE (default), a trellis plots of predicted means with CI will be drawn.}
-
-\item{scales}{Should scales be fixed ("fixed", the default), free ("free"), or free in one dimension ("free_x", "free_y") in a trellis graph?}
-
-\item{plotord}{A numeric vector specifying the order of plotting for two way interaction (e.g. 
-\code{plotord = c(2, 1)} will put the second variable in \code{modelterm} on the \code{X} 
-axis, the first variable as the grouping variable, and the third one as the panel variable). 
-The defaults are \code{c(1, 2)} for two way interactions.}
-
-\item{ci}{A logical scalar to indicate whether to print confidence interval. The default value is TRUE.}
-
-\item{point}{A logical scalar to indicate whether to print raw data points. The default value is TRUE.}
 
 \item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
 for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
@@ -61,7 +45,12 @@ their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the
 count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 overall means. Log-link count families only.}
 
-\item{plot_args}{A named list of colours and sizes for the plots, any of: \code{line} and \code{band} (one
+\item{plot_args}{A named list of plot settings (before 2.0 arguments of their own; given so they stop with this
+spelling): \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
+default, \code{"free"}, \code{"free_x"}, \code{"free_y"}: the axes of the panels), \code{plotord} (the order
+of the two factors of a two-way term, e.g. \code{c(2, 1)}; giving it draws the plot), \code{ci} (draw the
+bands, \code{TRUE}), \code{point} (draw the data, \code{TRUE}), \code{jitterv} (jitter of the points, 0),
+\code{threeD} (a 3-D surface with \pkg{plotly}, \code{FALSE}); and colours and sizes, any of: \code{line} and \code{band} (one
 curve; dark and light blue), \code{diff_line} and \code{diff_band} (a difference of two curves, \code{contr};
 dark and light green), \code{ref} (the dashed reference line at 0, or 1 for ratios, and the marks under a
 difference where its band leaves out the reference; red), \code{alpha} (of the bands, 0.35), \code{linewidth}
@@ -71,16 +60,12 @@ by group: eight colours that colour-blind readers can tell apart; ggplot2's own 
 example \code{plot_args = list(line = "black", band = "grey70")}; the plot is a ggplot, so anything else can
 be added to it.}
 
-\item{jitterv}{A degree of jitter in x and y direction in the graph. The default is zero.}
-
-\item{threeD}{A logical scalar to indicate whether to produce a 3-D plot or not. The default value is FALSE. 3-D plots need package \pkg{plotly}.}
-
-\item{prt}{The name of \code{plot} before 2.0: \code{TRUE} draws the plot, \code{FALSE} does not (whatever
-\code{plot} says). The default \code{NULL} leaves it to \code{plot}.}
-
 \item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
 (\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
-session, draws it; so does \code{plotord}.}
+session, draws it; so does \code{plot_args = list(plotord = )}.}
+
+\item{...}{Not used: arguments removed in 2.0 (\code{semireg}, \code{covariateV}, \code{level}, \code{prt},
+\code{simultaneous}, the plot settings) stop with their 2.0 spelling (see \code{vignette("migrating")}).}
 
 \item{band}{\code{"pointwise"} (the default) or \code{"simultaneous"}: simultaneous confidence bands over the
 whole curve(s) instead of pointwise limits; the critical value is the \code{1 - level} quantile of the largest
@@ -98,8 +83,6 @@ for generalized models and \code{FALSE} for gaussian ones: in a simulation of th
 0.89-0.91 over the whole curve for Poisson and binary data, and 0.955-0.957 and 0.94-0.95 with it; for gaussian
 data 0.97 without it (0.98 with it). \code{options(predictmeans.semi_unconditional = TRUE)} (or \code{FALSE}) sets
 it for \code{semipred()} and \code{predictmeans()} on \code{semireg} fits.}
-
-\item{simultaneous}{\code{TRUE} is the same as \code{band = "simultaneous"} (the name before 2.0).}
 
 \item{deriv}{\code{0} (the default): the curves; \code{1}: their slopes, \code{2}: their curvatures (first and
 second derivatives along \code{covariate}, one covariate), with bands as for the curves, and with \code{contr}
@@ -180,7 +163,7 @@ evaluated at the difference of the means, which is not a standard error of any d
 is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
 covariate where the curves differ are printed with the result and kept in \code{significant} and
 \code{attr(pred_df, "significant")}; with
-\code{simultaneous = TRUE} they hold for the whole curve, and the curves differ somewhere at level \code{level}
+\code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf.level}
 when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)
 }
@@ -223,7 +206,7 @@ ggplot(Dialyzer, aes(x = pressure, y = rate, col = QB)) +
 
 # a curve per blood flow rate, a random intercept and slope per dialyzer
 fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
-              data = Dialyzer, prt = FALSE)
+              data = Dialyzer)
 residplot(fm$semer, group = "QB")
 anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 
@@ -233,7 +216,7 @@ out
 autoplot(out)
 autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
 # at given pressures
-semipred(fm, "QB", "pressure", covariateV = c(0.5, 1, 1.5, 2))
+semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 
 # the difference of the two curves, and where they differ
 dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
@@ -247,7 +230,7 @@ slp$significant
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
-               data = copper, prt = FALSE)
+               data = copper)
 autoplot(semipred(fcu, covariate = "zcoord", trans = exp))
 autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 
@@ -256,8 +239,7 @@ set.seed(4)
 db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
 db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x +
                                      rnorm(12, 0, 0.5)[db$cl]))
-fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db,
-                prt = FALSE)
+fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial, data = db)
 autoplot(semipred(fbin, "g", "x"))
 head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
 }

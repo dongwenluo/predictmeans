@@ -13,7 +13,7 @@ conf_fit <- function() {
 test_that("the printed p-value matrix and the pairs table hold the same adjusted p-values", {
   fm <- lm(yield ~ Block + nitro*Variety, data = transform(as.data.frame(nlme::Oats), nitro = factor(nitro)))
   for (a in c("tukey", "holm", "scheffe")) {
-    p <- predictmeans(fm, "nitro:Variety", adj = a, plot = FALSE, prtnum = FALSE)
+    p <- predictmeans(fm, "nitro:Variety", adj = a, plot = FALSE)
     P <- p$`Pairwise p-value`
     pr <- p$pairs
     expect_equal(P[cbind(pr$level2, pr$level1)], round(pr$p.adj, 4), label = a)
@@ -22,7 +22,7 @@ test_that("the printed p-value matrix and the pairs table hold the same adjusted
 
 test_that("with confounded factors, the matrices, pairs and limits agree", {
   fm <- conf_fit()
-  pa <- suppressWarnings(predictmeans(fm, "C:vol", atvar = "C", adj = "tukey", plot = FALSE, prtnum = FALSE))
+  pa <- suppressWarnings(predictmeans(fm, "C:vol", atvar = "C", adj = "tukey", plot = FALSE))
   pr <- pa$pairs
   # drop and vol are confounded: the means are over the combinations that exist, so within each
   # level of C all four means take part in the pairs: k = 4 (before 2.0's fallback v3 was NA: k = 3)
@@ -33,7 +33,7 @@ test_that("with confounded factors, the matrices, pairs and limits agree", {
   l1 <- sub("^c1:", "", pr$level1[w]); l2 <- sub("^c1:", "", pr$level2[w])
   expect_equal(M[cbind(l2, l1)], pr$p.adj[w])
   for (a in c("tukey", "scheffe")) {
-    q <- suppressWarnings(predictmeans(fm, "C:vol", atvar = "C", adj = a, plot = FALSE, prtnum = FALSE))$pairs
+    q <- suppressWarnings(predictmeans(fm, "C:vol", atvar = "C", adj = a, plot = FALSE))$pairs
     ok <- !is.na(q$p.adj)
     expect_identical(q$adj.conf.low[ok] > 0 | q$adj.conf.high[ok] < 0, q$p.adj[ok] < 0.05, label = a)
   }
@@ -56,8 +56,8 @@ test_that("family sizes: k means in the estimable pairs, Scheffe rank of their c
 test_that("with a permlist the letters use 'level', as without", {
   O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
-  pl <- suppressWarnings(permmodels(fm, nperm = 99, seed = 1, prt = FALSE))
-  p <- predictmeans(fm, "nitro", permlist = pl, adj = "holm", level = 0.1, plot = FALSE, prtnum = FALSE)
+  pl <- suppressWarnings(permmodels(fm, nperm = 99, seed = 1))
+  p <- predictmeans(fm, "nitro", permlist = pl, adj = "holm", conf.level = 0.9, plot = FALSE)
   expect_equal(p$settings$level, 0.1)
   expect_match(p$mean_table$Note, "level '0.1'")
   expect_true(all(p$pairs$p.adj < 0.1) && any(p$pairs$p.adj >= 0.05))   # the level matters here

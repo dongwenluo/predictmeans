@@ -68,7 +68,7 @@ test_that("varied covariates and cov_reduce match emmeans", {
   skip_if_not_installed("emmeans")
   d <- sim_data()
   m <- lm(y ~ A*poly(x, 2), d)
-  K <- Kmatrix(m, "A", "x", covariateV = c(2, 5, 8))$K
+  K <- Kmatrix(m, "A", "x", at = c(2, 5, 8))$K
   em <- emmeans::emmeans(m, ~A|x, at = list(x = c(2, 5, 8)))
   L <- em@linfct
   rownames(L) <- paste(em@grid$A, em@grid$x, sep = ":")
@@ -130,7 +130,7 @@ test_that("a matrix covariateV gives joint prediction points", {
   d <- sim_data()
   m <- lm(y ~ A + x*z, d)
   pts <- cbind(x = c(2, 5, 8), z = c(-1, 0, 1))
-  kk <- Kmatrix(m, "A", c("x", "z"), covariateV = pts)
+  kk <- Kmatrix(m, "A", c("x", "z"), at = pts)
   expect_equal(nrow(kk$K), 3 * 3)
   expect_equal(unique(kk$fctnames[c("x", "z")]), as.data.frame(pts), ignore_attr = TRUE)
   expect_equal(unname(kk$K[, "x:z"]), rep(pts[, "x"] * pts[, "z"], times = 3))
@@ -166,7 +166,7 @@ test_that("predictmeans() works for gam models and matches predict.gam", {
   nd$x <- mean(d$x)
   nd$blk <- d$blk[1]
   pg <- predict(g, newdata = nd, se.fit = TRUE, exclude = "s(blk)")
-  pm <- predictmeans(g, "A:B", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(g, "A:B", plot = FALSE)
   mt <- pm$mean_table
   mt <- mt[order(mt$B, mt$A), ]
   expect_equal(mt$Mean, round(as.vector(pg$fit), 4))
@@ -178,7 +178,7 @@ test_that("predictmeans() works with transformed covariates", {
   skip_if_not_installed("emmeans")
   d <- sim_data()
   m <- suppressMessages(lmer(y ~ A + poly(x, 2) + (1|blk), d))
-  pm <- predictmeans(m, "A", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(m, "A", plot = FALSE)
   em <- summary(emmeans::emmeans(m, ~A, lmer.df = "kenward-roger"))
   expect_equal(pm$mean_table$Mean, round(em$emmean, 4))
 })
@@ -218,7 +218,7 @@ test_that("weights options match emmeans", {
   L2 <- em@linfct
   rownames(L2) <- paste(em@grid$A, em@grid$B, sep = ":")
   expect_equal(unclass(K2), L2[rownames(K2), colnames(K2)], ignore_attr = TRUE, tolerance = 1e-12)
-  pm <- predictmeans(m, "A", weights = "proportional", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(m, "A", weights = "proportional", plot = FALSE)
   expect_equal(pm$means$estimate, summary(emmeans::emmeans(m, ~A, weights = "proportional"))$emmean,
                tolerance = 1e-10)
   expect_error(Kmatrix(m, "A", weights = "other"))
@@ -234,7 +234,7 @@ test_that("nested treatments with one observation per block cell average observe
   d$contcomp <- factor(ifelse(d$treat == "control", "control", "Treated"))
   d$y <- c(control = 2, nick = 57, bwss = 66, bw1min = 81)[as.character(d$treat)] + rnorm(nrow(d))
   fm <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot + treat/contcomp/seedlot, data = d)
-  pm <- suppressWarnings(predictmeans(fm, "treat", adj = "BH", plot = FALSE, prtnum = FALSE))
+  pm <- suppressWarnings(predictmeans(fm, "treat", adj = "BH", plot = FALSE))
   expect_equal(pm$means$estimate, as.vector(tapply(d$y, d$treat, mean)), tolerance = 1e-8)
   expect_false(anyNA(pm$pairs$p.value))
 })

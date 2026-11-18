@@ -4,7 +4,7 @@ Authors@R: c(person("Dongwen", "Luo", role = c("aut", "cre"),
                     email = "dongwen.luo@agresearch.co.nz"),
              person("Siva", "Ganesh", role = "aut"),
              person("John", "Koolaard", role = "aut"),
-             person("James", "Curran", role = "ctb"))
+             person("James", "Curran", role = "aut"))
 Title: Predicted Means for Linear and Semiparametric Models
 Description: Providing functions to diagnose and make inferences from various linear models, 
     such as those obtained from 'aov', 'lm', 'glm', 'gls', 'lme', 'lmer', 'glmmTMB', 'gam' and 'semireg'. 
@@ -12,7 +12,7 @@ Description: Providing functions to diagnose and make inferences from various li
 	permutation tests, adjusted R-square and graphs.
 Depends: R (>= 3.6.0), lme4, nlme
 Imports: glmmTMB, ggplot2 (>= 3.4.0), graphics, grDevices, grid, Matrix, MASS, methods, mgcv, numDeriv, parallel, stats, utils
-Suggests: car, reformulas, TMB, lmerTest, emmeans, generics, marginaleffects, mvtnorm, HRW, lmeSplines, pbkrtest, plotly, splines2, testthat (>= 3.0.0), knitr, rmarkdown
+Suggests: car, reformulas, TMB, lmerTest, emmeans, generics, marginaleffects, mvtnorm, HRW, pbkrtest, plotly, testthat (>= 3.0.0), knitr, rmarkdown
 Config/testthat/edition: 3
 License: GPL (>= 2)
 URL: https://dongwenluo.github.io/predictmeans/, https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans

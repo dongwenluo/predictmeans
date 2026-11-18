@@ -6,9 +6,8 @@
 #' \code{glmer} and \code{glmmTMB}.
 #' @usage
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
-#'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-#'   fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-#'   refit=TRUE, robust=FALSE)
+#'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+#'   method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #'   \code{glmer} or \code{glmmTMB}.
 #' @param nperm The number of permutations. The default is 4999.
@@ -23,8 +22,9 @@
 #'   for balanced data).
 #' @param exact A logical variable to indicate whether or not exact no. of permutations will be used (applicable only to free the permutation case). The default is FALSE.
 #' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.
-#' @param fo A model formula used in the \code{model}; \code{fo!=NULL} when the formula is specified by function \code{formula}.
-#' @param prt A logical variable to indicate whether or not to print output on the screen. The default is TRUE.
+#' @param ... Not used: \code{prt} and \code{fo} (before 2.0) stop with their 2.0 spelling. Nothing is printed during
+#'   the call: \code{print()} of the result shows the tables. A model whose formula is held in a variable
+#'   (\code{lm(f, data)}; 1.x's \code{fo}) is detected and refitted in this session only.
 #' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
 #' @param seed Specify a random number generator seed, for reproducible results.
 #' @param method How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
@@ -180,9 +180,14 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL, map3 = NUL
 }
 
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
-                       test.statistic=c("Chisq", "F", "LR", "Wald"),  exact=FALSE, 
-					   data=NULL, fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-					   refit=TRUE, robust=FALSE) {
+                       test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+                       method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("permmodels", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  # a model whose formula is held in a variable (lm(f, data)) is refitted in
+  # this session only: the parallel workers would not find the variable
+  # (1.x asked for it in 'fo')
+  if (pm_formula_is_object(model)) ncore <- 1
   
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -195,12 +200,12 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
   if (isTRUE(robust)) {
     if (method != "freedman-lane") stop("robust = TRUE needs method = \"freedman-lane\".", call. = FALSE)
-    return(invisible(pm_perm_fl_robust(model, nperm, type, exact, seed, prt, perms)))
+    return(pm_perm_fl_robust(model, nperm, type, exact, seed, perms))
   }
   if (method == "freedman-lane") {
     if (class(model)[1] == "aovlist") stop("permmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
                                                  "lme) instead.", call. = FALSE)
-    return(invisible(pm_perm_fl(model, nperm, type, exact, seed, prt, perms, refit, if (is.null(fo)) ncore else 1)))
+    return(pm_perm_fl(model, nperm, type, exact, seed, perms, refit, ncore))
   }
   if (inherits(model, "glm") && !(test.statistic %in% c("LR", "Wald", "F"))) test.statistic <- "LR"
   if (any(inherits(model, "gls"), inherits(model, "lme"))) test.statistic <- "Chisq"
@@ -211,8 +216,6 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     stop("For glmer and glmmTMB models use method = \"freedman-lane\" (permutations on the working scale).",
          call. = FALSE)
   }
-  # 'fo': the model formula is an object; refit in this session only
-  if (!is.null(fo)) ncore <- 1
 
   # Each branch sets 'idx' (permutation indices, one column per permutation),
   # 'one' (refit to the k-th permuted data set and return its statistics, or
@@ -323,11 +326,6 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     Tper.p <- pm_perm_p(abs(model_tTable[, Tvalue]), sapply(permmod, function(x) abs(x[[3]][, Tvalue])), exact)
 	if ("(Intercept)" %in% rownames(model_tTable)) Tper.p[1] <- NA
 	COEFFICENTS <- round(cbind(model_tTable, "Perm_p_value"=Tper.p),4)
-    if (prt) {
-      cat("\nCoefficients of (fixed) effects:\n")
-      print(COEFFICENTS)
-      cat("\nNote: Perm_p_value of t test is obtained using ", sQuote(nperm), " permutations", failnote, ".\n", sep = "")
-    }
   }else COEFFICENTS <- NULL
   
   if (type %in% c("I", "1")) {
@@ -345,15 +343,24 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   if (!(type %in% c("I", "1"))) attr(ANOVA, "heading") <- attr(key_anova, "heading")
   
   ANOVA[is.na(ANOVA)] <-""
-  if (prt) {
-    cat("\nANOVA:\n")
-    if (!is.null(attr(ANOVA, "heading"))) cat(paste(attr(ANOVA, "heading"), "\n", sep=""))
-    print(ANOVA)
-    cat("\nNote: Perm_p_value of ", test.statistic, " test is obtained using ", sQuote(nperm), " permutations",
-        failnote, ".\n\n", sep = "")
-  }
   permlist <- lapply(permmod, `[[`, 1)
-  out <- list("permlist"=permlist, "COEFFICENTS"=COEFFICENTS, "ANOVA"=ANOVA)
+  out <- pm_permmodels_result(
+    list("permlist"=permlist, "COEFFICENTS"=COEFFICENTS, "ANOVA"=ANOVA),
+    if (!is.null(COEFFICENTS)) paste0("Note: Perm_p_value of t test is obtained using ", sQuote(nperm), " permutations",
+                                      failnote, "."),
+    paste0("Note: Perm_p_value of ", test.statistic, " test is obtained using ", sQuote(nperm), " permutations",
+           failnote, "."))
   if (failures > 0) attr(out, "failures") <- failures
-  return(invisible(out))
-} 
+  out
+}
+
+## TRUE when the model's formula is held in a variable (lm(f, data)) rather
+## than written in the call.
+pm_formula_is_object <- function(model) {
+  cl <- tryCatch(stats::getCall(model), error = function(e) NULL)
+  if (is.null(cl)) return(FALSE)
+  f <- if (!is.null(cl$formula)) cl$formula else if (!is.null(cl$fixed)) cl$fixed else if (length(cl) > 1) cl[[2]]
+  # only a formula written out (y ~ x) or stored as a formula object is safe
+  # for the workers; anything else (a name, a call) runs on one core
+  !(inherits(f, "formula") || (is.call(f) && identical(f[[1]], as.name("~"))))
+}

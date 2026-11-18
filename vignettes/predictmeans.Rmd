@@ -17,6 +17,10 @@ comparisons for `lm`, `glm`, `aov`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and
 models, with Kenward–Roger or Satterthwaite degrees of freedom for mixed models, and
 permutation tests.
 
+```{r, echo = FALSE, out.width = "100%", fig.alt = "From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots"}
+knitr::include_graphics("../man/figures/workflow.png")
+```
+
 ## A split-plot experiment
 
 The oats data (Yates 1935) are a split plot: three varieties on whole plots within six
@@ -33,7 +37,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
 ```{r}
 pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
-                   plot = FALSE, prtnum = FALSE)
+                   plot = FALSE)
 summary(pm)
 ```
 
@@ -85,9 +89,9 @@ among the means, bar, p-value and back-transformed plots.
 
 ```{r}
 # Satterthwaite df
-pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE, prtnum = FALSE)
+pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE)
 # SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors
-pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE, prtnum = FALSE)
+pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE)
 rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 ```
 
@@ -116,7 +120,7 @@ how: `"equal"` (the default), `"proportional"` (as SAS `LSMEANS / OM`), `"outer"
 `"cells"` or `"flat"`, with the same definitions as emmeans.
 
 ```{r}
-predictmeans(fm, "nitro", weights = "proportional", plot = FALSE, prtnum = FALSE)$means
+predictmeans(fm, "nitro", weights = "proportional", plot = FALSE)$means
 ```
 
 ## Custom contrasts
@@ -141,7 +145,7 @@ such as `poly()`, `ns()`, `log()` or smooth terms of a `gam`.
 ```{r}
 data(Drug)
 fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE, prtnum = FALSE)$means
+predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE)$means
 ```
 
 For a glm the means are also given on the response scale (here probabilities); see

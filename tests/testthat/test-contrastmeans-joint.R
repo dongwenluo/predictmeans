@@ -32,7 +32,7 @@ test_that("the joint F test by permutation", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   cn <- rbind(c(-1, 1, 0, 0), c(-1, 0, 1, 0), c(-1, 0, 0, 1))
   fl <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = Oats)
-  r <- permmodels(fl, nperm = 29, seed = 1, prt = FALSE, ncore = 1, method = "raw")
+  r <- permmodels(fl, nperm = 29, seed = 1, ncore = 1, method = "raw")
   jt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, joint = TRUE)[[3]]
   # by hand: the Wald F of the refits against the model's
   L <- cn %*% Kmatrix(fl, "nitro")$K
@@ -42,8 +42,8 @@ test_that("the joint F test by permutation", {
   expect_equal(jt$Perm_p_value, round((sum(round(Fs, 6) >= round(Fo, 6)) + 1) / 30, 4))
   # Freedman-Lane (lm, V fixed) and with refits (lmer)
   fm <- lm(yield ~ Block + nitro + Variety, data = Oats)
-  rf <- permmodels(fm, nperm = 99, seed = 2, prt = FALSE)
+  rf <- permmodels(fm, nperm = 99, seed = 2)
   expect_true(contrastmeans(fm, "nitro", ctrmatrix = cn, permlist = rf, joint = TRUE)[[3]]$Perm_p_value <= 0.02)
-  rr <- permmodels(fl, nperm = 19, seed = 3, prt = FALSE, ncore = 1)
+  rr <- permmodels(fl, nperm = 19, seed = 3, ncore = 1)
   expect_true(contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = rr, joint = TRUE)[[3]]$Perm_p_value <= 0.1)
 })

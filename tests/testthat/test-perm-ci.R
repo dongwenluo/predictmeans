@@ -17,12 +17,12 @@ test_that("contrastmeans() limits: t limits, and permutation-t limits that agree
   skip_on_cran()
   # refits: the permutation p-value is <= level exactly when 0 is outside the limits
   fl <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = Oats)
-  r <- permmodels(fl, nperm = 99, seed = 4, prt = FALSE, ncore = 1, method = "raw")
-  pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, level = 0.1)[[1]]
+  r <- permmodels(fl, nperm = 99, seed = 4, ncore = 1, method = "raw")
+  pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, conf.level = 0.9)[[1]]
   outside <- pt[, "lower.CL"] > 0 | pt[, "upper.CL"] < 0
   expect_identical(unname(outside), unname(pt[, "Permuted Pr(>|t|)"] <= 0.1))
   # simultaneous limits (max-|t|) are wider; lower.CL and upper.CL do not depend on adj
-  ps <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, adj = "westfall", level = 0.1)[[1]]
+  ps <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, adj = "westfall", conf.level = 0.9)[[1]]
   expect_true(all(ps[, "adj.upper.CL"] - ps[, "adj.lower.CL"] >= pt[, "upper.CL"] - pt[, "lower.CL"] - 1e-8))
   expect_equal(ps[, c("lower.CL", "upper.CL")], pt[, c("lower.CL", "upper.CL")])
   expect_false("adj.lower.CL" %in% colnames(pt))
@@ -31,17 +31,17 @@ test_that("contrastmeans() limits: t limits, and permutation-t limits that agree
 test_that("predictmeans() pairs: conf.low, conf.high and lsd", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro + Variety, data = Oats)
-  pm <- predictmeans(fm, "nitro", plot = FALSE, prtnum = FALSE)
+  pm <- predictmeans(fm, "nitro", plot = FALSE)
   pr <- pm$pairs
   expect_equal(pr$conf.high - pr$estimate, qt(0.975, pr$df) * pr$std.error)
   expect_equal(pr$lsd, qt(0.975, pr$df) * pr$std.error)
-  r <- permmodels(fm, nperm = 199, seed = 1, prt = FALSE)
-  pp <- predictmeans(fm, "nitro", permlist = r, plot = FALSE, prtnum = FALSE, ncore = 1)$pairs
+  r <- permmodels(fm, nperm = 199, seed = 1)
+  pp <- predictmeans(fm, "nitro", permlist = r, plot = FALSE, ncore = 1)$pairs
   expect_true(all(is.finite(pp$lsd)))
   expect_equal(pp$conf.high - pp$estimate, pp$lsd)
   # with permutation Tukey: simultaneous limits with one critical value for
   # the family (adj.conf.*); conf.low, conf.high and lsd do not depend on adj
-  pk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, prtnum = FALSE, ncore = 1)$pairs
+  pk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, ncore = 1)$pairs
   crit <- (pk$adj.conf.high - pk$estimate) / pk$std.error
   expect_equal(max(crit) - min(crit), 0, tolerance = 1e-8)
   expect_equal(pk$estimate - pk$adj.conf.low, pk$adj.conf.high - pk$estimate)

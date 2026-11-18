@@ -99,7 +99,7 @@ pm_fl_F <- function(Xw, zw, A, B) {
   ((rA$rss - rB$rss) / (rB$rank - rA$rank)) / (full$rss / (nrow(Xw) - full$rank))
 }
 
-pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore, only = NULL) {
+pm_perm_fl_refit <- function(model, nperm, type, exact, seed, perms, ncore, only = NULL) {
   # GLMMs: the same with the working linear mixed model (pm_working_lmm())
   glmm <- inherits(model, c("glmerMod", "glmmTMB"))
   model0 <- model
@@ -176,17 +176,6 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
   COEF <- tabs$COEF
   ANOVA <- tabs$ANOVA
   failnote <- pm_perm_failnote(failures)
-  if (prt) {
-    cat("\nCoefficients of (fixed) effects:\n")
-    print(COEF)
-    cat("\nNote: Perm_p_value of t test is obtained using ", sQuote(nperm), " Freedman-Lane permutations",
-        failnote, ".\n", sep = "")
-    cat("\nANOVA:\n")
-    cat(attr(ANOVA, "heading"), "\n", sep = "")
-    print(ANOVA)
-    cat("\nNote: Perm_p_value of F test is obtained using ", sQuote(nperm), " Freedman-Lane permutations",
-        failnote, ".\n\n", sep = "")
-  }
   perm <- structure(list(scheme = "freedman-lane-refit", nperm = as.integer(nperm), exact = exact,
                          start = attr(src, "start"), idx = attr(src, "matrix"), coef_names = colnames(X),
                          wmodel = if (glmm) model),
@@ -194,7 +183,10 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, prt, perms, ncore,
   rownames(st$T) <- names(st$obs)
   perm$stats <- pm_perm_statset(model0, st$obs, st$T, pval[names(st$obs)], st$df1,
                                 ifelse(startsWith(names(st$obs), "coef:"), "t", "F"), st$Ls, n - qr(Xw)$rank, n)
-  out <- list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm)
+  out <- pm_permmodels_result(
+    list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm),
+    paste0("Note: Perm_p_value of t test is obtained using ", sQuote(nperm), " Freedman-Lane permutations", failnote, "."),
+    paste0("Note: Perm_p_value of F test is obtained using ", sQuote(nperm), " Freedman-Lane permutations", failnote, "."))
   if (failures > 0) attr(out, "failures") <- failures
   out
 }

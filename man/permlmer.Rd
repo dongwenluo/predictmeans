@@ -2,23 +2,19 @@
 % Please edit documentation in R/permlmer.R
 \name{permlmer}
 \alias{permlmer}
-\alias{permglmer}
-\alias{permglmmTMB}
 \title{Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.}
 \usage{
-permlmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-         method=c("auto", "working", "quantile"))
-permglmer(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-          method=c("auto", "working", "quantile"))
-permglmmTMB(lmer0, lmer1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
-            method=c("auto", "working", "quantile"))
+permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
+         method=c("auto", "working", "quantile"), ...)
 }
 \arguments{
-\item{lmer0}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0, note that \code{lmer0} model must nest within
-\code{lmer1} model.}
+\item{model0}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0 (\code{model0} before 2.0); it must
+be nested within \code{model1}.}
 
-\item{lmer1}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1, note that \code{lmer0} model must nest within
-\code{lmer1} model.}
+\item{model1}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1 (\code{model1} before 2.0).}
+
+\item{...}{Not used: \code{lmer0}, \code{lmer1} (before 2.0) stop with their 2.0 spelling. \code{permglmer()} and
+\code{permglmmTMB()}, the same function under other names before 2.0, were removed: use \code{permlmer()}.}
 
 \item{nperm}{Number of permutation, the default value is 999.}
 
@@ -43,17 +39,17 @@ that failed and were left out (if any).
 }
 \description{
 This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
-linear mixed model of \code{glmer} or \code{glmmTMB} (also as \code{permglmer()} and \code{permglmmTMB()}).
+linear mixed model of \code{glmer} or \code{glmmTMB}.
 }
 \details{
-The residuals of \code{lmer0} are decorrelated with the symmetric square root of their covariance under
-\code{lmer0}, permuted, correlated again and added to the fitted values of \code{lmer0} (Lee and Braun, 2012); both models
+The residuals of \code{model0} are decorrelated with the symmetric square root of their covariance under
+\code{model0}, permuted, correlated again and added to the fitted values of \code{model0} (Lee and Braun, 2012); both models
 are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
 observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
 is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
 
 For GLMMs (\code{glmer} or \code{glmmTMB}; since predictmeans 2.0), \code{method = "working"} does the same on the
-working (link) scale: \code{lmer0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
+working (link) scale: \code{model0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
 working variance \eqn{\phi V(\mu)/(a (d\mu/d\eta)^2)}; the covariance of z also has the random effects, as in
 \code{\link{R2_glmm}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
 statistic of weighted linear mixed models fitted to the working responses (REML when the two models have the same
@@ -61,7 +57,7 @@ fixed effects, ML otherwise). In simulations it kept the 5\% level for counts an
 trials, and was much more robust than the usual likelihood-ratio test when counts were overdispersed. For 0/1
 responses the working scale fails when events are rare or clusters tiny (36\% rejections at the 5\% level), so
 \code{method = "quantile"} is used: randomised quantile residuals (Dunn and Smyth, 1996) of the response given the
-conditional means of \code{lmer0} are permuted and mapped back to 0/1 responses, and both models are refitted
+conditional means of \code{model0} are permuted and mapped back to 0/1 responses, and both models are refitted
 (\code{glmer} fits with \code{nAGQ = 0}, for the observed data too, so the statistic can differ from the
 \code{Chisq} column); it kept the level (5.6-6.2\%). A random effect with one level per observation (often used
 for overdispersion) cannot be used on the working scale; \code{\link{bootmodels}} can test it. \code{glmmTMB} models must have no zero inflation and the
@@ -91,15 +87,15 @@ permlmer(fm0, fm, nperm=99, ncore=1)
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)
 gm2 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION), family = poisson,
              data = lme4::grouseticks)
-permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
+permlmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 }
 }
 \references{
 Oliver E. Lee and Thomas M. Braun (2012),
-  \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
+    \emph{Permutation Tests for Random Effects in Linear Mixed Models. Biometrics}, Journal 68(2).
 
 Peter K. Dunn and Gordon K. Smyth (1996),
-  \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
+    \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

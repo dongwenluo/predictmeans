@@ -409,6 +409,32 @@ pm_perm_crit <- function(T, alpha, family = NULL) {
 
 ## Printing a permutation object (the 'perm' component of permmodels()):
 ## what it holds, not the random number state.
+## The result of permmodels() and bootmodels(): the tables (COEFFICENTS,
+## ANOVA) and what printing them says ('notes': the title of the coefficient
+## table and a note under each table). Before 2.0 they were printed during the
+## call (prt = TRUE); now print() shows them.
+pm_permmodels_result <- function(out, coef_note, anova_note, coef_title = "Coefficients of (fixed) effects:") {
+  out$notes <- list(coef_title = coef_title, coef = coef_note, anova = anova_note)
+  class(out) <- c("pm_permmodels", "list")
+  out
+}
+
+print.pm_permmodels <- function(x, ...) {
+  op <- options(scipen = 6)
+  on.exit(options(op), add = TRUE)
+  n <- x$notes
+  if (!is.null(x$COEFFICENTS)) {
+    cat("\n", n$coef_title, "\n", sep = "")
+    print(x$COEFFICENTS)
+    if (!is.null(n$coef)) cat("\n", n$coef, "\n", sep = "")
+  }
+  cat("\nANOVA:\n")
+  if (!is.null(attr(x$ANOVA, "heading"))) cat(attr(x$ANOVA, "heading"), "\n", sep = "")
+  print(x$ANOVA)
+  cat("\n", n$anova, "\n\n", sep = "")
+  invisible(x)
+}
+
 print.pm_perm <- function(x, ...) {
   scheme <- c("freedman-lane" = "Freedman-Lane", "freedman-lane-refit" = "Freedman-Lane with refits")[x$scheme]
   if (is.na(scheme)) scheme <- x$scheme

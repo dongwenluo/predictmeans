@@ -18,12 +18,6 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     }
     cov_names <- names(covariate)
     covV <- covariate
-    for (i in cov_names) {     # to the centred / scaled values semireg() used
-      m <- attr(mod_df, paste(i, "mean", sep = "_"))
-      s <- attr(mod_df, paste(i, "sd", sep = "_"))
-      if (!is.null(m)) covV[i] <- covV[i] - m
-      if (!is.null(s)) covV[i] <- covV[i]/s
-    }
     covV <- if (length(covV) == 1) unname(covV) else matrix(covV, nrow = 1, dimnames = list(NULL, cov_names))
   }
   des <- pm_semi_design(semireg, modelterm, cov_names, covV, NULL, mod_df, unconditional = unconditional)

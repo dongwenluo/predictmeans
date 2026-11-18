@@ -4,9 +4,8 @@
 \alias{Kmatrix}
 \title{Matrix of Coefficients in a Linear Model}
 \usage{
-Kmatrix(model, modelterm, covariate=NULL, covariateV=NULL, data=NULL, prtnum=FALSE,
-        cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE)
+Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
+        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
@@ -30,20 +29,20 @@ A factor created in the model formula, e.g. \code{factor(dose)}, can be given ei
     the model. With another length this is an error (before 2.0 the values were recycled, and names were
     ignored).
   \item The name of one or more covariates, in which case predictions are made over a range of values of those
-    covariates (see \code{covariateV}).
+    covariates (see \code{at}).
   }
 For a \code{semireg} model this may also be a covariate that only appears in the smooth terms.}
 
-\item{covariateV}{Values for the covariate(s) named in \code{covariate}. For one covariate, a numeric vector. For several covariates,
+\item{at}{Values for the covariate(s) named in \code{covariate} (\code{covariateV} before 2.0). For one covariate, a numeric vector. For several covariates,
 either a list of numeric vectors (all combinations are used; named by covariate, or in the order of
 \code{covariate}) or a matrix with one named column per covariate,
 where each row is one prediction point (e.g. a set of locations for a two-dimensional smooth).
-When \code{covariateV} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.}
+When \code{at} is \code{NULL}, 50 (one covariate) or 30 (several covariates) equally spaced values over the observed range are used.}
 
 \item{data}{In some cases, you need to provide the data set used in model fitting, for example when the data
 used to fit the model can no longer be found. Usually the data are recovered from the model.}
 
-\item{prtnum}{An option for printing covariate info on the screen or not. The default is FALSE.}
+\item{...}{Not used: arguments removed in 2.0 (\code{covariateV}, \code{prtnum}) stop with their 2.0 spelling.}
 
 \item{cov_reduce}{How covariates that are not varied are handled. A function returning a single value, applied to each covariate
 (the default \code{mean}; \code{median} is another choice), or the string \code{"average"}, which averages the
@@ -114,10 +113,10 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
   data(Oats, package="nlme")
 # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  Kmatrix(fm, "Variety", prtnum=TRUE)$K
-  Kmatrix(fm, "Variety", 0.5, prtnum=TRUE)$K
+  Kmatrix(fm, "Variety")$K
+  Kmatrix(fm, "Variety", 0.5)$K
   Kmatrix(fm, "Variety", "nitro")$K
-  Kmatrix(fm, "Variety", "nitro", covariateV=seq(0, 0.6, 0.1))$K
+  Kmatrix(fm, "Variety", "nitro", at=seq(0, 0.6, 0.1))$K
   Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
   Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
 
@@ -125,7 +124,7 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
   Kmatrix(fm2, "Variety")$K
   fm3 <- lm(yield ~ Variety + Variety:nitro, data=Oats)
-  Kmatrix(fm3, "Variety", "nitro", covariateV=c(0, 0.3, 0.6))$K
+  Kmatrix(fm3, "Variety", "nitro", at=c(0, 0.3, 0.6))$K
 
   # A smooth term in an mgcv model, averaged over the observed nitro values
   if (requireNamespace("mgcv", quietly = TRUE)) {

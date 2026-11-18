@@ -13,7 +13,7 @@ cmp_no_overlap <- function(r) {
 
 test_that("independent means with equal SEs: the 83.4% interval of the literature", {
   O <- cmp_oats()
-  r <- predictmeans(lm(yield ~ nitro, O), "nitro", pairwise = TRUE, prtnum = FALSE)
+  r <- predictmeans(lm(yield ~ nitro, O), "nitro", pairwise = TRUE)
   cm <- r$settings$comparison
   df <- 68
   expect_equal(cm$mult, qt(0.975, df)/sqrt(2), tolerance = 1e-10)
@@ -29,7 +29,7 @@ test_that("independent means with equal SEs: the 83.4% interval of the literatur
 test_that("independent means with unequal SEs: c = t sqrt(1 + K^2)/(1 + K) for each pair", {
   set.seed(8)
   d <- data.frame(g = factor(rep(c("a", "b"), c(4, 36))), y = rnorm(40))
-  r <- predictmeans(lm(y ~ g, d), "g", pairwise = TRUE, prtnum = FALSE)
+  r <- predictmeans(lm(y ~ g, d), "g", pairwise = TRUE)
   K <- r$means$std.error[1]/r$means$std.error[2]                # 3
   expect_equal(K, 3, tolerance = 1e-10)
   expect_equal(r$settings$comparison$mult, qt(0.975, 38)*sqrt(1 + K^2)/(1 + K), tolerance = 1e-10)
@@ -40,7 +40,7 @@ test_that("independent means with unequal SEs: c = t sqrt(1 + K^2)/(1 + K) for e
 test_that("correlated means (random blocks): narrower than 83.4%, and overlap still equals the test", {
   O <- cmp_oats()
   fm <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = O)
-  r <- predictmeans(fm, "nitro", pairwise = TRUE, prtnum = FALSE)
+  r <- predictmeans(fm, "nitro", pairwise = TRUE)
   cm <- r$settings$comparison
   expect_true(cm$exact)
   expect_lt(cm$conf.level, 0.6)                                  # the SED (5.1) is smaller than one SE (7.3)
@@ -52,13 +52,13 @@ test_that("correlated means (random blocks): narrower than 83.4%, and overlap st
   expect_lt(o$p$p.value[k], 0.001)
   expect_gt(r$means$conf.high[1], r$means$conf.low[2])
   # with an adjustment that has a critical value the intervals go with the adjusted tests
-  rt <- predictmeans(fm, "nitro", adj = "tukey", prtnum = FALSE)
+  rt <- predictmeans(fm, "nitro", adj = "tukey")
   ot <- cmp_no_overlap(rt)
   expect_identical(ot$no, ot$p$p.adj < 0.05)
   expect_true(rt$settings$comparison$adjusted)
   expect_gt(rt$settings$comparison$mult, cm$mult)
   # step-wise methods: the intervals of the unadjusted tests
-  rh <- predictmeans(fm, "nitro", adj = "holm", prtnum = FALSE)
+  rh <- predictmeans(fm, "nitro", adj = "holm")
   expect_false(rh$settings$comparison$adjusted)
   expect_equal(rh$settings$comparison$mult, cm$mult)
 })
@@ -66,7 +66,7 @@ test_that("correlated means (random blocks): narrower than 83.4%, and overlap st
 test_that("unequal SEDs: one average multiplier, and the pairs judged differently are counted", {
   O <- cmp_oats()
   fm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = O)
-  r <- predictmeans(fm, "nitro:Variety", pairwise = TRUE, prtnum = FALSE)
+  r <- predictmeans(fm, "nitro:Variety", pairwise = TRUE)
   cm <- r$settings$comparison
   expect_false(cm$exact)
   o <- cmp_no_overlap(r)
@@ -76,7 +76,7 @@ test_that("unequal SEDs: one average multiplier, and the pairs judged differentl
   expect_match(capture.output(print(summary(r)))[grep("^Comparison intervals", capture.output(print(summary(r))))],
                "pairs are judged differently by their own test")
   # within the levels of 'atvar' the SEDs are equal: exact, from those pairs only
-  ra <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", prtnum = FALSE)
+  ra <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
   ca <- ra$settings$comparison
   expect_true(ca$exact)
   expect_equal(ca$pairs, 18)
@@ -87,7 +87,7 @@ test_that("unequal SEDs: one average multiplier, and the pairs judged differentl
 test_that("letterCI: letters from the comparison intervals shown in the mean table, at the test level", {
   O <- cmp_oats()
   fm <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = O)
-  r <- predictmeans(fm, "nitro", letterCI = TRUE, prtnum = FALSE)
+  r <- predictmeans(fm, "nitro", letterCI = TRUE)
   tab <- r$mean_table$Table
   cm <- r$settings$comparison
   expect_equal(r$settings$level, 0.05)                          # (1.x: 0.166, the level of the intervals)
@@ -96,18 +96,18 @@ test_that("letterCI: letters from the comparison intervals shown in the mean tab
   expect_equal(tab[[lab]], round(r$means$comparison.low, 4))
   expect_match(r$mean_table$Note, "comparison intervals")
   # balanced: the same letters as the tests
-  rp <- predictmeans(fm, "nitro", pairwise = TRUE, prtnum = FALSE)
+  rp <- predictmeans(fm, "nitro", pairwise = TRUE)
   expect_identical(trimws(tab$LetterGrp), trimws(rp$mean_table$Table$LetterGrp))
   # the stable table keeps the 95% confidence limits
   expect_equal(r$means$conf.low, rp$means$conf.low)
   # within 'atvar' groups
   fs <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = O)
-  ra <- predictmeans(fs, "nitro:Variety", atvar = "Variety", letterCI = TRUE, prtnum = FALSE)
-  rb <- predictmeans(fs, "nitro:Variety", atvar = "Variety", pairwise = TRUE, prtnum = FALSE)
+  ra <- predictmeans(fs, "nitro:Variety", atvar = "Variety", letterCI = TRUE)
+  rb <- predictmeans(fs, "nitro:Variety", atvar = "Variety", pairwise = TRUE)
   expect_identical(trimws(ra$mean_table$Table$LetterGrp), trimws(rb$mean_table$Table$LetterGrp))
   # back-transformed limits follow
   O$ly <- log(O$yield)
-  rl <- predictmeans(lm(ly ~ Block + nitro, O), "nitro", letterCI = TRUE, trans = exp, prtnum = FALSE)
+  rl <- predictmeans(lm(ly ~ Block + nitro, O), "nitro", letterCI = TRUE, trans = exp)
   tl <- rl$mean_table$Table
   expect_equal(tl[[grep("^Bk_LL", names(tl))]], round(exp(rl$means$comparison.low), 4))
 })
@@ -115,7 +115,7 @@ test_that("letterCI: letters from the comparison intervals shown in the mean tab
 test_that("autoplot(interval = 'comparison') draws them; no pairs, no intervals", {
   O <- cmp_oats()
   fm <- lm(yield ~ Block + nitro * Variety, data = O)
-  r <- predictmeans(fm, "nitro", adj = "tukey", prtnum = FALSE)
+  r <- predictmeans(fm, "nitro", adj = "tukey")
   g <- ggplot2::autoplot(r, interval = "comparison")
   eb <- ggplot2::layer_data(g, 3)
   expect_equal(eb$ymin, r$means$comparison.low)
@@ -128,7 +128,7 @@ test_that("autoplot(interval = 'comparison') draws them; no pairs, no intervals"
   none$means$comparison.low <- none$means$comparison.high <- NULL
   expect_error(ggplot2::autoplot(none, interval = "comparison"), "no comparison intervals")
   op <- options(predictmeans.max_means = 2)
-  big <- suppressMessages(predictmeans(fm, "nitro", prtnum = FALSE))
+  big <- suppressMessages(predictmeans(fm, "nitro"))
   options(op)
   expect_null(big$settings$comparison)
 })

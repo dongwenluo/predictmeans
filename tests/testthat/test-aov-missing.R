@@ -23,13 +23,13 @@ test_that("one sub-plot missing: Genstat's missing value, stratum mean squares a
   expect_equal(sa$strata$ms[3], as.numeric(res[[1]][3]), tolerance = 0.05 / 568)        # 568.2
   expect_equal(sa$strata$ms[4], as.numeric(utils::tail(res[[2]], 1)), tolerance = 0.05 / 178)   # 178.7 (after "(1)")
   for (tm in c("Variety", "Nitro", "Variety:Nitro")) {
-    p <- suppressMessages(predictmeans(a, tm, plot = FALSE, prtnum = FALSE))
+    p <- suppressMessages(predictmeans(a, tm, plot = FALSE))
     gm <- g[g$table == "aov_mean" & g$term == sub(":", ".", tm), ]
     lab <- do.call(paste, c(lapply(p$means[strsplit(tm, ":")[[1]]], as.character), sep = ":"))
     expect_equal(round(p$means$estimate[match(gm$key, lab)], 1), as.numeric(gm$value), tolerance = 1e-8, label = tm)
   }
   # pairs that do not involve the missing plot's cell: Genstat's SEDs and df
-  p <- suppressMessages(predictmeans(a, "Variety:Nitro", plot = FALSE, prtnum = FALSE))$pairs
+  p <- suppressMessages(predictmeans(a, "Variety:Nitro", plot = FALSE))$pairs
   free <- !grepl("Victory:0.6", p$level1) & !grepl("Victory:0.6", p$level2)
   v1 <- sub(":.*", "", p$level1); v2 <- sub(":.*", "", p$level2)
   expect_equal(round(unique(round(p$std.error[free & v1 == v2], 6)), 2), 7.72)
@@ -39,9 +39,8 @@ test_that("one sub-plot missing: Genstat's missing value, stratum mean squares a
   d2 <- o
   d2$yield[o$Block == "II" & o$Variety == "Victory" & o$Nitro == "0.6"] <- NA
   a2 <- aov(yield ~ Variety * Nitro + Error(Block/Variety), data = d2)
-  p2 <- suppressMessages(predictmeans(a2, "Variety:Nitro", plot = FALSE, prtnum = FALSE))
-  expect_equal(p2$means$estimate, suppressMessages(predictmeans(a, "Variety:Nitro", plot = FALSE,
-                                                                prtnum = FALSE))$means$estimate, tolerance = 1e-10)
+  p2 <- suppressMessages(predictmeans(a2, "Variety:Nitro", plot = FALSE))
+  expect_equal(p2$means$estimate, suppressMessages(predictmeans(a, "Variety:Nitro", plot = FALSE))$means$estimate, tolerance = 1e-10)
 })
 
 test_that("randomized blocks with one value missing: Yates' formula", {
@@ -79,9 +78,9 @@ test_that("rows left out by 'subset' are not missing values", {
   O <- as.data.frame(nlme::Oats); O$nitro <- factor(O$nitro)
   O$yield[O$Block == "II" & O$Variety == "Victory" & O$nitro == "0.6"] <- NA
   m <- aov(yield ~ Variety * nitro + Error(Block/Variety), data = O, subset = Block != "VI")
-  expect_message(p <- predictmeans(m, "nitro", plot = FALSE, prtnum = FALSE), "and 1 missing value:")
+  expect_message(p <- predictmeans(m, "nitro", plot = FALSE), "and 1 missing value:")
   # the same as the data without block VI
   m2 <- aov(yield ~ Variety * nitro + Error(Block/Variety), data = droplevels(O[O$Block != "VI", ]))
-  p2 <- suppressMessages(predictmeans(m2, "nitro", plot = FALSE, prtnum = FALSE))
+  p2 <- suppressMessages(predictmeans(m2, "nitro", plot = FALSE))
   expect_equal(p$means[c("estimate", "std.error", "df")], p2$means[c("estimate", "std.error", "df")])
 })

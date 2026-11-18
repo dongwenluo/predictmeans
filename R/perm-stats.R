@@ -67,7 +67,9 @@ pm_perm_get_stats <- function(x, what = "x") {
 #'
 #' @param x A result of \code{\link{permmodels}} with Freedman-Lane permutations (\code{method = "auto"}, the
 #'   default, or \code{"freedman-lane"}).
-#' @param level The significance level of the check of the parametric test (default 0.05).
+#' @param conf.level The check of the parametric test is at the significance level \code{1 - conf.level} (default
+#'   0.95, i.e. 0.05; \code{level = 0.05} before 2.0).
+#' @param ... Not used: \code{level} (before 2.0) stops with its 2.0 spelling.
 #' @return A data frame with one row per term and coefficient (rows \code{"coef:<name>"}):
 #' \item{statistic}{the observed statistic: F for terms, |t| for coefficients (robust ones with
 #'   \code{robust = TRUE}).}
@@ -80,16 +82,16 @@ pm_perm_get_stats <- function(x, what = "x") {
 #'   deviation (Gotelli and McCabe 2002): how far the observed statistic lies from what the permutations give
 #'   when the effect is absent, in standard deviations.}
 #' \item{param.size}{the proportion of permuted data sets in which the parametric test rejects at
-#'   \code{level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
-#'   the parametric test for data like these: close to \code{level} when the parametric reference
+#'   \code{1 - conf.level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
+#'   the parametric test for data like these: close to \code{1 - conf.level} when the parametric reference
 #'   distribution suits the data, clearly above it when the parametric test is too liberal here (for example
 #'   with unequal variances, overdispersion or few groups), below it when it is conservative. With few
-#'   permutations it is rough (its standard error is about \code{sqrt(level (1 - level) / nperm)}).}
+#'   permutations it is rough (its standard error is about \code{sqrt(a (1 - a) / nperm)}, \code{a = 1 - conf.level}).}
 #' @details
 #' Every permuted data set comes from the model without the tested term (Freedman-Lane), so the permuted
 #' statistics show how the statistic behaves when that term has no effect but everything else in the data is
 #' kept. Comparing the parametric p-value with the permutation p-value, and \code{param.size} with
-#' \code{level}, shows whether the usual test can be trusted for these data. For mixed models the
+#' \code{1 - conf.level}, shows whether the usual test can be trusted for these data. For mixed models the
 #' permuted statistics are Wald statistics (unadjusted covariance), so \code{param.size} checks the Wald F
 #' with the given df, not the Kenward-Roger test.
 #' @references
@@ -99,14 +101,16 @@ pm_perm_get_stats <- function(x, what = "x") {
 #' @examples
 #' mtcars$cyl <- factor(mtcars$cyl)
 #' fm <- lm(mpg ~ wt + cyl, data = mtcars)
-#' pfl <- permmodels(fm, nperm = 999, type = "II", seed = 1, prt = FALSE)
+#' pfl <- permmodels(fm, nperm = 999, type = "II", seed = 1)
 #' permstats(pfl)
-#' @usage permstats(x, level = 0.05)
+#' @usage permstats(x, conf.level = 0.95, ...)
 #' @author Dongwen Luo, Siva Ganesh and John Koolaard
 #' @name permstats
 NULL
 
-permstats <- function(x, level = 0.05) {
+permstats <- function(x, conf.level = 0.95, ...) {
+  pm_defunct("permstats", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  level <- pm_conf_alpha(conf.level)
   st <- pm_perm_get_stats(x)
   T <- st$T
   ok <- !is.na(T)
@@ -167,8 +171,8 @@ permstats <- function(x, level = 0.05) {
 #' @seealso \code{\link{permmodels}}, \code{\link{permstats}}
 #' @examples
 #' mtcars$cyl <- factor(mtcars$cyl)
-#' p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
-#' p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
+#' p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
+#' p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
 #' permcombine(mpg = p1, qsec = p2)
 #' @usage permcombine(..., method = c("fisher", "tippett"), tests = NULL)
 #' @author Dongwen Luo, Siva Ganesh and John Koolaard

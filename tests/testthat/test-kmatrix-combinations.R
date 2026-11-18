@@ -24,11 +24,11 @@ test_that("covariate values go by name; a wrong number of unnamed values is an e
   expect_equal(nrow(k$K), 6)
   expect_equal(unique(k$fctnames$z), 2.5)
   expect_equal(k$K[, "x"], rep(c(-1, 1), 3), ignore_attr = TRUE)
-  expect_equal(k$K, Kmatrix(m, "A", "x", covariateV = c(-1, 1))$K + outer(rep(1, 6), (2.5 - mean(d$z)) * (colnames(k$K) == "z")),
+  expect_equal(k$K, Kmatrix(m, "A", "x", at = c(-1, 1))$K + outer(rep(1, 6), (2.5 - mean(d$z)) * (colnames(k$K) == "z")),
                ignore_attr = TRUE)
   # covariateV as a named list: by name, not by position
-  k1 <- Kmatrix(m, "A", c("x", "z"), covariateV = list(z = c(1.5, 2.5), x = c(-1, 1)))
-  k2 <- Kmatrix(m, "A", c("x", "z"), covariateV = list(c(-1, 1), c(1.5, 2.5)))
+  k1 <- Kmatrix(m, "A", c("x", "z"), at = list(z = c(1.5, 2.5), x = c(-1, 1)))
+  k2 <- Kmatrix(m, "A", c("x", "z"), at = list(c(-1, 1), c(1.5, 2.5)))
   expect_equal(k1$K, k2$K)
   # joint points
   kj <- Kmatrix(m, "A", covariate = data.frame(x = c(-1, 0), z = c(1, 3)))
@@ -89,7 +89,7 @@ test_that("predictmeans(): a combination that is not a term, its df, and combina
   d <- km_data()
   d <- d[!(d$A == "a3" & d$B == "b2"), ]                      # no data for a3:b2
   m <- lm(y ~ A + B + C, d)
-  expect_message(p <- predictmeans(m, "A:B", prtnum = FALSE), "is not a term of the model")
+  expect_message(p <- predictmeans(m, "A:B"), "is not a term of the model")
   # the model is additive, so the mean of a3:b2 can be estimated and is shown
   expect_equal(nrow(p$means), 6)
   expect_equal(p$means$n[6], 0)
@@ -97,22 +97,22 @@ test_that("predictmeans(): a combination that is not a term, its df, and combina
   expect_false(anyNA(p[["Predicted Means"]]))
   # with the interaction in the model it is an empty cell and is left out
   mi <- lm(y ~ A * B + C, d)
-  pi <- predictmeans(mi, "A:B", prtnum = FALSE)
+  pi <- predictmeans(mi, "A:B")
   expect_equal(nrow(pi$means), 5)
   expect_equal(sum(is.na(pi[["Predicted Means"]])), 1)
   # df by term (lme): a combination gets the smallest df of its factors' terms
   oats <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fl <- nlme::lme(yield ~ nitro + Variety, random = ~ 1 | Block/Variety, data = oats)
-  q <- function(term) suppressMessages(predictmeans(fl, term, df_method = "containment", pairwise = TRUE, prtnum = FALSE))
+  q <- function(term) suppressMessages(predictmeans(fl, term, df_method = "containment", pairwise = TRUE))
   dv <- q("Variety")$pairs$df[1]; dn <- q("nitro")$pairs$df[1]
   expect_lt(dv, dn)
   expect_equal(unique(q("nitro:Variety")$pairs$df), dv)
   # covariates: set by name; a covariate in the term is not tabulated by predictmeans()
   mx <- lm(y ~ A + x + z, d)
-  expect_equal(predictmeans(mx, "A", covariate = list(z = 2, x = 1), prtnum = FALSE)$means$estimate,
+  expect_equal(predictmeans(mx, "A", covariate = list(z = 2, x = 1))$means$estimate,
                unname(predict(mx, data.frame(A = levels(d$A), x = 1, z = 2))), tolerance = 1e-10)
-  expect_error(predictmeans(mx, "A:x", prtnum = FALSE), "is a covariate")
-  expect_error(predictmeans(mx, "A", covariate = list(x = c(0, 1)), prtnum = FALSE), "one mean for each combination")
+  expect_error(predictmeans(mx, "A:x"), "is a covariate")
+  expect_error(predictmeans(mx, "A", covariate = list(x = c(0, 1))), "one mean for each combination")
 })
 
 test_that("nesting the formula does not say (confounded factors): the combinations that exist, with a warning", {
@@ -121,18 +121,18 @@ test_that("nesting the formula does not say (confounded factors): the combinatio
   dn$y <- rnorm(16) + as.numeric(dn$T)
   cell <- tapply(dn$y, dn$T, mean)
   # declared (G/T): the means of the combinations that exist
-  pg <- suppressMessages(predictmeans(lm(y ~ G/T, dn), "G", prtnum = FALSE))
+  pg <- suppressMessages(predictmeans(lm(y ~ G/T, dn), "G"))
   expect_equal(pg$means$estimate, c(cell[["c"]], mean(cell[c("t1", "t2", "t3")])), tolerance = 1e-10)
   # not declared (G + T): G and T cannot be told apart, so the mean over all their combinations does
   # not exist; the means are those of the combinations that exist (as G/T), and a warning says so
   # (decision of 2026-11-16; NA before)
-  expect_warning(pa <- predictmeans(lm(y ~ G + T, dn), "T", prtnum = FALSE),
+  expect_warning(pa <- predictmeans(lm(y ~ G + T, dn), "T"),
                  "'G' and 'T' are confounded in the data.*G/T in the formula")
   expect_equal(pa$means$estimate, as.vector(cell), tolerance = 1e-10)
-  pa2 <- suppressWarnings(predictmeans(lm(y ~ G + T, dn), "G", prtnum = FALSE))
+  pa2 <- suppressWarnings(predictmeans(lm(y ~ G + T, dn), "G"))
   expect_equal(pa2$means$estimate, pg$means$estimate, tolerance = 1e-10)
   expect_equal(pa2$means$std.error, pg$means$std.error, tolerance = 1e-10)
-  pc <- suppressMessages(predictmeans(lm(y ~ G + T, dn), "T", weights = "cells", prtnum = FALSE))
+  pc <- suppressMessages(predictmeans(lm(y ~ G + T, dn), "T", weights = "cells"))
   expect_equal(pc$means$estimate, as.vector(cell), tolerance = 1e-10)
   # declared nesting also with weights other than "equal"
   kp <- Kmatrix(lm(y ~ G/T, dn), "G", weights = "proportional")
@@ -143,7 +143,7 @@ test_that("cells are those of each interaction term; one observation per cell is
   set.seed(3)
   d <- expand.grid(A = factor(1:3), B = factor(1:3)); d$y <- rnorm(9)
   d1 <- d[-9, ]                                               # unreplicated, cell 3:3 empty
-  expect_warning(p1 <- predictmeans(lm(y ~ A * B, d1), "A", prtnum = FALSE), "No data for A:B 3:3")
+  expect_warning(p1 <- predictmeans(lm(y ~ A * B, d1), "A"), "No data for A:B 3:3")
   expect_equal(p1$means$estimate[3], mean(d1$y[d1$A == "3"]), tolerance = 1e-10)
   # two separate interactions: a combination of all four factors without data is not an empty cell
   d4 <- expand.grid(A = factor(1:2), B = factor(1:2), C = factor(1:2), D = factor(1:2), r = 1:2); d4$y <- rnorm(32)

@@ -73,7 +73,7 @@ them, \code{autoplot()} returns the plot and \code{print()} shows a short summar
   library(predictmeans)
   data(Oats, package="nlme")
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  cm <- covariatemeans(fm, "Variety", covariate="nitro", covariateV=c(0, 0.3, 0.6))
+  cm <- covariatemeans(fm, "Variety", covariate="nitro", at=c(0, 0.3, 0.6))
   cm
   as.data.frame(cm)
   cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),

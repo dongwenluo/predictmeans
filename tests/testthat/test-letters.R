@@ -18,7 +18,7 @@ test_that("letterCI with atvar: letters from the overlap of the comparison inter
   tab <- r$mean_table$Table
   for (v in levels(Oats$Variety)) {
     g <- tab[tab$Variety == v, ]
-    expect_equal(unname(g$LetterGrp), unname(ci_mcp(g[[grep("^LL", names(g))]], g[[grep("^UL", names(g))]])))
+    expect_equal(unname(g$LetterGrp), unname(pm_ci_mcp(g[[grep("^LL", names(g))]], g[[grep("^UL", names(g))]])))
   }
   expect_match(r$mean_table$Note, "overlap of the comparison intervals", fixed = TRUE)
   expect_match(r$mean_table$Note, "at each level of Variety$")
@@ -31,5 +31,5 @@ test_that("letterCI: a mean without a CI gets no letter instead of an error", {
                     check.names = FALSE)
   lets <- pm_ci_letters(tab)
   expect_equal(trimws(lets[3]), "")
-  expect_equal(trimws(lets[-3]), trimws(unname(ci_mcp(c(0, 1, 8), c(2, 3, 10)))))
+  expect_equal(trimws(lets[-3]), trimws(unname(pm_ci_mcp(c(0, 1, 8), c(2, 3, 10)))))
 })

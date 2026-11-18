@@ -21,9 +21,9 @@ one that all the results have.}
 }
 \value{
 A data frame with one row per test: the permutation p-value of each response, the combined
-p-value (\code{combined}), and the p-values adjusted for the number of responses (columns
-\code{adj.<response>}): single-step min-p adjusted p-values (Westfall and Young 1993), which control the
-familywise error rate over the responses and allow for their correlation.
+  p-value (\code{combined}), and the p-values adjusted for the number of responses (columns
+  \code{adj.<response>}): single-step min-p adjusted p-values (Westfall and Young 1993), which control the
+  familywise error rate over the responses and allow for their correlation.
 }
 \description{
 Nonparametric combination (NPC) of permutation tests made with the same permutations, for example the same
@@ -44,8 +44,8 @@ points) are available from \code{\link{contrastmeans}} with \code{adj = "westfal
 }
 \examples{
 mtcars$cyl <- factor(mtcars$cyl)
-p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
-p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1, prt = FALSE)
+p1 <- permmodels(lm(mpg ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
+p2 <- permmodels(lm(qsec ~ wt + cyl, data = mtcars), nperm = 999, type = "II", seed = 1)
 permcombine(mpg = p1, qsec = p2)
 }
 \references{
@@ -57,6 +57,9 @@ Westfall, P. H. and Young, S. S. (1993). \emph{Resampling-Based Multiple Testing
 Winkler, A. M., Webster, M. A., Brooks, J. C., Tracey, I., Smith, S. M. and Nichols, T. E. (2016).
 Non-parametric combination and related permutation tests for neuroimaging. \emph{Human Brain Mapping},
 37, 1486-1511.
+}
+\seealso{
+\code{\link{permmodels}}, \code{\link{permstats}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

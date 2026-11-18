@@ -14,7 +14,7 @@ split_plot <- function(seed = 11, eff = c(a1 = 0, a2 = 0.5, a3 = 1)) {
 
 test_that("split plot with curves over time: means at t = 5 with Satterthwaite df for fixed + smooth coefficients", {
   d <- split_plot()
-  fit <- q(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = d, prt = FALSE))
+  fit <- q(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = d))
   pm <- q(predictmeans(fit, "A", covariate = c(t = 5), pairwise = TRUE))
   expect_equal(pm$settings$df_method, "Satterthwaite (fixed + smooth coefficients)")
   # whole-plot comparisons: far fewer df than the 180 residual df, more than the 10 whole-plot error df
@@ -30,8 +30,7 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
   # generalized fits: the inner-outer df of the design's strata, as glmer gets
   # for the same design (the smooth blocks are not strata); z without strata
   d$cnt <- rpois(nrow(d), exp(d$y/2))
-  gf <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), family = poisson, data = d,
-                  prt = FALSE))
+  gf <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), family = poisson, data = d))
   gm <- q(predictmeans(gf, "A", covariate = c(t = 5), pairwise = TRUE))
   io <- pm_inner_outer_df(q(lme4::glmer(cnt ~ A + A:t + (1 | Block) + (1 | Block:A), family = poisson, data = d)))
   expect_equal(gm$means$df, rep(attr(io, "terms")[["A"]], 3))
@@ -39,13 +38,13 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
   expect_equal(gm$pairs$df, rep(10, 3))
   expect_equal(gm$settings$df_method, "inner-outer (design strata; smooths within)")
   expect_equal(gm$pairs$p.value, 2*pt(-abs(gm$pairs$estimate/gm$pairs$std.error), 10))
-  sp <- q(semipred(gf, "A", "t", prt = FALSE))$pred_df
+  sp <- q(semipred(gf, "A", "t"))$pred_df
   expect_equal(sp$df, rep(10, nrow(sp)))
-  g0 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6), family = poisson, data = d, prt = FALSE))
+  g0 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6), family = poisson, data = d))
   g0m <- q(predictmeans(g0, "A", covariate = c(t = 5), pairwise = TRUE))
   expect_true(all(is.infinite(g0m$means$df)))
   expect_equal(g0m$settings$df_method, "normal (semireg)")
-  expect_null(q(semipred(g0, "A", "t", prt = FALSE))$pred_df$df)
+  expect_null(q(semipred(g0, "A", "t"))$pred_df$df)
 })
 
 test_that("s(x, f1*f2): a variance per deviation term; anova() tests which deviation curves are needed", {
@@ -55,7 +54,7 @@ test_that("s(x, f1*f2): a variance per deviation term; anova() tests which devia
   # the shape differs by f1 only
   d$y <- sin(2*pi*d$x) + (d$f1 == "q")*1.5*sin(pi*d$x)^2 + rnorm(nlevels(d$id), 0, 0.2)[d$id] +
     rnorm(nrow(d), 0, 0.25)
-  fit <- q(semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = d, prt = FALSE))
+  fit <- q(semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = d))
   sm <- anova(fit)$smooth
   expect_setequal(sm$term, c("s_x", "s_x_f1", "s_x_f2", "s_x_f1_f2"))
   expect_lt(sm$p.value[sm$term == "s_x_f1"], 0.01)
@@ -74,8 +73,8 @@ test_that("counts with a negative binomial and zero inflation (glmmTMB engine): 
   d$y <- rnbinom(nrow(d), mu = mu, size = 3)
   d$y[runif(nrow(d)) < 0.1] <- 0
   fit <- q(semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
-                       family = glmmTMB::nbinom2, data = d, prt = FALSE))
-  out <- q(semipred(fit, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE))$pred_df
+                       family = glmmTMB::nbinom2, data = d))
+  out <- q(semipred(fit, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous"))$pred_df
   expect_true(all(c("ratio", "ratio.LL", "ratio.UL", "ratio.includes1", "significant") %in% names(out)))
   expect_equal(out$ratio, exp(out$diff), tolerance = 1e-10)
   expect_equal(out$ratio.includes1, out$includes0)
@@ -88,8 +87,8 @@ test_that("counts with a negative binomial and zero inflation (glmmTMB engine): 
 test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Satterthwaite df as the lme4 engine", {
   d <- split_plot()
   f <- y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A)
-  a <- q(semireg(f, data = d, prt = FALSE))
-  b <- q(semireg_tmb(f, data = d, prt = FALSE))
+  a <- q(semireg(f, data = d))
+  b <- q(semireg_tmb(f, data = d))
   expect_true(b$semer$modelInfo$REML)
   expect_equal(-b$semer$fit$objective, as.numeric(logLik(a$semer)), tolerance = 1e-6)
   pa <- q(predictmeans(a, "A", covariate = c(t = 5), pairwise = TRUE))
@@ -102,9 +101,9 @@ test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Sat
   # the design's strata as with the lme4 engine (A varies within blocks: the
   # residual stratum)
   d$cnt <- rpois(nrow(d), exp(d$y/2))
-  g <- q(semireg_tmb(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
+  g <- q(semireg_tmb(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d))
   expect_false(g$semer$modelInfo$REML)
-  g4 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d, prt = FALSE))
+  g4 <- q(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = d))
   dg <- q(predictmeans(g, "A", covariate = c(t = 5)))$means$df
   expect_equal(dg, q(predictmeans(g4, "A", covariate = c(t = 5)))$means$df)
   expect_equal(dg, rep(nrow(d) - 6 - 5, 3))                # N - rank([X, blocks])
@@ -117,8 +116,7 @@ test_that("semireg_tmb() with AR(1) residuals: means at a time with Satterthwait
   d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
     unlist(lapply(1:12, function(i) as.numeric(stats::arima.sim(list(ar = 0.6), 8, sd = 0.4))))
   d$tf <- factor(d$t)
-  fit <- q(semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id), dispformula = ~0, data = d,
-                       prt = FALSE))
+  fit <- q(semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id), dispformula = ~0, data = d))
   pm <- q(predictmeans(fit, "A", covariate = c(t = 4), pairwise = TRUE))
   expect_true(all(is.finite(pm$means$df) & pm$means$df > 2 & pm$means$df < 60))
   expect_true(all(is.finite(pm$pairs$df) & pm$pairs$df > 2 & pm$pairs$df < 60))
