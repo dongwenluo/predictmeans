@@ -114,6 +114,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     every changed argument and function, the defaults and the numbers that
     change. `dev/check-migrating.R` runs each 2.0 line and checks that each
     1.1.1 line stops with the 2.0 spelling.
+  - Release checks (step 7): the migration guide also lists the packages
+    `library(predictmeans)` no longer attaches (glmmTMB, lmerTest);
+    `cran-comments.md` describes the removed functions and changed
+    dependencies.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
@@ -603,9 +607,7 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   0.03 s for the oats example) and put graphics pages into scripts, reports,
   Shiny apps and loops. The result holds the same tables, and `autoplot()`
   draws from it. `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a
-  session, draws the 1.x plots; so does asking for plots by name
-  (`which.plots`, `plotord`, or the old `mplot`, `barplot`, `pplot`,
-  `bkplot`).
+  session, draws the 1.x plots; `plot = c("mean", "bar")` chooses them.
 * **lmerTest is no longer needed**: it moved from Depends to Suggests (used
   only in the tests, to compare against). predictmeans' own df and tests
   never used it. `anova()` of an `lmer` fit now gives F tests with df by the
@@ -945,7 +947,8 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   reproduce 1.x results.
 * **glmmTMB is no longer attached** by `library(predictmeans)`; it moved
   from Depends to Imports. Scripts that fit models with `glmmTMB()` need
-  `library(glmmTMB)`. lme4, nlme and lmerTest are still attached.
+  `library(glmmTMB)`. lme4 and nlme are still attached (lmerTest: see
+  above).
 * `permmodels()` gives the same tables (including Satterthwaite df and
   p-values) whether an lmer model was fitted with `lme4::lmer()` or
   `lmerTest::lmer()`.

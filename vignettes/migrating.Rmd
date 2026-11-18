@@ -771,6 +771,7 @@ are shrunk towards each other. The formula form adds the slopes itself, which is
 
 | Function | Setting | 1.1.1 | 2.0 |
 |---|---|---|---|
+| `library(predictmeans)` | packages attached | glmmTMB, lme4, nlme, lmerTest | lme4, nlme: add `library(glmmTMB)` to call `glmmTMB()` or `nbinom1`, and `library(lmerTest)` for its `summary()` p-values and `ranova()` |
 | `predictmeans()`, `covariatemeans()`, `semipred()` | plots | drawn | `plot = FALSE`: `autoplot(x)`, `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a session |
 | every function | printing | tables printed during the call | nothing printed: `print(x)` |
 | `predictmeans()`, `contrastmeans()` | standard errors of REML `lmer` fits | unadjusted, with Kenward–Roger df | Kenward–Roger adjusted (below); `vcov_adjust = FALSE` for 1.x |
