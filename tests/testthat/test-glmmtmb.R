@@ -2,14 +2,14 @@
 # random-effect terms and renamed the dispersion parameter (betad ->
 # betadisp). These tests cover the code that handles both versions.
 
-test_that("R2_glmm() on a gaussian glmmTMB fit equals the lmer result", {
+test_that("r2_pct(R2_model()) on a gaussian glmmTMB fit equals the lmer result", {
   skip_if_not_installed("glmmTMB")
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   f <- yield ~ nitro + Variety + (1 | Block/Variety)
-  r_lmer <- R2_glmm(lme4::lmer(f, data = Oats))
+  r_lmer <- r2_pct(R2_model(lme4::lmer(f, data = Oats)))
   # gaussian glmmTMB has a dispersion parameter (betad / betadisp)
-  r_tmb <- R2_glmm(glmmTMB::glmmTMB(f, data = Oats, REML = TRUE))
+  r_tmb <- r2_pct(R2_model(glmmTMB::glmmTMB(f, data = Oats, REML = TRUE)))
   pct <- function(x) as.numeric(sub("%", "", x))
   expect_equal(pct(r_tmb[1:3]), pct(r_lmer[1:3]), tolerance = 0.01)
 })
@@ -41,13 +41,13 @@ test_that("glmmTMB random-effect covariance from VarCorr(): equals lmer's; block
   expect_equal(predictmeans:::pm_chol_lower(matrix(c(4, 2, 2, 1), 2)), matrix(c(2, 1, 0, 0), 2))
 })
 
-test_that("R2_glmm(): glmmTMB with correlated terms equals lmer; components split by column", {
+test_that("r2_pct(R2_model()): glmmTMB with correlated terms equals lmer; components split by column", {
   skip_if_not_installed("glmmTMB")
   pct <- function(x) as.numeric(sub("%", "", x))
   f <- Reaction ~ Days + (Days | Subject)
   m1 <- lme4::lmer(f, data = lme4::sleepstudy, REML = FALSE)
   m2 <- glmmTMB::glmmTMB(f, data = lme4::sleepstudy, REML = FALSE)
-  invisible(capture.output(r1 <- R2_glmm(m1), r2 <- R2_glmm(m2)))
+  invisible(capture.output(r1 <- r2_pct(R2_model(m1)), r2 <- r2_pct(R2_model(m2))))
   expect_identical(names(r1), c("Total", "Fixed", "Random", "Subject", "Subject.Days"))
   expect_identical(names(r2), names(r1))
   expect_equal(pct(r2), pct(r1), tolerance = 1e-3)
@@ -64,13 +64,13 @@ test_that("R2_glmm(): glmmTMB with correlated terms equals lmer; components spli
   expect_equal(pct(r1[4:5]) / pct(r1[3]), parts[1:2] / sum(parts), tolerance = 1e-3)
 })
 
-test_that("R2_glmm(): glmmTMB with zero-inflation random effects or aliased columns", {
+test_that("r2_pct(R2_model()): glmmTMB with zero-inflation random effects or aliased columns", {
   skip_if_not_installed("glmmTMB")
   set.seed(1)
   d <- data.frame(g = factor(rep(1:10, each = 20)), x = rnorm(200))
   d$y <- rpois(200, exp(0.5 + 0.3 * d$x + rnorm(10)[d$g])) * rbinom(200, 1, 0.8)
   m <- glmmTMB::glmmTMB(y ~ x + (1 | g), ziformula = ~ (1 | g), family = poisson, data = d)
-  invisible(capture.output(r <- R2_glmm(m)))
+  invisible(capture.output(r <- r2_pct(R2_model(m))))
   expect_true(all(is.finite(as.numeric(sub("%", "", r)))))
   # B is a copy of A: glmmTMB drops its columns; same R2 as without B
   set.seed(1)
@@ -79,11 +79,11 @@ test_that("R2_glmm(): glmmTMB with zero-inflation random effects or aliased colu
   da$B <- da$A
   ma <- suppressMessages(glmmTMB::glmmTMB(y ~ A + B + (1 | g), data = da))
   m0 <- glmmTMB::glmmTMB(y ~ A + (1 | g), data = da)
-  invisible(capture.output(ra <- R2_glmm(ma), r0 <- R2_glmm(m0)))
+  invisible(capture.output(ra <- r2_pct(R2_model(ma)), r0 <- r2_pct(R2_model(m0))))
   expect_identical(ra, r0)
 })
 
-test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", {
+test_that("semireg_tmb() with predict_info and semipred() run, with r2_pct(R2_model())", {
   skip_on_cran()
   skip_if_not_installed("glmmTMB")
   skip_if_not_installed("HRW")
@@ -93,7 +93,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with R2_glmm()", 
   fit <- suppressWarnings(semireg_tmb(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = W))
   sp <- semipred(fit, covariate = "construction.date")$pred_df
   expect_true(all(is.finite(sp$SE)) && all(sp$SE > 0))
-  r2 <- R2_glmm(fit$semer)
+  r2 <- r2_pct(R2_model(fit$semer))
   expect_true(all(is.finite(as.numeric(sub("%", "", r2)))))
   # with a correlated random term as well
   W$surf <- as.numeric(scale(W$surface))

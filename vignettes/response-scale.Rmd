@@ -124,7 +124,7 @@ pm_clin$pairs[, c("level1", "level2", "p.value", "odds.ratio",
 ```
 
 `R2_model()` gives the share of the variance explained, as numbers: Piepho's R² (the
-default, also printed by `R2_glmm()`) or Nakagawa and Schielzeth's marginal and
+default) or Nakagawa and Schielzeth's marginal and
 conditional R².
 
 ```{r}

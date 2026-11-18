@@ -7,20 +7,19 @@
 #' \code{residuals()} methods. With \code{interactive = TRUE} they are shown with \pkg{plotly}: hovering a point gives
 #' its row of the data.
 #' @usage
-#' residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE,
-#'     ask = FALSE, interactive = FALSE, plot = TRUE)
+#' residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
+#'     interactive = FALSE, plot = TRUE, ...)
 #' @param model A fitted model (see Description).
 #' @param group Optional variable that colours the points: the name (in "quotes") of a variable in the data of the
 #'   model, or a vector with one value per observation. The default \code{"none"} uses one colour.
-#' @param level For mixed models: which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
+#' @param re_level For mixed models (\code{level} before 2.0): which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
 #'   \code{ranef()}: for \code{lme} the outermost grouping first, for \code{lmer} the innermost first).
 #' @param slope For mixed models: \code{TRUE} plots the random slopes (the second column of the random effects) instead
 #'   of the random intercepts.
 #' @param id Number of the most extreme points labelled with their row names (largest absolute residuals; for the
 #'   Cook's distance plot the largest distances); \code{FALSE} or 0 labels none. In 1.x \code{id = TRUE} let you
 #'   click on points; now \code{TRUE} labels 3 points, and \code{interactive = TRUE} shows every point's row name.
-#' @param newwd Open a new graphics device first.
-#' @param ask \code{TRUE}: draw the plots one per page, asking before each new page (interactive sessions).
+#' @param ... Not used: \code{level}, \code{newwd}, \code{ask} (before 2.0) stop with their 2.0 spelling.
 #' @param interactive \code{TRUE}: show the plots with \pkg{plotly} (\code{plotly::ggplotly()}), which must be
 #'   installed.
 #' @param plot \code{FALSE}: do not draw; only return the plots.
@@ -58,10 +57,10 @@
 #' library(predictmeans)
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#' residplot(fm, level=2)    # lme: level=2 for random effect "Block:Variety"
+#' residplot(fm, re_level = 2)    # lme: re_level = 2 for random effect "Block:Variety"
 #'
 #' fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-#' residplot(fm, group = "Variety") # lmer: level=1 for random effect "Block:Variety"
+#' residplot(fm, group = "Variety") # lmer: re_level = 1 for random effect "Block:Variety"
 #'
 #' # a Poisson GLM: randomized quantile residuals
 #' gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)
@@ -72,13 +71,15 @@
 #' @name residplot
 NULL
 
-residplot <- function(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE, ask = FALSE,
-                      interactive = FALSE, plot = TRUE) {
+residplot <- function(model, group = "none", re_level = 1, slope = FALSE, id = 3, interactive = FALSE, plot = TRUE,
+                      ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("residplot", match.call(), strict = TRUE, formals_of = formals(sys.function()))
   if (inherits(model, "semireg")) model <- model$semer
   nlab <- if (isTRUE(id)) 3L else if (isFALSE(id) || is.null(id)) 0L else as.integer(id)
   d <- pm_resid_data(model)
   d$group <- pm_resid_group(model, group, d)
-  re <- pm_resid_ranef(model, level, slope)
+  re <- pm_resid_ranef(model, re_level, slope)
   plots <- pm_resid_plots(model, d, re, nlab, tooltip = isTRUE(interactive))
   if (isTRUE(interactive)) {
     pm_need("plotly", "interactive = TRUE")
@@ -88,27 +89,18 @@ residplot <- function(model, group = "none", level = 1, slope = FALSE, id = 3, n
     if (plot) print(w)
     return(invisible(w))
   }
-  if (plot) {
-    if (newwd) grDevices::dev.new()
-    pm_print_grid(plots, ask)
-  }
+  if (plot) pm_print_grid(plots)
   invisible(structure(plots, class = c("pm_residplot", "list"), data = d))
 }
 
 ## print() of residplot()'s value: the four plots on one page.
 print.pm_residplot <- function(x, ...) {
-  pm_print_grid(unclass(x), ask = FALSE)
+  pm_print_grid(unclass(x))
   invisible(x)
 }
 
-## Draw ggplots two by two on one page (ask: one per page, asking first).
-pm_print_grid <- function(plots, ask = FALSE) {
-  if (ask && grDevices::dev.interactive()) {
-    old <- grDevices::devAskNewPage(TRUE)
-    on.exit(grDevices::devAskNewPage(old))
-    for (p in plots) print(p)
-    return(invisible())
-  }
+## Draw ggplots two by two on one page.
+pm_print_grid <- function(plots) {
   grid::grid.newpage()
   nr <- ceiling(length(plots) / 2)
   grid::pushViewport(grid::viewport(layout = grid::grid.layout(nr, 2)))
@@ -256,7 +248,7 @@ pm_resid_group <- function(model, group, d) {
        "observation (", nrow(d), ").", call. = FALSE)
 }
 
-## The random effects of term 'level' (column 2 with slope = TRUE), or NULL.
+## The random effects of term number 're_level' (column 2 with slope = TRUE), or NULL.
 pm_resid_ranef <- function(model, level, slope) {
   re <- tryCatch({
     if (inherits(model, "lme")) {
@@ -267,7 +259,7 @@ pm_resid_ranef <- function(model, level, slope) {
     else if (inherits(model, "glmmTMB")) lme4::ranef(model)[["cond"]]
   }, error = function(e) NULL)
   if (is.null(re) || !length(re)) return(NULL)
-  if (level > length(re)) stop("'level' is larger than the number of random-effect terms (", length(re), ").",
+  if (level > length(re)) stop("'re_level' is larger than the number of random-effect terms (", length(re), ").",
                                call. = FALSE)
   r <- as.data.frame(re[[level]])
   col <- if (slope) 2 else 1

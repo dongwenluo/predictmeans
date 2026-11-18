@@ -8,12 +8,15 @@
 #'   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
 #'     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
 #'   \code{permglmer()}, \code{permglmmTMB()} \tab \code{\link{permlmer}()} (they were the same function) \cr
+#'   \code{ci_mcp()} \tab \code{\link{predictmeans}(..., letterCI = TRUE)}: letters from comparison intervals,
+#'     whose overlap agrees with the pairwise tests (overlap of confidence intervals does not) \cr
+#'   \code{R2_glmm()} \tab \code{\link{R2_model}(model)}: the same values, as numbers \cr
 #'   \code{permanova.lmer()} \tab \code{\link{permmodels}(model, type = )}: Freedman-Lane permutations, so the
 #'     p-values differ from the refits of \code{permanova.lmer()} \cr
 #' }
 #' @param ... Not used.
 #' @name predictmeans-defunct
-#' @aliases smZ permglmer permglmmTMB permanova.lmer
+#' @aliases smZ permglmer permglmmTMB permanova.lmer ci_mcp R2_glmm
 #' @keywords internal
 NULL
 
@@ -35,7 +38,8 @@ pm_defunct_rows <- function() {
   rbind(
     # one vocabulary for the means functions (D1, D2, D4)
     r(means, "Df", "df_method = %s", "same"),
-    r(c(means, "pm_slopes", "semipred", "varcomp", "permstats", "PMplot"), "level", "conf.level = %s", "one_minus"),
+    r(c(means, "pm_slopes", "semipred", "permstats", "PMplot"), "level", "conf.level = %s", "one_minus"),
+    r("varcomp", "level", "conf.level = %s (it was a confidence level already)", "same"),
     r(c("covariatemeans", "semipred", "Kmatrix"), "covariateV", "at = %s", "same"),
     r("df_term", "type", "df_method = %s", "same"),
     r("df_term", "vcov_adj", "nothing: the adjusted covariance is computed from df_method"),
@@ -80,7 +84,7 @@ pm_defunct_funs <- c(
   permglmmTMB = "permlmer()",
   permanova.lmer = "permmodels(model, type = ) (Freedman-Lane permutations; p-values differ from permanova.lmer()'s refits)",
   ci_mcp = "predictmeans(..., letterCI = TRUE): letters from comparison intervals that agree with the tests",
-  R2_glmm = "R2_model(model)"
+  R2_glmm = "R2_model(model) (the same values, as numbers)"
 )
 
 ## The message for a removed argument: its 2.0 spelling with the value given

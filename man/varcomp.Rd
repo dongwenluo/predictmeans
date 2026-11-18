@@ -4,16 +4,18 @@
 \alias{varcomp}
 \title{Variance Components with Standard Errors and Confidence Intervals}
 \usage{
-varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
         information = c("observed", "average", "expected"), test = FALSE,
-        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
 
 \item{ci}{\code{TRUE} (the default): add confidence intervals.}
 
-\item{level}{Confidence level of the intervals; the default is 0.95.}
+\item{conf.level}{Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).}
+
+\item{...}{Not used: \code{level} (before 2.0) stops with its 2.0 spelling.}
 
 \item{ci_method}{How the intervals of variances are made: \code{"Satterthwaite"} (the default) chi-square
 intervals with \eqn{\nu = 2 (estimate/SE)^2} df, as SAS PROC MIXED (\code{COVTEST CL}); \code{"Wald"} Wald

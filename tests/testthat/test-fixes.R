@@ -51,24 +51,24 @@ test_that("CookD() works for lmer models and agrees with lme", {
   expect_equal(c1, c2[names(c1)], tolerance = 1e-5)
 })
 
-test_that("R2_glmm(): glmmTMB data found outside the global environment; clear over_disp error", {
+test_that("r2_pct(R2_model()): glmmTMB data found outside the global environment; clear over_disp error", {
   data("Clinical", package = "predictmeans", envir = environment())
   local_fit <- function(dat) glmmTMB::glmmTMB(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
                                      family = binomial, data = dat)
-  r <- suppressMessages(capture.output(val <- R2_glmm(local_fit(Clinical))))
+  r <- suppressMessages(capture.output(val <- r2_pct(R2_model(local_fit(Clinical)))))
   expect_identical(unname(val), c("75.71%", "4.77%", "70.94%", "70.94%"))
   fm <- lmer(yield ~ nitro + (1|Block), data = oats())
-  expect_error(R2_glmm(fm, over_disp = TRUE), "observation-level random effect")
+  expect_error(r2_pct(R2_model(fm, over_disp = TRUE)), "observation-level random effect")
 })
 
-test_that("R2_glmm() over_disp leaves out an observation-level random effect", {
+test_that("r2_pct(R2_model()) over_disp leaves out an observation-level random effect", {
   set.seed(1)
   d <- data.frame(g = factor(rep(1:20, each = 6)), x = rnorm(120))
   d$y <- rpois(120, exp(0.5 + 0.3*d$x + rnorm(20, sd = 0.4)[d$g]))
   d$obs <- factor(seq_len(120))
   fm <- suppressMessages(glmer(y ~ x + (1|obs) + (1|g), family = poisson, data = d))
-  r <- capture.output(od <- R2_glmm(fm, over_disp = TRUE))
-  r <- capture.output(full <- R2_glmm(fm))
+  r <- capture.output(od <- r2_pct(R2_model(fm, over_disp = TRUE)))
+  r <- capture.output(full <- r2_pct(R2_model(fm)))
   # 1.1.1 values for this model
   expect_identical(unname(od), c("11.3%", "9.64%", "1.66%"))
   expect_identical(unname(full), c("26.19%", "9.64%", "16.55%", "14.89%", "1.66%"))
@@ -181,9 +181,9 @@ test_that("residplot(): glmmTMB with aliased columns; random part in the column 
   expect_no_error(residplot(tm))
 })
 
-test_that("ci_mcp() accepts LL = UL; model.matrix() of an lme model takes 'data'", {
+test_that("pm_ci_mcp() (letterCI) accepts LL = UL; model.matrix() of an lme model takes 'data'", {
   # [3, 3] lies inside [2, 4]; [10, 12] overlaps neither
-  expect_identical(unname(trimws(ci_mcp(c(3, 2, 10), c(3, 4, 12)))), c("A", "A", "B"))
+  expect_identical(unname(trimws(pm_ci_mcp(c(3, 2, 10), c(3, 4, 12)))), c("A", "A", "B"))
   # the lme methods are internal to predictmeans
   fm <- nlme::lme(distance ~ age + Sex, random = ~ 1 | Subject, data = nlme::Orthodont)
   X <- predictmeans:::model.matrix.lme(fm)

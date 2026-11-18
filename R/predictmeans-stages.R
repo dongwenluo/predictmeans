@@ -966,15 +966,15 @@ pm_final_mean_table <- function(meanTable, bkmt, vars, atvar, resvar, pairwise, 
   meanTable
 }
 
-## Letters from CI overlap (ci_mcp()) for the rows of a mean table; means
+## Letters from CI overlap (pm_ci_mcp()) for the rows of a mean table; means
 ## without a CI (not estimable) get no letter.
 pm_ci_letters <- function(tab) {
   LL <- tab[[grep("^LL", names(tab))[1]]]
   UL <- tab[[grep("^UL", names(tab))[1]]]
   ok <- is.finite(LL) & is.finite(UL)
-  if (all(ok)) return(ci_mcp(LL, UL))
+  if (all(ok)) return(pm_ci_mcp(LL, UL))
   out <- rep("", length(LL))
-  if (any(ok)) out[ok] <- unname(ci_mcp(LL[ok], UL[ok]))
+  if (any(ok)) out[ok] <- unname(pm_ci_mcp(LL[ok], UL[ok]))
   out
 }
 
@@ -1023,7 +1023,7 @@ pm_make_plots <- function(x) {
           mtitle <- paste("Level Plot of p-value (adjusted by '", adj, "' method)\n for Pairwise Comparison", sep="")
         }
 
-        print(PMplot(t(t.p.valuep), level=slevel, mtitle=mtitle, basesz=basesz))
+        print(PMplot(t(t.p.valuep), conf.level=1-slevel, mtitle=mtitle, basesz=basesz))
       }
     } else {
       if (all(nrow.pm > 2, pplot, plot)) {
@@ -1034,7 +1034,7 @@ pm_make_plots <- function(x) {
                           "' method)\n for Pairwise Comparison at Each Level of '",paste(atvar, collapse =" and "), "'", sep="")
         }
 
-        print(PMplot(pmlist, level=slevel, xylabel=rcnplotm, mtitle=mtitle, basesz=basesz))
+        print(PMplot(pmlist, conf.level=1-slevel, xylabel=rcnplotm, mtitle=mtitle, basesz=basesz))
       }
     }
   }

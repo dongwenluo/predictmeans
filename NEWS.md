@@ -97,6 +97,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     and `permmodels()` loses `fo` (a formula held in a variable is detected);
     `permstats(level =)` -> `conf.level`. 12 calls of `dev/snapshot-perm.R`
     written both ways give identical results.
+  - Plots, diagnostics and small functions (step 5): `residplot(level =)` ->
+    `re_level` (the random-effect term), `newwd`, `ask` removed;
+    `CookD(idn =)` -> `id`, `newwd` removed; `PMplot(level =)` ->
+    `conf.level`, `margin`, `legendx`, `newwd` removed; `varcomp(level =)` ->
+    `conf.level` (the same value: it was a confidence level). `R2_glmm()`
+    removed: `R2_model()` gives the same values as numbers. `ci_mcp()` removed:
+    letters from overlapping confidence intervals do not answer the pairwise
+    tests; `predictmeans(letterCI = TRUE)` gives letters from comparison
+    intervals (its engine is now internal). The overview article's 83.4%
+    letters along the dose became letters at a dose from `letterCI`. 12 calls
+    of `dev/snapshot-diag.R` written both ways give identical results.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

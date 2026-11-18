@@ -6,6 +6,8 @@
 \alias{permglmer}
 \alias{permglmmTMB}
 \alias{permanova.lmer}
+\alias{ci_mcp}
+\alias{R2_glmm}
 \title{Functions removed in predictmeans 2.0}
 \arguments{
 \item{...}{Not used.}
@@ -18,6 +20,9 @@ the 1.1.1 code beside the 2.0 code.
   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
   \code{permglmer()}, \code{permglmmTMB()} \tab \code{\link{permlmer}()} (they were the same function) \cr
+  \code{ci_mcp()} \tab \code{\link{predictmeans}(..., letterCI = TRUE)}: letters from comparison intervals,
+    whose overlap agrees with the pairwise tests (overlap of confidence intervals does not) \cr
+  \code{R2_glmm()} \tab \code{\link{R2_model}(model)}: the same values, as numbers \cr
   \code{permanova.lmer()} \tab \code{\link{permmodels}(model, type = )}: Freedman-Lane permutations, so the
     p-values differ from the refits of \code{permanova.lmer()} \cr
 }

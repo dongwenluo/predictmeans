@@ -127,17 +127,17 @@ end.
 
 | Function | Argument | Proposal | 2.0 spelling |
 |---|---|---|---|
-| residplot | level | rename (D1) | `re_level` |
-| residplot | newwd, ask | remove | (ggplot2) |
-| CookD | newwd | remove | |
-| CookD | idn | rename (as `residplot`) | `id` |
-| PMplot | level | rename (D1): the significance shading | `conf.level` (shading at p < 1 - conf.level) |
-| PMplot | margin, legendx, newwd | remove (not used since the ggplot2 version) | |
+| residplot | level | renamed (D1, step 5) | `re_level` |
+| residplot | newwd, ask | removed (step 5) | (ggplot2) |
+| CookD | newwd | removed (step 5) | |
+| CookD | idn | renamed (as `residplot`, step 5) | `id` |
+| PMplot | level | renamed (D1, step 5): the significance shading | `conf.level` (shading at p < 1 - conf.level) |
+| PMplot | margin, legendx, newwd | removed (step 5; not used since the ggplot2 version) | |
 | PMplot | mtitle, xylabel | keep, or move to `autoplot(type = "pvalue")` — keep | |
-| ci_mcp() | | remove (D7) | `predictmeans(letterCI = TRUE)` |
-| R2_glmm() | | remove (D8) | `R2_model(model)` |
+| ci_mcp() | | removed (D7, step 5; its engine is internal, `pm_ci_mcp()`) | `predictmeans(letterCI = TRUE)` |
+| R2_glmm() | | removed (D8, step 5) | `R2_model(model)` |
 | se_ranef, varcomp, pm_check, semiboundary, Kmatrix, contrast_family, specify_contrast, adapter generics (`pm_coef` ...), pm_boxcox, pm_yeojohnson | | keep |
-| varcomp | level | rename (D1) | `conf.level` |
+| varcomp | level | renamed (D1, step 5; the same value: it was a confidence level) | `conf.level` |
 | Kmatrix | covariateV, prtnum | rename (D4) / remove | `at` / none |
 
 ## Defaults that change between 1.1.1 and 2.0 (for the migration guide)

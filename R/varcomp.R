@@ -10,12 +10,13 @@
 #' of \code{lm}, \code{aov} and \code{glm} models (residual variance, dispersion, or the negative binomial
 #' \eqn{\theta}).
 #' @usage
-#' varcomp(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+#' varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
 #'         information = c("observed", "average", "expected"), test = FALSE,
-#'         test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1)
+#'         test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
 #' @param model A fitted model (see Description).
 #' @param ci \code{TRUE} (the default): add confidence intervals.
-#' @param level Confidence level of the intervals; the default is 0.95.
+#' @param conf.level Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).
+#' @param ... Not used: \code{level} (before 2.0) stops with its 2.0 spelling.
 #' @param ci_method How the intervals of variances are made: \code{"Satterthwaite"} (the default) chi-square
 #'   intervals with \eqn{\nu = 2 (estimate/SE)^2} df, as SAS PROC MIXED (\code{COVTEST CL}); \code{"Wald"} Wald
 #'   intervals on the log scale; \code{"profile"} (\code{lmer}, \code{glmer}) lme4's profile-likelihood intervals,
@@ -159,14 +160,18 @@
 #' @name varcomp
 NULL
 
-varcomp <- function(model, ci = TRUE, level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+varcomp <- function(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
                     information = c("observed", "average", "expected"), test = FALSE,
-                    test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1) {
+                    test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("varcomp", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  pm_conf_alpha(conf.level)                        # (checks it)
+  level <- conf.level                              # a confidence level, as before 2.0
   ci_method <- match.arg(ci_method)
   information <- match.arg(information)
   test_method <- match.arg(test_method)
   if (isTRUE(test)) {
-    tab <- varcomp(model, ci = ci, level = level, ci_method = ci_method, information = information)
+    tab <- varcomp(model, ci = ci, conf.level = conf.level, ci_method = ci_method, information = information)
     return(pm_vc_add_tests(tab, model, test_method, nsim, nboot, ncore))
   }
   if (inherits(model, "semireg")) model <- model$semer

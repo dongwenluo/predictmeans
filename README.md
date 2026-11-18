@@ -44,7 +44,7 @@ work on it.
 | Joint tests (slices) and slopes | `pm_joint()`, `pm_slopes()` |
 | Resampling tests | `permmodels()`, `permlmer()`, `bootmodels()` |
 | Semiparametric models | `semireg()`, `semireg_tmb()`, `semipred()` |
-| R², variance components, diagnostics | `R2_model()`, `R2_glmm()`, `varcomp()`, `pm_check()`, `residplot()`, `CookD()` |
+| R², variance components, diagnostics | `R2_model()`, `varcomp()`, `pm_check()`, `residplot()`, `CookD()` |
 | Reference grid / K matrix | `Kmatrix()` |
 
 ## Documentation

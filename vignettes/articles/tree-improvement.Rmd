@@ -651,7 +651,7 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 7
 #| fig-height: 6
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 #### Mean Plot
@@ -689,7 +689,7 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 7
 #| fig-height: 6
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 #### Mean Plot
@@ -852,7 +852,7 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 7
 #| fig-height: 6
-PMplot(predm_out$p_valueMatrix, newwd = FALSE)
+PMplot(predm_out$p_valueMatrix)
 ```
 
 #### Mean Plot
@@ -1281,7 +1281,7 @@ kable(anova(fm8.4, type=1, ddf = "Kenward-Roger"), digits = 4)
 
 -   adjusted $R^2$
 ```{r}
-R2_glmm(fm8.4)
+R2_model(fm8.4)
 ```
 
 -   Varcomp
@@ -1393,7 +1393,7 @@ kable(anova(fm8.7, type=1), digits=4)
 
 -   Adjusted $R^2$
 ```{r}
-R2_glmm(fm8.7)
+R2_model(fm8.7)
 ```
 
 -   Varcomp

@@ -48,7 +48,7 @@ NULL
 #' @examples
 #' data(Body_length)
 #' fm <- lmer(BodyL ~ Treatment + Habitat + Sex + (1|Population/Container), data = Body_length)
-#' R2_glmm(fm)
+#' R2_model(fm)
 #' @name Body_length
 #' @docType data
 NULL

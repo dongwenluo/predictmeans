@@ -5,25 +5,20 @@
 #' for each pair of levels, like a correlation plot: the lower triangle only,
 #' the tiles coloured by the size of the p-value.
 #' @usage
-#' PMplot(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73,
-#'   newwd=FALSE, values=FALSE, basesz=12)
+#' PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
 #' @param pmatrix A matrix with p-values from pairwise comparisons (the lower
 #' triangle is used), or a list of such matrices (e.g. \code{p_valueMatrix} of
 #' \code{\link{predictmeans}} with \code{atvar}), which are drawn as blocks
 #' down the diagonal of one plot.
-#' @param level The level of p-value to be highlighted. With the default 0.05
-#' the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other
-#' value two (up to \code{level} and above).
+#' @param conf.level The p-values below \code{1 - conf.level} are highlighted (\code{level = 0.05} before 2.0).
+#' With the default 0.95 the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other value two
+#' (up to \code{1 - conf.level} and above).
 #' @param mtitle The main title in the graph.
 #' @param xylabel The x and y labels in the graph: one for each row of the
 #' matrix (or of the list's matrices together). The default uses the row
 #' names of the matrix, else the row numbers.
-#' @param margin Not used since 2.0 (ggplot2 sizes the margins from the
-#' labels); kept so that 1.x calls still run.
-#' @param legendx The x coordinate of the left side of the legend, as a
-#' proportion of the plot's width. The default value is 0.73; the legend sits
-#' in the empty upper triangle.
-#' @param newwd A logical variable to indicate whether to print graph in a new window. The default is FALSE.
+#' @param ... Not used: \code{level}, \code{margin}, \code{legendx}, \code{newwd} (before 2.0) stop with their 2.0
+#'   spelling. (ggplot2 sizes the margins; the legend sits in the empty upper triangle.)
 #' @param values Whether to print each p-value on its tile (the default is
 #' \code{FALSE}). Useful for up to about 15 levels.
 #' @param basesz The base font size. The default is 12.
@@ -51,8 +46,10 @@
 #' @name PMplot
 NULL
 
-PMplot <- function(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, legendx=0.73, newwd=FALSE,
-                   values=FALSE, basesz=12) {
+PMplot <- function(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...) {
+  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
+  pm_defunct("PMplot", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  level <- pm_conf_alpha(conf.level)
   blocks <- NULL
   if (is.data.frame(pmatrix)) pmatrix <- as.matrix(pmatrix)
   if (is.list(pmatrix)) {
@@ -77,9 +74,7 @@ PMplot <- function(pmatrix, level=0.05, mtitle=NULL, xylabel=NULL, margin=5, leg
     return(invisible(NULL))
   }
   if (is.null(mtitle) || identical(mtitle, "NULL") || identical(mtitle, "")) mtitle <- "Level Plot of p-value Matrix"
-  if (newwd) grDevices::dev.new()
-  pm_ptile_plot(P, labs, level = level, title = mtitle, blocks = blocks, values = values, legendx = legendx,
-                basesz = basesz)
+  pm_ptile_plot(P, labs, level = level, title = mtitle, blocks = blocks, values = values, basesz = basesz)
 }
 
 ## The bands of p-values shown by the level plots: four with level 0.05, else

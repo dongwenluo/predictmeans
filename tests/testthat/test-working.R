@@ -108,7 +108,7 @@ test_that("permlmer() tests GLMM random and fixed effects on the working scale",
   expect_error(permlmer(g0, t1, nperm = 9, ncore = 1), "Both models")
 })
 
-test_that("R2_glmm() of glmmTMB models uses the right working variance", {
+test_that("R2_model() (Piepho) of glmmTMB models uses the right working variance", {
   skip_on_cran()
   set.seed(4)
   d <- expand.grid(rep = 1:5, A = factor(1:4), g = factor(1:12))

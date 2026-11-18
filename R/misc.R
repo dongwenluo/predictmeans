@@ -750,34 +750,11 @@ f_loj_krc <- function(x, y, by.x, by.y) {
 ## UL -- Upper Limit of CI
 ## trt_n -- names of treatment
 
-#' Multiple Comparisons Based on the Confidence Intervals
-#'
-#' @description
-#' This function produces letter representations for a multiple comparison test by analyzing the confidence intervals associated with the mean values of different treatments. In particular, if the confidence intervals of two treatments overlap, it indicates that there is no significant difference between them. Conversely, if the confidence intervals do not overlap, it indicates that the treatments are significantly different from each other.
-#' @usage
-#' ci_mcp(LL, UL, trt_n=NULL)
-#' @param LL Lower limits of treatments' confidence interval.
-#' @param UL Upper limits of treatments' confidence interval.
-#' @param trt_n Treatments' names.
-#' @references
-#' Vanessa, C. (05 October 2022),
-#' 	\emph{Confidence tricks: the 83.4\% confidence interval for comparing means}, https://vsni.co.uk/blogs/confidence_trick.
-#' @author
-#' Dongwen Luo, Siva Ganesh and John Koolaard
-#' @examples
-#'   library(predictmeans)
-#'   ci_mcp(LL=c(68.2566,  87.7566, 103.0899, 112.2566), UL=c(90.5212, 110.0212, 125.3545, 134.5212))
-#'   
-#'   data("Oats", package="nlme")
-#'   Oats$nitro <- factor(Oats$nitro)
-#'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-#'   predictmeans(fm, "nitro", adj="BH", plot=FALSE)$mean_table
-#'   predictmeans(fm, "nitro", pairwise=TRUE, conf.level=0.834, letterCI = TRUE, plot=FALSE)$mean_table
-#' @name ci_mcp
-NULL
-
-ci_mcp <- function(LL, UL, trt_n=NULL) {
+## Letters from the overlap of intervals (LL, UL): the engine of
+## predictmeans(letterCI = TRUE), whose intervals are the comparison intervals
+## (R/comparison.R). Exported as ci_mcp() before 2.0: letters from overlapping
+## confidence intervals (95% or 83.4%) do not answer the pairwise tests.
+pm_ci_mcp <- function(LL, UL, trt_n=NULL) {
 
   stopifnot("Check your LL and UL input!"={
     is.numeric(LL)
@@ -904,3 +881,6 @@ pm_zi_component <- function(model) {
     "(1 - pi) mu, with pi the probability of an extra zero. Ratios are of these means (the same for overall ",
     "means only when pi is the same)."))
 }
+
+## Removed in 2.0: predictmeans(letterCI = TRUE).
+ci_mcp <- function(...) pm_defunct_fun("ci_mcp")

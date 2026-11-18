@@ -1,13 +1,13 @@
-test_that("R2_model(): Piepho values as numbers equal R2_glmm()", {
+test_that("R2_model(): Piepho's values as numbers (R2_glmm(), removed in 2.0, printed them in percent)", {
   fm <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
   g <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), data = cbpp, family = binomial)
   for (m in list(fm, g)) {
-    txt <- suppressMessages(capture.output(r <- R2_glmm(m)))
     v <- R2_model(m)
     expect_s3_class(v, "pm_r2")
-    expect_equal(names(v), names(r))
-    expect_equal(round(100*unclass(v), 2), as.numeric(sub("%", "", r)), ignore_attr = TRUE)
+    expect_equal(100*unclass(v), pm_r2_piepho(m), ignore_attr = TRUE)
   }
+  expect_error(R2_glmm(fm), "use R2_model(model)", fixed = TRUE, class = "defunctError")
+  expect_error(ci_mcp(1, 2), "letterCI = TRUE", fixed = TRUE, class = "defunctError")
 })
 
 test_that("R2_model(method = 'nakagawa'): published sleepstudy values; random slopes as Johnson (2014)", {

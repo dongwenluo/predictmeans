@@ -4,8 +4,8 @@
 \alias{residplot}
 \title{Diagnostic Plots for a Fitted Model}
 \usage{
-residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE,
-    ask = FALSE, interactive = FALSE, plot = TRUE)
+residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
+    interactive = FALSE, plot = TRUE, ...)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
@@ -13,7 +13,7 @@ residplot(model, group = "none", level = 1, slope = FALSE, id = 3, newwd = FALSE
 \item{group}{Optional variable that colours the points: the name (in "quotes") of a variable in the data of the
 model, or a vector with one value per observation. The default \code{"none"} uses one colour.}
 
-\item{level}{For mixed models: which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
+\item{re_level}{For mixed models (\code{level} before 2.0): which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
 \code{ranef()}: for \code{lme} the outermost grouping first, for \code{lmer} the innermost first).}
 
 \item{slope}{For mixed models: \code{TRUE} plots the random slopes (the second column of the random effects) instead
@@ -23,9 +23,7 @@ of the random intercepts.}
 Cook's distance plot the largest distances); \code{FALSE} or 0 labels none. In 1.x \code{id = TRUE} let you
 click on points; now \code{TRUE} labels 3 points, and \code{interactive = TRUE} shows every point's row name.}
 
-\item{newwd}{Open a new graphics device first.}
-
-\item{ask}{\code{TRUE}: draw the plots one per page, asking before each new page (interactive sessions).}
+\item{...}{Not used: \code{level}, \code{newwd}, \code{ask} (before 2.0) stop with their 2.0 spelling.}
 
 \item{interactive}{\code{TRUE}: show the plots with \pkg{plotly} (\code{plotly::ggplotly()}), which must be
 installed.}
@@ -70,10 +68,10 @@ stratum. The plots inform; they do not test. For a summary of checks, see also \
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-residplot(fm, level=2)    # lme: level=2 for random effect "Block:Variety"
+residplot(fm, re_level = 2)    # lme: re_level = 2 for random effect "Block:Variety"
 
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
-residplot(fm, group = "Variety") # lmer: level=1 for random effect "Block:Variety"
+residplot(fm, group = "Variety") # lmer: re_level = 1 for random effect "Block:Variety"
 
 # a Poisson GLM: randomized quantile residuals
 gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)

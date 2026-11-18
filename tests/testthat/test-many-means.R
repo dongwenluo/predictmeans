@@ -74,7 +74,7 @@ test_that("PMplot() and autoplot(type = 'pvalue') draw the same square level plo
   expect_equal(sort(unique(b$data[[1]]$y)), -(8:2))            # (reversed y axis: first level at the top)
   expect_equal(g$coordinates$ratio, 1)                 # square tiles
   expect_equal(nrow(ggplot2::ggplot_build(PMplot(pmatrix, values = TRUE))$data[[2]]), 28)
-  expect_equal(nlevels(PMplot(pmatrix, level = 0.1)$data$band), 2)
+  expect_equal(nlevels(PMplot(pmatrix, conf.level = 0.9)$data$band), 2)
   expect_equal(nlevels(g$data$band), 4)
   expect_message(expect_null(PMplot(matrix(NA_real_, 3, 3))), "no p-values")
   expect_error(PMplot(matrix(0, 2, 3)), "square")

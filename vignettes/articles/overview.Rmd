@@ -155,7 +155,7 @@ kable(anova(mod))
 
 -   **$R^2$**
 ```{r}
-R2_glmm(mod)
+R2_model(mod)
 ```
 
 ### Predicted Means
@@ -356,7 +356,7 @@ kable(anova(mod))
 
 -   **$R^2$**
 ```{r}
-R2_glmm(mod)
+R2_model(mod)
 ```
 
 ### Predicted Means
@@ -555,17 +555,20 @@ kable(car::Anova(mod))
 ##### Mean Table
 
 ```{r}
-covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                conf.level = 0.834) # get 83.4% CI
+covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose")
 as.data.frame(covariate_out) %>%
   select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
   rename(Probability=response, LL=response.conf.low, UL=response.conf.high) %>% 
   arrange(log10Dose, Drug) %>% 
-  group_by(log10Dose) %>% 
-  mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
-  ungroup() %>% 
   DT_df()
+```
+
+Letters for the drugs at one dose: from comparison intervals, whose overlap agrees with the pairwise tests
+(overlap of 95% or 83.4% confidence intervals does not):
+
+```{r}
+predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterCI = TRUE)$mean_table
 ```
 
 ##### Mean Plot
@@ -575,9 +578,9 @@ as.data.frame(covariate_out) %>%
 #| fig-height: 7
 autoplot(covariate_out)
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               conf.level = 0.834, plot = TRUE, plot_args = list(trellis = FALSE))
+               plot = TRUE, plot_args = list(trellis = FALSE))
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               conf.level = 0.834, trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
+               trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
 ```
 
 
@@ -585,7 +588,10 @@ covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
 
 Options in function 'covariatemeans':
 
--   **{conf.level = 0.834}** produces 83.4% confidence interval (CI) for predicted means. If a straightforward multiple comparison between predicted means is not feasible, an alternative method involves utilizing predicted means with 83.4% CIs. When the CIs of two predicted means overlap, the associated means are not significantly different at the 0.05 level; otherwise, they are considered significant. This holds for independent means with equal standard errors. When the means are correlated (blocks, repeated measures, mixed models) or their standard errors differ, the level that makes overlap agree with the test is different: `predictmeans()` computes it from the model (`letterCI = TRUE`, or `autoplot(pm, interval = "comparison")`). The function **'ci_mcp(LL, UL)'** is used to produce indicating letters.
+-   The confidence bands of the lines are for each line on its own: whether two bands overlap is not a test
+    of the two drugs. `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letterCI = TRUE)` gives letters
+    at a dose that agree with the pairwise tests, and `contr = c("Morphine", "Amidone")` in `covariatemeans()`
+    gives the difference of two drugs along the dose with its band.
 
 **DT_df** is a function for producing data table in html with 'CSV' download button. To download the whole data, you need to select 'All' entries.
 
@@ -652,7 +658,7 @@ kable(anova(mod1)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -709,7 +715,7 @@ kable(anova(mod2)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
 ### Prediction with Group {.tabset .tabset-pills}
@@ -803,7 +809,7 @@ kable(Anova(mod$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -896,7 +902,7 @@ kable(car::Anova(mod1$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod1$semer)
+R2_model(mod1$semer)
 ```
 
 ### Prediction {.tabset .tabset-pills}
@@ -950,7 +956,7 @@ kable(Anova(mod2$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod2$semer)
+R2_model(mod2$semer)
 ```
 
 ### Prediction with Group {.tabset .tabset-pills}
@@ -1046,7 +1052,7 @@ kable(car::Anova(mod$semer))
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 ### Prediction by Day in Season {.tabset .tabset-pills}
@@ -1129,7 +1135,7 @@ kable(anova(mod)$smooth)
 -   **$R^2$**
 
 ```{r}
-R2_glmm(mod$semer)
+R2_model(mod$semer)
 ```
 
 

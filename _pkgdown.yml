@@ -48,12 +48,10 @@ reference:
   - tidy.pm_curves
   - autoplot.predictmeans
   - PMplot
-  - ci_mcp
 - title: Degrees of freedom, tests and diagnostics
   contents:
   - anova.lmerMod
   - df_term
-  - R2_glmm
   - R2_model
   - varcomp
   - se_ranef
