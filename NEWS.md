@@ -118,6 +118,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     `library(predictmeans)` no longer attaches (glmmTMB, lmerTest);
     `cran-comments.md` describes the removed functions and changed
     dependencies.
+  - `print()` of a `semireg()` or `semireg_tmb()` fit shows the fitted model
+    (as 1.x printed it during the fit with `prt = TRUE`) and the random-effect
+    term of each smooth; it printed the whole list, data and matrices
+    included. `summary()` gives the summary of the fitted model.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

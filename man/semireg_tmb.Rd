@@ -56,6 +56,8 @@ because of missingness.}
 nothing is printed during the fit (\code{print(fit$semer)}).}
 }
 \value{
+A list of class \code{semireg}; \code{print()} shows the fitted model and the random-effect term of each
+smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests of its terms. Its elements:
 \item{semer}{A glmmTMB model used in the fitting.}
 \item{data}{A data.frame with generated variables in the fitting.}
 \item{fomul_vars}{Name of variables in the formula of semireg_tmb model.}

@@ -225,6 +225,23 @@ pm_sr_result <- function(semer, st, mc, info, extra) {
   ans
 }
 
+## print() and summary() of a fit show the fitted model (as 1.x printed it
+## during the fit with prt = TRUE), not the list, and name the random-effect
+## term that holds each smooth.
+print.semireg <- function(x, ...) {
+  print(x$semer, ...)
+  sm <- x$smooths
+  if (length(sm$labels)) {
+    cat("\nSmooth terms:\n")
+    if (length(sm$maps) == length(sm$labels)) {
+      print(data.frame(smooth = sm$labels, `random term` = names(sm$maps), check.names = FALSE), row.names = FALSE)
+    } else cat(" ", paste(sm$labels, collapse = ", "), "\n")
+  }
+  invisible(x)
+}
+
+summary.semireg <- function(object, ...) summary(object$semer, ...)
+
 ## ---- Uncertainty of the smoothing parameters ----
 ##
 ## The covariance of the coefficients from pm_sr_info() is conditional on the

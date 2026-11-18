@@ -238,3 +238,18 @@ test_that("objects of the session in xt or k of random curves and t2() are not t
   expect_false("kk" %in% ft$sm_vars)
   expect_true(all(is.finite(semipred(ft, covariate = c("x", "z"))$pred_df$SE)))
 })
+
+test_that("print() and summary() of a fit show the model, not the list", {
+  fit <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
+  out <- capture.output(print(fit))
+  expect_true(any(grepl("REML criterion", out)))
+  expect_true(any(grepl("s(pressure):QB200", out, fixed = TRUE)))
+  expect_false(any(grepl("^\\$data", out)))
+  expect_lt(length(out), 60)
+  expect_s3_class(summary(fit), "summary.merMod")
+  ft <- semireg_tmb(rate ~ s(pressure, bs = "os") + (1 | Subject), data = nlme::Dialyzer)
+  out <- capture.output(print(ft))
+  expect_true(any(grepl("s_pressure", out)))
+  expect_lt(length(out), 60)
+  expect_s3_class(summary(ft), "summary.glmmTMB")
+})

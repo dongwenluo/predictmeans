@@ -102,6 +102,8 @@
 #'   glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Poisson fit, which is not the
 #'   maximum-likelihood fit.
 #' @return
+#' A list of class \code{semireg}; \code{print()} shows the fitted model and the random-effect term of each
+#' smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests of its terms. Its elements:
 #' \item{semer}{A mer model used in the fitting.}
 #' \item{data}{A data.frame with generated variables in the fitting.}
 #' \item{fomul_vars}{Name of variables in the formula of semireg model.}
