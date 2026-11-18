@@ -553,12 +553,11 @@ kable(car::Anova(mod))
 
 ```{r}
 covariate_out <- covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose",
-                                level = 0.166, # get 83.4% CI
-                                newwd = TRUE) 
-covariate_out$pltdf %>%
-  select(Drug, xvar, Mean, ses, LL, UL) %>% 
+                                level = 0.166) # get 83.4% CI
+as.data.frame(covariate_out) %>%
+  select(Drug, log10Dose, response, std.error, response.conf.low, response.conf.high) %>% 
   mutate_if(is.numeric, round, digits = 4) %>% 
-  rename(log10Dose=xvar, Probability=Mean) %>% 
+  rename(Probability=response, LL=response.conf.low, UL=response.conf.high) %>% 
   arrange(log10Dose, Drug) %>% 
   group_by(log10Dose) %>% 
   mutate(Letter=ci_mcp(LL, UL)) %>%  # get multi-compare letter
@@ -571,10 +570,11 @@ covariate_out$pltdf %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
+autoplot(covariate_out)
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trellis = FALSE)
+               level = 0.166, trellis = FALSE, plot = TRUE)
 covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               level = 0.166, trans=I, trellis = FALSE, ci=F)
+               level = 0.166, trans=I, trellis = FALSE, ci=F)$plt
 ```
 
 

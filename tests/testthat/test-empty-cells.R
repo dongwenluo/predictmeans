@@ -163,3 +163,59 @@ test_that("factors confounded within another factor (each pasture on one farm): 
   expect_no_warning(pw <- suppressMessages(predictmeans(fm, "date:trt", weights = "cells", plot = FALSE, prtnum = FALSE)))
   expect_false(anyNA(pw$means$estimate))
 })
+
+test_that("means over empty cells are labelled, and nothing read off them contradicts their pair tests", {
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  Oats <- as.data.frame(nlme::Oats); Oats$N <- factor(Oats$nitro)
+  Om <- subset(Oats, !(Variety == "Victory" & N == "0.6"))
+  fm <- q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Om))
+  pm <- q(predictmeans(fm, "Variety", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  m <- pm$means
+  # the cells each mean averages, as 'over' of the pairs
+  expect_equal(m$over, c(NA, NA, "N 0, 0.2, 0.4"))
+  expect_equal(which(names(m) == "over"), which(names(m) == "estimate") - 1)
+  # no comparison interval for it: its pairs are on common cells
+  expect_true(all(is.na(m[3, c("comparison.low", "comparison.high")])))
+  expect_false(anyNA(m$comparison.low[1:2]))
+  cmp <- pm$settings$comparison
+  expect_equal(cmp$left_out, "Victory")
+  expect_equal(cmp$pairs, 1)
+  # the multiplier from the one pair left: overlap = its test
+  p <- pm$pairs[1, ]
+  expect_equal(cmp$mult, qt(0.975, p$df)*p$std.error/sum(m$std.error[1:2]), tolerance = 1e-10)
+  # letterCI: letters from the p-values instead (Marvellous vs Victory: p = 0.07)
+  expect_message(pl <- suppressWarnings(predictmeans(fm, "Variety", letterCI = TRUE, plot = FALSE, prtnum = FALSE)),
+                 "letters are from the p-values")
+  expect_equal(pl$means$group, pm$means$group)
+  expect_equal(pm$means$group, c("A", "A", "A"))
+  expect_match(attr(pm$LSD, "Note"), "compared on common cells")
+  # the plot: an open point, no comparison bar, a caption
+  g <- ggplot2::autoplot(pm, interval = "comparison")
+  b <- ggplot2::ggplot_build(g)
+  expect_equal(b$data[[2]]$shape, c(16, 16, 1))
+  expect_true(all(is.na(b$data[[3]][3, c("ymin", "ymax")])))
+  expect_match(g$labels$caption, "Open points")
+  expect_equal(nrow(ggplot2::ggplot_build(ggplot2::autoplot(pm))$data[[3]]), 3)   # confidence limits: all
+  # complete data: no 'over' column, no caption, intervals for all
+  pf <- q(predictmeans(q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Oats)), "Variety",
+                       pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  expect_null(pf$means$over)
+  expect_length(pf$settings$comparison$left_out, 0)
+  expect_null(ggplot2::autoplot(pf, interval = "comparison")$labels$caption)
+})
+
+test_that("confounded factors: means labelled; intervals kept where the pairs are the differences of the means", {
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  set.seed(9)
+  dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
+  dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))
+  dc$y <- as.numeric(dc$vol) + as.numeric(dc$C) + rnorm(nrow(dc))
+  pv <- q(predictmeans(lm(y ~ C*vol + drop, data = dc), "vol", pairwise = TRUE, plot = FALSE, prtnum = FALSE))
+  expect_equal(pv$means$over, c("drop coarse", "drop coarse", "drop fine", "drop coarse"))
+  # each pair is the difference of the shown means: the intervals stay
+  m <- setNames(pv$means$estimate, pv$means$vol)
+  expect_equal(abs(pv$pairs$estimate), unname(abs(m[pv$pairs$level1] - m[pv$pairs$level2])), tolerance = 1e-10)
+  expect_length(pv$settings$comparison$left_out, 0)
+  expect_false(anyNA(pv$means$comparison.low))
+  expect_null(attr(pv$LSD, "Note"))
+})

@@ -28,6 +28,7 @@ seven transmembrane pressures, at two blood flow rates (`QB`, 200 or 300 dl/min)
 
 ```{r}
 library(predictmeans)
+library(ggplot2)      # autoplot()
 data(Dialyzer, package = "nlme")
 Dialyzer <- as.data.frame(Dialyzer)
 ```
@@ -70,10 +71,15 @@ anova(fm)
 ## Curves with confidence bands
 
 ```{r}
-cur <- semipred(fm, "QB", "pressure", prt = FALSE)
-head(cur$pred_df)
-cur$plt
+cur <- semipred(fm, "QB", "pressure")
+cur
+autoplot(cur)
 ```
+
+The result prints a summary and holds its tables in the layout of `predictmeans()`:
+`as.data.frame(cur)` (or `cur$means`) has `estimate`, `std.error`, `df`, `conf.low` and
+`conf.high` with the pressure under its own name. Nothing is drawn unless asked
+(`plot = TRUE`, or `autoplot()` as here). The 1.x table is still in `cur$pred_df`.
 
 The band is pointwise: at each pressure it covers the true curve with 95% probability
 (`level = 0.05`). Before version 2.0 these limits were 90% limits; `level = 0.1` gives
@@ -84,15 +90,17 @@ A **simultaneous** band covers the whole curve at once with 95% probability, so 
 wider. Use it to judge the shape of the curve over its whole range:
 
 ```{r}
-sim <- semipred(fm, "QB", "pressure", simultaneous = TRUE, prt = FALSE)
-p <- sim$pred_df
+sim <- semipred(fm, "QB", "pressure", band = "simultaneous")
+p <- sim$means
 head(data.frame(pressure = p$pressure, df = p$df, pointwise = qt(0.975, p$df),
-                simultaneous = (p$UL - p$rate) / p$SE))
-sim$plt
+                simultaneous = (p$adj.conf.high - p$estimate) / p$std.error))
+autoplot(sim)
 ```
 
 The critical values come from 10,000 draws of the estimates' distribution (a
-multivariate t), with a fixed seed, so the band is the same each time.
+multivariate t), with a fixed seed, so the band is the same each time. In the table the
+pointwise limits stay in `conf.low`/`conf.high` and the simultaneous band is in
+`adj.conf.low`/`adj.conf.high`, as the adjusted limits of `predictmeans()`.
 
 ## Where do the curves differ?
 
@@ -102,21 +110,27 @@ controlled over the whole range of pressures. Here the higher blood flow rate gi
 higher ultrafiltration rate from a pressure of about 1.2 upwards:
 
 ```{r}
-dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), simultaneous = TRUE, prt = FALSE)
-dif$plt
+dif <- semipred(fm, "QB", "pressure", contr = c(2, 1), band = "simultaneous")
+dif$significant
+autoplot(dif)
 ```
+
+`as.data.frame(dif)` has the difference at each pressure in the columns of
+`predictmeans()$pairs`, with `p.adj`: the share of the simulated maxima at least as large,
+below 0.05 exactly where the simultaneous band leaves out zero.
 
 ## Slopes and curvature: `deriv`
 
 `deriv = 1` gives the slope of each curve along the covariate, `deriv = 2` its
 curvature, with the same bands and df. Where the band lies above zero the rate still
-rises with pressure; the ranges are printed and kept in `attr(pred_df, "significant")`
-(here with a simultaneous band, which holds over the whole range at once):
+rises with pressure; the ranges are printed with the result and kept in `significant`
+(here with a simultaneous band, which holds over the whole range at once). The table
+`slp$slopes` adds the t test of slope = 0:
 
 ```{r}
-slp <- semipred(fm, "QB", "pressure", deriv = 1, simultaneous = TRUE, prt = FALSE)
-attr(slp$pred_df, "significant")
-slp$plt
+slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
+slp$significant
+autoplot(slp)
 ```
 
 `contr` with `deriv` compares the slopes of two curves. The derivatives are those of the
@@ -206,9 +220,9 @@ cn$y <- rnbinom(nrow(cn), size = 3,
 cn$y[runif(nrow(cn)) < 0.1] <- 0
 fc <- semireg_tmb(y ~ s(x, by = trt, bs = "os", k = 6) + (1 | site), ziformula = ~ 1,
                   family = glmmTMB::nbinom2, data = cn, prt = FALSE)
-rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous", prt = FALSE)
-attr(rr$pred_df, "significant")
-rr$plt
+rr <- semipred(fc, "trt", "x", contr = c("trt", "ctl"), band = "simultaneous")
+rr$significant
+autoplot(rr)
 ```
 
 **Subject-specific curves.** `(s(age, k = 10) | idnum)` gives each subject a random
@@ -224,7 +238,7 @@ gb$idnum <- factor(gb$idnum)
 fg <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20))) +
                 (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gb, prt = FALSE)
 logLik(fg$semer)
-semipred(fg, "age", "age", prt = FALSE)$plt
+autoplot(semipred(fg, "age", "age"))
 ```
 
 The population curve leaves out the subjects' curves; `anova(fg)` would test whether
@@ -243,7 +257,7 @@ da <- data.frame(x1 = runif(200), x2 = runif(200), z = rnorm(200))
 da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
 fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da, prt = FALSE)
 anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
-semipred(fa, covariate = "x1", prt = FALSE)$plt
+autoplot(semipred(fa, covariate = "x1"))
 ```
 
 **A surface.** Copper grade over a mining area (`data(copper)`): a thin-plate surface over
@@ -254,7 +268,7 @@ plots:
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
                data = copper, prt = FALSE)
-semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp, prt = FALSE)$plt
+autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 ```
 
 **Binary responses.** The probability of a response over `x` for two groups, with a random
@@ -267,9 +281,9 @@ db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x 
                                      rnorm(12, 0, 0.5)[db$cl]))
 fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial,
                 data = db, prt = FALSE)
-semipred(fbin, "g", "x", prt = FALSE)$plt
-head(semipred(fbin, "g", "x", contr = c("b", "a"), prt = FALSE)$pred_df[
-  c("x", "odds.ratio", "odds.ratio.LL", "odds.ratio.UL")])
+autoplot(semipred(fbin, "g", "x"))
+head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a")))[
+  c("x", "odds.ratio", "odds.ratio.conf.low", "odds.ratio.conf.high")])
 ```
 
 **Repeated measures with serial correlation.** Curves over time for three treatments,
@@ -300,7 +314,7 @@ data(ozoneCalif)
 fo <- semireg(ozone ~ t2(inversion.base.height, inversion.base.temp) +
                 s(daggett.pressure.gradient, bs = "os", k = 15), data = ozoneCalif, prt = FALSE)
 anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
-semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp"), prt = FALSE)$plt
+autoplot(semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp")))
 ```
 
 **A basis of your own.** A seasonal cycle on a straight trend: two years of daily values and
@@ -315,7 +329,7 @@ ds$y <- 10 + 0.002*ds$day + 2*sin(2*pi*ds$day/365) + rnorm(730)
 season <- function(d) cbind(sin(2*pi*d/365), cos(2*pi*d/365), sin(4*pi*d/365), cos(4*pi*d/365))
 fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "none")),
               data = ds, prt = FALSE)
-semipred(fs, covariate = "day", prt = FALSE)$plt
+autoplot(semipred(fs, covariate = "day"))
 ```
 
 ## Examples from the semiparametric regression literature
@@ -346,8 +360,8 @@ data(scallop); data(scallopKnots); data(scallopBdry)
 fsc <- semireg(asinh(tot.catch) ~ s(longitude, latitude, bs = "ztps",
                                    xt = list(knots = as.matrix(scallopKnots))),
                data = scallop, prt = FALSE)
-semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
-         trans = sinh, prt = FALSE)$plt
+autoplot(semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallopBdry,
+                  trans = sinh))
 ```
 
 **Union membership over the wage** (`wageTUnion`): penalised spline logistic regression,
@@ -357,7 +371,7 @@ the probability with its band:
 data(wageTUnion)
 fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
               data = wageTUnion, prt = FALSE)
-semipred(fw, "wage", "wage", prt = FALSE)$plt
+autoplot(semipred(fw, "wage", "wage"))
 ```
 
 ## From the `smoothZ` form

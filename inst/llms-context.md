@@ -60,7 +60,8 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", level = NULL,
 | factor (and covariate) columns | the level of each variable of `modelterm` |
 | `estimate`, `std.error`, `df` | mean on the model (link) scale, SE, denominator df |
 | `conf.low`, `conf.high` | confidence limits at `1 - level` (of each mean; not for comparing means) |
-| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap |
+| `over` | only when some mean averages over empty cells: the cells it averages (e.g. `"N 0, 0.2, 0.4"`); NA for the others |
+| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap; NA for a mean over empty cells whose pairs are not the differences of the shown means (`settings$comparison$left_out`; `letterCI` then takes the letters from the p-values) |
 | `response`, `response.std.error`, `response.conf.low`, `response.conf.high` | only when the means are back-transformed (non-identity link or `trans`); SE by the delta method |
 | `group` | letters (only with pairwise comparisons); means sharing a letter do not differ |
 | `n` | number of observations in the cell |
@@ -120,9 +121,9 @@ pm2 <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot 
 # contrasts by level names; standard families (Dunnett, polynomial, ...)
 K <- Kmatrix(fm, "nitro:Variety")
 cm <- specify_contrast(K, N_Victory = `0.6:Victory` - `0:Victory`)
-contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)[[1]]
+as.data.frame(contrastmeans(fm, "nitro:Variety", ctrmatrix = cm))
 contrastmeans(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "trt.vs.ctrl"),
-              adj = "mvt")[[1]]
+              adj = "mvt")$contrasts
 
 # joint F tests: nitrogen within each variety (SAS SLICE)
 pm_joint(fm, "nitro:Variety", by = "Variety")
@@ -130,7 +131,8 @@ pm_joint(fm, "nitro:Variety", by = "Variety")
 # slopes of a numeric covariate by group (fit with nitro numeric)
 Oats2 <- as.data.frame(nlme::Oats)
 fm2 <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats2)
-pm_slopes(fm2, "nitro", "Variety")
+sl <- pm_slopes(fm2, "nitro", "Variety", adj = "tukey")
+sl$slopes; sl$pairs                     # as.data.frame(sl, what = "pairs")
 
 # GLM / GLMM: response-scale means, ratios or odds ratios in pm$pairs
 data(Drug)
@@ -240,14 +242,39 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   LRT, stops after 20 exceedances. In simulation the default was never liberal (<= 4.5% at 5%) but
   conservative for GLMMs (0-4%), where the bootstrap was nearer 5% with more power: use the default for
   gaussian models, the bootstrap for GLMMs, small data and flagged rows.
-- `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) and
-  `semipred(..., contr = )` give the difference between two curves along a covariate. The test is on
-  the model (link) scale: `diff`, `LL`, `UL`, `includes0`; a log link also gives `ratio`, a logit link
-  `odds.ratio` (with `.includes1`); `response.diff` etc. are the delta-method difference on the response
-  scale (`contr_scale = "response"` plots it). `band = "simultaneous"` (`simultaneous = TRUE` in
-  `semipred()`) for "over which range do the curves differ"; `$test` is the joint F test
-  (`covariatemeans()` only), `$significant` the ranges. `covariatemeans(bias_adjust = TRUE)` draws the
-  mean of the response instead of the median / typical cluster.
+- `covariatemeans(model, "A", covariate = "x")` returns class `c("covariatemeans", "pm_curves")` and draws
+  nothing (`plot = TRUE` or `ggplot2::autoplot(cm)` for the plot). `cm$means` (= `as.data.frame(cm)`,
+  `generics::tidy(cm)`): factor columns, the covariate under its own name, `estimate`, `std.error`, `df`,
+  `conf.low`, `conf.high` (model scale), `response`, `response.std.error`, `response.conf.low`,
+  `response.conf.high` when back-transformed; `cm$settings` as for `predictmeans()` (plus `covariate`,
+  `contrast`, `band`, `test`). `level` is alpha here too.
+- `covariatemeans(model, "A", covariate = "x", contr = c("a1", "a3"))` (level names or numbers) gives the
+  difference between two curves along a covariate in `cm$pairs` (the default table of `as.data.frame()`):
+  `level1`, `level2`, the covariate, `estimate` (`a1` - `a3`, model scale, where the test is), `std.error`,
+  `df`, `statistic`, `p.value`, `conf.low`, `conf.high` (pointwise); with `band = "simultaneous"` also
+  `p.adj`, `adj.conf.low`, `adj.conf.high` (Scheffé over the covariate values, "over which range do the
+  curves differ"); `ratio` (log) or `odds.ratio` (logit) with limits; `response`, ... the delta-method
+  difference on the response scale. `cm$settings$test` is the joint F test, `cm$significant` the ranges
+  where the band asked for leaves out 0.
+  `covariatemeans(bias_adjust = TRUE)`: the mean of the response instead of the median / typical cluster.
+- `semipred(fit, "A", "x")` returns class `c("semipred", "pm_curves")` with the same tables and methods and
+  draws nothing (`plot = TRUE`; `prt = TRUE`, the 1.x name, also draws, `prt = FALSE` never): `$means` (the
+  curves or surfaces; `NULL` with `contr` or `deriv`), `$slopes` (`deriv = 1, 2`: the same columns plus
+  `statistic`, `p.value` of slope = 0), `$pairs` (`contr`: the difference of two curves). In every table
+  `conf.low`/`conf.high` are pointwise t limits; with `band = "simultaneous"` the simulated band is
+  `adj.conf.low`/`adj.conf.high` (and `response.adj.conf.*`), with `p.adj` = share of simulated maxima
+  >= |t| (agrees with the band; smallest 1e-4). Generalized fits and `trans` add `response` columns (the
+  curves at random effects zero; `settings$back_transform`). `$settings` adds `deriv`, `unconditional`,
+  `boundary`; `$significant` the ranges. The 1.x `$pred_df` (`LL`/`UL` = the band asked for, `SE`,
+  `SE_mu`, `diff`, `ratio`, `response.diff`, ...) and `$plt` are still there.
+- One layout for every comparison table: `predictmeans()$pairs`, `contrastmeans()$contrasts` (first column
+  `contrast`), `pm_slopes()$slopes` / `$pairs`, `covariatemeans()` / `semipred()` `$pairs`, and the pairs of
+  `predictmeans()` on `semireg` fits all use `estimate`, `std.error`, `df`, `statistic`, `p.value`
+  (unadjusted), `p.adj`, `conf.low`, `conf.high` (each row on its own) and, with an adjustment that has them
+  (tukey, bonferroni, sidak, scheffe, mvt; simultaneous bands), `adj.conf.low`, `adj.conf.high`; `ratio` or
+  `odds.ratio` with `.conf.low` / `.conf.high` on a log or logit scale. F tests (`pm_joint()`,
+  `contrastmeans(joint = TRUE)$joint`, `covariatemeans()$settings$test`) use `df1`, `df2`, `F.ratio`,
+  `p.value`. `contrastmeans()[[1]]` is still the rounded 1.x table (adjusted p in `Pr(>|t|)`).
 - `marginaleffects::hypotheses()` works on `predictmeans()` results after
   `options(marginaleffects_model_classes = "predictmeans")`.
 - Data must be available when `predictmeans()` runs: it re-reads the model's `data`

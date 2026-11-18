@@ -122,8 +122,10 @@ pm_empty_rule <- function(Terms, factor_names, preddf, facs, nested = list(), ap
 ##   N            null space of the design (rank-deficient fits) or NULL
 ##   labels       row names of K
 ##   modelterm    for the warning
-## Value: list(affected (logical, by row of K), missing (labels of the empty
-## cells), compare = function(C, together = FALSE)).
+## Value: list(affected (logical, by row of K), over (by row of K: the cells
+## a mean over empty cells averages, e.g. "N 0, 0.2, 0.4"; NA for the other
+## means), missing (labels of the empty cells), compare = function(C,
+## together = FALSE)).
 pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   if (!length(rule$missing)) return(NULL)
   observed <- rule$present(rg$grid)
@@ -167,9 +169,9 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   }
   w0 <- rg$w0
 
-  describe <- function(rows, mdims) {
+  describe <- function(rows, mdims, unm = unmatched, vars = NULL) {
     # the factors whose levels describe the common cells
-    desc_vars <- intersect(setdiff(inter_vars, unmatched), unlist(rg$dim_vars[mdims]))
+    desc_vars <- if (!is.null(vars)) vars else intersect(setdiff(inter_vars, unm), unlist(rg$dim_vars[mdims]))
     if (!length(desc_vars)) return(NA_character_)
     g <- unique(rg$grid[rows, desc_vars, drop = FALSE])
     short <- function(x) if (length(x) > 6) c(x[1:6], "...") else x
@@ -249,19 +251,27 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
   # factors confounded in the data: say so first, and how to say it in the model
   conf <- if (length(rule$confounded)) paste0(
     paste(vapply(rule$confounded, function(p) paste0("'", p[1], "' and '", p[2], "'"), character(1)), collapse = "; "),
-    if (length(rule$confounded) == 1) " are" else ": each pair is", " confounded in the data (not all their combinations ",
-    "occur and the model has no term with both), so a mean over all their combinations cannot be estimated: ",
-    "the means average over the combinations that exist. To say this in the model, write the nesting in the formula (",
+    if (length(rule$confounded) == 1) " are" else ": each pair is", " confounded in the data: the means average over ",
+    "the combinations that exist (to say so: ",
     paste(vapply(rule$confounded, function(p) paste0(p[1], "/", p[2]), character(1)), collapse = ", "),
-    ") or leave out the factor that adds nothing; weights = \"cells\" weights the combinations by their numbers of ",
-    "observations. ")
+    " in the formula, leave one factor out, or weights = \"cells\"). ")
   warning(conf, "No data for ", miss_lab, ". ",
           if (one) "The mean of " else "The means of ", modelterm, " = ", short(aff_lab),
-          if (one) " averages only its observed cells; comparisons with it" else
-            " average only their observed cells; comparisons with them",
-          " use only the cells that the compared means all have (column 'over' of the pairs).",
+          if (one) " averages only its observed cells; its pairs" else " average only their observed cells; their pairs",
+          " use the cells both means have (column 'over'). See vignette(\"missing-cells\").",
           call. = FALSE)
-  list(affected = affected, missing = rule$missing, compare = compare)
+  # the cells each mean over empty cells averages (as 'over' of the pairs)
+  over <- stats::setNames(rep(NA_character_, length(affected)), labels)
+  # (with the factors that cannot be matched; only the factors with levels
+  # missing, unless only their combinations are)
+  avg_vars <- intersect(inter_vars, unlist(rg$dim_vars[setdiff(dn, rg$tdims)]))
+  for (k in which(affected)) {
+    rows <- which(observed & key == k)
+    part <- avg_vars[vapply(avg_vars, function(v) length(unique(rg$grid[rows, v])) < length(unique(rg$grid[[v]])),
+                            logical(1))]
+    over[k] <- describe(rows, NULL, vars = if (length(part)) part else avg_vars)
+  }
+  list(affected = affected, over = over, missing = rule$missing, compare = compare)
 }
 
 ## Factors of 'cands' that cannot be matched across the levels of the factors

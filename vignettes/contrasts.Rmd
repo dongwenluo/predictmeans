@@ -55,8 +55,10 @@ The confidence limits that go with the adjusted p-values are in the columns
 exactly when `p.adj` is below the level. `conf.low` and `conf.high` are the limits of
 each comparison on its own. The step-down and false discovery rate methods (`"holm"`,
 `"BH"`, ...) have no simultaneous limits, so their pairs have no such columns.
-`contrastmeans()` gives the same limits as `adj.lower.CL` and `adj.upper.CL` (below, for
-the comparisons with a control).
+`contrastmeans()` and `pm_slopes()` give their contrasts in the same columns
+(`estimate`, `std.error`, `df`, `statistic`, `p.value`, `p.adj`, `conf.low`,
+`conf.high`, `adj.conf.low`, `adj.conf.high`), as below for the comparisons with a
+control.
 
 ```{r}
 pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE, prtnum = FALSE)$pairs
@@ -81,7 +83,7 @@ dunnett
 ```
 
 ```{r, eval = has_mvt}
-contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")[[1]]
+contrastmeans(fm, "N", ctrmatrix = dunnett, adj = "mvt")
 ```
 
 Linear and quadratic trends in nitrogen within each variety (`by`), with integer
@@ -90,8 +92,12 @@ orthogonal polynomial coefficients (the nitrogen levels are equally spaced):
 ```{r}
 K2 <- Kmatrix(fm, "N:Variety")
 trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
-contrastmeans(fm, "N:Variety", ctrmatrix = trends)[[1]]
+contrastmeans(fm, "N:Variety", ctrmatrix = trends)
 ```
+
+The result prints its table; `as.data.frame()` (or `$contrasts`) returns it unrounded,
+with `p.value` unadjusted and `p.adj` adjusted. The 1.x table (rounded, with the
+adjusted p-value in `Pr(>|t|)`) is still the first element, `[[1]]`.
 
 `specify_contrast()` (see the getting-started vignette) writes any other contrast by
 the names of the means.
@@ -125,7 +131,7 @@ containment df.
 individual contrasts (and, with a `permlist`, a permutation p-value of the joint F):
 
 ```{r}
-contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)[["Joint F test of the contrasts"]]
+contrastmeans(fm, "N", ctrmatrix = curv, joint = TRUE)$joint
 ```
 
 ## Slopes of a covariate
@@ -194,7 +200,7 @@ fl <- lm(yield ~ Block + N + Variety, data = Oats)
 pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE, prtnum = FALSE)
 pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 pmh$settings$vcov
-contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)[[1]]
+contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)
 ```
 
 For any model, including mixed models, `vcov` also takes a covariance matrix of the

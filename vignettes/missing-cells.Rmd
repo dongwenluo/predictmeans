@@ -25,6 +25,11 @@ In short:
   it is the average of the observed cells, with a warning naming it.
 - **Its comparisons** with other means are made on the cells both means have (column
   `over` of `pairs`), not as the difference of two averages over different cells.
+- **The table says so**: column `over` of `means` names the cells such a mean averages.
+  Nothing read off the means can contradict the pair tests: when its pairs are not
+  the differences of the shown means, such a mean has no comparison interval,
+  `letterCI` takes the letters from the p-values, and `autoplot()` draws no
+  comparison or half-LSD bar for it (an open point marks every such mean).
 - **A cell** is a combination of the factors of one interaction term of the model.
   Factors that do not interact do not make cells together: a combination of them
   without data is not an empty cell, because an additive model can estimate it.
@@ -67,7 +72,7 @@ so its mean is their average, and predictmeans warns:
 
 ```{r}
 pm_n <- predictmeans(fm, "N", plot = FALSE, prtnum = FALSE)
-pm_n$means[, c("N", "estimate", "std.error", "n")]
+pm_n$means[, c("N", "over", "estimate", "std.error", "n")]
 ```
 
 That mean leaves out Victory, the lowest-yielding variety at the other nitrogen levels,
@@ -89,7 +94,26 @@ package sources) comparing averages over different cells rejected 8–78% of tru
 hypotheses when the other factor had an effect; comparing on the common cells 4–6%. When
 two means have no cell in common their difference is NA (`over = "none"`). `pm_joint()`
 tests a term on the cells common to all its means, and `contrastmeans()` compares on the
-cells the means of each contrast have in common.
+cells the means of each contrast have in common. `anova()` does the same for its Type III
+tests: the interaction keeps the contrasts that use no empty cell (5 df here, not 6), and
+the main effects are the `pm_joint()` tests:
+
+```{r}
+anova(fm)
+```
+
+The mean of N = 0.6 stays in the table, labelled by `over`, because it is the honest
+estimate of its own quantity (the average over the varieties that have it). A table of
+means over the cells common to all levels would not be better: it would change the means
+of complete levels whenever another level loses a cell, and with scattered empty cells
+the cells common to all can shrink to one or none. Readings that treat the means as
+comparable are switched off for it instead: no comparison interval (its pairs are on
+common cells), letters from the p-values with `letterCI = TRUE`, an open point in
+`autoplot()`:
+
+```{r, fig.width = 5, fig.height = 3.5}
+ggplot2::autoplot(pm_n2, interval = "comparison")
+```
 
 Other comparisons that stay within the observed cells are sound too, e.g. nitrogen levels
 within each variety:

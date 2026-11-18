@@ -23,6 +23,11 @@ reference_cases <- function() {
       if ("df_method" %in% a && inherits(m, c("glmerMod", "glmmTMB", "glm"))) list(df_method = "residual"))
   }
   cvm <- function(...) do.call(covariatemeans, c(list(...), old_df(covariatemeans, list(...)[[1]])))
+  # contrastmeans(): the 1.x elements only (the stable tables are newer)
+  ct_legacy <- function(r) {
+    r <- unclass(r)
+    r[setdiff(names(r), c("contrasts", "joint", "settings"))]
+  }
   pmo <- function(...) {
     extra <- old_df(predictmeans, list(...)[[1]])
     p <- do.call(predictmeans, c(list(...), plot = FALSE, prtnum = FALSE, extra))
@@ -130,8 +135,8 @@ reference_cases <- function() {
   cap("varcomp_lmer", varcomp(fm_lmer))
   cap("varcomp_lme", varcomp(fm_lme))
   cm <- rbind(c(1, -1, 0, 0), c(0, 0, 1, -1))
-  cap("contr_lmer", do.call(contrastmeans, c(list(fm_lmer, "nitro", ctrmatrix = cm), if ("vcov_adjust" %in% names(formals(contrastmeans))) list(vcov_adjust = FALSE))))
-  cap("contr_lme", do.call(contrastmeans, c(list(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"), old_df(contrastmeans, fm_lme))))
+  cap("contr_lmer", ct_legacy(do.call(contrastmeans, c(list(fm_lmer, "nitro", ctrmatrix = cm), if ("vcov_adjust" %in% names(formals(contrastmeans))) list(vcov_adjust = FALSE)))))
+  cap("contr_lme", ct_legacy(do.call(contrastmeans, c(list(fm_lme, "nitro", ctrmatrix = cm, adj = "BH"), old_df(contrastmeans, fm_lme)))))
   R
 }
 

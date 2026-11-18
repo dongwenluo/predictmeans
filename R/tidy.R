@@ -42,6 +42,10 @@ pm_tidy_parts <- function(e) {
   means <- label
   rownames(means) <- NULL
   for (v in names(means)) if (is.matrix(means[[v]])) means[[v]] <- as.vector(means[[v]])
+  # means over empty cells (R/empty-cells.R): the cells each one averages, as
+  # 'over' of the pairs (NA: all its cells)
+  ec_over <- g("ctr.matrix")$empty_cells$over
+  if (any(!is.na(ec_over))) means$over <- unname(ec_over[rownames(K)])
   means$estimate <- est
   means$std.error <- se
   means$df <- df
@@ -52,6 +56,10 @@ pm_tidy_parts <- function(e) {
   if (!is.null(cmp)) {
     means$comparison.low <- est - cmp$mult*se
     means$comparison.high <- est + cmp$mult*se
+    # none for means over empty cells: their pairs are compared on common
+    # cells, which no interval around the mean can show (R/comparison.R)
+    off <- rownames(K) %in% cmp$left_out
+    means$comparison.low[off] <- means$comparison.high[off] <- NA_real_
   }
 
   back <- function(x) {
@@ -290,9 +298,18 @@ get_vcov.predictmeans <- function(model, ...) vcov.predictmeans(model)
 
 as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
                                        what = c("means", "pairs"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
+  pm_result_table(x, if (!missing(what)) what, c("means", "pairs"), row.names)
+}
+
+## The tables of a classed result as data frames: tidy() and as.data.frame()
+## of predictmeans(), covariatemeans() / semipred() (pm_curves), pm_slopes()
+## and contrastmeans(), in one place. 'tables': the result's table names;
+## without 'what', the first of them that the result has.
+pm_result_table <- function(x, what, tables, row.names = NULL) {
+  what <- if (is.null(what)) tables[!vapply(tables, function(t) is.null(x[[t]]), logical(1))][1] else
+    match.arg(what, tables)
+  out <- if (is.na(what)) NULL else x[[what]]
+  if (is.null(out)) stop("There is no '", if (is.na(what)) tables[1] else what, "' table in this result.", call. = FALSE)
   if (!is.null(row.names)) rownames(out) <- row.names
   out
 }
@@ -352,10 +369,7 @@ as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
 NULL
 
 tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {
-  what <- match.arg(what)
-  out <- x[[what]]
-  if (is.null(out)) stop("There are no ", what, " in this result.", call. = FALSE)
-  out
+  pm_result_table(x, if (!missing(what)) what, c("means", "pairs"))
 }
 
 ## One row describing a result (the generics/broom glance()).

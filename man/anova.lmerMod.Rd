@@ -23,7 +23,10 @@ predictmeans attached before 2.0. With several models, \code{anova(m1, m2)} is l
 unchanged.
 }
 \details{
-Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3);
+Type III hypotheses do not depend on the contrasts the model was fitted with (sum-to-zero coding, as SAS Type 3).
+With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
+contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
+cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
 Type II are those of \code{car::Anova()}; Type I (sequential) are lmerTest's, always with Satterthwaite df.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's

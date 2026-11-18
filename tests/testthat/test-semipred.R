@@ -129,7 +129,7 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
   expect_lte(sum(rs$significant), sum(r$significant))
   sg <- attr(rs, "significant")
   expect_equal(nrow(sg), sum(rle(rs$significant)$values))
-  expect_message(semipred(sm, "district", "construction.date", contr = c(2, 1), prt = TRUE), "band, level 0.05")
+  expect_output(print(semipred(sm, "district", "construction.date", contr = c(2, 1))), "pointwise limits")
   # a Poisson model: link-scale difference, ratio, and the response-scale difference by the delta method
   set.seed(3)
   n <- 300
@@ -276,7 +276,7 @@ test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives
   sig <- attr(semipred(f, covariate = "x", deriv = 1, prt = FALSE)$pred_df, "significant")
   expect_equal(sig$direction, c("> 0", "< 0", "> 0"))
   expect_true(sig$to[1] < 2.36 && sig$from[2] > 2.36 && sig$to[2] < 7.07 && sig$from[3] > 7.07)
-  expect_message(semipred(f, covariate = "x", deriv = 1), "Slope of y")
+  expect_output(print(semipred(f, covariate = "x", deriv = 1)), "Slope differs from 0 \\(pointwise limits\\) for x")
   expect_error(semipred(f, covariate = "x", deriv = 3), "0, 1 or 2")
   expect_error(semipred(f, covariate = "x", deriv = 1, trans = exp), "model scale")
 })
@@ -290,7 +290,7 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
   r <- semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1"), prt = FALSE)$pred_df
   expect_equal(r$y, a$y[a$A == "a2"] - a$y[a$A == "a1"], tolerance = 1e-10)
   expect_equal(r$UL - r$y, qt(0.975, r$df)*r$SE_contr, tolerance = 1e-8)
-  expect_message(semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1")), "slope of a2|includes no difference")
+  expect_output(print(semipred(f, "A", "t", deriv = 1, contr = c("a2", "a1"))), "Difference a2 - a1 of the slopes")
   # a GLMM: slopes of the linear predictor, no back-transformation
   sp$cnt <- rpois(nrow(sp), exp(1 + sin(sp$t/2)/2))
   g <- suppressWarnings(semireg(cnt ~ s(t, by = A, bs = "os", k = 6) + (1 | Block), family = poisson, data = sp,

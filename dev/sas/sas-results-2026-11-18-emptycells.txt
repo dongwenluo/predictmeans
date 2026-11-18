@@ -1,0 +1,25 @@
+SAS run of pm-reference-emptycells.sas (SAS OnDemand, 2026-11-18), values
+read from the results page (PDF uploaded by the maintainer). Oats without
+Victory x 0.6, 66 observations, 11 cells.
+
+(1) PROC GLM, Block fixed, cell means NV: Error DF 50, SS 11955.75758, MS 239.11515
+  Contrast                          DF  Contrast SS   Mean Square  F     Pr > F
+  Variety (common Nitro)             2  1628.11111     814.05556   3.40  0.0411
+  Nitro (common Variety)             3  12077.72917   4025.90972  16.84  <.0001
+  Nitro x Variety (observed cells)   5  296.22917      59.24583    0.25  0.9390
+
+(1b) PROC GLM, factorial model
+  Type III: Block 5 13374.07576; Nitro 3 16559.89583 F 23.08; Variety 2 1596.77083 F 3.34 p 0.0435;
+            Variety*Nitro 5 296.22917 F 0.25 p 0.9390
+  Type IV:  Block 5 13374.07576; Nitro 3 12077.72917 F 16.84; Variety 2 1628.11111 F 3.40 p 0.0411;
+            Variety*Nitro 5 296.22917 F 0.25 p 0.9390
+            (note: other Type IV testable hypotheses exist which may yield different SS)
+
+(2) PROC MIXED REML, random Block Block*Variety
+  Covariance parameters: Block 205.18, Block*Variety 79.7643, Residual 179.82; -2 Res Log Like 484.53910904
+  DDFM=KR, KR(FIRSTORDER) and SATTERTHWAITE give the same contrast tests:
+  Label                             Num DF  Den DF  F      Pr > F
+  Variety (common Nitro)             2      11.9    1.94   0.1864
+  Nitro (common Variety)             3      40.1   22.39   <.0001
+  Nitro x Variety (observed cells)   5      40.1    0.33   0.8922
+  Type 3 test of NV: KR 10 / 38.7 F 9.95; Satterthwaite 10 / 28.3 F 10.25

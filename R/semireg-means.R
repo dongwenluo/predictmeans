@@ -85,9 +85,28 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     # all the pairs, or the pairs within each level of atvar (R/p-adjust.R)
     fams <- pm_families(if (is.null(atvar)) rep("all", length(p)) else by, est = !is.na(stat),
                         ij = cbind(pp$j, pp$i), L = CM %*% D)
-    p_adj <- pm_adjust_p(adj, stat, p, df_p, fams, R = if (adj == "mvt") stats::cov2cor(pV))
+    R <- if (adj == "mvt") stats::cov2cor(pV)
+    p_adj <- pm_adjust_p(adj, stat, p, df_p, fams, R = R)
     pairs$p.adj <- p_adj
+    # limits of each pair, and the simultaneous limits that agree with p.adj
+    # (the columns of predictmeans()$pairs; R/p-adjust.R)
+    ct <- stats::qt(1 - level/2, df_p)
+    pairs$conf.low <- pe - ct*pse
+    pairs$conf.high <- pe + ct*pse
+    pairs$lsd <- ct*pse
+    crit_adj <- pm_adjust_crit(adj, level, df_p, fams, R = R)
+    if (!is.null(crit_adj)) {
+      pairs$adj.conf.low <- pe - crit_adj*pse
+      pairs$adj.conf.high <- pe + crit_adj*pse
+    }
     pairs$p.method <- if (adj == "tukey") "tukey" else if (any(is.finite(dfs))) "t" else "z"
+    # a log link: ratios of the means; a logit link: odds ratios
+    kind <- if (is.list(fam)) switch(fam$link, log = "ratio", logit = "odds.ratio", NULL)
+    if (!is.null(kind)) {
+      pairs[[kind]] <- exp(pe)
+      pairs[[paste0(kind, ".conf.low")]] <- exp(pairs$conf.low)
+      pairs[[paste0(kind, ".conf.high")]] <- exp(pairs$conf.high)
+    }
     if (is.null(atvar)) {             # letters among all means
       P <- matrix(1, n, n, dimnames = list(levs, levs))
       P[cbind(pp$j, pp$i)] <- P[cbind(pp$i, pp$j)] <- p_adj

@@ -27,18 +27,27 @@
 #' @param adj Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.
 #' @param df_method,vcov_adjust,weights,vcov As in \code{\link{predictmeans}}.
 #' @return
-#' A list of two data frames:
-#' \item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{slope}, \code{std.error}, \code{df},
-#'   \code{conf.low}, \code{conf.high}, \code{statistic} (t) and \code{p.value} (of slope = 0).}
+#' An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predictmeans}} (\code{tidy()} and
+#' \code{as.data.frame()} return its tables, \code{what = "slopes"} or \code{"pairs"}):
+#' \item{slopes}{one row per level of \code{modelterm}: the factor columns, \code{estimate} (the slope),
+#'   \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value} (of slope = 0), \code{conf.low} and
+#'   \code{conf.high}.}
 #' \item{pairs}{one row per pair of levels: \code{level1}, \code{level2}, \code{estimate} (slope of \code{level1} minus
-#'   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value} and \code{p.adj}.}
+#'   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
+#'   \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
+#'   mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
+#'   \code{p.adj} is below \code{level}.}
+#' \item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
+#'   \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #'   library(predictmeans)
 #'   Oats <- as.data.frame(nlme::Oats)
 #'   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-#'   pm_slopes(fm, "nitro", "Variety")
+#'   sl <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
+#'   sl
+#'   as.data.frame(sl, what = "pairs")
 #' @name pm_slopes
 NULL
 
@@ -80,8 +89,9 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
   se <- sqrt(rowSums((L %*% V) * L))
   dfs <- df_of(L)
   crit <- stats::qt(1 - level/2, dfs)
-  slopes <- cbind(lab, slope = est, std.error = se, df = dfs, conf.low = est - crit*se, conf.high = est + crit*se,
-                  statistic = est/se, p.value = 2*stats::pt(-abs(est/se), dfs))
+  # the layout of predictmeans(): estimate, std.error, df, statistic, p.value, limits
+  slopes <- cbind(lab, estimate = est, std.error = se, df = dfs, statistic = est/se,
+                  p.value = 2*stats::pt(-abs(est/se), dfs), conf.low = est - crit*se, conf.high = est + crit*se)
 
   pairs <- NULL
   n <- length(est)
@@ -95,17 +105,40 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, level = 0.05, adj 
     stat <- pe/pse
     p <- 2*stats::pt(-abs(stat), pdf)
     fams <- pm_families(rep("all", length(stat)), est = !is.na(stat), ij = cbind(pp$j, pp$i), L = rL)
-    p_adj <- pm_adjust_p(adj, stat, p, pdf, fams, R = if (adj == "mvt") stats::cov2cor(pV))   # R/p-adjust.R
+    R <- if (adj == "mvt") stats::cov2cor(pV)
+    p_adj <- pm_adjust_p(adj, stat, p, pdf, fams, R = R)   # R/p-adjust.R
+    ct <- stats::qt(1 - level/2, pdf)
     pairs <- data.frame(level1 = levs[pp$j], level2 = levs[pp$i], estimate = pe, std.error = pse, df = pdf,
-                        statistic = stat, p.value = p, p.adj = p_adj, stringsAsFactors = FALSE)
+                        statistic = stat, p.value = p, p.adj = p_adj, conf.low = pe - ct*pse, conf.high = pe + ct*pse,
+                        stringsAsFactors = FALSE)
+    # simultaneous limits that agree with p.adj (the adjustments that have them)
+    crit_adj <- pm_adjust_crit(adj, level, pdf, fams, R = R)
+    if (!is.null(crit_adj)) {
+      pairs$adj.conf.low <- pe - crit_adj*pse
+      pairs$adj.conf.high <- pe + crit_adj*pse
+    }
   }
   rownames(slopes) <- NULL
-  structure(list(slopes = slopes, pairs = pairs), class = "pm_slopes",
+  settings <- list(modelterm = modelterm, covariate = covariate, at = at, level = level, adjust = adj,
+                   df_method = inf$label, vcov_adjust = isTRUE(inf$vcov_adjust),
+                   vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label,
+                   model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
+  structure(list(slopes = slopes, pairs = pairs, settings = settings), class = "pm_slopes",
             covariate = covariate, at = at, adjust = adj)
 }
 
+tidy.pm_slopes <- function(x, what = c("slopes", "pairs"), ...) {
+  pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"))       # R/tidy.R
+}
+
+as.data.frame.pm_slopes <- function(x, row.names = NULL, optional = FALSE, what = c("slopes", "pairs"), ...) {
+  pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"), row.names)
+}
+
 print.pm_slopes <- function(x, digits = 4, ...) {
-  cat("Slopes of", sQuote(attr(x, "covariate")), "at", format(attr(x, "at"), digits = digits), "\n\n")
+  s <- x$settings
+  cat("Slopes of", sQuote(attr(x, "covariate")), "at", format(attr(x, "at"), digits = digits),
+      if (!is.null(s)) paste0("(", format(100*(1 - s$level)), "% limits; ", s$df_method, " df)"), "\n\n")
   print(x$slopes, digits = digits, row.names = FALSE)
   if (!is.null(x$pairs)) {
     cat("\nPairwise differences of slopes (p.adj: ", attr(x, "adjust"), ")\n\n", sep = "")
