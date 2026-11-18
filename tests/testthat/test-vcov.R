@@ -98,7 +98,7 @@ test_that("a given matrix or function; lmer keeps its df; errors and permlist", 
   expect_error(predictmeans(m, "nitro", vcov = diag(2), plot = FALSE), "matrix")
   fm <- lm(yield ~ nitro, data = d)
   expect_error(predictmeans(fm, "nitro", vcov = "HC5", plot = FALSE), "not available")
-  r <- permmodels(fm, nperm = 19, seed = 1, prt = FALSE)
+  r <- permmodels(fm, nperm = 19, seed = 1)
   expect_warning(pp <- predictmeans(fm, "nitro", vcov = "HC3", permlist = r, plot = FALSE),
                  "not used with 'permlist'")
   expect_identical(pp$settings$vcov, "model")

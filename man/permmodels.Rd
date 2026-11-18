@@ -5,9 +5,8 @@
 \title{Permutation Test of Linear Model}
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
-  test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, 
-  fo=NULL, prt=TRUE, ncore=1, seed, method=c("auto", "raw", "freedman-lane"), perms=NULL,
-  refit=TRUE, robust=FALSE)
+  test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+  method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
@@ -30,9 +29,9 @@ for balanced data).}
 
 \item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.}
 
-\item{fo}{A model formula used in the \code{model}; \code{fo!=NULL} when the formula is specified by function \code{formula}.}
-
-\item{prt}{A logical variable to indicate whether or not to print output on the screen. The default is TRUE.}
+\item{...}{Not used: \code{prt} and \code{fo} (before 2.0) stop with their 2.0 spelling. Nothing is printed during
+the call: \code{print()} of the result shows the tables. A model whose formula is held in a variable
+(\code{lm(f, data)}; 1.x's \code{fo}) is detected and refitted in this session only.}
 
 \item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
 

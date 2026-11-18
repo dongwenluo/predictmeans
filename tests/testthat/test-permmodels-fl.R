@@ -18,7 +18,7 @@ fl_idx <- function(seed, nperm, n) {
 test_that("Freedman-Lane p-values equal a direct computation", {
   d <- fl_data()
   fm <- lm(y ~ x + A * B, data = d)
-  r <- permmodels(fm, nperm = 99, type = "II", seed = 3, prt = FALSE, method = "freedman-lane")
+  r <- permmodels(fm, nperm = 99, type = "II", seed = 3, method = "freedman-lane")
   idx <- fl_idx(3, 99, 24)
 
   # type II test of A: reduced model without A and A:B
@@ -48,7 +48,7 @@ test_that("Freedman-Lane p-values equal a direct computation", {
 test_that("Freedman-Lane works with weights and type I tests", {
   d <- fl_data()
   fw <- lm(y ~ x + A, data = d, weights = w)
-  r <- permmodels(fw, nperm = 99, type = "I", seed = 3, prt = FALSE, method = "freedman-lane")
+  r <- permmodels(fw, nperm = 99, type = "I", seed = 3, method = "freedman-lane")
   idx <- fl_idx(3, 99, 24)
   red <- lm(y ~ x, data = d, weights = w)
   f0 <- fitted(red); e0 <- resid(red) * sqrt(d$w)
@@ -63,19 +63,19 @@ test_that("Freedman-Lane works with weights and type I tests", {
 test_that("Freedman-Lane: large effects, aov, seeds and unsupported models", {
   d <- fl_data()
   fm <- lm(y ~ x + A, data = d)
-  r1 <- permmodels(fm, nperm = 49, type = "III", seed = 5, prt = FALSE, method = "freedman-lane")
-  r2 <- permmodels(fm, nperm = 49, type = "III", seed = 5, prt = FALSE, method = "freedman-lane")
+  r1 <- permmodels(fm, nperm = 49, type = "III", seed = 5, method = "freedman-lane")
+  r2 <- permmodels(fm, nperm = 49, type = "III", seed = 5, method = "freedman-lane")
   expect_identical(r1, r2)
   expect_equal(as.numeric(r1$ANOVA["x", "Perm_p_value"]), 1 / 50)
   expect_equal(r1$ANOVA["(Intercept)", "Perm_p_value"], "")
 
   fa <- aov(y ~ x + A, data = d)
-  ra <- permmodels(fa, nperm = 49, seed = 5, prt = FALSE, method = "freedman-lane")
+  ra <- permmodels(fa, nperm = 49, seed = 5, method = "freedman-lane")
   expect_null(ra$COEFFICENTS)
   expect_equal(as.numeric(ra$ANOVA["x", "Perm_p_value"]), 1 / 50)
 
   # glm models are permuted on the working scale (test-perm-fl-classes.R)
-  expect_s3_class(permmodels(glm(y ~ A, data = d), nperm = 9, prt = FALSE, method = "freedman-lane")$perm, "pm_perm")
+  expect_s3_class(permmodels(glm(y ~ A, data = d), nperm = 9, method = "freedman-lane")$perm, "pm_perm")
   fl2 <- lm(cbind(y, x) ~ A, data = d)
   expect_error(permmodels(fl2, nperm = 9, method = "freedman-lane"), "single response")
 })
@@ -83,7 +83,7 @@ test_that("Freedman-Lane: large effects, aov, seeds and unsupported models", {
 test_that("Freedman-Lane p-values of pairs and contrasts equal direct refits", {
   d <- fl_data()
   fm <- lm(y ~ x + A, data = d)
-  r <- permmodels(fm, nperm = 99, seed = 5, prt = FALSE, method = "freedman-lane")
+  r <- permmodels(fm, nperm = 99, seed = 5, method = "freedman-lane")
   expect_s3_class(r$perm, "pm_perm")
   idx <- fl_idx(5, 99, 24)
   # pair 2 v 3: the reduced model merges levels 2 and 3 of A
@@ -118,11 +118,31 @@ test_that("with a permlist, observed t statistics use the unadjusted covariance"
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   Om <- Oats[-c(1, 5, 9, 20, 33), ]
   m <- lme4::lmer(yield ~ nitro + Variety + (1 | Block/Variety), data = Om)
-  pl <- permmodels(m, method = "raw", nperm = 9, prt = FALSE, ncore = 1, seed = 1)
+  pl <- permmodels(m, method = "raw", nperm = 9, ncore = 1, seed = 1)
   a <- predictmeans(m, "nitro", permlist = pl, plot = FALSE, ncore = 1)
   b <- predictmeans(m, "nitro", vcov_adjust = FALSE, plot = FALSE, ncore = 1)
   expect_equal(a$pairs$std.error, b$pairs$std.error)
   expect_false(a$settings$vcov_adjust)
   expect_warning(predictmeans(m, "nitro", permlist = pl, vcov_adjust = TRUE, plot = FALSE, ncore = 1),
                  "unadjusted covariance")
+})
+
+test_that("permmodels() and bootmodels() print their tables; prt and fo stop (removed in 2.0)", {
+  mt <- mtcars
+  mt$cyl <- factor(mt$cyl)
+  fm <- lm(mpg ~ wt + cyl, data = mt)
+  r <- permmodels(fm, nperm = 19, type = "II", seed = 1)
+  expect_s3_class(r, "pm_permmodels")
+  out <- capture.output(print(r))
+  expect_true(any(grepl("^ANOVA:", out)) && any(grepl("Coefficients of \\(fixed\\) effects", out)))
+  expect_true(any(grepl("'19' Freedman-Lane permutations", out)))
+  expect_error(permmodels(fm, nperm = 19, prt = FALSE), "'prt' was removed in predictmeans 2.0: use print(x)", fixed = TRUE)
+  f <- mpg ~ wt + cyl
+  expect_error(permmodels(lm(f, data = mt), nperm = 19, fo = f), "'fo' was removed", fixed = TRUE)
+  # a formula held in a variable is detected (refitted in this session only)
+  expect_true(pm_formula_is_object(lm(f, data = mt)))
+  expect_false(pm_formula_is_object(fm))
+  b <- bootmodels(fm, nsim = 9, seed = 1)
+  expect_true(any(grepl("parametric bootstrap", capture.output(print(b)))))
+  expect_error(bootmodels(fm, nsim = 9, prt = FALSE), "'prt' was removed", fixed = TRUE)
 })

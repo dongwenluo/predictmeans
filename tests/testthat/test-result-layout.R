@@ -42,7 +42,7 @@ test_that("contrastmeans(): odds ratios for a logit link when the weights sum to
   skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fl <- lm(yield ~ Block + nitro + Variety, data = Oats)
-  r <- permmodels(fl, nperm = 29, seed = 1, prt = FALSE, ncore = 1)
+  r <- permmodels(fl, nperm = 29, seed = 1, ncore = 1)
   cp <- contrastmeans(fl, "nitro", ctrmatrix = rbind(c(-1, 1, 0, 0), c(-1, 0, 0, 1)), permlist = r, adj = "holm")
   expect_equal(unique(cp$contrasts$p.method), "permutation")
   expect_true(all(is.na(cp$contrasts$df)))

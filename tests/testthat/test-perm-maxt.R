@@ -22,7 +22,7 @@ test_that("pm_perm_maxT() follows Westfall and Young", {
 test_that("predictmeans(): permutation Tukey and Westfall with a permlist", {
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
-  r <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
+  r <- permmodels(fm, nperm = 999, seed = 1)
   tk <- predictmeans(fm, "nitro", permlist = r, adj = "tukey", plot = FALSE, ncore = 1)
   wy <- predictmeans(fm, "nitro", permlist = r, adj = "westfall", plot = FALSE, ncore = 1)
   pt <- predictmeans(fm, "nitro", adj = "tukey", plot = FALSE)
@@ -43,7 +43,7 @@ test_that("contrastmeans(): max-|t| from the refits of a permlist, and other adj
   skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = Oats)
-  r <- permmodels(fm, nperm = 49, seed = 1, prt = FALSE, ncore = 1, method = "raw")
+  r <- permmodels(fm, nperm = 49, seed = 1, ncore = 1, method = "raw")
   cm <- rbind(c(-1, 1, 0, 0), c(-1, 0, 1, 0), c(-1, 0, 0, 1))
   out <- contrastmeans(fm, "nitro", ctrmatrix = cm, permlist = r, adj = "westfall")[[1]]
   # by hand: |t| of each refit for the three contrasts

@@ -117,7 +117,7 @@ end.
 | permglmer(), permglmmTMB() | (aliases of `permlmer`) | remove | `permlmer()` |
 | permanova.lmer() | | remove (D6) | `permmodels(model, type =)` |
 | permmodels | prt | remove (D10) | `print()` |
-| permmodels | fo | remove: the formula is read from the model (`pm_data()`/`formula()`) — to check in step 4 that no class needs it | none |
+| permmodels | fo | removed (step 4): a formula held in a variable is detected (`pm_formula_is_object()`) | none |
 | permmodels | exact, data, method, perms, refit, robust, test.statistic, type, nperm, ncore, seed | keep | |
 | bootmodels | prt | remove (D10) | `print()` |
 | permstats | level | rename (D1) | `conf.level` |

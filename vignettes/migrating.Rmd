@@ -53,6 +53,12 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 | `semireg()` | `ngbinomial = TRUE` | `semireg_tmb(family = glmmTMB::nbinom2)` |
 | `semireg()`, `semireg_tmb()` | `smoothZ = list(sm = smZ(x))` | smooths in the formula: `s(x, bs = "os")` (below) |
 | `semireg()` | `ncenter`, `nscale`, `resp_scale` | removed: variables are used as they are |
+| `permlmer()` | `permlmer(lmer0 = m0, lmer1 = m1)` | `permlmer(model0 = m0, model1 = m1)` (or `permlmer(m0, m1)`) |
+| `permglmer()`, `permglmmTMB()` | `permglmer(m0, m1)` | `permlmer(m0, m1)` (they were the same function) |
+| `permanova.lmer()` | `permanova.lmer(fit, type = 3)` | `permmodels(fit, type = 3)` (Freedman-Lane permutations: other p-values, below) |
+| `permmodels()`, `bootmodels()` | `prt = FALSE` | removed: nothing is printed during the call; `print(result)` shows the tables |
+| `permmodels()` | `fo = f` (the formula held in a variable) | removed: detected from the model |
+| `permstats()` | `level = 0.05` | `conf.level = 0.95` |
 
 ```{r}
 library(predictmeans)
@@ -65,10 +71,13 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 try(predictmeans(fm, "nitro", level = 0.1))
 ```
 
-Two of these change numbers, by design:
+Three of these change numbers, by design:
 
 - `trans = function(x) exp(x) - 1`: the pairs have no `ratio` columns any more; with an offset they were ratios
   of `y + 1`, labelled as ratios of `y`.
+- `permanova.lmer()` refitted each model with and without the term and permuted through `permlmer()`;
+  `permmodels()` uses Freedman–Lane permutations. Both test the same hypotheses, with other permutation
+  p-values.
 - `semireg(ngbinomial = TRUE)` took theta from a Poisson fit, which is not the maximum-likelihood fit
   (on a test data set log-likelihood -1133.60 against -1132.98 for `semireg_tmb(family = glmmTMB::nbinom2)`,
   theta 3.31 against 2.80 with the true value 3).
@@ -563,7 +572,7 @@ several `Kmatrix()` cases with transformed covariates. See `NEWS.md` for the ful
 - **`R2_model()`** (R² as numbers, Piepho or Nakagawa), **`bootmodels()`** (parametric
   bootstrap), and `predictmeans()` on `semireg()` fits.
 - **Permutation tests for GLMs and GLMMs**: `permmodels()` on the working scale,
-  `permlmer()` (also `permglmer()`, `permglmmTMB()`) for nested GLMMs, and `perms` for
+  `permlmer()` for nested GLMMs, and `perms` for
   permutations restricted by the design (`permindex()`). See `vignette("resampling")`.
 - **Other model classes** can be added with a few methods (see `?pm_coef`).
 - **Fewer dependencies** and faster Kenward–Roger and Satterthwaite computations.

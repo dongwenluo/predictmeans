@@ -65,7 +65,6 @@ reference:
   contents:
   - permmodels
   - permlmer
-  - permanova.lmer
   - permindex
   - permstats
   - permcombine

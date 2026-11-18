@@ -5,7 +5,7 @@
 \title{Parametric Bootstrap Tests}
 \usage{
 bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
-           ncore = 1, prt = TRUE)
+           ncore = 1, ...)
 }
 \arguments{
 \item{model}{A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
@@ -23,7 +23,7 @@ Wald chi-square statistics (\code{lm}: F; \code{glm}: likelihood ratio).}
 
 \item{ncore}{Number of cores for refitting, the default is 1.}
 
-\item{prt}{Logical: print the tables? The default is TRUE.}
+\item{...}{Not used: \code{prt} (before 2.0) stops with its 2.0 spelling; \code{print()} of the result shows the tables.}
 }
 \value{
 Invisibly, a list with \code{permlist} (the coefficients and covariance matrices of the refits),

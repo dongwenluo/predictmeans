@@ -88,6 +88,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     numeric covariates are no longer centred). `fit$knots_lst`, `range_lst`,
     `type_lst`, `smoothZ_call` removed. splines2 and lmeSplines are no longer
     suggested.
+  - Permutation functions (step 4): `permlmer(lmer0, lmer1)` ->
+    `permlmer(model0, model1)`; `permglmer()`, `permglmmTMB()` (the same
+    function) and `permanova.lmer()` (use `permmodels(model, type = )`,
+    Freedman-Lane, other permutation p-values) removed; `permmodels()` and
+    `bootmodels()` lose `prt` (their results are class `"pm_permmodels"` and
+    print their tables; one print method for the five places that printed them)
+    and `permmodels()` loses `fo` (a formula held in a variable is detected);
+    `permstats(level =)` -> `conf.level`. 12 calls of `dev/snapshot-perm.R`
+    written both ways give identical results.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

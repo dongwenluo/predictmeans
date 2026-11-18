@@ -38,8 +38,8 @@ test_that("every main function works on the 13 model classes, or refuses with a 
     residplot = function(m) residplot(m),
     pm_check = function(m) pm_check(m),
     CookD = function(m) CookD(m, group = "Blk", plot = FALSE),
-    permmodels = function(m) permmodels(m, nperm = 5, prt = FALSE, ncore = 1, seed = 1),
-    bootmodels = function(m) bootmodels(m, nsim = 5, ncore = 1, seed = 1, prt = FALSE),
+    permmodels = function(m) permmodels(m, nperm = 5, ncore = 1, seed = 1),
+    bootmodels = function(m) bootmodels(m, nsim = 5, ncore = 1, seed = 1),
     autoplot = function(m) ggplot2::autoplot(predictmeans(m, "A", pairwise = TRUE),
                                              interval = "comparison"),
     Kmatrix = function(m) Kmatrix(m, "A", list(x = c(0, 1))))

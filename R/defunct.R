@@ -7,10 +7,13 @@
 #'   \strong{Removed} \tab \strong{Use} \cr
 #'   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
 #'     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
+#'   \code{permglmer()}, \code{permglmmTMB()} \tab \code{\link{permlmer}()} (they were the same function) \cr
+#'   \code{permanova.lmer()} \tab \code{\link{permmodels}(model, type = )}: Freedman-Lane permutations, so the
+#'     p-values differ from the refits of \code{permanova.lmer()} \cr
 #' }
 #' @param ... Not used.
 #' @name predictmeans-defunct
-#' @aliases smZ
+#' @aliases smZ permglmer permglmmTMB permanova.lmer
 #' @keywords internal
 NULL
 
@@ -75,7 +78,7 @@ pm_defunct_funs <- c(
   smZ = "smooths in the formula of semireg(), e.g. y ~ s(x, bs = \"os\") for smoothZ = list(sm = smZ(x)) (see vignette(\"migrating\"))",
   permglmer = "permlmer()",
   permglmmTMB = "permlmer()",
-  permanova.lmer = "permmodels(model, type = )",
+  permanova.lmer = "permmodels(model, type = ) (Freedman-Lane permutations; p-values differ from permanova.lmer()'s refits)",
   ci_mcp = "predictmeans(..., letterCI = TRUE): letters from comparison intervals that agree with the tests",
   R2_glmm = "R2_model(model)"
 )

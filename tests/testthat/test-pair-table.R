@@ -56,7 +56,7 @@ test_that("family sizes: k means in the estimable pairs, Scheffe rank of their c
 test_that("with a permlist the letters use 'level', as without", {
   O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
-  pl <- suppressWarnings(permmodels(fm, nperm = 99, seed = 1, prt = FALSE))
+  pl <- suppressWarnings(permmodels(fm, nperm = 99, seed = 1))
   p <- predictmeans(fm, "nitro", permlist = pl, adj = "holm", conf.level = 0.9, plot = FALSE)
   expect_equal(p$settings$level, 0.1)
   expect_match(p$mean_table$Note, "level '0.1'")

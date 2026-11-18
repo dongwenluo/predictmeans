@@ -263,6 +263,7 @@ Options in function 'predictmeans':
 system.time(
   permlme <- permmodels(model=mod, nperm=999)
 )
+permlme
 ```
 
 #### For Multiple Comparisons

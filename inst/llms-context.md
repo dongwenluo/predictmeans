@@ -147,7 +147,7 @@ predictmeans(g, "Drug", pairwise = TRUE, plot = FALSE)$pairs
 
 # permutation p-values for terms and pairs (Freedman-Lane by default, any model class:
 # lm, aov, glm, lme, gls, lmer, glmer, glmmTMB; mixed models refitted, refit = FALSE is faster)
-perm <- permmodels(fm, nperm = 999, seed = 1, prt = FALSE)
+perm <- permmodels(fm, nperm = 999, seed = 1)
 predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
 # unequal error variances in lm/glm: HC3 statistics with sign flips (wild bootstrap)
 # permmodels(lm_fit, nperm = 999, seed = 1, robust = TRUE)
@@ -155,12 +155,12 @@ predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)$pairs
 permstats(perm)
 # permcombine(y1 = perm1, y2 = perm2)   # same rows, same seed and nperm
 # the 1.x scheme (response / fitted values permuted, refits kept in permlist)
-perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, prt = FALSE, method = "raw")
+perm_raw <- permmodels(fm, nperm = 999, ncore = 1, seed = 1, method = "raw")
 # random effects or any two nested mixed models (lmer, glmer, glmmTMB)
-# permlmer(fm0, fm1, nperm = 999, ncore = 1, seed = 1)    # permglmer(), permglmmTMB() too
+# permlmer(fm0, fm1, nperm = 999, ncore = 1, seed = 1)    # also glmer and glmmTMB fits
 # randomisation test: permutations within blocks
 idx <- permindex(Oats, block = "Block", nsim = 999, seed = 1)
-permmodels(lm(yield ~ Block + nitro, data = Oats), perms = idx, prt = FALSE)$ANOVA
+permmodels(lm(yield ~ Block + nitro, data = Oats), perms = idx)$ANOVA
 
 # R2 as numbers; variance components
 R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
@@ -192,7 +192,7 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   means). Confidence limits of means are not for comparing means.
 - `letterCI = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
   in `mean_table`, at the significance level `1 - conf.level`.
-- `permmodels()`, `permlmer()`, `permanova.lmer()` and `predictmeans(permlist = )` use
+- `permmodels()`, `permlmer()` and `predictmeans(permlist = )` use
   `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down
   permutation max-|t| (Westfall-Young); `"scheffe"` is not available.

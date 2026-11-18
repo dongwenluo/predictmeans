@@ -77,7 +77,10 @@ test_that("permlmer() tests GLMM random and fixed effects on the working scale",
   set.seed(5); r <- permlmer(g0, g1, nperm = 19, ncore = 1, seed = 1); b <- runif(1)
   expect_identical(a, b)                         # the seed leaves the user's stream alone
   expect_identical(attr(r, "method"), "working")
-  expect_identical(r$`Perm-p`[2], permglmer(g0, g1, nperm = 19, ncore = 1, seed = 1)$`Perm-p`[2])
+  expect_identical(r$`Perm-p`[2], permlmer(model0 = g0, model1 = g1, nperm = 19, ncore = 1, seed = 1)$`Perm-p`[2])
+  # removed in 2.0: the same function under other names, and the 1.x argument names
+  expect_error(permglmer(g0, g1), "use permlmer()", fixed = TRUE, class = "defunctError")
+  expect_error(permlmer(lmer0 = g0, lmer1 = g1), "'lmer0' was removed in predictmeans 2.0: use model0 = g0", fixed = TRUE)
   # the observed statistic: REML LRT of the weighted working LMMs
   W <- pm_working(g0)
   dz <- d; dz$z <- W$z; dz$w <- 1 / W$resvar
@@ -100,7 +103,7 @@ test_that("permlmer() tests GLMM random and fixed effects on the working scale",
   # glmmTMB
   t0 <- glmmTMB::glmmTMB(y ~ A + B + (1 | block), family = poisson, data = d)
   t1 <- glmmTMB::glmmTMB(y ~ A + B + (1 | block) + (1 | wpid), family = poisson, data = d)
-  rt <- permglmmTMB(t0, t1, nperm = 19, ncore = 1, seed = 1)
+  rt <- permlmer(t0, t1, nperm = 19, ncore = 1, seed = 1)
   expect_equal(rt$`Perm-p`[2], r$`Perm-p`[2])
   expect_error(permlmer(g0, t1, nperm = 9, ncore = 1), "Both models")
 })
@@ -124,11 +127,12 @@ test_that("R2_glmm() of glmmTMB models uses the right working variance", {
   expect_gt(pm_r2_piepho(m)[["Total"]], 20)
 })
 
-test_that("permanova.lmer() tests the terms of a glmer model", {
+test_that("permanova.lmer() was removed in 2.0: permmodels() tests the terms of a glmer model", {
   skip_on_cran()
   data(Clinical, package = "predictmeans", envir = environment())
   gm <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic), family = binomial, data = Clinical)
-  a <- permanova.lmer(gm, nperm = 19, ncore = 1, seed = 1)
-  g0 <- lme4::glmer(cbind(Favorable, Total - Favorable) ~ 1 + (1 | Clinic), family = binomial, data = Clinical)
-  expect_equal(a$Perm.p, permlmer(g0, gm, nperm = 19, ncore = 1, seed = 1)$`Perm-p`[2])
+  expect_error(permanova.lmer(gm), "permmodels(model, type = )", fixed = TRUE, class = "defunctError")
+  a <- permmodels(gm, nperm = 19, seed = 1)
+  expect_true("Treatment" %in% rownames(a$ANOVA))
+  expect_true(is.finite(as.numeric(a$ANOVA["Treatment", "Perm_p_value"])))
 })

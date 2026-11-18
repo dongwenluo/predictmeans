@@ -3,6 +3,9 @@
 \name{predictmeans-defunct}
 \alias{predictmeans-defunct}
 \alias{smZ}
+\alias{permglmer}
+\alias{permglmmTMB}
+\alias{permanova.lmer}
 \title{Functions removed in predictmeans 2.0}
 \arguments{
 \item{...}{Not used.}
@@ -14,6 +17,9 @@ the 1.1.1 code beside the 2.0 code.
   \strong{Removed} \tab \strong{Use} \cr
   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
+  \code{permglmer()}, \code{permglmmTMB()} \tab \code{\link{permlmer}()} (they were the same function) \cr
+  \code{permanova.lmer()} \tab \code{\link{permmodels}(model, type = )}: Freedman-Lane permutations, so the
+    p-values differ from the refits of \code{permanova.lmer()} \cr
 }
 }
 \keyword{internal}

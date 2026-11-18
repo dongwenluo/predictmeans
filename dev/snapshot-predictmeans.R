@@ -30,8 +30,8 @@ m_nest <- aov(y ~ repl + contcomp + seedlot + treat/contcomp + contcomp/seedlot 
 ds <- expand.grid(date = factor(c("d1", "d2", "d3")), trt = factor(c("a", "b")), rep = 1:4)
 ds <- ds[!(ds$date == "d2" & ds$trt == "a"), ]; ds$y <- as.numeric(ds$trt) + rnorm(nrow(ds))
 m_single <- lm(y ~ date * trt, data = ds)
-perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, prt = FALSE, ncore = 1, seed = 1, method = "raw"))
-perm_lm <- suppressWarnings(permmodels(m_lm, nperm = 99, prt = FALSE, ncore = 1, seed = 1))
+perm <- suppressWarnings(permmodels(m_lmer, nperm = 19, ncore = 1, seed = 1, method = "raw"))
+perm_lm <- suppressWarnings(permmodels(m_lm, nperm = 99, ncore = 1, seed = 1))
 # confounded factors (drop "fine" only and always with v3): means and pairs that cannot be estimated
 set.seed(9); dc <- expand.grid(C = factor(c("c1", "c2")), vol = factor(c("v1", "v2", "v3", "v4")), rep = 1:3)
 dc$drop <- factor(ifelse(dc$vol == "v3", "fine", "coarse"))

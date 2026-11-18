@@ -18,7 +18,7 @@
 #' 37\% of true null hypotheses, where \code{\link{permmodels}} (Freedman-Lane on the working scale) gave 7\%.
 #' @usage
 #' bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL,
-#'            ncore = 1, prt = TRUE)
+#'            ncore = 1, ...)
 #' @param model A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
 #'   distribution: gaussian, binomial, Poisson, Gamma; also \code{MASS::glm.nb}), \code{gls}, \code{lme},
 #'   \code{lmer}, \code{glmer} or \code{glmmTMB}. Responses of \code{lme} and \code{gls} models are simulated from
@@ -29,7 +29,7 @@
 #'   Wald chi-square statistics (\code{lm}: F; \code{glm}: likelihood ratio).
 #' @param seed Optional random number seed, for reproducible results; the user's random number stream is left as it was.
 #' @param ncore Number of cores for refitting, the default is 1.
-#' @param prt Logical: print the tables? The default is TRUE.
+#' @param ... Not used: \code{prt} (before 2.0) stops with its 2.0 spelling; \code{print()} of the result shows the tables.
 #' @return
 #' Invisibly, a list with \code{permlist} (the coefficients and covariance matrices of the refits),
 #' \code{COEFFICENTS} and \code{ANOVA} (the model's tables with a \code{Boot_p_value} column). Attribute
@@ -47,8 +47,8 @@
 #' @name bootmodels
 NULL
 
-bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL, ncore = 1,
-                       prt = TRUE) {
+bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = NULL, ncore = 1, ...) {
+  pm_defunct("bootmodels", match.call(), strict = TRUE, formals_of = formals(sys.function()))
   type <- match.arg(as.character(type)[1], c("I", "II", "III", "1", "2", "3"))
   if (inherits(model, "aovlist")) {
     stop("bootmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
@@ -103,16 +103,11 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
   ap[rownames(aT) %in% c("(Intercept)", "Residuals")] <- NA     # the null model keeps the intercept
   ANOVA <- round(cbind(aT, Boot_p_value = ap), 4)
   attr(ANOVA, "heading") <- attr(aT, "heading")
-  if (prt) {
-    cat("\nCoefficients of (fixed) effects:\n")
-    print(COEF)
-    cat("\nANOVA:\n")
-    print(ANOVA)
-    cat("\nNote: Boot_p_value is from ", sQuote(B), " parametric bootstrap samples under the global null model",
-        pm_perm_failnote(failures), ".\n\n", sep = "")
-  }
-  out <- list(permlist = lapply(res, `[[`, 1), COEFFICENTS = COEF, ANOVA = ANOVA)
+  out <- pm_permmodels_result(list(permlist = lapply(res, `[[`, 1), COEFFICENTS = COEF, ANOVA = ANOVA), NULL,
+                              paste0("Note: Boot_p_value is from ", sQuote(B),
+                                     " parametric bootstrap samples under the global null model",
+                                     pm_perm_failnote(failures), "."))
   attr(out, "resampling") <- "parametric bootstrap"
   if (failures > 0) attr(out, "failures") <- failures
-  invisible(out)
+  out
 }

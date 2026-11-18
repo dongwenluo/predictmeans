@@ -17,7 +17,7 @@ test_that("contrastmeans() limits: t limits, and permutation-t limits that agree
   skip_on_cran()
   # refits: the permutation p-value is <= level exactly when 0 is outside the limits
   fl <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = Oats)
-  r <- permmodels(fl, nperm = 99, seed = 4, prt = FALSE, ncore = 1, method = "raw")
+  r <- permmodels(fl, nperm = 99, seed = 4, ncore = 1, method = "raw")
   pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, conf.level = 0.9)[[1]]
   outside <- pt[, "lower.CL"] > 0 | pt[, "upper.CL"] < 0
   expect_identical(unname(outside), unname(pt[, "Permuted Pr(>|t|)"] <= 0.1))
@@ -35,7 +35,7 @@ test_that("predictmeans() pairs: conf.low, conf.high and lsd", {
   pr <- pm$pairs
   expect_equal(pr$conf.high - pr$estimate, qt(0.975, pr$df) * pr$std.error)
   expect_equal(pr$lsd, qt(0.975, pr$df) * pr$std.error)
-  r <- permmodels(fm, nperm = 199, seed = 1, prt = FALSE)
+  r <- permmodels(fm, nperm = 199, seed = 1)
   pp <- predictmeans(fm, "nitro", permlist = r, plot = FALSE, ncore = 1)$pairs
   expect_true(all(is.finite(pp$lsd)))
   expect_equal(pp$conf.high - pp$estimate, pp$lsd)

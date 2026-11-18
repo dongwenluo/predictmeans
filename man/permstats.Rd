@@ -4,32 +4,35 @@
 \alias{permstats}
 \title{Effect Sizes and Model Checks from Permutations}
 \usage{
-permstats(x, level = 0.05)
+permstats(x, conf.level = 0.95, ...)
 }
 \arguments{
 \item{x}{A result of \code{\link{permmodels}} with Freedman-Lane permutations (\code{method = "auto"}, the
 default, or \code{"freedman-lane"}).}
 
-\item{level}{The significance level of the check of the parametric test (default 0.05).}
+\item{conf.level}{The check of the parametric test is at the significance level \code{1 - conf.level} (default
+0.95, i.e. 0.05; \code{level = 0.05} before 2.0).}
+
+\item{...}{Not used: \code{level} (before 2.0) stops with its 2.0 spelling.}
 }
 \value{
 A data frame with one row per term and coefficient (rows \code{"coef:<name>"}):
 \item{statistic}{the observed statistic: F for terms, |t| for coefficients (robust ones with
-\code{robust = TRUE}).}
+  \code{robust = TRUE}).}
 \item{df1, df2}{numerator and denominator df of the usual parametric test: the residual df for \code{lm},
-\code{aov}, \code{glm} and \code{gls}, Satterthwaite df for \code{lmer}, nlme's df for \code{lme}, and
-\code{Inf} (Wald chi-square) for \code{glmer} and \code{glmmTMB}.}
+  \code{aov}, \code{glm} and \code{gls}, Satterthwaite df for \code{lmer}, nlme's df for \code{lme}, and
+  \code{Inf} (Wald chi-square) for \code{glmer} and \code{glmmTMB}.}
 \item{p.param}{the parametric p-value of the observed statistic with these df.}
 \item{p.perm}{the permutation p-value (as in the tables of \code{permmodels()}).}
 \item{ses}{the standardised effect size, (observed - mean of the permuted statistics) / their standard
-deviation (Gotelli and McCabe 2002): how far the observed statistic lies from what the permutations give
-when the effect is absent, in standard deviations.}
+  deviation (Gotelli and McCabe 2002): how far the observed statistic lies from what the permutations give
+  when the effect is absent, in standard deviations.}
 \item{param.size}{the proportion of permuted data sets in which the parametric test rejects at
-\code{level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
-the parametric test for data like these: close to \code{level} when the parametric reference
-distribution suits the data, clearly above it when the parametric test is too liberal here (for example
-with unequal variances, overdispersion or few groups), below it when it is conservative. With few
-permutations it is rough (its standard error is about \code{sqrt(level (1 - level) / nperm)}).}
+  \code{1 - conf.level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
+  the parametric test for data like these: close to \code{1 - conf.level} when the parametric reference
+  distribution suits the data, clearly above it when the parametric test is too liberal here (for example
+  with unequal variances, overdispersion or few groups), below it when it is conservative. With few
+  permutations it is rough (its standard error is about \code{sqrt(a (1 - a) / nperm)}, \code{a = 1 - conf.level}).}
 }
 \description{
 Uses the permuted statistics kept by \code{\link{permmodels}} to give, for each term and coefficient, a
@@ -39,19 +42,22 @@ standardised effect size and a check of the usual parametric test against the pe
 Every permuted data set comes from the model without the tested term (Freedman-Lane), so the permuted
 statistics show how the statistic behaves when that term has no effect but everything else in the data is
 kept. Comparing the parametric p-value with the permutation p-value, and \code{param.size} with
-\code{level}, shows whether the usual test can be trusted for these data. For mixed models the
+\code{1 - conf.level}, shows whether the usual test can be trusted for these data. For mixed models the
 permuted statistics are Wald statistics (unadjusted covariance), so \code{param.size} checks the Wald F
 with the given df, not the Kenward-Roger test.
 }
 \examples{
 mtcars$cyl <- factor(mtcars$cyl)
 fm <- lm(mpg ~ wt + cyl, data = mtcars)
-pfl <- permmodels(fm, nperm = 999, type = "II", seed = 1, prt = FALSE)
+pfl <- permmodels(fm, nperm = 999, type = "II", seed = 1)
 permstats(pfl)
 }
 \references{
 Gotelli, N. J. and McCabe, D. J. (2002). Species co-occurrence: a meta-analysis of J. M. Diamond's
 assembly rules model. \emph{Ecology}, 83, 2091-2096.
+}
+\seealso{
+\code{\link{permmodels}}, \code{\link{permcombine}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

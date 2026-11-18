@@ -17,9 +17,8 @@ GLMM, resampling tests are a useful check. predictmeans has:
 
 - `permmodels()`: permutation tests of the terms and coefficients of `lm`, `aov`, `glm`,
   `gls`, `lme`, `lmer`, `glmer` and `glmmTMB` models;
-- `permlmer()` (also as `permglmer()` and `permglmmTMB()`) and `permanova.lmer()`:
-  permutation likelihood-ratio tests comparing two nested mixed models, including tests
-  of random effects;
+- `permlmer()`: permutation likelihood-ratio tests comparing two nested mixed models
+  (`lmer`, `glmer`, `glmmTMB`), including tests of random effects;
 - `permindex()`: permutations restricted by the design (within blocks, of whole plots),
   for randomisation tests;
 - `bootmodels()`: parametric bootstrap tests for `lmer` and `glmer` models.
@@ -70,6 +69,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
 ```{r}
 perm <- permmodels(fm, nperm = 199, seed = 1, ncore = 1)
+perm
 ```
 
 For `lm`, `aov`, `lme` and `gls` models the tables are the model's own tests with a
@@ -130,6 +130,7 @@ data(Clinical)
 fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
                  family = binomial, data = Clinical)
 perm_clin <- permmodels(fm_clin, nperm = 199, seed = 1, ncore = 1)
+perm_clin
 ```
 
 ## Testing random effects: `varcomp(test = TRUE)`
@@ -184,7 +185,7 @@ fm0 <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
 permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 ```
 
-For GLMMs (`glmer` or `glmmTMB`, also as `permglmer()` and `permglmmTMB()`) the same is
+For GLMMs (`glmer` or `glmmTMB`) the same is
 done on the working scale. For 0/1 responses, where the working scale fails with rare
 events or tiny clusters, randomised quantile residuals are permuted instead and the
 GLMMs refitted (`method = "quantile"`, chosen automatically). Do tick counts vary between
@@ -194,11 +195,11 @@ locations, beyond the variation between broods?
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson,
              data = lme4::grouseticks)
 gm2 <- update(gm1, . ~ . + (1 | LOCATION))
-permglmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
+permlmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 ```
 
-`permanova.lmer()` applies the same test to each fixed term of an `lmer` or `glmer`
-model in turn (Type I, II or III), for an ANOVA table with permutation p-values.
+For an ANOVA table of the fixed terms of an `lmer` or `glmer` model with permutation
+p-values, use `permmodels()` (above).
 
 ## Permutations restricted by the design: `permindex()`
 
@@ -221,6 +222,7 @@ model to each and compares the statistics. For the clinical trial data:
 
 ```{r}
 boot <- bootmodels(fm_clin, nsim = 99, seed = 1)
+boot
 ```
 
 Its result is used as a `permlist`; the `pairs` table then says `"bootstrap"`:
@@ -260,7 +262,7 @@ no effect) where the parametric test rejects at `level`. Near `level`, the param
 suits these data; well above it, its p-values are too small here.
 
 ```{r}
-p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1, prt = FALSE)
+p_mpg <- permmodels(fm_mt, nperm = 999, type = "II", seed = 1)
 permstats(p_mpg)
 ```
 
@@ -272,8 +274,7 @@ adjusted for testing every response (min-p; Westfall and Young 1993). The respon
 correlation is kept by the shared permutations, without a multivariate model.
 
 ```{r}
-p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1,
-                     prt = FALSE)
+p_qsec <- permmodels(lm(qsec ~ wt + cyl, data = mt), nperm = 999, type = "II", seed = 1)
 permcombine(mpg = p_mpg, qsec = p_qsec)
 ```
 
