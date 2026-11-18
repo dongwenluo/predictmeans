@@ -759,7 +759,7 @@ A data is collected from 420 schools in United States cross-section from 1998-19
 #### Structure
 
 ```{r}
-data(Caschool, package="Ecdat")
+data(Caschool, package="predictmeans")
 Caschool <- Caschool %>% 
   select(county, grspan, calwpct, compstu, avginc, mathscr) %>% 
   mutate(log.avginc = log(Caschool$avginc))

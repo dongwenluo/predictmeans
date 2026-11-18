@@ -77,6 +77,9 @@ if (requireNamespace("HRW", quietly = TRUE)) {
   levels(indonRespir$sex) <- c("male", "female")
   ragweed$year <- factor(ragweed$year)
   nbinom1 <- glmmTMB::nbinom1
+  # Caschool (in predictmeans since 2.0; for an older library give the file in CASCHOOL_RDATA)
+  if (nzchar(Sys.getenv("CASCHOOL_RDATA"))) load(Sys.getenv("CASCHOOL_RDATA")) else data(Caschool, package = "predictmeans")
+  Caschool$log.avginc <- log(Caschool$avginc)
   art <- list(
     warsaw1 = list(quote(semireg(apartment.price ~ construction.date, smoothZ = list(grp = smZ(construction.date, k = 25)),
                                  data = WarsawApts)),
@@ -86,6 +89,12 @@ if (requireNamespace("HRW", quietly = TRUE)) {
                                  data = WarsawApts)),
                    quote(semireg(apartment.price ~ s(construction.date, by = district, bs = "os", k = 10),
                                  data = WarsawApts))),
+    caschool = list(quote(semireg_tmb(mathscr ~ calwpct + log.avginc + compstu + (1|county) + (1|grspan),
+                                      smoothZ = list(cal_grp = smZ(calwpct, k = 12), avg_grp = smZ(log.avginc, k = 5),
+                                                     comp_grp = smZ(compstu, k = 12)), data = Caschool)),
+                    quote(semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = "os", k = 5) +
+                                        s(compstu, bs = "os", k = 12) + (1 | county) + (1 | grspan),
+                                      data = Caschool))),
     indon1 = list(quote(semireg_tmb(respirInfec ~ age + vitAdefic + sex + height + stunted + visit2 + visit3 + visit4 +
                                       visit5 + visit6 + (1|idnum), smoothZ = list(grp = smZ(age, k = 25)),
                                     family = binomial, data = indonRespir)),

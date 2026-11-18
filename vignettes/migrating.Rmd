@@ -490,7 +490,7 @@ pred <- semipred(mod, covariate = c("xcoord", "ycoord"), trans = exp,
 |---|---|---|---|
 | Warsaw, one curve | -1772.452 | -1772.452 | the same fit |
 | Warsaw, a curve per district | -1751.525 | -1751.525 | the same fit |
-| California schools | | | not checked (package Ecdat not available) |
+| California schools | -1601.803 | -1601.803 | the same fit |
 | Respiratory infection, one curve | -323.509 | -323.509 | the same fit |
 | Respiratory infection, a curve per sex | -322.806 | -322.788 | 2.0 adds `sex:age`, the slope of each sex, which the 1.1.1 formula left out |
 | Pollen, a curve per year | -1168.703 | -1164.093 | 2.0 adds `year:dayInSeason`, the slope of each year, which the 1.1.1 formula left out |

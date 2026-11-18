@@ -941,6 +941,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 
 ## New features
 
+* **`Caschool`**: the California test score data (420 school districts,
+  1998-1999; Stock and Watson; as in package Ecdat), the data of the overview
+  article's example with several smooth terms, now in the package
+  (`data(Caschool)`). Its 1.1.1 and 2.0 models give the same fit
+  (`dev/check-smz-migration.R`).
+
 * `semipred()` on generalized fits: the table of the curves has the SE on
   the link scale (`SE`, from which the limits h(eta -+ crit SE) come) next
   to the delta-method SE of the means (`SE_mu`); before, only `SE_mu` was
