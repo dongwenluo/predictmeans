@@ -14,7 +14,7 @@ semireg_tmb(formula, data, family = gaussian(), ziformula = ~0,
 
 \item{data}{data frame (tibbles are OK) containing model variables. Not required, but strongly recommended; if \code{data} is not specified, downstream methods such as prediction with new data (\code{predict(fitted_model, newdata = ...)}) will fail. If it is necessary to call \code{glmmTMB} with model variables taken from the environment rather than from a data frame, specifying \code{data=NULL} will suppress the warning message.}
 
-\item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link{family_glmmTMB}} for details of \code{glmmTMB}-specific families.}
+\item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. See \code{\link{family}} for a generic discussion of families or \code{\link[glmmTMB]{family_glmmTMB}} for details of \code{glmmTMB}-specific families.}
 
 \item{ziformula}{a \emph{one-sided} (i.e., no response variable) formula for zero-inflation combining fixed and random effects: the default \code{~0} specifies no zero-inflation. Specifying \code{~.} sets the zero-inflation formula identical to the right-hand side of \code{formula} (i.e., the conditional effects formula); terms can also be added or subtracted. \strong{When using \code{~.} as the zero-inflation formula in models where the conditional effects formula contains an offset term, the offset term will automatically be dropped}. The zero-inflation model uses a logit link.}
 
@@ -42,7 +42,7 @@ because of missingness.}
 
 \item{doFit}{whether to fit the full model, or (if FALSE) return the preprocessed data and parameter objects, without fitting the model.}
 
-\item{control}{control parameters, see \code{\link{glmmTMBControl}}.}
+\item{control}{control parameters, see \code{\link[glmmTMB]{glmmTMBControl}}.}
 
 \item{REML}{whether to use REML estimation rather than maximum likelihood. Gaussian fits use REML by default; for other families the default is maximum likelihood (Laplace), as \code{glmer}, unless \code{REML = TRUE} is given. (Before 2.0 the default never reached glmmTMB, so gaussian fits were maximum likelihood.)}
 

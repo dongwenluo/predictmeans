@@ -20,7 +20,7 @@ License: \tab GPL (>= 2)\cr
 }
 \section{Workflow}{
 
-\if{html}{\figure{workflow.png}{options: width='100\%' alt='From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots'}}
+\if{html}{\figure{workflow.png}{options: width='720' alt='From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots'}}
 }
 
 \references{

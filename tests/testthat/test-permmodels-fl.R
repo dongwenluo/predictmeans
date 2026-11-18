@@ -139,9 +139,18 @@ test_that("permmodels() and bootmodels() print their tables; prt and fo stop (re
   expect_error(permmodels(fm, nperm = 19, prt = FALSE), "'prt' was removed in predictmeans 2.0: use print(x)", fixed = TRUE)
   f <- mpg ~ wt + cyl
   expect_error(permmodels(lm(f, data = mt), nperm = 19, fo = f), "'fo' was removed", fixed = TRUE)
-  # a formula held in a variable is detected (refitted in this session only)
-  expect_true(pm_formula_is_object(lm(f, data = mt)))
+  # a formula held in a variable is detected (refitted in this session only),
+  # whatever lm() records in its call (R-devel of 2026-11 records more than the name)
+  fv <- lm(mpg ~ wt + cyl, data = mt)
+  fv$call$formula <- quote(f)
+  expect_true(pm_formula_is_object(fv))
+  fv$call$formula <- quote(stats::as.formula(f))
+  expect_true(pm_formula_is_object(fv))
+  fv$call$formula <- f
+  expect_false(pm_formula_is_object(fv))
   expect_false(pm_formula_is_object(fm))
+  r2 <- permmodels(lm(f, data = mt), nperm = 19, seed = 1, ncore = 2)
+  expect_identical(r2$ANOVA, permmodels(lm(mpg ~ wt + cyl, data = mt), nperm = 19, seed = 1)$ANOVA)
   b <- bootmodels(fm, nsim = 9, seed = 1)
   expect_true(any(grepl("parametric bootstrap", capture.output(print(b)))))
   expect_error(bootmodels(fm, nsim = 9, prt = FALSE), "'prt' was removed", fixed = TRUE)

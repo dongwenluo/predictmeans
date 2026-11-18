@@ -360,5 +360,7 @@ pm_formula_is_object <- function(model) {
   cl <- tryCatch(stats::getCall(model), error = function(e) NULL)
   if (is.null(cl)) return(FALSE)
   f <- if (!is.null(cl$formula)) cl$formula else if (!is.null(cl$fixed)) cl$fixed else if (length(cl) > 1) cl[[2]]
-  is.name(f)
+  # only a formula written out (y ~ x) or stored as a formula object is safe
+  # for the workers; anything else (a name, a call) runs on one core
+  !(inherits(f, "formula") || (is.call(f) && identical(f[[1]], as.name("~"))))
 }

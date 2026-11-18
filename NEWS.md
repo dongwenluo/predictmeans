@@ -124,6 +124,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
     included. `summary()` gives the summary of the fitted model.
 * James Curran (University of Auckland) is an author of the package (he was
   listed as a contributor).
+* `permmodels()` keeps to one core for any model whose formula is not
+  written in the call: R-devel's `lm()` records more than the name of a
+  formula held in a variable, which the check missed. Help pages: package
+  anchors for the glmmTMB links, the workflow figure sized in pixels.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
