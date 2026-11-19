@@ -150,8 +150,9 @@ pm_contrasts.gls <- function(model, ...) model$contrasts
 pm_contrasts.lm <- function(model, ...) model$contrasts
 
 ## Names of the columns of the fixed-effects design, in its order: the names
-## of pm_coef(). (glmmTMB: the columns of its model matrix, which include
-## those dropped from a rank-deficient fit.)
+## of pm_coef(). (glmmTMB: the columns of its model matrix; with a
+## rank-deficient fit, fixef() also lists the dropped columns, as NA, which
+## mymodelparm() leaves out.)
 pm_coef_names <- function(model, coef_vals = pm_coef(model)) {
   if (inherits(model, "glmmTMB")) return(colnames(stats::model.matrix(model)))
   names(coef_vals)

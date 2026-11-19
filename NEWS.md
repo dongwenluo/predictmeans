@@ -128,6 +128,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   written in the call: R-devel's `lm()` records more than the name of a
   formula held in a variable, which the check missed. Help pages: package
   anchors for the glmmTMB links, the workflow figure sized in pixels.
+* A glmmTMB fit whose design is rank deficient (aliased columns, e.g. from
+  combinations of factor levels without data) stopped every means function
+  with "logical subscript too long": glmmTMB drops the aliased columns from
+  its model matrix but lists them in `fixef()` as NA. The coefficients are
+  now matched to the model matrix (`mymodelparm()`); the means equal those
+  of the lmer ML fit of the same model.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

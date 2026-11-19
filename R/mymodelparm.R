@@ -78,6 +78,21 @@ mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NU
   if (inherits(model, "aov")) {
     ocoef <- model$coefficients
   }
+  # glmmTMB (1.1.8 at least) drops aliased columns from its model matrix but
+  # reports them in fixef() as NA: keep the coefficients of the model matrix,
+  # whose columns the K matrices have, so that 'estimable' indexes them.
+  if (inherits(model, "glmmTMB")) {
+    cols <- pm_coef_names(model)
+    extra <- setdiff(names(ocoef), cols)
+    if (length(extra) && all(cols %in% names(ocoef)) && all(is.na(ocoef[extra]))) {
+      if (nrow(sigma) == length(ocoef)) {
+        dimnames(sigma) <- list(names(ocoef), names(ocoef))
+        sigma <- sigma[cols, cols, drop = FALSE]
+      }
+      ocoef <- ocoef[cols]
+      beta <- ocoef[!is.na(ocoef)]
+    }
+  }
   estimable <- rep(TRUE, length(ocoef))
   if (any(is.na(ocoef))) {
     estimable[is.na(ocoef)] <- FALSE
