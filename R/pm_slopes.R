@@ -81,7 +81,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf.level = 0.95,
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov)     # R/inference.R
   mp <- inf$mp
   L <- (kp$K - km$K)/(2*h)
-  L <- L[, mp$estimable, drop = FALSE]
+  L <- pm_K_cols(L, mp)
   rownames(L) <- levs
   V <- as.matrix(mp$vcov)
   # one df per term: the smallest of the terms with the covariate

@@ -218,7 +218,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov,
                       permlist = if (!missing(permlist)) permlist)          # R/inference.R
   mp <- inf$mp
-  K <- KK[, mp$estimable, drop=FALSE]
+  K <- pm_K_cols(KK, mp)
   rK <- ctrmatrix%*%K
   # contrasts with a mean over empty cells: on the cells all their means have (R/empty-cells.R)
   cr <- pm_common_rows(km$empty_cells, ctrmatrix, rK, colnames(K))

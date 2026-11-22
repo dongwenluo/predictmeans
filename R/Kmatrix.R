@@ -293,8 +293,12 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   names(fctnames)[seq_along(term_vars)] <- term_labels
   rnK <- do.call("paste", c(fctnames[, seq_along(facs), drop = FALSE], sep=":"))
   rownames(K) <- rnK
-  if (length(setdiff(info$coef_names, colnames(K))) != 0) {
-    stop(paste("You may need drop empty levels in factor", modelterm))
+  miss <- setdiff(info$coef_names, colnames(K))
+  if (length(miss) != 0) {
+    stop("The model's coefficients ", paste(utils::head(miss, 5), collapse = ", "), if (length(miss) > 5) ", ...",
+         " have no column in the design of '", modelterm, "'. If a factor has levels without data, drop them ",
+         "(droplevels()) and refit; for a new model class, pm_coef() and pm_basis() must give the same column ",
+         "names (see ?pm_coef).", call. = FALSE)
   }
   names(estimable) <- rnK
   if (any(!estimable & !empty)) pm_note_nesting(nested_data[!declared], facs, weights)

@@ -122,7 +122,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
 
   ## Model parameters, covariance and df (R/inference.R)
   inf <- pm_inference(model, df_method, vcov_adjust = FALSE, vcov = vcov)
-  K <- KK[, inf$mp$estimable, drop = FALSE]
+  K <- pm_K_cols(KK, inf$mp)
   K[!est_flag, ] <- 0
   # a set with a mean over empty cells: tested on the cells all its means have (R/empty-cells.R)
   over <- rep(NA_character_, length(sets))

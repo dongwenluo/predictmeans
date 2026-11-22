@@ -20,7 +20,8 @@
 #'   Default: \code{coef(model)}; methods for \code{lme}, \code{merMod} and \code{glmmTMB} return the fixed effects.}
 #'   \item{\code{pm_vcov(model)}}{Covariance matrix of the non-aliased estimates. Default: \code{vcov(model)}.}
 #'   \item{\code{pm_basis(model, newdata, ...)}}{Design matrix of the fixed effects for \code{newdata}, with columns
-#'   named as in \code{pm_coef(model)}. Default: \code{model.matrix()} of the model's terms (with their stored
+#'   named as in \code{pm_coef(model)}: the columns are matched to the coefficients by name, and a coefficient
+#'   without a column stops with a message (a column for an aliased coefficient may be there or not). Default: \code{model.matrix()} of the model's terms (with their stored
 #'   \code{predvars}, so \code{poly()}, \code{ns()}, \code{scale()} etc. use the fitted basis), contrasts and factor
 #'   levels. The \code{gam} method uses the linear predictor matrix of package \pkg{mgcv}.}
 #'   \item{\code{pm_data(model)}}{The data used to fit the model, or \code{NULL} (the default), in which case they are
@@ -151,8 +152,8 @@ pm_contrasts.lm <- function(model, ...) model$contrasts
 
 ## Names of the columns of the fixed-effects design, in its order: the names
 ## of pm_coef(). (glmmTMB: the columns of its model matrix; with a
-## rank-deficient fit, fixef() also lists the dropped columns, as NA, which
-## mymodelparm() leaves out.)
+## rank-deficient fit, fixef() also lists the dropped columns, as NA;
+## pm_K_cols() matches the columns to the coefficients by name.)
 pm_coef_names <- function(model, coef_vals = pm_coef(model)) {
   if (inherits(model, "glmmTMB")) return(colnames(stats::model.matrix(model)))
   names(coef_vals)

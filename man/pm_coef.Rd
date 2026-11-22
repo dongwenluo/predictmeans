@@ -44,7 +44,8 @@ corresponding generic only; nothing inside predictmeans needs to change.
   Default: \code{coef(model)}; methods for \code{lme}, \code{merMod} and \code{glmmTMB} return the fixed effects.}
   \item{\code{pm_vcov(model)}}{Covariance matrix of the non-aliased estimates. Default: \code{vcov(model)}.}
   \item{\code{pm_basis(model, newdata, ...)}}{Design matrix of the fixed effects for \code{newdata}, with columns
-  named as in \code{pm_coef(model)}. Default: \code{model.matrix()} of the model's terms (with their stored
+  named as in \code{pm_coef(model)}: the columns are matched to the coefficients by name, and a coefficient
+  without a column stops with a message (a column for an aliased coefficient may be there or not). Default: \code{model.matrix()} of the model's terms (with their stored
   \code{predvars}, so \code{poly()}, \code{ns()}, \code{scale()} etc. use the fitted basis), contrasts and factor
   levels. The \code{gam} method uses the linear predictor matrix of package \pkg{mgcv}.}
   \item{\code{pm_data(model)}}{The data used to fit the model, or \code{NULL} (the default), in which case they are

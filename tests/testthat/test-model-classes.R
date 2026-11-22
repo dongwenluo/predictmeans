@@ -57,3 +57,32 @@ test_that("every main function works on the 13 model classes, or refuses with a 
     }
   }
 })
+
+test_that("a new class's coefficients are matched to the design by name, or the call stops", {
+  # an empty cell aliases A2:B2; the made-up class lists its coefficients in
+  # reverse order, the aliased one as NA (as lm() does)
+  d <- expand.grid(A = factor(1:3), B = factor(1:2), r = 1:4)
+  d <- d[!(d$A == "2" & d$B == "2"), ]
+  d$y <- c(10, 12, 15)[d$A] + 2 * (d$B == "2") + sin(seq_len(nrow(d)))
+  fl <- lm(y ~ A * B, d)
+  rev_fit <- structure(list(fit = fl, call = quote(lm(y ~ A * B, d))), class = "pm_revmodel")
+  registerS3method("coef", "pm_revmodel", function(object, ...) rev(coef(object$fit)))
+  registerS3method("vcov", "pm_revmodel", function(object, ...) { v <- vcov(object$fit); v[rev(rownames(v)), rev(colnames(v))] })
+  registerS3method("terms", "pm_revmodel", function(x, ...) terms(x$fit))
+  registerS3method("df.residual", "pm_revmodel", function(object, ...) object$fit$df.residual)
+  registerS3method("model.frame", "pm_revmodel", function(formula, ...) model.frame(formula$fit))
+  q <- function(e) suppressWarnings(suppressMessages(e))
+  a <- q(predictmeans(rev_fit, "A:B", pairwise = TRUE, data = d))
+  b <- q(predictmeans(fl, "A:B", pairwise = TRUE))
+  expect_equal(a$means$mean, b$means$mean, tolerance = 1e-10)
+  expect_equal(a$means$std.error, b$means$std.error, tolerance = 1e-10)
+  expect_equal(a$pairs$estimate, b$pairs$estimate, tolerance = 1e-10)
+  # coefficient names that are not columns of the design: stop, never guess
+  bad_fit <- structure(list(fit = fl, call = quote(lm(y ~ A * B, d))), class = "pm_badmodel")
+  registerS3method("coef", "pm_badmodel", function(object, ...) { b <- coef(object$fit); names(b) <- paste0("b", seq_along(b)); b })
+  registerS3method("vcov", "pm_badmodel", function(object, ...) { v <- vcov(object$fit); dimnames(v) <- list(paste0("b", 1:5), paste0("b", 1:5)); v })
+  registerS3method("terms", "pm_badmodel", function(x, ...) terms(x$fit))
+  registerS3method("df.residual", "pm_badmodel", function(object, ...) object$fit$df.residual)
+  registerS3method("model.frame", "pm_badmodel", function(formula, ...) model.frame(formula$fit))
+  expect_error(q(predictmeans(bad_fit, "A", data = d)), "b1, b2, b3, b4, b5, ... have no column in the design", fixed = TRUE)
+})

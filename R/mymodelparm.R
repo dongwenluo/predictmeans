@@ -78,21 +78,6 @@ mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NU
   if (inherits(model, "aov")) {
     ocoef <- model$coefficients
   }
-  # glmmTMB (1.1.8 at least) drops aliased columns from its model matrix but
-  # reports them in fixef() as NA: keep the coefficients of the model matrix,
-  # whose columns the K matrices have, so that 'estimable' indexes them.
-  if (inherits(model, "glmmTMB")) {
-    cols <- pm_coef_names(model)
-    extra <- setdiff(names(ocoef), cols)
-    if (length(extra) && all(cols %in% names(ocoef)) && all(is.na(ocoef[extra]))) {
-      if (nrow(sigma) == length(ocoef)) {
-        dimnames(sigma) <- list(names(ocoef), names(ocoef))
-        sigma <- sigma[cols, cols, drop = FALSE]
-      }
-      ocoef <- ocoef[cols]
-      beta <- ocoef[!is.na(ocoef)]
-    }
-  }
   estimable <- rep(TRUE, length(ocoef))
   if (any(is.na(ocoef))) {
     estimable[is.na(ocoef)] <- FALSE
@@ -142,4 +127,27 @@ mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   RET <- list(coef = beta, vcov = sigma, df = df, estimable = rep(TRUE, length(beta)))
   class(RET) <- "mymodelparm"
   RET
+}
+
+## The columns of a K (or L) matrix that go with the model's estimable
+## coefficients, in their order: the one place where the columns of a design
+## are matched to mp$coef. By name when the coefficients are named (any
+## class: a model may list aliased coefficients as NA, as lm() does, or leave
+## them out of its design, as lme4 does, or both, as glmmTMB does); by
+## position only when there are no names to go by and the sizes agree.
+## Anything else stops: a silent mismatch would give wrong means.
+pm_K_cols <- function(K, mp) {
+  b <- names(mp$coef)
+  cn <- colnames(K)
+  if (length(b) && length(cn)) {
+    if (all(b %in% cn)) return(K[, b, drop = FALSE])
+  } else if (ncol(K) == length(mp$estimable)) {
+    return(K[, mp$estimable, drop = FALSE])
+  }
+  miss <- if (length(b) && length(cn)) setdiff(b, cn) else character(0)
+  stop("predictmeans cannot match the model's coefficients (", length(mp$coef), " estimable of ",
+       length(mp$estimable), ") to the columns of its design (", ncol(K), ")",
+       if (length(miss)) paste0("; not in the design: ", paste(utils::head(miss, 5), collapse = ", "),
+                                if (length(miss) > 5) ", ..."),
+       ". For a new model class, pm_coef() and pm_basis() must give the same column names (see ?pm_coef).", call. = FALSE)
 }

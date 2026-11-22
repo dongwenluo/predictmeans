@@ -229,7 +229,7 @@ pm_estimate_means <- function(KK, fctnames, mdf, vars, mp, ndecimal) {
   n.table <- table(mdf[, vars, drop = FALSE])
   ndf <- data.frame(n.table)       ## To obtain info from model
 
-  K <- KK[, mp$estimable, drop = FALSE]          # To match coef names
+  K <- pm_K_cols(KK, mp)          # columns of the coefficients (R/mymodelparm.R)
   est_flag <- attr(KK, "estimable")
 
   # Combinations of levels without data are left out, unless their mean can

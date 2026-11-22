@@ -134,6 +134,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   its model matrix but lists them in `fixef()` as NA. The coefficients are
   now matched to the model matrix (`mymodelparm()`); the means equal those
   of the lmer ML fit of the same model.
+* The columns of a K matrix are matched to the model's coefficients by name
+  in one place (`pm_K_cols()`, used by `predictmeans()`, `contrastmeans()`,
+  `covariatemeans()`, `pm_joint()` and `pm_slopes()`), not by position: a
+  class that lists its coefficients in another order, or lists aliased ones
+  that its design leaves out (glmmTMB), gives the right means; names that do
+  not match stop with a message naming the coefficients. This replaces the
+  glmmTMB-only fix above. Output unchanged for every built-in class (all
+  `dev/snapshot-*.R` results identical at tolerance 0).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

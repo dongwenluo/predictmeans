@@ -237,9 +237,9 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, at=NU
     # the curves of overall means (1 - pi) mu, as log m (R/zero-inflation.R);
     # df from the count model's columns
     bz <- glmmTMB::fixef(model)$zi
-    b <- mp$coef[mp$estimable]
+    b <- mp$coef
     Vf <- as.matrix(stats::vcov(model, full = TRUE))[seq_len(length(b) + length(bz)), seq_len(length(b) + length(bz))]
-    a <- pm_zi_augment(KK[, mp$estimable, drop = FALSE], b, pm_zi_X(model, pltdf, names(bz)), bz, Vf)
+    a <- pm_zi_augment(pm_K_cols(KK, mp), b, pm_zi_X(model, pltdf, names(bz)), bz, Vf)
     KK <- a$K
     mp$coef <- a$coef
     mp$vcov <- a$vcov
@@ -252,7 +252,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, at=NU
 
   # the difference between two levels along the covariate, with its own band
   if (!is.null(contr)) {
-    return(pm_cov_difference(contr, KK[, mp$estimable, drop = FALSE], pltdf, vars, covariate, modelterm, mp, inf,
+    return(pm_cov_difference(contr, pm_K_cols(KK, mp), pltdf, vars, covariate, modelterm, mp, inf,
                              level, Df, model, trans, mtitle, match.arg(contr_scale), match.arg(band),
                              bias_adjust, sigma, draw = draw, mean_type = mean_type))
   }
@@ -269,7 +269,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as.is=FALSE, at=NU
   }
 
   # We'll work only with the non-NA elements of bhat
-  KK <- KK[, mp$estimable, drop=FALSE]
+  KK <- pm_K_cols(KK, mp)
   pltdf$yhat <- as.numeric(KK%*%bhat)
   pltdf$ses <- sqrt(base::diag(KK %*% tcrossprod(mp$vcov, KK)))
 
