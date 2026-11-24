@@ -12,7 +12,8 @@
 ##             the two curves (level1 - level2) in the columns of
 ##             predictmeans()$pairs
 ##   settings  the options that produced them
-## and the 1.x fields (plt, pltdf / pred_df, test, significant).
+## and the 1.x fields (plt, pred_df, test, significant; x$pltdf gives pred_df),
+## and attr(, "plot_data"): the data rows for the plots (R/autoplot-curves.R).
 ##
 ## Limits: conf.low, conf.high are pointwise (t with each row's df), as in
 ## predictmeans(); a simultaneous band (band = "simultaneous") adds
@@ -150,7 +151,7 @@ pm_curve_settings <- function(model, modelterm, covariate, level, df_method, mea
                               band = NULL, test = NULL, vcov_adjust = NA, vcov = "model", ...) {
   c(list(modelterm = modelterm, covariate = covariate, level = level, contrast = contr, band = band,
          df_method = df_method, vcov_adjust = vcov_adjust, vcov = vcov, back_transform = back, test = test),
-    list(...),
+    Filter(Negate(is.null), list(...)),
     list(component = if (is.null(pm_zi_component(model))) NA_character_ else mean_type,
          model_class = class(model)[1],
          version = as.character(utils::packageVersion("predictmeans"))))
@@ -172,17 +173,15 @@ pm_curve_result <- function(means = NULL, pairs = NULL, settings, legacy, fun = 
 #' (\code{semipred(deriv = )}) and, with \code{contr}, \code{pairs} (the difference of two curves at each
 #' covariate value), with the same column names (\code{estimate}, \code{std.error}, \code{df}, \code{conf.low},
 #' \code{conf.high}, ...) and the covariates under their own names. \code{tidy()} and \code{as.data.frame()} return
-#' them, \code{autoplot()} returns the plot and \code{print()} shows a short summary.
+#' them, \code{\link{autoplot.pm_curves}} draws them and \code{print()} shows a short summary.
 #' @usage
 #' \method{tidy}{pm_curves}(x, what = c("means", "pairs", "slopes"), ...)
 #'
 #' \method{as.data.frame}{pm_curves}(x, row.names = NULL, optional = FALSE,
 #'               what = c("means", "pairs", "slopes"), ...)
 #'
-#' \method{autoplot}{pm_curves}(object, ...)
-#'
 #' \method{print}{pm_curves}(x, n = 10, digits = 4, ...)
-#' @param x,object A result of \code{\link{covariatemeans}} or \code{\link{semipred}}.
+#' @param x A result of \code{\link{covariatemeans}} or \code{\link{semipred}}.
 #' @param what Which table: \code{"means"}, \code{"pairs"} or \code{"slopes"}. The default is the one the result
 #'   has (\code{"pairs"} for a result with \code{contr}, \code{"slopes"} for \code{semipred(deriv = 1)}).
 #' @param row.names Optional row names for the result.
@@ -218,6 +217,7 @@ pm_curve_result <- function(means = NULL, pairs = NULL, settings, legacy, fun = 
 #' \code{semipred()} also \code{deriv}, \code{unconditional} and \code{boundary}, then \code{component}
 #' (zero-inflated \code{glmmTMB} fits), \code{model_class} and \code{version}. \code{significant} (in the result)
 #' holds the ranges of the covariate where the band asked for leaves out zero.
+#' @seealso \code{\link{covariatemeans}}, \code{\link{semipred}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -232,26 +232,24 @@ pm_curve_result <- function(means = NULL, pairs = NULL, settings, legacy, fun = 
 #'   head(as.data.frame(cd))
 #'   if (requireNamespace("ggplot2", quietly = TRUE)) ggplot2::autoplot(cd)
 #' @name tidy.pm_curves
-#' @aliases as.data.frame.pm_curves autoplot.pm_curves print.pm_curves
+#' @aliases as.data.frame.pm_curves print.pm_curves
 NULL
 
 ## The table a result holds (pairs, then slopes, then means).
 pm_curve_tables <- c("pairs", "slopes", "means")
 pm_curve_what <- function(x) pm_curve_tables[!vapply(pm_curve_tables, function(t) is.null(x[[t]]), logical(1))][1]
 
+#' @exportS3Method generics::tidy pm_curves
 tidy.pm_curves <- function(x, what = c("means", "pairs", "slopes"), ...) {
   pm_result_table(x, if (!missing(what)) what, pm_curve_tables)            # R/tidy.R
 }
 
+#' @exportS3Method as.data.frame pm_curves
 as.data.frame.pm_curves <- function(x, row.names = NULL, optional = FALSE, what = c("means", "pairs", "slopes"), ...) {
   pm_result_table(x, if (!missing(what)) what, pm_curve_tables, row.names)
 }
 
-autoplot.pm_curves <- function(object, ...) {
-  if (is.null(object$plt)) stop("This result has no plot.", call. = FALSE)
-  object$plt
-}
-
+#' @exportS3Method print pm_curves
 print.pm_curves <- function(x, n = 10, digits = 4, ...) {
   s <- x$settings
   what <- pm_curve_what(x)
@@ -272,8 +270,13 @@ print.pm_curves <- function(x, n = 10, digits = 4, ...) {
       if (identical(s$df_method, "user")) "df given" else paste(s$df_method, "df"), "\n", sep = "")
   tst <- s$test
   if (!is.null(tst) && is.finite(tst$p.value)) {
-    cat("Curves equal: F(", tst$df1, ", ", format(round(tst$df2, 1)), ") = ", format(round(tst$F.ratio, 3)),
-        ", p = ", format.pval(tst$p.value, digits = 3), "\n", sep = "")
+    if (!is.null(tst$F.ratio)) {
+      cat("Curves equal: F(", tst$df1, ", ", format(round(tst$df2, 1)), ") = ", format(round(tst$F.ratio, 3)),
+          ", p = ", format.pval(tst$p.value, digits = 3), "\n", sep = "")
+    } else {
+      cat("Curves equal: max |t| = ", format(round(tst$statistic, 3)), " over ", tst$points, " points, p = ",
+          format.pval(tst$p.value, digits = 3), " (simulated)\n", sep = "")
+    }
   }
   sig <- x$significant
   if (is.data.frame(sig) && length(s$covariate) == 1) {
@@ -289,10 +292,14 @@ print.pm_curves <- function(x, n = 10, digits = 4, ...) {
   b <- s$back_transform
   if (!is.null(b)) cat("response: back-transformed by ", b$by, "; ", b$estimate, "\n", sep = "")
   if (!is.na(s$component)) cat("Zero inflation: ", s$component, " means\n", sep = "")
-  if (is.null(tab) || !nrow(tab)) return(invisible(x))
+  if (is.null(tab) || !nrow(tab)) {
+    pm_print_advice(x)
+    return(invisible(x))
+  }
   if (what == "pairs") tab$level1 <- tab$level2 <- NULL
   print(utils::head(tab, n), digits = digits, row.names = FALSE)
   if (nrow(tab) > n) cat("... ", nrow(tab) - n, " more rows: as.data.frame(x) gives the table.\n", sep = "")
-  cat("autoplot(x) draws the plot.\n")
+  cat("autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).\n")
+  pm_print_advice(x)
   invisible(x)
 }

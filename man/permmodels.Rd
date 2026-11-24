@@ -2,10 +2,10 @@
 % Please edit documentation in R/permmodels.R
 \name{permmodels}
 \alias{permmodels}
-\title{Permutation Test of Linear Model}
+\title{Permutation Tests of the Terms and Coefficients of a Model}
 \usage{
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
-  test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+  test_statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
   method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 }
 \arguments{
@@ -14,28 +14,36 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 \item{nperm}{The number of permutations. The default is 4999.}
 
-\item{type}{type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
+\item{type}{The type of the tests: "I", "II" or "III" (or 1, 2, 3).
 Type III tests are those of sum-to-zero contrasts whatever contrasts the model was fitted with (as SAS Type 3);
 \code{car::Anova()} gives them only for models fitted with such contrasts (with R's default treatment contrasts
 it tests each main effect at the first level of the other factors).}
 
-\item{test.statistic}{For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
-Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.
+\item{test_statistic}{The statistic of Type II and III tests with \code{method = "raw"}: F for \code{lm};
+chi-square for \code{lme} and \code{gls}; \code{"Chisq"} or \code{"F"} for \code{lmer}; \code{"LR"},
+\code{"Wald"} or \code{"F"} for \code{glm}. Type I tests use F. A statistic the model does not have is
+replaced by the one it has, with a message; with \code{method = "freedman-lane"} the F (or t) statistics are
+permuted and a different \code{test_statistic} is ignored with a message.
 The F tests of an \code{lmer} model are Kenward-Roger F tests with the observed information of the variance
 parameters, as in the rest of predictmeans (\code{car::Anova()} uses the expected information; the two agree
 for balanced data).}
 
-\item{exact}{A logical variable to indicate whether or not exact no. of permutations will be used (applicable only to free the permutation case). The default is FALSE.}
+\item{exact}{\code{TRUE}: \code{perms} holds every permutation the design allows (a complete enumeration), so
+p-values are the proportion of them with a statistic at least as large as the observed one. Otherwise (the
+default \code{FALSE}) the observed data count as one of the permutations: p = (b + 1)/(B + 1), never 0.
+\code{exact = TRUE} without \code{perms}, or with repeated columns, is ignored with a warning.}
 
-\item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.}
+\item{data}{The data the model was fitted to, when they cannot be found from the model's call (e.g. after
+transforming variables outside the data).}
 
 \item{...}{Not used: \code{prt} and \code{fo} (before 2.0) stop with their 2.0 spelling. Nothing is printed during
 the call: \code{print()} of the result shows the tables. A model whose formula is held in a variable
 (\code{lm(f, data)}; 1.x's \code{fo}) is detected and refitted in this session only.}
 
-\item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
+\item{ncore}{Number of cores (default 1; before predictmeans 2.0: 3). Each permutation has its own seed, so
+the results do not depend on \code{ncore}.}
 
-\item{seed}{Specify a random number generator seed, for reproducible results.}
+\item{seed}{A random number seed, for reproducible results; the user's random number stream is left as it was.}
 
 \item{method}{How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
 chooses the more robust one for the model class, which is \code{"freedman-lane"} for every class at present.
@@ -71,16 +79,21 @@ result use them too (robust t, and confidence limits from robust standard errors
 \code{FALSE}.}
 }
 \value{
-The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+A list of class \code{"pm_permmodels"}: \code{COEFFICENTS} (permutation t tests of the coefficients),
+\code{ANOVA} (permutation tests of the terms, of the \code{type} asked for) and \code{permlist} (with
+\code{method = "raw"}: the coefficients and covariance of each refit, for \code{\link{predictmeans}} and
+\code{\link{contrastmeans}}). Values are stored rounded to 4 decimals; the notes give the smallest attainable
+p-value, 1/(B + 1). Advice on the number of permutations is kept in \code{attr(, "advice")} (\code{\link{advice}}).
 With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
 \code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
 \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
 pairwise comparisons and contrasts. If refits fail, the number left out is in attribute \code{"failures"}.
 }
 \description{
-This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
-for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
-\code{glmer} and \code{glmmTMB}.
+Permutation t tests of the coefficients of the fixed effects and permutation F (or chi-square) tests of the
+terms of a model fitted by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer} or
+\code{glmmTMB}. p-values are (b + 1)/(B + 1): b of the B permuted statistics at least as large as the observed
+one. Results are the same for any \code{ncore}.
 }
 \details{
 With \code{method = "auto"} (the default since predictmeans 2.0) the method is chosen by model class from a
@@ -104,7 +117,7 @@ the same). In other designs the two methods agreed.
 
 For mixed models with a covariate with extreme values related to the tested term, the same study found
 the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Satterthwaite F test kept the level
-(4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (e.g. \code{anova()} of an \pkg{lmerTest} fit, or
+(4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (\code{\link{anova.lmerMod}} or
 \code{\link{pm_joint}}), or \code{method = "freedman-lane"} (4.6\%).
 
 Since predictmeans 2.0, \code{method = "freedman-lane"} also handles \code{lmer}, \code{lme} and \code{gls} models,
@@ -143,7 +156,7 @@ permlme <- permmodels(model=fm, nperm=99, ncore=1)
 
 ## Permutation test for multiple comparisons
 predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
-  permlist=permlme, plot=FALSE, ncore=1)
+  permlist=permlme)
 
 ## Permutation test for specified contrasts
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -161,7 +174,7 @@ mtcars$cyl <- factor(mtcars$cyl)
 fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
 pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 ## ... and for the pairwise comparisons of the cyl means
-predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+predictmeans(fm2, "cyl", permlist = pfl)$pairs
 ## Robust (HC3) statistics, for error variances that differ between the cyl groups
 permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 }
@@ -178,6 +191,9 @@ regression coefficients in a linear model. \emph{Journal of Statistical Computat
 
 Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of reported significance levels.
 \emph{Journal of Business & Economic Statistics}, 1, 292-298.
+}
+\seealso{
+\code{\link{permlmer}}, \code{\link{permindex}}, \code{\link{permstats}}, \code{\link{permcombine}}, \code{\link{bootmodels}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

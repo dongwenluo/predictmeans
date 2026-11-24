@@ -101,7 +101,7 @@ pm_boot_anova <- function(m, type) {
     }
     return(pm_anova_seq(m))
   }
-  pm_anova(m, type = type, test.statistic = "Chisq")
+  pm_anova(m, type = type, test_statistic = "Chisq")
 }
 
 pm_boot_stat_col <- function(aT) {

@@ -2,10 +2,11 @@
 % Please edit documentation in R/semireg.R
 \name{semireg}
 \alias{semireg}
-\title{Fitting Semi Parametric Models Using lme4 Ecosystem}
+\title{Semiparametric Mixed Models Fitted with lme4}
 \usage{
-semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
-        start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+semireg(formula, data, family = NULL, REML = TRUE,
+        control = lmerControl(optimizer = "nloptwrap"),
+        start = NULL, verbose = FALSE, drop_unused_levels = TRUE, subset, weights,
         offset, contrasts = NULL, ...)
 }
 \arguments{
@@ -13,17 +14,17 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 \item{data}{A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula), typically the environment from which semireg is called.}
 
-\item{family}{A GLM family, see glm and family.}
+\item{family}{A GLM family (see \code{\link{family}}); \code{NULL} (the default) is gaussian.}
 
 \item{REML}{Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?}
 
 \item{control}{A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.}
 
-\item{start}{Starting value list as used by lmer or glmer.}
+\item{start}{Starting values, as for \code{lmer} or \code{glmer}.}
 
-\item{verbose}{Passed on to fitting lme4 fitting routines.}
+\item{verbose}{Passed on to the lme4 fitting functions.}
 
-\item{drop.unused.levels}{By default unused levels are dropped from factors before fitting. For some smooths involving factor variables you might want to turn this off. Only do so if you know what you are doing.}
+\item{drop_unused_levels}{By default unused levels are dropped from factors before fitting. For some smooths involving factor variables you might want to turn this off. Only do so if you know what you are doing.}
 
 \item{subset}{An optional expression indicating the subset of the rows of data that should be used in the fit. This can be a logical vector, or a numeric vector indicating which observation numbers are to be included, or a character vector of the row names to be included. All observations are included by default.}
 
@@ -31,7 +32,7 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 \item{offset}{This can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. One or more offset terms can be included in the formula instead or as well, and if more than one is specified their sum is used. See model.offset.}
 
-\item{contrasts}{An optional list. See the contrasts.arg of model.matrix.default.}
+\item{contrasts}{An optional list, as \code{contrasts.arg} of \code{\link{model.matrix.default}}.}
 
 \item{...}{Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{smoothZ},
 \code{ncenter}, \code{nscale}, \code{resp_scale}, \code{prt}, \code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
@@ -40,9 +41,19 @@ glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Pois
 maximum-likelihood fit.}
 }
 \value{
-A list of class \code{semireg}; \code{print()} shows the fitted model and the random-effect term of each
-smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests of its terms. Its elements:
-\item{semer}{A mer model used in the fitting.}
+A list of class \code{semireg}. \code{print()} shows a short account of the fit: the formula as written, the
+smooth terms (one row per random-effect block: the smooth, its random-effect term, its covariate, basis, basis
+dimension, smoothing variance and whether it is estimated as a straight line), the fixed effects, the other
+variance components and any advice. The \code{smooth}, \code{term} and \code{covariate} columns are the values
+\code{\link{semipred}} takes for \code{sm_term} and \code{covariate}. \code{summary()} adds the summary of the fitted
+mixed model (\code{summary(fit)$model}); \code{tidy(fit)} returns the smooth table and \code{tidy(fit, "fixed")} the
+fixed effects with standard errors. \code{coef()}, \code{fixef()}, \code{vcov()}, \code{fitted()},
+\code{residuals()}, \code{logLik()}, \code{AIC()}, \code{nobs()}, \code{family()}, \code{VarCorr()} and
+\code{ranef()} work as for the fitted mixed model, and \code{formula()} gives the formula as written.
+\code{anova()} tests the terms and smooths; notes on the fit are in \code{attr(, "advice")} (\code{\link{advice}}).
+Its elements:
+\item{semer}{The fitted \code{lmer} or \code{glmer} model (class \code{semerMod} for gaussian fits).}
+\item{call}{The call of \code{semireg()}.}
 \item{data}{A data.frame with generated variables in the fitting.}
 \item{fomul_vars}{Name of variables in the formula of semireg model.}
 \item{sm_vars}{Names of the variables of the smooths.}
@@ -57,10 +68,10 @@ smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests o
   design of each block for new data (used by \code{semipred()} and \code{predictmeans()}).}
 }
 \description{
-Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code{glmer} and \code{glmer.nb}.
+Fit a semiparametric (additive mixed) model with \pkg{lme4} (\code{lmer} for gaussian, \code{glmer} for other families): smooth terms written in the formula, as in \code{mgcv::gam}, are fitted as random effects. For negative binomial, zero-inflated or correlated data use \code{\link{semireg_tmb}}.
 }
 \details{
-A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
+A semiparametric model is fitted as a linear (or generalized linear) mixed model whose random effects are the penalised parts of smooth functions of covariates (Wand and Ormerod, 2008); each smooth's variance is its smoothing parameter, estimated by (RE)ML.
 }
 \section{Smooth terms in the formula}{
 
@@ -78,8 +89,8 @@ slopes:
   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
   \code{(s(x, k = 10) | g)} \tab random curve per level of \code{g}: \code{(x | g)} (correlated intercepts and slopes) plus a spline deviation per level, one variance \tab none \cr
   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
-  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
-  \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
+  \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots (1.x \code{smZ(x, k = 10)}); \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
+  \code{s(x1, x2, bs = "ztps", k = 6)} \tab low-rank thin plate with \code{k} knots (1.x \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)}); \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own: \code{f(x)} (\code{f(x1, x2)} for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in \code{smoothZ}); checked before the fit (see below); \code{xt = list(basis = f, null = "constant")} or \code{"none"} for a smaller fixed part \tab \code{x} (\code{x1 + x2}) \cr
   \code{t2(x1, x2)}, \code{t2(x1, x2, bs = c("cr", "ps"), k = c(6, 8))} \tab tensor-product surface (covariates on different scales), a variance per penalty; \code{te()} is fitted as \code{t2()} \tab \code{x1 + x2 + x1:x2} \cr
   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
@@ -135,7 +146,7 @@ for binomial and Poisson fits. Each smooth block of a formula smooth is scaled a
 squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
 smooth block reported by \code{VarCorr()} or \code{varcomp()} is on that scale.
 
-Moving from 1.x: \code{smZ()} and \code{smoothZ} were removed in 2.0; \code{vignette("migrating")} shows each
+Moving from 1.x: \code{smZ()} and \code{smoothZ} are superseded and were removed in 2.0 (they stop with a pointer to the formula syntax); \code{vignette("migrating")} shows each
 \code{smoothZ = list(sm = smZ(...))} form beside its formula form, which gives the same fit (checked in
 \code{dev/check-smz-migration.R}). The variables are no longer centred (1.x's \code{ncenter = TRUE}), which put knots
 given in the data's units (\code{smZ(x, intKnots = )}) in the wrong place.
@@ -234,6 +245,9 @@ Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sulliva
 
 Wood, S.N., Scheipl, F. and Faraway, J.J. (2013). Straightforward intermediate rank tensor product smoothing in
 mixed models. \emph{Statistics and Computing}, \bold{23}, 341-360.
+}
+\seealso{
+\code{\link{semireg_tmb}}, \code{\link{anova.semireg}}, \code{\link{semipred}}, \code{\link{varcomp}}, \code{\link{predictmeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

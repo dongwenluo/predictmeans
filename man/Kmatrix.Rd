@@ -4,11 +4,12 @@
 \alias{Kmatrix}
 \title{Matrix of Coefficients in a Linear Model}
 \usage{
-Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
+Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean,
+        exclude=NULL, weights=c("equal", "proportional", "outer", "cells", "flat"),
+        refgrid=FALSE, ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+\item{model}{A fitted model: \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 \code{glmer}, \code{glmmTMB}, \code{gam}/\code{bam} (package \pkg{mgcv}; for \code{gamm} use its
 \code{$gam} component) or \code{semireg}.}
 
@@ -92,7 +93,7 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
 
   The predicted means are built on a reference grid: every combination of the factor levels in
   the model, with covariates fixed at their means (or other chosen values). Each row of \code{K}
-  is the equally weighted average of the grid rows for one level combination of
+  is the average of the grid rows (weighted as \code{weights} says; equal by default) for one level combination of
   \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
   factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
   the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
@@ -111,14 +112,14 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
 \examples{
   library(predictmeans)
   data(Oats, package="nlme")
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
   Kmatrix(fm, "Variety")$K
   Kmatrix(fm, "Variety", 0.5)$K
   Kmatrix(fm, "Variety", "nitro")$K
   Kmatrix(fm, "Variety", "nitro", at=seq(0, 0.6, 0.1))$K
   Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
-  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
+  # not a term of the model
+  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames
 
   # Covariates entering through transformations or only through interactions
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
@@ -135,6 +136,9 @@ This function obtains a matrix of coefficients (the linear functions \eqn{K} suc
 \references{
 Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347.
+}
+\seealso{
+\code{\link{predictmeans}}, \code{\link{contrast_family}}, \code{\link{specify_contrast}}
 }
 \author{
 This function heavily depends on the codes from package "lsmeans".

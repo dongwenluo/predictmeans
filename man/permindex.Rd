@@ -7,11 +7,11 @@
 permindex(data, block=NULL, group=NULL, nsim=4999, seed)
 }
 \arguments{
-\item{data}{Data object used in the \code{model} fitting.}
+\item{data}{The data the model was fitted to.}
 
-\item{block}{Name (in "quotes") for the blocking factor in the \code{data}.}
+\item{block}{Optional name (in "quotes") of the blocking factor in \code{data}.}
 
-\item{group}{Name (in "quotes") for the group factor in the \code{data}.}
+\item{group}{Optional name (in "quotes") of the factor whose levels are permuted as whole units.}
 
 \item{nsim}{The number of permutations. The default is 4999.}
 
@@ -24,10 +24,10 @@ of \code{data} (row i of the permuted data is row \code{index[i]} of \code{data}
 dropped, so there are fewer columns when the design allows fewer distinct permutations.
 }
 \description{
-This function obtains permutation index for a dataset: free permutations, permutations within blocks, permutations
-of whole groups (e.g. whole plots), or of whole groups within blocks. The result can be given to
-\code{\link{permmodels}} or \code{\link{permlmer}} (argument \code{perms}) for tests that permute only as the
-design allows (restricted, or design-based, permutation tests).
+Permutations allowed by the design: free, within blocks, of whole groups (e.g. whole plots), or of whole groups
+within blocks. Give the result to \code{\link{permmodels}} or \code{\link{permlmer}} (argument \code{perms}) for
+restricted (design-based) permutation tests; when its columns are every permutation the design allows, use
+\code{exact = TRUE} in \code{permmodels()}.
 }
 \details{
 Groups are permuted as whole units, so the groups that change places (within a block, if \code{block} is given)
@@ -56,6 +56,9 @@ permutations are the same as before for sorted data and the same \code{seed}).
   fm <- lm(yield ~ Block + nitro, data = Oats)
   idx <- permindex(Oats, block = "Block", nsim = 199, seed = 1)
   permmodels(fm, perms = idx, ncore = 1)
+}
+\seealso{
+\code{\link{permmodels}}, \code{\link{permlmer}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

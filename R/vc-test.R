@@ -491,16 +491,25 @@ pm_vc_boot_parts <- function(m) {
   stop("The parametric bootstrap is not available for this model.", call. = FALSE)
 }
 
+## Parametric bootstrap p-values of the variance-component tests. Draw i
+## uses its own seed seeds[i] (from 'seed'), so the draws, and the p-values,
+## are the same for any 'ncore' and platform. The draws run in batches on
+## 'ncore' cores through pm_perm_mapper() (R/perm-engine.R: forked processes on
+## Unix, a socket cluster on Windows started once; before 2.0.0 Windows ran on one core),
+## and stop early once h draws reach the observed statistic.
 pm_vc_boot <- function(model, info, tab, cache, nboot = 999L, ncore = 1L, seed = 2026L, h = 20L) {
   full <- pm_vc_boot_parts(if (info$engine == "semireg") model else info$fit)
   old <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) get(".Random.seed", envir = globalenv())
   on.exit(if (is.null(old)) rm(".Random.seed", envir = globalenv()) else assign(".Random.seed", old, envir = globalenv()))
   set.seed(seed)
   seeds <- sample.int(.Machine$integer.max, nboot)
+  # one set of workers for every batch and key (pm_perm_mapper(), R/perm-engine.R);
+  # a failed refit (NULL) is NA, left out of the p-value
+  mapper <- pm_perm_mapper(ncore, packages = c("lme4", "glmmTMB"), n = nboot)
+  on.exit(mapper$stop(), add = TRUE)
   run <- function(fun, idx) {
-    if (ncore > 1 && .Platform$OS.type != "windows") {
-      unlist(parallel::mclapply(idx, fun, mc.cores = ncore))
-    } else vapply(idx, fun, numeric(1))
+    res <- mapper$map(idx, fun)
+    vapply(res, function(r) if (is.numeric(r) && length(r) == 1) r else NA_real_, numeric(1))
   }
   done <- list()
   for (key in unique(tab$key[!is.na(tab$key) & !is.na(tab$LRT)])) {
@@ -515,7 +524,9 @@ pm_vc_boot <- function(model, info, tab, cache, nboot = 999L, ncore = 1L, seed =
     }
     vals <- numeric(0)
     b <- 0L
-    batch <- max(ncore, 1L)*10L
+    # a fixed batch: early stopping is checked at the same draws for any ncore,
+    # so the p-value does not depend on it (a batch of 10 x ncore did)
+    batch <- 40L
     while (b < nboot) {
       idx <- (b + 1L):min(nboot, b + batch)
       vals <- c(vals, run(one, idx))

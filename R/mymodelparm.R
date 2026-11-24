@@ -1,6 +1,7 @@
 mymodelparm <- function(model, coef., vcov., df, ...)
 UseMethod("mymodelparm")
 
+#' @exportS3Method NULL
 mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NULL, ...)
 {
   ### extract coefficients and their covariance matrix
@@ -113,26 +114,33 @@ mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NU
   RET
 }
 
+#' @exportS3Method NULL
 mymodelparm.aovlist <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
     stop("This function does not support objects of class ", sQuote("aovlist"))
 
+#' @exportS3Method NULL
 mymodelparm.lme <- function(model, coef. = nlme::fixef, vcov. = vcov, df = NULL, ...)
     mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.lmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.glmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
     mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
 # mgcv gam/bam: all coefficients (parametric and smooth basis), the Bayesian
 # posterior covariance matrix Vp, and the residual degrees of freedom.
+#' @exportS3Method NULL
 mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   beta <- coef.(model)
   sigma <- as.matrix(vcov.(model))

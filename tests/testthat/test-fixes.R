@@ -7,7 +7,7 @@ oats <- function() {
 test_that("legacy plot arguments stop with their 2.0 spelling (B1; removed in 2.0)", {
   fm <- lm(yield ~ nitro*Variety, data = oats())
   expect_error(predictmeans(fm, "nitro", mplot = TRUE, barplot = FALSE, plot = FALSE),
-               "'mplot' was removed in predictmeans 2.0: use plot = c(", fixed = TRUE)
+               "'mplot' was removed in predictmeans 2.0: use autoplot(x)", fixed = TRUE)
 })
 
 test_that("trans = NULL means no back-transformation (B2)", {
@@ -181,7 +181,7 @@ test_that("residplot(): glmmTMB with aliased columns; random part in the column 
   expect_no_error(residplot(tm))
 })
 
-test_that("pm_ci_mcp() (letterCI) accepts LL = UL; model.matrix() of an lme model takes 'data'", {
+test_that("pm_ci_mcp() (letter_ci) accepts LL = UL; model.matrix() of an lme model takes 'data'", {
   # [3, 3] lies inside [2, 4]; [10, 12] overlaps neither
   expect_identical(unname(trimws(pm_ci_mcp(c(3, 2, 10), c(3, 4, 12)))), c("A", "A", "B"))
   # the lme methods are internal to predictmeans

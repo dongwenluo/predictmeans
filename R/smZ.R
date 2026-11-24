@@ -2,4 +2,5 @@
 ## and semireg_tmb() (vignette("migrating") shows each smZ() form beside its
 ## formula form; dev/check-smz-migration.R checked that they give the same
 ## fits).
+#' @export
 smZ <- function(...) pm_defunct_fun("smZ")

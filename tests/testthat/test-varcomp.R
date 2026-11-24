@@ -168,7 +168,10 @@ test_that("edge cases: a variance at zero (Dyestuff2), crossed effects (Penicill
     expect_true(is.na(b["Batch.(Intercept)", "SE"]) && is.na(b["Batch.(Intercept)", 4]))
     expect_equal(b["Batch.(Intercept)", 3], 0)
   }
-  expect_equal(b1["residual", ], b2["residual", ], tolerance = 1e-4)
+  # a variance at zero is advised for both; varcomp(test = TRUE) only for lmer
+  expect_identical(pm_advice_get(b1)$id, c("variance_at_zero", "variance_test_boundary"))
+  expect_identical(pm_advice_get(b2)$id, "variance_at_zero")
+  expect_equal(as.data.frame(unclass(b1))["residual", ], as.data.frame(unclass(b2))["residual", ], tolerance = 1e-4)
   # the ANOVA estimate is negative there
   ba <- suppressMessages(varcomp(aov(Yield ~ 1 + Error(Batch), data = Dyestuff2)))
   expect_lt(ba["Batch", "vcov"], 0)

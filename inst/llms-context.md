@@ -15,8 +15,8 @@ default) with covariates at their means. Results match SAS `LSMEANS` and emmeans
 ## Core call
 
 ```r
-pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf.level = 0.95,
-                   pairwise = FALSE, trans = I, plot = FALSE)
+pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf_level = 0.95,
+                   pairwise = NULL, trans = I)
 ```
 
 - `modelterm`: a fixed-effect term written as in the model, e.g. `"A"` or `"A:B"`; its
@@ -24,15 +24,16 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf.level = 0.
 - `atvar`: compare the levels of the other factor(s) within each level of `atvar`.
 - `adj`: `"none"`, `"tukey"`, `"holm"`, `"hochberg"`, `"hommel"`, `"bonferroni"`, `"BH"`,
   `"BY"`, `"fdr"`, `"sidak"`, `"scheffe"`, `"mvt"` (exact single-step, = SAS
-  `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. Giving `adj` or `atvar` turns on
-  pairwise comparisons.
-- `conf.level`: confidence level, default 0.95; tests, LSDs and letters are at the significance
-  level `level = 1 - conf.level` (stored as `settings$level`). `df_method` takes a method name or
+  `ADJUST=SIMULATE`; needs mvtnorm). Any letter case. `adj`, `atvar`, `permlist` or `pairwise = TRUE` ask for
+  comparisons; `pairwise` only sets printing (NULL: shown when asked for; FALSE: hidden, results unchanged).
+  One LSD is printed only when all LSDs are equal (`attr(pm$LSD, "equal")`); otherwise the range and advice `lsd_varies`.
+- `conf_level`: confidence level, default 0.95; tests, LSDs and letters are at the significance
+  level `level = 1 - conf_level` (stored as `settings$level`). `df_method` takes a method name or
   one number (a fixed df). 1.1.1 arguments (`level`, `Df`, `which.plots`, `prtnum`, `ndecimal`,
   `transOff`, `count`, plot settings as arguments) stop with their 2.0 spelling.
-- `plot`: `FALSE` by default (since 2.0); `plot = TRUE` or `options(predictmeans.plot = TRUE)` draws the
-  1.x plots, `plot = c("mean", "bar")` the plots named; settings in `plot_args`; `autoplot(pm)` draws
-  from the result. Nothing is printed during the call.
+- No `plot` or `plot_args` (removed; `plot = FALSE` is accepted): `autoplot(pm)` / `plot(pm)` draw from the
+  result (`type = "means"` with one average LSD bar, `"bar"`, `"ci"`, `"pvalue"`; `data = TRUE` adds the observations).
+  Nothing is printed or drawn during the call.
 - `generics::glance(pm)`: one row describing the result (term, numbers of means and pairs, df
   method, adjustment, SED range, mean LSD).
 - `df_method`: `"auto"` (Kenward-Roger for REML `lmer`, `lme`, `gls`; Satterthwaite for ML fits;
@@ -64,7 +65,7 @@ pm <- predictmeans(model, modelterm, atvar = NULL, adj = "none", conf.level = 0.
 | `estimate`, `std.error`, `df` | mean on the model (link) scale, SE, denominator df |
 | `conf.low`, `conf.high` | confidence limits at `1 - level` (of each mean; not for comparing means) |
 | `over` | only when some mean averages over empty cells: the cells it averages (e.g. `"N 0, 0.2, 0.4"`); NA for the others |
-| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap; NA for a mean over empty cells whose pairs are not the differences of the shown means (`settings$comparison$left_out`; `letterCI` then takes the letters from the p-values) |
+| `comparison.low`, `comparison.high` | comparison intervals (when the pairs are tabulated): two means differ at `level` when these do not overlap; NA for a mean over empty cells whose pairs are not the differences of the shown means (`settings$comparison$left_out`; `letter_ci` then takes the letters from the p-values) |
 | `response`, `response.std.error`, `response.conf.low`, `response.conf.high` | only when the means are back-transformed (non-identity link or `trans`); SE by the delta method |
 | `group` | letters (only with pairwise comparisons); means sharing a letter do not differ |
 | `n` | number of observations in the cell |
@@ -91,7 +92,7 @@ comparison asked for: then only the SED and LSD summaries are computed, fast for
 
 `pm$settings`: list with `modelterm`, `level`, `adjust`, `atvar`, `df_method`,
 `vcov_adjust`, `vcov` (`"model"`, or the covariance given by `vcov =`: `"HC0"`-`"HC3"`, `"CR1, clusters: ..."`,
-`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `comparison` (the comparison intervals: `mult`, `conf.level`, `pairs`,
+`"user matrix"`, `"user function"`), `equivalence` (the TOST margins, or NULL), `comparison` (the comparison intervals: `mult`, `conf_level`, `pairs`,
 `disagree`, `exact`; NULL without pairs), `back_transform` (what the back-transformed means are: `by` the
 inverse link, `trans` or the response transformation found in the formula; `estimate` mean, typical cluster,
 median or bias-adjusted mean; NULL when not back-transformed), `bias_adjust` (the SD
@@ -101,7 +102,7 @@ the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`, `c
 `"overall"`, the overall means (1 - pi) mu with `predictmeans(mean_type = "overall")`; NA otherwise), `model_class`, `version`.
 
 Also: `as.data.frame(pm)` / `as.data.frame(pm, what = "pairs")`, `generics::tidy(pm)`,
-`summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "pvalue", "response"))`,
+`summary(pm)`, `ggplot2::autoplot(pm, type = c("means", "bar", "ci", "pvalue"), interval = c("lsd", "sed", "ci", "comparison", "none"), data = FALSE, x, group, panel)` (one average LSD bar per panel; atvar levels are panels), `plot(pm)`,
 `coef(pm)` and `vcov(pm)` (means and their covariance, named `"a:b"`).
 
 The 1.x slots (`"Predicted Means"`, `"Standard Error of Means"`, `"LSD"`, `mean_table`,
@@ -190,8 +191,8 @@ R2_model(fm); R2_model(fm, method = "nakagawa"); varcomp(fm)
   averaged over the pairs, so two means differ at `level` when their intervals do not
   overlap (83.4% intervals for independent means with equal SEs; narrower for correlated
   means). Confidence limits of means are not for comparing means.
-- `letterCI = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
-  in `mean_table`, at the significance level `1 - conf.level`.
+- `letter_ci = TRUE`: letters from the overlap of the comparison intervals, shown as LL/UL
+  in `mean_table`, at the significance level `1 - conf_level`.
 - `permmodels()`, `permlmer()` and `predictmeans(permlist = )` use
   `ncore = 1` by default since 2.0 (3 before); set `ncore` for parallel refits. With `permlist`,
   `adj = "tukey"`/`"mvt"` is the single-step and `adj = "westfall"` the step-down

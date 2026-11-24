@@ -38,7 +38,7 @@ test_that("every model class gives four ggplots with the right panels", {
   }
   # axis labels: residuals on y, standard normal quantiles on x
   p <- rp(ms$lmer)
-  expect_identical(p[[2]]$labels$x, "Theoretical quantiles (standard normal)")
+  expect_identical(p[[2]]$labels$x, "Normal quantiles")
   expect_identical(p[[2]]$labels$y, "Standardized residuals")
   expect_identical(p[[1]]$labels$x, "Fitted values")
   # lmer residuals are scaled by sigma
@@ -58,6 +58,56 @@ test_that("randomized quantile residuals: standard normal for a right Poisson mo
   s <- .Random.seed; rp(g); expect_identical(.Random.seed, s)   # the user's random stream is untouched
 })
 
+test_that("fitted vs observed: response from pm_data(), axis labelled with the response", {
+  O <- oats_f()
+  m1 <- lme4::lmer(log(yield + 1) ~ nitro + (1 | Block), data = O)
+  p <- rp(m1)
+  expect_identical(p[[4]]$labels$x, "log(yield + 1)")
+  expect_equal(attr(p, "data")$observed, log(O$yield + 1))
+  m2 <- nlme::lme(sqrt(yield) ~ nitro, random = ~ 1 | Block, data = O)
+  expect_identical(rp(m2)[[4]]$labels$x, "sqrt(yield)")
+  expect_identical(rp(aov(yield ~ nitro + Error(Block), O))[[4]]$labels$x, "yield")
+  cb <- lme4::cbpp
+  g <- lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial, data = cb)
+  expect_identical(rp(g)[[4]]$labels$x, "Observed proportion of incidence")
+  # a two-level factor response: 0/1, so the calibration plot (was "response not available")
+  cb$y01 <- factor(cb$incidence > 0)
+  t1 <- glmmTMB::glmmTMB(y01 ~ period + (1 | herd), family = binomial, data = cb)
+  p <- suppressWarnings(rp(t1))
+  expect_identical(attr(p, "data")$observed, as.numeric(cb$y01 == "TRUE"))
+  expect_identical(gsub("\n", " ", p[[4]]$labels$title), "Calibration (tenths of fitted values)")
+})
+
+test_that("points keep the original row numbers when rows with missing values are dropped", {
+  O <- oats_f()
+  O$yield[c(3, 10)] <- NA
+  O$nitro[20] <- NA
+  ms <- list(lm = lm(yield ~ nitro + Block, O),
+             lme = nlme::lme(yield ~ nitro, random = ~ 1 | Block, data = O, na.action = na.omit),
+             gls = nlme::gls(yield ~ nitro, data = O, na.action = na.omit),
+             lmer = lme4::lmer(yield ~ nitro + (1 | Block), data = O),
+             tmb_pois = glmmTMB::glmmTMB(round(yield) ~ nitro + (1 | Block), family = poisson, data = O),
+             gam = mgcv::gam(yield ~ nitro + s(Block, bs = "re"), data = O))
+  keep <- setdiff(as.character(1:72), c("3", "10", "20"))
+  for (nm in names(ms)) {
+    d <- attr(suppressWarnings(rp(ms[[nm]])), "data")
+    expect_identical(d$label, keep, label = nm)
+  }
+  # the largest residual is labelled with its own row of the data
+  O$yield[50] <- 400
+  d <- attr(rp(lme4::lmer(yield ~ nitro + (1 | Block), data = O)), "data")
+  expect_identical(d$label[which.max(abs(d$resid))], "50")
+})
+
+test_that("gam fits show fitted vs observed, not Cook's distance", {
+  O <- oats_f()
+  g <- mgcv::gam(log(yield) ~ nitro + s(Block, bs = "re"), data = O)
+  p <- rp(g)
+  expect_identical(p[[4]]$labels$title, "Fitted vs observed")
+  expect_identical(p[[4]]$labels$x, "log(yield)")
+  expect_equal(attr(p, "data")$observed, log(O$yield))
+})
+
 test_that("group colours, labels of extreme points, binary calibration, semireg, plotly", {
   O <- oats_f()
   fm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = O)
@@ -75,3 +125,38 @@ test_that("group colours, labels of extreme points, binary calibration, semireg,
   skip_if_not_installed("plotly")
   expect_s3_class(residplot(fm, interactive = TRUE, plot = FALSE), "plotly")
 })
+
+test_that("residplot(): many points as open transparent circles, bins on request, no legends; Q-Q line through all quartiles", {
+  set.seed(8124)
+  big <- data.frame(g = factor(sample(1:200, 6000, TRUE)), x = runif(6000), f = factor(sample(letters[1:3], 6000, TRUE)))
+  big$y <- 2 + 0.5 * big$x + rnorm(200)[big$g] + rnorm(6000)
+  fb <- lme4::lmer(y ~ x + (1 | g), data = big)
+  geoms <- function(q) vapply(q$layers, function(l) class(l$geom)[1], "")
+  p <- rp(fb)
+  # default: every point, open circles, transparent
+  lay <- Filter(function(l) inherits(l$geom, "GeomPoint"), p[[1]]$layers)[[1]]
+  expect_equal(nrow(lay$data), 6000)
+  expect_identical(lay$aes_params$shape, 1)
+  expect_lt(lay$aes_params$alpha, 0.5)
+  # small data: filled points, nearly opaque
+  O <- oats_f()
+  ls <- Filter(function(l) inherits(l$geom, "GeomPoint"), rp(lm(yield ~ Block + nitro * Variety, O))[[1]]$layers)[[1]]
+  expect_identical(ls$aes_params$shape, 16)
+  # no legends, also with group colours
+  pg <- rp(fb, group = big$f)
+  expect_true(all(vapply(pg, function(z) identical(z$theme$legend.position, "none"), logical(1))))
+  # bins only when asked, without a colour bar, outstanding points on top
+  pb <- rp(fb, dense = "bins")
+  expect_true(any(c("GeomTile", "GeomBin2d") %in% geoms(pb[[1]])))
+  fs <- Filter(function(s) "fill" %in% s$aesthetics, pb[[1]]$scales$scales)[[1]]
+  expect_identical(fs$guide, "none")
+  # Q-Q of many residuals: thinned in the centre, every tail point kept, line from all quartiles
+  qd <- Filter(function(l) inherits(l$geom, "GeomPoint"), p[[2]]$layers)[[1]]$data
+  expect_lt(nrow(qd), 6000)
+  r <- attr(p, "data")$resid
+  expect_true(all(sort(r)[c(1:100, 5901:6000)] %in% qd$resid))
+  ab <- Filter(function(l) inherits(l$geom, "GeomAbline"), p[[2]]$layers)[[1]]$data
+  expect_equal(unname(ab$slope), unname(diff(stats::quantile(r, c(0.25, 0.75))) / diff(stats::qnorm(c(0.25, 0.75)))))
+  expect_error(rp(fb, dense = "hex"), "should be one of")
+})
+

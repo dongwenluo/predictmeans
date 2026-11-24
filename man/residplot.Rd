@@ -5,13 +5,15 @@
 \title{Diagnostic Plots for a Fitted Model}
 \usage{
 residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
-    interactive = FALSE, plot = TRUE, ...)
+    interactive = FALSE, plot = TRUE, dense = c("auto", "points", "bins"), ...)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
 
 \item{group}{Optional variable that colours the points: the name (in "quotes") of a variable in the data of the
-model, or a vector with one value per observation. The default \code{"none"} uses one colour.}
+model, or a vector with one value per observation. The default \code{"none"} uses one colour. The plots have no
+legend; \code{interactive = TRUE} shows each point's row and group on hover, and the plots can be given one with
+\code{+ ggplot2::theme(legend.position = "right")}.}
 
 \item{re_level}{For mixed models (\code{level} before 2.0): which random-effect term the random-effect plot shows, 1, 2, ... (in the order of
 \code{ranef()}: for \code{lme} the outermost grouping first, for \code{lmer} the innermost first).}
@@ -19,7 +21,8 @@ model, or a vector with one value per observation. The default \code{"none"} use
 \item{slope}{For mixed models: \code{TRUE} plots the random slopes (the second column of the random effects) instead
 of the random intercepts.}
 
-\item{id}{Number of the most extreme points labelled with their row names (largest absolute residuals; for the
+\item{id}{Number of the most extreme points labelled with their row names in the data (rows left out for missing
+values keep their numbers, so a label is the row to look at; largest absolute residuals; for the
 Cook's distance plot the largest distances); \code{FALSE} or 0 labels none. In 1.x \code{id = TRUE} let you
 click on points; now \code{TRUE} labels 3 points, and \code{interactive = TRUE} shows every point's row name.}
 
@@ -29,6 +32,13 @@ click on points; now \code{TRUE} labels 3 points, and \code{interactive = TRUE} 
 installed.}
 
 \item{plot}{\code{FALSE}: do not draw; only return the plots.}
+
+\item{dense}{How overlapping points are drawn. \code{"points"} (also \code{"auto"}, the default): every
+point; beyond 200 points as open circles, more transparent as their number grows, so dense regions show darker
+and no point is hidden. \code{"bins"}: the scatter plots as shaded
+counts in a grid of bins (darker: more points; no colour bar), with the points that stand out (the \code{id}
+largest and those beyond 3 on the residual scale) drawn on top. The Q-Q plot of more than
+2000 residuals draws every point in the tails (outside the central 95\%) and an even selection of the others.}
 }
 \value{
 Invisibly, a list of the four \code{ggplot} objects (class \code{"pm_residplot"}), with attribute \code{"data"}:
@@ -49,12 +59,15 @@ The plots:
   residual at each, joined): look for trends (a missing term, a wrong link) and
   for spread that changes with the fitted values.
 \item Normal Q-Q plot of the residuals: the points should lie near the line.
-\item Mixed models: normal Q-Q plot of the random effects of term \code{level}. \code{gls}: autocorrelation of the
+\item Mixed models: normal Q-Q plot of the random effects of term \code{re_level}. \code{gls}: autocorrelation of the
   normalized residuals (with approximate 95\% limits). Other models: square root of the absolute residuals
   against fitted values (scale-location), for spread that changes with the fitted values.
-\item \code{lm}, \code{aov} and \code{glm}: Cook's distances. Other models: fitted against observed values; for a
-  0/1 response, the observed proportion against the mean fitted probability in tenths of the fitted values
-  (calibration).
+\item \code{lm}, \code{aov} and \code{glm}: Cook's distances. Other models (also \code{gam}: Cook's distances of a
+  penalized fit are only approximate): fitted against observed values of the
+  response as modelled (from \code{\link{pm_data}}: the rows used in the fit; the axis is labelled with the response
+  as written, e.g. \code{log(yield + 1)}, or the observed proportion for \code{cbind(successes, failures)}); for a
+  0/1 response (also a two-level factor), the observed proportion against the mean fitted probability in tenths of
+  the fitted values (calibration).
 }
 Residuals: standardized for \code{lm} (\code{rstandard()}), normalized for \code{gls} and \code{lme} (the
 correlation structure removed), scaled by the residual standard deviation for \code{lmer}. For Poisson, binomial and
@@ -62,7 +75,8 @@ negative binomial models (\code{glm}, \code{glmer}, \code{glmmTMB}, \code{gam}) 
 (Dunn and Smyth, 1996): exactly normal when the model is right, so plots 1 and 2 are read as for a normal model
 (they use a fixed random seed, so the plots do not change between calls); fitted values are then on the link
 scale. Other families: standardized deviance residuals. \code{aov} with \code{Error()}: the residuals of the lowest
-stratum. The plots inform; they do not test. For a summary of checks, see also \code{\link{CookD}}.
+stratum. The plots inform; they do not test. For a table of checks see \code{\link{pm_check}}; for Cook's
+distances of mixed models \code{\link{CookD}}.
 }
 \examples{
 library(predictmeans)
@@ -83,6 +97,9 @@ if (interactive() && requireNamespace("plotly", quietly = TRUE)) residplot(fm, i
 \references{
 Dunn, P. K. and Smyth, G. K. (1996), Randomized quantile residuals, \emph{Journal of Computational and Graphical
 Statistics}, 5, 236-244.
+}
+\seealso{
+\code{\link{pm_check}}, \code{\link{CookD}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

@@ -79,7 +79,7 @@ autoplot(cur)
 The result prints a summary and holds its tables in the layout of `predictmeans()`:
 `as.data.frame(cur)` (or `cur$means`) has `estimate`, `std.error`, `df`, `conf.low` and
 `conf.high` with the pressure under its own name. Nothing is drawn unless asked
-(`plot = TRUE`, or `autoplot()` as here). The 1.x table is still in `cur$pred_df`.
+(`autoplot()` as here, or `plot = TRUE`). The 1.x table is still in `cur$pred_df`.
 
 The band is pointwise: at each pressure it covers the true curve with 95% probability
 (`level = 0.05`). Before version 2.0 these limits were 90% limits; `level = 0.1` gives
@@ -118,6 +118,20 @@ autoplot(dif)
 `as.data.frame(dif)` has the difference at each pressure in the columns of
 `predictmeans()$pairs`, with `p.adj`: the share of the simulated maxima at least as large,
 below 0.05 exactly where the simultaneous band leaves out zero.
+
+## Which smooths: `sm_term`
+
+By default the curves use every smooth of the fit. `sm_term` picks some: a term as
+written in the formula, a smooth as labelled, a covariate (all its smooths) or a block
+name (`names(fm$u_lst)`). `settings$sm_term` records the blocks used:
+
+```{r}
+semipred(fm, "QB", "pressure", sm_term = "s(pressure, by = QB)")$settings$sm_term
+semipred(fm, "QB", "pressure", sm_term = "s(pressure):QB300")$settings$sm_term
+```
+
+A smooth of another covariate adds a constant to the curves; the result's advice says so
+(see the additive model below).
 
 ## Slopes and curvature: `deriv`
 
@@ -202,6 +216,16 @@ fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 8) + (1 | id), data = dd)
 anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 ```
 
+The curves of all six combinations are computed at once; `autoplot()` chooses the layout
+without computing again: by default the first factor colours the curves and the second
+makes the panels; `group` and `panel` swap them, and two panel factors give a grid:
+
+```{r, fig.height = 4}
+c2 <- semipred(fx, "f1:f2", "x")
+autoplot(c2)
+autoplot(c2, group = "f2", panel = "f1", data = FALSE)
+```
+
 The test is conservative: in 200 simulated data sets like these, with no `f2` or `f1:f2`
 differences, it rejected at the 5% level in 1-3% of them, and it found the `f1` difference
 in all (`dev/sim-semireg-lrt.R`). `permlmer()` on `fx$semer` gives a permutation test
@@ -258,7 +282,11 @@ da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(200, 0, 0.3)
 fa <- semireg(y ~ s(x1, bs = "os") + s(x2, by = z, bs = "os"), data = da)
 anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
 autoplot(semipred(fa, covariate = "x1"))
+autoplot(semipred(fa, covariate = "x1", sm_term = "x1"))
 ```
+
+The first curve includes `s(x2, by = z)` as a constant (its advice says so); with
+`sm_term = "x1"` it is the smooth of `x1` alone.
 
 **A surface.** Copper grade over a mining area (`data(copper)`): a thin-plate surface over
 the plane (`bs = "ztps"`) and a curve in depth, on the log scale, back-transformed for the

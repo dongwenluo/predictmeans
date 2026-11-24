@@ -89,7 +89,7 @@ R2_model(fit_pat("cloglog"))
 
 Piepho, H.-P. (2023). An adjusted coefficient of determination (R²) for generalized
 linear mixed models in one go. *Biometrical Journal*, 65(7), e2200290.
-doi:10.1002/bimj.202200290
+<https://doi.org/10.1002/bimj.202200290>
 
 Nakagawa, S. and Schielzeth, H. (2013). A general and simple method for obtaining R²
 from generalized linear mixed-effects models. *Methods in Ecology and Evolution*, 4,

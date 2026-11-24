@@ -1,9 +1,9 @@
-#' Fitting Semi Parametric Models Using glmmTMB
+#' Semiparametric Mixed Models Fitted with glmmTMB
 #'
 #' @description
-#' Fit a semi parametric model based on glmmTMB.
+#' Fit a semiparametric (additive mixed) model with \pkg{glmmTMB}: smooth terms written in the formula, as in \code{mgcv::gam}, are fitted as random effects, next to glmmTMB's families (e.g. negative binomial), zero inflation, dispersion models and covariance structures. \code{smZ()}/\code{smoothZ} of 1.x are superseded (removed in 2.0); see \code{vignette("migrating")}.
 #' @details
-#' A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg_tmb} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
+#' A semiparametric model is fitted as a linear (or generalized linear) mixed model whose random effects are the penalised parts of smooth functions of covariates (Wand and Ormerod, 2008); each smooth's variance is its smoothing parameter, estimated by (RE)ML.
 #' @section Correlation structures:
 #' glmmTMB's covariance structures can be written next to the smooths and are kept as written: \code{ar1()},
 #' \code{ou()} (unequally spaced times, with \code{glmmTMB::numFactor()}), \code{cs()}, \code{toep()},
@@ -27,8 +27,8 @@
 #'   \code{s(x, by = z)}, \code{z} numeric \tab varying coefficient \eqn{f(x) z} \tab \code{z + z:x} \cr
 #'   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
 #'   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
-#'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)} \tab \code{x} \cr
-#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6} \tab \code{x1 + x2} \cr
+#'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots (1.x \code{smZ(x, k = 10)}) \tab \code{x} \cr
+#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab low-rank thin plate with \code{k} knots (1.x \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)}) \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own (see \code{\link{semireg}}) \tab \code{x} \cr
 #'   \code{t2(x1, x2)} \tab tensor-product surface, a variance per penalty \tab \code{x1 + x2 + x1:x2} \cr
 #'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
@@ -88,9 +88,13 @@
 #' \code{mean_type = "overall"} (\code{predictmeans()}, \code{covariatemeans()}, \code{semipred()}) gives the overall
 #' means and their ratios.
 #' @return
-#' A list of class \code{semireg}; \code{print()} shows the fitted model and the random-effect term of each
-#' smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests of its terms. Its elements:
-#' \item{semer}{A glmmTMB model used in the fitting.}
+#' A list of class \code{semireg}, as for \code{\link{semireg}}: \code{print()} shows the formula, the smooth terms
+#' (with the \code{smooth}, \code{term} and \code{covariate} values that \code{\link{semipred}} takes for
+#' \code{sm_term} and \code{covariate}), the fixed effects, other variance components and any advice;
+#' \code{summary()}, \code{tidy()} and the extractors (\code{coef()}, \code{vcov()}, \code{VarCorr()}, ...) are those
+#' described there. Notes on the fit are in \code{attr(, "advice")} (\code{\link{advice}}). Its elements:
+#' \item{semer}{The fitted \code{glmmTMB} model.}
+#' \item{call}{The call of \code{semireg_tmb()}.}
 #' \item{data}{A data.frame with generated variables in the fitting.}
 #' \item{fomul_vars}{Name of variables in the formula of semireg_tmb model.}
 #' \item{sm_vars}{Names of the variables of the smooths.}
@@ -103,6 +107,7 @@
 #' \item{tmbf}{The glmmTMB model result using doFit=FALSE.}
 #' @references
 #' Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with O'Sullivan penalized splines. \emph{Australian and New Zealand Journal of Statistics.} \bold{50}, 179-198.
+#' @seealso \code{\link{semireg}}, \code{\link{anova.semireg}}, \code{\link{semipred}}, \code{\link{varcomp}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -123,7 +128,7 @@
 #' \donttest{
 #' ## Repeated measures: curves over time, AR(1) correlation within subjects (the residual
 #' ## covariance, dispformula = ~0); means at a time with Satterthwaite df
-#' set.seed(9)
+#' set.seed(7)
 #' d <- expand.grid(t = 1:8, id = factor(1:12))
 #' d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
 #' d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
@@ -146,6 +151,7 @@
 #' @name semireg_tmb
 NULL
 
+#' @export
 semireg_tmb <- function(formula, data, family = gaussian(), ziformula = ~0, dispformula = ~1, weights = NULL, offset = NULL, contrasts = NULL, na.action, se = TRUE,
                         verbose = FALSE, doFit = TRUE, control = glmmTMBControl(), REML = TRUE,
                         start = NULL, map = NULL, sparseX = NULL, ...)
@@ -235,8 +241,17 @@ pm_semireg_tmb <- function(formula, data, family = gaussian(), smoothZ = list(),
     info <- pm_sr_info(X, Z, pm_tmb_lambda(semer, re), w, uHat, u_ind, names(st$Zt), V = Vzi)
   }
   mi <- semer$modelInfo
+  # prior weights and offset of the rows used, for refits (anova(), varcomp()
+  # tests): before 2.0.0 they were left out, so the LRT compared a weighted
+  # fit with an unweighted one. The offset of the call ('offset ='); an
+  # offset() term stays in the formula. From TMB's data: model.offset() of
+  # glmmTMB's frame counts the call's offset twice (columns "offset(o)" and
+  # "(offset)").
+  w_fit <- tmbf$data.tmb$weights
+  off_fit <- if (!is.null(mc$offset)) as.numeric(tmbf$data.tmb$offset) else NULL
   refit <- list(engine = "glmmTMB", formula = st$formula, data = st$data, smoothZ = st$smoothZN,
                 family = mi$family, ziformula = mi$allForm$ziformula, dispformula = mi$allForm$dispformula,
-                REML = isTRUE(mi$REML))
+                REML = isTRUE(mi$REML), weights = if (any(w_fit != 1)) w_fit,
+                offset = if (length(off_fit) && any(off_fit != 0)) off_fit)
   pm_sr_result(semer, st, mc, info, list(tmbf = tmbf, refit = refit))
 }

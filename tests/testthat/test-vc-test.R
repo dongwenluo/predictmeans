@@ -228,3 +228,25 @@ test_that("parametric bootstrap: reproducible, the same with several cores, near
   tv <- attr(v, "tests")$test
   expect_true(all(grepl("parametric bootstrap", tv[!is.na(tv)])))
 })
+
+test_that("varcomp() parametric bootstrap: the same p-values for any ncore, on every platform (pm_perm_mapper())", {
+  skip_on_cran()
+  set.seed(4419)
+  d <- data.frame(g = gl(15, 8), h = gl(30, 4))
+  d$y <- rpois(120, exp(0.5 + rnorm(15, sd = 0.3)[d$g] + rnorm(30, sd = 0.2)[d$h]))
+  m <- lme4::glmer(y ~ 1 + (1 | g) + (1 | h), family = poisson, data = d)
+  v1 <- varcomp(m, test = TRUE, test_method = "bootstrap", nboot = 99, ncore = 1)
+  v2 <- varcomp(m, test = TRUE, test_method = "bootstrap", nboot = 99, ncore = 2)
+  expect_identical(v1, v2)
+  expect_true(all(!is.na(v1$p.value)))
+})
+
+test_that("pm_perm_mapper(): one set of workers for several calls; errors become NULL", {
+  mp <- predictmeans:::pm_perm_mapper(2, n = 4)
+  on.exit(mp$stop())
+  expect_equal(unlist(mp$map(1:4, function(i) i^2)), (1:4)^2)
+  expect_equal(unlist(mp$map(5:6, function(i) i + 1)), 6:7)
+  res <- mp$map(1:3, function(i) if (i == 2) stop("no") else i)
+  expect_null(res[[2]])
+  expect_identical(predictmeans:::pm_perm_mapper(1)$ncore, 1L)
+})

@@ -4,14 +4,14 @@
 \name{copper}
 \alias{copper}
 \alias{copperKnots}
-\title{\code{copper} data}
+\title{Copper Grade at Sampling Points}
 \format{
 A data frame with 439 rows and 4 columns:
 \describe{
 \item{xcoord}{X coordinate of the sampling point.}
 \item{ycoord}{Y coordinate of the sampling point.}
 \item{zcoord}{Z coordinate of the sampling point.}
-\item{grade}{copper grade.}
+\item{grade}{copper grade (positive; modelled on the log scale below).}
 }
 \code{copperKnots}: the 20 knots (columns \code{xcoord}, \code{ycoord}) of M. P. Wand's thin-plate spline
 fit of these data (a geoadditive model fitted by \code{lme()}), which \code{\link{semireg}} reproduces.

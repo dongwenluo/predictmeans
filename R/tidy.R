@@ -37,7 +37,12 @@ pm_tidy_parts <- function(e) {
   } else {
     rep(NA_real_, nK)
   }
-  crit <- if (perm) rep(2, nK) else stats::qt(1 - slevel/2, df)
+  # with a permlist the tests are of comparisons: the limits of each mean are
+  # the model's t limits at conf_level with the model's df ('ci_df' of
+  # pm_compare(), pm_perm_ci_df()); 'df' stays NA, as no test uses it
+  ci_df <- if (perm) g("ci_df")
+  if (perm && is.null(ci_df)) ci_df <- rep(Inf, nK)
+  crit <- pm_ci_crit(slevel, if (perm) ci_df else df)
   means <- label
   rownames(means) <- NULL
   for (v in names(means)) if (is.matrix(means[[v]])) means[[v]] <- as.vector(means[[v]])
@@ -79,10 +84,10 @@ pm_tidy_parts <- function(e) {
     means$response.conf.high <- pmax(lo, hi)
   }
   # bias adjustment and averaging on the response scale (R/response-scale.R)
-  ba_arg <- g("bias_adjust")
-  ba <- isTRUE(ba_arg) || identical(ba_arg, "taylor")
-  if (!ba && !isFALSE(ba_arg) && !is.null(ba_arg)) stop("'bias_adjust' must be TRUE, FALSE or \"taylor\".", call. = FALSE)
   avg <- if (is.null(g("average"))) "link" else g("average")
+  bs <- pm_bias_setup(g("bias_adjust"), g("sigma"), model, isTRUE(g("link_scale")),
+                      need = !is.null(means$response))
+  ba <- bs$on
   ba_sigma <- NA_real_
   if (ba || identical(avg, "response")) {
     if (is.null(means$response)) {
@@ -91,10 +96,9 @@ pm_tidy_parts <- function(e) {
       avg <- "link"
     } else {
       bf <- pm_back_funs(back, trans, model, isTRUE(g("link_scale")))
-      s2 <- if (!ba) 0 else if (!is.null(g("sigma"))) g("sigma")^2 else pm_bias_sigma2(model, isTRUE(g("link_scale")))
-      if (ba) ba_sigma <- sqrt(s2)
+      if (ba) ba_sigma <- sqrt(bs$s2)
       # the mean of the back-transformed response (R/back-transform.R)
-      bias <- pm_bias_funs(bf, s2, if (identical(ba_arg, "taylor")) "taylor" else "exact")
+      bias <- pm_bias_funs(bf, bs$s2, bs$method)
       hb <- bias$h
       db <- bias$d
       if (identical(avg, "response")) {
@@ -211,6 +215,8 @@ pm_tidy_parts <- function(e) {
     equivalence = pm_equiv_margins(g("equivalence")),
     comparison = cmp,
     back_transform = pm_back_label(means, g("trans_by"), isTRUE(g("link_scale")), model, ba, avg),
+    response = pm_response_label_info(model, trans, isTRUE(g("link_scale")), !is.null(means$response),
+                                      from_formula = grepl("model formula", paste(g("trans_by"), collapse = ""))),
     bias_adjust = ba_sigma,
     singular = pm_singular(model),
     average = avg,
@@ -226,6 +232,23 @@ pm_tidy_parts <- function(e) {
       "The model has zero inflation: the means are the overall means (1 - pi) mu (mean_type = \"overall\"), ",
       "averaged over the cells of the grid; 'estimate' is their log, the ratios are of these means.") else
       paste(attr(zi, "note"), "mean_type = \"overall\" gives the overall means."))
+  }
+
+  # with 'atvar': the means grouped by its levels (atvar first, then the
+  # other factors, in modelterm order), the pairs by level in the same order,
+  # pairs across levels last
+  if (!is.null(atvar)) {
+    o <- do.call(order, unname(as.list(means[c(atvar, setdiff(vars, atvar))])))
+    means <- means[o, , drop = FALSE]
+    rownames(means) <- NULL
+    if (!is.null(V)) V <- V[o, o, drop = FALSE]
+    if (!is.null(pairs)) {
+      by_lev <- unique(do.call(paste, c(lapply(means[atvar], as.character), sep = " : ")))
+      po <- order(match(pairs$by, by_lev), match(pairs$level1, rownames(K)[o]), match(pairs$level2, rownames(K)[o]),
+                  na.last = TRUE)
+      pairs <- pairs[po, , drop = FALSE]
+      rownames(pairs) <- NULL
+    }
   }
 
   list(means = means, pairs = pairs, settings = settings, vcov = V)
@@ -276,9 +299,11 @@ pm_finish <- function(outputlist, parts) {
 ## The means (model scale) and their covariance matrix, named by the mean
 ## labels ("level1:level2"). With these, multcomp::glht() and
 ## marginaleffects::hypotheses() can test any contrast of the means.
+#' @exportS3Method coef predictmeans
 coef.predictmeans <- function(object, ...) {
   stats::setNames(object$means$estimate, rownames(attr(object, "vcov")))
 }
+#' @exportS3Method vcov predictmeans
 vcov.predictmeans <- function(object, ...) {
   V <- attr(object, "vcov")
   if (is.null(V)) stop("This result has no covariance matrix of the means.", call. = FALSE)
@@ -288,13 +313,17 @@ vcov.predictmeans <- function(object, ...) {
 ## Methods for marginaleffects (registered when it is loaded), so that
 ## marginaleffects::hypotheses() works on the means; its delta method changes
 ## the coefficients with set_coef().
+#' @exportS3Method marginaleffects::get_coef predictmeans
 get_coef.predictmeans <- function(model, ...) coef.predictmeans(model)
+#' @exportS3Method marginaleffects::set_coef predictmeans
 set_coef.predictmeans <- function(model, coefs, ...) {
   model$means$estimate <- unname(coefs)
   model
 }
+#' @exportS3Method marginaleffects::get_vcov predictmeans
 get_vcov.predictmeans <- function(model, ...) vcov.predictmeans(model)
 
+#' @exportS3Method as.data.frame predictmeans
 as.data.frame.predictmeans <- function(x, row.names = NULL, optional = FALSE,
                                        what = c("means", "pairs"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("means", "pairs"), row.names)
@@ -347,6 +376,7 @@ pm_result_table <- function(x, what, tables, row.names = NULL) {
 #' \code{modelterm}, \code{n.means}, \code{n.pairs}, \code{nobs} (observations in the cells), \code{df.method},
 #' \code{adjust}, \code{level}, \code{vcov}, \code{vcov.adjust}, \code{sed.min}, \code{sed.mean}, \code{sed.max}
 #' (standard errors of the differences), \code{lsd.mean}, \code{nperm} and \code{model.class}.
+#' @seealso \code{\link{predictmeans}}, \code{\link{autoplot.predictmeans}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -354,7 +384,7 @@ pm_result_table <- function(x, what, tables, row.names = NULL) {
 #'   Oats <- as.data.frame(nlme::Oats)
 #'   Oats$nitro <- factor(Oats$nitro)
 #'   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-#'   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
+#'   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
 #'   as.data.frame(pm)
 #'   head(as.data.frame(pm, what = "pairs"))
 #'   if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
@@ -367,11 +397,13 @@ pm_result_table <- function(x, what, tables, row.names = NULL) {
 #' @aliases as.data.frame.predictmeans coef.predictmeans vcov.predictmeans glance.predictmeans
 NULL
 
+#' @exportS3Method generics::tidy predictmeans
 tidy.predictmeans <- function(x, what = c("means", "pairs"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("means", "pairs"))
 }
 
 ## One row describing a result (the generics/broom glance()).
+#' @exportS3Method generics::glance predictmeans
 glance.predictmeans <- function(x, ...) {
   s <- x$settings
   m <- x$means

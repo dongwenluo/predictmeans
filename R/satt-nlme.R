@@ -301,7 +301,8 @@ pm_nlme_W_observed <- function(R, pt = pm_nlme_parts(R)) {
   I <- (I + t(I)) / 2
   eg <- eigen(I, symmetric = TRUE)
   pos <- eg$values > 5e-9
-  eg$vectors[, pos, drop = FALSE] %*% diag(1 / eg$values[pos], nrow = sum(pos)) %*% t(eg$vectors[, pos, drop = FALSE])
+  Ev <- eg$vectors[, pos, drop = FALSE]
+  tcrossprod(Ev * rep(1 / sqrt(eg$values[pos]), each = nrow(Ev)))   # generalized inverse
 }
 
 ## Satterthwaite: d vcov(beta) / d theta_i = Phi A_i Phi (exact, given G_i).
@@ -334,7 +335,17 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "aver
   Phi <- pt$Phi
   Q <- pt$Q
   PP <- lapply(pt$A, function(a) -a)
-  W <- if (information == "observed") pm_nlme_W_observed(R, pt) else solve(pm_nlme_info(R, pt, information))
+  # observed or average information not positive definite: the expected one,
+  # with a message (pm_kr_info_check(), R/kr.R), as for lmer. (Before 2.0.0
+  # the observed one dropped such directions silently; the average one was
+  # inverted as it was.)
+  information_used <- information
+  if (information != "expected") {
+    I <- pm_nlme_info(R, pt, information, reml = !R$ml)
+    if (!pm_kr_info_check(I, information)) information_used <- "expected"
+  }
+  W <- if (information_used == "expected") solve(pm_nlme_info(R, pt, "expected")) else
+    if (information_used == "observed") pm_nlme_W_observed(R, pt) else solve(I)
   U <- matrix(0, ncol(X), ncol(X))
   for (i in seq_len(k)) for (j in seq_len(k)) {
     U <- U + W[i, j] * (Q[[i]][[j]] - PP[[i]] %*% Phi %*% PP[[j]])
@@ -344,7 +355,7 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "aver
   dimnames(PhiA) <- dimnames(Phi)
   attr(PhiA, "P") <- PP
   attr(PhiA, "W") <- W
-  attr(PhiA, "information") <- information
+  attr(PhiA, "information") <- information_used
   PhiA
 }
 

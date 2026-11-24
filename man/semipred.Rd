@@ -2,25 +2,33 @@
 % Please edit documentation in R/semipred.R
 \name{semipred}
 \alias{semipred}
-\title{Predicted Means of a Semi Paramatric Model with Covariate Variable(s)}
+\title{Predicted Curves and Surfaces of a Semiparametric Model}
 \usage{
-semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
-         conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL,
+         boundary=NULL, conf_level=0.95, trans=NULL, contr_scale=c("model", "response"),
          band=c("pointwise", "simultaneous"),
-         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-         mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
+         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0,
+         plot_args=list(), mean_type=c("conditional", "overall"),
+         bias_adjust=FALSE, sigma=NULL, plot=getOption("predictmeans.plot", FALSE), ...)
 }
 \arguments{
-\item{model}{A fit returned by \code{semireg} (\code{semireg} before 2.0).}
+\item{model}{A fit of \code{\link{semireg}} or \code{\link{semireg_tmb}} (\code{semireg} before 2.0).}
 
-\item{modelterm}{Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.}
+\item{modelterm}{Name (in "quotes") of the factor term whose curves are predicted, as in the model formula, e.g. "A" or "A:B"
+(any number of factors: every combination is computed; \code{autoplot(x, group = , panel = )} chooses the layout).
+With \code{NULL} or the name of the covariate, one curve without grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.}
 
-\item{covariate}{Name (in "quotes") of one or two (for \code{Ztps} smooth) the covariate variables in the \code{semireg} shuch as "x1" or c("x1", "x2").}
+\item{covariate}{Name (in "quotes") of the covariate, or two names for a surface, e.g. \code{c("x1", "x2")}.}
 
-\item{sm_term}{Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.}
+\item{sm_term}{The smooths used in the prediction; the default \code{NULL} uses all of them. \code{print(model)}
+(or \code{tidy(model)}) lists the smooths of the fit with the values to use here. Each entry may be a
+term as written in the formula (\code{"s(pressure, by = QB)"}, all its pieces), a smooth as labelled
+(\code{"s(pressure):QB200"}, column \code{smooth}), a covariate (\code{"pressure"}: every smooth of it, column
+\code{covariate}) or a random-effect term (\code{"s_pressure_QB200"}, column \code{term}). Smooths of other covariates enter the curves as
+a constant; the advice \code{smooth_other_covariate} says when the prediction includes such smooths.
+\code{settings$sm_term} records the blocks used.}
 
-\item{contr}{A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.}
+\item{contr}{Two levels of \code{modelterm} (numbers or names, e.g. \code{c(4, 1)} or \code{c("d", "a")}): the difference of their curves (level 4 minus level 1), with limits, along \code{covariate}.}
 
 \item{at}{The values of \code{covariate} to predict at (\code{covariateV} before 2.0): a numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth); each row of the matrix is one prediction point.}
 
@@ -30,13 +38,22 @@ by a row of \code{NA} (a point is inside when it is inside an odd number of them
 as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
 the data cover, following their shape). \code{NULL} (default): the whole grid.}
 
-\item{conf.level}{Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
+\item{conf_level}{Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
 before 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
 df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
 besides the smooths.}
 
-\item{trans}{A function object for calculating the back transformed means, e.g. \code{trans=exp}.}
+\item{trans}{A function that back-transforms the curves, e.g. \code{trans = exp}. Without it the curves are
+back-transformed by the inverse link of a generalized fit, or by the inverse of a response transformed in the
+formula (\code{log(y)}, \code{sqrt(y)}, \code{log(y + 1)}, ...), as in \code{\link{covariatemeans}} (one rule
+for both); \code{trans = I} keeps the model scale.}
+
+\item{bias_adjust, sigma}{For back-transformed curves, as in \code{\link{covariatemeans}}: by default a curve is the
+back-transformed fitted value (the median for a transformed response, a typical cluster for a GLMM);
+\code{bias_adjust = TRUE} gives the mean of the response, over the residual variance (transformed response) and
+the variances of the random intercepts other than the smooths (the smooths' random effects are the curves
+themselves), or \code{sigma^2}.}
 
 \item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
 for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
@@ -45,8 +62,8 @@ their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the
 count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 overall means. Log-link count families only.}
 
-\item{plot_args}{A named list of plot settings (before 2.0 arguments of their own; given so they stop with this
-spelling): \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
+\item{plot_args}{Superseded by the arguments of \code{\link{autoplot.pm_curves}}, kept for 1.x scripts (before
+2.0 arguments of their own; given so they stop with this spelling). A named list: \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
 default, \code{"free"}, \code{"free_x"}, \code{"free_y"}: the axes of the panels), \code{plotord} (the order
 of the two factors of a two-way term, e.g. \code{c(2, 1)}; giving it draws the plot), \code{ci} (draw the
 bands, \code{TRUE}), \code{point} (draw the data, \code{TRUE}), \code{jitterv} (jitter of the points, 0),
@@ -95,7 +112,7 @@ on the link scale, as the ratio (log link) or the odds ratio (logit link) of the
 }
 \value{
 An object of class \code{c("semipred", "pm_curves")}, a list. \code{tidy()} and \code{as.data.frame()} return its
-table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}).
+table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}); notes in \code{attr(, "advice")} (\code{\link{advice}}).
 \item{means}{The curves: the factor columns of \code{modelterm}, the covariate(s), \code{estimate},
   \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} on the model scale (pointwise limits), with a
   simultaneous band \code{adj.conf.low}, \code{adj.conf.high}; for generalized fits and with \code{trans} also
@@ -107,11 +124,16 @@ table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code
   simultaneous band \code{p.adj} is the share of the simulated maxima at least as large (below 0.05 exactly where
   the band leaves out zero; the smallest value is 1/10000).}
 \item{settings}{The options: \code{df_method}, \code{band}, \code{deriv}, \code{unconditional},
-  \code{back_transform}, ...}
+  \code{back_transform}, ...; with \code{contr}, \code{test}: whether the curves differ anywhere along the
+  covariate, the max-|t| test (\code{statistic} the largest |t| over the \code{points}, \code{p.value} the share of
+  simulated maxima at least as large, from the covariance of the fixed and smooth coefficients: the smallest level at
+  which the simultaneous band leaves out zero somewhere). A Wald F test of the smooth coefficients is not used:
+  they are shrunken, and the statistic would not have an F distribution. In a simulation of equal curves
+  (200 data sets) it rejected 3.0\% at the 5\% level.}
 \item{significant}{With \code{contr} or \code{deriv}: the ranges of the covariate where the band asked for
   leaves out zero.}
-\item{plt}{A ggplot object (a list of plotly plots for \code{threeD} surfaces by group); drawn only when
-  \code{plot = TRUE}.}
+\item{plt}{\code{autoplot()} of the result with \code{plot_args}: a ggplot (one plotly widget for \code{threeD});
+  drawn only when \code{plot = TRUE}.}
 \item{pred_df}{The 1.x table: a data.frame with the predicted values, their limits \code{LL} and \code{UL} (the band asked for), \code{SE} and
   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
@@ -163,7 +185,7 @@ evaluated at the difference of the means, which is not a standard error of any d
 is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
 covariate where the curves differ are printed with the result and kept in \code{significant} and
 \code{attr(pred_df, "significant")}; with
-\code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf.level}
+\code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf_level}
 when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 penalised smooth coefficients are not reliable.)
 }
@@ -172,7 +194,7 @@ penalised smooth coefficients are not reliable.)
 With \code{deriv = 1} (\code{2}) each row of the prediction design is replaced by its first (second) derivative
 along the covariate, by central differences of the whole design (the fixed part and every smooth basis, on the
 same grid), so the slopes are those of the fitted curves for any basis; for the O'Sullivan basis (\code{bs = "os"},
-\code{smZ()}) they equal the exact derivatives of the basis, \code{ZOSull(drv = )} (as \code{smZ(drv = )}),
+1.x \code{smZ()}) they equal the exact derivatives of the basis (\code{ZOSull(drv = )}),
 to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
 models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
 response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
@@ -214,7 +236,10 @@ anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 out <- semipred(fm, "QB", "pressure")
 out
 autoplot(out)
-autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
+\donttest{
+autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"), panel = character(0))
+# the smooths of one term only, as written in the formula
+semipred(fm, "QB", "pressure", sm_term = "s(pressure, by = QB)")$settings$sm_term
 # at given pressures
 semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 
@@ -226,7 +251,7 @@ head(as.data.frame(dif))
 # slopes of the curves, and where they differ from zero over the whole range
 slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
 slp$significant
-\donttest{
+
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
@@ -246,6 +271,9 @@ head(as.data.frame(semipred(fbin, "g", "x", contr = c("b", "a"))))
 }
 \references{
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
+}
+\seealso{
+\code{\link{semireg}}, \code{\link{tidy.pm_curves}}, \code{\link{semiboundary}}, \code{\link{covariatemeans}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

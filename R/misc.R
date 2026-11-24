@@ -348,61 +348,55 @@ doolittle <- function(x, eps = 1e-6) {
 
 ########################
 
-#' Calculate degree of freedom of a modelterm (contrast) for a lmer model
+#' Denominator Degrees of Freedom of the Means or Contrasts of an lmer Model
 #'
 #' @description
-#' Calculate the degree of freedom of a modelterm (contrast) for a \code{lmer} model 
-#'   using "Kenward-Roger" or "Satterthwaite" method.
+#' The denominator df of each mean of a model term, or of each row of a contrast matrix, for an \code{lmer} fit:
+#'   Kenward-Roger (default), Satterthwaite, containment or between-within.
 #' @usage
 #' df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
-#'           df_method=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), ...)
+#'         df_method=c("Kenward-Roger", "Satterthwaite", "containment",
+#'           "between-within", "KR-expected", "KR-average"), ...)
 #' @param model Model object returned by \code{lmer}.
-#' @param modelterm Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
-#'   The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".
-#' @param covariate Name (in "quotes") of one the covariate variables in the \code{model}.
-#' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} isn't NULL, the programe will ignore modelterm 
-#'   and calculate degree of freedom for the \code{ctrmatrix}.
-#' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
-#' @param df_method The method for the degrees of freedom (called \code{type} before 2.0). 
-#'   The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
+#' @param modelterm Name (in "quotes") of the model term whose means get df, as written in the model formula,
+#'   e.g. "A" or "A:B".
+#' @param covariate Name (in "quotes") of a covariate in the \code{model}, passed to \code{\link{Kmatrix}}.
+#' @param ctrmatrix A contrast matrix on the fixed-effect coefficients (one column per coefficient of
+#'   \code{fixef(model)}). When given, \code{modelterm} is ignored (except for "containment" and
+#'   "between-within", which need it).
+#' @param ctrnames Names of the rows of \code{ctrmatrix}, e.g. c("A vs D", "C vs B").
+#' @param df_method The method for the degrees of freedom (called \code{type} before 2.0): "Kenward-Roger" (the
+#'   default), "Satterthwaite", "containment", "between-within", "KR-expected" or "KR-average".
 #'   Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 #'   "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
 #'   "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
 #'   observed information of the variance parameters, as SAS \code{DDFM=KR}; "KR-expected" the expected
 #'   information, as \pkg{pbkrtest} and \pkg{emmeans}; "KR-average" the average information, as Genstat.
 #' @param ... Arguments removed in 2.0 (\code{type}, \code{vcov_adj}) stop with their 2.0 spelling.
+#' @details
+#' Kenward-Roger df that cannot be computed fall back to Satterthwaite with a warning. The Satterthwaite df equal
+#' those of \pkg{lmerTest} and the Kenward-Roger df those of \pkg{pbkrtest} (\code{"KR-expected"}) and SAS
+#' \code{DDFM=KR} (\file{tests/testthat/test-satterthwaite.R}, \file{test-kr-sas.R}).
+#' @return A numeric vector of df, one per mean of \code{modelterm} (rows of \code{Kmatrix(model, modelterm)$K})
+#'   or per row of \code{ctrmatrix}.
+#' @seealso \code{\link{predictmeans}} (argument \code{df_method}), \code{\link{anova.lmerMod}},
+#'   \code{\link{contrastmeans}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
-#' # ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #' df_term(fm, "nitro:Variety")
-#' ## The contrast has a contrast matrix as follows:
-#' #     0:Golden Rain 0:Marvellous 0:Victory 
-#' #[1,]            -1            0         1 
-#' #[2,]             0            0         1 
-#' #     0.2:Golden Rain 0.2:Marvellous 0.2:Victory 
-#' #[1,]               0              0           0 
-#' #[2,]               0              0           0 
-#' #     0.4:Golden Rain  0.4:Marvellous 0.4:Victory
-#' #[1,]               0               0           0
-#' #[2,]               0              -1           0
-#' #      0.6:Golden Rain 0.6:Marvellous 0.6:Victory
-#' #[1,]                0              0           0
-#' #[2,]                0              0           0
-#'
-#' # 1. Enter above contrast matrix into a pop up window, then close the window
-#' if (interactive()) df_term(fm, "nitro:Variety")
-#'  
-#' # 2. Construct the contrast matrix directly
-#' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
+#' df_term(fm, "nitro:Variety", df_method = "containment")
+#' # two contrasts of the 12 coefficients
+#' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 #'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 #' df_term(fm, ctrmatrix=cm, df_method="Satterthwaite")
 #' @name df_term
 NULL
 
+#' @export
 df_term <- function(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
                     df_method=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), ...) {
   pm_defunct("df_term", match.call(), strict = TRUE, formals_of = formals(sys.function()))
@@ -554,6 +548,7 @@ get_covbeta <- function(varpar, devfun) {
 # }
 
 ###################### for print
+#' @exportS3Method print pdmlist
 print.pdmlist = function(x, ...){
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
@@ -562,7 +557,9 @@ print.pdmlist = function(x, ...){
   # output is the same as before; use tidy() or as.data.frame() to see them
   pos = union(pos, which(names(x) %in% c("means", "pairs", "settings")))
   if (length(pos)) x = x[names(x)[-pos]]
-  NextMethod()
+  out <- NextMethod()
+  pm_print_advice(x)
+  invisible(out)
 }
 ########## R-function: ZOSull ##########
 # For creation of O'Sullivan-type Z matrices.
@@ -608,8 +605,7 @@ ZOSull <- function(x,intKnots, range.x, drv=0) {
   Lmat <- cbind(UX,LZ)
   stabCheck <- t(crossprod(Lmat,t(crossprod(Lmat,Omega))))
   if (sum(stabCheck^2) > 1.0001*(numIntKnots+2)) {
-    print("WARNING: NUMERICAL INSTABILITY ARISING\\
-              FROM SPECTRAL DECOMPOSITION")
+    warning("ZOSull(): numerical instability in the spectral decomposition of the penalty.", call. = FALSE)
   }
 
   # Obtain B and post-multiply by LZ matrix to get Z.
@@ -618,8 +614,9 @@ ZOSull <- function(x,intKnots, range.x, drv=0) {
 
   Z <- crossprod(t(B),LZ)
 
-  # Order the columns of Z with respect to the eigenvalues of "Omega":
-  Z <- Z[,order(eigOmega$values[indsZ])]
+  # Order the columns of Z with respect to the eigenvalues of "Omega" (a
+  # matrix also for one value of x)
+  Z <- Z[, order(eigOmega$values[indsZ]), drop = FALSE]
 
   # Add the `range.x' and 'intKnots' as attributes
   # of the return object.
@@ -751,7 +748,7 @@ f_loj_krc <- function(x, y, by.x, by.y) {
 ## trt_n -- names of treatment
 
 ## Letters from the overlap of intervals (LL, UL): the engine of
-## predictmeans(letterCI = TRUE), whose intervals are the comparison intervals
+## predictmeans(letter_ci = TRUE), whose intervals are the comparison intervals
 ## (R/comparison.R). Exported as ci_mcp() before 2.0: letters from overlapping
 ## confidence intervals (95% or 83.4%) do not answer the pairwise tests.
 pm_ci_mcp <- function(LL, UL, trt_n=NULL) {
@@ -882,5 +879,6 @@ pm_zi_component <- function(model) {
     "means only when pi is the same)."))
 }
 
-## Removed in 2.0: predictmeans(letterCI = TRUE).
+## Removed in 2.0: predictmeans(letter_ci = TRUE).
+#' @export
 ci_mcp <- function(...) pm_defunct_fun("ci_mcp")

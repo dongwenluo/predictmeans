@@ -2,28 +2,87 @@
 % Please edit documentation in R/se_ranef.R
 \name{se_ranef}
 \alias{se_ranef}
-\title{Extract Standard Errors of Model Random Effects}
-\usage{
-se_ranef(object, rand_term=NULL)
-}
+\alias{print.pm_ranef}
+\alias{tidy.pm_ranef}
+\alias{as.data.frame.pm_ranef}
+\alias{as.list.pm_ranef}
+\title{Standard Errors of the Predicted Random Effects}
 \arguments{
-\item{object}{object of \code{merMod} and \code{glmmTMB} fit}
+\item{object}{An \code{lmer}, \code{glmer}, \code{glmmTMB} (conditional model), \code{lme} or
+\code{\link{semireg}} fit.}
 
-\item{rand_term}{a name of random term in the model.}
+\item{rand_term}{Optional name of one grouping factor, e.g. \code{"Block"} or \code{"Variety:Block"}
+(\code{lme}: the level name, e.g. \code{"Variety"} for \code{~ 1 | Block/Variety}).}
+
+\item{type}{\code{"prediction"} (default) or \code{"conditional"} (1.x); see Description.}
+
+\item{predict}{Add the predicted value of each level (see Description)?}
+
+\item{conf_level}{Confidence level of the limits.}
+
+\item{x}{A \code{pm_ranef} result.}
+
+\item{n}{Rows printed per group.}
+
+\item{digits}{Digits printed.}
+
+\item{...}{Not used.}
 }
 \value{
-\code{se_ranef} gives a list of standard errors for \code{ranef}.
+A data frame of class \code{pm_ranef}: \code{group}, \code{level}, \code{term}, \code{estimate} (the BLUP),
+\code{std.error}, \code{conf.low}, \code{conf.high} (normal limits \eqn{\hat u \pm z\,SE}: for
+\code{"prediction"} a prediction interval of \eqn{u}); with \code{predict = TRUE} also \code{prediction},
+\code{prediction.std.error}, \code{prediction.conf.low}, \code{prediction.conf.high}, and for GLMMs
+\code{response}, \code{response.std.error}, \code{response.conf.low}, \code{response.conf.high}.
+\code{attr(, "settings")} records \code{type}, \code{conf_level}, \code{limits}, \code{model_class},
+\code{scale} and \code{conditional} (what the conditional SE is for this class). \code{as.list()} gives the 1.x
+result: one matrix of SEs (levels x terms) per group, or that matrix only when \code{rand_term} was given.
 }
 \description{
-These functions extract standard errors of model random effects
-   from objects returned by modeling functions.
+The predicted random effects (BLUPs, conditional modes) of a mixed model with their standard errors and
+limits, and optionally the predicted value of each level (fixed part plus random effect).
+
+Two standard errors are available:
+\describe{
+\item{\code{type = "prediction"}}{(the default) the prediction error SE, \eqn{\sqrt{Var(\hat u - u)}}, from
+  the inverse of the mixed model equations (Henderson's \eqn{C_{22}}; SAS PROC MIXED \code{RANDOM / SOLUTION},
+  "Std Err Pred"). It includes the uncertainty of the estimated fixed effects, which matters most for a term
+  that contains a fixed factor (e.g. \code{Block:Variety} with \code{Variety} fixed).}
+\item{\code{type = "conditional"}}{the conditional SE, \eqn{\sqrt{Var(u \mid y)}} with the fixed effects
+  treated as known: lme4's \code{ranef(condVar = TRUE)}, the numbers of \code{se_ranef()} in predictmeans 1.x.
+  It is smaller.}
 }
-\details{
-\code{se_ranef} extracts standard errors of the random effects
-    from objects returned by lmer, glmer and glmmTMB functions.
+Both treat the variance parameters as known (the usual plug-in), except for \code{glmmTMB}: there
+\code{"conditional"} is \code{ranef(condVar = TRUE)} of glmmTMB, which is TMB's \code{sdreport()} and
+includes the uncertainty of the fixed effects \emph{and} of the variance parameters (so it can exceed
+\code{"prediction"}, which inverts the \eqn{(\beta, b)} block of TMB's joint precision, variance parameters
+known). Correlated terms, nested and crossed terms, glmmTMB structures (\code{us}, \code{cs}, \code{ar1},
+...) and \code{lme} correlation and variance structures are all covered, as the SEs come from the joint
+covariance of all random effects. For GLMMs, all values are on the link scale.
+
+With \code{predict = TRUE}, each level gets its predicted value: for a random term with no fixed factor in it
+(\code{Block}), the overall mean (the fixed factors averaged with equal weights, as \code{\link{predictmeans}};
+covariates at their means) plus \eqn{\hat u}; for a term that contains fixed factors (\code{Block:Variety},
+\code{Variety} fixed), the predicted mean of that fixed level plus \eqn{\hat u}. Its SE is from the joint
+covariance of \eqn{(\hat\beta, \hat u - u)}, \eqn{L C L'} with \eqn{L = [k', e_i]} (\code{"prediction"}
+always). Only intercept rows get a prediction (random slopes: \code{NA}). For GLMMs the response scale is added
+by the inverse link (SE by the delta method).
+}
+\examples{
+library(predictmeans)
+Oats$nitro <- factor(Oats$nitro)
+fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
+se_ranef(fm, "Block")
+se_ranef(fm, "Block", type = "conditional")     # 1.x numbers
+se_ranef(fm, "Variety:Block", predict = TRUE)   # cell values
+as.list(se_ranef(fm, type = "conditional"))     # 1.x list of matrices
 }
 \references{
-This function is modified from function 'se.ranef' at package 'arm'.
+Henderson, C. R. (1975). Best linear unbiased estimation and prediction under a selection model.
+\emph{Biometrics}, 31, 423-447.
+}
+\seealso{
+\code{\link{varcomp}}, \code{\link{residplot}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

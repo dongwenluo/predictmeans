@@ -48,6 +48,9 @@ Society B, 26(2), 211-252.
 Yeo, I.-K. and Johnson, R. A. (2000), \emph{A new family of power transformations to improve normality or
 symmetry}, Biometrika, 87(4), 954-959.
 }
+\seealso{
+\code{\link{predictmeans}}, \code{\link{pm_check}}
+}
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
 }

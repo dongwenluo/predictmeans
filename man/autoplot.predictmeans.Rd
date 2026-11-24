@@ -2,12 +2,19 @@
 % Please edit documentation in R/autoplot.R
 \name{autoplot.predictmeans}
 \alias{autoplot.predictmeans}
+\alias{plot.predictmeans}
 \alias{summary.predictmeans}
 \alias{print.summary.predictmeans}
 \title{Plots and Summary of Predicted Means}
 \usage{
-\method{autoplot}{predictmeans}(object, type = c("means", "pvalue", "response"),
-         interval = c("ci", "comparison", "lsd", "none"), values = FALSE, ...)
+\method{autoplot}{predictmeans}(object, type = c("means", "bar", "ci", "pvalue"),
+         interval = c("lsd", "sed", "ci", "comparison", "none"),
+         scale = c("auto", "model", "response"),
+         data = FALSE, x = NULL, group = NULL, panel = NULL,
+         scales = c("fixed", "free_y"), lines = TRUE,
+         jitter = 0.1, values = FALSE, ...)
+
+\method{plot}{predictmeans}(x, ...)
 
 \method{summary}{predictmeans}(object, digits = 4, ...)
 
@@ -16,52 +23,85 @@
 \arguments{
 \item{object}{A result of \code{\link{predictmeans}}.}
 
-\item{type}{\code{"means"} (the default) plots the predicted means; \code{"pvalue"} a square level plot of the
-adjusted pairwise p-values, like a correlation plot (the plot of \code{\link{PMplot}}; with \code{atvar} the
-comparisons within each of its levels are blocks down the diagonal); \code{"response"} the back-transformed
-means. \code{"pvalue"} needs the \code{pairs} table (with more than 100 means: \code{pairwise = TRUE} in
-\code{predictmeans()}).}
+\item{type}{\code{"means"} (the default): points joined by lines for each level of \code{group};
+\code{"bar"}: a bar chart of the means; \code{"ci"}: each mean with its confidence limits, drawn horizontally
+(one row per mean; on the response scale when the means are back-transformed); \code{"pvalue"}: a square level
+plot of the adjusted pairwise p-values (the plot of \code{\link{PMplot}}; with \code{atvar} the comparisons
+within each of its levels are blocks down the diagonal), which needs the \code{pairs} table.
+(\code{"response"} of earlier 2.0 versions is \code{type = "ci"} or \code{scale = "response"}.)}
 
-\item{interval}{Bars around the means: confidence limits (\code{"ci"}, the default); comparison intervals
-(\code{"comparison"}); half the average LSD (\code{"lsd"}); or none. Confidence limits are for each mean and
-must not be read as tests: two means can differ significantly while their 95\% limits overlap, and with
-correlated means (blocks, mixed models) by a wide margin. Comparison intervals are made for that reading: mean
-\eqn{\pm c\,SE} with \eqn{c = crit \times SED/(SE_1 + SE_2)} averaged over the pairs, so that two means differ
-at the level (and adjustment) of the result when their bars do not overlap; exactly so when the SEDs are
-equal, and the subtitle says how many pairs are judged differently by their own tests otherwise (columns
-\code{comparison.low} and \code{comparison.high} of \code{means}; see \code{\link{predictmeans}}). Half-LSD
-bars are the same idea with the average LSD (adjusted as the p-values when \code{adj} has a critical value).}
+\item{interval}{For \code{"means"} and \code{"bar"}: \code{"lsd"} (the default) draws one bar of the average LSD
+beside the means of each panel, as predictmeans 1.x: two means differ at the level of the result when they are
+further apart than the bar (exactly so when all the LSDs are equal; the caption gives their range when they are
+not). It is the LSD that goes with the p-values: adjusted when \code{adj} has a critical value. With
+\code{atvar} each panel (level of \code{atvar}) gets the LSD of the pairs compared within it. \code{"sed"} draws
+the average SED instead; \code{"ci"} confidence limits on each mean (for each mean, not for comparing means: two
+means can differ while their limits overlap); \code{"comparison"} comparison intervals (mean
+\eqn{\pm c\,SE}, \eqn{c = crit \times SED/(SE_1 + SE_2)} averaged over the pairs: means differ when their bars
+do not overlap; see \code{\link{predictmeans}}); \code{"none"}. One LSD bar replaces the half-LSD bars on each
+mean of earlier 2.0 versions: those said the same when the SEDs are equal, and looked like confidence limits.}
+
+\item{scale}{\code{"model"}: the scale of the model (e.g. \code{log(y + 1)} or the link); \code{"response"}: the
+back-transformed means (needs them); \code{"auto"} (the default): \code{"response"} for \code{type = "ci"}
+when the means are back-transformed, else \code{"model"}. LSD and SED bars exist only on the model scale.}
+
+\item{scales}{For \code{"means"} and \code{"bar"} with panels: \code{"fixed"} (the default), one y axis for all
+panels, with the LSD (SED) bar at the same place in each, from the lowest point of the plot, so equal LSDs look
+equal; \code{"free_y"}, each panel its own y range, with its bar from its own lowest point (the bars are
+then read within their panel only: the caption says so).}
+
+\item{data}{Add the observations (\code{TRUE}; jittered points), from \code{\link{pm_data}} of the model, on the
+scale shown: the transformed response on the model scale, the original response on the response scale. For a
+link function the data are shown only on the response scale. A data frame can be given instead (with the
+factors of \code{modelterm} and the response).}
+
+\item{x, group, panel}{Names of factors of \code{modelterm} for the x axis, the lines (colours) and the panels.
+The defaults: with \code{atvar}, the panels are its levels and x the first other factor; else x is the first
+factor, group the second and the panels the rest. These replace \code{plotord} of predictmeans 1.x.}
+
+\item{lines}{For \code{type = "means"}: join the means of a group by lines (\code{TRUE}) or not.}
+
+\item{jitter}{Horizontal jitter of the data points, in units of the x categories.}
 
 \item{values}{For \code{type = "pvalue"}: print each p-value on its tile (the default is \code{FALSE}).}
 
 \item{digits}{Number of significant digits printed (plus two).}
 
-\item{x}{A result of \code{summary()}.}
-
-\item{\dots}{Not used.}
+\item{\dots}{For \code{plot()}: arguments of \code{autoplot()}, with \code{xvar} for its \code{x} (in \code{plot()} \code{x} is the
+result). Otherwise not used.}
 }
 \value{
-\code{autoplot()} returns a \code{ggplot} object; \code{summary()} returns an object whose print method shows the
-table and footer.
+\code{autoplot()} returns a \code{ggplot} object; \code{plot()} prints it and returns it invisibly;
+\code{summary()} returns an object whose print method shows the table and footer.
 }
 \description{
-\code{autoplot()} draws the predicted means, their pairwise p-values or the back-transformed means of a
-\code{\link{predictmeans}} result as a \pkg{ggplot2} object. \code{summary()} prints the means with a footer that
-states the degrees of freedom, the SED and LSD ranges, the p-value adjustment and the covariate values used.
-Both are built from the \code{means} and \code{pairs} tables of the result: they do not compute statistics, open
-graphics devices or print on their own, so they can be used in reports and Shiny apps
-(e.g. \code{renderPlot(autoplot(pm))}) or made interactive with \code{plotly::ggplotly()}.
+\code{autoplot()} draws a \code{\link{predictmeans}} result as a \pkg{ggplot2} object: the means with one LSD
+bar (as predictmeans 1.x), as bars, as horizontal confidence intervals, or the pairwise p-values.
+\code{plot()} draws the same and prints it. \code{summary()} prints the means with a footer that states the
+degrees of freedom, the SED and LSD ranges, the p-value adjustment and the covariate values used. All are built
+from the \code{means} and \code{pairs} tables of the result: they do not compute statistics, so they can be used
+in reports and Shiny apps (e.g. \code{renderPlot(autoplot(pm))}) or made interactive with
+\code{plotly::ggplotly()}. Titles, labels and font sizes are changed with \pkg{ggplot2}, e.g.
+\code{autoplot(pm) + labs(title = "Yield") + theme_bw(14)}.
 }
 \examples{
   library(predictmeans)
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
   summary(pm)
   ggplot2::autoplot(pm)
-  ggplot2::autoplot(pm, interval = "lsd")
+  ggplot2::autoplot(pm, data = TRUE)
+  ggplot2::autoplot(pm, type = "bar")
+  ggplot2::autoplot(pm, type = "ci")
   ggplot2::autoplot(pm, type = "pvalue")
+  plot(predictmeans(fm, "nitro:Variety"), xvar = "Variety", group = "nitro")
+  fl <- lm(log(yield) ~ nitro * Variety, data = Oats)
+  ggplot2::autoplot(predictmeans(fl, "nitro:Variety"), type = "ci", data = TRUE)
+}
+\seealso{
+\code{\link{predictmeans}}, \code{\link{tidy.predictmeans}}, \code{\link{pm_data}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

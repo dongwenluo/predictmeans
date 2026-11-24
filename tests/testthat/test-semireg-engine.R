@@ -192,3 +192,28 @@ test_that("semireg(): the deviance function cannot move the fitted model (df, va
   expect_equal(lme4::getME(f$semer, "theta"), th)
   expect_equal(as.matrix(vcov(f$semer)), V)
 })
+
+test_that("semireg_tmb() refits keep the prior weights and offset (anova(), varcomp() LRTs)", {
+  set.seed(8812)
+  d <- data.frame(x = runif(120), g = gl(12, 10), w = runif(120, 0.3, 3), o = rnorm(120, sd = 0.5))
+  d$y <- sin(2 * pi * d$x) + rnorm(12, sd = 0.5)[d$g] + rnorm(120)/sqrt(d$w) + d$o
+  fits <- list(
+    weights = semireg_tmb(y ~ s(x, bs = "os") + (1 | g), data = d, weights = w),
+    offset = semireg_tmb(y ~ s(x, bs = "os") + (1 | g), data = d, offset = o),
+    both = semireg_tmb(y ~ s(x, bs = "os") + (1 | g), data = d, weights = w, offset = o),
+    offset_term = semireg_tmb(y ~ s(x, bs = "os") + (1 | g) + offset(o), data = d))
+  expect_equal(fits$offset$refit$offset, d$o)      # once, not twice (glmmTMB's frame holds it twice)
+  for (nm in names(fits)) {
+    m <- fits[[nm]]
+    # a refit with nothing dropped is the fit itself (before 2.0.0 weights and offset were lost)
+    expect_equal(as.numeric(logLik(predictmeans:::pm_sr_refit(m))), as.numeric(logLik(m$semer)),
+                 tolerance = 1e-6, label = nm)
+  }
+  # the LRT of the smooth: the null model is the weighted fit without the smooth
+  null <- glmmTMB::glmmTMB(y ~ x + (1 | g), data = d, weights = w, offset = o, REML = TRUE)
+  sm <- predictmeans:::pm_sr_smooth_tests(fits$both)
+  expect_equal(sm$logLik.without, as.numeric(logLik(null)), tolerance = 1e-5)
+  expect_equal(sm$logLik, as.numeric(logLik(fits$both$semer)), tolerance = 1e-6)
+  # Type III Wald tests with an offset (the rebuilt design leaves it out)
+  expect_s3_class(anova(fits$offset_term), "pm_semi_anova")
+})

@@ -8,7 +8,7 @@
 #'
 #'   The predicted means are built on a reference grid: every combination of the factor levels in
 #'   the model, with covariates fixed at their means (or other chosen values). Each row of \code{K}
-#'   is the equally weighted average of the grid rows for one level combination of
+#'   is the average of the grid rows (weighted as \code{weights} says; equal by default) for one level combination of
 #'   \code{modelterm}. Combinations of nested factors that cannot exist (a term of the model holds both
 #'   factors, e.g. \code{G/T}, and each level of one occurs with one level of the other) are left out of
 #'   the averages; so are, with \code{weights = "equal"}, the empty cells of interaction terms (see
@@ -24,9 +24,10 @@
 #'   \code{I(x^2)}, only through interactions (e.g. \code{A:x} without \code{x}, or \code{x:z}),
 #'   or through smooth terms (\code{s(x)}, \code{te(x, z)}, \code{s(x, by = A)}) of a \code{gam}.
 #' @usage
-#' Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
-#'         weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
-#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+#' Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean,
+#'         exclude=NULL, weights=c("equal", "proportional", "outer", "cells", "flat"),
+#'         refgrid=FALSE, ...)
+#' @param model A fitted model: \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #' \code{glmer}, \code{glmmTMB}, \code{gam}/\code{bam} (package \pkg{mgcv}; for \code{gamm} use its
 #' \code{$gam} component) or \code{semireg}.
 #' @param modelterm Name (in "quotes") of the variables whose combinations give the rows of \code{K}: fixed-effect
@@ -94,19 +95,20 @@
 #' @references
 #' Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 #' 	\emph{Prediction in linear mixed models}, Australian and New Zealand Journal of Statistics, 46(3), 325-347.
+#' @seealso \code{\link{predictmeans}}, \code{\link{contrast_family}}, \code{\link{specify_contrast}}
 #' @author
 #' This function heavily depends on the codes from package "lsmeans".
 #' @examples
 #'   library(predictmeans)
 #'   data(Oats, package="nlme")
-#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #'   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 #'   Kmatrix(fm, "Variety")$K
 #'   Kmatrix(fm, "Variety", 0.5)$K
 #'   Kmatrix(fm, "Variety", "nitro")$K
 #'   Kmatrix(fm, "Variety", "nitro", at=seq(0, 0.6, 0.1))$K
 #'   Kmatrix(fm, "Variety", list(nitro = c(0, 0.3, 0.6)))$K      # the same, values by name
-#'   Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
+#'   # not a term of the model
+#'   Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames
 #'
 #'   # Covariates entering through transformations or only through interactions
 #'   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
@@ -122,6 +124,7 @@
 #' @name Kmatrix
 NULL
 
+#' @export
 Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
                     weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...) {
   pm_defunct("Kmatrix", match.call(), strict = TRUE, formals_of = formals(sys.function()))
@@ -186,7 +189,9 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   Terms <- basis$Terms
   basis <- basis$fun
   cov_report <- setdiff(pv$covariates, facs)
+  lc <- NULL
   basis_cov <- function(nd) {
+    if (length(lc)) nd <- pm_set_level_covariates(nd, lc)
     B <- basis(nd)
     if (length(cov_report)) B <- cbind(B, matrix(unlist(lapply(nd[cov_report], as.numeric)), nrow(nd),
                                                  dimnames = list(NULL, paste0("\rcov:", cov_report))))
@@ -205,6 +210,21 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
       null_space <- N
       rownames(null_space) <- colnames(Xfit)
     }
+  }
+  # Covariates that are a function of a factor (a site-level value such as
+  # the site mean): in a rank-deficient fit they are aliased with that factor,
+  # and a grid row that pairs a level with any other value of the covariate
+  # is not estimable. Each row then takes its level's value (pm_level_covariates()).
+  lc <- if (!is.null(null_space) && !average_cov) {
+    pm_level_covariates(X, setdiff(pv$covariates, c(facs, names(cv$fixed))), factor_names)
+  }
+  if (length(lc)) {
+    message("Covariate", if (length(lc) > 1) "s", " ", paste(names(lc), collapse = ", "), " ",
+            if (length(lc) > 1) "are" else "is", " constant within the levels of ",
+            paste(unique(vapply(lc, `[[`, "", "factor")), collapse = ", "),
+            ": each mean uses the value of each level averaged over.")
+    basis0 <- basis
+    basis <- function(nd) basis0(pm_set_level_covariates(nd, lc))
   }
 
   ## 5. K: the basis averaged over the reference grid, and 6. estimability.
@@ -228,7 +248,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
     # ('refgrid', semireg fits, comparisons on common cells); otherwise each
     # group of interacting variables is averaged on its own grid
     # (pm_average_by_groups()).
-    need_grid <- isTRUE(refgrid) || isTRUE(info$semireg) || length(empty_rule$missing) > 0
+    need_grid <- isTRUE(refgrid) || isTRUE(info$semireg) || length(empty_rule$missing) > 0 || length(lc) > 0
     groups <- if (!need_grid) pm_dim_groups(dims, c(pm_basis_sets(info, Terms), cw$sets,
                                                    lapply(nested, function(p) c(p$a, p$b))))
     rg <- NULL
@@ -325,7 +345,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
 
   if (!is.null(rg)) rg$basis <- basis    # the basis of the grid rows (for means averaged on the response scale)
   return(list(K=K, fctnames=fctnames, response=info$yname, preddf=X, refgrid=rg, data=model_data,
-              empty_cells=empty_cells))
+              empty_cells=empty_cells, level_covariates=lc))
 }
 
 ## ---- The steps of Kmatrix() ----
@@ -498,6 +518,42 @@ pm_base_values <- function(pv, cv, cov_reduce) {
   # Variables used only in excluded smooths: fixed at one value, never averaged.
   for (v in pv$excluded_only) baselevs[[v]] <- baselevs[[v]][1]
   baselevs
+}
+
+## Covariates that take one value within each level of a factor (with at
+## least two distinct values): list(cov = list(factor =, values = named by
+## level)). The first such factor is used.
+pm_level_covariates <- function(X, covs, factor_names) {
+  out <- list()
+  for (cv in covs) {
+    x <- X[[cv]]
+    if (!is.numeric(x) || is.matrix(x)) next
+    for (f in factor_names) {
+      g <- X[[f]]
+      if (!is.factor(g)) next
+      ok <- !is.na(x) & !is.na(g)
+      if (!any(ok)) next
+      rng <- tapply(x[ok], droplevels(g[ok]), function(v) diff(range(v)))
+      vals <- tapply(x[ok], droplevels(g[ok]), `[`, 1)
+      if (all(rng <= 1e-10 * max(1, abs(vals))) && length(unique(vals)) > 1) {
+        out[[cv]] <- list(factor = f, values = vals)
+        break
+      }
+    }
+  }
+  out
+}
+
+## Set the level covariates of the rows of 'nd' to their level's value
+## (levels without data keep the value they have).
+pm_set_level_covariates <- function(nd, lc) {
+  for (cv in names(lc)) {
+    f <- lc[[cv]]$factor
+    if (is.null(nd[[f]])) next
+    v <- unname(lc[[cv]]$values[as.character(nd[[f]])])
+    nd[[cv]] <- ifelse(is.na(v), nd[[cv]], v)
+  }
+  nd
 }
 
 ## Means that cannot be estimated because a factor is nested in another in

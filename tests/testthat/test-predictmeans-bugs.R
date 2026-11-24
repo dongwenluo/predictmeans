@@ -94,17 +94,13 @@ test_that("atvar groups with a single observed level get a letter", {
   expect_false(anyNA(pm$mean_table$Table$LetterGrp))
 })
 
-test_that("asking for the bar chart keeps the other plots (mean plot not NULL)", {
+test_that("every plot type is drawn from one result", {
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
   pdf(NULL); on.exit(dev.off())
-  pm <- predictmeans(fm, "nitro", adj = "BH", plot = c("mean", "bar", "pval", "back"))
-  expect_s3_class(pm$predictmeansPlot$meanPlot, "ggplot")
-  expect_s3_class(pm$predictmeansBarPlot, "ggplot")
-  pm2 <- predictmeans(fm, "nitro", adj = "BH", plot = TRUE)
-  expect_s3_class(pm2$predictmeansPlot$meanPlot, "ggplot")
-  expect_null(pm2$predictmeansBarPlot)
+  pm <- predictmeans(fm, "nitro", adj = "BH")
+  for (ty in c("means", "bar", "ci", "pvalue")) expect_s3_class(ggplot2::autoplot(pm, type = ty), "ggplot")
 })
 
 test_that("confounded factors: means over the combinations that exist, with a warning; no error", {
@@ -200,17 +196,14 @@ test_that("back-transformed data points are shifted by the offset in trans, like
   d$Block <- factor(d$Block, ordered = FALSE)
   d$nitro <- as.numeric(d$nitro)
   d$ly1 <- log(d$yield + 1)
-  grDevices::pdf(NULL)
-  on.exit(grDevices::dev.off())
-  invisible(predictmeans(lm(ly1 ~ Variety + Block, data = d), "Variety", trans = function(x) exp(x) - 1,
-                         plot = "back"))
-  p <- ggplot2::last_plot()
-  pts <- ggplot2::layer_data(p, 3)    # data points (jittered by up to 0.2 * resolution)
+  pm <- predictmeans(lm(ly1 ~ Variety + Block, data = d), "Variety", trans = function(x) exp(x) - 1)
+  p <- ggplot2::autoplot(pm, type = "ci", data = TRUE)
+  pts <- pm_layer(p, "GeomPoint")    # data points (the first point layer)
   expect_equal(nrow(pts), nrow(d))
   expect_equal(range(pts$x), range(d$yield), tolerance = 0.02)
   cm <- covariatemeans(lm(ly1 ~ Variety * nitro, data = d), "Variety", covariate = "nitro",
                        trans = function(x) exp(x) - 1)$plt
-  expect_equal(range(ggplot2::layer_data(cm, 3)$y), range(d$yield))
+  expect_equal(range(pm_layer(cm, "GeomPoint")$y), range(d$yield))
 })
 
 test_that("clear messages for a misspelled 'adj' or a term in the wrong order or case", {

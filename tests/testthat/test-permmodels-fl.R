@@ -155,3 +155,14 @@ test_that("permmodels() and bootmodels() print their tables; prt and fo stop (re
   expect_true(any(grepl("parametric bootstrap", capture.output(print(b)))))
   expect_error(bootmodels(fm, nsim = 9, prt = FALSE), "'prt' was removed", fixed = TRUE)
 })
+
+test_that("permmodels(method = \"raw\") on lme fits gives no partial-match warnings", {
+  Oats <- as.data.frame(nlme::Oats)
+  Oats$nitro <- factor(Oats$nitro)
+  fm <- nlme::lme(yield ~ nitro * Variety, random = ~ 1 | Block/Variety, data = Oats)
+  op <- options(warnPartialMatchDollar = TRUE)
+  # restored here, not by on.exit(): the option must not reach later test files
+  # (mgcv's own code, as summary.gam(), abbreviates $ names)
+  res <- tryCatch(expect_no_warning(permmodels(fm, nperm = 9, seed = 1, method = "raw")),
+                  finally = options(op))
+})

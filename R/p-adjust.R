@@ -209,7 +209,7 @@ pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf, draws = FALSE) {
     return(if (draws) list(crit = cr, M = NULL, tdist = tdist) else cr)
   }
   e <- eigen(C, symmetric = TRUE)
-  A <- e$vectors %*% diag(sqrt(pmax(e$values, 0)), nrow = length(e$values))
+  A <- e$vectors * rep(sqrt(pmax(e$values, 0)), each = nrow(e$vectors))   # columns scaled
   DA <- D[ok, , drop = FALSE] %*% A
   M <- pm_with_seed(20240403, {
     Z <- matrix(stats::rnorm(ncol(A)*nsim), ncol(A))

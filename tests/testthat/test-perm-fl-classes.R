@@ -6,7 +6,7 @@ test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
   m1 <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Om)
   r1 <- permmodels(m1, nperm = 49, type = "II", seed = 1, method = "freedman-lane", refit = FALSE)
   # car's type II hypotheses (as pm_anova()), unadjusted covariance: Wald chi-square / df
-  a1 <- pm_anova(m1, type = "II", test.statistic = "Chisq")
+  a1 <- pm_anova(m1, type = "II", test_statistic = "Chisq")
   expect_equal(r1$ANOVA[, "F value"], round(unname(a1[, "Chisq"] / a1[, "Df"]), 4))
   ct <- coef(summary(lmerTest::as_lmerModLmerTest(m1)))
   expect_equal(unname(r1$COEFFICENTS[, "t value"]), round(unname(ct[, "t value"]), 4))

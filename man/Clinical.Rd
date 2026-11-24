@@ -3,20 +3,29 @@
 \docType{data}
 \name{Clinical}
 \alias{Clinical}
-\title{\code{Clinical} data}
+\title{Multicentre Clinical Trial of a Skin Treatment}
 \format{
-\code{Clinical} is a 16 row data frame with the following columns 
+A data frame with 16 rows and 4 columns:
 \describe{
-\item{Clinic}{8 centres id.}
-\item{Treatment}{2 skin treatments (control or active drug).}
-\item{Favorable}{number that produced a favourable response.}
-\item{Total}{number of patients in each treatment group.}
+\item{Clinic}{factor, 8 centres.}
+\item{Treatment}{factor, \code{control} or \code{drug}.}
+\item{Favorable}{number of patients with a favourable response.}
+\item{Total}{number of patients in the clinic and treatment group.}
 }
+}
+\source{
+Beitler, P. J. and Landis, J. R. (1985). A mixed-effects model for categorical data. \emph{Biometrics}, 41, 991-1000.
 }
 \usage{
 data(Clinical)
 }
 \description{
-\code{Clinical} data is from a multicentre randomized clinical trial (Beitler
+Favourable responses in a multicentre randomized clinical trial of a topical drug against a control (Beitler
  & Landis 1985, Biometrics).
+}
+\examples{
+data(Clinical)
+gm <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
+            family = binomial, data = Clinical)
+predictmeans(gm, "Treatment")$means   # probability scale
 }

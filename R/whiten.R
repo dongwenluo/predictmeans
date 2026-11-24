@@ -43,6 +43,39 @@ pm_whiten <- function(A, d = NULL) {
   )
 }
 
+## The diagonal of the residual covariance of an lmer fit relative to sigma^2,
+## 1/w for prior weights w; NULL (the identity) without weights. For
+## pm_whiten(Z Lambda, d) in permlmer() and permmodels(method = "raw").
+pm_mer_resvar <- function(model) {
+  w <- stats::weights(model)
+  if (all(w == 1)) NULL else 1/w
+}
+
+## The whitener of an lmer fit, V = Z Lambda Lambda' Z' + diag(1/w) (prior
+## weights w); 'Lambda' to use other variances in the same structure
+## (permlmer(): the null model's in the alternative's). The one place this is
+## set up for permmodels(), permlmer() and the Freedman-Lane code.
+pm_mer_whiten <- function(model, Lambda = lme4::getME(model, "Lambda")) {
+  pm_whiten(lme4::getME(model, "Z") %*% Lambda, pm_mer_resvar(model))
+}
+
+## Fitted values X b + offset of an lmer fit, its residuals, and their
+## decorrelated form W^-1 e (W from pm_mer_whiten()), for residual permutation.
+pm_mer_perm_parts <- function(model, W = pm_mer_whiten(model), beta = lme4::fixef(model)) {
+  xbeta <- as.vector(lme4::getME(model, "X") %*% beta) + lme4::getME(model, "offset")
+  errors <- lme4::getME(model, "y") - xbeta
+  list(W = W, xbeta = xbeta, errors = errors, wterrors = W$solve(errors))
+}
+
+## The blocks of an nlme (lme, gls) fit's covariance, with the rows of B
+## reordered to follow them: list(W (pm_whiten_blocks()), B reordered, ord
+## (the original row of each new row)).
+pm_nlme_whiten <- function(model, B) {
+  V_list <- build_Sigma_mats(model, sigma_scale = FALSE)
+  o <- get_order(A = V_list, B = B)
+  list(W = pm_whiten_blocks(V_list), B = o[[1]], ord = o[[2]])
+}
+
 ## The same for a block-diagonal V given as a list of dense blocks (nlme
 ## models): the symmetric square root of each block.
 pm_whiten_blocks <- function(V_list) {

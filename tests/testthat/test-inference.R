@@ -85,8 +85,8 @@ test_that("covariatemeans() follows the same defaults: Kenward-Roger df per poin
   oats$Block <- factor(oats$Block, ordered = FALSE)
   oats <- oats[-c(3, 20, 41), ]
   m <- lme4::lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = oats)
-  a <- covariatemeans(m, "Variety", covariate = "nitro", at = c(0, 0.3, 0.6))$pltdf
-  u <- covariatemeans(m, "Variety", covariate = "nitro", at = c(0, 0.3, 0.6), vcov_adjust = FALSE)$pltdf
+  a <- covariatemeans(m, "Variety", covariate = "nitro", at = c(0, 0.3, 0.6))$pred_df
+  u <- covariatemeans(m, "Variety", covariate = "nitro", at = c(0, 0.3, 0.6), vcov_adjust = FALSE)$pred_df
   inf <- pm_inference(m)
   K <- Kmatrix(m, "Variety", "nitro", at = c(0, 0.3, 0.6))$K
   expect_equal(a$ses, unname(sqrt(diag(K %*% inf$mp$vcov %*% t(K)))), tolerance = 1e-8)

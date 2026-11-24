@@ -4,34 +4,36 @@
 \alias{covariatemeans}
 \title{Predicted Means of a Linear Model with Covariate Variable(s)}
 \usage{
-covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL,
-  conf.level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
+covariatemeans(model, modelterm=NULL, covariate, as_is=FALSE, at=NULL, data=NULL,
+  conf_level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+    "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE),
   plot_args=list(), ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.}
+\item{model}{A fitted model, as for \code{\link{predictmeans}} (\code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB}, \code{gam}).}
 
-\item{modelterm}{Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".}
+\item{modelterm}{Name (in "quotes") of the factor term whose lines are predicted, e.g. "A" or "A:B",
+given exactly as it appears in the printed model.}
 
-\item{covariate}{Name (in "quotes") of one the covariate variables in the \code{model}.}
+\item{covariate}{Name (in "quotes") of a covariate of \code{model}, or two names for surfaces (then \code{at}
+is a matrix with a column per covariate, or \code{NULL} for a grid; not with \code{contr} or \code{as_is}).}
 
-\item{as.is}{\code{TRUE}: each line only over the range of the covariate observed in its group (rows outside it are
+\item{as_is}{\code{TRUE}: each line only over the range of the covariate observed in its group (rows outside it are
 left out of the result); the default \code{FALSE} uses the values of \code{at} for every group.}
 
 \item{at}{The values of \code{covariate} at which the lines are predicted (\code{covariateV} before 2.0); by
 default 50 values over the observed range. See \code{\link{Kmatrix}}.}
 
-\item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.}
+\item{data}{The data used to fit the model; needed in some cases, e.g. when a variable is transformed in the model formula.}
 
-\item{conf.level}{The confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0). The limits
+\item{conf_level}{The confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0). The limits
 are for each line on its own: whether the bands of two groups overlap is not a test of their difference
-(the lines are estimated from the same model and are correlated; see \code{letterCI} in
+(the lines are estimated from the same model and are correlated; see \code{letter_ci} in
 \code{\link{predictmeans}}). Use \code{contr} for the band of the difference between two groups, or compare
 groups at chosen covariate values with \code{\link{predictmeans}} (\code{covariate = }) and their slopes
 with \code{\link{pm_slopes}}.}
@@ -42,17 +44,13 @@ model formula (\code{log(y)}, \code{sqrt(y)}, ...; see \code{\link{predictmeans}
 \code{trans = I} keeps the model scale. The back-transformed line is the back-transformed fitted value.
 (Before 2.0 half the standard error of the fitted value was added inside \code{exp()} for a log.)}
 
-\item{plot_args}{A named list of plot settings (names may be abbreviated):
-\describe{
-  \item{\code{trellis}}{\code{TRUE} (default): one panel per level.}
-  \item{\code{plotord}}{The order of the factors for two or three way terms (e.g. \code{c(2, 1)} or
-    \code{c("B", "A")}): the first gives the colours, the second (and third) the panels. Giving it draws the plot.}
-  \item{\code{mtitle}}{The main title.}
-  \item{\code{ci}}{Draw the confidence band (default \code{TRUE}).}
-  \item{\code{point}}{Draw the data points (default \code{TRUE}).}
-  \item{\code{jitterv}}{Jitter of the points in x and y (default 0).}
-}
-Before 2.0 these were arguments of their own; given so they stop with this spelling.}
+\item{plot_args}{Superseded by the arguments of \code{\link{autoplot.pm_curves}}, kept for 1.x scripts: a named
+list (names may be abbreviated) of \code{trellis} (\code{FALSE}: one panel; \code{panel = character(0)}),
+\code{plotord} (the order of the factors, e.g. \code{c(2, 1)} or \code{c("B", "A")}: the first colours the
+lines, the others make the panels; \code{group}, \code{panel}; giving it draws the plot), \code{mtitle}
+(\code{title}), \code{ci} (\code{interval}), \code{point} (\code{data}), \code{jitterv} (\code{jitter}),
+\code{scales} and the colours of \code{style}. Before 2.0 these were arguments of their own; given so they stop
+with this spelling.}
 
 \item{...}{Not used: arguments removed in 2.0 (\code{level}, \code{Df}, \code{covariateV}, \code{transOff},
 \code{responsen}, \code{newwd}, the plot settings) stop with their 2.0 spelling (see \code{vignette("migrating")}).}
@@ -86,7 +84,7 @@ of the two lines and for a logit link as the odds ratio (exact: exp of the diffe
 \code{"response"} is the difference of the back-transformed lines, in the units of the response, with a
 delta-method band; it describes the size of the difference, the test stays on the model scale.}
 
-\item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the confidence level \code{conf.level} for
+\item{band}{With \code{contr}: \code{"pointwise"} (the default) gives limits at the confidence level \code{conf_level} for
 each covariate value on its own; \code{"simultaneous"} gives Scheffe limits that hold for all covariate
 values together, for saying over which range of the covariate the lines differ.}
 
@@ -97,8 +95,8 @@ their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the
 count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 overall means. Log-link count families only.}
 
-\item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): the plot is in the result
-(\code{autoplot()} returns it). \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
+\item{plot}{Draw the plot now? The default is \code{FALSE} (since 2.0; 1.x drew it): \code{autoplot()} of the
+result draws it (\code{\link{autoplot.pm_curves}}: layouts, scales, data), and \code{$plt} holds the default plot. \code{plot = TRUE}, or \code{options(predictmeans.plot = TRUE)} for a whole
 session, draws it as 1.x did; \code{plot_args = list(plotord = )} also draws it.}
 
 \item{bias_adjust, sigma}{For back-transformed lines (a link, a transformed response or \code{trans}), as in
@@ -121,8 +119,8 @@ An object of class \code{c("covariatemeans", "pm_curves")}, a list. Its tables h
   \code{contr}).}
 \item{pairs}{With \code{contr}: the difference of the two curves at each covariate value.}
 \item{settings}{The options that produced them (df method, level, band, back-transformation, ...).}
-\item{plt}{The plot (a \code{ggplot}); drawn only with \code{plot = TRUE}.}
-\item{pltdf}{The data of the plot as in 1.x: the fitted values with their limits, or with \code{contr} the
+\item{plt}{\code{autoplot()} of the result with \code{plot_args} (a \code{ggplot}); drawn only with \code{plot = TRUE}.}
+\item{pred_df}{(\code{pltdf} before 2.0; \code{x$pltdf} still gives it, with a message once per session) The 1.x table: the fitted values with their limits, or with \code{contr} the
   differences on the model scale and, when there is a back-transformation, on the response scale.}
 \item{test, significant}{With \code{contr}: the joint F test that the two lines are the same (numerator and
   denominator df, F, p-value), and the ranges of the covariate where the band leaves out zero.}
@@ -160,7 +158,7 @@ model it is the difference for a typical cluster (random effects at zero), as th
 \emph{Significance at a level.} Three questions have three answers:
 \enumerate{
 \item At one covariate value chosen beforehand: the pointwise band (\code{band = "pointwise"}); the lines
-  differ at the level \code{1 - conf.level} when it leaves out zero (one for a ratio).
+  differ at the level \code{1 - conf_level} when it leaves out zero (one for a ratio).
 \item Over which range of the covariate: looking at many values needs wider limits. \code{band =
   "simultaneous"} uses Scheffe's critical value \eqn{c = \sqrt{r F_{1-\alpha;\,r,\,df}}}, \eqn{r} the rank
   of the contrasts along the covariate (2 for straight lines: the Working-Hotelling band). It holds for
@@ -168,7 +166,7 @@ model it is the difference for a typical cluster (random effects at zero), as th
 \item Whether the lines differ anywhere: the joint F test that all the differences along the covariate
   are zero (\code{test} in the result).
 }
-Each set of limits in \code{pltdf} has a column that says whether it includes the value of no difference:
+Each set of limits in \code{pred_df} has a column that says whether it includes the value of no difference:
 \code{includes0} for \code{diff}, \code{ratio.includes1} or \code{odds.ratio.includes1} (always equal to
 \code{includes0}) and \code{response.includes0} for the response-scale difference (which can differ from
 \code{includes0} near the boundary). Column \code{significant} (\code{!includes0}) and \code{significant} in
@@ -190,10 +188,9 @@ means and their ratios.
   library(predictmeans)
   data(Oats, package="nlme")
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# library(lme4)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   cm <- covariatemeans(fm, "Variety", covariate="nitro")
   ggplot2::autoplot(cm)
+  ggplot2::autoplot(cm, panel = character(0), data = FALSE)   # one panel, no data
   covariatemeans(fm, "Variety", covariate="nitro", at=seq(0, 0.6, 0.3))
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
@@ -201,6 +198,9 @@ means and their ratios.
                        band="simultaneous")
   cd$settings$test
   head(as.data.frame(cd))
+}
+\seealso{
+\code{\link{autoplot.pm_curves}}, \code{\link{tidy.pm_curves}}, \code{\link{advice}}, \code{\link{pm_slopes}}, \code{\link{predictmeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

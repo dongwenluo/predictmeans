@@ -4,16 +4,18 @@
 \alias{varcomp}
 \title{Variance Components with Standard Errors and Confidence Intervals}
 \usage{
-varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+varcomp(model, ci = TRUE, conf_level = 0.95,
+        ci_method = c("Satterthwaite", "Wald", "profile"),
         information = c("observed", "average", "expected"), test = FALSE,
-        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999,
+        ncore = 1, ...)
 }
 \arguments{
 \item{model}{A fitted model (see Description).}
 
 \item{ci}{\code{TRUE} (the default): add confidence intervals.}
 
-\item{conf.level}{Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).}
+\item{conf_level}{Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).}
 
 \item{...}{Not used: \code{level} (before 2.0) stops with its 2.0 spelling.}
 
@@ -43,7 +45,8 @@ with a fixed seed, so the p-values repeat).}
 \item{nboot}{Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
 statistics reach the observed one.}
 
-\item{ncore}{Number of cores for the bootstrap (default 1; not on Windows).}
+\item{ncore}{Number of cores for the bootstrap (default 1; a socket cluster on Windows). The p-values are the
+same for any \code{ncore}.}
 }
 \value{
 A data frame with one row per component (random-effect variances and covariances by group, named
@@ -51,7 +54,8 @@ A data frame with one row per component (random-effect variances and covariances
   \code{cor.name} and \code{var.name}; \code{residual}) and columns \code{vcov} (the estimate), \code{SE} and,
   with \code{ci = TRUE}, the limits. Values are rounded to 4 decimals; attribute \code{"ci_method"} says how
   the intervals were made. With \code{test = TRUE} also \code{LRT} and \code{p.value}, and class
-  \code{"pm_varcomp"} (printed with the hypotheses).
+  \code{"pm_varcomp"} (printed with the hypotheses). Notes on this fit (e.g. a variance estimated at zero, few
+  levels) are kept in \code{attr(, "advice")}; read them with \code{\link{advice}}.
 }
 \description{
 The variance components of a fitted model, with standard errors and confidence intervals, for every model class
@@ -179,6 +183,9 @@ tests under nonstandard conditions. \emph{Journal of the American Statistical As
 
 Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed effects model.
 \emph{Biometrics}, 50, 1171-1177.
+}
+\seealso{
+\code{\link{anova.semireg}}, \code{\link{R2_model}}, \code{\link{se_ranef}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

@@ -10,11 +10,11 @@ test_that("letters: two means share a letter exactly when they don't differ (40 
   expect_equal(share[upper.tri(share)], (P >= 0.05)[upper.tri(P)])
 })
 
-test_that("letterCI with atvar: letters from the overlap of the comparison intervals within each atvar group", {
+test_that("letter_ci with atvar: letters from the overlap of the comparison intervals within each atvar group", {
   data(Oats, package = "nlme", envir = environment())
   Oats$nitro <- factor(Oats$nitro)
   fm <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
-  r <- predictmeans(fm, "nitro:Variety", atvar = "Variety", letterCI = TRUE, plot = FALSE)
+  r <- predictmeans(fm, "nitro:Variety", atvar = "Variety", letter_ci = TRUE, plot = FALSE)
   tab <- r$mean_table$Table
   for (v in levels(Oats$Variety)) {
     g <- tab[tab$Variety == v, ]
@@ -26,7 +26,7 @@ test_that("letterCI with atvar: letters from the overlap of the comparison inter
                as.character(tab$LetterGrp))
 })
 
-test_that("letterCI: a mean without a CI gets no letter instead of an error", {
+test_that("letter_ci: a mean without a CI gets no letter instead of an error", {
   tab <- data.frame(Mean = c(1, 2, NA, 9), "LL(83.4%)" = c(0, 1, NA, 8), "UL(83.4%)" = c(2, 3, NA, 10),
                     check.names = FALSE)
   lets <- pm_ci_letters(tab)
