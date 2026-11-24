@@ -80,6 +80,7 @@ pm_advice_get <- function(x) {
 #'   \code{extrapolation} \tab semipred, covariatemeans, pm_slopes \tab predictions beyond the range of the data \cr
 #'   \code{pointwise_regions} \tab semipred, covariatemeans \tab regions of difference read from pointwise limits \cr
 #'   \code{smooth_other_covariate} \tab semipred \tab a smooth in the prediction does not involve \code{covariate} (adds a constant) \cr
+#'   \code{nonestimable_slopes} \tab pm_slopes \tab the covariate is aliased with a factor: slopes NA, their differences kept \cr
 #'   \code{slopes_equal_by_model} \tab pm_slopes \tab no covariate x term interaction: the slopes are equal by assumption \cr
 #'   \code{slopes_at_value} \tab pm_slopes \tab a curved term or a link: the slopes depend on \code{at} \cr
 #' }
@@ -465,6 +466,12 @@ pm_slopes_advice <- function(x, model) {
     p <- trimws(p)
     s$covariate %in% all.vars(str2lang(p)) && p != s$covariate
   }, logical(1))), logical(1)))
+  if (isTRUE(any(!x$slopes$estimable))) {
+    rows$na <- pm_advice("nonestimable_slopes", paste0(
+      sum(!x$slopes$estimable), " slope(s) cannot be estimated (NA): ", s$covariate, " is aliased with a factor of ",
+      "the model (e.g. constant within its levels), so only differences between slopes are estimable; they are ",
+      "in the pairs."), "caution")
+  }
   if (nrow(x$slopes) > 1 && !any(inter)) {
     rows$same <- pm_advice("slopes_equal_by_model", paste0(
       "The model has no ", s$covariate, " x ", s$modelterm, " interaction, so the slopes are equal by assumption; ",

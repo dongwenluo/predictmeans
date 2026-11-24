@@ -207,6 +207,9 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Bug fixes
 
+* `pm_slopes()` gave a slope of 0 with SE 0 when the covariate is aliased with a factor (a site mean with
+  site in the model). Such slopes are now NA, with advice; their differences are kept. The slopes table has
+  an `estimable` column, as the means table.
 * `autoplot()` of means by group with the data (`data = TRUE`) works with ggplot2 3.4, as `DESCRIPTION`
   promises (it stopped: "position_jitterdodge() requires at least one aesthetic to dodge by").
 * Permutation tests, `bootmodels()` and variance-component tests of `lmer`/`glmer` fits with missing values

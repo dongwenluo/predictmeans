@@ -2828,3 +2828,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   notes for the saturated site x seedlot models. Rendered here without errors.
   Found: `pm_slopes()` gives 0 with SE 0 for a slope that is not estimable
   (sitemean aliased with site) - to fix.
+* `pm_slopes()` (2026-11-25): estimability check, the one Kmatrix() uses
+  (projection of K(at+h) - K(at-h) on the design's null space,
+  `pm_slope_null_proj()`, `pm_estimable_rows()`); non-estimable slopes and
+  pairs NA; advice id `nonestimable_slopes`; column `estimable`. Example 5.1
+  (`ht ~ site + sitemean*seedlot`) gave the first seedlot 0 with SE 0; pairs
+  = coefficient differences. Test in `test-pm-slopes.R`.

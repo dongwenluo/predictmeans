@@ -55,7 +55,8 @@ test_that("pm_slopes(): estimate column; pairs with limits that agree with the T
   Oats <- as.data.frame(nlme::Oats)
   fm <- lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   s <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
-  expect_named(s$slopes, c("Variety", "estimate", "std.error", "df", "statistic", "p.value", "conf.low", "conf.high"))
+  expect_named(s$slopes, c("Variety", "estimate", "std.error", "df", "statistic", "p.value", "conf.low", "conf.high",
+                              "estimable"))
   p <- s$pairs
   expect_named(p, c("level1", "level2", "estimate", "std.error", "df", "statistic", "p.value", "p.adj", "conf.low",
                     "conf.high", "adj.conf.low", "adj.conf.high"))
