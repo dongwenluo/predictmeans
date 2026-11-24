@@ -1,5 +1,23 @@
 # SAS reference output for df methods
 
+
+`Omega.sas` and `Tables 5 & 6 foot_mv in one go.sas`: Piepho's own %omega macro and Table 5/6 program (full model only), for reference.
+`piepho-table6.sas` (run 2026-11-23, `piepho-table6-results.csv`): Piepho (2023)
+Table 6, lamb-level R2 of the cumulative probit model for the 16 covariate
+subsets of the foot-shape data. `first_k` (each subset's coefficients paired
+with the first k columns of yr b1 b2 b3) reproduces the published table in all
+16 rows (to 0.01); `match` (the subset's own covariates) agrees with R
+(ordinal::clmm, nAGQ = 10) to 0.01. The published values are wrong for the 12
+subsets other than yr, yr b1, yr b1 b2, yr b1 b2 b3; Table 5 (full model) is
+right.
+`se-ranef.sas` (run 2026-11-24, SAS OnDemand; output `se-ranef-sas-output.pdf`;
+BLUPs and Std Err Pred in `se-ranef-results.csv` and
+`tests/testthat/_data/se-ranef-sas.rds`): PROC MIXED `RANDOM ... / SOLUTION` on Oats made
+unbalanced (7 of 72 plots deleted: whole plot I x Marvellous and three subplots; data
+inline). At SAS's variance estimates (Block 284.80, Block:Variety 110.97, residual 171.54)
+`se_ranef(type = "prediction")` equals Std Err Pred for all 23 levels to 1e-4 (SAS's 4
+decimals), and the BLUPs to 2e-4. At lme4's own REML fit (284.96, 110.97, 171.53) the SEs
+agree to 1.7e-4 relative. Test: `test-se-ranef.R`.
 `pm-reference-emptycells.sas` (run 2026-11-18, `sas-results-2026-11-18-emptycells.txt`; every value agrees, and the hypotheses equal SAS Type IV here): Type III F tests
 with an empty cell (oats without Victory x 0.6), written as contrasts on the
 cell means, for `anova()` (`R/anova.R`, `pm_type3_map_cells()`; the same

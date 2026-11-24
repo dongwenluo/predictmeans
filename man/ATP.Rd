@@ -3,24 +3,29 @@
 \docType{data}
 \name{ATP}
 \alias{ATP}
-\title{\code{ATP} containing data}
+\title{ATP Content of Preserved Dog Hearts}
 \format{
-\code{ATP} is a 230 row data frame with the following columns 
+A data frame with 230 rows (23 hearts, 10 times) and 5 columns:
 \describe{
-\item{heart}{dog heart id.}
-\item{time}{time in hour for \code{ATP} measurement.}
-\item{A}{treatment with two levels.}
-\item{B}{treatment with two levels.}
-\item{ATP}{percentage of total enzyme in the heart.}
+\item{heart}{factor, 23 dog hearts.}
+\item{time}{factor, time of measurement (hours after preservation; 10 levels).}
+\item{A}{factor, treatment A (2 levels).}
+\item{B}{factor, treatment B (2 levels).}
+\item{ATP}{ATP as a percentage of total enzyme in the heart (\%).}
 }
 }
 \usage{
 data(ATP)
 }
 \description{
-\code{ATP} containing data from an experiment to study the effects 
+Data from an experiment to study the effects 
 of preserving liquids on the enzyme content of dog hearts. There were 23 hearts 
 and two treatment factors, A and B, each at two levels. Measurements were made 
 of ATP as a percentage of total enzyme in the heart, at one and two hourly
 intervals during a twelve hour period following initial preservation.
+}
+\examples{
+data(ATP)
+fm <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
+predictmeans(fm, "A:B", pairwise = TRUE)$means
 }

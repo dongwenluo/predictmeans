@@ -28,13 +28,15 @@ Wald chi-square statistics (\code{lm}: F; \code{glm}: likelihood ratio).}
 \value{
 Invisibly, a list with \code{permlist} (the coefficients and covariance matrices of the refits),
 \code{COEFFICENTS} and \code{ANOVA} (the model's tables with a \code{Boot_p_value} column). Attribute
-\code{"resampling"} is \code{"parametric bootstrap"}.
+\code{"resampling"} is \code{"parametric bootstrap"}; advice (e.g. on too few samples) in \code{attr(, "advice")}
+(\code{\link{advice}}).
 }
 \description{
 Parametric bootstrap p-values for the terms and coefficients of a model. Responses are simulated from the model
 fitted without its fixed effects (only an intercept, any offset, and the same random effects and covariance
-structure: the global null hypothesis), the full model is refitted to each, and a p-value is the proportion of
-simulated statistics at least as large as the observed one. Useful for GLMs and GLMMs and small samples, where
+structure: the global null hypothesis), the full model is refitted to each, and a p-value is (b + 1)/(B + 1), b
+of the B simulated statistics being at least as large as the observed one. Results are the same for any
+\code{ncore}. Useful for GLMs and GLMMs and small samples, where
 Wald or F tests can be poor.
 }
 \details{
@@ -54,8 +56,11 @@ Like the likelihood-ratio test it relies on the model: with overdispersed counts
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   \donttest{
   bt <- bootmodels(fm, nsim = 99, seed = 1)   # use 999 or more in practice
-  predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
+  predictmeans(fm, "nitro", permlist = bt)$pairs
   }
+}
+\seealso{
+\code{\link{permmodels}}, \code{\link{varcomp}} (\code{test_method = "bootstrap"}), \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

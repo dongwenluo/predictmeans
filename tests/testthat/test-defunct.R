@@ -13,8 +13,8 @@ test_that("the defunct table is well formed", {
 test_that("a removed argument stops with its 2.0 spelling and the value given", {
   d <- predictmeans:::pm_defunct
   expect_error(d("predictmeans", quote(predictmeans(m, "A", level = 0.05))),
-               "'level' was removed in predictmeans 2.0: use conf.level = 0.95", fixed = TRUE)
-  expect_error(d("predictmeans", quote(predictmeans(m, "A", level = 0.1))), "conf.level = 0.9", fixed = TRUE)
+               "'level' was removed in predictmeans 2.0: use conf_level = 0.95", fixed = TRUE)
+  expect_error(d("predictmeans", quote(predictmeans(m, "A", level = 0.1))), "conf_level = 0.9", fixed = TRUE)
   expect_error(d("contrastmeans", quote(contrastmeans(m, "A", Df = 10))), "use df_method = 10", fixed = TRUE)
   k <- 12
   expect_error(d("covariatemeans", quote(covariatemeans(m, covariateV = list(x = k))), env = environment()),

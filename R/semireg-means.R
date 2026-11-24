@@ -117,6 +117,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
             class = c("pm_semimeans", "predictmeans"))
 }
 
+#' @exportS3Method print pm_semimeans
 print.pm_semimeans <- function(x, digits = 4, ...) {
   cat("Predicted means of", sQuote(x$settings$modelterm), "from a semireg model (smooth terms included)\n\n")
   print(x$means, digits = digits, row.names = FALSE)

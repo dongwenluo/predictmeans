@@ -40,7 +40,7 @@ test_that("formula smooths: the same fit as gam(method = 'REML'), fixed parts ad
     g <- mgcv::gam(cs[[2]], data = d, method = "REML")
     lab <- deparse(cs[[1]])
     expect_equal(unname(fitted(s$semer)), unname(fitted(g)), tolerance = 1e-4, label = lab)
-    fx <- attr(stats::terms(lme4::nobars(stats::formula(s$semer))), "term.labels")
+    fx <- attr(stats::terms(pm_nobars(stats::formula(s$semer))), "term.labels")
     expect_true(all(cs[[3]] %in% fx), label = lab)
   }
   # writing the fixed part or not: the same model
@@ -130,7 +130,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
   d$y <- sin(2*d$x) + 0.5*(d$f1 == "b")*sin(3*d$x) + 0.3*(d$f2 == "r") + rnorm(n, 0, 0.3)
   fit <- q(semireg(y ~ s(x, f1, k = 8), data = d))
   expect_setequal(names(fit$u_lst), c("s_x", "s_x_f1"))
-  fx <- attr(stats::terms(lme4::nobars(stats::formula(fit$semer))), "term.labels")
+  fx <- attr(stats::terms(pm_nobars(stats::formula(fit$semer))), "term.labels")
   expect_setequal(fx, c("x", "f1", "x:f1"))
   # Harezlak, Ruppert and Wand's form: one pdIdent block for the common curve, one for the deviations
   dd <- fit$data
@@ -151,7 +151,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
   # s(x, f1*f2): a deviation term per factor term, each with its variance; no f1:f2 deviation in these data
   f2 <- q(semireg(y ~ s(x, f1*f2, k = 8), data = d))
   expect_setequal(names(f2$u_lst), c("s_x", "s_x_f1", "s_x_f2", "s_x_f1_f2"))
-  fx2 <- attr(stats::terms(lme4::nobars(stats::formula(f2$semer))), "term.labels")
+  fx2 <- attr(stats::terms(pm_nobars(stats::formula(f2$semer))), "term.labels")
   expect_setequal(fx2, c("x", "f1", "f2", "x:f1", "x:f2", "f1:f2", "x:f1:f2"))
   v <- varcomp(f2)
   expect_lt(v["s_x_f1_f2.(Intercept)", "vcov"], 0.1*v["s_x_f1.(Intercept)", "vcov"])
@@ -166,7 +166,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
   d$z <- runif(n)
   f4 <- q(semireg(y ~ s(x, z, f1, k = 12), data = d))
   expect_setequal(names(f4$u_lst), c("s_x_z", "s_x_z_f1"))
-  expect_setequal(attr(stats::terms(lme4::nobars(stats::formula(f4$semer))), "term.labels"),
+  expect_setequal(attr(stats::terms(pm_nobars(stats::formula(f4$semer))), "term.labels"),
                   c("x", "z", "f1", "x:f1", "z:f1"))
   # refusals
   expect_error(semireg(y ~ s(x, f1, f2), data = d), "one term")
@@ -185,7 +185,7 @@ test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level w
   pb <- q(semipred(a, "x", "x", sm_term = "s_x"))$pred_df
   expect_equal(pa[[3]], pb[[3]], tolerance = 1e-10)
   expect_equal(pa$SE, pb$SE, tolerance = 1e-10)
-  expect_error(semipred(a, "x", "x", sm_term = "s_x_id"), "smooth blocks")
+  expect_error(semipred(a, "x", "x", sm_term = "s_x_id"), "is not a smooth of this fit")
   expect_error(semireg(y ~ s(x) + (s(x, by = f) | id), data = d), "cannot have 'by'")
 })
 
@@ -242,14 +242,51 @@ test_that("objects of the session in xt or k of random curves and t2() are not t
 test_that("print() and summary() of a fit show the model, not the list", {
   fit <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
   out <- capture.output(print(fit))
-  expect_true(any(grepl("REML criterion", out)))
+  expect_true(any(grepl("Semiparametric lmer fit", out)))
   expect_true(any(grepl("s(pressure):QB200", out, fixed = TRUE)))
+  # the formula as written, not the expanded one
+  expect_true(any(grepl("s(pressure, by = QB", out, fixed = TRUE)))
   expect_false(any(grepl("^\\$data", out)))
-  expect_lt(length(out), 60)
-  expect_s3_class(summary(fit), "summary.merMod")
+  expect_lt(length(out), 40)
+  s <- summary(fit)
+  expect_s3_class(s, "summary.semireg")
+  expect_s3_class(s$model, "summary.merMod")
+  expect_identical(s$smooths, generics::tidy(fit))
   ft <- semireg_tmb(rate ~ s(pressure, bs = "os") + (1 | Subject), data = nlme::Dialyzer)
   out <- capture.output(print(ft))
   expect_true(any(grepl("s_pressure", out)))
-  expect_lt(length(out), 60)
-  expect_s3_class(summary(ft), "summary.glmmTMB")
+  expect_lt(length(out), 40)
+  expect_s3_class(summary(ft)$model, "summary.glmmTMB")
+})
+
+test_that("extractors of a semireg fit are those of its mixed model", {
+  fit <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
+  m <- fit$semer
+  expect_identical(coef(fit), lme4::fixef(m))
+  expect_identical(fixef(fit), lme4::fixef(m))
+  expect_equal(vcov(fit), as.matrix(vcov(m)))
+  expect_identical(logLik(fit), logLik(m))
+  expect_identical(nobs(fit), nobs(m))
+  expect_identical(fitted(fit), fitted(m))
+  expect_identical(residuals(fit), residuals(m))
+  expect_s3_class(VarCorr(fit), "VarCorr.merMod")
+  expect_identical(deparse(formula(fit)), "rate ~ s(pressure, by = QB, bs = \"os\", k = 4) + (1 | Subject)")
+  # the smooth table: one row per random-effect block, with its variance
+  st <- generics::tidy(fit)
+  expect_named(st, c("smooth", "term", "covariate", "basis", "basis_dim", "variance", "linear"))
+  expect_identical(unique(st$covariate), "pressure")
+  # every smooth, term and covariate in the table works as semipred(sm_term = )
+  for (v in c(st$smooth, st$term, "pressure")) {
+    expect_no_error(suppressMessages(semipred(fit, "QB", "pressure", sm_term = v)))
+  }
+  expect_identical(suppressMessages(semipred(fit, "QB", "pressure", sm_term = st$smooth[1]))$settings$sm_term, st$term[1])
+  expect_identical(st$term, names(fit$smooths$maps))
+  v <- as.data.frame(lme4::VarCorr(m))
+  expect_equal(st$variance, v$vcov[match(st$term, v$grp)])
+  fx <- generics::tidy(fit, "fixed")
+  expect_equal(fx$estimate, unname(lme4::fixef(m)))
+  expect_equal(fx$std.error, unname(sqrt(diag(as.matrix(vcov(m))))))
+  ft <- semireg_tmb(rate ~ s(pressure, bs = "os") + (1 | Subject), data = nlme::Dialyzer)
+  expect_identical(coef(ft), glmmTMB::fixef(ft$semer)$cond)
+  expect_s3_class(VarCorr(ft), "VarCorr.glmmTMB")
 })

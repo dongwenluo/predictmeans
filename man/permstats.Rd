@@ -4,13 +4,13 @@
 \alias{permstats}
 \title{Effect Sizes and Model Checks from Permutations}
 \usage{
-permstats(x, conf.level = 0.95, ...)
+permstats(x, conf_level = 0.95, ...)
 }
 \arguments{
 \item{x}{A result of \code{\link{permmodels}} with Freedman-Lane permutations (\code{method = "auto"}, the
 default, or \code{"freedman-lane"}).}
 
-\item{conf.level}{The check of the parametric test is at the significance level \code{1 - conf.level} (default
+\item{conf_level}{The check of the parametric test is at the significance level \code{1 - conf_level} (default
 0.95, i.e. 0.05; \code{level = 0.05} before 2.0).}
 
 \item{...}{Not used: \code{level} (before 2.0) stops with its 2.0 spelling.}
@@ -28,11 +28,11 @@ A data frame with one row per term and coefficient (rows \code{"coef:<name>"}):
   deviation (Gotelli and McCabe 2002): how far the observed statistic lies from what the permutations give
   when the effect is absent, in standard deviations.}
 \item{param.size}{the proportion of permuted data sets in which the parametric test rejects at
-  \code{1 - conf.level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
-  the parametric test for data like these: close to \code{1 - conf.level} when the parametric reference
+  \code{1 - conf_level}. The permuted data sets have no effect for the tested term, so this is the type I error rate of
+  the parametric test for data like these: close to \code{1 - conf_level} when the parametric reference
   distribution suits the data, clearly above it when the parametric test is too liberal here (for example
   with unequal variances, overdispersion or few groups), below it when it is conservative. With few
-  permutations it is rough (its standard error is about \code{sqrt(a (1 - a) / nperm)}, \code{a = 1 - conf.level}).}
+  permutations it is rough (its standard error is about \code{sqrt(a (1 - a) / nperm)}, \code{a = 1 - conf_level}).}
 }
 \description{
 Uses the permuted statistics kept by \code{\link{permmodels}} to give, for each term and coefficient, a
@@ -42,7 +42,7 @@ standardised effect size and a check of the usual parametric test against the pe
 Every permuted data set comes from the model without the tested term (Freedman-Lane), so the permuted
 statistics show how the statistic behaves when that term has no effect but everything else in the data is
 kept. Comparing the parametric p-value with the permutation p-value, and \code{param.size} with
-\code{1 - conf.level}, shows whether the usual test can be trusted for these data. For mixed models the
+\code{1 - conf_level}, shows whether the usual test can be trusted for these data. For mixed models the
 permuted statistics are Wald statistics (unadjusted covariance), so \code{param.size} checks the Wald F
 with the given df, not the Kenward-Roger test.
 }

@@ -71,7 +71,7 @@ test_that("lm with an empty cell: Type III interaction = the model comparison; p
   expect_true(all(c("N", "Variety", "N:Variety") %in% rownames(pr$ANOVA)))
   # glm: Wald tests on the cells; likelihood ratio tests need a complete design
   g <- glm(round(yield) ~ N * Variety, family = poisson, data = e)
-  expect_equal(pm_anova(g, "III", test.statistic = "Wald")$Df, c(3, 2, 5))
+  expect_equal(pm_anova(g, "III", test_statistic = "Wald")$Df, c(3, 2, 5))
   expect_error(pm_anova(g, "III"), "complete design")
 })
 

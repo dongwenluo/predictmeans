@@ -71,7 +71,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
   df_type <- dfm$df_type
   vcov_adj <- dfm$vcov_adj
   if (any(df_type %in% c("containment", "between-within")) && vcov_adjust && lmer && lme4::getME(model, "is_REML"))
-    vcov_adj <- tryCatch(pm_vcov_kr(model), error = function(e) NULL)
+    vcov_adj <- pm_try_vcov_kr(model, fallback = "unadjusted SEs")
 
   ## coefficients and covariance
   mp <- if (aovl) sa$mp else if (lmer && !term_df) mymodelparm(model, df = 0) else
@@ -134,7 +134,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     L <- L[r$pivot[seq_len(q)], , drop = FALSE]
     beta <- mp$coef
     b <- L %*% beta
-    wald <- function(Vb) as.numeric(t(b) %*% solve(L %*% Vb %*% t(L), b))/q
+    wald <- function(Vb) pm_wald_quad(L, beta, Vb, Lb = b)/q
     if (identical(df_type, "Kenward-Roger") && !is.null(attr(vcov_adj, "P"))) {   # lmer, lme, gls
       kr <- pm_kr_ftest(model, L, PhiA = vcov_adj)
       ddf <- unname(kr["ddf"])
@@ -280,10 +280,26 @@ pm_df_method <- function(model, df_method) {
   }
   if (df_method == "auto" && !reml) message("The model was fitted by ML: using Satterthwaite df.")
   vcov_adj <- switch(df_type,
-    "Kenward-Roger" = tryCatch(pm_vcov_kr(model, kr_info), error = function(e) NULL),
+    "Kenward-Roger" = pm_try_vcov_kr(model, kr_info),
     "Satterthwaite" = pm_satt_parts(model),
     NULL)
+  # Kenward-Roger failed: Satterthwaite df and unadjusted SEs, said once, so
+  # that no result is labelled Kenward-Roger without the adjustment
+  if (identical(df_type, "Kenward-Roger") && is.null(vcov_adj)) {
+    df_type <- "Satterthwaite"
+    vcov_adj <- pm_satt_parts(model)
+  }
   list(df_type = df_type, vcov_adj = vcov_adj)
+}
+
+## The Kenward-Roger adjusted covariance of an lmer fit (pm_vcov_kr()), or
+## NULL with a message naming the reason and the fallback when it cannot be
+## computed. The one place where a failed Kenward-Roger fit is handled.
+pm_try_vcov_kr <- function(model, information = "observed", fallback = "Satterthwaite df and unadjusted SEs") {
+  tryCatch(pm_vcov_kr(model, information), error = function(e) {
+    message("Kenward-Roger adjustment failed (", conditionMessage(e), "); using ", fallback, ".")
+    NULL
+  })
 }
 
 ## The model terms that contain variable 'v' (e.g. the covariate of slopes).
@@ -301,17 +317,17 @@ pm_fixed_dispersion <- function(model) {
 }
 
 ## The vocabulary of 2.0 (dev/review-options.md, D1, D2), for every front
-## end. 'conf.level' gives the significance level the internal code uses;
-## rounded so that conf.level = 0.95 gives exactly 0.05 (1 - 0.95 is not).
-pm_conf_alpha <- function(conf.level) {
-  if (!is.numeric(conf.level) || length(conf.level) != 1 || is.na(conf.level) || conf.level <= 0 || conf.level >= 1) {
-    stop("'conf.level' must be one number between 0 and 1, e.g. 0.95.", call. = FALSE)
+## end. 'conf_level' gives the significance level the internal code uses;
+## rounded so that conf_level = 0.95 gives exactly 0.05 (1 - 0.95 is not).
+pm_conf_alpha <- function(conf_level) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1 || is.na(conf_level) || conf_level <= 0 || conf_level >= 1) {
+    stop("'conf_level' must be one number between 0 and 1, e.g. 0.95.", call. = FALSE)
   }
-  if (conf.level < 0.5) {
-    stop("conf.level = ", conf.level, " is a confidence level below 50%; for a significance level of ", conf.level,
-         " use conf.level = ", 1 - conf.level, ".", call. = FALSE)
+  if (conf_level < 0.5) {
+    stop("conf_level = ", conf_level, " is a confidence level below 50%; for a significance level of ", conf_level,
+         " use conf_level = ", 1 - conf_level, ".", call. = FALSE)
   }
-  round(1 - conf.level, 12)
+  round(1 - conf_level, 12)
 }
 
 ## 'df_method' as a name or as a number (a fixed df, 1.x's 'Df'): returns

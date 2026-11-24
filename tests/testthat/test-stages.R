@@ -14,13 +14,14 @@ test_that("label matrix keeps levels with ':' intact", {
   expect_equal(predictmeans:::pm_label_matrix(lab, 2), matrix(c("a:1", "b", "x", "y:z"), 2))
 })
 
-test_that("mean table: t limits, or mean +/- 2 SE at 0.05 with permutation", {
+test_that("mean table: t limits; with permutation the model's t limits at the user's level (ci_df)", {
   mt <- data.frame(pm = c(10, 12), ses = c(1, 2), Df = c(5, 5), A = factor(c("a", "b")))
   r <- predictmeans:::pm_mean_table(mt, "A", perm = FALSE, slevel = 0.1, ndecimal = 4)
   expect_equal(r$table[["LL(90%)"]], round(c(10, 12) - qt(0.95, 5) * c(1, 2), 4))
-  rp <- predictmeans:::pm_mean_table(mt, "A", perm = TRUE, slevel = 0.1, ndecimal = 4)
-  expect_equal(rp$ci_level, 0.05)
-  expect_equal(rp$table[["LL(95%)"]], c(8, 8))
+  # before 2.0.0: mean +/- 2 SE labelled 95% whatever the level
+  rp <- predictmeans:::pm_mean_table(mt, "A", perm = TRUE, slevel = 0.1, ndecimal = 4, ci_df = c(8, 8))
+  expect_equal(rp$ci_level, 0.1)
+  expect_equal(rp$table[["LL(90%)"]], round(c(10, 12) - qt(0.95, 8) * c(1, 2), 4))
   expect_true(all(is.na(rp$table$Df)))
 })
 
@@ -76,9 +77,10 @@ test_that("the printed LSDs go with the adjusted p-values: the critical value of
   expect_equal(ra$LSD[["Aveg.LSD"]], round(qt(1 - 0.05/(2*6), df)*sed_a, 5))
   rt <- q("nitro:Variety", atvar = "Variety", adj = "tukey")
   expect_equal(rt$LSD[["Aveg.LSD"]], round(qtukey(0.95, 4, df)/sqrt(2)*sed_a, 5))
-  # the matrix of pairwise LSDs uses the same value
+  # each pair's LSD goes with its adjusted p-value (the 1.x LSD matrix is not printed)
   rb <- q("nitro", adj = "bonferroni")
-  expect_equal(rb[["Pairwise LSDs"]][2, 1], round(qt(1 - 0.05/12, df)*rb$pairs$std.error[1], 5))
+  expect_equal(rb$pairs$adj.conf.high[1] - rb$pairs$estimate[1], qt(1 - 0.05/12, df)*rb$pairs$std.error[1], tolerance = 1e-8)
+  expect_null(rb[["Pairwise LSDs"]])
 })
 
 test_that("means that cannot be estimated are NA; estimable differences kept", {
@@ -95,11 +97,9 @@ test_that("means that cannot be estimated are NA; estimable differences kept", {
   # at a fixed x, depends on the dropped x coefficient and is not
   expect_equal(r$pairs$estimate[1], unname(-coef(m)["Aa2"]))
   expect_true(all(is.na(r$pairs$estimate[2:3])))
-  pdf(NULL); on.exit(dev.off())
-  expect_message(predictmeans(m, "A", plot = TRUE), "no mean plots")
 })
 
-test_that("plots only when asked: plot = TRUE, the option, or plots named", {
+test_that("predictmeans() draws nothing; the option predictmeans.plot is ignored", {
   O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
   f <- tempfile(fileext = ".pdf")
@@ -111,8 +111,7 @@ test_that("plots only when asked: plot = TRUE, the option, or plots named", {
     length(grepRaw("/Type /Page[^s]", readBin(f, "raw", file.size(f)), all = TRUE))
   }
   expect_equal(pages(predictmeans(fm, "nitro")), 0)
-  expect_gt(pages(predictmeans(fm, "nitro", plot = TRUE)), 0)
-  expect_gt(pages(predictmeans(fm, "nitro", plot = "mean")), 0)
   op <- options(predictmeans.plot = TRUE); on.exit(options(op), add = TRUE)
-  expect_gt(pages(predictmeans(fm, "nitro")), 0)
+  expect_equal(pages(predictmeans(fm, "nitro")), 0)
+  expect_gt(pages(print(plot(predictmeans(fm, "nitro")))), 0)
 })

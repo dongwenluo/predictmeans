@@ -6,7 +6,9 @@
 \arguments{
 \item{object}{A \code{\link{semireg}} or \code{\link{semireg_tmb}} fit.}
 
-\item{type}{\code{"III"} (default) or \code{"II"}: the type of the tests of the fixed effects.}
+\item{type}{\code{"III"} (default), \code{"II"} or \code{"I"} (also \code{3}, \code{2}, \code{1}): the type of
+the tests of the fixed effects. Type I is sequential (Satterthwaite F for gaussian fits, Wald chi-square
+otherwise); see \code{\link{anova.lmerMod}} for which type to use.}
 
 \item{smooth}{Logical: test the smooth terms (refits the model once per smooth block)? The default is TRUE.}
 
@@ -15,7 +17,8 @@
 \value{
 A list of class \code{"pm_semi_anova"} with \code{fixed} (the table of the fixed effects) and
   \code{smooth} (a data frame: the variance of each smooth block, the log-likelihoods of the model with and without
-  it, the likelihood ratio statistic, its p-value and the reference distribution), printed together.
+  it, the likelihood ratio statistic, its p-value and the reference distribution), printed together. Advice on the
+  type of tests is kept as for \code{\link{anova.lmerMod}} (see \code{\link{advice}}).
 }
 \description{
 Tests of the fixed effects and of the smooth terms of a \code{\link{semireg}} or \code{\link{semireg_tmb}} fit,
@@ -50,4 +53,7 @@ component. \emph{Journal of the Royal Statistical Society B}, 66, 165-185.
 
 Self, S. G. and Liang, K.-Y. (1987). Asymptotic properties of maximum likelihood estimators and likelihood ratio
 tests under nonstandard conditions. \emph{Journal of the American Statistical Association}, 82, 605-610.
+}
+\seealso{
+\code{\link{anova.lmerMod}}, \code{\link{varcomp}}, \code{\link{semipred}}
 }

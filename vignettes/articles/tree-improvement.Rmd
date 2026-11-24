@@ -3,8 +3,20 @@ title: "Experimental design and analysis for tree improvement"
 author: "Dongwen Luo"
 ---
 
+
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+```{r, include = FALSE}
+# show code folded: click 'Code' to open it
+local({
+  hook <- knitr::knit_hooks$get("source")
+  knitr::knit_hooks$set(source = function(x, options) {
+    paste0("\n<details class=\"code-fold\"><summary>Code</summary>\n\n", hook(x, options), "\n\n</details>\n")
+  })
+})
 ```
 
 
@@ -99,7 +111,7 @@ kable(anova(fmtab2.3), digits = 4)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
+predm_out <- predictmeans(fmtab2.3, "seedlot", meandecr=TRUE, adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -110,9 +122,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -191,7 +203,7 @@ kable(anova(fmtab2.5), digits = 4)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fmtab2.5, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -202,9 +214,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -255,7 +267,7 @@ residplot(fmtab3.3)
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fmtab3.3, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -274,9 +286,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -341,7 +353,7 @@ residplot(fmtab3.8)
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fmtab3.8, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -360,9 +372,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -419,7 +431,7 @@ residplot(fm4.2)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.2, "contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fm4.2, "contcomp", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -430,9 +442,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -443,7 +455,7 @@ predm_out$predictmeansBarPlot
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.2, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fm4.2, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -462,9 +474,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -475,7 +487,7 @@ predm_out$predictmeansBarPlot
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.2, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fm4.2, "treat", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -494,9 +506,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -507,7 +519,7 @@ predm_out$predictmeansBarPlot
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot", atvar="contcomp", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, groupname_col ="contcomp",
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -527,9 +539,9 @@ for (i in 6:7){
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -540,7 +552,7 @@ predm_out$predictmeansBarPlot
 -   Mean
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.2, "contcomp:seedlot:treat", atvar=c("treat", "contcomp"), adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, groupname_col ="treat",
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -561,8 +573,8 @@ for (i in c(6, 11:13)){
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
 
@@ -600,7 +612,7 @@ residplot(fm4.4)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.4, "treat", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.4, "treat", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -621,9 +633,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -633,7 +645,7 @@ predm_out$predictmeansBarPlot
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.4, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"))
+predm_out <- predictmeans(fm4.4, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -659,9 +671,9 @@ PMplot(predm_out$p_valueMatrix)
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -671,7 +683,7 @@ predm_out$predictmeansBarPlot
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "treat")))
+predm_out <- predictmeans(fm4.4, "treat:seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -697,9 +709,9 @@ PMplot(predm_out$p_valueMatrix)
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, x = "seedlot", group = "treat")
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar", x = "seedlot", group = "treat")
 ```
 
 
@@ -755,7 +767,7 @@ residplot(fm4.6)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.6, "irrig", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.6, "irrig", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -766,9 +778,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -778,7 +790,7 @@ predm_out$predictmeansBarPlot
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.6, "fert", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.6, "fert", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -789,9 +801,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -801,7 +813,7 @@ predm_out$predictmeansBarPlot
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.6, "seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(lineplot = FALSE))
+predm_out <- predictmeans(fm4.6, "seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -822,9 +834,9 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, lines = FALSE)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 
@@ -834,7 +846,7 @@ predm_out$predictmeansBarPlot
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH", plot = c("mean", "bar", "pval", "back"), plot_args = list(plotord = c("seedlot", "fert")))
+predm_out <- predictmeans(fm4.6, "fert:seedlot", adj="BH")
 print(predm_out[1:4])
 gt(predm_out$mean_table$Table, 
    caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
@@ -860,9 +872,9 @@ PMplot(predm_out$p_valueMatrix)
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out, x = "seedlot", group = "fert")
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar", x = "seedlot", group = "fert")
 ```
 
 
@@ -1442,20 +1454,20 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 -   Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
 discovery rate: a practical and powerful approach to multiple
 testing. Journal of the Royal Statistical Society Series B, 57,
-289--300. <doi:10.1111/j.2517-6161.1995.tb02031.x>.
+289--300. <https://doi.org/10.1111/j.2517-6161.1995.tb02031.x>.
 <https://www.jstor.org/stable/2346101>.
 
 -   Cave, V. (2021). Confidence tricks: the 83.4% confidence interval for comparing means. https://vsni.co.uk/blogs/confidence_trick.
 
 -   Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015).
 Fitting Linear Mixed-Effects Models Using lme4. Journal of
-Statistical Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>.
+Statistical Software, 67(1), 1-48. <https://doi.org/10.18637/jss.v067.i01>.
 
 -   Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
 predicted means for linear models [R package version 1.0.8].
 <https://CRAN.R-project.org/package=predictmeans>.
 
--   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID: 37127864.
+-   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. <https://doi.org/10.1002/bimj.202200290>. Epub 2023 May 1. PMID: 37127864.
 
 -   R Core Team (2022). R: A language and environment for statistical
 computing. R Foundation for Statistical Computing, Vienna, Austria.

@@ -3,7 +3,7 @@
 \docType{data}
 \name{Body_length}
 \alias{Body_length}
-\title{\code{Body_length} data}
+\title{Body Length of Beetles (Simulated)}
 \format{
 A data frame with 960 rows and 6 columns:
 \describe{

@@ -41,8 +41,8 @@ reference_cases <- function() {
   cap("ex_K2", km(fm_lme_num, "Variety", 0.5))
   cap("ex_K3", km(fm_lme_num, "Variety", "nitro", at = seq(0, 0.6, 0.1)))
   cap("ex_K4", km(fm_lme_num, "Variety", "nitro"))
-  cap("ex_cov1", cvm(fm_lme_num, "Variety", covariate = "nitro")$pltdf)
-  cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", at = seq(0, 0.6, 0.1))$pltdf)
+  cap("ex_cov1", cvm(fm_lme_num, "Variety", covariate = "nitro")$pred_df)
+  cap("ex_cov2", cvm(fm_lme_num, "Variety", covariate = "nitro", at = seq(0, 0.6, 0.1))$pred_df)
 
   Oats$nitro <- factor(Oats$nitro); Oats$Whole_plot <- Oats$Variety
   fm_lmer <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Whole_plot), data = Oats)
@@ -83,7 +83,7 @@ reference_cases <- function() {
   fm_drug <- glm(cbind(R, N-R) ~ Drug + log10Dose, data = Drug, family = binomial)
   cap("drug_K", km(fm_drug, "Drug"))
   cap("drug_pm", pmo(fm_drug, "Drug", pairwise = TRUE))
-  cap("drug_cov", cvm(fm_drug, "Drug", covariate = "log10Dose", trans = binomial()$linkinv)$pltdf)
+  cap("drug_cov", cvm(fm_drug, "Drug", covariate = "log10Dose", trans = binomial()$linkinv)$pred_df)
 
   data("Clinical", package = "predictmeans", envir = environment())
   fm_clin <- glmer(cbind(Favorable, Total-Favorable) ~ Treatment + (1|Clinic), family = binomial, data = Clinical)
@@ -108,11 +108,11 @@ reference_cases <- function() {
   sm1 <- suppressWarnings(semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = W))
   # 1.1.1 used qnorm(1 - level) for the limits (90% with the default 0.05);
   # 2.0 uses qnorm(1 - level/2), so level = 0.1 gives the limits 1.1.1 gave
-  cap("semi_1", semipred(sm1, covariate = "construction.date", conf.level = 0.9)$pred_df)
+  cap("semi_1", semipred(sm1, covariate = "construction.date", conf_level = 0.9)$pred_df)
   sm2 <- suppressWarnings(semireg(areaPerMzloty ~ s(construction.date, by = district, bs = "os", k = 15),
                  data = W))
-  cap("semi_2_grp", semipred(sm2, "district", "construction.date", conf.level = 0.9)$pred_df)
-  cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), conf.level = 0.9)$pred_df)
+  cap("semi_2_grp", semipred(sm2, "district", "construction.date", conf_level = 0.9)$pred_df)
+  cap("semi_2_contr", semipred(sm2, "district", "construction.date", contr = c(1,2), conf_level = 0.9)$pred_df)
   # 1.1.1: a smooth without its straight line in the formula,
   # smoothZ = list(gc = smZ(construction.date, k = 10)): smZ()'s basis as a
   # basis of one's own with no fixed part
@@ -122,8 +122,8 @@ reference_cases <- function() {
   zos <- function(x) predictmeans:::ZOSull(x, intKnots = kn, range.x = rg)
   sm3 <- suppressWarnings(semireg(areaPerMzloty ~ district + surface +
                                     s(construction.date, bs = "user", xt = list(basis = zos, null = "none")), data = W))
-  cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", conf.level = 0.9)$pred_df)
-  cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", conf.level = 0.9)$pred_df)
+  cap("semi_3_smonly", semipred(sm3, covariate = "construction.date", conf_level = 0.9)$pred_df)
+  cap("semi_3_smonly_grp", semipred(sm3, "district", "construction.date", conf_level = 0.9)$pred_df)
 
   ## Permutation tests, R2, variance components and contrasts
   perm_lmer <- suppressWarnings(permmodels(fm_lmer, method = "raw", nperm = 19, ncore = 1, seed = 1))

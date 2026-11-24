@@ -25,7 +25,7 @@ test_that("Dunnett and trends within 'by' groups through contrastmeans() match e
   expect_equal(unname(r[, "Pr(>|t|)"]), round(em$p.value, 4), tolerance = 1e-3)
 
   pm <- predictmeans(fm, "nitro:Variety", df_method = "KR-expected", plot = FALSE)
-  cf <- contrast_family(pm, "poly", by = "Variety", max.degree = 2)
+  cf <- contrast_family(pm, "poly", by = "Variety", max_degree = 2)
   expect_equal(rownames(cf)[1:2], c("Golden Rain: linear", "Golden Rain: quadratic"))
   r2 <- contrastmeans(fm, "nitro:Variety", ctrmatrix = cf, df_method = "KR-expected")[[1]]
   e2 <- summary(emmeans::contrast(emmeans::emmeans(fm, ~nitro | Variety, lmer.df = "kenward-roger"),

@@ -19,7 +19,7 @@
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @seealso
-#' \code{\link{contrastmeans}}
+#' \code{\link{contrastmeans}}, \code{\link{contrast_family}}, \code{\link{pm_joint}}
 #' @examples
 #'   library(predictmeans)
 #'   Oats <- as.data.frame(nlme::Oats)
@@ -28,7 +28,8 @@
 #'   cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
 #'     N_effect_Victory = `0.6:Victory` - `0:Victory`,
 #'     N_effect_vs_others = (`0.6:Victory` - `0:Victory`) -
-#'                          ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`))/2)
+#'                          ((`0.6:Golden Rain` - `0:Golden Rain`) +
+#'                           (`0.6:Marvellous` - `0:Marvellous`))/2)
 #'   contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 #' @name specify_contrast
 NULL
@@ -41,6 +42,7 @@ NULL
 ## Each level name stands for that mean (a unit vector over the levels), so
 ## any linear combination can be written without counting columns. The result
 ## can be passed to contrastmeans(ctrmatrix = ).
+#' @export
 specify_contrast <- function(.x, ..., .zero_sum = TRUE) {
   # dot-prefixed arguments, so contrasts can be named anything (even "x")
   x <- .x

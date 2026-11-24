@@ -1,19 +1,20 @@
-#' Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.
+#' Permutation Test of Random or Fixed Effects of Mixed Models
 #'
 #' @description
-#' This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
-#' linear mixed model of \code{glmer} or \code{glmmTMB}.
+#' Permutation likelihood ratio test of two nested \code{lmer}, \code{glmer} or \code{glmmTMB} models. The p-value
+#' is (b + 1)/(B + 1), b of the B permuted statistics being at least as large as the observed one; results are the
+#' same for any \code{ncore}.
 #' @usage
 #' permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 #'          method=c("auto", "working", "quantile"), ...)
-#' @param model0 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0 (\code{model0} before 2.0); it must
+#' @param model0 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0 (\code{lmer0} before 2.0); it must
 #'   be nested within \code{model1}.
-#' @param model1 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1 (\code{model1} before 2.0).
+#' @param model1 \code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1 (\code{lmer1} before 2.0).
 #' @param ... Not used: \code{lmer0}, \code{lmer1} (before 2.0) stop with their 2.0 spelling. \code{permglmer()} and
 #'   \code{permglmmTMB()}, the same function under other names before 2.0, were removed: use \code{permlmer()}.
-#' @param nperm Number of permutation, the default value is 999.
-#' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
-#' @param plot Plot permutation distribution or not, the default value is FALSE.
+#' @param nperm Number of permutations; default 999.
+#' @param ncore Number of cores (default 1; before predictmeans 2.0: 3).
+#' @param plot \code{TRUE}: plot the permutation distribution of the statistic. Default \code{FALSE}.
 #' @param seed Specify a random number generator seed, for reproducible results. The user's random number stream is
 #'   left as it was.
 #' @param perms Optional matrix of permutations to use instead of free ones, one row per observation and one column
@@ -31,11 +32,15 @@
 #' are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
 #' observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
 #' is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
+#' Models with the same fixed effects (tests of random effects) are compared by the REML likelihood ratio; models
+#' with different fixed effects are first refitted by ML, so the permuted statistic is the ML likelihood ratio
+#' that \code{anova()} prints in column \code{Chisq} (before 2.0 it was the ML likelihood at the REML estimates).
+#' Check: the identity permutation gives \code{Perm-p} = 1 (\file{tests/testthat/test-permlmer.R}).
 #'
 #' For GLMMs (\code{glmer} or \code{glmmTMB}; since predictmeans 2.0), \code{method = "working"} does the same on the
 #' working (link) scale: \code{model0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
 #' working variance \eqn{\phi V(\mu)/(a (d\mu/d\eta)^2)}; the covariance of z also has the random effects, as in
-#' \code{\link{R2_glmm}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
+#' \code{\link{R2_model}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
 #' statistic of weighted linear mixed models fitted to the working responses (REML when the two models have the same
 #' fixed effects, ML otherwise). In simulations it kept the 5\% level for counts and for binomial data with several
 #' trials, and was much more robust than the usual likelihood-ratio test when counts were overdispersed. For 0/1
@@ -52,6 +57,7 @@
 #'
 #' Peter K. Dunn and Gordon K. Smyth (1996),
 #'     \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
+#' @seealso \code{\link{permmodels}}, \code{\link{varcomp}} (\code{test = TRUE}), \code{\link{permindex}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -83,6 +89,7 @@
 #' @name permlmer
 NULL
 
+#' @export
 permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
                      method=c("auto", "working", "quantile"), ...){
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
@@ -138,18 +145,35 @@ permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, per
     ref <- FALSE
   }
 
+  # Different fixed effects: the LRT needs ML fits (REML likelihoods of models
+  # with different fixed effects are not comparable). Both models are refitted
+  # by ML once, so the observed statistic, the null model that generates the
+  # permuted data and every permuted refit are ML, and the observed statistic
+  # equals the printed anova() chi-square. (Before 2.0.0 the REML fits were
+  # kept and logLik(REML = FALSE) taken at their REML estimates: a different
+  # statistic from the printed one.)
+  if (!ref) {
+    if (lme4::isREML(lmer0)) lmer0 <- suppressMessages(pm_refit(lmer0, REML = FALSE))
+    if (lme4::isREML(lmer1)) lmer1 <- suppressMessages(pm_refit(lmer1, REML = FALSE))
+    theta0 <- getME(lmer0, "theta")
+    theta1 <- getME(lmer1, "theta")
+    fixef0 <- fixef(lmer0)
+  }
+
   thetan <- rep(0, length(theta1))
   names(thetan) <- theta1name
   thetan[theta0name] <- theta0
   Lambda1n <- getME(lmer1, "Lambda")
   Lambda1n@x <- thetan[getME(lmer1, "Lind")]
-  # V = Z Lambda Lambda' Z' + I (H0 variances in H1's structure); W is its
-  # order-invariant square root (pm_whiten(), R/whiten.R).
-  W <- pm_whiten(getME(lmer1, "Z") %*% Lambda1n)
-  xbeta <- as.vector(getME(lmer0, "X")%*%fixef0)
-  errors <- getME(lmer0, "y") - xbeta
-
-  wterrors <- W$solve(errors)
+  # V = Z Lambda Lambda' Z' + diag(1/w) (H0 variances in H1's structure; w the
+  # prior weights, 1 without); W is its order-invariant square root
+  # (R/whiten.R). The offset is part of the fitted values: refit() keeps the
+  # model's weights and offset, so only the response changes.
+  pp <- pm_mer_perm_parts(lmer0, W = pm_mer_whiten(lmer1, Lambda1n), beta = fixef0)
+  W <- pp$W
+  xbeta <- pp$xbeta
+  errors <- pp$errors
+  wterrors <- pp$wterrors
 
   # Random effects (same fixed effects): the decorrelated residuals are
   # permuted. Fixed effects: fitted values and decorrelated residuals are
@@ -166,11 +190,18 @@ permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, per
   # LRT is 0 up to optimizer noise, and without rounding permuted values of 0
   # could count as smaller than an observed 1e-9.
   lrtest1 <- max(as.numeric(2*(logLik(lmer1, REML=ref)-logLik(lmer0, REML=ref))), 0)
+  # lme4's convergence warnings of single permuted refits are counted and
+  # reported once (attr "convergence"), not printed for each refit
   lrtest2 <- pm_perm_map(seq_len(nperm), function(k) {
     y <- permy(k)
-    as.numeric(2*(logLik(suppressMessages(refit(lmer1, y)), REML=ref) -
-                  logLik(suppressMessages(refit(lmer0, y)), REML=ref)))
+    nconv <- 0L
+    quiet_refit <- function(m) withCallingHandlers(suppressMessages(pm_mer_refit(m, y)), warning = function(w) {
+      if (grepl("converge", conditionMessage(w))) { nconv <<- nconv + 1L; invokeRestart("muffleWarning") }
+    })
+    lr <- as.numeric(2*(logLik(quiet_refit(lmer1), REML=ref) - logLik(quiet_refit(lmer0), REML=ref)))
+    structure(lr, conv = nconv > 0)
   }, ncore, packages = "lme4")
+  nconv <- sum(vapply(lrtest2, function(r) isTRUE(attr(r, "conv")), logical(1)))
   lrtest2 <- pm_perm_drop(lrtest2)
   lrtest <- pmax(unlist(lrtest2$res), 0)
   ok <- !is.na(lrtest)
@@ -181,6 +212,11 @@ permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, per
   aod <- anova(lmer0, lmer1, refit=!ref)
   aod$'Perm-p' <- c(NA, perm_p)
   if (failures > 0) attr(aod, "failures") <- failures
+  if (nconv > 0) {
+    attr(aod, "convergence") <- nconv
+    message(nconv, " of ", nperm, " permuted refits had an lme4 convergence warning (usually a gradient just above ",
+            "lme4's tolerance; the statistic is kept).")
+  }
 
   if (plot) {
     dev.new()
@@ -191,5 +227,7 @@ permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, per
 }
 
 ## Removed in 2.0 (they were permlmer() itself): permlmer().
+#' @export
 permglmer <- function(...) pm_defunct_fun("permglmer")
+#' @export
 permglmmTMB <- function(...) pm_defunct_fun("permglmmTMB")

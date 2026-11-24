@@ -1,18 +1,20 @@
 #' Linear Contrast Tests for a Linear Model
 #'
 #' @description
-#' Performs t-tests (or permuted t-tests) of specified contrasts for linear models 
-#'   obtained from functions \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, 
-#'   or \code{lmer}.
+#' t tests (or permutation t tests) of given contrasts among the predicted means of a model term, for the
+#'   models of \code{\link{predictmeans}} (\code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
+#'   \code{glmer}, \code{glmmTMB}, \code{gam}).
 #' @usage
 #' contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
-#'                 vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-#'                 df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
-#'                 conf.level=0.95, vcov=NULL, equivalence=NULL, ...)
-#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, and \code{lmer}.
+#'               vcov_adjust=TRUE,
+#'               weights=c("equal", "proportional", "outer", "cells", "flat"),
+#'               df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+#'       "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+#'               joint=FALSE, conf_level=0.95, vcov=NULL, equivalence=NULL, ...)
+#' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") for indicating which factor term's contrast to be calculated. 
 #'   The \code{modelterm} must be given exactly as it appears in the printed model, e.g. "A" or "A:B".
-#' @param ctrmatrix A specified contrast matrix. If \code{ctrmatrix} is missing, the programe will ask user to enter it. The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
+#' @param ctrmatrix A specified contrast matrix. If it is missing, an edit window asks for it (interactive sessions only). The columns can be named by level (e.g. from \code{\link{specify_contrast}}); levels that are not given get zero weight.
 #' @param ctrnames Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)
 #' @param adj Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 #'   The choices are "none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe",
@@ -21,11 +23,11 @@
 #'   single-step and "westfall" the step-down max-|t| adjustment of the permutation p-values (Westfall and Young,
 #'   1993); "westfall" needs \code{permlist}, and "scheffe" is not available with it.
 #'   The default method is "none".
-#' @param permlist A model parameter list containing \code{nsim} parameters produced by the function \code{permmodels}. When \code{permlist != NULL}, \code{df_method} is not used. This is a key 
-#' 	option for the permutation test. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
+#' @param permlist A list from \code{\link{permmodels}}: each contrast is then tested by permutation, with p-value \eqn{(b + 1)/(B + 1)} (\eqn{b} of the \eqn{B} permuted |t| at least the observed one), and \code{df_method} is not used.
+#'   With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and
 #'   \code{aov} models), each contrast is tested by Freedman-Lane permutations of the model in which that contrast is
 #'   0. With a \code{permlist}, \code{vcov_adjust} is not used (the permuted refits use the unadjusted covariance).
-#' @param vcov_adjust For \code{lmer} models fitted by REML: if \code{TRUE} (the default), standard errors use the Kenward-Roger
+#' @param vcov_adjust For models fitted by REML (\code{lmer}, \code{lme}, \code{gls}) with Kenward-Roger df: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 #'   adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 #'   Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
 #'   predictmeans 1.x. It has no effect for other models.
@@ -44,13 +46,13 @@
 #'   df1, when there is none). Contrasts that are linear combinations of others are dropped, so \code{df1} is the rank
 #'   of \code{ctrmatrix}. With \code{permlist}, also a permutation p-value of the joint Wald F statistic, from the same
 #'   permutations (for Freedman-Lane, the model with all the contrasts zero). The default is \code{FALSE}.
-#' @param conf.level Confidence level of the limits of the contrasts (\code{lower.CL}, \code{upper.CL}; \code{level =
-#'   0.05} before 2.0); the tests are at the significance level \code{level = 1 - conf.level}. They are t limits of each contrast, or with \code{permlist} permutation-t limits:
+#' @param conf_level Confidence level of the limits of the contrasts (\code{level = 0.05} before 2.0); the tests
+#'   are at the significance level \code{1 - conf_level}. The limits are t limits of each contrast, or with \code{permlist} permutation-t limits:
 #'   estimate +- c SE, with c the critical value of the permutation test (the k-th largest permuted |t|,
-#'   k = floor(level (nperm + 1))). With \code{adj} "bonferroni", "sidak", "scheffe" or "mvt" (with \code{permlist}:
+#'   k = floor((1 - conf_level) (nperm + 1))). With \code{adj} "bonferroni", "sidak", "scheffe" or "mvt" (with \code{permlist}:
 #'   "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted |t| of the contrasts) the table also has
 #'   \code{adj.lower.CL} and \code{adj.upper.CL}: simultaneous limits that exclude 0 exactly when the adjusted
-#'   p-value is below \code{level}, as \pkg{emmeans}' \code{confint()} and SAS \code{AdjLower}/\code{AdjUpper}. The
+#'   p-value is below \code{1 - conf_level}, as \pkg{emmeans}' \code{confint()} and SAS \code{AdjLower}/\code{AdjUpper}. The
 #'   step-down and false discovery rate methods have none.
 #' @param vcov Optional covariance of the coefficients to use instead of the model's. For \code{lm}, \code{aov}
 #'   and \code{glm} models: \code{"HC0"}, \code{"HC1"}, \code{"HC2"} or \code{"HC3"} (heteroscedasticity-consistent,
@@ -64,7 +66,7 @@
 #' @param equivalence Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
 #'   contrasts: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
 #'   scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
-#'   one-sided p-values; below \code{1 - conf.level}, the difference lies within the margins (as emmeans'
+#'   one-sided p-values; below \code{1 - conf_level}, the difference lies within the margins (as emmeans'
 #'   \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 #'   (normal-based in \code{contrastmeans}).
 #' @param ... Not used: arguments removed in 2.0 (\code{Df}, \code{level}) stop with their 2.0 spelling.
@@ -86,39 +88,23 @@
 #'   \code{p.method}, and for a log or logit scale (link, or a log response) \code{ratio} or
 #'   \code{odds.ratio} with its limits when the weights of every contrast sum to zero.}
 #' \item{joint}{With \code{joint = TRUE}: the joint test, unrounded.}
-#' \item{settings}{\code{modelterm}, \code{level}, \code{adjust}, \code{df_method}, \code{vcov_adjust}, \code{vcov},
+#' \item{settings}{\code{modelterm}, \code{level} (significance level, \code{1 - conf_level}), \code{adjust}, \code{df_method}, \code{vcov_adjust}, \code{vcov},
 #'   \code{equivalence}, \code{nperm}, \code{model_class}, \code{version}.}
 #' @references
 #' Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 #'     \emph{Simultaneous Inference in General Parametric Models. Biometrical}, Journal 50(3), 346--363.
+#' @seealso \code{\link{specify_contrast}}, \code{\link{contrast_family}}, \code{\link{pm_joint}}, \code{\link{predictmeans}}, \code{\link{tidy.predictmeans}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
-#' # ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#' # library(lme4)
-#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #'
-#' ## The contrast has a contrast matrix as follows:
-#' #     0:Golden Rain 0:Marvellous 0:Victory 
-#' #[1,]            -1            0         1 
-#' #[2,]             0            0         1 
-#' #     0.2:Golden Rain 0.2:Marvellous 0.2:Victory 
-#' #[1,]               0              0           0 
-#' #[2,]               0              0           0 
-#' #     0.4:Golden Rain  0.4:Marvellous 0.4:Victory
-#' #[1,]               0               0           0
-#' #[2,]               0              -1           0
-#' #      0.6:Golden Rain 0.6:Marvellous 0.6:Victory
-#' #[1,]                0              0           0
-#' #[2,]                0              0           0
-#'
-#' # 1. Enter above contrast matrix into a pop up window, then close the window
+#' # 1. Enter a contrast matrix in an edit window (interactive sessions only)
 #' if (interactive()) contrastmeans(fm, "nitro:Variety")
 #'  
-#' # 2. Construct the contrast matrix directly
+#' # 2. Give the contrast matrix: Victory - Golden Rain at nitro 0, Victory at 0 - Marvellous at 0.4
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
 #'             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 #' contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)
@@ -130,12 +116,13 @@
 #' @name contrastmeans
 NULL
 
+#' @export
 contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist, vcov_adjust=TRUE,
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
-                          conf.level=0.95, vcov=NULL, equivalence=NULL, ...) {
+                          conf_level=0.95, vcov=NULL, equivalence=NULL, ...) {
   pm_defunct("contrastmeans", match.call(), strict = TRUE, formals_of = formals(sys.function()))
-  level <- pm_conf_alpha(conf.level)
+  level <- pm_conf_alpha(conf_level)
   vcov_adjust_default <- missing(vcov_adjust)
   dfa <- pm_df_arg(df_method, eval(formals(sys.function())$df_method))
   df_method <- dfa$method
@@ -218,7 +205,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov,
                       permlist = if (!missing(permlist)) permlist)          # R/inference.R
   mp <- inf$mp
-  K <- KK[, mp$estimable, drop=FALSE]
+  K <- pm_K_cols(KK, mp)
   rK <- ctrmatrix%*%K
   # contrasts with a mean over empty cells: on the cells all their means have (R/empty-cells.R)
   cr <- pm_common_rows(km$empty_cells, ctrmatrix, rK, colnames(K))
@@ -322,6 +309,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                        equivalence = eqm, nperm = if (!missing(permlist)) nsim else NA_integer_,
                        model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
   class(out) <- "contrastmeans"
+  out <- pm_add_advice(out, pm_contrast_advice(model, tab, adj))
   out
 }
 
@@ -386,14 +374,17 @@ pm_contrast_kind <- function(model, ctrmatrix) {
 
 ## Methods: the contrasts (or the joint test) as a data frame, and a printed
 ## summary.
+#' @exportS3Method generics::tidy contrastmeans
 tidy.contrastmeans <- function(x, what = c("contrasts", "joint"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("contrasts", "joint"))    # R/tidy.R
 }
 
+#' @exportS3Method as.data.frame contrastmeans
 as.data.frame.contrastmeans <- function(x, row.names = NULL, optional = FALSE, what = c("contrasts", "joint"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("contrasts", "joint"), row.names)
 }
 
+#' @exportS3Method print contrastmeans
 print.contrastmeans <- function(x, digits = 4, ...) {
   s <- x$settings
   cat("Contrasts of '", s$modelterm, "' (", format(100*(1 - s$level)), "% limits; p.adj: ", s$adjust, "; ",
@@ -410,5 +401,6 @@ print.contrastmeans <- function(x, digits = 4, ...) {
         "\n", sep = "")
   }
   if (!identical(s$vcov, "model")) cat("Standard errors from the covariance given by 'vcov' (", s$vcov, ").\n", sep = "")
+  pm_print_advice(x)
   invisible(x)
 }

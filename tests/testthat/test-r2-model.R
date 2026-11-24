@@ -7,7 +7,7 @@ test_that("R2_model(): Piepho's values as numbers (R2_glmm(), removed in 2.0, pr
     expect_equal(100*unclass(v), pm_r2_piepho(m), ignore_attr = TRUE)
   }
   expect_error(R2_glmm(fm), "use R2_model(model)", fixed = TRUE, class = "defunctError")
-  expect_error(ci_mcp(1, 2), "letterCI = TRUE", fixed = TRUE, class = "defunctError")
+  expect_error(ci_mcp(1, 2), "letter_ci = TRUE", fixed = TRUE, class = "defunctError")
 })
 
 test_that("R2_model(method = 'nakagawa'): published sleepstudy values; random slopes as Johnson (2014)", {
@@ -111,4 +111,22 @@ test_that("R2_model(method = 'nakagawa') for lme equals lmer; variance functions
   v <- attr(R2_model(h, "nakagawa"), "variances")
   w <- nlme::varWeights(h$modelStruct$varStruct)
   expect_equal(v[["observation"]], mean(h$sigma^2/w^2), tolerance = 1e-8)
+})
+
+test_that("Piepho R2 reproduces Table 2 of Piepho (2023) (SAS GLIMMIX values, %)", {
+  # published to 2 decimals; the paper's egg random share (41.80) is its total minus
+  # its fixed share, so it is checked to 0.01 instead of 0.005
+  r2 <- function(m, ...) 100 * unclass(R2_model(m, ...))[c("Fixed", "Random", "Total")]
+  e <- new.env()
+  data(Body_length, Poisson_ind, package = "predictmeans", envir = e)
+  load(test_path("fixtures", "Binary_color.RData"), envir = e)
+  body <- lme4::lmer(BodyL ~ Treatment + Habitat + Sex + (1 | Population/Container), data = e$Body_length)
+  expect_lt(max(abs(r2(body) - c(Fixed = 40.09, Random = 33.30, Total = 73.39))), 0.005)
+  egg <- lme4::glmer(Egg ~ Treatment + Habitat + (1 | Population/Container/individual), family = poisson,
+                     data = e$Poisson_ind)
+  expect_lt(max(abs(r2(egg, over_disp = TRUE) - c(Fixed = 9.13, Random = 41.80, Total = 50.93))), 0.01)
+  colour <- lme4::glmer(Colour ~ Treatment + Habitat + (1 | Population/Container), family = binomial,
+                        data = e$Binary_color)
+  # (GLMMs to 0.01: the glmer estimates move with lme4's version, by 0.006 for lme4 1.1-35)
+  expect_lt(max(abs(r2(colour) - c(Fixed = 7.46, Random = 21.99, Total = 29.46))), 0.01)
 })

@@ -18,18 +18,20 @@
 #' family.
 #' @usage
 #' contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly",
-#'                 "eff", "del.eff"), ref = 1, by = NULL, max.degree = NULL)
+#'                 "eff", "del.eff"), ref = 1, by = NULL, max_degree = NULL, ...)
 #' @param .x A \code{\link{Kmatrix}} or \code{\link{predictmeans}} result for the model term, or a character vector of
 #'   the level names (then \code{by} can't be used).
 #' @param family The family of contrasts (see Description).
 #' @param ref For \code{"trt.vs.ctrl"}: the reference level, by position or name (within each \code{by} group), the
 #'   default is the first level.
 #' @param by Optional name(s) of factor(s) of the term: build the family within each of their levels.
-#' @param max.degree For \code{"poly"}: the highest degree, the default is the number of levels - 1 (at most 6).
+#' @param max_degree For \code{"poly"}: the highest degree, the default is the number of levels - 1 (at most 6).
+#' @param \dots Not used: \code{max.degree} (before 2.0) stops with its 2.0 spelling.
 #' @return
 #' A matrix with one row per contrast (named as in \pkg{emmeans}, e.g. \code{"0.2 - 0"}, \code{"linear"}; with
 #' \code{by} the group comes first, e.g. \code{"Victory: 0.2 - 0"}) and one column per level of the term. Levels whose
 #' means can't be estimated are left out of the families.
+#' @seealso \code{\link{contrastmeans}}, \code{\link{specify_contrast}}, \code{\link{pm_joint}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -38,16 +40,21 @@
 #'   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
 #'   # Dunnett: each nitrogen level against no nitrogen, exact adjustment
 #'   K <- Kmatrix(fm, "nitro")
-#'   contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"), adj = "mvt")
+#'   if (requireNamespace("mvtnorm", quietly = TRUE)) {
+#'     contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"),
+#'                   adj = "mvt")
+#'   }
 #'   # linear and quadratic trends in nitrogen within each variety
 #'   K2 <- Kmatrix(fm, "nitro:Variety")
-#'   cf <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+#'   cf <- contrast_family(K2, "poly", by = "Variety", max_degree = 2)
 #'   contrastmeans(fm, "nitro:Variety", ctrmatrix = cf)
 #' @name contrast_family
 NULL
 
+#' @export
 contrast_family <- function(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly", "eff", "del.eff"),
-                            ref = 1, by = NULL, max.degree = NULL) {
+                            ref = 1, by = NULL, max_degree = NULL, ...) {
+  pm_defunct("contrast_family", match.call(), strict = TRUE, formals_of = formals(sys.function()))
   family <- match.arg(family)
   x <- .x
   if (is.list(x) && !is.null(x$K)) {                 # Kmatrix() result
@@ -95,7 +102,7 @@ contrast_family <- function(.x, family = c("pairwise", "revpairwise", "trt.vs.ct
     idx <- groups[[k]]
     idx <- idx[estimable[idx]]
     if (length(idx) < 2) next
-    C <- pm_family_coefs(family, within[idx], ref, max.degree)       # levels x contrasts
+    C <- pm_family_coefs(family, within[idx], ref, max_degree)       # levels x contrasts
     M <- matrix(0, ncol(C), length(levs), dimnames = list(colnames(C), levs))
     M[, idx] <- t(C)
     if (!is.null(by)) rownames(M) <- paste(gname[k], rownames(M), sep = ": ")
@@ -108,7 +115,7 @@ contrast_family <- function(.x, family = c("pairwise", "revpairwise", "trt.vs.ct
 
 ## Coefficients of one family for levels 'levs' (levels x contrasts), as
 ## emmeans' *.emmc functions.
-pm_family_coefs <- function(family, levs, ref = 1, max.degree = NULL) {
+pm_family_coefs <- function(family, levs, ref = 1, max_degree = NULL) {
   k <- length(levs)
   pair <- function(i, j) { v <- numeric(k); v[i] <- 1; v[j] <- -1; v }
   if (family %in% c("pairwise", "revpairwise")) {
@@ -129,7 +136,7 @@ pm_family_coefs <- function(family, levs, ref = 1, max.degree = NULL) {
     C <- vapply(2:k, function(i) pair(i, i - 1), numeric(k))
     nm <- paste(levs[2:k], levs[1:(k - 1)], sep = " - ")
   } else if (family == "poly") {
-    deg <- if (is.null(max.degree)) min(6, k - 1) else min(max.degree, k - 1)
+    deg <- if (is.null(max_degree)) min(6, k - 1) else min(max_degree, k - 1)
     P <- stats::poly(seq_len(k), deg)
     C <- apply(P, 2, function(con) {     # integer coefficients, as emmeans
       con <- con/min(con[con > 0.01])

@@ -2,7 +2,7 @@
 % Please edit documentation in R/CookD.R
 \name{CookD}
 \alias{CookD}
-\title{Calculates and plots Cook's distances for a Linear (Mixed) Model}
+\title{Cook's Distances of a Linear (Mixed) Model}
 \usage{
 CookD(model, group=NULL, plot=TRUE, id=3, ...)
 }
@@ -10,9 +10,11 @@ CookD(model, group=NULL, plot=TRUE, id=3, ...)
 \item{model}{Model object returned by \code{aov} (without \code{Error()}), \code{lm}, \code{glm}, \code{gls},
 \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{gam}.}
 
-\item{group}{Name (in "quotes") for indicating how observations are deleted for Cook's distance calculation. If \code{group!=NULL} then deletions will be along levels of \code{group} variable, otherwise, will be along individual observations.}
+\item{group}{Optional name (in "quotes") of a variable whose levels are deleted one at a time (e.g. the
+clusters of a mixed model); the default \code{NULL} deletes single observations.}
 
-\item{plot}{A logical variable; if it is true, a plot of Cook's distance will be presented. The default is TRUE.}
+\item{plot}{\code{TRUE} (the default): draw the distances (\pkg{ggplot2}, as the Cook's distance panel of
+\code{\link{residplot}}).}
 
 \item{id}{The number of the largest Cook's distances labelled in the plot (\code{idn} before 2.0, now as in
 \code{\link{residplot}}). The default value is 3.}
@@ -23,8 +25,8 @@ CookD(model, group=NULL, plot=TRUE, id=3, ...)
 Invisibly, the Cook's distances (named by observation or group).
 }
 \description{
-This function produces Cook's distance plots for a model obtained from functions \code{aov}, \code{lm},
-  \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{mgcv::gam}.
+Cook's distances of the observations (or groups of observations) of a model fitted by \code{aov}, \code{lm},
+  \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{mgcv::gam}, with a plot.
 }
 \details{
 Cook's distance of an observation (or of a group of observations, \code{group}) is
@@ -43,9 +45,11 @@ mixed models.
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# library(lme4)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 CookD(fm)
+CookD(fm, group = "Block")   # delete whole blocks
+}
+\seealso{
+\code{\link{residplot}}, \code{\link{pm_check}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

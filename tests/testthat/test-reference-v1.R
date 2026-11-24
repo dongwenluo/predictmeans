@@ -71,6 +71,26 @@ test_that("results match predictmeans 1.1.1 for everything 1.1.1 supported", {
   for (nm in setdiff(names(ref)[!failed_in_ref], wrong_in_ref)) {
     a <- strip_ci(new[[nm]]); b <- ref[[nm]]
     a <- lsd_core(a, b, nm)
+    # 2.0 predictmeans() review (NEWS): the 'Pairwise LSDs' matrix is no
+    # longer printed (pairs$lsd); the LSD says whether it is one value
+    # (attr 'equal'); with atvar the LSD is that of the pairs within each
+    # level of atvar (attr 'Within levels of atvar'), not of all pairs; with
+    # a permlist the limits of the means are the model's t limits at
+    # conf_level, not mean +- 2 SE. The rest of these results is compared.
+    if (is.list(a) && !is.null(a$LSD)) {
+      a[["Pairwise LSDs"]] <- b[["Pairwise LSDs"]] <- NULL
+      # (2.0 names the p-value matrices by the levels of atvar)
+      if (is.list(a$p_valueMatrix) && is.null(names(b$p_valueMatrix))) names(a$p_valueMatrix) <- NULL
+      attr(a$LSD, "equal") <- NULL
+      if (!is.null(attr(a$LSD, "Within levels of atvar"))) a$LSD <- b$LSD
+    }
+    if (nm == "perm_pm_lmer") {
+      for (x in c("a", "b")) {
+        tb <- get(x)$mean_table$Table
+        if (!is.null(tb)) { tb <- tb[, !grepl("^(LL|UL)\\(", names(tb)), drop = FALSE]
+          y <- get(x); y$mean_table$Table <- tb; assign(x, y) }
+      }
+    }
     if (nm %in% rewhitened) { a <- strip_perm(a); b <- strip_perm(b) }
     # Since 2.0 semipred(contr = ) also has indicator columns and the
     # significant ranges; the 1.1.1 columns are compared.

@@ -51,15 +51,25 @@ pm_fit_env <- function(model) {
   }
   data_expr <- tryCatch(stats::getCall(model)$data, error = function(e) NULL)
   has_data <- function(e) is.data.frame(tryCatch(eval(data_expr, e), error = function(err) NULL))
-  if (is.environment(env) && (is.null(data_expr) || has_data(env))) return(env)
+  # a frame that holds the data itself (a name, not found by inheritance
+  # from the global environment)
+  has_own <- function(e) {
+    if (is.name(data_expr)) exists(as.character(data_expr), envir = e, inherits = FALSE) && has_data(e) else has_data(e)
+  }
+  # gam records the global environment wherever it was fitted: a data set of
+  # the same name there (another session object) is not evidence; look in the
+  # calling frames first
+  unreliable <- inherits(model, "gam") && identical(env, globalenv())
+  if (!unreliable && is.environment(env) && (is.null(data_expr) || has_data(env))) return(env)
   if (!is.null(data_expr)) {
     own <- asNamespace("predictmeans")
     for (i in rev(seq_len(sys.nframe()))) {
       fn_env <- environment(sys.function(i))
       if (is.environment(fn_env) && identical(topenv(fn_env), own)) next
       f <- sys.frame(i)
-      if (has_data(f)) return(f)
+      if (has_own(f)) return(f)
     }
+    if (unreliable && has_data(globalenv())) return(globalenv())
   }
   if (is.environment(env)) env else globalenv()
 }
@@ -107,4 +117,15 @@ pm_mer_data <- function(model) {
   fr <- stats::model.frame(model)
   fr <- fr[, !grepl("^\\(", names(fr)), drop = FALSE]
   as.data.frame(lapply(fr, function(v) if (is.matrix(v)) as.vector(v) else v))
+}
+
+## lme4::refit() with a new response for the rows the fit used. lme4 1.1-35
+## (and other versions before the fix) drops the fit's NA rows again from a
+## response that has none ("replacement has 58 rows, data has 59"), unless
+## the response carries an "na.action" attribute: so mark it as subset. All
+## refits of lme4 fits with a new response go through here.
+pm_mer_refit <- function(model, y, ...) {
+  na <- attr(model@frame, "na.action")
+  if (!is.null(na) && is.null(dim(y)) && is.null(attr(y, "na.action"))) attr(y, "na.action") <- na
+  lme4::refit(model, newresp = y, ...)
 }

@@ -63,7 +63,7 @@ pm_fl_design <- function(model) {
   if (inherits(model, "lmerMod")) {
     X0 <- lme4::getME(model, "X")
     resp <- model@resp
-    W <- pm_whiten(lme4::getME(model, "Z") %*% lme4::getME(model, "Lambda"), 1 / resp$weights)
+    W <- pm_mer_whiten(model)
     X <- W$solve(as.matrix(X0))
     colnames(X) <- colnames(X0)
     return(list(X = X, z = as.vector(W$solve(resp$y - resp$offset)), asgn = attr(X0, "assign"),
@@ -78,13 +78,12 @@ pm_fl_design <- function(model) {
     asgn <- attr(X0, "assign")[match(names(b), colnames(X0))]
     y <- as.numeric(nlme::getResponse(model))
     if (nrow(X) != length(y)) stop("Please remove missing values from the data and refit the model.", call. = FALSE)
-    V_list <- build_Sigma_mats(model, sigma_scale = FALSE)
-    o <- get_order(A = V_list, B = cbind(X, y))
-    ord <- o[[2]]
-    W <- pm_whiten_blocks(V_list)
-    Xw <- W$solve(o[[1]][, colnames(X), drop = FALSE])
+    nw <- pm_nlme_whiten(model, cbind(X, y))
+    ord <- nw$ord
+    W <- nw$W
+    Xw <- W$solve(nw$B[, colnames(X), drop = FALSE])
     colnames(Xw) <- colnames(X)
-    return(list(X = Xw, z = as.vector(W$solve(o[[1]][, "y"])), asgn = asgn, Terms = Terms, ord = ord, kind = "gls"))
+    return(list(X = Xw, z = as.vector(W$solve(nw$B[, "y"])), asgn = asgn, Terms = Terms, ord = ord, kind = "gls"))
   }
   stop("method = \"freedman-lane\" is available for lm, aov, glm, lme, gls, lmer, glmer and glmmTMB models.",
        call. = FALSE)
@@ -187,7 +186,8 @@ pm_perm_fl <- function(model, nperm, type, exact, seed, perms = NULL, refit = FA
                                 ifelse(cf, "t", "F"), Ls, df_res, n)
   pm_permmodels_result(list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm),
                        paste("Note: Perm_p_value of t test is obtained using", sQuote(nperm), "Freedman-Lane permutations."),
-                       paste("Note: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations."))
+                       paste("Note: Perm_p_value of F test is obtained using", sQuote(nperm), "Freedman-Lane permutations."),
+                       nperm = nperm, exact = exact)
 }
 
 ## Tables for lm and aov: the model's own coefficient and ANOVA tables with
@@ -198,7 +198,7 @@ pm_fl_tables_lm <- function(model, type, pval) {
     ctab <- stats::coef(summary(model))
     COEF <- round(cbind(ctab, Perm_p_value = unname(pval[paste0("coef:", rownames(ctab))])), 4)
   }
-  aT <- if (type %in% c("I", "1")) stats::anova(model) else pm_anova(model, type = type, test.statistic = "F")
+  aT <- if (type %in% c("I", "1")) stats::anova(model) else pm_anova(model, type = type, test_statistic = "F")
   ANOVA <- round(cbind(aT, Perm_p_value = unname(pval[rownames(aT)])), 4)
   attr(ANOVA, "heading") <- attr(aT, "heading")
   ANOVA[is.na(ANOVA)] <- ""

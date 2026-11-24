@@ -111,7 +111,8 @@ plot(latitude ~ longitude, data = scallop, asp = 1/cos(40*pi/180), pch = 16, cex
      xlim = range(b$longitude, na.rm = TRUE), ylim = range(b$latitude, na.rm = TRUE))
 polygon(b, border = "blue", lwd = 2)
 polygon(scallopBdry, border = "red", lwd = 2)
-legend("bottomright", c("semiboundary()", "scallopBdry"), col = c("blue", "red"), lwd = 2, bty = "n")
+legend("bottomright", c("semiboundary()", "scallopBdry"), col = c("blue", "red"),
+       lwd = 2, bty = "n")
 
 ## 2. Copper drill holes (coordinates in the same unit): how 'mult' changes the region;
 ##    with mult = 1 the hole far to the left is a separate piece
@@ -153,7 +154,8 @@ data(copperKnots)
 fc <- semireg(grade ~ s(xcoord, ycoord, bs = "ztps", xt = list(knots = as.matrix(copperKnots))) +
                 s(zcoord, bs = "os"), data = copper)
 semipred(fc, covariate = c("xcoord", "ycoord"), boundary = b2)$plt +
-  geom_path(data = outline(b2), aes(xcoord, ycoord, group = ring), inherit.aes = FALSE, na.rm = TRUE) +
+  geom_path(data = outline(b2), aes(xcoord, ycoord, group = ring),
+            inherit.aes = FALSE, na.rm = TRUE) +
   geom_point(data = holes, aes(xcoord, ycoord), inherit.aes = FALSE, size = 0.8)
 # boundary = TRUE draws the boundary from the model's data (scale "auto": here "sd")
 semipred(fc, covariate = c("xcoord", "ycoord"), boundary = TRUE)$plt

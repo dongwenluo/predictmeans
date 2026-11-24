@@ -186,14 +186,14 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
   q <- function(e) suppressWarnings(suppressMessages(e))
   m <- glmmTMB::glmmTMB(y ~ trt * x + (1 | site), ziformula = ~trt, family = poisson, data = d)
   xs <- c(2, 5, 8)
-  pd <- q(covariatemeans(m, "trt", "x", at = xs, mean_type = "overall"))$pltdf
+  pd <- q(covariatemeans(m, "trt", "x", at = xs, mean_type = "overall"))$pred_df
   expect_equal(pd$Mean, unname(predict(m, data.frame(x = pd$xvar, trt = pd$trt, site = NA), type = "response",
                                        re.form = NA, allow.new.levels = TRUE)), tolerance = 1e-8)
   skip_if_not_installed("emmeans")
   em <- summary(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"))
   o <- match(paste(em$trt, em$x), paste(pd$trt, pd$xvar))
   expect_equal(pd$Mean[o] * pd$ses[o], em$SE, tolerance = 1e-6)     # SE of m = m x SE of log m
-  cc <- q(covariatemeans(m, "trt", "x", at = xs, contr = c("b", "a"), mean_type = "overall"))$pltdf
+  cc <- q(covariatemeans(m, "trt", "x", at = xs, contr = c("b", "a"), mean_type = "overall"))$pred_df
   emc <- summary(emmeans::contrast(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"),
                                    "revpairwise"))
   expect_equal(cc$response.diff, emc$estimate, tolerance = 1e-6)
@@ -207,4 +207,24 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
   cr <- q(semipred(f, "trt", "x", at = xs, contr = c("b", "a"), unconditional = FALSE, mean_type = "overall"))$pred_df
   expect_equal(cr$ratio, po$y[po$trt == "b"] / po$y[po$trt == "a"], tolerance = 1e-8)
   expect_error(q(semipred(f, "trt", "x", deriv = 1, mean_type = "overall")), "not their derivatives")
+})
+
+test_that("a rank-deficient glmmTMB fit (aliased columns dropped) gives the means of the lmer ML fit", {
+  # an empty cell aliases one interaction coefficient; glmmTMB drops it from
+  # its model matrix but fixef() reports it as NA (seen with glmmTMB 1.1.8)
+  set.seed(7)
+  d <- expand.grid(A = factor(1:3), B = factor(1:2), blk = factor(1:6))
+  d <- d[!(d$A == "3" & d$B == "2"), ]
+  d$y <- rnorm(nrow(d), 10 + as.numeric(d$A)) + rnorm(6)[d$blk]
+  f <- y ~ A * B + (1 | blk)
+  mt <- suppressWarnings(glmmTMB::glmmTMB(f, d))
+  ml <- lmer(f, d, REML = FALSE)
+  a <- suppressWarnings(suppressMessages(predictmeans(mt, "A:B", pairwise = TRUE, atvar = "A")))
+  b <- suppressWarnings(suppressMessages(predictmeans(ml, "A:B", pairwise = TRUE, atvar = "A", vcov_adjust = FALSE)))
+  expect_equal(a$means$mean, b$means$mean, tolerance = 1e-4)
+  expect_equal(a$means$std.error, b$means$std.error, tolerance = 1e-3)
+  expect_equal(a$pairs$estimate, b$pairs$estimate, tolerance = 1e-4)
+  mp <- predictmeans:::mymodelparm(mt)
+  X <- stats::model.matrix(mt)
+  expect_identical(colnames(predictmeans:::pm_K_cols(X, mp)), names(mp$coef))
 })

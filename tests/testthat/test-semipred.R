@@ -210,7 +210,7 @@ test_that("semipred(): generalized models back-transform the limits, as predictm
   expect_error(semipred(sp, "g", "x", prt = TRUE), "'prt' was removed", fixed = TRUE)
   expect_error(semipred(sp, "g", "x", trellis = FALSE), "use plot_args = list(trellis", fixed = TRUE)
   expect_error(semipred(semireg = sp, "g", "x"), "use model = sp", fixed = TRUE)
-  expect_error(semipred(sp, "g", "x", level = 0.1), "use conf.level = 0.9", fixed = TRUE)
+  expect_error(semipred(sp, "g", "x", level = 0.1), "use conf_level = 0.9", fixed = TRUE)
 })
 
 test_that("semipred(contr = ) with two covariates: the difference of two surfaces from the contrast", {
@@ -314,7 +314,7 @@ test_that("plot_args sets the colours: band under its line, reference line, bars
   gc <- geoms(pc)
   expect_identical(pc$layers[[match("GeomLine", gc)]]$aes_params$colour, "navy")
   expect_identical(pc$layers[[match("GeomHline", gc)]]$aes_params$colour, "orange")
-  expect_true("GeomSegment" %in% gc)                               # 300 and 200 differ at high pressure
+  expect_true("GeomRug" %in% gc)                               # 300 and 200 differ at high pressure
   expect_error(semipred(fm, "QB", "pressure", plot_args = list(colour = "red")), "can hold")
 })
 
@@ -327,4 +327,96 @@ test_that("generalized fits: SE on the link scale next to SE_mu, the limits h(et
   expect_true(all(c("SE", "SE_mu") %in% names(p)))
   expect_equal(p$LL, plogis(qlogis(p$y) - qnorm(0.975) * p$SE), tolerance = 1e-10)
   expect_equal(p$SE_mu, p$y * (1 - p$y) * p$SE, tolerance = 1e-10)
+})
+
+test_that("CovMat of a Gamma semireg() fit is relative to sigma^2 (no double scaling)", {
+  set.seed(2291)
+  d <- data.frame(x = runif(200), g = gl(20, 10))
+  d$y <- rgamma(200, shape = 2, rate = 2/exp(1 + sin(2 * pi * d$x) + rnorm(20, sd = 0.3)[d$g]))
+  fit <- semireg(y ~ s(x, bs = "os") + (1 | g), data = d, family = Gamma(link = "log"))
+  s2 <- sigma(fit$semer)^2
+  # the fixed-effect block of CovMat times sigma^2 is lme4's covariance
+  # conditional on the variance parameters, (RX'RX)^-1: lme4's working weights
+  # already hold 1/sigma^2 (vcov(use.hessian = FALSE) multiplies by sigma^2
+  # again, and lme4 warns that it disagrees with the Hessian)
+  expect_equal(as.matrix(fit$CovMat)[1:2, 1:2] * s2, chol2inv(lme4::getME(fit$semer, "RX")),
+               ignore_attr = TRUE, tolerance = 1e-6)
+  # and close to vcov() from the Hessian (which also allows for the
+  # uncertainty of the variance parameters)
+  expect_equal(diag(as.matrix(fit$CovMat))[1:2] * s2, diag(as.matrix(vcov(fit$semer))),
+               ignore_attr = TRUE, tolerance = 0.1)
+  # the same model with the glmmTMB engine: covariances agree to the
+  # difference of the two fits (they disagreed by a factor sigma^2 = 0.48)
+  ft <- semireg_tmb(y ~ s(x, bs = "os") + (1 | g), data = d, family = Gamma(link = "log"))
+  expect_equal(diag(as.matrix(fit$CovMat))[1:2] * s2, diag(as.matrix(ft$CovMat))[1:2] * sigma(ft$semer)^2,
+               tolerance = 0.15)
+})
+
+test_that("ZOSull() gives a matrix for one value, and O'Sullivan predictions outside the basis range stop", {
+  Z1 <- ZOSull(0.5, intKnots = c(0.25, 0.5, 0.75), range.x = c(0, 1))
+  expect_equal(dim(Z1), c(1L, 5L))
+  Z <- ZOSull(c(0.2, 0.5), intKnots = c(0.25, 0.5, 0.75), range.x = c(0, 1))
+  expect_equal(Z1[1, ], Z[2, ])
+  set.seed(5530)
+  d <- data.frame(x = runif(80))
+  d$y <- sin(2 * pi * d$x) + rnorm(80, sd = 0.3)
+  f <- semireg(y ~ s(x, bs = "os"), data = d)
+  expect_equal(nrow(semipred(f, covariate = "x", at = list(x = 0.5))$pred_df), 1)
+  # outside the basis the B-splines are 0: before 2.0.0 the curve silently fell back to its linear part
+  expect_snapshot(semipred(f, covariate = "x", at = list(x = 1.2)), error = TRUE)
+})
+
+test_that("the unconditional correction is computed once per fit (fit$cache) and gives the same curves", {
+  set.seed(2291)
+  d <- data.frame(x = runif(200), g = gl(20, 10))
+  d$y <- rpois(200, exp(1 + sin(2 * pi * d$x) + rnorm(20, sd = 0.3)[d$g]))
+  for (eng in c("lme4", "glmmTMB")) {
+    fit <- if (eng == "lme4") semireg(y ~ s(x, bs = "os") + (1 | g), data = d, family = poisson) else
+      semireg_tmb(y ~ s(x, bs = "os") + (1 | g), data = d, family = poisson)
+    expect_true(is.environment(fit$cache))
+    n <- 0
+    real <- predictmeans:::pm_sr_uncond
+    a <- with_mocked_bindings(semipred(fit, covariate = "x", unconditional = TRUE),
+                              pm_sr_uncond = function(s) { n <<- n + 1; real(s) },
+                              .package = "predictmeans")
+    b <- with_mocked_bindings(semipred(fit, covariate = "x", unconditional = TRUE),
+                              pm_sr_uncond = function(s) { n <<- n + 1; real(s) },
+                              .package = "predictmeans")
+    expect_identical(n, 1, label = eng)
+    expect_identical(a$pred_df, b$pred_df)
+    # a fit without a cache (made before 2.0.0) gives the same result
+    old <- fit
+    old$cache <- NULL
+    expect_equal(semipred(old, covariate = "x", unconditional = TRUE)$pred_df, a$pred_df)
+  }
+})
+
+test_that("semipred(contr = ): the max-|t| test of equal curves; one back-transformation with covariatemeans()", {
+  set.seed(4421)
+  d <- data.frame(x = rep(seq(0, 1, length = 30), 2), g = factor(rep(c("a", "b"), each = 30)))
+  d$y <- sin(3 * d$x) + 0.6 * (d$g == "b") * d$x + rnorm(60, sd = 0.15)
+  fl <- semireg(y ~ s(x, by = g, bs = "os", k = 6), data = d)
+  r <- semipred(fl, "g", "x", contr = c("b", "a"), band = "simultaneous")
+  tst <- r$settings$test
+  expect_named(tst, c("statistic", "method", "points", "p.value"))
+  expect_equal(tst$statistic, max(abs(r$pairs$statistic)))
+  # the p-value is the smallest level at which the simultaneous band leaves out 0
+  expect_equal(tst$p.value, min(r$pairs$p.adj))
+  expect_lt(tst$p.value, 0.01)
+  d$y0 <- sin(3 * d$x) + rnorm(60, sd = 0.15)
+  f0 <- semireg(y0 ~ s(x, by = g, bs = "os", k = 6), data = d)
+  expect_gt(semipred(f0, "g", "x", contr = c("b", "a"))$settings$test$p.value, 0.05)
+  expect_match(paste(capture.output(print(r)), collapse = " "), "Curves equal: max |t|", fixed = TRUE)
+
+  # a response transformed in the formula is back-transformed as covariatemeans() does
+  d$z <- exp(1 + sin(3 * d$x) + rnorm(60, sd = 0.15))
+  flog <- semireg(log(z) ~ s(x, by = g, bs = "os", k = 6), data = d)
+  s1 <- semipred(flog, "g", "x")
+  expect_equal(s1$means$response, exp(s1$means$estimate))
+  expect_equal(s1$means$response, semipred(flog, "g", "x", trans = exp)$means$response)
+  expect_null(semipred(flog, "g", "x", trans = I)$means$response)
+  # bias_adjust: the residual variance only (the smooths are the curve, not variation)
+  s3 <- semipred(flog, "g", "x", bias_adjust = TRUE)
+  expect_equal(s3$means$response, s1$means$response * exp(sigma(flog$semer)^2 / 2))
+  expect_match(s3$settings$back_transform$estimate, "bias adjusted")
 })

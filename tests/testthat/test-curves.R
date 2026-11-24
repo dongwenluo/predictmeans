@@ -8,15 +8,15 @@ test_that("covariatemeans(): classed result, means in the predictmeans layout, n
   r <- covariatemeans(fm, "Variety", covariate = "nitro", at = xs)
   expect_null(grDevices::dev.list())                     # nothing drawn
   expect_s3_class(r, c("covariatemeans", "pm_curves"))
-  expect_named(r, c("means", "pairs", "settings", "plt", "pltdf"))
+  expect_named(r, c("means", "pairs", "settings", "plt", "pred_df"))
   m <- r$means
   expect_named(m, c("Variety", "nitro", "estimate", "std.error", "df", "conf.low", "conf.high"))
   # the same values as the 1.x table of the plot
-  expect_equal(m$estimate, r$pltdf$Mean)
-  expect_equal(m$std.error, r$pltdf$ses)
-  expect_equal(m$conf.low, r$pltdf$LL)
-  expect_equal(m$conf.high, r$pltdf$UL)
-  expect_equal(m$nitro, r$pltdf$xvar)
+  expect_equal(m$estimate, r$pred_df$Mean)
+  expect_equal(m$std.error, r$pred_df$ses)
+  expect_equal(m$conf.low, r$pred_df$LL)
+  expect_equal(m$conf.high, r$pred_df$UL)
+  expect_equal(m$nitro, r$pred_df$xvar)
   # and as predictmeans() at the same covariate values
   pm <- predictmeans(fm, "Variety", covariate = list(nitro = 0.3), plot = FALSE)$means
   m3 <- m[m$nitro == 0.3, ]
@@ -50,8 +50,8 @@ test_that("covariatemeans(): back-transformed curves have response columns, as p
   expect_equal(m$response, exp(m$estimate))
   expect_equal(m$response.std.error, exp(m$estimate)*m$std.error)
   expect_equal(m$response.conf.low, exp(m$conf.low))
-  expect_equal(m$response, r$pltdf$Mean)
-  expect_equal(m$response.conf.high, r$pltdf$UL)
+  expect_equal(m$response, r$pred_df$Mean)
+  expect_equal(m$response.conf.high, r$pred_df$UL)
   expect_equal(r$settings$back_transform$by, "the inverse link")
   pm <- suppressMessages(predictmeans(g, "A", covariate = list(x = 5), plot = FALSE))$means
   m5 <- m[m$x == 5, ]
@@ -74,20 +74,20 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
                     "response.conf.low", "response.conf.high"))
   expect_equal(unique(p$level1), "a3")
   expect_equal(unique(p$level2), "a1")
-  expect_equal(p$estimate, rp$pltdf$diff)
-  expect_equal(p$conf.low, rp$pltdf$LL)
-  expect_equal(p$ratio.conf.high, rp$pltdf$ratio.UL)
-  expect_equal(p$response.conf.low, rp$pltdf$response.LL)
+  expect_equal(p$estimate, rp$pred_df$diff)
+  expect_equal(p$conf.low, rp$pred_df$LL)
+  expect_equal(p$ratio.conf.high, rp$pred_df$ratio.UL)
+  expect_equal(p$response.conf.low, rp$pred_df$response.LL)
   expect_equal(p$p.value, 2*pnorm(-abs(p$estimate/p$std.error)))
   expect_identical(as.data.frame(rp), p)                 # the default table: pairs
-  # simultaneous: conf.* stay pointwise; adj.conf.* are the Scheffe band of pltdf, and p.adj < 0.05 exactly
+  # simultaneous: conf.* stay pointwise; adj.conf.* are the Scheffe band of pred_df, and p.adj < 0.05 exactly
   # where they leave out 0
   s <- rs$pairs
   expect_equal(s$conf.low, p$conf.low)
-  expect_equal(s$adj.conf.low, rs$pltdf$LL)
-  expect_equal(s$adj.conf.high, rs$pltdf$UL)
+  expect_equal(s$adj.conf.low, rs$pred_df$LL)
+  expect_equal(s$adj.conf.high, rs$pred_df$UL)
   expect_equal(s$p.adj, pchisq(s$statistic^2, 2, lower.tail = FALSE))
-  expect_equal(s$p.adj < 0.05, rs$pltdf$significant)
+  expect_equal(s$p.adj < 0.05, rs$pred_df$significant)
   expect_equal(rs$settings$band, "simultaneous")
   expect_equal(rs$settings$contrast, c("a3", "a1"))
   expect_equal(unlist(rs$settings$test), setNames(rs$test, c("df1", "df2", "F.ratio", "p.value")))

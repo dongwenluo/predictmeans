@@ -15,17 +15,21 @@ R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 \code{lme}; for \code{lme} with a variance or correlation structure the observation-level variance is the mean
 residual variance).}
 
-\item{over_disp}{For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: as in
-\code{\link{R2_glmm}}.}
+\item{over_disp}{For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: \code{TRUE}
+leaves an observation-level random effect (one level per observation, modelling overdispersion) out of the
+random share; the model must have one. Default \code{FALSE}.}
 }
 \value{
 A named numeric vector of proportions (class \code{"pm_r2"}, printed as percentages). For \code{"nakagawa"},
 \code{Marginal} and \code{Conditional}, with attribute \code{"variances"}: the fixed-effect, random-effect and
-observation-level variances.
+observation-level variances. The Nakagawa values agree with \code{performance::r2_nakagawa()}
+(\file{tests/testthat/test-r2-model.R}). Notes on the choice of method are kept in \code{attr(, "advice")}
+(\code{\link{advice}}).
 }
 \description{
 The R-squared of a model as a numeric result, for every model class of \code{\link{predictmeans}}. \code{method = "piepho"} (the default) gives the same values as
-\code{\link{R2_glmm}} (Piepho, 2023), as proportions: total, fixed, random and each random-effect component.
+\code{R2_glmm()} of predictmeans 1.x (removed in 2.0; Piepho, 2023), as proportions: total, fixed, random and
+each random-effect component.
 \code{method = "nakagawa"} gives the marginal (fixed effects) and conditional (fixed and random effects) R-squared of
 Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014): the variance of each random-effect term is the
 mean of \eqn{z_i' \Sigma z_i} over the observations.
@@ -61,6 +65,9 @@ mixed-effects models, \emph{Methods in Ecology and Evolution}, 4, 133-142.
 
 Johnson, P. C. D. (2014), Extension of Nakagawa & Schielzeth's R2GLMM to random slopes models, \emph{Methods in
 Ecology and Evolution}, 5, 944-946.
+}
+\seealso{
+\code{\link{varcomp}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

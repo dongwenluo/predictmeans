@@ -38,8 +38,10 @@ test_that("pm_anova() equals car::Anova() for lm, glm, lme, gls and lmer", {
                      ignore_attr = TRUE)
         next
       }
-      ref <- suppressMessages(car::Anova(if (ty == "III") models_sum[[nm]] else m, type = ty, test.statistic = ts))
-      new <- predictmeans:::pm_anova(m, type = ty, test.statistic = ts, kr_information = "expected")
+      # (car warns that the sum-to-zero coefficients of an lme fit are "not in the model
+      # matrix"; a check of car's names only, its tests are right)
+      ref <- suppressWarnings(suppressMessages(car::Anova(if (ty == "III") models_sum[[nm]] else m, type = ty, test.statistic = ts)))
+      new <- predictmeans:::pm_anova(m, type = ty, test_statistic = ts, kr_information = "expected")
       if (ty == "III") {
         expect_equal(as.matrix(new), as.matrix(ref), tolerance = 1e-7, ignore_attr = TRUE, label = paste(nm, ty, ts))
         expect_identical(rownames(new), rownames(ref))
@@ -90,10 +92,22 @@ test_that("Kenward-Roger F tables use the observed information, as pm_joint()", 
   set.seed(7)
   Ou <- Oats[-sample(nrow(Oats), 9), ]
   m <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Ou)
-  a <- predictmeans:::pm_anova(m, type = "III", test.statistic = "F")
+  a <- predictmeans:::pm_anova(m, type = "III", test_statistic = "F")
   jt <- pm_joint(m, "nitro:Variety", ctrmatrix = t(kronecker(contr.sum(4), contr.sum(3))))
   expect_equal(a["nitro:Variety", "Df.res"], jt$df2, tolerance = 1e-8)
   expect_equal(a["nitro:Variety", "F"], jt$F.ratio, tolerance = 1e-8)
-  ae <- predictmeans:::pm_anova(m, type = "III", test.statistic = "F", kr_information = "expected")
+  ae <- predictmeans:::pm_anova(m, type = "III", test_statistic = "F", kr_information = "expected")
   expect_false(isTRUE(all.equal(a[, "Df.res"], ae[, "Df.res"])))     # unbalanced: they differ
+})
+
+test_that("Type III map leaves an offset out of the rebuilt design", {
+  set.seed(4102)
+  d <- data.frame(f = gl(3, 20), o = rnorm(60, sd = 0.2))
+  d$y <- rpois(60, exp(1 + d$o))
+  for (fo in list(y ~ f + offset(o), y ~ 0 + f + offset(o))) {
+    m <- glm(fo, poisson, d)
+    mp <- predictmeans:::pm_type3_map(m, names(coef(m)))
+    m0 <- glm(update(fo, . ~ . - offset(o)), poisson, d)
+    expect_equal(mp, predictmeans:::pm_type3_map(m0, names(coef(m0))))
+  }
 })

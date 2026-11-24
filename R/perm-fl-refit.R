@@ -28,7 +28,7 @@ pm_lmm_parts <- function(model) {
     X <- as.matrix(lme4::getME(model, "X"))
     y <- resp$y - resp$offset
     wts <- resp$weights
-    Wof <- function(m) pm_whiten(lme4::getME(m, "Z") %*% lme4::getME(m, "Lambda"), 1 / wts)
+    Wof <- function(m) pm_mer_whiten(m)
     bars <- vapply(pm_findbars(stats::formula(model)),
                    function(b) paste0("(", paste(deparse(b), collapse = ""), ")"), "")
     d <- pm_model_rows(model)
@@ -44,7 +44,7 @@ pm_lmm_parts <- function(model) {
     }
     return(list(X = X, y = y, asgn = attr(lme4::getME(model, "X"), "assign"), Terms = stats::terms(model),
                 ord = seq_along(y), Wfit = Wof(model), Wof = Wof, fit_reduced = fit_reduced,
-                refit_full = function(ys) quiet(lme4::refit(model, ys + resp$offset)),
+                refit_full = function(ys) quiet(pm_mer_refit(model, ys + resp$offset)),
                 coefvcov = function(m) list(b = lme4::fixef(m), V = as.matrix(stats::vcov(m))),
                 packages = "lme4"))
   }
@@ -60,8 +60,8 @@ pm_lmm_parts <- function(model) {
     stop("Freedman-Lane refits of lme/gls models need a response that is one variable and data without missing ",
          "values; use refit = FALSE.", call. = FALSE)
   }
-  V_list <- build_Sigma_mats(model, sigma_scale = FALSE)
-  ord <- get_order(A = V_list, B = cbind(X, y))[[2]]
+  nw <- pm_nlme_whiten(model, cbind(X, y))
+  ord <- nw$ord
   Wof <- function(m) pm_whiten_blocks(build_Sigma_mats(m, sigma_scale = FALSE))
   fa <- if (inherits(model, "lme")) "fixed" else "model"
   fit_reduced <- function(XN) {
@@ -81,7 +81,7 @@ pm_lmm_parts <- function(model) {
     quiet(pm_refit(model, data = dd))
   }
   list(X = X, y = y, asgn = attr(X0, "assign")[match(names(b), colnames(X0))], Terms = Terms, ord = ord,
-       Wfit = pm_whiten_blocks(V_list), Wof = Wof, fit_reduced = fit_reduced, refit_full = refit_full,
+       Wfit = nw$W, Wof = Wof, fit_reduced = fit_reduced, refit_full = refit_full,
        coefvcov = function(m) list(b = pm_fixef(m), V = as.matrix(stats::vcov(m))), packages = "nlme")
 }
 
@@ -186,7 +186,8 @@ pm_perm_fl_refit <- function(model, nperm, type, exact, seed, perms, ncore, only
   out <- pm_permmodels_result(
     list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA, perm = perm),
     paste0("Note: Perm_p_value of t test is obtained using ", sQuote(nperm), " Freedman-Lane permutations", failnote, "."),
-    paste0("Note: Perm_p_value of F test is obtained using ", sQuote(nperm), " Freedman-Lane permutations", failnote, "."))
+    paste0("Note: Perm_p_value of F test is obtained using ", sQuote(nperm), " Freedman-Lane permutations", failnote, "."),
+    nperm = nperm - failures, exact = exact)
   if (failures > 0) attr(out, "failures") <- failures
   out
 }

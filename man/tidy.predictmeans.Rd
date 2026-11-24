@@ -54,7 +54,7 @@ the class listed first: \code{options(marginaleffects_model_classes = "predictme
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
-  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
+  pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
   as.data.frame(pm)
   head(as.data.frame(pm, what = "pairs"))
   if (requireNamespace("generics", quietly = TRUE)) generics::glance(pm)
@@ -63,6 +63,9 @@ the class listed first: \code{options(marginaleffects_model_classes = "predictme
   b <- coef(pm)
   L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
   c(estimate = sum(L*b), SE = sqrt(drop(L \%*\% vcov(pm) \%*\% L)))
+}
+\seealso{
+\code{\link{predictmeans}}, \code{\link{autoplot.predictmeans}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

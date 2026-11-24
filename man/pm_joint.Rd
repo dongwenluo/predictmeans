@@ -5,7 +5,8 @@
 \title{Joint F Tests of Contrasts among Means (Slices)}
 \usage{
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+           "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 }
 \arguments{
@@ -74,11 +75,14 @@ Cornelius 1996), and with this basis they equal SAS's.
   # varieties within each nitrogen level
   pm_joint(fm, "nitro:Variety", by = "nitro")
   # a set of contrasts: linear and quadratic nitrogen trends together
-  pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max.degree = 2))
+  pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max_degree = 2))
 }
 \references{
 Kenward, M. G. and Roger, J. H. (1997), Small sample inference for fixed effects from restricted maximum likelihood,
 \emph{Biometrics}, 53, 983-997.
+}
+\seealso{
+\code{\link{contrastmeans}}, \code{\link{contrast_family}}, \code{\link{predictmeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

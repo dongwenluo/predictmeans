@@ -3,22 +3,30 @@
 \docType{data}
 \name{Drug}
 \alias{Drug}
-\title{\code{Drug} data}
+\title{Potency of Analgesic Drugs in Mice}
 \format{
-\code{Drug} is a 14 row data frame with the following columns 
+A data frame with 14 rows and 5 columns:
 \describe{
-\item{Drug}{type of drug.}
-\item{Dose}{dose volumn.}
-\item{N}{total number of mice in each group.}
-\item{R}{number responding mice in each group.}
-\item{log10Dose}{log10 transformed dose volumn.}
+\item{Drug}{factor, 4 drugs (Morphine, Amidone, ...).}
+\item{Dose}{dose (units as in Finney, 1971).}
+\item{N}{number of mice in the group.}
+\item{R}{number of mice responding.}
+\item{log10Dose}{\code{log10(Dose)}.}
 }
+}
+\source{
+Finney, D. J. (1971). \emph{Probit Analysis}, 3rd edition. Cambridge University Press, p. 103.
 }
 \usage{
 data(Drug)
 }
 \description{
-The data is for the comparison of the effectiveness of three analgesic drugs 
+Data for the comparison of the effectiveness of three analgesic drugs 
 to a standard drug, morphine (Finney, Probit analysis, 3rd Edition 1971, p.103). 14 groups 
 of mice were tested for response to the drugs at a range of doses.
+}
+\examples{
+data(Drug)
+gm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial(link = "probit"), data = Drug)
+predictmeans(gm, "Drug", covariate = c(log10Dose = 0.5))$means
 }

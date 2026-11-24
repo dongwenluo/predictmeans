@@ -5,24 +5,36 @@
 ## car is not needed. The results equal car::Anova() (see the tests). Classes
 ## other than lm, glm, lme, gls and merMod get Wald chi-square tests from
 ## pm_coef() and pm_vcov(), so this also works through the model adapter.
-## Kenward-Roger F tests (lmer, test.statistic = "F") use the observed
+## Kenward-Roger F tests (lmer, test_statistic = "F") use the observed
 ## information, as everywhere in predictmeans (R/inference.R);
 ## kr_information = "expected" gives car's (pbkrtest's) values. 'type3_map':
 ## pm_type3_map() of a fit with the same design, which permutation refits
 ## (only the response changes) compute once.
 
+## The type of the tests, the one place it is decided: "I"/"II"/"III",
+## 1/2/3 or "1"/"2"/"3" (any case) give "I", "II" or "III". 'allowed' limits
+## the types a caller supports. Callers pass type[1] (the default vector's first).
+pm_anova_type <- function(type, allowed = c("I", "II", "III")) {
+  if (length(type) != 1 || is.na(type)) stop("'type' must be one of I, II, III (or 1, 2, 3).", call. = FALSE)
+  t <- toupper(trimws(as.character(type)))
+  t <- c("1" = "I", "2" = "II", "3" = "III", I = "I", II = "II", III = "III")[t]
+  if (is.na(t)) stop("'type' must be one of I, II, III (or 1, 2, 3), not '", type, "'.", call. = FALSE)
+  if (!t %in% allowed) {
+    stop("Type ", t, " tests are not available here; use type ", paste(allowed, collapse = " or "), ".", call. = FALSE)
+  }
+  unname(t)
+}
+
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
-                     test.statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
+                     test_statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
                      type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite")) {
   ddf <- match.arg(ddf)
-  type <- as.character(type)
-  type <- match.arg(type)
-  type <- c("2" = "II", "3" = "III", II = "II", III = "III")[[type]]
-  test.statistic <- match.arg(test.statistic)
+  type <- pm_anova_type(type[1], c("II", "III"))
+  test_statistic <- match.arg(test_statistic)
 
   if (inherits(model, "glm")) {
-    if (!test.statistic %in% c("LR", "Wald", "F")) test.statistic <- "LR"
-    return(switch(test.statistic,
+    if (!test_statistic %in% c("LR", "Wald", "F")) test_statistic <- "LR"
+    return(switch(test_statistic,
                   LR = if (type == "II") pm_anova_glm_II(model, "LR") else pm_anova_glm_III(model, "LR", type3_map),
                   F = if (type == "II") pm_anova_glm_II(model, "F") else pm_anova_glm_III(model, "F", type3_map),
                   Wald = pm_anova_wald(model, type, layout = "default", type3_map = type3_map)))
@@ -30,7 +42,7 @@ pm_anova <- function(model, type = c("II", "III", "2", "3"),
   if (inherits(model, "lm")) return(pm_anova_lm(model, type, type3_map))
   if (inherits(model, "lme")) return(pm_anova_wald(model, type, layout = "lme", type3_map = type3_map))
   if (inherits(model, "merMod")) {
-    test <- if (test.statistic == "F") "F" else "Chisq"
+    test <- if (test_statistic == "F") "F" else "Chisq"
     return(pm_anova_wald(model, type, layout = "mer", test = test, kr_information = kr_information,
                          type3_map = type3_map, ddf = ddf))
   }
@@ -64,10 +76,7 @@ pm_type2_hyp <- function(term, names, assign, fac, I.p, not_aliased, V) {
   H[!apply(H, 1, function(x) all(x == 0)), , drop = FALSE]
 }
 
-pm_wald_chisq <- function(H, b, V) {
-  d <- H %*% b
-  as.vector(t(d) %*% solve(H %*% V %*% t(H)) %*% d)
-}
+pm_wald_chisq <- function(H, b, V) pm_wald_quad(H, b, V)
 
 pm_response_name <- function(model) deparse(attr(stats::terms(model), "variables")[[2]])
 
@@ -312,7 +321,7 @@ pm_anova_glm_III <- function(model, test = c("LR", "F"), type3_map = NULL) {
   test <- match.arg(test)
   if (any(is.na(stats::coef(model)))) {
     stop("Type III likelihood ratio tests need a complete design; with empty cells (aliased coefficients) use ",
-         "test.statistic = \"Wald\" (the hypotheses on the cells with data) or type = \"II\".", call. = FALSE)
+         "test_statistic = \"Wald\" (the hypotheses on the cells with data) or type = \"II\".", call. = FALSE)
   }
   Source <- labels(stats::terms(model))
   n <- length(Source)
@@ -389,10 +398,7 @@ pm_lmer_tables <- function(model) {
 ## Returns a one-column matrix "F value" with a row per hypothesis.
 pm_type1_F <- function(Ls, b, V) {
   V <- as.matrix(V)
-  Fv <- vapply(Ls, function(L) {
-    d <- L %*% b
-    as.numeric(crossprod(d, solve(L %*% V %*% t(L), d))) / nrow(L)
-  }, numeric(1))
+  Fv <- vapply(Ls, function(L) pm_waldF(L, b, V), numeric(1))
   matrix(Fv, ncol = 1, dimnames = list(names(Ls), "F value"))
 }
 
@@ -411,6 +417,12 @@ pm_type1_F <- function(Ls, b, V) {
 pm_type3_map <- function(model, coef_names) {
   tt <- if (inherits(model, "merMod")) stats::terms(model, fixed.only = TRUE) else stats::terms(model)
   tt <- stats::delete.response(tt)
+  # an offset is not part of any hypothesis, and glmmTMB's frame does not hold
+  # its variables (only "offset(o)"): leave it out of the rebuilt design
+  if (!is.null(attr(tt, "offset"))) {
+    tl <- attr(tt, "term.labels")
+    tt <- stats::terms(stats::reformulate(if (length(tl)) tl else "1", intercept = attr(tt, "intercept") == 1))
+  }
   dat <- if (inherits(model, c("lme", "gls"))) pm_get_data(model) else stats::model.frame(model)
   mf <- stats::model.frame(tt, dat, na.action = stats::na.omit)
   facs <- names(mf)[vapply(mf, function(v) is.factor(v) || is.character(v), logical(1))]
@@ -536,9 +548,29 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' \code{lme4::lmer()}. Everything else in predictmeans works the same with either class.
 #' @param object An \code{lmer} fit (class \code{lmerMod}).
 #' @param ... Other fitted models: then lme4's comparison of the models.
-#' @param type \code{"III"} (default), \code{"II"} or \code{"I"}.
+#' @param type \code{"III"} (default), \code{"II"} or \code{"I"}; also \code{3}, \code{2}, \code{1}.
 #' @param ddf \code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.
-#' @return An \code{anova} table.
+#' @param advice Logical: add a note on the choice of type when the data are unbalanced or have empty cells
+#'   (default \code{TRUE}).
+#' @section Which type of test:
+#' With balanced data (equal numbers in all cells) Types I, II and III give the same tests. With unbalanced data:
+#' \describe{
+#' \item{Type I}{sequential: each term adjusted for the terms before it, so the order in the formula matters. Use
+#'   it when the order is meaningful, e.g. a block or a covariate to be removed first.}
+#' \item{Type II}{each term adjusted for all terms that do not contain it (the principle of marginality). The most
+#'   powerful tests of main effects when the interactions are negligible; with an interaction present the main
+#'   effects are not well defined.}
+#' \item{Type III}{each term adjusted for all others, testing equally weighted cell means; meaningful with an
+#'   interaction present, and here independent of the model's contrasts. A covariate in an interaction makes the
+#'   other terms be tested at covariate = 0: centre it.}
+#' }
+#' With empty cells no type answers the question of a main effect over all cells: Type III uses the cells with
+#' data (and says so). State the comparisons of interest on the cell means instead, with \code{\link{pm_joint}} or
+#' \code{\link{predictmeans}}.
+#' @return An \code{anova} table: for each term the numerator df, the denominator df (column heading names the
+#'   method), the F value and its p-value. With \code{advice = TRUE} a note on the type is kept in
+#'   \code{attr(, "advice")} (read it with \code{\link{advice}}).
+#' @seealso \code{\link{anova.semireg}}, \code{\link{pm_joint}}, \code{\link{df_term}}, \code{\link{permmodels}}
 #' @examples
 #' library(predictmeans)
 #' Oats$nitro <- factor(Oats$nitro)
@@ -549,16 +581,113 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' @name anova.lmerMod
 NULL
 
+#' @exportS3Method anova lmerMod
 anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
-                          ddf = c("Kenward-Roger", "Satterthwaite", "lme4")) {
+                          ddf = c("Kenward-Roger", "Satterthwaite", "lme4"), advice = TRUE) {
   # several models: lme4's comparison, by NextMethod() so that lme4 sees the
   # original call (model names), also when lmerTest's anova() hands on to here
   if (length(list(...))) return(NextMethod())
-  type <- match.arg(as.character(type)[1], c("III", "II", "I"))
+  type <- pm_anova_type(type[1])
   ddf <- match.arg(ddf)
   if (ddf == "lme4") return(utils::getS3method("anova", "merMod", envir = asNamespace("lme4"))(object))
-  if (type == "I") return(pm_lmer_tables(object)$anova)
-  pm_anova(object, type = type, test.statistic = "F", ddf = ddf)
+  out <- if (type == "I") pm_lmer_tables(object)$anova else pm_anova(object, type = type, test_statistic = "F", ddf = ddf)
+  if (isTRUE(advice)) out <- pm_anova_add_advice(out, object, type)
+  out
+}
+
+## Type I (sequential) table of a mixed model: lmer, lmerTest's Satterthwaite
+## F; other models, sequential Wald chi-square tests on the hypotheses of
+## pm_type1_L() (no refits).
+pm_anova_type1 <- function(model) {
+  if (inherits(model, "lmerMod")) return(pm_lmer_tables(model)$anova)
+  X <- if (inherits(model, "merMod")) lme4::getME(model, "X") else stats::model.matrix(model)
+  tl <- attr(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model),
+             "term.labels")
+  b <- pm_coef(model)
+  b <- b[!is.na(b)]
+  V <- as.matrix(pm_vcov(model))
+  Ls <- pm_type1_L(X[, names(b), drop = FALSE], tl, attr(X, "assign")[match(names(b), colnames(X))])
+  q <- vapply(Ls, nrow, 1L)
+  chi <- pm_type1_F(Ls, b, V)[, 1] * q
+  pm_anova_result(data.frame(chi, q, stats::pchisq(chi, q, lower.tail = FALSE)), names(Ls),
+                  c("Chisq", "Df", "Pr(>Chisq)"),
+                  c("Analysis of Deviance Table (Type I Wald chisquare tests)\n",
+                    paste("Response:", pm_response_name(model))))
+}
+
+## Balance of the fixed factors' cells: "balanced" (all cells observed,
+## equal counts), "unbalanced" or "empty" (a cell of the crossed fixed
+## factors has no data). NA when there are fewer than two factors in the
+## fixed terms (one factor: types I, II and III agree for it anyway).
+## Attribute "covariate": a numeric variable is in an interaction term.
+pm_design_balance <- function(model) {
+  tt <- tryCatch(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model),
+                 error = function(e) NULL)
+  if (is.null(tt)) return(NA_character_)
+  dat <- tryCatch(if (inherits(model, c("lme", "gls"))) pm_get_data(model) else stats::model.frame(model),
+                  error = function(e) NULL)
+  if (is.null(dat)) return(NA_character_)
+  vars <- intersect(all.vars(stats::delete.response(tt)), names(dat))
+  isfac <- vapply(dat[vars], function(v) is.factor(v) || is.character(v), logical(1))
+  facs <- vars[isfac]
+  inter <- grep(":", attr(tt, "term.labels"), value = TRUE)
+  cov_in <- any(vapply(vars[!isfac], function(v) any(vapply(strsplit(inter, ":"), function(s) v %in% s,
+                                                            logical(1))), logical(1)))
+  out <- if (length(facs) < 2) NA_character_ else {
+    n <- table(lapply(dat[facs], factor))
+    if (any(n == 0)) "empty" else if (length(unique(as.vector(n))) == 1) "balanced" else "unbalanced"
+  }
+  structure(out, covariate = cov_in, counts = if (length(facs) >= 2) n)
+}
+
+## Plain-language advice on the type of tests, for the design at hand; one
+## place for the wording (anova(), pm_check()). Rows of pm_advice() (R/advice.R).
+pm_anova_advice_rows <- function(model, type) {
+  bal <- pm_design_balance(model)
+  rows <- list()
+  if (isTRUE(attr(bal, "covariate")) && type == "III") {
+    rows$cov <- pm_advice("anova_covariate_zero", paste(
+      "A numeric covariate is in an interaction: Type III tests of the other terms are at",
+      "covariate = 0; centre the covariate if 0 is not a meaningful value."), "caution")
+  }
+  if (!is.na(bal) && bal != "balanced") {
+    rows$type <- pm_advice(paste0("anova_unbalanced_type", type), switch(type,
+      I = paste("Unbalanced data: Type I tests are sequential, each term adjusted only for the terms before it, so",
+                "the order of the terms in the formula changes the results. Use them only when that order is meaningful",
+                "(e.g. a covariate or block first); otherwise Type II or III."),
+      II = paste("Unbalanced data: Type II tests each term adjusted for all terms that do not contain it. They are the",
+                 "more powerful tests of main effects when the interactions are negligible; when an interaction is",
+                 "present the main effects are hard to interpret, so look at the interaction first."),
+      III = paste("Unbalanced data: Type III tests compare equally weighted cell means (contrasts as sum-to-zero),",
+                  "meaningful with an interaction present. With no interaction, Type II tests of main effects are",
+                  "more powerful.")), if (type == "I") "caution" else "note")
+    if (bal == "empty") {
+      rows$empty <- pm_advice("anova_empty_cells", paste(
+        "Empty cells: no type of test answers the question of a main effect over all cells.",
+        "Type III tests use the cells with data; better, state the comparisons of interest",
+        "on the cell means (pm_joint(), predictmeans(pairwise = TRUE))."), "caution")
+    }
+  }
+  if (!length(rows)) return(NULL)
+  do.call(rbind, unname(rows))
+}
+
+## The texts of the advice (character; kept for pm_check() and tests).
+pm_anova_advice <- function(model, type) {
+  r <- pm_anova_advice_rows(model, type)
+  if (is.null(r)) character(0) else r$text
+}
+
+## Store the advice on an anova table and, unless
+## options(predictmeans.advice = FALSE), append it to the table's heading
+## (print.anova() prints the heading).
+pm_anova_add_advice <- function(tab, model, type) {
+  rows <- tryCatch(pm_anova_advice_rows(model, type), error = function(e) NULL)
+  if (is.null(rows)) return(tab)
+  tab <- pm_add_advice(tab, rows)
+  txt <- pm_format_advice(pm_advice_get(tab))
+  if (nzchar(txt)) attr(tab, "heading") <- c(attr(tab, "heading"), txt)
+  tab
 }
 
 ## lme4's own table for one model (sequential sums of squares and F values,

@@ -18,11 +18,11 @@ test_that("contrastmeans() limits: t limits, and permutation-t limits that agree
   # refits: the permutation p-value is <= level exactly when 0 is outside the limits
   fl <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = Oats)
   r <- permmodels(fl, nperm = 99, seed = 4, ncore = 1, method = "raw")
-  pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, conf.level = 0.9)[[1]]
+  pt <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, conf_level = 0.9)[[1]]
   outside <- pt[, "lower.CL"] > 0 | pt[, "upper.CL"] < 0
   expect_identical(unname(outside), unname(pt[, "Permuted Pr(>|t|)"] <= 0.1))
   # simultaneous limits (max-|t|) are wider; lower.CL and upper.CL do not depend on adj
-  ps <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, adj = "westfall", conf.level = 0.9)[[1]]
+  ps <- contrastmeans(fl, "nitro", ctrmatrix = cn, permlist = r, adj = "westfall", conf_level = 0.9)[[1]]
   expect_true(all(ps[, "adj.upper.CL"] - ps[, "adj.lower.CL"] >= pt[, "upper.CL"] - pt[, "lower.CL"] - 1e-8))
   expect_equal(ps[, c("lower.CL", "upper.CL")], pt[, c("lower.CL", "upper.CL")])
   expect_false("adj.lower.CL" %in% colnames(pt))

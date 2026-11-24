@@ -110,10 +110,13 @@ pm_sr_call_for <- function(cl, fn, drop = character(0)) {
 ## Zt, one fit. 'lmerc' is the [g]lmer call of the front end (formula with
 ## placeholders). Returns the merMod and, for a gaussian fit, the deviance
 ## function that goes with it (Satterthwaite df and varcomp() need it).
-pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, control, start, verbose, drop.unused.levels, mc, env,
+pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, control, start, verbose, drop_unused_levels, mc, env,
                            ...) {
   fc <- lmerc
   fc$formula <- st$formula
+  # lme4's name for the user's drop_unused_levels
+  fc$drop_unused_levels <- NULL
+  fc$drop.unused.levels <- drop_unused_levels
   if (gaus) {
     fc[[1]] <- quote(lme4::lFormula)
     fc <- pm_sr_call_for(fc, lme4::lFormula)
@@ -125,7 +128,7 @@ pm_sr_fit_lme4 <- function(lmerc, st, gaus, family, control, start, verbose, dro
   lf <- suppressWarnings(pm_sr_eval(fc, st$data, env))
   reTrms <- lf$reTrms
   reTrms$Zt <- pm_sr_replace_Zt(reTrms$Zt, st$Zt, reTrms$flist, reTrms$Gp)
-  dfl <- list(fr = lf$fr, X = lf$X, reTrms = reTrms, start = reTrms$theta, drop.unused.levels = drop.unused.levels)
+  dfl <- list(fr = lf$fr, X = lf$X, reTrms = reTrms, start = reTrms$theta, drop.unused.levels = drop_unused_levels)
   glmm_fit <- function(fam) {
     dfl$family <- fam
     devfun <- do.call(lme4::mkGlmerDevfun, dfl)
@@ -172,7 +175,10 @@ pm_sr_fit_tmb <- function(tmbc, st, env) {
 ##   u_ind          number of columns of Z of each term, named by term
 ##   V              (optional) the covariance itself, relative to sigma^2
 ##                  (zero-inflated glmmTMB fits: from TMB's joint precision)
-pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, V = NULL) {
+##   s2             sigma^2 when w already includes 1/sigma^2 (lme4 GLMMs with a
+##                  dispersion parameter: Gamma, inverse.gaussian); the
+##                  covariance is then divided by it, after the effective df
+pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, V = NULL, s2 = 1) {
   n_beta <- ncol(X)
   C <- cbind(X, Z)
   CTC <- Matrix::crossprod(C * w, C)
@@ -190,6 +196,7 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, V = NULL) {
   fullCovMat <- if (is.null(V)) Tm %*% (Dm %*% Matrix::solve(Ms, Dm %*% Matrix::t(Tm))) else Matrix::Matrix(V)
   fullCovMat <- Matrix::forceSymmetric(methods::as(fullCovMat, "generalMatrix"))
   df <- sum(Matrix::diag(fullCovMat %*% CTC))              # effective degrees of freedom
+  if (s2 != 1) fullCovMat <- fullCovMat/s2
 
   vcov_ind <- cumsum(c(n_beta, u_ind))
   names(vcov_ind) <- c("beta", names(u_ind))
@@ -219,28 +226,27 @@ pm_sr_info <- function(X, Z, Lambda, w, uHat, u_ind, Zt_name, V = NULL) {
 pm_sr_result <- function(semer, st, mc, info, extra) {
   if (is.null(info)) info <- list(cov_lst = NULL, u_lst = NULL, CovMat = NULL, Cov_ind = NULL, Cov_indN = NULL,
                                   df = NULL)
-  ans <- c(list(semer = semer, data = st$data, fomul_vars = st$fomul_vars, sm_vars = st$sm_vars), info, extra,
-           list(smooths = st$smooths))
+  # results computed later from the fit and kept for the next call
+  # (pm_sr_uncond_cached()): an environment, so copies of the fit share it
+  ans <- c(list(semer = semer, call = mc, data = st$data, fomul_vars = st$fomul_vars, sm_vars = st$sm_vars), info, extra,
+           list(smooths = st$smooths, cache = new.env(parent = emptyenv())))
   class(ans) <- c("semireg", "list")
-  ans
+  pm_add_advice(ans, tryCatch(pm_semireg_advice(ans), error = function(e) NULL))
 }
 
-## print() and summary() of a fit show the fitted model (as 1.x printed it
-## during the fit with prt = TRUE), not the list, and name the random-effect
-## term that holds each smooth.
-print.semireg <- function(x, ...) {
-  print(x$semer, ...)
-  sm <- x$smooths
-  if (length(sm$labels)) {
-    cat("\nSmooth terms:\n")
-    if (length(sm$maps) == length(sm$labels)) {
-      print(data.frame(smooth = sm$labels, `random term` = names(sm$maps), check.names = FALSE), row.names = FALSE)
-    } else cat(" ", paste(sm$labels, collapse = ", "), "\n")
-  }
-  invisible(x)
+## pm_sr_uncond(), computed once per fit: the correction needs a numerical
+## Hessian and Jacobian (lme4, many deviance evaluations) or TMB's joint
+## precision and its inverse, and each semipred() or predictmeans() call on
+## the fit used to repeat it. Kept in fit$cache (fits made before 2.0.0, or
+## without a cache, compute it each time). NULL (not available) is kept too.
+pm_sr_uncond_cached <- function(semireg) {
+  cache <- semireg$cache
+  if (!is.environment(cache)) return(pm_sr_uncond(semireg))
+  if (!exists("uncond", envir = cache, inherits = FALSE)) assign("uncond", pm_sr_uncond(semireg), envir = cache)
+  get("uncond", envir = cache, inherits = FALSE)
 }
 
-summary.semireg <- function(object, ...) summary(object$semer, ...)
+## print(), summary() and the extractors of a fit: R/semireg-methods.R.
 
 ## ---- Uncertainty of the smoothing parameters ----
 ##

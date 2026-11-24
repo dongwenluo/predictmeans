@@ -22,10 +22,22 @@
 ## Freedman-Lane reduced model is the null space of L. glm: the same on the
 ## working scale (the IRLS weights fixed at the fit).
 
+## (X'X)^-1 from the QR of a full-rank X, R^-1 R^-T in X's column order: no
+## crossprod, so the condition number is not squared.
+pm_xtx_inv <- function(qrX) {
+  p <- ncol(qrX$qr)
+  if (qrX$rank < p) stop("the model matrix is not of full rank.", call. = FALSE)
+  Ri <- chol2inv(qr.R(qrX))
+  piv <- qrX$pivot
+  out <- Ri
+  out[piv, piv] <- Ri
+  out
+}
+
 ## The parts of the least-squares fit used for every statistic.
 pm_hc_parts <- function(X) {
   qrX <- qr(X)
-  XtXi <- solve(crossprod(X))
+  XtXi <- pm_xtx_inv(qrX)
   h <- rowSums((X %*% XtXi) * X)
   list(X = X, qr = qrX, XtXi = XtXi, h = pmin(h, 1 - 1e-8), df_res = nrow(X) - qrX$rank)
 }
@@ -152,7 +164,7 @@ pm_perm_fl_robust <- function(model, nperm, type, exact, seed, perms = NULL) {
                              "sign flips of the Freedman-Lane residuals (wild bootstrap)."),
                        paste("Note: Perm_p_value of robust F test is obtained using", sQuote(nperm),
                              "sign flips of the Freedman-Lane residuals (wild bootstrap)."),
-                       coef_title = "Coefficients of (fixed) effects (robust standard errors):")
+                       coef_title = "Coefficients of (fixed) effects (robust standard errors):", nperm = nperm)
 }
 
 ## Pairs and contrasts from a robust permutation object: robust |t| of each

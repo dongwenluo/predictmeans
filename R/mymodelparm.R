@@ -1,6 +1,7 @@
 mymodelparm <- function(model, coef., vcov., df, ...)
 UseMethod("mymodelparm")
 
+#' @exportS3Method NULL
 mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NULL, ...)
 {
   ### extract coefficients and their covariance matrix
@@ -98,26 +99,33 @@ mymodelparm.default <- function(model, coef. = pm_coef, vcov. = pm_vcov, df = NU
   RET
 }
 
+#' @exportS3Method NULL
 mymodelparm.aovlist <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
     stop("This function does not support objects of class ", sQuote("aovlist"))
 
+#' @exportS3Method NULL
 mymodelparm.lme <- function(model, coef. = nlme::fixef, vcov. = vcov, df = NULL, ...)
     mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.lmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.glmerMod <- function(model, coef. = lme4::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.gls <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...)
     mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
+#' @exportS3Method NULL
 mymodelparm.glmmTMB <- function(model, coef. = glmmTMB::fixef, vcov. = vcov, df = NULL, ...)
    mymodelparm.default(model, coef. = coef., vcov. = vcov., df = df, ...)
 
 # mgcv gam/bam: all coefficients (parametric and smooth basis), the Bayesian
 # posterior covariance matrix Vp, and the residual degrees of freedom.
+#' @exportS3Method NULL
 mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   beta <- coef.(model)
   sigma <- as.matrix(vcov.(model))
@@ -127,4 +135,27 @@ mymodelparm.gam <- function(model, coef. = coef, vcov. = vcov, df = NULL, ...) {
   RET <- list(coef = beta, vcov = sigma, df = df, estimable = rep(TRUE, length(beta)))
   class(RET) <- "mymodelparm"
   RET
+}
+
+## The columns of a K (or L) matrix that go with the model's estimable
+## coefficients, in their order: the one place where the columns of a design
+## are matched to mp$coef. By name when the coefficients are named (any
+## class: a model may list aliased coefficients as NA, as lm() does, or leave
+## them out of its design, as lme4 does, or both, as glmmTMB does); by
+## position only when there are no names to go by and the sizes agree.
+## Anything else stops: a silent mismatch would give wrong means.
+pm_K_cols <- function(K, mp) {
+  b <- names(mp$coef)
+  cn <- colnames(K)
+  if (length(b) && length(cn)) {
+    if (all(b %in% cn)) return(K[, b, drop = FALSE])
+  } else if (ncol(K) == length(mp$estimable)) {
+    return(K[, mp$estimable, drop = FALSE])
+  }
+  miss <- if (length(b) && length(cn)) setdiff(b, cn) else character(0)
+  stop("predictmeans cannot match the model's coefficients (", length(mp$coef), " estimable of ",
+       length(mp$estimable), ") to the columns of its design (", ncol(K), ")",
+       if (length(miss)) paste0("; not in the design: ", paste(utils::head(miss, 5), collapse = ", "),
+                                if (length(miss) > 5) ", ..."),
+       ". For a new model class, pm_coef() and pm_basis() must give the same column names (see ?pm_coef).", call. = FALSE)
 }

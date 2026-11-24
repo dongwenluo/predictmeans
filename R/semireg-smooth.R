@@ -152,7 +152,11 @@ pm_sm_parse <- function(formula, data = NULL) {
     }
   }
   if (length(plain)) groups <- c(list(plain), groups)
-  ig <- mgcv::interpret.gam(f_fixed)
+  # (only the parametric part is used; interpret.gam() also evaluates each s()
+  # term with mgcv::s(), which warns on predictmeans' own s(x, f1*f2) form)
+  ig <- withCallingHandlers(mgcv::interpret.gam(f_fixed), warning = function(w) {
+    if (grepl("number of items to replace", conditionMessage(w), fixed = TRUE)) invokeRestart("muffleWarning")
+  })
   pf <- ig$pf
   rhs <- c(paste(deparse(pf[[3]], width.cutoff = 500L), collapse = " "),
            vapply(bars, function(b) paste0("(", paste(deparse(b, width.cutoff = 500L), collapse = " "), ")"), ""),
@@ -204,7 +208,11 @@ pm_sm_build <- function(sp, data) {
     ce <- str2lang(tc)
     ce[[1]] <- quote(mgcv::t2)
     spec <- eval(ce, envir = environment(sp$formula))
-    sms <- c(sms, mgcv::smoothCon(spec, data = gd, knots = NULL, absorb.cons = FALSE))
+    # mgcv's t2 constructor abbreviates a $ name (er$value): no partial-match
+    # warning from it when the user has warnPartialMatchDollar on
+    op <- options(warnPartialMatchDollar = FALSE)
+    sms <- c(sms, tryCatch(mgcv::smoothCon(spec, data = gd, knots = NULL, absorb.cons = FALSE),
+                           finally = options(op)))
   }
   blocks <- list()
   maps <- list()
@@ -362,7 +370,7 @@ pm_sm_map <- function(sm, Xd, R, r = NULL) {
     Rb <- Reduce(`+`, lapply(seq_len(nl), function(j) R[, (j - 1)*q + seq_len(q), drop = FALSE]))
     B <- tryCatch(qr.solve(sm$Xb, Rb), error = function(e) NULL)
     if (!is.null(B)) {
-      A <- kronecker(diag(nl), B)
+      A <- as.matrix(Matrix::kronecker(Matrix::Diagonal(nl), B))
       if (ok(A)) return(A)
     }
   }
@@ -382,6 +390,7 @@ pm_sm_map <- function(sm, Xd, R, r = NULL) {
 ## random effects have exactly smZ()'s design. (Registered as S3 methods of
 ## mgcv's generics in NAMESPACE.)
 
+#' @exportS3Method mgcv::smooth.construct os.smooth.spec
 smooth.construct.os.smooth.spec <- function(object, data, knots) {
   x <- data[[object$term]]
   k <- if (object$bs.dim < 0) 6 else object$bs.dim
@@ -405,11 +414,29 @@ smooth.construct.os.smooth.spec <- function(object, data, knots) {
   object
 }
 
+#' @exportS3Method mgcv::Predict.matrix os.smooth
 Predict.matrix.os.smooth <- function(object, data) {
   x <- data[[object$term]]
+  pm_os_range_check(x, object$range.x, object$term)
   cbind(1, x, ZOSull(x, intKnots = object$intKnots, range.x = object$range.x))
 }
 
+## The O'Sullivan B-spline basis is zero outside range.x (the boundary knots),
+## so a curve there is only its linear part and its SE too: a silent wrong
+## answer. Values outside stop, with the range and what to do. (The fit's
+## own range.x is the data range widened by 1%.)
+pm_os_range_check <- function(x, range.x, term) {
+  out <- !is.na(x) & (x < range.x[1] | x > range.x[2])
+  if (any(out)) {
+    stop("'", term, "' = ", format(x[out][1], digits = 6), " is outside the range of the O'Sullivan basis [",
+         format(range.x[1], digits = 6), ", ", format(range.x[2], digits = 6), "]: the smooth is not defined ",
+         "there. Predict within the data, or fit with s(", term, ", bs = \"os\", xt = list(range = c(lo, hi))) ",
+         "covering the values.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+#' @exportS3Method mgcv::smooth.construct ztps.smooth.spec
 smooth.construct.ztps.smooth.spec <- function(object, data, knots) {
   if (length(object$term) != 2) stop("bs = \"ztps\" is for two covariates.", call. = FALSE)
   x <- as.matrix(as.data.frame(data[object$term]))
@@ -432,6 +459,7 @@ smooth.construct.ztps.smooth.spec <- function(object, data, knots) {
   object
 }
 
+#' @exportS3Method mgcv::Predict.matrix ztps.smooth
 Predict.matrix.ztps.smooth <- function(object, data) {
   x <- as.matrix(as.data.frame(data[object$term]))
   Z <- unclass(as.matrix(Ztps(x, k = object$ztps_k, knots = object$ztps_knots)))
@@ -447,6 +475,7 @@ Predict.matrix.ztps.smooth <- function(object, data) {
 ## "none": no fixed part). The function is checked when the smooth is set up
 ## (pm_user_basis_check()) and its values again at prediction.
 
+#' @exportS3Method mgcv::smooth.construct user.smooth.spec
 smooth.construct.user.smooth.spec <- function(object, data, knots) {
   xt <- if (is.function(object$xt)) list(basis = object$xt) else object$xt
   f <- if (is.list(xt)) xt$basis
@@ -475,6 +504,7 @@ smooth.construct.user.smooth.spec <- function(object, data, knots) {
   object
 }
 
+#' @exportS3Method mgcv::Predict.matrix user.smooth
 Predict.matrix.user.smooth <- function(object, data) {
   x <- lapply(object$term, function(v) data[[v]])
   lab <- paste0("s(", paste(object$term, collapse = ", "), ", bs = \"user\")")

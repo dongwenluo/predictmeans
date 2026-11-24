@@ -21,6 +21,22 @@ permutation tests.
 knitr::include_graphics("../man/figures/workflow.png")
 ```
 
+## Why predictmeans
+
+- **Defaults chosen on evidence** (simulation, literature): Kenward–Roger df and
+  adjusted SEs for REML `lmer` fits; permutation p-values $(b+1)/(B+1)$; `aov` with
+  `Error()` analysed by strata, with SEs from the stratum mean squares (as Genstat);
+  means over empty cells averaged with equal weight over the observed cells, with a
+  warning naming them.
+- **Checked against outside references** in the package tests: real SAS PROC MIXED
+  and Genstat runs (`vignette("sas")`), pbkrtest, `nlme::lme` and emmeans.
+- **Robust across model classes**: when a result cannot be computed correctly, the
+  function stops with a message saying why, rather than returning a wrong number.
+- **Advice from the data**: when this fit needs a caution (empty cells, singular fit,
+  small df, ...), the result says so in one line with what to do; read it with
+  `advice(x)`, turn it off with `options(predictmeans.advice = FALSE)`.
+- **Reproducible**: permutation and bootstrap results are identical for any `ncore`.
+
 ## A split-plot experiment
 
 The oats data (Yates 1935) are a split plot: three varieties on whole plots within six
@@ -36,8 +52,7 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 ## Predicted means and pairwise comparisons
 
 ```{r}
-pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
-                   plot = FALSE)
+pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
 summary(pm)
 ```
 
@@ -67,9 +82,15 @@ ggplot2::autoplot(pm)
 ggplot2::autoplot(pm, type = "pvalue")
 ```
 
-`predictmeans()` draws its classic plots with `plot = TRUE` (since 2.0 the default is
-`FALSE`; `options(predictmeans.plot = TRUE)` sets it for a session); `which.plots` chooses
-among the means, bar, p-value and back-transformed plots.
+`autoplot()` draws every plot from the result (`predictmeans()` draws none): the means with one average LSD
+bar (the default), `type = "bar"`, `type = "ci"` (each mean with its confidence limits; on the response scale when
+the means are back-transformed) and `type = "pvalue"`. `data = TRUE` adds the observations; `x`, `group` and
+`panel` place the factors; with `atvar` each level is a panel with its own LSD.
+
+```{r}
+ggplot2::autoplot(pm, type = "bar")
+ggplot2::autoplot(pm, type = "ci", data = TRUE)
+```
 
 ## Degrees of freedom and standard errors
 
@@ -89,9 +110,9 @@ among the means, bar, p-value and back-transformed plots.
 
 ```{r}
 # Satterthwaite df
-pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE)
+pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite")
 # SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors
-pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE)
+pm_c <- predictmeans(fm, "Variety", df_method = "containment")
 rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 ```
 
@@ -120,7 +141,7 @@ how: `"equal"` (the default), `"proportional"` (as SAS `LSMEANS / OM`), `"outer"
 `"cells"` or `"flat"`, with the same definitions as emmeans.
 
 ```{r}
-predictmeans(fm, "nitro", weights = "proportional", plot = FALSE)$means
+predictmeans(fm, "nitro", weights = "proportional")$means
 ```
 
 ## Custom contrasts
@@ -145,7 +166,7 @@ such as `poly()`, `ns()`, `log()` or smooth terms of a `gam`.
 ```{r}
 data(Drug)
 fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE)$means
+predictmeans(fm_glm, "Drug", pairwise = TRUE)$means
 ```
 
 For a glm the means are also given on the response scale (here probabilities); see

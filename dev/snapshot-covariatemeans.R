@@ -18,7 +18,7 @@ calls <- list(
   def = quote(covariatemeans(m_lm, "Variety", covariate = "nitro")),
   noterm = quote(covariatemeans(m_lm, covariate = "nitro")),
   at = quote(covariatemeans(m_lm, "Variety", covariate = "nitro", covariateV = seq(0, 0.6, 0.2))),
-  asis = quote(covariatemeans(m_lm, "Variety", covariate = "nitro", as.is = TRUE)),
+  asis = quote(covariatemeans(m_lm, "Variety", covariate = "nitro", as_is = TRUE)),
   level10 = quote(covariatemeans(m_lmer, "Variety", covariate = "nitro", level = 0.1)),
   df20 = quote(covariatemeans(m_lmer, "Variety", covariate = "nitro", Df = 20)),
   glm = quote(covariatemeans(m_glm, "Drug", covariate = "log10Dose")),
@@ -33,9 +33,9 @@ calls <- list(
                                    contr_scale = "response", mtitle = "D")),
   contr_df = quote(covariatemeans(m_lm, "Variety", covariate = "nitro", contr = c(1, 3), Df = 30)))
 pm2 <- function(cl) {
-  if (!"conf.level" %in% names(formals(covariatemeans))) return(cl)
+  if (!"conf_level" %in% names(formals(covariatemeans))) return(cl)
   a <- as.list(cl); n <- names(a)
-  if ("level" %in% n) { a$conf.level <- 1 - a$level; a$level <- NULL }
+  if ("level" %in% n) { a$conf_level <- 1 - a$level; a$level <- NULL }
   if ("Df" %in% n) { a$df_method <- a$Df; a$Df <- NULL }
   if ("covariateV" %in% n) { a$at <- a$covariateV; a$covariateV <- NULL }
   if ("transOff" %in% n) {

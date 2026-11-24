@@ -33,7 +33,8 @@
 #' \code{emmeans::joint_tests()} gives a slightly different Kenward-Roger test (the unscaled F with its own df).
 #' @usage
 #' pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+#'          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+#'            "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param modelterm Name (in "quotes") of the model term whose means are compared, e.g. \code{"nitro:Variety"}.
@@ -53,6 +54,7 @@
 #' @references
 #' Kenward, M. G. and Roger, J. H. (1997), Small sample inference for fixed effects from restricted maximum likelihood,
 #' \emph{Biometrics}, 53, 983-997.
+#' @seealso \code{\link{contrastmeans}}, \code{\link{contrast_family}}, \code{\link{predictmeans}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -64,10 +66,11 @@
 #'   # varieties within each nitrogen level
 #'   pm_joint(fm, "nitro:Variety", by = "nitro")
 #'   # a set of contrasts: linear and quadratic nitrogen trends together
-#'   pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max.degree = 2))
+#'   pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max_degree = 2))
 #' @name pm_joint
 NULL
 
+#' @export
 pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
                      df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                      weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL) {
@@ -122,7 +125,7 @@ pm_joint <- function(model, modelterm, by = NULL, ctrmatrix = NULL,
 
   ## Model parameters, covariance and df (R/inference.R)
   inf <- pm_inference(model, df_method, vcov_adjust = FALSE, vcov = vcov)
-  K <- KK[, inf$mp$estimable, drop = FALSE]
+  K <- pm_K_cols(KK, inf$mp)
   K[!est_flag, ] <- 0
   # a set with a mean over empty cells: tested on the cells all its means have (R/empty-cells.R)
   over <- rep(NA_character_, length(sets))

@@ -30,7 +30,7 @@
 ##
 ## pair_tab: pm_pair_table(); est, se, df: the means, their SEs and df;
 ## level: the significance level; affected: TRUE for the means over empty
-## cells. Returns NULL (no pair to compare) or list(mult, conf.level (the
+## cells. Returns NULL (no pair to compare) or list(mult, conf_level (the
 ## confidence level of mean +/- mult SE as an interval for one mean), level,
 ## adjust, adjusted, pairs, disagree (pairs whose overlap of the intervals
 ## around the shown means and test disagree), exact, range, left_out).
@@ -52,7 +52,7 @@ pm_comparison_intervals <- function(pair_tab, est, se, df, level, adj = "none", 
   by_overlap <- abs(est[pair_tab$i[ok]] - est[pair_tab$j[ok]]) > mult * sum_se[ok]
   dfm <- if (is.null(df) || all(is.na(df))) Inf else mean(df, na.rm = TRUE)
   rg <- range(cij[ok])
-  list(mult = mult, conf.level = 1 - 2 * stats::pt(-mult, dfm), level = level, adjust = adj, adjusted = adjusted,
+  list(mult = mult, conf_level = 1 - 2 * stats::pt(-mult, dfm), level = level, adjust = adj, adjusted = adjusted,
        pairs = sum(ok), disagree = sum(by_test != by_overlap), exact = diff(rg) <= 1e-6 * mult, range = rg,
        left_out = names(affected)[off])
 }
@@ -61,7 +61,7 @@ pm_comparison_intervals <- function(pair_tab, est, se, df, level, adj = "none", 
 ## shown means: TRUE for a mean with a pair (among those compared) that is not
 ## the difference of the shown means (compared on common cells) or is NA (no
 ## cell in common; confounded factors). The one rule for the comparison
-## intervals, letterCI and the LSD note (pm_compare()).
+## intervals, letter_ci and the LSD note (pm_compare()).
 pm_misread_means <- function(pair_tab, est, affected) {
   if (is.null(pair_tab) || !nrow(pair_tab) || !any(affected)) return(affected & FALSE)
   within <- if (any(!is.na(pair_tab$by))) !is.na(pair_tab$by) else rep(TRUE, nrow(pair_tab))

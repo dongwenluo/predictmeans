@@ -78,20 +78,32 @@ pm_perm_check_index <- function(perms, n) {
 ## cluster on Windows with 'packages' attached on each worker. An error in
 ## FUN gives NULL for that element, which pm_perm_drop() counts as a failure.
 pm_perm_map <- function(X, FUN, ncore = 1, packages = character()) {
-  safe <- function(x) tryCatch(FUN(x), error = function(e) NULL)
+  mapper <- pm_perm_mapper(ncore, packages, n = length(X))
+  on.exit(mapper$stop(), add = TRUE)
+  mapper$map(X, FUN)
+}
+
+## The workers of pm_perm_map() kept for several calls (batches of a
+## bootstrap that stops early): a socket cluster on Windows is started once,
+## not per batch (starting one takes seconds). Returns list(map(X, FUN),
+## stop()); call stop() when done. 'n': the number of elements, when known
+## (fewer than 2: no workers).
+pm_perm_mapper <- function(ncore = 1, packages = character(), n = Inf) {
   ncore <- max(1L, as.integer(ncore))
   # at most 2 cores where R CMD check limits them (CRAN policy)
   lim <- tolower(Sys.getenv("_R_CHECK_LIMIT_CORES_", ""))
   if (nzchar(lim) && lim != "false") ncore <- min(ncore, 2L)
-  if (ncore == 1L || length(X) < 2L) return(lapply(X, safe))
-  if (.Platform$OS.type == "windows") {
-    cl <- parallel::makeCluster(ncore)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    for (p in packages) parallel::clusterCall(cl, library, p, character.only = TRUE)
-    parallel::parLapplyLB(cl, X, safe)
-  } else {
-    parallel::mclapply(X, safe, mc.cores = ncore)
+  safe_of <- function(FUN) function(x) tryCatch(FUN(x), error = function(e) NULL)
+  serial <- list(map = function(X, FUN) lapply(X, safe_of(FUN)), stop = function() invisible(NULL), ncore = 1L)
+  if (ncore == 1L || n < 2) return(serial)
+  if (.Platform$OS.type != "windows") {
+    return(list(map = function(X, FUN) if (length(X) < 2L) lapply(X, safe_of(FUN)) else
+      parallel::mclapply(X, safe_of(FUN), mc.cores = ncore), stop = function() invisible(NULL), ncore = ncore))
   }
+  cl <- parallel::makeCluster(ncore)
+  for (p in packages) parallel::clusterCall(cl, library, p, character.only = TRUE)
+  list(map = function(X, FUN) if (length(X) < 2L) lapply(X, safe_of(FUN)) else parallel::parLapplyLB(cl, X, safe_of(FUN)),
+       stop = function() parallel::stopCluster(cl), ncore = ncore)
 }
 
 ## Drop failed refits (NULL, or a try-error from a forked process). Returns
@@ -99,6 +111,27 @@ pm_perm_map <- function(X, FUN, ncore = 1, packages = character()) {
 pm_perm_drop <- function(res) {
   bad <- vapply(res, function(r) is.null(r) || inherits(r, "try-error"), logical(1))
   list(res = res[!bad], failures = sum(bad))
+}
+
+## 'exact' of permmodels(), checked once for every scheme. Leaving out the +1
+## terms of pm_perm_p() is right only when the permutations are the complete
+## set the design allows (the observed order is then one of them). Random
+## draws never are, so exact = TRUE needs 'perms' whose columns are distinct
+## permutations (the user vouches that they are all of them); otherwise it is
+## ignored with a warning (before 2.0 it gave p = 0 with random draws).
+pm_perm_exact <- function(exact, perms) {
+  if (!isTRUE(exact)) return(FALSE)
+  if (is.null(perms)) {
+    warning("'exact = TRUE' needs 'perms' holding all the permutations the design allows; with random ",
+            "permutations the observed statistic is counted as one of them (p = (b + 1)/(B + 1)).", call. = FALSE)
+    return(FALSE)
+  }
+  if (anyDuplicated(t(as.matrix(perms)))) {
+    warning("'exact = TRUE' ignored: the columns of 'perms' are not distinct, so they are not a complete ",
+            "enumeration.", call. = FALSE)
+    return(FALSE)
+  }
+  TRUE
 }
 
 ## Permutation (or bootstrap) p-values. 'obs' holds k observed statistics and
@@ -187,7 +220,7 @@ pm_perm_fl_t <- function(perm, L, model = NULL, ncore = 1) {
   n <- nrow(X)
   qrX <- qr(X)
   df_res <- n - qrX$rank
-  XtXi <- solve(crossprod(X))
+  XtXi <- pm_xtx_inv(qrX)
   se1 <- sqrt(rowSums((L %*% XtXi) * L))
   abs_t <- function(j, Y) {
     B <- qr.coef(qrX, Y)
@@ -330,11 +363,16 @@ pm_indep_rows <- function(L) {
   L[r$pivot[seq_len(r$rank)], , drop = FALSE]
 }
 
-## Wald F of L b = 0 (L with independent rows), covariance V.
-pm_waldF <- function(L, b, V) {
-  d <- L %*% b
-  as.numeric(crossprod(d, solve(L %*% as.matrix(V) %*% t(L), d))) / nrow(L)
+## The Wald quadratic form (L b)' (L V L')^-1 (L b), the one place it is
+## computed (anova, F tests, Kenward-Roger, permutations). L with independent
+## rows; V the covariance of b (dense or Matrix). 'Lb' if already computed.
+pm_wald_quad <- function(L, b, V, Lb = L %*% b) {
+  L <- as.matrix(L)
+  as.numeric(crossprod(Lb, solve(L %*% tcrossprod(as.matrix(V), L), Lb)))
 }
+
+## Wald F of L b = 0 (L with independent rows), covariance V.
+pm_waldF <- function(L, b, V) pm_wald_quad(L, b, V) / nrow(L)
 
 ## Freedman-Lane, V fixed: the joint permutation distribution of the |t| of
 ## all rows of L, from the reduced model with all of them zero.
@@ -349,7 +387,7 @@ pm_perm_fl_T <- function(perm, L, model = NULL) {
   n <- nrow(X)
   qrX <- qr(X)
   df_res <- n - qrX$rank
-  se1 <- sqrt(rowSums((L %*% solve(crossprod(X))) * L))
+  se1 <- sqrt(rowSums((L %*% pm_xtx_inv(qrX)) * L))
   abs_t <- function(Y) {
     s <- sqrt(colSums(qr.resid(qrX, Y)^2) / df_res)
     abs(L %*% qr.coef(qrX, Y)) / outer(se1, s)
@@ -413,28 +451,67 @@ pm_perm_crit <- function(T, alpha, family = NULL) {
 ## ANOVA) and what printing them says ('notes': the title of the coefficient
 ## table and a note under each table). Before 2.0 they were printed during the
 ## call (prt = TRUE); now print() shows them.
-pm_permmodels_result <- function(out, coef_note, anova_note, coef_title = "Coefficients of (fixed) effects:") {
+## The result of permmodels() and bootmodels(), for every scheme. With
+## 'nperm' the notes also give the smallest p-value the permutations can give
+## (1/(nperm + 1), or 1/nperm when 'exact'), so that a permutation p-value at
+## that floor next to a model p-value near 0 is read as "as small as it can
+## be", not as disagreement.
+pm_permmodels_result <- function(out, coef_note, anova_note, coef_title = "Coefficients of (fixed) effects:",
+                                 nperm = NULL, exact = FALSE) {
+  floor_note <- if (!is.null(nperm) && nperm > 0) {
+    pmin <- if (isTRUE(exact)) 1/nperm else 1/(nperm + 1)
+    paste0(" The smallest attainable p-value is ", if (isTRUE(exact)) paste0("1/", nperm) else paste0("1/(", nperm, " + 1)"),
+           " = ", format(signif(pmin, 3), scientific = FALSE), ".")
+  }
+  if (!is.null(coef_note)) coef_note <- paste0(coef_note, floor_note)
+  if (!is.null(anova_note)) anova_note <- paste0(anova_note, floor_note)
   out$notes <- list(coef_title = coef_title, coef = coef_note, anova = anova_note)
   class(out) <- c("pm_permmodels", "list")
+  pm_add_advice(out, pm_perm_advice(out, nperm, exact))
+}
+
+## The tables of permmodels() for printing: model p-values below 1e-4 (rounded
+## to 0 in the stored tables) shown as "<1e-04"; the stored tables keep
+## numbers. Columns: those whose name starts with "Pr(" or "p.value"
+## (the permutation and bootstrap p-value columns are at least 1/(nperm + 1)).
+pm_perm_print_table <- function(tab, raw = NULL) {
+  if (!is.data.frame(tab) && !is.matrix(tab)) return(tab)
+  out <- as.data.frame(tab, check.names = FALSE, stringsAsFactors = FALSE)
+  pcols <- grep("^Pr\\(|^p\\.value", colnames(out))
+  for (j in pcols) {
+    v <- suppressWarnings(as.numeric(as.character(out[[j]])))
+    small <- !is.na(v) & v < 1e-4
+    if (any(small)) {
+      s <- as.character(out[[j]])
+      s[small] <- "<1e-04"
+      s[is.na(v)] <- ""
+      s[!is.na(v) & !small] <- format(v[!is.na(v) & !small], scientific = FALSE, drop0trailing = TRUE)
+      out[[j]] <- s
+    }
+  }
   out
 }
 
+#' @exportS3Method print pm_permmodels
 print.pm_permmodels <- function(x, ...) {
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
   n <- x$notes
   if (!is.null(x$COEFFICENTS)) {
     cat("\n", n$coef_title, "\n", sep = "")
-    print(x$COEFFICENTS)
+    print(pm_perm_print_table(x$COEFFICENTS))
     if (!is.null(n$coef)) cat("\n", n$coef, "\n", sep = "")
   }
   cat("\nANOVA:\n")
   if (!is.null(attr(x$ANOVA, "heading"))) cat(attr(x$ANOVA, "heading"), "\n", sep = "")
-  print(x$ANOVA)
-  cat("\n", n$anova, "\n\n", sep = "")
+  print(pm_perm_print_table(x$ANOVA))
+  cat("\n", n$anova, "\n", sep = "")
+  pm_print_advice(x)
+  cat("\n")
   invisible(x)
 }
 
+#' @exportS3Method print pm_perm
 print.pm_perm <- function(x, ...) {
   scheme <- c("freedman-lane" = "Freedman-Lane", "freedman-lane-refit" = "Freedman-Lane with refits")[x$scheme]
   if (is.na(scheme)) scheme <- x$scheme

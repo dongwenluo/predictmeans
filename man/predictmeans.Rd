@@ -4,12 +4,14 @@
 \alias{predictmeans}
 \title{Predicted Means of a Linear Model}
 \usage{
-predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", conf.level=0.95,
-  covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
-  plot=getOption("predictmeans.plot", FALSE), plot_args=list(), permlist=NULL,
+predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
+  conf_level=0.95, covariate=NULL, meandecr=NULL, letter_ci=FALSE, trans = I,
+  permlist=NULL,
   ncore=1, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+    "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+  vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
   mean_type=c("conditional", "overall"), ...)
 }
@@ -39,19 +41,23 @@ model can be asked for too (e.g. "A:B" for \code{y ~ A + B}): its means are the 
 that the model implies (a note says so), which gives a table of predictions for every combination, also
 those without data. Covariates are set with \code{covariate}.}
 
-\item{data}{In some cases, you need to provide the data set used in model fitting, especially when you have applied some 
-variable trnasformation in the model.}
+\item{data}{The data used to fit the model; needed in some cases, e.g. when a variable is transformed in the
+model formula.}
 
-\item{pairwise}{An option for showing pair-wise LSDs and p-values, or not. The default is FALSE.
-The \code{pairs} table of the result is made in either case for up to 100 means. With more means (e.g. several
-hundred lines of a breeding trial) and no comparison asked for, the means, their SEs and the SED and LSD
-summaries (maximum, minimum, average) are computed from the covariance of the means, without a row per pair
-(300 means: about a second), and \code{pairs} is \code{NULL}; \code{pairwise = TRUE} (or \code{adj}) still
+\item{pairwise}{What is printed: \code{TRUE} shows the pairwise p-value matrices (t values above the diagonal)
+and the letter groups; \code{FALSE} hides them; \code{NULL} (the default) shows them when comparisons are asked
+for (\code{adj}, \code{atvar}, \code{permlist} or \code{letter_ci}), as before 2.0. It does not change what is
+computed: the \code{pairs} table (every difference, SE, df, p-value, adjusted p-value and limits) is made
+whenever comparisons are asked for, also with \code{pairwise = FALSE}, and otherwise for up to 100 means. With
+more means (e.g. several hundred lines of a breeding trial) and no comparison asked for, the means, their SEs
+and the SED and LSD summaries (maximum, minimum, average) are computed from the covariance of the means, without
+a row per pair (300 means: about a second), and \code{pairs} is \code{NULL}; \code{pairwise = TRUE} or \code{adj}
 compares all the pairs. No letter groups are made for more than 100 means.
-\code{options(predictmeans.max_means = )} changes the limit of 100.}
+\code{options(predictmeans.max_means = )} changes the limit of 100. (Before 2.0 the default was \code{FALSE}, and
+\code{adj} or \code{atvar} turned it on.)}
 
-\item{atvar}{When \code{pairwise = TRUE}, a quoted name indicating within levels of which variable in 
-\code{modelterm} the multiple comparison will be performed.}
+\item{atvar}{Factor(s) of \code{modelterm} within whose levels the pairs are compared (one or two names, or
+\code{"A:B"}); each level is a family for \code{adj}, and the LSDs are those of the pairs within it.}
 
 \item{adj}{Name (in "quote") for indicating a method for adjusting p-values of pairwise comparisons. 
 The choices are "none", "tukey", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "sidak", "scheffe"
@@ -70,30 +76,30 @@ The printed LSDs go with the p-values: the SED times the critical value of the m
 of pairs (all pairs, or the pairs within a level of \code{atvar}): \emph{t} for "none", the studentized range
 divided by \eqn{\sqrt{2}} for "tukey" (the HSD), \emph{t} at the adjusted level for "bonferroni" and "sidak",
 and the Scheffe and multivariate \emph{t} values. So a difference is beyond its LSD exactly when its adjusted
-p-value is below \code{level}. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
+p-value is below \code{1 - conf_level}. The step-wise methods ("holm", "hochberg", "hommel", "BH", "BY", "fdr") have no
 critical value for all pairs: their LSDs are not adjusted and a note with the LSDs says so. (Before 2.0 only
 "bonferroni" adjusted the LSDs, with all the pairs as family also with \code{atvar}.)}
 
-\item{conf.level}{The confidence level of the confidence limits; the tests, LSDs and letters are at the
-significance level \code{1 - conf.level}. The default is 0.95 (\code{level = 0.05} before 2.0).}
+\item{conf_level}{The confidence level of the confidence limits; the tests, LSDs and letters are at the
+significance level \code{1 - conf_level}. The default is 0.95 (\code{level = 0.05} before 2.0).}
 
 \item{covariate}{The values of covariates at which the means are predicted: a named list or vector, e.g.
 \code{list(x = 2, z = 0.3)} (covariates not named are at their means), or an unnamed numerical vector with one
 value for each covariate of the model, in their order. The default values are the means of the covariates
 (see \code{cov_reduce}). For means along the values of a covariate use \code{\link{covariatemeans}}.}
 
-\item{meandecr}{A logical variable to indicate whether to print letters for multiple comparisons by decreasing order of means in the mean_table. 
-The default is NULL which indicates the mean order follows the associated factor levels.}
+\item{meandecr}{Logical: order the letters of \code{mean_table} by decreasing (\code{TRUE}) or increasing
+(\code{FALSE}) means. The default \code{NULL} keeps the order of the factor levels.}
 
-\item{letterCI}{A logical variable to indicate printed letters for multiple comparisons by whether or not the
+\item{letter_ci}{A logical variable to indicate printed letters for multiple comparisons by whether or not the
 comparison intervals of the means overlap (the default is FALSE). The comparison intervals are mean
 \eqn{\pm c\,SE} with \eqn{c = t \times SED/(SE_1 + SE_2)}, averaged over the pairs compared, so that two means
-differ at \code{level} when their intervals do not overlap: 83.4\% intervals for independent means with equal
+differ at \code{1 - conf_level} when their intervals do not overlap: 83.4\% intervals for independent means with equal
 SEs and a 5\% test, wider when the SEs differ, narrower when the means are correlated as in most mixed
 models (Goldstein and Healy, 1995; Maghsoodloo and Huang, 2010; Afshartous and Preston, 2010). They are shown
 as LL and UL in \code{mean_table}, labelled with their level, and the note under the table says how many
-pairs are judged differently by their own tests when the SEDs differ. \code{level} is the significance level
-of the comparisons (default 0.05), \code{adj} is "none", and with \code{atvar} the letters compare the means
+pairs are judged differently by their own tests when the SEDs differ. The comparisons are at the significance
+level \code{1 - conf_level} (default 0.05), \code{adj} is "none", and with \code{atvar} the letters compare the means
 within each \code{atvar} group. (Before 2.0 the intervals were 83.4\% confidence intervals whatever the
 design, and \code{level} set their level, 0.166 by default.) The comparison intervals are in every result:
 columns \code{comparison.low} and \code{comparison.high} of \code{means}, and
@@ -104,44 +110,27 @@ not given and the response is transformed in the model formula (\code{log(y)}, \
 \code{log10(y)}, \code{log2(y)}, \code{log1p(y)}, \code{sqrt(y)}, \code{y^p}, \code{1/y}, \code{qlogis(y)},
 \code{asin(sqrt(y))}, \code{\link{pm_boxcox}(y, lambda)}, \code{pm_yeojohnson(y, lambda)}), the inverse is
 used, constant included, and a message says so; \code{trans = I} keeps the model scale only. Models with a
-link (\code{glm}, \code{glmer}, \code{glmmTMB}) are back-transformed with its inverse. What the
+link (\code{glm}, \code{glmer}, \code{glmmTMB}) are back-transformed with its inverse, unless \code{trans}
+is given: then \code{trans} is used (with a message), and \code{trans = I} keeps the link scale, as in
+\code{\link{covariatemeans}} (before 2.0 a given \code{trans} was silently replaced by the inverse link). What the
 back-transformed mean is depends on the model: for a GLM the mean; for a GLMM the response of a typical
 cluster (random effects at zero); for a transformed response the median of the original scale (the geometric
 mean for a log). \code{bias_adjust = TRUE} gives the mean in the last two cases;
 \code{settings$back_transform} and \code{summary()} say which it is.}
 
-\item{plot}{Draw the plots now? The default is \code{FALSE} (since 2.0; 1.x drew them): the result holds the
-tables, and \code{autoplot()} draws the plots from it. \code{plot = TRUE}, or
-\code{options(predictmeans.plot = TRUE)} for a whole session, draws \code{"mean"} (means plot),
-\code{"pval"} (p-value plot, when there are more than six p-values) and \code{"back"} (back-transformed
-plot); name the plots wanted to choose them, including \code{"bar"} (bar chart), e.g.
-\code{plot = c("mean", "bar")}.}
-
-\item{plot_args}{A named list of settings for the plots, e.g.
-\code{plot_args = list(plottitle = "Yield", basesz = 14)}:
-\describe{
-  \item{\code{plottitle}}{A character vector specifying the main title for plot(s). The default is NULL.}
-  \item{\code{plotxlab}}{A character vector specifying the x label for plot(s). The default is NULL.}
-  \item{\code{plotylab}}{A character vector specifying the y label for plot(s). The default is NULL.}
-  \item{\code{plotord}}{A numeric (or character) vector specifying the order of plotting for two or three way interaction (e.g.  \code{plotord = c(2, 1, 3)} or \code{plotord = c("B", "A", "C")} will put the second variable 'B' in  \code{modelterm} on the \code{X} axis, the first variable 'A' as the grouping variable, and the third one  'C' as the panel variable). The defaults are \code{c(1, 2)} and \code{c(1, 2, 3)} for two and three way  interactions.}
-  \item{\code{lineplot}}{An option for drawing a line chart, or dot chart. The default is TRUE.}
-  \item{\code{lsd_bar}}{A logical variable to indicate to print an average LSD or SED bar on the means plot. The default is TRUE.}
-  \item{\code{jitterv}}{A degree of jitter in x and y direction in the back transformed means graph. The default is zero.}
-  \item{\code{basesz}}{The base font size. The default is 12.}
-}}
-
-\item{\dots}{Not used: arguments removed in 2.0 (e.g. \code{level}, \code{Df}, \code{which.plots},
+\item{\dots}{Not used: arguments removed in 2.0 (e.g. \code{level}, \code{Df}, \code{plot}, \code{plot_args},
 \code{plottitle} as an argument of its own) stop with their 2.0 spelling (see \code{vignette("migrating")});
 other names are an error.}
 
-\item{permlist}{A model parameter list produced by the function \code{permmodels}. When \code{permlist != NULL}, 
-\code{df_method} is not used. This is a key option for pairwise comparisons via 
-permutation tests. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
+\item{permlist}{A list from \code{\link{permmodels}}: the pairs are then tested by permutation, with p-value
+\eqn{(b + 1)/(B + 1)} (\eqn{b} of the \eqn{B} permuted statistics at least as extreme as the observed one), and
+\code{df_method} is not used. With the result of \code{permmodels(method = "freedman-lane")} (\code{lm} and \code{aov}
 models), each pair is tested by Freedman-Lane permutations of the model in which that pair's means are equal.
 With a \code{permlist}, \code{vcov_adjust} is not used: the observed t statistics are compared with those of the
-permuted refits, which use the unadjusted covariance.}
+permuted refits, which use the unadjusted covariance. The confidence limits of each mean are the model's t
+limits at \code{conf_level} (the permutation tests are of the comparisons; before 2.0, mean +/- 2 SE).}
 
-\item{ncore}{Number of cores for parallel computing when \code{permlist != NULL}, the default value is 1 (before predictmeans 2.0: 3).}
+\item{ncore}{Number of cores for parallel computing when \code{permlist != NULL}, the default value is 1 (before predictmeans 2.0: 3). Results are the same for any \code{ncore}.}
 
 \item{cov_reduce}{How covariates that are not varied are handled when building the predicted means: a function such as
 \code{mean} (the default) or \code{median}, or \code{"average"} to average the predictions over the
@@ -235,7 +224,7 @@ covariance.}
 \item{equivalence}{Optional equivalence margins for equivalence tests (two one-sided t tests, TOST) of the
 differences: a positive number \eqn{d} (equivalence region \eqn{-d} to \eqn{d}) or \code{c(lower, upper)}, on the
 scale of the comparisons (the link scale for GLMs: e.g. log ratios). The TOST p-value is the larger of the two
-one-sided p-values; below \code{level}, the difference lies within the margins (as emmeans'
+one-sided p-values; below \code{1 - conf_level}, the difference lies within the margins (as emmeans'
 \code{test(..., side = "equivalence")}). Not adjusted for multiplicity; with a \code{permlist} it is t-based
 (normal-based in \code{contrastmeans}).}
 
@@ -273,21 +262,19 @@ pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and
  \item{LSD}{Least significant differences between predicted means (maximum, minimum and average), with the
  critical value that goes with \code{adj} (see there); attribute \code{"Note"} says when they are adjusted,
  or why not.}
- \item{Pairwise p-value}{A matrix with t-values above the diagonal and p-values below the diagonal, or 
- matrix of pairwise comparison p-values for each level of \code{atvar}.}
- \item{mean_table}{A summary of predicted means result including 'Predicted means', 'Standard error', 'Df' 
- and 'CIs'. When \code{trans!=NULL} or \code{trans!=I}, a table of back transformed means with CIs are also shown.}
- \item{predictmeansPlot}{ggplot of predicted means.}
- \item{predictmeansBKPlot}{ggplot of back transformed means.}
- \item{predictmeansBarPlot}{gg bar plot of predicted means.}
- \item{p_valueMatrix}{p_value matrix for pairwise comparison.}
+ \item{Pairwise p-value}{Only when the pairs are displayed (see \code{pairwise}): a matrix with t values above
+ the diagonal and p-values (adjusted by \code{adj}) below it; with \code{atvar} one matrix per level of
+ \code{atvar}, named by the level.}
+ \item{mean_table}{The means with SE, df and confidence limits (and letters when pairs are compared); for
+ back-transformed means also the response-scale means and limits.}
+ \item{p_valueMatrix}{Only when the pairs are displayed: the p-value matrix of the letters.}
  \item{means}{A data frame with one row per predicted mean and fixed column names: the factor (and covariate)
  columns, \code{over} (only when some mean averages over empty cells: the cells it averages, e.g.
  \code{"N 0, 0.2, 0.4"}; NA for the means over all their cells), \code{estimate}, \code{std.error}, \code{df},
  \code{conf.low}, \code{conf.high} (confidence limits
  of each mean, not for comparing means), \code{comparison.low} and \code{comparison.high} (comparison
- intervals: two means differ at \code{level}, with the adjustment of \code{adj} when it has a critical value,
- when these do not overlap; see \code{letterCI}; present when the pairs are tabulated; NA for a mean over empty
+ intervals: two means differ at \code{1 - conf_level}, with the adjustment of \code{adj} when it has a critical value,
+ when these do not overlap; see \code{letter_ci}; present when the pairs are tabulated; NA for a mean over empty
  cells whose pairs are not the differences of the shown means (compared on common cells, or not estimable), which
  no interval around it can show); when the means are
  back-transformed also \code{response}, \code{response.std.error} (delta method, as \pkg{emmeans} with
@@ -300,9 +287,9 @@ pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and
  minus mean of \code{level2}), \code{std.error}, \code{df}, \code{statistic} (t), \code{p.value}, \code{p.adj}
  (adjusted by \code{adj}, within each level of \code{atvar} when given), \code{p.equiv} (with
  \code{equivalence}: the TOST p-value), \code{conf.low} and \code{conf.high} (limits of
- each difference at \code{level}, not adjusted), \code{lsd} (the half-width of those limits),
+ each difference at \code{conf_level}, not adjusted), \code{lsd} (the half-width of those limits),
  \code{adj.conf.low} and \code{adj.conf.high} (simultaneous limits within each family, which exclude 0 exactly
- when \code{p.adj} is below \code{level}, as SAS \code{AdjLower} and \code{AdjUpper} and \pkg{emmeans}; for
+ when \code{p.adj} is below \code{1 - conf_level}, as SAS \code{AdjLower} and \code{AdjUpper} and \pkg{emmeans}; for
  \code{adj} "tukey" (each pair's own df, as SAS \code{ADJDFE=ROW}), "bonferroni", "sidak", "scheffe" and "mvt";
  the step-down and false discovery rate methods have none) and \code{p.method}; with \code{permlist}
  the limits are permutation-t limits (estimate +- c SE, c the critical value of the permutation test), and the
@@ -317,14 +304,16 @@ pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and
  confidence level, the number of pairs and how many of them are judged differently by their own tests, from the
  means shown (\code{disagree}; 0 and \code{exact = TRUE} when all SEDs are equal), and \code{left_out}, the means
  over empty cells that have none.}
- The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the same output as earlier versions;
- the \code{means}, \code{pairs} and \code{settings} slots are not printed.
+ The result has class \code{c("predictmeans", "pdmlist")}. Printing shows the legacy tables;
+ the \code{means}, \code{pairs} and \code{settings} elements are not printed. Plots come from
+ \code{autoplot()}; notes for this fit are in \code{attr(, "advice")}, read with \code{\link{advice}}.
 }
 \description{
-This function obtains predicted means, SE of means, SED of means, LSDs and plots of means
-  with SE bar or LSD bar for parametric models such as \code{aov}, \code{lm}, 
-  \code{glm}, \code{gls}, \code{lme}, and \code{lmer}. The function also perfomrs pairwise comparisons
-  and permutation tests.
+Predicted means, their standard errors (SE), standard errors of differences (SED) and least significant
+  differences (LSD) for \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+  \code{glmmTMB}, \code{gam} and \code{semireg} fits, with pairwise comparisons and permutation tests. Plots are
+  drawn from the result with \code{link{autoplot.predictmeans}}; \code{link{advice}} reads the notes made for
+  this fit and data.
 }
 \note{
 The \code{predictmeans} function becomes confused if a factor or covariate is changed to the other
@@ -338,6 +327,20 @@ The \code{predictmeans} function becomes confused if a factor or covariate is ch
   
   For \code{predictmeans} function, it is assumed that methods \code{coef}, \code{vcov}, \code{model.matrix}, \code{model.frame} and \code{terms} are available for \code{model}.
 }
+\section{Covariates aliased with a factor}{
+
+A covariate that takes one value within each level of a factor (a site mean, a block-level measurement) is
+aliased with that factor: in \code{lm(ht ~ site + sitemean * seedlot)} the coefficient of \code{sitemean} is
+NA. A mean over sites is then estimable only if each site keeps its own value of the covariate; at a single
+value, such as the overall mean, the "means" depend on the coding of the factors (which level is the
+reference) and are not estimates. predictmeans finds such covariates and uses each level's own value, with a
+message. predictmeans 1.x, and Genstat \code{PREDICT} after the covariate is dropped as aliased, used the
+overall mean; SAS \code{LSMEANS} reports such means as non-estimable. For a seedlot measured at every site the
+equal-weight mean is then its raw mean; for one with missing sites, \code{weights = "equal"} extrapolates its
+regression line to the missing sites and \code{weights = "cells"} averages over the sites it was measured at.
+See \code{\link{DataExam5.2}}.
+}
+
 \section{Zero inflation (glmmTMB)}{
 
 For a \code{glmmTMB} fit with zero inflation (\code{ziformula}) the means are those of the conditional (count)
@@ -353,20 +356,19 @@ ratios of overall means only when \eqn{\pi} is the same. A message says so and \
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data=Oats)
   ## The results as tables (columns described under Value)
-  pm <- predictmeans(fm, "nitro", plot=FALSE)
+  pm <- predictmeans(fm, "nitro")
   pm$means
   pm$pairs
   pm$settings
   summary(pm)
-  ## Means within each variety, Tukey-adjusted pairs, plots
-  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
-    plot=c("mean", "bar", "pval", "back"), plot_args=list(lineplot=FALSE))
+  ## Means within each variety, Tukey-adjusted pairs; plots from the result
+  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey")
   names(predictout)
-  print(predictout$predictmeansPlot)
-  print(predictout$predictmeansBarPlot)
+  ggplot2::autoplot(predictout)                   # means, one LSD bar per variety
+  ggplot2::autoplot(predictout, type = "bar")
   ## lme fits work the same way
   fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
+  predictmeans(fl, "nitro", adj="BH")$pairs
 }
 \references{
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
@@ -393,6 +395,10 @@ Torsten Hothorn, Frank Bretz and Peter Westfall (2008),
 
 	Afshartous, D. and Preston, R. A. (2010), \emph{Confidence intervals for dependent data: equating non-overlap
 	with statistical significance}, Computational Statistics and Data Analysis, 54(10), 2296-2305.
+}
+\seealso{
+\code{\link{autoplot.predictmeans}}, \code{\link{tidy.predictmeans}}, \code{\link{advice}},
+  \code{\link{pm_check}}, \code{\link{contrastmeans}}, \code{\link{pm_joint}}, \code{\link{covariatemeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

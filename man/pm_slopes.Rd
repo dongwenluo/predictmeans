@@ -4,10 +4,12 @@
 \alias{pm_slopes}
 \title{Slopes of a Covariate by Group}
 \usage{
-pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+pm_slopes(model, covariate, modelterm, at = NULL, conf_level = 0.95, adj = "none",
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+            "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
+          weights = c("equal", "proportional", "outer", "cells", "flat"),
+          vcov = NULL, ...)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{predictmeans}}.}
@@ -19,7 +21,7 @@ pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none
 \item{at}{The value of the covariate where the slopes are taken (matters only when the covariate enters the model
 non-linearly); the default is its mean.}
 
-\item{conf.level}{Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).}
+\item{conf_level}{Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).}
 
 \item{adj}{Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.}
 
@@ -37,7 +39,7 @@ An object of class \code{"pm_slopes"}, a list in the layout of \code{\link{predi
   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
   \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
   mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
-  \code{p.adj} is below \code{1 - conf.level}.}
+  \code{p.adj} is below \code{1 - conf_level}.}
 \item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
   \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
 }
@@ -63,6 +65,9 @@ residual df.
   sl <- pm_slopes(fm, "nitro", "Variety", adj = "tukey")
   sl
   as.data.frame(sl, what = "pairs")
+}
+\seealso{
+\code{\link{covariatemeans}}, \code{\link{predictmeans}}, \code{\link{advice}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

@@ -19,20 +19,38 @@ pm_kr_ddf <- function(L, V0, Vadj) {
     rowSums((L %*% M) * L) / s
   }, numeric(nrow(L)))
   a <- matrix(a, nrow = nrow(L))
-  A1 <- A2 <- rowSums((a %*% W) * a)
-  q <- 1
+  A <- rowSums((a %*% W) * a)
+  ddf <- pm_kr_ddf_formula(A, A, q = 1)
+  stats::setNames(ddf$ddf, rownames(L))
+}
+
+## Kenward-Roger denominator df from pbkrtest's two sums A1 and A2 (vectors
+## allowed) for a hypothesis of rank q: the one place of this formula (used by
+## pm_kr_ddf() and pm_kr_ftest()). Returns list(ddf, A2). A df that is not
+## positive and finite means the approximation broke down (e.g. an indefinite
+## information matrix of the variance parameters): it stops with a clear
+## message rather than giving a test with a nonsense df. NA/NaN (rows that
+## cannot be estimated) are passed through.
+pm_kr_ddf_formula <- function(A1, A2, q) {
   B <- (1/(2 * q)) * (A1 + 6 * A2)
   g <- ((q + 1) * A1 - (q + 4) * A2)/((q + 2) * A2)
-  c1 <- g/(3 * q + 2 * (1 - g))
-  c2 <- (q - g)/(3 * q + 2 * (1 - g))
-  c3 <- (q + 2 - g)/(3 * q + 2 * (1 - g))
-  V0s <- 1 + c1 * B
+  den <- 3 * q + 2 * (1 - g)
+  c1 <- g/den
+  c2 <- (q - g)/den
+  c3 <- (q + 2 - g)/den
+  V0 <- 1 + c1 * B
   V1 <- 1 - c2 * B
   V2 <- 1 - c3 * B
-  V0s <- ifelse(abs(V0s) < 1e-10, 0, V0s)
+  V0 <- ifelse(abs(V0) < 1e-10, 0, V0)
   x <- 1 - A2/q
   ratio <- ifelse(abs(x) < 1e-14 & abs(V1) < 1e-14, 1, x/V1)
-  rho <- 1/q * ratio^2 * V0s/V2
-  df2 <- 4 + (q + 2)/(q * rho - 1)
-  stats::setNames(df2, rownames(L))
+  rho <- 1/q * ratio^2 * V0/V2
+  ddf <- 4 + (q + 2)/(q * rho - 1)
+  bad <- !is.na(ddf) & (!is.finite(ddf) | ddf <= 0)
+  if (any(bad)) {
+    stop("Kenward-Roger df could not be computed (", format(ddf[bad][1], digits = 4), "): the approximation ",
+         "breaks down for this model, e.g. a variance parameter near its boundary or a poorly identified one. ",
+         "Use df_method = \"Satterthwaite\" or \"KR-expected\".", call. = FALSE)
+  }
+  list(ddf = ddf, A2 = A2)
 }

@@ -1,15 +1,15 @@
 #' Permutation Index
 #'
 #' @description
-#' This function obtains permutation index for a dataset: free permutations, permutations within blocks, permutations
-#' of whole groups (e.g. whole plots), or of whole groups within blocks. The result can be given to
-#' \code{\link{permmodels}} or \code{\link{permlmer}} (argument \code{perms}) for tests that permute only as the
-#' design allows (restricted, or design-based, permutation tests).
+#' Permutations allowed by the design: free, within blocks, of whole groups (e.g. whole plots), or of whole groups
+#' within blocks. Give the result to \code{\link{permmodels}} or \code{\link{permlmer}} (argument \code{perms}) for
+#' restricted (design-based) permutation tests; when its columns are every permutation the design allows, use
+#' \code{exact = TRUE} in \code{permmodels()}.
 #' @usage
 #' permindex(data, block=NULL, group=NULL, nsim=4999, seed)
-#' @param data Data object used in the \code{model} fitting.
-#' @param block Name (in "quotes") for the blocking factor in the \code{data}.
-#' @param group Name (in "quotes") for the group factor in the \code{data}.
+#' @param data The data the model was fitted to.
+#' @param block Optional name (in "quotes") of the blocking factor in \code{data}.
+#' @param group Optional name (in "quotes") of the factor whose levels are permuted as whole units.
 #' @param nsim The number of permutations. The default is 4999.
 #' @param seed Specify a random number generator seed, for reproducible results. The user's random number stream is
 #'   left as it was.
@@ -22,6 +22,7 @@
 #' must have the same number of rows. The data need not be sorted: before predictmeans 2.0 the indices referred to
 #' the data sorted by \code{block} and \code{group}, so they were right only for data already in that order (the
 #' permutations are the same as before for sorted data and the same \code{seed}).
+#' @seealso \code{\link{permmodels}}, \code{\link{permlmer}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -48,6 +49,7 @@
 #' @name permindex
 NULL
 
+#' @export
 permindex <- function(data, block=NULL, group=NULL, nsim=4999, seed) {
   data <- as.data.frame(data)
   n <- nrow(data)
