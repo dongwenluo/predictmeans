@@ -21,7 +21,7 @@ local({
 
 
 This article gives R code for the worked examples of the book *Experimental Design and Analysis for Tree
-Improvement* (Williams, Matheson and Harwood, 2002). The data sets come with the package
+Improvement* (Williams, Harwood and Matheson, 2023). The data sets come with the package
 [eda4treeR](https://CRAN.R-project.org/package=eda4treeR) (Yaseen et al., 2023). Each example follows the
 book: the data, the model, a check of the residuals, the analysis of variance and the predicted means with
 their pairwise comparisons, computed with predictmeans. Section titles give the book's example number and
@@ -1486,8 +1486,8 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 
 ## **References**
 
--   Williams, E. R., Matheson, A. C. and Harwood, C. E. (2002). *Experimental Design and Analysis for Tree
-Improvement*, 2nd edition. CSIRO Publishing, Collingwood, Victoria.
+-   Williams, E. R., Harwood, C. E. and Matheson, A. C. (2023). *Experimental Design and Analysis for Tree
+Improvement*. CSIRO Publishing. <https://www.publish.csiro.au/book/3145/>.
 
 -   Yaseen, M., Ullah, S., Eskridge, K. M. and Williams, E. (2023). eda4treeR: Experimental Design and
 Analysis for Tree Improvement. R package. <https://CRAN.R-project.org/package=eda4treeR>.
