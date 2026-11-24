@@ -78,7 +78,7 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
   ysim <- if (is.null(seed)) bp$simulate(nsim) else pm_with_seed(seed, bp$simulate(nsim))
 
   stats_of <- function(m) {
-    mp <- mymodelparm(m, df = 0)[1:2]
+    mp <- pm_model_parm(m, df = 0)[1:2]
     list(mp, pm_boot_anova(m, type))
   }
   one <- function(y) {

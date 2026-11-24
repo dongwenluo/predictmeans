@@ -194,6 +194,8 @@ shows 1.1.1 and 2.0 code side by side.
 * Exported generics `pm_coef()`, `pm_vcov()`, `pm_basis()`, `pm_data()`, `pm_df()`, `pm_linkinv()` for new
   model classes (`?pm_coef`). The columns of the design are matched to the coefficients by name; a name
   without a column stops with a message, never a silent mismatch.
+* `pm_coef()` of an `aov` fit keeps its aliased coefficients as `NA`, as for `lm` and `glm`; every front end
+  now reads a fit's coefficients and covariance only through `pm_coef()` and `pm_vcov()`.
 * New data sets, including `Caschool`, `DataExam5.2`, `copper` and M. P. Wand's examples.
 
 ## Bug fixes

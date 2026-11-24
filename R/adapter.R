@@ -85,6 +85,13 @@ NULL
 pm_coef <- function(model, ...) UseMethod("pm_coef")
 #' @exportS3Method pm_coef default
 pm_coef.default <- function(model, ...) stats::coef(model)
+#' @exportS3Method pm_coef lm
+pm_coef.lm <- function(model, ...) {
+  # lm, glm, aov: the stored estimates keep the aliased ones as NA (coef() of an
+  # aov fit leaves them out); a multivariate lm has a matrix, left to coef()
+  b <- model$coefficients
+  if (is.numeric(b) && !is.matrix(b)) b else stats::coef(model)
+}
 #' @exportS3Method pm_coef lme
 pm_coef.lme <- function(model, ...) nlme::fixef(model)
 #' @exportS3Method pm_coef merMod

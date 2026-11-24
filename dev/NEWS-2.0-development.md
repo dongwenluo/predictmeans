@@ -574,6 +574,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * `se_ranef` help: with `\usage` (above), R CMD check warned "Documented
   arguments not in \usage: x, n, digits, ..." (the print method's);
   `print.pm_ranef` now shares the page (`@rdname`), with its usage line.
+* Part A1 of the post-2.0 plan (2026-11-24): the S3 generic `mymodelparm()`
+  and its seven class methods are one function, `pm_model_parm()`
+  (`R/mymodelparm.R`), reading coefficients and covariance only through
+  `pm_coef()`/`pm_vcov()`; the df rules moved unchanged into
+  `pm_model_df()` (a generic in A4). Removed: the `[["cond"]]` indexing that
+  worked for glmmTMB only through a special method, and a dead branch for a
+  class "parm". New `pm_coef.lm()` (lm, glm, aov: `$coefficients`, aliased
+  as NA) replaces the aov special case in `pm_model_info()` (`R/refgrid.R`).
+  Snapshots: all 107 results identical to main at tolerance 0.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

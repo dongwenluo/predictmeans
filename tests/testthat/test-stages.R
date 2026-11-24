@@ -31,7 +31,7 @@ test_that("compare: SEDs and nested factors drop atvar", {
   set.seed(1); d$y <- rnorm(12)
   m <- lm(y ~ A/B, d)                      # B nested in A
   k <- suppressWarnings(Kmatrix(m, "A:B"))
-  mp <- predictmeans:::mymodelparm(m)
+  mp <- predictmeans:::pm_model_parm(m)
   ok <- table(d$A, d$B)[cbind(k$fctnames$A, k$fctnames$B)] > 0   # cells with data
   K <- k$K[ok, mp$estimable, drop = FALSE]
   r <- predictmeans:::pm_compare_sed(K, k$K, k$fctnames[ok, ], k$fctnames, c("A", "B"),

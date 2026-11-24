@@ -68,14 +68,14 @@ CookD <- function (model, group=NULL, plot=TRUE, id=3, ...) {
   } else {
     mdf <- as.data.frame(pm_get_data(model))
   }
-  mp <- mymodelparm(model, df = 0)
+  mp <- pm_model_parm(model, df = 0)
   beta0  <- mp$coef
   vcovb <- mp$vcov
   vb.inv <- solve(vcovb)
 
   refit_coef <- function(keep) {
     fit <- tryCatch(quiet(pm_refit(model, data = mdf[keep, , drop = FALSE])), error = function(e) NULL)
-    b <- if (is.null(fit)) NULL else tryCatch(mymodelparm(fit, df = 0)$coef, error = function(e) NULL)
+    b <- if (is.null(fit)) NULL else tryCatch(pm_model_parm(fit, df = 0)$coef, error = function(e) NULL)
     # a coefficient that the deletion leaves without data: no distance
     out <- rep(NA_real_, length(beta0))
     if (!is.null(b)) out <- unname(b[names(beta0)])

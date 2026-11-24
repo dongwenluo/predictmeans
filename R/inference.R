@@ -39,7 +39,7 @@
 ## (mp$df, for the legacy tables of predictmeans() and covariatemeans()).
 ##
 ## Value, a list of class "pm_inference":
-##   mp           coefficients, the covariance used, the model's df, estimable flags (mymodelparm())
+##   mp           coefficients, the covariance used, the model's df, estimable flags (pm_model_parm())
 ##   df_type      "Kenward-Roger", "Satterthwaite", "containment", "between-within", or NULL (the model's own rule)
 ##   vcov_adj     Kenward-Roger adjusted covariance, or the Satterthwaite ingredients ("pm_satt")
 ##   vcov_adjust  TRUE when the adjusted covariance is used
@@ -74,8 +74,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     vcov_adj <- pm_try_vcov_kr(model, fallback = "unadjusted SEs")
 
   ## coefficients and covariance
-  mp <- if (aovl) sa$mp else if (lmer && !term_df) mymodelparm(model, df = 0) else
-    mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
+  mp <- if (aovl) sa$mp else if (lmer && !term_df) pm_model_parm(model, df = 0) else
+    pm_model_parm(model, df_type = df_type, vcov_adj = vcov_adj)
   adjusted <- FALSE
   if (vcov_adjust) {
     if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {

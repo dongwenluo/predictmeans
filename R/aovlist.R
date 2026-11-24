@@ -45,7 +45,7 @@ pm_aov_carrier <- function(model) {
 }
 
 ## The strata and the combined estimates. 'carrier' from pm_aov_carrier().
-## Returns list(mp (as mymodelparm), parts (class "pm_satt", for the
+## Returns list(mp (as pm_model_parm()), parts (class "pm_satt", for the
 ## Satterthwaite df and F tests), strata (name, df, mean square)).
 pm_aov_strata <- function(carrier) {
   mf <- stats::model.frame(carrier)

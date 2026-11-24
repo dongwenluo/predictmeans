@@ -79,3 +79,16 @@ test_that("an object without estimates gives a clear message", {
   reg("terms", "nocoef", function(x, ...) x$terms)
   expect_error(Kmatrix(bad, "x"), "pm_coef")
 })
+
+test_that("pm_coef() of an aov fit keeps its aliased coefficients as NA; one reader for every class", {
+  d <- expand.grid(A = factor(1:3), B = factor(1:2), r = 1:3)
+  d <- d[!(d$A == "3" & d$B == "2"), ]
+  d$y <- seq_len(nrow(d)) %% 5
+  fa <- aov(y ~ A * B, data = d)
+  b <- pm_coef(fa)
+  expect_identical(names(b), colnames(model.matrix(fa)))
+  expect_true(anyNA(b))
+  mp <- predictmeans:::pm_model_parm(fa)
+  expect_identical(mp$estimable, !is.na(b))
+  expect_equal(mp$coef, stats::coef(fa))          # coef() of aov leaves the aliased one out
+})

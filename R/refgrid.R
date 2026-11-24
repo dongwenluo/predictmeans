@@ -70,8 +70,6 @@ pm_model_info <- function(model, data = NULL, exclude = NULL) {
     stop("Can't handle a nonlinear mixed model")
   }
   coef_vals <- tryCatch(pm_coef(model), error = function(e) NULL)
-  # (coef() of an aov model leaves out its aliased coefficients)
-  if (inherits(model, "lm") && is.numeric(model$coefficients) && !is.matrix(model$coefficients)) coef_vals <- model$coefficients
   if (!is.numeric(coef_vals) || is.null(names(coef_vals))) {
     stop("Can't handle a model of class ", sQuote(class(model)[1]),
          ": it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).",
