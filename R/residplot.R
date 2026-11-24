@@ -90,7 +90,7 @@ residplot <- function(model, group = "none", re_level = 1, slope = FALSE, id = 3
                       dense = c("auto", "points", "bins"), ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("residplot", match.call(), strict = TRUE, formals_of = formals(sys.function()))
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   dense <- match.arg(dense)
   nlab <- if (isTRUE(id)) 3L else if (isFALSE(id) || is.null(id)) 0L else as.integer(id)
   d <- pm_resid_data(model)

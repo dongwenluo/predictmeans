@@ -190,7 +190,7 @@ varcomp <- function(model, ci = TRUE, conf_level = 0.95, ci_method = c("Satterth
 
 ## The table of varcomp() (no tests): by model class.
 pm_varcomp_fit <- function(model, ci, level, ci_method, information) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   if (ci_method == "profile" && !inherits(model, c("lmerMod", "glmerMod"))) {
     message("Profile intervals are for lmer and glmer models; Satterthwaite intervals instead.")
     ci_method <- "Satterthwaite"

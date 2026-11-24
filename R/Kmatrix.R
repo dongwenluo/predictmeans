@@ -130,7 +130,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   pm_defunct("Kmatrix", match.call(), strict = TRUE, formals_of = formals(sys.function()))
 
   weights <- match.arg(weights)
-  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
+  model <- pm_means_model(model)
 
   ## 1. The model and the data of its fixed-effect variables
   info <- pm_model_info(model, data, exclude)

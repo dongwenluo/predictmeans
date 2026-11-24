@@ -583,6 +583,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   class "parm". New `pm_coef.lm()` (lm, glm, aov: `$coefficients`, aliased
   as NA) replaces the aov special case in `pm_model_info()` (`R/refgrid.R`).
   Snapshots: all 107 results identical to main at tolerance 0.
+* Part A2 (2026-11-24): two helpers in `R/adapter.R`. `pm_fit(model)` (a
+  semireg fit's lme4/glmmTMB model, else the model) replaces 14 copies of the
+  semireg unwrap (R2, advice, residplot, pm_check, varcomp, se_ranef, ranef
+  covariance, pm_data, zero inflation); `pm_means_model(model)` (the carrier
+  of an aov fit with Error(), else the model) replaces the block in 6 front
+  ends (predictmeans, contrastmeans, covariatemeans, Kmatrix, pm_joint,
+  pm_slopes). Snapshots identical to main; 17 related test files pass.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

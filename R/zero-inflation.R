@@ -140,7 +140,7 @@ pm_zi_check <- function(model, mean_type, deriv = 0) {
             "means are the usual ones.")
     return("conditional")
   }
-  m <- if (inherits(model, "semireg")) model$semer else model
+  m <- pm_fit(model)
   fam <- stats::family(m)
   if (!identical(fam$link, "log") || grepl("truncated", fam$family)) {
     stop("mean_type = \"overall\" is available for zero-inflated count models with a log link (poisson, nbinom1, ",

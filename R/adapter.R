@@ -186,6 +186,15 @@ pm_contrasts.gls <- function(model, ...) model$contrasts
 #' @exportS3Method pm_contrasts lm
 pm_contrasts.lm <- function(model, ...) model$contrasts
 
+## The model as fitted by its engine: a semireg() / semireg_tmb() fit holds its
+## lme4 or glmmTMB model in $semer; any other model is its own fit.
+pm_fit <- function(model) if (inherits(model, "semireg")) model$semer else model
+
+## The model the means functions work on: an aov fit with Error() strata is
+## analysed through its carrier (the fixed part as an lm, holding the strata;
+## R/aovlist.R); any other model as it is.
+pm_means_model <- function(model) if (inherits(model, "aovlist")) pm_aov_carrier(model) else model
+
 ## Names of the columns of the fixed-effects design, in its order: the names
 ## of pm_coef(). (glmmTMB: the columns of its model matrix; with a
 ## rank-deficient fit, fixef() also lists the dropped columns, as NA;

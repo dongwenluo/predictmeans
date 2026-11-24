@@ -82,7 +82,7 @@ pm_fit_rows <- function(model, data = NULL) {
 
 ## The response as modelled, evaluated in the rows 'd' (NULL if it cannot be).
 pm_eval_response <- function(model, d) {
-  tt <- tryCatch(stats::terms(if (inherits(model, "semireg")) model$semer else model), error = function(e) NULL)
+  tt <- tryCatch(stats::terms(pm_fit(model)), error = function(e) NULL)
   e <- if (!is.null(tt) && isTRUE(attr(tt, "response") > 0)) attr(tt, "variables")[[attr(tt, "response") + 1]]
   if (is.null(e)) return(NULL)
   env <- attr(tt, ".Environment")
@@ -100,7 +100,7 @@ pm_eval_response <- function(model, d) {
 ## back (what back-transforms the means): "link", "formula", "trans" (the
 ## user's), or NA (none).
 pm_response_info <- function(model, trans = NULL, link_scale = NULL) {
-  m <- if (inherits(model, "semireg")) model$semer else model
+  m <- pm_fit(model)
   tt <- tryCatch(stats::terms(m), error = function(e) NULL)
   e <- if (!is.null(tt) && isTRUE(attr(tt, "response") > 0)) attr(tt, "variables")[[attr(tt, "response") + 1]]
   expr <- if (is.null(e)) "response" else paste(deparse(e), collapse = "")

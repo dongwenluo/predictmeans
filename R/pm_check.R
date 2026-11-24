@@ -79,7 +79,7 @@ pm_check_sections <- c("Fit", "Residuals", "Variance", "Distribution", "Design",
 
 #' @export
 pm_check <- function(model, plot = FALSE) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   out <- list()
   add <- function(section, check, result, p = NA_real_, note = "", look = FALSE, info = FALSE) {
     out[[length(out) + 1]] <<- data.frame(section = section, check = check, result = result, p.value = p,

@@ -51,9 +51,7 @@ pm_setup <- function(a) {
   adj <- pm_match_adj(a$adj, westfall = TRUE)
 
   trans <- if (is.null(a$trans)) I else a$trans
-  if (inherits(model, "aovlist")){
-    model <- pm_aov_carrier(model)
-  }
+  model <- pm_means_model(model)
 
   # Models with a link function other than the identity: means are
   # back-transformed with its inverse (pm_linkinv(); see ?pm_coef to support

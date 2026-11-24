@@ -18,7 +18,7 @@
 ## variance: the term's variance component), rows (per group: the factor of
 ## the data rows), data, fixed (fixed-effect factors), family).
 pm_ranef_cov <- function(model) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   if (inherits(model, "merMod")) return(pm_ranef_cov_mer(model))
   if (inherits(model, "glmmTMB")) return(pm_ranef_cov_tmb(model))
   if (inherits(model, "lme")) return(pm_ranef_cov_lme(model))

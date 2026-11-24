@@ -133,9 +133,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
 
-  if (inherits(model, "aovlist")) {
-    model <- pm_aov_carrier(model)
-  }
+  model <- pm_means_model(model)
 
   if (is.null(ctrnames) || all(ctrnames%in%c("NULL", ""))) {
     ctrnames <- NULL

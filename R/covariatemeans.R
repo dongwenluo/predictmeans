@@ -188,7 +188,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as_is=FALSE, at=NU
   dfa <- pm_df_arg(df_method, eval(formals(sys.function())$df_method))
   df_method <- dfa$method
   Df <- dfa$Df
-  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
+  model <- pm_means_model(model)     # by strata (R/aovlist.R)
   if (identical(mean_type, "overall") && !isFALSE(bias_adjust)) {
     stop("mean_type = \"overall\" cannot be combined with 'bias_adjust'.", call. = FALSE)
   }

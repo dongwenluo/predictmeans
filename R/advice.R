@@ -285,7 +285,7 @@ pm_perm_advice <- function(out, nperm, exact = FALSE) {
 
 ## R2_model(): what the numbers are and are not.
 pm_r2_advice <- function(model, method) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   rows <- list()
   fam <- tryCatch(stats::family(model)$family, error = function(e) "gaussian")
   if (!identical(fam, "gaussian") && !inherits(model, c("lmerMod", "lme", "gls"))) {
@@ -304,7 +304,7 @@ pm_r2_advice <- function(model, method) {
 
 ## varcomp(): estimates at zero (boundary), few levels, tests on the boundary.
 pm_varcomp_advice <- function(model, tab, test = FALSE) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   rows <- list()
   zero <- isTRUE(pm_singular(model))
   if (!zero && is.data.frame(tab) && "vcov" %in% names(tab)) {
