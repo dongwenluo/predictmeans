@@ -241,3 +241,27 @@ test_that("Exam 8.2: Type 1 and Type 3 tables = SAS PROC MIXED (HTYPE=1,3; DDFM=
   chk(a3, c(2.05, 1.55, 72.03, 16.86), c(26.5, 19.6, 255, 207))
   expect_false(any(grepl("Empty cells", c(attr(a3, "heading"), advice(a3)$message))))
 })
+
+test_that("Exam 8.2: type1_basis = \"fitted\" with ddf = \"KR-average\" gives Genstat's tables", {
+  skip_on_cran()
+  # Genstat REML output for this model, pasted by the maintainer (2026-11-25): "sequentially adding terms"
+  # Wald 8.20 7.99 72.66 51.75, d.d.f. 26.6 19.7 254.0 208.2; "dropping individual terms" column 7.77 on 19.7.
+  # Genstat prints the drop-term d.d.f. (19.7) for column in both tables; the sequential hypothesis gives 19.4.
+  d <- tree_data("ex8.2.csv")
+  for (v in c("repl", "row", "column", "standard", "clone")) d[[v]] <- factor(d[[v]])
+  d$contcompv <- d$contcompf
+  d$contcompf <- factor(d$contcompf)
+  m <- suppressMessages(lme4::lmer(dbhmean ~ repl + column + contcompf + contcompf:standard + (1 | repl:row) +
+                                     (1 | repl:column) + (0 + contcompv | clone), data = d))
+  g <- anova(m, type = "I", type1_basis = "fitted", ddf = "KR-average", advice = FALSE)
+  expect_lt(max(abs(g[["F value"]] * g$NumDF - c(8.20, 7.99, 72.66, 51.75))), 0.006)
+  expect_equal(g$DenDF[-2], c(26.6, 254.0, 208.2), tolerance = 2e-3)
+  dr <- anova(m, type = "II", ddf = "KR-average", advice = FALSE)
+  expect_lt(abs(dr$F[2] * 5 - 7.77), 0.006)
+  expect_equal(dr$Df.res[c(1, 2, 4)], c(26.6, 19.7, 208.2), tolerance = 2e-3)
+  # the fitted basis: sequential parts add up to the whole Wald statistic of the fixed effects
+  b <- lme4::fixef(m)[-1]; V <- as.matrix(vcov(m))[-1, -1]
+  expect_equal(sum(g[["F value"]] * g$NumDF), drop(b %*% solve(V, b)), tolerance = 1e-8)
+  # the default (design basis) is unchanged: = SAS
+  expect_equal(anova(m, type = "I", advice = FALSE)[["F value"]][2], 1.484, tolerance = 1e-3)
+})

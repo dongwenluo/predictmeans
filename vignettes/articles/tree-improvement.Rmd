@@ -1431,10 +1431,11 @@ residplot(fm8.7)
 
 Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). Genstat's "sequentially adding terms" gives the same tests for `repl` and
 `contcompf.standard`, and different ones for `column` and `contcompf`, because it builds the sequential
-hypotheses from the fitted variances (see `?anova.lmerMod`).
+hypotheses from the fitted variances (see `?anova.lmerMod`). Genstat's table:
 
 ```{r}
 kable(anova(fm8.7, type = 1), digits = 4)
+kable(anova(fm8.7, type = 1, type1_basis = "fitted", ddf = "KR-average"), digits = 4)
 ```
 
 -   Adjusted $R^2$

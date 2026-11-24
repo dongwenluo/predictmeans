@@ -145,6 +145,9 @@ shows 1.1.1 and 2.0 code side by side.
 
 ### Tests and degrees of freedom
 
+* `anova()` of `lmer` fits: `type1_basis = "fitted"` builds Type I hypotheses from the fitted model
+  (X'V^-1X), as Genstat, instead of X'X (SAS, lmerTest; the default); `ddf = "KR-average"` gives Genstat's
+  d.d.f. with an unadjusted F. Together they reproduce Genstat's REML tables.
 * `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"` (Genstat), `"Satterthwaite"`,
   `"containment"`, `"between-within"`, `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.

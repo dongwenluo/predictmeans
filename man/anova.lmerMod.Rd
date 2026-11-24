@@ -8,7 +8,8 @@
   object,
   ...,
   type = c("III", "II", "I"),
-  ddf = c("Kenward-Roger", "Satterthwaite", "lme4"),
+  ddf = c("Kenward-Roger", "Satterthwaite", "KR-average", "lme4"),
+  type1_basis = c("design", "fitted"),
   advice = TRUE
 )
 }
@@ -19,7 +20,14 @@
 
 \item{type}{\code{"III"} (default), \code{"II"} or \code{"I"}; also \code{3}, \code{2}, \code{1}.}
 
-\item{ddf}{\code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.}
+\item{ddf}{\code{"Kenward-Roger"} (default; adjusted covariance and scaled F, as SAS \code{DDFM=KR}),
+\code{"Satterthwaite"}, \code{"KR-average"} (F = Wald/numerator df from the unadjusted covariance, with
+Kenward-Roger df from the average information, as Genstat) or \code{"lme4"}.}
+
+\item{type1_basis}{For \code{type = "I"}: \code{"design"} (default) builds the sequential hypotheses from
+\eqn{X'X}, as SAS and lmerTest; \code{"fitted"} from \eqn{X'V^{-1}X}, as Genstat's "sequentially adding
+terms". \code{type = "I", type1_basis = "fitted", ddf = "KR-average"} gives Genstat's table, and
+\code{type = "II", ddf = "KR-average"} its "dropping individual terms".}
 
 \item{advice}{Logical: add a note on the choice of type when the data are unbalanced or have empty cells
 (default \code{TRUE}).}
@@ -41,9 +49,11 @@ Type III hypotheses do not depend on the contrasts the model was fitted with (su
 With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
 contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
 cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
-Type II are those of \code{car::Anova()}; Type I (sequential) are those of SAS (\code{HTYPE=1}) and lmerTest, built
-from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds them from
-\eqn{X'V^{-1}X} (the estimated variances), and its tests of the middle terms differ with unbalanced data.
+Type II are those of \code{car::Anova()}; Type I (sequential) are by default those of SAS (\code{HTYPE=1}) and
+lmerTest, built from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds
+them from \eqn{X'V^{-1}X} (\code{type1_basis = "fitted"}): each term after the earlier ones in the mixed model's
+own fit, with parts that add up to the whole Wald statistic, but hypotheses that move with the estimated
+variances. With unbalanced data the two differ for the terms between the first and the last.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
 own table (sums of squares and F values without df or p-values).

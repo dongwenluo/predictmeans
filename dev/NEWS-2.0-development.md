@@ -2834,3 +2834,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   pairs NA; advice id `nonestimable_slopes`; column `estimable`. Example 5.1
   (`ht ~ site + sitemean*seedlot`) gave the first seedlot 0 with SE 0; pairs
   = coefficient differences. Test in `test-pm-slopes.R`.
+* anova() Type I option (2026-11-25, maintainer's request): `type1_basis =
+  "fitted"` (`pm_type1_L_fitted()`: rows of chol(vcov^-1) per term, the
+  sequential GLS parts) and `ddf = "KR-average"` (Wald/q from the unadjusted
+  covariance, KR df from the average information; also for Types II/III in
+  `pm_anova_wald()`). Exam 8.2: Genstat's sequential Wald 8.20 7.99 72.66
+  51.75 and d.d.f. 26.6 254.0 208.2, and its drop-term table (= Type II,
+  column 7.77 on 19.7), reproduced; Genstat prints the drop-term d.d.f. for
+  column in its sequential table (19.7; the sequential hypothesis gives
+  19.4). Defaults unchanged (= SAS). Test in `test-tree-examples.R`.

@@ -27,7 +27,7 @@ pm_anova_type <- function(type, allowed = c("I", "II", "III")) {
 
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
                      test_statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
-                     type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite")) {
+                     type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite", "KR-average")) {
   ddf <- match.arg(ddf)
   type <- pm_anova_type(type[1], c("II", "III"))
   test_statistic <- match.arg(test_statistic)
@@ -108,7 +108,11 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   if (nrow(V) == length(b_all) && length(b) < length(b_all)) V <- V[not_aliased, not_aliased, drop = FALSE]
   PhiA <- NULL
   satt <- layout == "mer" && test == "F" && ddf == "Satterthwaite"
-  if (layout == "mer" && test == "F" && !satt) {
+  kr_avg <- layout == "mer" && test == "F" && ddf == "KR-average"
+  if (kr_avg) {
+    # Genstat: Wald/q from the unadjusted covariance, df Kenward-Roger with the average information
+    PhiA <- pm_vcov_kr(model, "average")
+  } else if (layout == "mer" && test == "F" && !satt) {
     PhiA <- pm_vcov_kr(model, kr_information)   # "expected": as car::Anova() (pbkrtest)
     V <- as.matrix(PhiA)
     attributes(V) <- attributes(V)[c("dim", "dimnames")]
@@ -121,6 +125,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
       return(c(stat = r[[3]], ddf = r[[2]]))
     }
     kr <- pm_kr_ftest(model, H, PhiA)
+    if (kr_avg) return(c(stat = pm_waldF(H, b, V), ddf = kr[["ddf"]]))
     c(stat = kr[["stat"]], ddf = kr[["ddf"]])
   }
   mm <- stats::model.matrix(model)
@@ -178,7 +183,8 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   resp <- paste("Response:", pm_response_name(model))
 
   if (layout == "mer") {
-    kind <- if (test == "F") paste0("Wald F tests with ", ddf, " df") else "Wald chisquare tests"
+    kind <- if (test != "F") "Wald chisquare tests" else if (ddf == "KR-average")
+      "Wald F tests (unadjusted F) with Kenward-Roger df, average information" else paste0("Wald F tests with ", ddf, " df")
     heading <- c(paste0("Analysis of Deviance Table (Type ", type, " ", kind, ")\n"), resp, pm_cells_note(map))
     if (test == "F") {
       return(pm_anova_result(data.frame(stat, df, res_df, pval), names, c("F", "Df", "Df.res", "Pr(>F)"), heading))
@@ -394,24 +400,55 @@ pm_lmer_tables <- function(model) {
   list(coef = coefT, anova = aT)
 }
 
-## Type I (sequential) F tests of an lmer fit. The hypotheses are those of
-## SAS PROC MIXED HTYPE=1 and lmerTest, built from X'X (pm_type1_L()): they
-## depend on the design only. Genstat's "sequentially adding terms" builds
-## them from X'V^-1X instead, so its middle terms differ in unbalanced data
-## (dev/sas/type1-exam8.2.sas). Kenward-Roger (default): adjusted covariance
-## and scaled F, = SAS DDFM=KR; "Satterthwaite": pm_lmer_tables(), = SAS
-## DDFM=SATTERTHWAITE. A failed adjustment falls back to Satterthwaite.
-pm_lmer_type1 <- function(model, ddf = "Kenward-Roger") {
-  PhiA <- if (ddf == "Kenward-Roger") pm_try_vcov_kr(model)
-  if (is.null(PhiA)) return(pm_lmer_tables(model)$anova)
-  Ls <- pm_type1_L(lme4::getME(model, "X"), attr(stats::terms(model), "term.labels"))
-  kr <- vapply(Ls, function(L) pm_kr_ftest(model, L, PhiA)[c("stat", "ndf", "ddf", "p.value")], numeric(4))
-  ms <- kr["stat", ] * stats::sigma(model)^2
-  aT <- data.frame(ms * kr["ndf", ], ms, kr["ndf", ], kr["ddf", ], kr["stat", ], kr["p.value", ], row.names = names(Ls))
+## Type I (sequential) F tests of an lmer fit. basis = "design" (default):
+## hypotheses built from X'X (pm_type1_L()), as SAS PROC MIXED HTYPE=1 and
+## lmerTest; they depend on the design only. basis = "fitted": from
+## X'V^-1X, the GLS fit (the rows of the Cholesky factor of vcov^-1 that go
+## with each term), as Genstat's "sequentially adding terms": each term
+## after the earlier ones in the mixed model's own fit; the parts add up to
+## the whole Wald statistic, and the hypotheses move with the estimated
+## variances. The two agree for the first and the last term
+## (dev/sas/type1-exam8.2.sas). ddf: "Kenward-Roger" (adjusted covariance and
+## scaled F, = SAS DDFM=KR), "Satterthwaite" (= SAS DDFM=SATTERTHWAITE),
+## "KR-average" (Wald/q unadjusted with Kenward-Roger df from the average
+## information, as Genstat). A failed adjustment falls back to Satterthwaite.
+pm_lmer_type1 <- function(model, ddf = "Kenward-Roger", basis = "design") {
+  X <- lme4::getME(model, "X")
+  labs <- attr(stats::terms(model), "term.labels")
+  b <- lme4::fixef(model)
+  V <- as.matrix(stats::vcov(model))
+  Ls <- if (basis == "fitted") pm_type1_L_fitted(V, attr(X, "assign"), labs) else pm_type1_L(X, labs)
+  PhiA <- switch(ddf, "Kenward-Roger" = pm_try_vcov_kr(model),
+                 "KR-average" = pm_try_vcov_kr(model, "average"), NULL)
+  if (is.null(PhiA)) ddf <- "Satterthwaite"
+  parts <- if (ddf == "Satterthwaite") pm_satt_parts(model)
+  ft <- vapply(Ls, function(L) {
+    if (ddf == "Satterthwaite") return(c(pm_waldF(L, b, V), nrow(L), pm_satt_Fddf(L, parts)))
+    k <- pm_kr_ftest(model, L, PhiA)
+    c(if (ddf == "KR-average") pm_waldF(L, b, V) else k[["stat"]], k[["ndf"]], k[["ddf"]])
+  }, numeric(3))
+  Fv <- ft[1, ]; q <- ft[2, ]; dd <- ft[3, ]
+  ms <- Fv * stats::sigma(model)^2
+  aT <- data.frame(ms * q, ms, q, dd, Fv, stats::pf(Fv, q, dd, lower.tail = FALSE), row.names = names(Ls))
   names(aT) <- c("Sum Sq", "Mean Sq", "NumDF", "DenDF", "F value", "Pr(>F)")
-  attr(aT, "heading") <- "Type I Analysis of Variance Table with Kenward-Roger's method"
+  method <- switch(ddf, "Kenward-Roger" = "Kenward-Roger's method",
+                   "KR-average" = "Kenward-Roger df (average information), unadjusted F",
+                   "Satterthwaite's method")
+  attr(aT, "heading") <- paste0("Type I Analysis of Variance Table with ", method,
+                                if (basis == "fitted") "\nSequential hypotheses from the fitted model (X'V^-1 X), as Genstat")
   class(aT) <- c("anova", "data.frame")
   aT
+}
+
+## Type I hypotheses from the GLS fit: with R the upper Cholesky factor of
+## vcov^-1 (= X'V^-1X / sigma^2), (R b)[term k] are the sequential parts, so
+## the rows of R for term k are its hypothesis. 'assign': term of each
+## coefficient (0 = intercept).
+pm_type1_L_fitted <- function(V, assign, labs) {
+  R <- chol(solve(V))
+  dimnames(R) <- list(colnames(V), colnames(V))
+  k <- sort(unique(assign[assign > 0]))
+  stats::setNames(lapply(k, function(j) R[assign == j, , drop = FALSE]), labs[k])
 }
 
 ## Wald F of each hypothesis L b = 0 (q = rows of L), with covariance V.
@@ -587,9 +624,11 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
 #' contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
 #' cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
-#' Type II are those of \code{car::Anova()}; Type I (sequential) are those of SAS (\code{HTYPE=1}) and lmerTest, built
-#' from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds them from
-#' \eqn{X'V^{-1}X} (the estimated variances), and its tests of the middle terms differ with unbalanced data.
+#' Type II are those of \code{car::Anova()}; Type I (sequential) are by default those of SAS (\code{HTYPE=1}) and
+#' lmerTest, built from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds
+#' them from \eqn{X'V^{-1}X} (\code{type1_basis = "fitted"}): each term after the earlier ones in the mixed model's
+#' own fit, with parts that add up to the whole Wald statistic, but hypotheses that move with the estimated
+#' variances. With unbalanced data the two differ for the terms between the first and the last.
 #' Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 #' a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
 #' own table (sums of squares and F values without df or p-values).
@@ -600,7 +639,13 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' @param object An \code{lmer} fit (class \code{lmerMod}).
 #' @param ... Other fitted models: then lme4's comparison of the models.
 #' @param type \code{"III"} (default), \code{"II"} or \code{"I"}; also \code{3}, \code{2}, \code{1}.
-#' @param ddf \code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.
+#' @param ddf \code{"Kenward-Roger"} (default; adjusted covariance and scaled F, as SAS \code{DDFM=KR}),
+#'   \code{"Satterthwaite"}, \code{"KR-average"} (F = Wald/numerator df from the unadjusted covariance, with
+#'   Kenward-Roger df from the average information, as Genstat) or \code{"lme4"}.
+#' @param type1_basis For \code{type = "I"}: \code{"design"} (default) builds the sequential hypotheses from
+#'   \eqn{X'X}, as SAS and lmerTest; \code{"fitted"} from \eqn{X'V^{-1}X}, as Genstat's "sequentially adding
+#'   terms". \code{type = "I", type1_basis = "fitted", ddf = "KR-average"} gives Genstat's table, and
+#'   \code{type = "II", ddf = "KR-average"} its "dropping individual terms".
 #' @param advice Logical: add a note on the choice of type when the data are unbalanced or have empty cells
 #'   (default \code{TRUE}).
 #' @section Which type of test:
@@ -631,14 +676,16 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' anova(fm, type = "I")
 #' @exportS3Method anova lmerMod
 anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
-                          ddf = c("Kenward-Roger", "Satterthwaite", "lme4"), advice = TRUE) {
+                          ddf = c("Kenward-Roger", "Satterthwaite", "KR-average", "lme4"),
+                          type1_basis = c("design", "fitted"), advice = TRUE) {
   # several models: lme4's comparison, by NextMethod() so that lme4 sees the
   # original call (model names), also when lmerTest's anova() hands on to here
   if (length(list(...))) return(NextMethod())
   type <- pm_anova_type(type[1])
   ddf <- match.arg(ddf)
+  type1_basis <- match.arg(type1_basis)
   if (ddf == "lme4") return(utils::getS3method("anova", "merMod", envir = asNamespace("lme4"))(object))
-  out <- if (type == "I") pm_anova_type1(object, ddf) else pm_anova(object, type = type, test_statistic = "F", ddf = ddf)
+  out <- if (type == "I") pm_anova_type1(object, ddf, type1_basis) else pm_anova(object, type = type, test_statistic = "F", ddf = ddf)
   if (isTRUE(advice)) out <- pm_anova_add_advice(out, object, type)
   out
 }
@@ -646,8 +693,8 @@ anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
 ## Type I (sequential) table of a mixed model: lmer, lmerTest's Satterthwaite
 ## F; other models, sequential Wald chi-square tests on the hypotheses of
 ## pm_type1_L() (no refits).
-pm_anova_type1 <- function(model, ddf = "Kenward-Roger") {
-  if (inherits(model, "lmerMod")) return(pm_lmer_type1(model, ddf))
+pm_anova_type1 <- function(model, ddf = "Kenward-Roger", basis = "design") {
+  if (inherits(model, "lmerMod")) return(pm_lmer_type1(model, ddf, basis))
   X <- if (inherits(model, "merMod")) lme4::getME(model, "X") else stats::model.matrix(model)
   tl <- attr(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model),
              "term.labels")
