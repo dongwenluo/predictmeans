@@ -1,9 +1,21 @@
-## Status
+## Resubmission
 
-Version 2.0.0, not submitted yet. Submitted to win-builder (R-release and
-R-devel) on 2026-11-24; results come by email to the maintainer. mac-builder
-returned "HTTP 502 Bad Gateway" twice on 2026-11-24; resubmit with
-`devtools::check_mac_release()`. Fill in the results below before submitting.
+This is a resubmission of predictmeans 2.0.0. The CRAN pre-tests of the
+first submission (2026-11-24) gave three NOTEs; in this version:
+
+* "Overall checktime 21 min > 10 min" (r-devel-windows): the tests took
+  13 min. Slow tests (the comparisons with SAS, Genstat and emmeans,
+  permutation and bootstrap runs, simulations) now skip on CRAN
+  (`skip_on_cran()`); every exported function is still called by a test that
+  runs on CRAN. Two long vignettes are precomputed. On our Linux machine the
+  tests run as on CRAN took 430 s and now take 58 s, the vignettes 80 s and
+  now about 23 s; the whole check run as on CRAN takes 3.7 min there.
+  Win-builder R-devel: (to be filled in from the new run).
+* "Rd files without \usage: anova.lmerMod.Rd, anova.semireg.Rd,
+  se_ranef.Rd" (r-devel-linux-debian): fixed; the usage sections are there.
+* "Possibly misspelled words in DESCRIPTION: Kenward, PROC": both are names,
+  Kenward of Kenward and Roger (1997), cited with its DOI, and the 'SAS'
+  procedure PROC MIXED.
 
 ## Test environments
 
