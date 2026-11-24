@@ -52,6 +52,7 @@ test_that("glmer: dropping the only random term refits a glm; nested terms (1 | 
 })
 
 test_that("glmmTMB: unstructured terms, ar1() correlation; residual ar1 (dispformula = ~0) variances not tested", {
+  skip_on_cran()
   d <- sleep()
   obj <- function(m) m$fit$objective
   t1 <- q(glmmTMB::glmmTMB(Reaction ~ Days + (Days | Subject) + (1 | g), d))
@@ -71,6 +72,7 @@ test_that("glmmTMB: unstructured terms, ar1() correlation; residual ar1 (dispfor
 })
 
 test_that("semireg: smooth blocks as anova(), other random terms by refit; semireg_tmb with ar1()", {
+  skip_on_cran()
   d <- sleep()
   s1 <- q(semireg(Reaction ~ s(Days, bs = "os", k = 4) + (Days | Subject), data = d))
   tt <- q(pm_vc_test(s1))
@@ -88,6 +90,7 @@ test_that("semireg: smooth blocks as anova(), other random terms by refit; semir
 })
 
 test_that("likelihood ratio statistics equal SAS PROC MIXED / GLIMMIX and Genstat REML (real runs, 2026-11-17)", {
+  skip_on_cran()
   # dev/sas/sas-results-2026-11-17-vctest.txt (pm-reference-vctest.sas),
   # dev/genstat/genstat-results-2026-11-17-run4.txt (pm-reference-4.gen):
   # differences of -2 (restricted) log-likelihoods of full and reduced fits
@@ -120,6 +123,7 @@ test_that("likelihood ratio statistics equal SAS PROC MIXED / GLIMMIX and Gensta
 })
 
 test_that("p-values: mixtures equal SAS GLIMMIX COVTEST; the exact restricted LRT has the known mass at 0", {
+  skip_on_cran()
   # dev/sas/sas-results-2026-11-17-vctest.txt (4 decimals)
   data(Orthodont, package = "nlme", envir = environment())
   O <- as.data.frame(Orthodont)

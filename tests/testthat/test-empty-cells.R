@@ -165,6 +165,7 @@ test_that("factors confounded within another factor (each pasture on one farm): 
 })
 
 test_that("means over empty cells are labelled, and nothing read off them contradicts their pair tests", {
+  skip_on_cran()
   q <- function(e) suppressWarnings(suppressMessages(e))
   Oats <- as.data.frame(nlme::Oats); Oats$N <- factor(Oats$nitro)
   Om <- subset(Oats, !(Variety == "Victory" & N == "0.6"))

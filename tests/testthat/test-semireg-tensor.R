@@ -9,6 +9,7 @@ tensor_data <- function() {
 }
 
 test_that("t2(): the same model as gam() with the unconstrained t2 basis and its penalties (paraPen)", {
+  skip_on_cran()
   d <- tensor_data()
   fs <- q(semireg(y ~ t2(x, z) + (1 | g), data = d))
   expect_equal(sort(names(fs$u_lst)), c("t2_x_z_1", "t2_x_z_2", "t2_x_z_3"))
@@ -34,6 +35,7 @@ test_that("t2(): the same model as gam() with the unconstrained t2 basis and its
 })
 
 test_that("t2(..., by = f): a surface per level, fixed terms f + f:x + f:z + f:x:z; te() and ti()", {
+  skip_on_cran()
   set.seed(1)
   d <- data.frame(x = runif(400), z = runif(400), A = gl(2, 200, labels = c("a1", "a2")), g = gl(20, 20))
   d$y <- sin(3*d$x)*cos(2*d$z) + 0.5*(d$A == "a2")*d$x*d$z + rnorm(20, 0, 0.3)[d$g] + rnorm(400, 0, 0.2)

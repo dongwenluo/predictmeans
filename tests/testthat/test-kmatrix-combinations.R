@@ -58,6 +58,7 @@ test_that("any combination of fixed-effect variables gives rows, model term or n
 })
 
 test_that("each group of interacting variables is averaged on its own grid: the same K as the full grid", {
+  skip_on_cran()
   d <- km_data()
   mods <- list(lm(y ~ A + B + C + Blk + x + z, d), lm(y ~ A * B + C * Blk + x, d), lm(y ~ A * x + B + poly(z, 2), d),
                lme4::lmer(y ~ A * B + C + x + (1 | Blk), d),

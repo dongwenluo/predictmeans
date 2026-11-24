@@ -3,6 +3,7 @@
 ## Lambda, the data kept out of the caller's frame.
 
 test_that("semireg(): Satterthwaite df and variance components equal the same model fitted by lme", {
+  skip_on_cran()
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   fit <- semireg(areaPerMzloty ~ s(construction.date, bs = "os", k = 25), data = WarsawApts)
@@ -34,6 +35,7 @@ test_that("semireg(): Satterthwaite df and variance components equal the same mo
 })
 
 test_that("semireg(): a smooth with its variance at zero (a straight line) and a negative binomial fit", {
+  skip_on_cran()
   set.seed(3)
   n <- 300
   d <- data.frame(x = runif(n, 0, 3), g = gl(2, n/2, labels = c("a", "b")), id = gl(20, 1, n))
@@ -74,6 +76,7 @@ test_that("semireg(): the covariance of the coefficients is (C'WC + D)^-1 when L
 })
 
 test_that("semireg(): cbind() responses, data as an expression, nothing written into the caller's frame", {
+  skip_on_cran()
   data(cbpp, package = "lme4", envir = environment())
   set.seed(1)
   cbpp$x <- runif(nrow(cbpp))
@@ -136,6 +139,7 @@ test_that("unconditional = TRUE: the smoothing-parameter correction, close to mg
 })
 
 test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zero, smooth LRTs, no lmerTest", {
+  skip_on_cran()
   q <- function(e) suppressWarnings(suppressMessages(e))
   data(Dialyzer, package = "nlme", envir = environment())
   fit <- q(semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer))
@@ -161,6 +165,7 @@ test_that("anova() of a semireg fit: Kenward-Roger with a smooth variance at zer
 })
 
 test_that("semireg_tmb(): a glmmTMB family named without glmmTMB attached (family = nbinom1), as in 1.x", {
+  skip_on_cran()
   set.seed(4)
   d <- data.frame(x = runif(120, 0, 3), g = gl(6, 20))
   d$y <- rnbinom(120, mu = exp(1 + sin(d$x)), size = 3)
@@ -194,6 +199,7 @@ test_that("semireg(): the deviance function cannot move the fitted model (df, va
 })
 
 test_that("semireg_tmb() refits keep the prior weights and offset (anova(), varcomp() LRTs)", {
+  skip_on_cran()
   set.seed(8812)
   d <- data.frame(x = runif(120), g = gl(12, 10), w = runif(120, 0.3, 3), o = rnorm(120, sd = 0.5))
   d$y <- sin(2 * pi * d$x) + rnorm(12, sd = 0.5)[d$g] + rnorm(120)/sqrt(d$w) + d$o
@@ -216,4 +222,12 @@ test_that("semireg_tmb() refits keep the prior weights and offset (anova(), varc
   expect_equal(sm$logLik, as.numeric(logLik(fits$both$semer)), tolerance = 1e-6)
   # Type III Wald tests with an offset (the rebuilt design leaves it out)
   expect_s3_class(anova(fits$offset_term), "pm_semi_anova")
+})
+
+test_that("semireg_tmb(): a quick fit and its curve (runs on CRAN)", {
+  fit <- semireg_tmb(rate ~ s(pressure, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
+  expect_s3_class(fit, "semireg")
+  cur <- semipred(fit, covariate = "pressure", at = c(0.5, 1.5, 2.5))
+  expect_equal(nrow(cur$means), 3)
+  expect_true(all(is.finite(cur$means$std.error)))
 })

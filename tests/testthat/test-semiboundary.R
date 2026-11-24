@@ -4,6 +4,7 @@
 in_b <- function(P, b) pm_points_in_poly(as.matrix(P), b)
 
 test_that("the scallop survey: one piece, every point inside, close to the boundary of the original analysis", {
+  skip_on_cran()
   data(scallop, package = "predictmeans", envir = environment())
   data(scallopBdry, package = "predictmeans", envir = environment())
   b <- semiboundary(scallop[, c("longitude", "latitude")])
@@ -63,6 +64,7 @@ test_that("scale: coordinates in the same unit are not stretched", {
 })
 
 test_that("small holes are filled, an area without data stays a hole", {
+  skip_on_cran()
   g <- expand.grid(x = 1:30, y = 1:30)
   lake <- g[!(g$x %in% 10:15 & g$y %in% 10:15), ]               # 36 plots missing
   b <- semiboundary(lake, scale = "same")
@@ -86,6 +88,7 @@ test_that("arguments are checked", {
 })
 
 test_that("semipred(boundary = TRUE) keeps the grid points inside the data's region", {
+  skip_on_cran()
   set.seed(2)
   d <- data.frame(x1 = c(runif(60, 0, 1), runif(60, 2, 3)), x2 = runif(120, 0, 1))
   d$y <- sin(2 * d$x1) + d$x2 + rnorm(120, 0, 0.2)

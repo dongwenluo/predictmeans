@@ -120,6 +120,7 @@ test_that("summary() says what the back-transformed means are", {
 })
 
 test_that("pm_check() gives the Box-Cox power the residuals suggest", {
+  skip_on_cran()
   set.seed(2)
   d <- data.frame(A = factor(rep(1:4, each = 15)))
   d$y <- exp(1 + 0.3*as.numeric(d$A) + rnorm(60, sd = 0.5))
@@ -275,6 +276,7 @@ test_that("covariatemeans(contr = ): simultaneous band, joint test and the range
 })
 
 test_that("covariatemeans(bias_adjust = ): the mean of the response, as predictmeans()", {
+  skip_on_cran()
   O <- as.data.frame(nlme::Oats)
   grDevices::pdf(NULL); on.exit(grDevices::dev.off())
   cm <- function(...) suppressMessages(covariatemeans(...))

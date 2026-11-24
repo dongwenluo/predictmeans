@@ -1,6 +1,7 @@
 ## permmodels(method = "freedman-lane") for mixed models, GLMs and GLMMs
 
 test_that("Freedman-Lane for lmer/lme/gls uses the model's Wald F and t", {
+  skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   Om <- Oats[-c(1, 5, 9, 20, 33), ]
   m1 <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Om)

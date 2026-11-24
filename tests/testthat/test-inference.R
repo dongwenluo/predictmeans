@@ -22,6 +22,7 @@ inf_models <- function() {
 }
 
 test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() for every df method", {
+  skip_on_cran()
   ms <- inf_models()
   for (nm in names(ms)) {
     m <- ms[[nm]]$m
@@ -45,6 +46,7 @@ test_that("pairs df agree across predictmeans(), contrastmeans() and pm_joint() 
 })
 
 test_that("settings$vcov_adjust says whether the Kenward-Roger covariance was used", {
+  skip_on_cran()
   ms <- inf_models()
   s <- function(m, ...) suppressWarnings(suppressMessages(
     predictmeans(m, "Variety", plot = FALSE, ...)))$settings$vcov_adjust

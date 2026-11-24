@@ -13,6 +13,7 @@ split_plot <- function(seed = 11, eff = c(a1 = 0, a2 = 0.5, a3 = 1)) {
 }
 
 test_that("split plot with curves over time: means at t = 5 with Satterthwaite df for fixed + smooth coefficients", {
+  skip_on_cran()
   d <- split_plot()
   fit <- q(semireg(y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A), data = d))
   pm <- q(predictmeans(fit, "A", covariate = c(t = 5), pairwise = TRUE))
@@ -48,6 +49,7 @@ test_that("split plot with curves over time: means at t = 5 with Satterthwaite d
 })
 
 test_that("s(x, f1*f2): a variance per deviation term; anova() tests which deviation curves are needed", {
+  skip_on_cran()
   set.seed(1)
   d <- expand.grid(x = seq(0, 1, length = 25), f1 = factor(c("p", "q")), f2 = factor(c("u", "v", "w")), rep = 1:4)
   d$id <- interaction(d$f1, d$f2, d$rep)
@@ -67,6 +69,7 @@ test_that("s(x, f1*f2): a variance per deviation term; anova() tests which devia
 })
 
 test_that("counts with a negative binomial and zero inflation (glmmTMB engine): rate ratio between curves", {
+  skip_on_cran()
   set.seed(5)
   d <- expand.grid(x = seq(0, 3, length = 30), trt = factor(c("ctl", "trt")), site = factor(1:8))
   mu <- exp(1 + sin(d$x) + (d$trt == "trt")*0.5*d$x + rnorm(8, 0, 0.3)[d$site])
@@ -85,6 +88,7 @@ test_that("counts with a negative binomial and zero inflation (glmmTMB engine): 
 })
 
 test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Satterthwaite df as the lme4 engine", {
+  skip_on_cran()
   d <- split_plot()
   f <- y ~ s(t, by = A, bs = "os", k = 6) + (1 | Block) + (1 | Block:A)
   a <- q(semireg(f, data = d))
@@ -110,6 +114,7 @@ test_that("semireg_tmb(): REML by default for gaussian fits (as documented), Sat
 })
 
 test_that("semireg_tmb() with AR(1) residuals: means at a time with Satterthwaite df", {
+  skip_on_cran()
   set.seed(9)
   d <- expand.grid(t = 1:8, id = factor(1:12))
   d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))

@@ -4,6 +4,7 @@ q <- function(e) suppressWarnings(suppressMessages(e))
 built <- function(p) { ggplot2::ggplot_build(p); TRUE }
 
 test_that("covariatemeans(): one to four factors, default and chosen layouts", {
+  skip_on_cran()
   O <- as.data.frame(nlme::Oats)
   O$B <- factor(O$Block %in% c("I", "II", "III"), labels = c("late", "early"))
   O$C <- factor(rep(1:2, length.out = nrow(O)))
@@ -72,6 +73,7 @@ test_that("covariatemeans(): two covariates need a matrix 'at'; surface plots", 
 })
 
 test_that("semipred(): layouts for two factors, slopes, differences, surfaces, 3d", {
+  skip_on_cran()
   set.seed(1)
   dd <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = factor(c("u", "v", "w")), rep = 1:3)
   dd$id <- interaction(dd$f1, dd$f2, dd$rep)
@@ -105,6 +107,7 @@ test_that("semipred(): layouts for two factors, slopes, differences, surfaces, 3
 })
 
 test_that("semipred(): sm_term as block names, labels, terms as written or covariates; advice", {
+  skip_on_cran()
   set.seed(2)
   da <- data.frame(x1 = runif(150), x2 = runif(150), z = rnorm(150))
   da$y <- sin(3*da$x1) + da$z*sin(2*pi*da$x2) + rnorm(150, 0, 0.3)
@@ -147,6 +150,7 @@ test_that("marks where the band leaves out the reference are drawn, also on the 
 })
 
 test_that("autoplot() takes the plot settings of the call; one legend for many groups", {
+  skip_on_cran()
   d <- get(utils::data(DataExam5.2, package = "predictmeans", envir = environment()))
   m <- lm(ht ~ site + sitemean * seedlot, data = d)
   cm <- suppressWarnings(covariatemeans(m, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))

@@ -7,6 +7,7 @@ cars_data <- function() {
 }
 
 test_that("permstats(): parametric and permutation p-values, effect sizes, size of the parametric test", {
+  skip_on_cran()
   d <- cars_data()
   fm <- lm(mpg ~ wt + cyl, data = d)
   set.seed(7)

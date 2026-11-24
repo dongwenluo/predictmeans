@@ -79,6 +79,7 @@ test_that("R2_model(): every model class; equal to the known value of each", {
 })
 
 test_that("R2_model(): glm as the glmmTMB fit without random effects; binary on the latent scale", {
+  skip_on_cran()
   u <- function(x) unclass(x)[seq_along(x)]
   p1 <- glm(breaks ~ wool*tension, poisson, warpbreaks)
   p2 <- glmmTMB::glmmTMB(breaks ~ wool*tension, family = poisson, data = warpbreaks)

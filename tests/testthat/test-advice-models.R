@@ -9,6 +9,7 @@ oats <- function() {
 }
 
 test_that("permmodels(): few permutations are advised, enough are not", {
+  skip_on_cran()
   fm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = oats())
   p49 <- permmodels(fm, nperm = 49, seed = 1)
   expect_identical(ids_of(p49), "few_permutations")

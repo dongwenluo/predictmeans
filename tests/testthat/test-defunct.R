@@ -41,6 +41,7 @@ test_that("a removed function stops with its replacement", {
 })
 
 test_that("no removed argument can be partially matched to a remaining one", {
+  skip_on_cran()
   # Once an argument is no longer a formal, the function must take '...' (so
   # that pm_defunct() sees it), and it must not be the start of a formal
   # placed before '...' (R would pass it there silently).
@@ -52,5 +53,11 @@ test_that("no removed argument can be partially matched to a remaining one", {
     expect_true("..." %in% fm, info = paste(tab$fun[i], tab$arg[i]))
     before <- fm[seq_len(match("...", fm) - 1L)]
     expect_false(any(startsWith(before, tab$arg[i])), info = paste(tab$fun[i], tab$arg[i]))
+  }
+})
+
+test_that("the removed permutation functions stop with their replacement", {
+  for (fn in c("permanova.lmer", "permglmer", "permglmmTMB")) {
+    expect_error(get(fn, asNamespace("predictmeans"))(), "was removed in predictmeans 2.0", class = "defunctError")
   }
 })

@@ -159,6 +159,7 @@ test_that("Exam 4.4 as aov(... + Error(repl/mainpl)): Genstat's SEDs and df by s
 })
 
 test_that("Exam 8.1, inoculation (on whole replicates) x provenances within countries: Genstat by strata (TABC8_1)", {
+  skip_on_cran()
   d <- tree_data("ex8.1a.csv")
   d$repl <- factor(d$repl); d$prov <- factor(d$prov)
   fa <- aov(dbh ~ inoc * (country/prov) + Error(repl), data = d)

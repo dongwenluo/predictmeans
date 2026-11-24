@@ -39,6 +39,7 @@ test_that("bias adjustment by hand: the mean of h(eta + u); 'taylor' is h(eta) +
 })
 
 test_that("bias_adjust = 'taylor' equals emmeans (bias.adjust, regrid) for Poisson, binomial and a log response", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   d <- glmm_data()
   m <- lme4::glmer(y ~ A * B + (1 | block), family = poisson, data = d)

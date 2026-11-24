@@ -10,6 +10,7 @@ oats_fac <- function() {
 reg <- function(generic, cls, fn, ns = "stats") registerS3method(generic, cls, fn, envir = asNamespace(ns))
 
 test_that("a class with only coef, vcov, terms and df.residual works", {
+  skip_on_cran()
   fit_toylm <- function(formula, data) {
     structure(list(fit = lm(formula, data), call = match.call()), class = "toylm")
   }

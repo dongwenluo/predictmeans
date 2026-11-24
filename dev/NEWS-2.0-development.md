@@ -558,6 +558,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   \usage: anova.lmerMod.Rd, anova.semireg.Rd, se_ranef.Rd" (r-devel Debian).
   Their roxygen blocks were detached (`@name x` + `NULL`); now on the
   functions, so roxygen writes `\usage` (`\method{anova}{lmerMod}` etc.).
+* CRAN pre-test "Overall checktime 21 min > 10 min" (r-devel-windows; tests
+  13 min). Tests timed as CRAN runs them (`NOT_CRAN` unset): 430 s here, 4
+  tests took 166 s. The 114 tests over 0.5 s now start with
+  `skip_on_cran()` (they still run on GitHub, locally and with `NOT_CRAN`):
+  CRAN-mode tests 58 s, 0 failures. Every exported function is still
+  called by a test CRAN runs (checked by tracing all exports); two quick
+  tests added for the four that were not (`semireg_tmb()`, the removed
+  `permanova.lmer()`/`permglmer()`/`permglmmTMB()` stubs).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

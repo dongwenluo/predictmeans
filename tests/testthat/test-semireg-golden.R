@@ -21,6 +21,7 @@ expect_same_fit <- function(fit, r, y, label) {
 }
 
 test_that("golden examples: additive models, thin-plate surfaces, additive mixed model (lme)", {
+  skip_on_cran()
   ref <- golden()
   # addMix: O'Sullivan spline + binary covariate + random intercept (Smith and Wand, 2008)
   d <- ref$addMix$data
@@ -75,6 +76,7 @@ test_that("golden example growthIndiana: mean curve + subject curves (s(age) | i
 })
 
 test_that("golden examples fitted by gamm() and gam(): semireg() equals gam(method = 'REML')", {
+  skip_on_cran()
   ref <- golden()
   # SBMDfem: gamm(s(age) + ethnicity, random intercept); gamm's lme stops short of the REML optimum
   sb <- gdata("SBMDfem.txt", header = TRUE)

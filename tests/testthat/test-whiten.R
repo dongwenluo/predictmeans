@@ -44,6 +44,7 @@ test_that("pm_whiten_blocks() gives symmetric roots of each block", {
 })
 
 test_that("permlmer() and permmodels() run with the new square root", {
+  skip_on_cran()
   set.seed(2)
   d <- expand.grid(sub = 1:3, wp = 1:4, block = 1:6)
   d$A <- factor(d$wp); d$block <- factor(d$block); d$wpid <- interaction(d$block, d$wp)

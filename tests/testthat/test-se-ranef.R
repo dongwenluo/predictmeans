@@ -76,6 +76,7 @@ test_that("predict adds the fixed part: overall mean for Block, the Variety mean
 })
 
 test_that("crossed terms, zero variance, glmer, glmmTMB, semireg, and models without random effects", {
+  skip_on_cran()
   d <- oats_se()
   fc <- lme4::lmer(yield ~ nitro + (1 | Block) + (1 | Variety), data = d)
   rc <- se_ranef(fc)

@@ -10,6 +10,7 @@ oats_f <- function() {
 }
 
 test_that("every model class gives four ggplots with the right panels", {
+  skip_on_cran()
   O <- oats_f()
   ms <- list(lm = lm(yield ~ Block + nitro * Variety, O),
              aovlist = aov(yield ~ nitro * Variety + Error(Block/Variety), O),
@@ -59,6 +60,7 @@ test_that("randomized quantile residuals: standard normal for a right Poisson mo
 })
 
 test_that("fitted vs observed: response from pm_data(), axis labelled with the response", {
+  skip_on_cran()
   O <- oats_f()
   m1 <- lme4::lmer(log(yield + 1) ~ nitro + (1 | Block), data = O)
   p <- rp(m1)
@@ -79,6 +81,7 @@ test_that("fitted vs observed: response from pm_data(), axis labelled with the r
 })
 
 test_that("points keep the original row numbers when rows with missing values are dropped", {
+  skip_on_cran()
   O <- oats_f()
   O$yield[c(3, 10)] <- NA
   O$nitro[20] <- NA
@@ -109,6 +112,7 @@ test_that("gam fits show fitted vs observed, not Cook's distance", {
 })
 
 test_that("group colours, labels of extreme points, binary calibration, semireg, plotly", {
+  skip_on_cran()
   O <- oats_f()
   fm <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = O)
   p <- rp(fm, group = "Variety", id = 2)

@@ -7,6 +7,7 @@ expect_anova_equal <- function(new, ref, label) {
 }
 
 test_that("pm_anova() equals car::Anova() for lm, glm, lme, gls and lmer", {
+  skip_on_cran()
   skip_if_not_installed("car")
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)

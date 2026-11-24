@@ -17,6 +17,7 @@ ar1_data <- function(seed = 7, ns = 20, nt = 8) {
 struct_codes <- function(m) vapply(glmmTMB::VarCorr(m)$cond, function(v) names(attr(v, "blockCode")), "")
 
 test_that("semireg_tmb() keeps ar1(), ou(), cs(), diag() terms: fit, refit for anova(), the same model as smoothZ", {
+  skip_on_cran()
   d <- ar1_data()
   for (st in c("ar1", "cs", "diag", "ou")) {
     term <- if (st == "ou") "ou(times + 0 | id)" else paste0(st, "(tf + 0 | id)")
@@ -36,6 +37,7 @@ test_that("semireg_tmb() keeps ar1(), ou(), cs(), diag() terms: fit, refit for a
 })
 
 test_that("pure AR1 residuals (dispformula = ~0): curves and means with finite SEs", {
+  skip_on_cran()
   d <- ar1_data()
   fit <- q(semireg_tmb(y ~ s(time, by = trt, bs = "os", k = 4) + ar1(tf + 0 | id), dispformula = ~0, data = d))
   expect_true("ar1" %in% struct_codes(fit$semer))
@@ -46,6 +48,7 @@ test_that("pure AR1 residuals (dispformula = ~0): curves and means with finite S
 })
 
 test_that("semireg() (lme4) refuses covariance structures; bootmodels() keeps them in its null model", {
+  skip_on_cran()
   d <- ar1_data()
   expect_error(semireg(y ~ s(time) + ar1(tf + 0 | id), data = d), "semireg_tmb")
   m <- q(glmmTMB::glmmTMB(y ~ trt + ar1(tf + 0 | id), data = d))

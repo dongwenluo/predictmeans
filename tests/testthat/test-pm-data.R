@@ -6,6 +6,7 @@ oats <- function() {
 }
 
 test_that("pm_data(): fitted rows and the response on both scales for every model class", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   d <- oats()
   fits <- list(

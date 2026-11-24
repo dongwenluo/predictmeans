@@ -10,6 +10,7 @@ oats_unbal <- function() {
 pair_key <- function(a, b) paste(pmin(a, b), pmax(a, b))
 
 test_that("sidak, scheffe and mvt pairs match emmeans (overall and within atvar)", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   skip_if_not_installed("mvtnorm")
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
@@ -47,6 +48,7 @@ test_that("contrastmeans(): sidak and scheffe (rank of ctrmatrix) match emmeans"
 })
 
 test_that("contrastmeans(): adjusted limits match emmeans' confint() and agree with the p-values", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   skip_if_not_installed("mvtnorm")
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
@@ -67,6 +69,7 @@ test_that("contrastmeans(): adjusted limits match emmeans' confint() and agree w
 })
 
 test_that("mvt repeats exactly and leaves the user's random numbers alone", {
+  skip_on_cran()
   skip_if_not_installed("mvtnorm")
   d <- oats_unbal()   # (not in the call: predictmeans() re-evaluates the data argument)
   fm <- lm(yield ~ Block + nitro*Variety, data = d)
@@ -80,6 +83,7 @@ test_that("mvt repeats exactly and leaves the user's random numbers alone", {
 })
 
 test_that("with permutation p-values sidak works; scheffe and mvt stop", {
+  skip_on_cran()
   d <- oats_unbal()
   fm <- nlme::lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = d)
   pl <- permmodels(fm, method = "raw", nperm = 30, ncore = 1, seed = 1)
@@ -90,6 +94,7 @@ test_that("with permutation p-values sidak works; scheffe and mvt stop", {
 })
 
 test_that("adjusted limits of the pairs match emmeans' confint() and agree with p.adj", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   skip_if_not_installed("mvtnorm")
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats_unbal())
