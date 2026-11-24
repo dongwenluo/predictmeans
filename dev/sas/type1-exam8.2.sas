@@ -353,3 +353,18 @@ proc export data=cp_&tag outfile="type1_ex82_covparms_&tag..csv" dbms=csv replac
 
 %fit(kr, kr);
 %fit(satterthwaite, satt);
+
+/* Run 3 (added 2026-11-25, parallel to dev/genstat/type1-exam8.2.gen run 2):
+   another order of the fixed terms, contcompf first. R (predictmeans, X'X
+   hypotheses, KR): contcompf F 68.68 (257.5), repl 2.05 (26.5), column 2.00
+   (19.3), contcompf*std 16.86 (207). Genstat's X'V^-1X sequential Wald for
+   column would be 10.32 (F 2.06). */
+ods output Tests1 = t1_order2;
+proc mixed data=ex82 method=reml;
+  class repl row column contcompf std clone;
+  model dbh = contcompf repl column contcompf*std / htype=1 ddfm=kr;
+  random repl*row repl*column;
+  random cv / subject=clone;
+run;
+proc export data=t1_order2 outfile="type1_ex82_tests1_order2.csv" dbms=csv replace; run;
+
