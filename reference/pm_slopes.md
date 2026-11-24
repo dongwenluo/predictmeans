@@ -10,10 +10,12 @@ and SAS `ESTIMATE` statements on slope terms.
 ## Usage
 
 ``` r
-pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
-          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+pm_slopes(model, covariate, modelterm, at = NULL, conf_level = 0.95, adj = "none",
+          df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+            "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
           vcov_adjust = TRUE,
-          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
+          weights = c("equal", "proportional", "outer", "cells", "flat"),
+          vcov = NULL, ...)
 ```
 
 ## Arguments
@@ -38,7 +40,7 @@ pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none
   when the covariate enters the model non-linearly); the default is its
   mean.
 
-- conf.level:
+- conf_level:
 
   Confidence level of the limits, the default is 0.95 (`level = 0.05`
   before 2.0).
@@ -79,7 +81,7 @@ its tables, `what = "slopes"` or `"pairs"`):
   `p.value`, `p.adj`, `conf.low`, `conf.high` and, with the adjustments
   that have them (tukey, bonferroni, sidak, scheffe, mvt),
   `adj.conf.low`, `adj.conf.high`: simultaneous limits that leave out 0
-  exactly when `p.adj` is below `1 - conf.level`.
+  exactly when `p.adj` is below `1 - conf_level`.
 
 - settings:
 
@@ -103,6 +105,12 @@ for models fitted by REML (`lmer`, `lme`, `gls`) Kenward-Roger (with the
 adjusted covariance when `vcov_adjust = TRUE`); with one df per term
 (containment, between-within, nlme's df) the smallest df of the terms
 with the covariate; otherwise the residual df.
+
+## See also
+
+[`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
 
 ## Author
 

@@ -1,6 +1,13 @@
-# Fitting Semi Parametric Models Using glmmTMB
+# Semiparametric Mixed Models Fitted with glmmTMB
 
-Fit a semi parametric model based on glmmTMB.
+Fit a semiparametric (additive mixed) model with glmmTMB: smooth terms
+written in the formula, as in
+[`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html), are fitted as
+random effects, next to glmmTMB's families (e.g. negative binomial),
+zero inflation, dispersion models and covariance structures.
+[`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)/`smoothZ`
+of 1.x are superseded (removed in 2.0); see
+[`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md).
 
 ## Usage
 
@@ -157,16 +164,28 @@ semireg_tmb(formula, data, family = gaussian(), ziformula = ~0,
 
 ## Value
 
-A list of class `semireg`;
-[`print()`](https://rdrr.io/r/base/print.html) shows the fitted model
-and the random-effect term of each smooth,
-[`summary()`](https://rdrr.io/r/base/summary.html) the summary of the
-fitted model, [`anova()`](https://rdrr.io/r/stats/anova.html) tests of
-its terms. Its elements:
+A list of class `semireg`, as for
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md):
+[`print()`](https://rdrr.io/r/base/print.html) shows the formula, the
+smooth terms (with the `smooth`, `term` and `covariate` values that
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+takes for `sm_term` and `covariate`), the fixed effects, other variance
+components and any advice;
+[`summary()`](https://rdrr.io/r/base/summary.html), `tidy()` and the
+extractors ([`coef()`](https://rdrr.io/r/stats/coef.html),
+[`vcov()`](https://rdrr.io/r/stats/vcov.html),
+[`VarCorr()`](https://rdrr.io/pkg/nlme/man/VarCorr.html), ...) are those
+described there. Notes on the fit are in `attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
+Its elements:
 
 - semer:
 
-  A glmmTMB model used in the fitting.
+  The fitted `glmmTMB` model.
+
+- call:
+
+  The call of `semireg_tmb()`.
 
 - data:
 
@@ -211,11 +230,10 @@ its terms. Its elements:
 
 ## Details
 
-A semi parametric model can be parameterized as a linear (or generalized
-linear) mixed model in which its random effects are smooth functions of
-some covariates (named \<e2\>\<80\>\<98\>smooth term\<e2\>\<80\>\<99\>).
-`semireg_tmb` follows the approach suggested by Wand and Ormerod (2008)
-and represents the 'smooth term' using O'Sullivan-type of Z.
+A semiparametric model is fitted as a linear (or generalized linear)
+mixed model whose random effects are the penalised parts of smooth
+functions of covariates (Wand and Ormerod, 2008); each smooth's variance
+is its smoothing parameter, estimated by (RE)ML.
 
 ## Correlation structures
 
@@ -253,8 +271,8 @@ its group slopes:
 | `s(x, by = z)`, `z` numeric | varying coefficient \\f(x) z\\ | `z + z:x` |
 | `s(x, f, bs = "fs")` | random curves per level, one variance | none |
 | `s(x1, x2)` | isotropic surface (thin plate) | `x1 + x2` |
-| `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots, as `smZ(x, k = 10)` | `x` |
-| `s(x1, x2, bs = "ztps", k = 6)` | thin plate of `Ztps()`, as `smZ(cbind(x1, x2), type = "Ztps", k = 6)` with `k = 6` | `x1 + x2` |
+| `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots (1.x `smZ(x, k = 10)`) | `x` |
+| `s(x1, x2, bs = "ztps", k = 6)` | low-rank thin plate with `k` knots (1.x `smZ(cbind(x1, x2), type = "Ztps", k = 6)`) | `x1 + x2` |
 | `s(x, bs = "user", xt = list(basis = f))` | a basis of your own (see [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)) | `x` |
 | `t2(x1, x2)` | tensor-product surface, a variance per penalty | `x1 + x2 + x1:x2` |
 | `s(x, bs = "cs")`, `"ts"` | shrinkage smooths (no unpenalised part) | none |
@@ -305,6 +323,13 @@ Wand, M.P. and Ormerod, J.T. (2008). On semiparametric regression with
 O'Sullivan penalized splines. *Australian and New Zealand Journal of
 Statistics.* **50**, 179-198.
 
+## See also
+
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+[`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md),
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -339,7 +364,7 @@ predictmeans(fc, "trt", covariate = c(x = 1.5))$means
 # \donttest{
 ## Repeated measures: curves over time, AR(1) correlation within subjects (the residual
 ## covariance, dispformula = ~0); means at a time with Satterthwaite df
-set.seed(9)
+set.seed(7)
 d <- expand.grid(t = 1:8, id = factor(1:12))
 d$A <- factor(rep(c("a1", "a2", "a3"), each = 32))
 d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
@@ -347,24 +372,23 @@ d$y <- sin(d$t/3) + rnorm(12, 0, 0.4)[d$id] +
 d$tf <- factor(d$t)
 fa <- semireg_tmb(y ~ s(t, by = A, bs = "os", k = 4) + (1 | id) + ar1(tf + 0 | id),
                   dispformula = ~0, data = d)
-#> Warning: Model convergence problem; false convergence (8). See vignette('troubleshooting'), help('diagnose')
 predictmeans(fa, "A", covariate = c(t = 4), pairwise = TRUE)$pairs
-#>   level1 level2    estimate std.error       df  statistic   p.value     p.adj
-#> 1     a1     a2 -0.21464779 0.3486296 20.14254 -0.6156900 0.5449940 0.5449940
-#> 2     a1     a3 -0.30286816 0.3191345 17.10317 -0.9490298 0.3558238 0.3558238
-#> 3     a2     a3 -0.08822037 0.3358213 19.06262 -0.2627004 0.7955997 0.7955997
+#>   level1 level2   estimate std.error       df  statistic   p.value     p.adj
+#> 1     a1     a2  0.2777639 0.4349906 13.49640  0.6385516 0.5338012 0.5338012
+#> 2     a1     a3 -0.1610702 0.4431463 14.19657 -0.3634695 0.7216096 0.7216096
+#> 3     a2     a3 -0.4388341 0.4381514 14.09415 -1.0015583 0.3334431 0.3334431
 #>     conf.low conf.high       lsd p.method
-#> 1 -0.9415467 0.5122511 0.7268989        t
-#> 2 -0.9758738 0.3701375 0.6730057        t
-#> 3 -0.7909461 0.6145053 0.7027257        t
+#> 1 -0.6584747 1.2140026 0.9362386        t
+#> 2 -1.1102914 0.7881510 0.9492212        t
+#> 3 -1.3779868 0.5003185 0.9391526        t
 varcomp(fa)
 #>                       vcov     SE  2.5 %       97.5 %
-#> id.(Intercept)      0.0000     NA 0.0000           NA
-#> id.1.var            0.3314 0.0850 0.2122 5.893000e-01
-#> cor.id.1            0.7044 0.0773 0.5191 8.264000e-01
-#> s_t_Aa1.(Intercept) 0.0056 0.0097 0.0009 1.808692e+02
-#> s_t_Aa2.(Intercept) 0.0274 0.0307 0.0067 2.432200e+00
-#> s_t_Aa3.(Intercept) 0.0016 0.0057 0.0002 2.787244e+16
+#> id.(Intercept)      0.0737 0.2157 0.0079 7.077491e+11
+#> id.1.var            0.3662 0.2435 0.1376 2.521000e+00
+#> cor.id.1            0.7865 0.1441 0.3112 9.470000e-01
+#> s_t_Aa1.(Intercept) 0.0244 0.0257 0.0063 1.373100e+00
+#> s_t_Aa2.(Intercept) 0.0116 0.0160 0.0024 8.644800e+00
+#> s_t_Aa3.(Intercept) 0.0425 0.0452 0.0109 2.558500e+00
 #> residual            0.0000     NA 0.0000           NA
 
 ## Binary responses with a random intercept per child (HRW::indonRespir)

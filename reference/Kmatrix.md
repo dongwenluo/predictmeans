@@ -7,12 +7,12 @@ as `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`
 
 The predicted means are built on a reference grid: every combination of
 the factor levels in the model, with covariates fixed at their means (or
-other chosen values). Each row of `K` is the equally weighted average of
-the grid rows for one level combination of `modelterm`. Combinations of
-nested factors that cannot exist (a term of the model holds both
-factors, e.g. `G/T`, and each level of one occurs with one level of the
-other) are left out of the averages; so are, with `weights = "equal"`,
-the empty cells of interaction terms (see
+other chosen values). Each row of `K` is the average of the grid rows
+(weighted as `weights` says; equal by default) for one level combination
+of `modelterm`. Combinations of nested factors that cannot exist (a term
+of the model holds both factors, e.g. `G/T`, and each level of one
+occurs with one level of the other) are left out of the averages; so
+are, with `weights = "equal"`, the empty cells of interaction terms (see
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
 When a mean cannot be estimated because two factors that share no term
 of the model are confounded in the data (not all their combinations
@@ -33,17 +33,18 @@ without `x`, or `x:z`), or through smooth terms (`s(x)`, `te(x, z)`,
 ## Usage
 
 ``` r
-Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean, exclude=NULL,
-        weights=c("equal", "proportional", "outer", "cells", "flat"), refgrid=FALSE, ...)
+Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean,
+        exclude=NULL, weights=c("equal", "proportional", "outer", "cells", "flat"),
+        refgrid=FALSE, ...)
 ```
 
 ## Arguments
 
 - model:
 
-  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`,
-  `glmer`, `glmmTMB`, `gam`/`bam` (package mgcv; for `gamm` use its
-  `$gam` component) or `semireg`.
+  A fitted model: `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`,
+  `glmmTMB`, `gam`/`bam` (package mgcv; for `gamm` use its `$gam`
+  component) or `semireg`.
 
 - modelterm:
 
@@ -186,6 +187,12 @@ Welham, S., Cullis, B., Gogel, B., Gilmour, A., & Thompson, R. (2004),
 *Prediction in linear mixed models*, Australian and New Zealand Journal
 of Statistics, 46(3), 325-347.
 
+## See also
+
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`contrast_family`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md),
+[`specify_contrast`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md)
+
 ## Author
 
 This function heavily depends on the codes from package "lsmeans".
@@ -195,7 +202,6 @@ This function heavily depends on the codes from package "lsmeans".
 ``` r
   library(predictmeans)
   data(Oats, package="nlme")
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
   Kmatrix(fm, "Variety")$K
 #>             (Intercept) nitro VarietyMarvellous VarietyVictory
@@ -932,7 +938,8 @@ This function heavily depends on the codes from package "lsmeans".
 #>            TRUE            TRUE            TRUE            TRUE            TRUE 
 #>  Marvellous:0.6       Victory:0     Victory:0.3     Victory:0.6 
 #>            TRUE            TRUE            TRUE            TRUE 
-  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames   # not a term of the model
+  # not a term of the model
+  Kmatrix(lm(yield ~ Block + Variety + nitro, data=Oats), "Block:Variety")$fctnames
 #>    Block     Variety nitro
 #> 1     VI Golden Rain   0.3
 #> 2     VI  Marvellous   0.3

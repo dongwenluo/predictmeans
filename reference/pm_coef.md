@@ -18,7 +18,6 @@ inside predictmeans needs to change.
 pm_coef(model, ...)
 pm_vcov(model, ...)
 pm_basis(model, newdata, ...)
-pm_data(model, ...)
 pm_df(model, L, ...)
 pm_linkinv(model, ...)
 pm_contrasts(model, ...)
@@ -64,7 +63,9 @@ As described in Details.
 - `pm_basis(model, newdata, ...)`:
 
   Design matrix of the fixed effects for `newdata`, with columns named
-  as in `pm_coef(model)`. Default:
+  as in `pm_coef(model)`: the columns are matched to the coefficients by
+  name, and a coefficient without a column stops with a message (a
+  column for an aliased coefficient may be there or not). Default:
   [`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html) of the
   model's terms (with their stored `predvars`, so
   [`poly()`](https://rdrr.io/r/stats/poly.html), `ns()`,
@@ -74,10 +75,15 @@ As described in Details.
 
 - `pm_data(model)`:
 
-  The data used to fit the model, or `NULL` (the default), in which case
-  they are found from the `data` argument of the call,
-  [`getData()`](https://rdrr.io/pkg/nlme/man/getData.html), the model
-  frame or the formula environment.
+  The data used to fit the model. The default method (see
+  [`pm_data`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md))
+  finds them from the `data` argument of the call,
+  [`getData()`](https://rdrr.io/pkg/nlme/man/getData.html) or the model
+  frame;
+  [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
+  uses a
+  [`pm_data()`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md)
+  method only when the class has its own.
 
 - `pm_df(model, L)`:
 
@@ -103,7 +109,13 @@ As described in Details.
 The model also needs a [`terms()`](https://rdrr.io/r/stats/terms.html)
 method for its fixed effects (used to find the variables in the model),
 and its call ([`getCall()`](https://rdrr.io/r/stats/update.html)) or a
-`pm_data()` method so that the data can be found.
+[`pm_data()`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md)
+method so that the data can be found.
+
+## See also
+
+[`Kmatrix`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
+[`pm_data`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md)
 
 ## Author
 
@@ -113,23 +125,43 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 ``` r
   library(predictmeans)
-  # A made-up model class that wraps lm() and has only four methods.
+  # A made-up model class that wraps lm() and has only four methods. (Methods are
+  # found where predictmeans looks for them: in a package's namespace or, as
+  # here, in the global environment; registerS3method() also works.)
   fit_mymodel <- function(formula, data) {
     structure(list(fit = lm(formula, data), call = match.call()), class = "mymodel")
   }
-  coef.mymodel <- function(object, ...) coef(object$fit)
-  vcov.mymodel <- function(object, ...) vcov(object$fit)
-  terms.mymodel <- function(x, ...) terms(x$fit)
-  df.residual.mymodel <- function(object, ...) object$fit$df.residual
+  registerS3method("coef", "mymodel", function(object, ...) coef(object$fit))
+  registerS3method("vcov", "mymodel", function(object, ...) vcov(object$fit))
+  registerS3method("terms", "mymodel", function(x, ...) terms(x$fit))
+  registerS3method("df.residual", "mymodel", function(object, ...) object$fit$df.residual)
 
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   m <- fit_mymodel(yield ~ Block + nitro*Variety, data = Oats)
-  predictmeans(m, "nitro", plot = FALSE)$means
-#> Error: Can't handle a model of class ‘mymodel’: it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).
+  predictmeans(m, "nitro")$means
+#>   nitro  estimate std.error df conf.low conf.high comparison.low
+#> 1     0  79.38889  3.758096 55  71.8575  86.92028       74.06339
+#> 2   0.2  98.88889  3.758096 55  91.3575 106.42028       93.56339
+#> 3   0.4 114.22222  3.758096 55 106.6908 121.75362      108.89672
+#> 4   0.6 123.38889  3.758096 55 115.8575 130.92028      118.06339
+#>   comparison.high  n estimable
+#> 1        84.71439 18      TRUE
+#> 2       104.21439 18      TRUE
+#> 3       119.54772 18      TRUE
+#> 4       128.71439 18      TRUE
 
   # Degrees of freedom of its own, e.g. normal-based:
-  pm_df.mymodel <- function(model, L, ...) rep(Inf, nrow(L))
-  predictmeans(m, "nitro", plot = FALSE)$means
-#> Error: Can't handle a model of class ‘mymodel’: it needs named fixed-effect estimates from coef() or a pm_coef() method (see ?pm_coef).
+  registerS3method("pm_df", "mymodel", function(model, L, ...) rep(Inf, nrow(L)))
+  predictmeans(m, "nitro")$means
+#>   nitro  estimate std.error  df  conf.low conf.high comparison.low
+#> 1     0  79.38889  3.758096 Inf  72.02316  86.75462       74.18053
+#> 2   0.2  98.88889  3.758096 Inf  91.52316 106.25462       93.68053
+#> 3   0.4 114.22222  3.758096 Inf 106.85649 121.58796      109.01386
+#> 4   0.6 123.38889  3.758096 Inf 116.02316 130.75462      118.18053
+#>   comparison.high  n estimable
+#> 1        84.59725 18      TRUE
+#> 2       104.09725 18      TRUE
+#> 3       119.43058 18      TRUE
+#> 4       128.59725 18      TRUE
 ```

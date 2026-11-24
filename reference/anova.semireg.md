@@ -18,8 +18,11 @@ fit, with the package's own code (no lmerTest needed).
 
 - type:
 
-  `"III"` (default) or `"II"`: the type of the tests of the fixed
-  effects.
+  `"III"` (default), `"II"` or `"I"` (also `3`, `2`, `1`): the type of
+  the tests of the fixed effects. Type I is sequential (Satterthwaite F
+  for gaussian fits, Wald chi-square otherwise); see
+  [`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+  for which type to use.
 
 - smooth:
 
@@ -36,7 +39,10 @@ A list of class `"pm_semi_anova"` with `fixed` (the table of the fixed
 effects) and `smooth` (a data frame: the variance of each smooth block,
 the log-likelihoods of the model with and without it, the likelihood
 ratio statistic, its p-value and the reference distribution), printed
-together.
+together. Advice on the type of tests is kept as for
+[`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+(see
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
 
 ## Details
 
@@ -80,6 +86,12 @@ likelihood estimators and likelihood ratio tests under nonstandard
 conditions. *Journal of the American Statistical Association*, 82,
 605-610.
 
+## See also
+
+[`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md),
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md),
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+
 ## Examples
 
 ``` r
@@ -90,6 +102,12 @@ anova(fm)
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
 #> Response: rate
+#> 
+#> Advice:
+#> ! A numeric covariate is in an interaction: Type III tests of the other
+#>   terms are at covariate = 0; centre the covariate if 0 is not a meaningful
+#>   value.
+#> 
 #>                    F Df  Df.res  Pr(>F)    
 #> (Intercept)   6.5438  1 116.395 0.01181 *  
 #> pressure    183.8452  1 109.641 < 2e-16 ***

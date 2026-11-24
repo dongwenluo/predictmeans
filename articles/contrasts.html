@@ -5,21 +5,27 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Contrasts, joint tests and slopes • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Contrasts, joint tests and slopes">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Contrasts, joint tests and slopes">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,22 +39,31 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -104,14 +119,14 @@ SAS <code>ADJUST=SIMULATE</code> estimates by simulation; here it is
 computed by package mvtnorm.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"tukey"</span>, <span class="st">"mvt"</span>, <span class="st">"sidak"</span>, <span class="st">"scheffe"</span>, <span class="st">"holm"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">a</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, adj <span class="op">=</span> <span class="va">a</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">p.adj</span><span class="op">)</span></span>
-<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, adj <span class="op">=</span> <span class="va">a</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">p.adj</span><span class="op">)</span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pair <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">level1</span>, <span class="st">"-"</span>, <span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">level2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">signif</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        pair     none    tukey      mvt    sidak  scheffe     holm</span></span>
 <span><span class="co">#&gt; 1   0 - 0.2 6.66e-05 3.76e-04 3.66e-04 3.99e-04 1.01e-03 2.00e-04</span></span>
 <span><span class="co">#&gt; 2   0 - 0.4 5.65e-10 3.36e-09 1.32e-09 3.39e-09 1.55e-08 2.82e-09</span></span>
 <span><span class="co">#&gt; 3 0.2 - 0.4 1.21e-03 6.39e-03 6.38e-03 7.21e-03 1.34e-02 2.41e-03</span></span>
-<span><span class="co">#&gt; 4   0 - 0.6 6.70e-13 4.26e-12 1.73e-13 4.02e-12 2.15e-11 4.02e-12</span></span>
+<span><span class="co">#&gt; 4   0 - 0.6 6.70e-13 4.27e-12 1.73e-13 4.02e-12 2.15e-11 4.02e-12</span></span>
 <span><span class="co">#&gt; 5 0.2 - 0.6 1.58e-06 9.24e-06 5.43e-06 9.50e-06 3.12e-05 6.33e-06</span></span>
 <span><span class="co">#&gt; 6 0.4 - 0.6 4.46e-02 1.80e-01 1.80e-01 2.39e-01 2.48e-01 4.46e-02</span></span></code></pre></div>
 <p>For all pairs of means Tukey and <code>"mvt"</code> agree, up to the
@@ -134,7 +149,7 @@ so their pairs have no such columns. <code><a href="../reference/contrastmeans.h
 <code>adj.conf.low</code>, <code>adj.conf.high</code>), as below for the
 comparisons with a control.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span>
+<code class="sourceCode R"><span><span class="va">pt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span>
 <span><span class="va">pt</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"adj.conf.low"</span>,</span>
 <span>     <span class="st">"adj.conf.high"</span>, <span class="st">"p.adj"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate  conf.low   conf.high adj.conf.low adj.conf.high</span></span>
@@ -146,9 +161,9 @@ comparisons with a control.</p>
 <span><span class="co">#&gt; 6    0.4    0.6  -9.166667 -18.10073  -0.2326042    -20.99992      2.666585</span></span>
 <span><span class="co">#&gt;          p.adj</span></span>
 <span><span class="co">#&gt; 1 3.764251e-04</span></span>
-<span><span class="co">#&gt; 2 3.362210e-09</span></span>
+<span><span class="co">#&gt; 2 3.362209e-09</span></span>
 <span><span class="co">#&gt; 3 6.390152e-03</span></span>
-<span><span class="co">#&gt; 4 4.263701e-12</span></span>
+<span><span class="co">#&gt; 4 4.265699e-12</span></span>
 <span><span class="co">#&gt; 5 9.244650e-06</span></span>
 <span><span class="co">#&gt; 6 1.797189e-01</span></span></code></pre></div>
 </div>
@@ -187,7 +202,7 @@ the exact Dunnett adjustment:</p>
 nitrogen levels are equally spaced):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">K2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span></span>
-<span><span class="va">trends</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K2</span>, <span class="st">"poly"</span>, by <span class="op">=</span> <span class="st">"Variety"</span>, max.degree <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">trends</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/contrast_family.html">contrast_family</a></span><span class="op">(</span><span class="va">K2</span>, <span class="st">"poly"</span>, by <span class="op">=</span> <span class="st">"Variety"</span>, max_degree <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/contrastmeans.html">contrastmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, ctrmatrix <span class="op">=</span> <span class="va">trends</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Contrasts of 'N:Variety' (95% limits; p.adj: none; Kenward-Roger df)</span></span>
 <span><span class="co">#&gt;                contrast estimate std.error df statistic   p.value     p.adj</span></span>
@@ -203,7 +218,12 @@ nitrogen levels are equally spaced):</p>
 <span><span class="co">#&gt;     80.23   178.101</span></span>
 <span><span class="co">#&gt;    -34.05     9.717</span></span>
 <span><span class="co">#&gt;    113.23   211.101</span></span>
-<span><span class="co">#&gt;    -32.38    11.384</span></span></code></pre></div>
+<span><span class="co">#&gt;    -32.38    11.384</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Advice:</span></span>
+<span><span class="co">#&gt; i 6 contrasts tested without adjustment: some will be significant by</span></span>
+<span><span class="co">#&gt;   chance. If they are a family, use adj = "holm" (any design) or</span></span>
+<span><span class="co">#&gt;   "tukey"/"mvt" (all pairs).</span></span></code></pre></div>
 <p>The result prints its table; <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> (or
 <code>$contrasts</code>) returns it unrounded, with <code>p.value</code>
 unadjusted and <code>p.adj</code> adjusted. The 1.x table (rounded, with
@@ -293,7 +313,7 @@ covariate’s mean).</p>
 (Kenward–Roger adjusted for REML <code>lmer</code> fits), named by the
 levels. Any contrast can be computed from them:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pmv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pmv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N:Variety"</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">pmv</span><span class="op">)</span></span>
 <span><span class="va">L</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Victory"</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span> <span class="op">==</span> <span class="st">"0.6:Golden Rain"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">L</span> <span class="op">*</span> <span class="va">b</span><span class="op">)</span>, SE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/drop.html" class="external-link">drop</a></span><span class="op">(</span><span class="va">L</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">pmv</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -323,7 +343,7 @@ or <code>c(lower, upper)</code>). The <code>pairs</code> table then has
 <code>p.equiv</code>, the p-value of two one-sided t tests (TOST): below
 <code>level</code>, the difference lies within the margin.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, equivalence <span class="op">=</span> <span class="fl">15</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"N"</span>, equivalence <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
 <span><span class="va">pe</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.equiv"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate std.error    p.equiv</span></span>
 <span><span class="co">#&gt; 1      0    0.2 -19.500000  4.435752 0.84211224</span></span>
@@ -348,7 +368,7 @@ for <code>lm</code>, <code>aov</code> and <code>glm</code> models, and
 model’s:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">N</span> <span class="op">+</span> <span class="va">Variety</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
-<span><span class="va">pmh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fl</span>, <span class="st">"N"</span>, vcov <span class="op">=</span> <span class="st">"HC3"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pmh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fl</span>, <span class="st">"N"</span>, vcov <span class="op">=</span> <span class="st">"HC3"</span><span class="op">)</span></span>
 <span><span class="va">pmh</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate std.error      p.value</span></span>
 <span><span class="co">#&gt; 1      0    0.2 -19.500000  4.864548 1.688713e-04</span></span>

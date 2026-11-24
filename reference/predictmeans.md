@@ -1,19 +1,23 @@
 # Predicted Means of a Linear Model
 
-This function obtains predicted means, SE of means, SED of means, LSDs
-and plots of means with SE bar or LSD bar for parametric models such as
-`aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`. The function also perfomrs
-pairwise comparisons and permutation tests.
+Predicted means, their standard errors (SE), standard errors of
+differences (SED) and least significant differences (LSD) for `aov`,
+`lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`, `gam` and
+`semireg` fits, with pairwise comparisons and permutation tests. Plots
+are drawn from the result with `link{autoplot.predictmeans}`;
+`link{advice}` reads the notes made for this fit and data.
 
 ## Usage
 
 ``` r
-predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none", conf.level=0.95,
-  covariate=NULL, meandecr=NULL, letterCI=FALSE, trans = I,
-  plot=getOption("predictmeans.plot", FALSE), plot_args=list(), permlist=NULL,
+predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
+  conf_level=0.95, covariate=NULL, meandecr=NULL, letter_ci=FALSE, trans = I,
+  permlist=NULL,
   ncore=1, cov_reduce=mean, exclude=NULL, vcov_adjust=TRUE,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+    "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+  vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
   mean_type=c("conditional", "overall"), ...)
 ```
@@ -65,28 +69,32 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - data:
 
-  In some cases, you need to provide the data set used in model fitting,
-  especially when you have applied some variable trnasformation in the
-  model.
+  The data used to fit the model; needed in some cases, e.g. when a
+  variable is transformed in the model formula.
 
 - pairwise:
 
-  An option for showing pair-wise LSDs and p-values, or not. The default
-  is FALSE. The `pairs` table of the result is made in either case for
-  up to 100 means. With more means (e.g. several hundred lines of a
-  breeding trial) and no comparison asked for, the means, their SEs and
-  the SED and LSD summaries (maximum, minimum, average) are computed
-  from the covariance of the means, without a row per pair (300 means:
-  about a second), and `pairs` is `NULL`; `pairwise = TRUE` (or `adj`)
-  still compares all the pairs. No letter groups are made for more than
-  100 means. `options(predictmeans.max_means = )` changes the limit of
-  100.
+  What is printed: `TRUE` shows the pairwise p-value matrices (t values
+  above the diagonal) and the letter groups; `FALSE` hides them; `NULL`
+  (the default) shows them when comparisons are asked for (`adj`,
+  `atvar`, `permlist` or `letter_ci`), as before 2.0. It does not change
+  what is computed: the `pairs` table (every difference, SE, df,
+  p-value, adjusted p-value and limits) is made whenever comparisons are
+  asked for, also with `pairwise = FALSE`, and otherwise for up to 100
+  means. With more means (e.g. several hundred lines of a breeding
+  trial) and no comparison asked for, the means, their SEs and the SED
+  and LSD summaries (maximum, minimum, average) are computed from the
+  covariance of the means, without a row per pair (300 means: about a
+  second), and `pairs` is `NULL`; `pairwise = TRUE` or `adj` compares
+  all the pairs. No letter groups are made for more than 100 means.
+  `options(predictmeans.max_means = )` changes the limit of 100. (Before
+  2.0 the default was `FALSE`, and `adj` or `atvar` turned it on.)
 
 - atvar:
 
-  When `pairwise = TRUE`, a quoted name indicating within levels of
-  which variable in `modelterm` the multiple comparison will be
-  performed.
+  Factor(s) of `modelterm` within whose levels the pairs are compared
+  (one or two names, or `"A:B"`); each level is a family for `adj`, and
+  the LSDs are those of the pairs within it.
 
 - adj:
 
@@ -115,16 +123,16 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   \\\sqrt{2}\\ for "tukey" (the HSD), *t* at the adjusted level for
   "bonferroni" and "sidak", and the Scheffe and multivariate *t* values.
   So a difference is beyond its LSD exactly when its adjusted p-value is
-  below `level`. The step-wise methods ("holm", "hochberg", "hommel",
-  "BH", "BY", "fdr") have no critical value for all pairs: their LSDs
-  are not adjusted and a note with the LSDs says so. (Before 2.0 only
-  "bonferroni" adjusted the LSDs, with all the pairs as family also with
-  `atvar`.)
+  below `1 - conf_level`. The step-wise methods ("holm", "hochberg",
+  "hommel", "BH", "BY", "fdr") have no critical value for all pairs:
+  their LSDs are not adjusted and a note with the LSDs says so. (Before
+  2.0 only "bonferroni" adjusted the LSDs, with all the pairs as family
+  also with `atvar`.)
 
-- conf.level:
+- conf_level:
 
   The confidence level of the confidence limits; the tests, LSDs and
-  letters are at the significance level `1 - conf.level`. The default is
+  letters are at the significance level `1 - conf_level`. The default is
   0.95 (`level = 0.05` before 2.0).
 
 - covariate:
@@ -139,31 +147,31 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - meandecr:
 
-  A logical variable to indicate whether to print letters for multiple
-  comparisons by decreasing order of means in the mean_table. The
-  default is NULL which indicates the mean order follows the associated
+  Logical: order the letters of `mean_table` by decreasing (`TRUE`) or
+  increasing (`FALSE`) means. The default `NULL` keeps the order of the
   factor levels.
 
-- letterCI:
+- letter_ci:
 
   A logical variable to indicate printed letters for multiple
   comparisons by whether or not the comparison intervals of the means
   overlap (the default is FALSE). The comparison intervals are mean
   \\\pm c\\SE\\ with \\c = t \times SED/(SE_1 + SE_2)\\, averaged over
-  the pairs compared, so that two means differ at `level` when their
-  intervals do not overlap: 83.4% intervals for independent means with
-  equal SEs and a 5% test, wider when the SEs differ, narrower when the
-  means are correlated as in most mixed models (Goldstein and Healy,
+  the pairs compared, so that two means differ at `1 - conf_level` when
+  their intervals do not overlap: 83.4% intervals for independent means
+  with equal SEs and a 5% test, wider when the SEs differ, narrower when
+  the means are correlated as in most mixed models (Goldstein and Healy,
   1995; Maghsoodloo and Huang, 2010; Afshartous and Preston, 2010). They
   are shown as LL and UL in `mean_table`, labelled with their level, and
   the note under the table says how many pairs are judged differently by
-  their own tests when the SEDs differ. `level` is the significance
-  level of the comparisons (default 0.05), `adj` is "none", and with
-  `atvar` the letters compare the means within each `atvar` group.
-  (Before 2.0 the intervals were 83.4% confidence intervals whatever the
-  design, and `level` set their level, 0.166 by default.) The comparison
-  intervals are in every result: columns `comparison.low` and
-  `comparison.high` of `means`, and `autoplot(interval = "comparison")`.
+  their own tests when the SEDs differ. The comparisons are at the
+  significance level `1 - conf_level` (default 0.05), `adj` is "none",
+  and with `atvar` the letters compare the means within each `atvar`
+  group. (Before 2.0 the intervals were 83.4% confidence intervals
+  whatever the design, and `level` set their level, 0.166 by default.)
+  The comparison intervals are in every result: columns `comparison.low`
+  and `comparison.high` of `means`, and
+  `autoplot(interval = "comparison")`.
 
 - trans:
 
@@ -175,95 +183,45 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `pm_yeojohnson(y, lambda)`), the inverse is used, constant included,
   and a message says so; `trans = I` keeps the model scale only. Models
   with a link (`glm`, `glmer`, `glmmTMB`) are back-transformed with its
-  inverse. What the back-transformed mean is depends on the model: for a
+  inverse, unless `trans` is given: then `trans` is used (with a
+  message), and `trans = I` keeps the link scale, as in
+  [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  (before 2.0 a given `trans` was silently replaced by the inverse
+  link). What the back-transformed mean is depends on the model: for a
   GLM the mean; for a GLMM the response of a typical cluster (random
   effects at zero); for a transformed response the median of the
   original scale (the geometric mean for a log). `bias_adjust = TRUE`
   gives the mean in the last two cases; `settings$back_transform` and
   [`summary()`](https://rdrr.io/r/base/summary.html) say which it is.
 
-- plot:
-
-  Draw the plots now? The default is `FALSE` (since 2.0; 1.x drew them):
-  the result holds the tables, and `autoplot()` draws the plots from it.
-  `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a whole
-  session, draws `"mean"` (means plot), `"pval"` (p-value plot, when
-  there are more than six p-values) and `"back"` (back-transformed
-  plot); name the plots wanted to choose them, including `"bar"` (bar
-  chart), e.g. `plot = c("mean", "bar")`.
-
-- plot_args:
-
-  A named list of settings for the plots, e.g.
-  `plot_args = list(plottitle = "Yield", basesz = 14)`:
-
-  `plottitle`
-
-  :   A character vector specifying the main title for plot(s). The
-      default is NULL.
-
-  `plotxlab`
-
-  :   A character vector specifying the x label for plot(s). The default
-      is NULL.
-
-  `plotylab`
-
-  :   A character vector specifying the y label for plot(s). The default
-      is NULL.
-
-  `plotord`
-
-  :   A numeric (or character) vector specifying the order of plotting
-      for two or three way interaction (e.g. `plotord = c(2, 1, 3)` or
-      `plotord = c("B", "A", "C")` will put the second variable 'B' in
-      `modelterm` on the `X` axis, the first variable 'A' as the
-      grouping variable, and the third one 'C' as the panel variable).
-      The defaults are `c(1, 2)` and `c(1, 2, 3)` for two and three way
-      interactions.
-
-  `lineplot`
-
-  :   An option for drawing a line chart, or dot chart. The default is
-      TRUE.
-
-  `lsd_bar`
-
-  :   A logical variable to indicate to print an average LSD or SED bar
-      on the means plot. The default is TRUE.
-
-  `jitterv`
-
-  :   A degree of jitter in x and y direction in the back transformed
-      means graph. The default is zero.
-
-  `basesz`
-
-  :   The base font size. The default is 12.
-
 - ...:
 
-  Not used: arguments removed in 2.0 (e.g. `level`, `Df`, `which.plots`,
-  `plottitle` as an argument of its own) stop with their 2.0 spelling
-  (see
+  Not used: arguments removed in 2.0 (e.g. `level`, `Df`, `plot`,
+  `plot_args`, `plottitle` as an argument of its own) stop with their
+  2.0 spelling (see
   [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md));
   other names are an error.
 
 - permlist:
 
-  A model parameter list produced by the function `permmodels`. When
-  `permlist != NULL`, `df_method` is not used. This is a key option for
-  pairwise comparisons via permutation tests. With the result of
+  A list from
+  [`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md):
+  the pairs are then tested by permutation, with p-value \\(b + 1)/(B +
+  1)\\ (\\b\\ of the \\B\\ permuted statistics at least as extreme as
+  the observed one), and `df_method` is not used. With the result of
   `permmodels(method = "freedman-lane")` (`lm` and `aov` models), each
   pair is tested by Freedman-Lane permutations of the model in which
   that pair's means are equal. With a `permlist`, `vcov_adjust` is not
   used: the observed t statistics are compared with those of the
-  permuted refits, which use the unadjusted covariance.
+  permuted refits, which use the unadjusted covariance. The confidence
+  limits of each mean are the model's t limits at `conf_level` (the
+  permutation tests are of the comparisons; before 2.0, mean +/- 2 SE).
 
 - ncore:
 
   Number of cores for parallel computing when `permlist != NULL`, the
-  default value is 1 (before predictmeans 2.0: 3).
+  default value is 1 (before predictmeans 2.0: 3). Results are the same
+  for any `ncore`.
 
 - cov_reduce:
 
@@ -418,8 +376,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   tests, TOST) of the differences: a positive number \\d\\ (equivalence
   region \\-d\\ to \\d\\) or `c(lower, upper)`, on the scale of the
   comparisons (the link scale for GLMs: e.g. log ratios). The TOST
-  p-value is the larger of the two one-sided p-values; below `level`,
-  the difference lies within the margins (as emmeans'
+  p-value is the larger of the two one-sided p-values; below
+  `1 - conf_level`, the difference lies within the margins (as emmeans'
   `test(..., side = "equivalence")`). Not adjusted for multiplicity;
   with a `permlist` it is t-based (normal-based in `contrastmeans`).
 
@@ -493,31 +451,19 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
 
 - Pairwise p-value:
 
-  A matrix with t-values above the diagonal and p-values below the
-  diagonal, or matrix of pairwise comparison p-values for each level of
-  `atvar`.
+  Only when the pairs are displayed (see `pairwise`): a matrix with t
+  values above the diagonal and p-values (adjusted by `adj`) below it;
+  with `atvar` one matrix per level of `atvar`, named by the level.
 
 - mean_table:
 
-  A summary of predicted means result including 'Predicted means',
-  'Standard error', 'Df' and 'CIs'. When `trans!=NULL` or `trans!=I`, a
-  table of back transformed means with CIs are also shown.
-
-- predictmeansPlot:
-
-  ggplot of predicted means.
-
-- predictmeansBKPlot:
-
-  ggplot of back transformed means.
-
-- predictmeansBarPlot:
-
-  gg bar plot of predicted means.
+  The means with SE, df and confidence limits (and letters when pairs
+  are compared); for back-transformed means also the response-scale
+  means and limits.
 
 - p_valueMatrix:
 
-  p_value matrix for pairwise comparison.
+  Only when the pairs are displayed: the p-value matrix of the letters.
 
 - means:
 
@@ -527,9 +473,9 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   `"N 0, 0.2, 0.4"`; NA for the means over all their cells), `estimate`,
   `std.error`, `df`, `conf.low`, `conf.high` (confidence limits of each
   mean, not for comparing means), `comparison.low` and `comparison.high`
-  (comparison intervals: two means differ at `level`, with the
+  (comparison intervals: two means differ at `1 - conf_level`, with the
   adjustment of `adj` when it has a critical value, when these do not
-  overlap; see `letterCI`; present when the pairs are tabulated; NA for
+  overlap; see `letter_ci`; present when the pairs are tabulated; NA for
   a mean over empty cells whose pairs are not the differences of the
   shown means (compared on common cells, or not estimable), which no
   interval around it can show); when the means are back-transformed also
@@ -549,19 +495,19 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   minus mean of `level2`), `std.error`, `df`, `statistic` (t),
   `p.value`, `p.adj` (adjusted by `adj`, within each level of `atvar`
   when given), `p.equiv` (with `equivalence`: the TOST p-value),
-  `conf.low` and `conf.high` (limits of each difference at `level`, not
-  adjusted), `lsd` (the half-width of those limits), `adj.conf.low` and
-  `adj.conf.high` (simultaneous limits within each family, which exclude
-  0 exactly when `p.adj` is below `level`, as SAS `AdjLower` and
-  `AdjUpper` and emmeans; for `adj` "tukey" (each pair's own df, as SAS
-  `ADJDFE=ROW`), "bonferroni", "sidak", "scheffe" and "mvt"; the
-  step-down and false discovery rate methods have none) and `p.method`;
-  with `permlist` the limits are permutation-t limits (estimate +- c SE,
-  c the critical value of the permutation test), and the adjusted limits
-  use the permutation distribution of the family's largest \|t\|
-  ("tukey", "mvt", "westfall") or each pair's at level/m ("bonferroni",
-  "sidak"); for a log link or `trans = exp` also `ratio` (of the
-  back-transformed means, `exp(estimate)`), `ratio.conf.low` and
+  `conf.low` and `conf.high` (limits of each difference at `conf_level`,
+  not adjusted), `lsd` (the half-width of those limits), `adj.conf.low`
+  and `adj.conf.high` (simultaneous limits within each family, which
+  exclude 0 exactly when `p.adj` is below `1 - conf_level`, as SAS
+  `AdjLower` and `AdjUpper` and emmeans; for `adj` "tukey" (each pair's
+  own df, as SAS `ADJDFE=ROW`), "bonferroni", "sidak", "scheffe" and
+  "mvt"; the step-down and false discovery rate methods have none) and
+  `p.method`; with `permlist` the limits are permutation-t limits
+  (estimate +- c SE, c the critical value of the permutation test), and
+  the adjusted limits use the permutation distribution of the family's
+  largest \|t\| ("tukey", "mvt", "westfall") or each pair's at level/m
+  ("bonferroni", "sidak"); for a log link or `trans = exp` also `ratio`
+  (of the back-transformed means, `exp(estimate)`), `ratio.conf.low` and
   `ratio.conf.high`, and for a logit link `odds.ratio` with its limits.
 
 - settings:
@@ -578,8 +524,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=FALSE, atvar=NULL, adj="none"
   have none.
 
 The result has class `c("predictmeans", "pdmlist")`. Printing shows the
-same output as earlier versions; the `means`, `pairs` and `settings`
-slots are not printed.
+legacy tables; the `means`, `pairs` and `settings` elements are not
+printed. Plots come from `autoplot()`; notes for this fit are in
+`attr(, "advice")`, read with
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md).
 
 ## Note
 
@@ -597,6 +545,24 @@ tables are not affected.
 
 For `predictmeans` function, it is assumed that methods `coef`, `vcov`,
 `model.matrix`, `model.frame` and `terms` are available for `model`.
+
+## Covariates aliased with a factor
+
+A covariate that takes one value within each level of a factor (a site
+mean, a block-level measurement) is aliased with that factor: in
+`lm(ht ~ site + sitemean * seedlot)` the coefficient of `sitemean` is
+NA. A mean over sites is then estimable only if each site keeps its own
+value of the covariate; at a single value, such as the overall mean, the
+"means" depend on the coding of the factors (which level is the
+reference) and are not estimates. predictmeans finds such covariates and
+uses each level's own value, with a message. predictmeans 1.x, and
+Genstat `PREDICT` after the covariate is dropped as aliased, used the
+overall mean; SAS `LSMEANS` reports such means as non-estimable. For a
+seedlot measured at every site the equal-weight mean is then its raw
+mean; for one with missing sites, `weights = "equal"` extrapolates its
+regression line to the missing sites and `weights = "cells"` averages
+over the sites it was measured at. See
+[`DataExam5.2`](https://dongwenluo.github.io/predictmeans/reference/DataExam5.2.md).
 
 ## Zero inflation (glmmTMB)
 
@@ -644,6 +610,16 @@ Afshartous, D. and Preston, R. A. (2010), *Confidence intervals for
 dependent data: equating non-overlap with statistical significance*,
 Computational Statistics and Data Analysis, 54(10), 2296-2305.
 
+## See also
+
+[`autoplot.predictmeans`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md),
+[`tidy.predictmeans`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md),
+[`pm_check`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md),
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+[`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -655,7 +631,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   Oats$nitro <- factor(Oats$nitro)
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data=Oats)
   ## The results as tables (columns described under Value)
-  pm <- predictmeans(fm, "nitro", plot=FALSE)
+  pm <- predictmeans(fm, "nitro")
   pm$means
 #>   nitro  estimate std.error       df  conf.low conf.high comparison.low
 #> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186
@@ -711,7 +687,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> $comparison$mult
 #> [1] 0.6226041
 #> 
-#> $comparison$conf.level
+#> $comparison$conf_level
 #> [1] 0.4461306
 #> 
 #> $comparison$level
@@ -742,6 +718,26 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> $back_transform
 #> NULL
 #> 
+#> $response
+#> $response$expr
+#> [1] "yield"
+#> 
+#> $response$name
+#> [1] "yield"
+#> 
+#> $response$scale
+#> [1] "identity"
+#> 
+#> $response$link
+#> NULL
+#> 
+#> $response$family
+#> [1] "gaussian"
+#> 
+#> $response$back
+#> [1] NA
+#> 
+#> 
 #> $bias_adjust
 #> [1] NA
 #> 
@@ -764,7 +760,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> [1] "lmerMod"
 #> 
 #> $version
-#> [1] "1.1.1.9000"
+#> [1] "2.0.0"
 #> 
   summary(pm)
 #> Predicted means for 'nitro' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
@@ -778,16 +774,11 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> 6 pairwise comparisons.
 #> SED: min 4.436, mean 4.436, max 4.436
-#> LSD (5%): min 8.934, mean 8.934, max 8.934
+#> LSD (5%): 8.934 (equal for all pairs)
 #> p-values: t tests, adjusted by 'none'.
 #> Comparison intervals: mean +/- 0.6226 SE (44.6% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.
-  ## Means within each variety, Tukey-adjusted pairs, plots
-  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey",
-    plot=c("mean", "bar", "pval", "back"), plot_args=list(lineplot=FALSE))
-
-
-
-
+  ## Means within each variety, Tukey-adjusted pairs; plots from the result
+  predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="tukey")
   names(predictout)
 #>  [1] "Predicted Means"                                         
 #>  [2] "Standard Error of Means"                                 
@@ -798,24 +789,17 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #>  [7] "Marvellous"                                              
 #>  [8] "Victory"                                                 
 #>  [9] "mean_table"                                              
-#> [10] "predictmeansPlot"                                        
-#> [11] "predictmeansBarPlot"                                     
-#> [12] "p_valueMatrix"                                           
-#> [13] "means"                                                   
-#> [14] "pairs"                                                   
-#> [15] "settings"                                                
-  print(predictout$predictmeansPlot)
-#> $meanPlot
+#> [10] "p_valueMatrix"                                           
+#> [11] "means"                                                   
+#> [12] "pairs"                                                   
+#> [13] "settings"                                                
+  ggplot2::autoplot(predictout)                   # means, one LSD bar per variety
 
-#> 
-#> $ciPlot
-
-#> 
-  print(predictout$predictmeansBarPlot)
+  ggplot2::autoplot(predictout, type = "bar")
 
   ## lme fits work the same way
   fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-  predictmeans(fl, "nitro", adj="BH", plot=FALSE)$pairs
+  predictmeans(fl, "nitro", adj="BH")$pairs
 #>   level1 level2   estimate std.error       df statistic      p.value
 #> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656859e-05
 #> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852848 5.649197e-10

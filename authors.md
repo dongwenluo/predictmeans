@@ -16,13 +16,13 @@ Source:
 [`DESCRIPTION`](https://github.com/dongwenluo/predictmeans/blob/main/DESCRIPTION)
 
 Luo D, Ganesh S, Koolaard J, Curran J (2026). *predictmeans: Predicted
-Means for Linear and Semiparametric Models*. R package version
-1.1.1.9000, <https://dongwenluo.github.io/predictmeans/>.
+Means for Linear and Semiparametric Models*. R package version 2.0.0,
+<https://dongwenluo.github.io/predictmeans/>.
 
     @Manual{,
       title = {predictmeans: Predicted Means for Linear and Semiparametric Models},
       author = {Dongwen Luo and Siva Ganesh and John Koolaard and James Curran},
       year = {2026},
-      note = {R package version 1.1.1.9000},
+      note = {R package version 2.0.0},
       url = {https://dongwenluo.github.io/predictmeans/},
     }

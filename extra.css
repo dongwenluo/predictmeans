@@ -1,0 +1,7 @@
+/* tabsets: each panel takes its own height, not that of the tallest panel */
+.tab-content { display: block; }
+.tab-content > .tab-pane:not(.active) { display: none; }
+
+/* folded code */
+details.code-fold > summary { cursor: pointer; color: var(--bs-primary); font-size: 0.9rem; margin-bottom: 0.5rem; }
+details.code-fold[open] > summary { margin-bottom: 0.25rem; }

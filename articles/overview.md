@@ -1,10 +1,12 @@
 # Overview of predictmeans
 
+Code
+
 ``` r
 
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
+library(lmerTest)   # t tests in summary(); predictmeans alone gives anova() F tests for lmer fits
 library(HRW)
 library(gridExtra)
 library(car)
@@ -14,8 +16,8 @@ library(knitr)
 
 data(copper, package = "predictmeans")
 
+# an HTML table with a CSV download button (choose 'All' entries to download every row)
 DT_df <- function(df){
-  require(DT)
   stopifnot(is.data.frame(df))
   
   df |>
@@ -33,64 +35,61 @@ DT_df <- function(df){
 }
 ```
 
-## **Outline**
-
-- Motivation
-
-- Overview
-
-- Examples
-
-- Future Plan
-
 ## **Motivation**
 
-- **Mixed Effects Models:** Essential for statistical analysis (e.g.,
-  split-plot experiments, repeated measurements, meta-analysis).
-  However, popular R packages like ‘nlme’ and ‘lme4’ only provide model
-  effects and ANOVA outputs, lacking further inference (predicted means,
-  multiple comparisons, confidence intervals).
+- **Mixed-effects models** are needed for split-plot experiments,
+  repeated measurements, meta-analysis and many other designs. The
+  packages that fit them (‘nlme’, ‘lme4’, ‘glmmTMB’) give the model
+  coefficients and an ANOVA table, but not the inference a study usually
+  reports: predicted means, their standard errors, confidence intervals
+  and multiple comparisons.
 
-- **Permutation Tests:** Ideal for small sample sizes, non-normal
-  distributions, or when parametric test assumptions are unmet. They
-  offer robust and flexible hypothesis testing in such scenarios.
+- **Permutation tests** need no distributional assumption: they suit
+  small samples and data that are not normal, where the assumptions of
+  parametric tests are in doubt.
 
-- **Semiparametric Regression:** Combines parametric and non-parametric
-  effects for predictive variables. Widely valuable across astronomy,
-  biology, medicine, economics, and finance applications.
+- **Semiparametric regression** combines parametric terms with smooth
+  curves and surfaces, for relationships whose shape is not known in
+  advance. It is used widely, from biology and medicine to economics.
 
-- **Package ‘predictmeans’:** Offers diagnostic and inference functions
-  for various models (‘aov’, ‘lm’, ‘glm’, etc.). Inferences include
-  predicted means, standard errors, contrasts, multiple comparisons,
-  permutation tests, adjusted R-square, and graphical representations.
-  <https://cran.r-project.org/web/packages/predictmeans/index.html>.
+- **predictmeans** provides diagnostics and inference for models fitted
+  by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and
+  `gam`, and its own semiparametric models
+  ([`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)):
+  predicted means with standard errors and confidence intervals,
+  contrasts, multiple comparisons, permutation tests, adjusted
+  R-squared, and plots. Its defaults are chosen on the statistical
+  evidence (e.g. Kenward-Roger degrees of freedom for REML fits), its
+  results are checked against SAS and Genstat in the package tests, and
+  it adds a one-line note when this fit and data call for care
+  ([`advice()`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
+  <https://CRAN.R-project.org/package=predictmeans>
 
 ## **Overview**
 
 ### **Main Functions Flowchart**
 
-![](overview%20flow%20chart.jpg)
+![The workflow of predictmeans](figures/workflow.png)
 
-### Contents
+The workflow of predictmeans
 
-![](predictmeans%20help.jpg)
+## Example 1: split-plot design (Oats data)
 
-## Example_1 Split-plot Design (Oats data)
-
-In the split-plot design shown here, the treatments are three varieties
-of oats (Victory, Golden rain and Marvellous) and four levels of
-nitrogen (0, 0.2, 0.4 and 0.6 cwt). As it is feasible to work with
-smaller plots for fertiliser than for varieties, the six blocks were
-initially split into three whole-plots and then each whole-plot was
-split into four subplots. The varieties were allocated (at random) to
-the whole-plots within each block, and the nitrogen levels (at random)
-to the subplots within each whole-plot. In a randomized-block design, we
-have a hierarchical structure with blocks and then plots within blocks.
+The treatments are three oat varieties (Victory, Golden Rain and
+Marvellous) and four rates of nitrogen (0, 0.2, 0.4 and 0.6 cwt per
+acre). Fertiliser can be applied to smaller plots than a variety can be
+sown in, so each of the six blocks was split into three whole plots, and
+each whole plot into four subplots. The varieties were randomized to the
+whole plots within each block, and the nitrogen rates to the subplots
+within each whole plot. The model therefore has two error strata:
+blocks, and whole plots within blocks.
 
 ### Data Info
 
 - Structure
 - Plot
+
+Code
 
 ``` r
 
@@ -106,6 +105,8 @@ str(Oats)
     ##  $ nitro  : num  0 0.2 0.4 0.6 0 0.2 0.4 0.6 0 0.2 ...
     ##  $ yield  : num  111 130 157 174 117 114 161 141 105 140 ...
 
+Code
+
 ``` r
 
 Oats %>% 
@@ -116,7 +117,7 @@ Oats %>%
   theme_bw(9)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-3-1.png)
+![](overview_files/figure-html/unnamed-chunk-4-1.png)
 
 ### Modelling
 
@@ -124,6 +125,8 @@ Oats %>%
 - Residual Plot
 - Highlights
 - Test
+
+Code
 
 ``` r
 
@@ -168,23 +171,35 @@ summary(mod, corr=FALSE)
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
+Code
+
 ``` r
 
-residplot(mod, group="nitro")  # id=TRUE
+residplot(mod, group = "nitro")
 ```
 
-![](overview_files/figure-html/unnamed-chunk-5-1.png)
+![](overview_files/figure-html/unnamed-chunk-6-1.png)
 
-Options in function ‘residplot’:
+Options of
+[`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md):
 
-- **{id=TRUE}** is useful to identify any outliers.
+- `id = 3` (the default) labels the three most extreme points with their
+  row numbers in the data, so outliers can be found;
+  `interactive = TRUE` shows every point’s row on hover.
 
-- **{group=“nitro”}** is useful to identify variation pattern along
-  ‘nitro’ groups.
+- `group = "nitro"` colours the points by nitrogen rate, to show whether
+  the spread differs between groups.
+
+Formal tests of the assumptions, for reference; with small samples they
+have little power, and with large ones they flag departures too small to
+matter, so read them with the plots. `pm_check(mod)` gives a table of
+checks with advice.
+
+Code
 
 ``` r
 
-#perform shapiro-wilk test
+# Shapiro-Wilk test of normality of the residuals
 shapiro.test(resid(mod))
 ```
 
@@ -194,21 +209,24 @@ shapiro.test(resid(mod))
     ## data:  resid(mod)
     ## W = 0.97896, p-value = 0.2698
 
+Code
+
 ``` r
 
-#perform bartlett test
-bartlett.test(yield ~ interaction(nitro:Variety), data = Oats)
+# Bartlett and Levene tests of equal variance across treatment combinations
+bartlett.test(yield ~ interaction(nitro, Variety), data = Oats)
 ```
 
     ## 
     ##  Bartlett test of homogeneity of variances
     ## 
-    ## data:  yield by interaction(nitro:Variety)
+    ## data:  yield by interaction(nitro, Variety)
     ## Bartlett's K-squared = 9.182, df = 11, p-value = 0.6051
+
+Code
 
 ``` r
 
-#perform levene test 
 car::leveneTest(yield ~ nitro:Variety, data = Oats)
 ```
 
@@ -220,6 +238,8 @@ car::leveneTest(yield ~ nitro:Variety, data = Oats)
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -233,6 +253,8 @@ kable(anova(mod))
 | nitro:Variety |   321.7500 |   53.6250 |     6 | 45.00004 |  0.302824 | 0.9321985 |
 
 - **$`R^2`$**
+
+Code
 
 ``` r
 
@@ -253,14 +275,12 @@ R2_model(mod)
 - Mean Plot
 - p-value Table & Plot
 
-``` r
-
-predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
-```
+Code
 
 ``` r
 
-print(predm_out[1:4])
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, adj="BH")
+predm_out
 ```
 
     ## $`Predicted Means`
@@ -285,11 +305,35 @@ print(predm_out[1:4])
     ## [1] 45
     ## attr(,"Note")
     ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
+    ## attr(,"equal")
+    ## [1] TRUE
+    ## 
+    ## $`Pairwise p-value`
+    ##          0     0.2     0.4     0.6
+    ## 0   1.0000 -4.3961 -7.8529 -9.9194
+    ## 0.2 0.0001  1.0000 -3.4568 -5.5233
+    ## 0.4 0.0000  0.0014  1.0000 -2.0665
+    ## 0.6 0.0000  0.0000  0.0446  1.0000
+    ## attr(,"Note")
+    ## [1] "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal"
+    ## 
+    ## $mean_table
+    ## $mean_table$Table
+    ##   nitro     Mean      SE   Df  LL(95%)  UL(95%) LetterGrp
+    ## 4   0.6 123.3889 7.17475 6.79 106.3163 140.4614      A   
+    ## 3   0.4 114.2222 7.17475 6.79  97.1497 131.2948       B  
+    ## 2   0.2  98.8889 7.17475 6.79  81.8163 115.9614        C 
+    ## 1     0  79.3889 7.17475 6.79  62.3163  96.4614         D
+    ## 
+    ## $mean_table$Note
+    ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05'"
+
+Code
 
 ``` r
 
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+   caption = "Means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 | nitro | Mean     | SE      | Df   | LL(95%)  | UL(95%)  | LetterGrp |
@@ -299,36 +343,44 @@ gt(predm_out$mean_table$Table,
 | 0.2   | 98.8889  | 7.17475 | 6.79 | 81.8163  | 115.9614 | C         |
 | 0     | 79.3889  | 7.17475 | 6.79 | 62.3163  | 96.4614  | D         |
 
-Group: Letter-based representation of pairwise comparisons at
-significant level '0.05' {.table .gt_table
-quarto-disable-processing="false" quarto-bootstrap="false"}
+Means sharing a letter are not significantly different (BH-adjusted
+p-values, 5% level) {.table .gt_table quarto-disable-processing="false"
+quarto-bootstrap="false"}
+
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$meanPlot
+autoplot(predm_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-10-1.png)
+![](overview_files/figure-html/unnamed-chunk-11-1.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-10-2.png)
+![](overview_files/figure-html/unnamed-chunk-11-2.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansBarPlot
+autoplot(predm_out, type = "bar")
 ```
 
-![](overview_files/figure-html/unnamed-chunk-10-3.png)
+![](overview_files/figure-html/unnamed-chunk-11-3.png)
+
+Code
 
 ``` r
 
 gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
    rownames_to_stub=TRUE, 
-   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+   caption = "t values above the diagonal; BH-adjusted p-values below") %>% 
   cols_width(everything() ~ px(130))
 ```
 
@@ -339,17 +391,18 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 | 0.4 | 0e+00 | 0.0014  | 1.0000  | -2.0665 |
 | 0.6 | 0e+00 | 0.0000  | 0.0446  | 1.0000  |
 
-The matrix has t-value above the diagonal, p-value (adjusted by 'BH'
-method) below the diagonal {.table .gt_table
-style="table-layout:fixed;width:0px;" quarto-disable-processing="false"
-quarto-bootstrap="false"}
+t values above the diagonal; BH-adjusted p-values below {.table
+.gt_table style="table-layout:fixed;width:0px;"
+quarto-disable-processing="false" quarto-bootstrap="false"}
+
+Code
 
 ``` r
 
 PMplot(predm_out$p_valueMatrix)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-12-1.png)
+![](overview_files/figure-html/unnamed-chunk-13-1.png)
 
 #### Predicted Means for “nitro:Variety”
 
@@ -357,14 +410,12 @@ PMplot(predm_out$p_valueMatrix)
 - Mean Plot
 - p-value Table & Plot
 
-``` r
-
-predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
-```
+Code
 
 ``` r
 
-print(predm_out[1:4])
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, adj="BH")
+predm_out
 ```
 
     ## $`Predicted Means`
@@ -401,12 +452,78 @@ print(predm_out[1:4])
     ## attr(,"Degree of freedom")
     ## [1] 45
     ## attr(,"Note")
-    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons. The LSDs differ between pairs (15.47 to 19.57): no single LSD tests every pair; use the p-values, or each pair's LSD (pairs$lsd)."
+    ## attr(,"equal")
+    ## [1] FALSE
+    ## 
+    ## $`Pairwise p-value`
+    ##                 0:Golden Rain 0:Marvellous 0:Victory 0.2:Golden Rain
+    ## 0:Golden Rain          1.0000      -0.6862    0.8749         -2.4079
+    ## 0:Marvellous           0.5867       1.0000    1.5612         -1.2180
+    ## 0:Victory              0.4838       0.2127    1.0000         -2.7792
+    ## 0.2:Golden Rain        0.0430       0.3338    0.0219          1.0000
+    ## 0.2:Marvellous         0.0185       0.0185    0.0025          0.4196
+    ## 0.2:Victory            0.4240       0.8086    0.0449          0.4701
+    ## 0.4:Golden Rain        0.0004       0.0190    0.0007          0.0795
+    ## 0.4:Marvellous         0.0025       0.0015    0.0004          0.1144
+    ## 0.4:Victory            0.0108       0.0409    0.0001          0.3222
+    ## 0.6:Golden Rain        0.0000       0.0023    0.0001          0.0046
+    ## 0.6:Marvellous         0.0004       0.0001    0.0001          0.0185
+    ## 0.6:Victory            0.0023       0.0087    0.0000          0.0910
+    ##                 0.2:Marvellous 0.2:Victory 0.4:Golden Rain 0.4:Marvellous
+    ## 0:Golden Rain          -2.9336     -0.9950         -4.5122        -3.8257
+    ## 0:Marvellous           -2.8418     -0.3088         -2.8821        -3.9698
+    ## 0:Victory              -3.8085     -2.3645         -4.4433        -4.7006
+    ## 0.2:Golden Rain        -1.0293      0.9092         -2.1042        -1.9214
+    ## 0.2:Marvellous          1.0000      1.9386         -0.6348        -1.1280
+    ## 0.2:Victory             0.1136      1.0000         -2.5733        -2.8307
+    ## 0.4:Golden Rain         0.5933      0.0346          1.0000        -0.2573
+    ## 0.4:Marvellous          0.3725      0.0206          0.8367         1.0000
+    ## 0.4:Victory             0.8372      0.0206          0.7530         0.5910
+    ## 0.6:Golden Rain         0.1789      0.0039          0.3024         0.5234
+    ## 0.6:Marvellous          0.0439      0.0025          0.3227         0.3222
+    ## 0.6:Victory             0.4196      0.0024          0.7530         0.8917
+    ##                 0.4:Victory 0.6:Golden Rain 0.6:Marvellous 0.6:Victory
+    ## 0:Golden Rain       -3.1738         -5.8354        -4.8207     -3.9629
+    ## 0:Marvellous        -2.4876         -3.9286        -5.2280     -3.2767
+    ## 0:Victory           -5.1196         -5.4898        -5.6956     -6.1174
+    ## 0.2:Golden Rain     -1.2695         -3.4275        -2.9164     -2.0587
+    ## 0.2:Marvellous      -0.2402         -1.6812        -2.3862     -1.0293
+    ## 0.2:Victory         -2.7550         -3.6198        -3.8257     -3.7529
+    ## 0.4:Golden Rain      0.3946         -1.3233        -1.2524     -0.3946
+    ## 0.4:Marvellous       0.6519         -0.7892        -1.2582     -0.1372
+    ## 0.4:Victory          1.0000         -1.4411        -1.6469     -0.9979
+    ## 0.6:Golden Rain      0.2573          1.0000        -0.2059      0.6519
+    ## 0.6:Marvellous       0.1860          0.8512         1.0000      0.8578
+    ## 0.6:Victory          0.4240          0.5910         0.4862      1.0000
+    ## attr(,"Note")
+    ## [1] "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal"
+    ## 
+    ## $mean_table
+    ## $mean_table$Table
+    ##    nitro     Variety     Mean      SE    Df  LL(95%)  UL(95%) LetterGrp
+    ## 11   0.6  Marvellous 126.8333 9.10701 16.08 107.5351 146.1315   A      
+    ## 10   0.6 Golden Rain 124.8333 9.10701 16.08 105.5351 144.1315   AB     
+    ## 12   0.6     Victory 118.5000 9.10701 16.08  99.2018 137.7982   ABC    
+    ## 8    0.4  Marvellous 117.1667 9.10701 16.08  97.8685 136.4649   ABC    
+    ## 7    0.4 Golden Rain 114.6667 9.10701 16.08  95.3685 133.9649   ABC    
+    ## 9    0.4     Victory 110.8333 9.10701 16.08  91.5351 130.1315   ABC    
+    ## 5    0.2  Marvellous 108.5000 9.10701 16.08  89.2018 127.7982    BCD   
+    ## 4    0.2 Golden Rain  98.5000 9.10701 16.08  79.2018 117.7982     CDE  
+    ## 6    0.2     Victory  89.6667 9.10701 16.08  70.3685 108.9649      DEF 
+    ## 2      0  Marvellous  86.6667 9.10701 16.08  67.3685 105.9649       EFG
+    ## 1      0 Golden Rain  80.0000 9.10701 16.08  60.7018  99.2982        FG
+    ## 3      0     Victory  71.5000 9.10701 16.08  52.2018  90.7982         G
+    ## 
+    ## $mean_table$Note
+    ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05'"
+
+Code
 
 ``` r
 
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+   caption = "Means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 | nitro | Variety     | Mean     | SE      | Df    | LL(95%)  | UL(95%)  | LetterGrp |
@@ -424,36 +541,44 @@ gt(predm_out$mean_table$Table,
 | 0     | Golden Rain | 80.0000  | 9.10701 | 16.08 | 60.7018  | 99.2982  | FG        |
 | 0     | Victory     | 71.5000  | 9.10701 | 16.08 | 52.2018  | 90.7982  | G         |
 
-Group: Letter-based representation of pairwise comparisons at
-significant level '0.05' {.table .gt_table
-quarto-disable-processing="false" quarto-bootstrap="false"}
+Means sharing a letter are not significantly different (BH-adjusted
+p-values, 5% level) {.table .gt_table quarto-disable-processing="false"
+quarto-bootstrap="false"}
+
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$meanPlot
+autoplot(predm_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-14-1.png)
+![](overview_files/figure-html/unnamed-chunk-15-1.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-14-2.png)
+![](overview_files/figure-html/unnamed-chunk-15-2.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansBarPlot
+autoplot(predm_out, type = "bar")
 ```
 
-![](overview_files/figure-html/unnamed-chunk-14-3.png)
+![](overview_files/figure-html/unnamed-chunk-15-3.png)
+
+Code
 
 ``` r
 
 gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
    rownames_to_stub=TRUE,
-   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+   caption = "t values above the diagonal; BH-adjusted p-values below") %>% 
   cols_width(everything() ~ px(130))
 ```
 
@@ -472,37 +597,43 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 | 0.6:Marvellous | 0.0004 | 0.0001 | 0.0001 | 0.0185 | 0.0439 | 0.0025 | 0.3227 | 0.3222 | 0.1860 | 0.8512 | 1.0000 | 0.8578 |
 | 0.6:Victory | 0.0023 | 0.0087 | 0.0000 | 0.0910 | 0.4196 | 0.0024 | 0.7530 | 0.8917 | 0.4240 | 0.5910 | 0.4862 | 1.0000 |
 
-The matrix has t-value above the diagonal, p-value (adjusted by 'BH'
-method) below the diagonal {.table .gt_table
-style="table-layout:fixed;width:0px;" quarto-disable-processing="false"
-quarto-bootstrap="false"}
+t values above the diagonal; BH-adjusted p-values below {.table
+.gt_table style="table-layout:fixed;width:0px;"
+quarto-disable-processing="false" quarto-bootstrap="false"}
+
+Code
 
 ``` r
 
 PMplot(predm_out$p_valueMatrix)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-16-1.png)
+![](overview_files/figure-html/unnamed-chunk-17-1.png)
 
 #### Highlights
 
-Options in function ‘predictmeans’:
+Options of
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
 
-- **{pairwise=TRUE}** is for multiple comparison without p-value
-  adjusted (‘adj’ has default value ‘none’).
+- `pairwise = TRUE` compares every pair of means with unadjusted
+  p-values (`adj = "none"`, the default).
 
-- **{adj=“BH”}** is for multiple comparison with p-value adjusted by
-  “BH” method (‘pairwise’ will be TRUE automatically when ‘adj’ is not
-  none).
+- `adj = "BH"` compares the pairs with p-values adjusted by the
+  Benjamini-Hochberg method (false discovery rate); any `adj` other than
+  `"none"` turns the comparisons on. `"tukey"`, `"holm"`, `"bonferroni"`
+  and others are available.
 
-- **{plot=c(“mean”, “bar”, “pval”, “back”)}** draws the plots named,
-  including the bar chart (`plot = TRUE`: the default plots).
+- `meandecr = TRUE` sorts `mean_table` by decreasing mean, `FALSE` by
+  increasing mean.
 
-- **{meandecr=TRUE}** is for descending means in ‘mean_table’.
+- Plots are drawn from the result: `autoplot(predm_out)` (means with one
+  LSD bar), `type = "bar"`, `type = "ci"` (each mean with its confidence
+  limits; `data = TRUE` adds the observations) and `type = "pvalue"`.
+  `plot(predm_out)` draws the first.
 
-- **{meandecr=FALSE}** is for ascending means in ‘mean_table’.
-
-- **Pairwise LSD** is available only when adj=‘none’ or ‘bonferroni’.
+- The LSD is the least significant difference at the chosen adjustment;
+  when the standard errors of the differences are not all equal it is
+  shown as a range.
 
 ### Permutation Test
 
@@ -510,19 +641,12 @@ Options in function ‘predictmeans’:
 - For Multiple Comparisons
 - For Contrasts
 
-``` r
-
-# Permutation Test for model terms
-system.time(
-  permlme <- permmodels(model=mod, nperm=999)
-)
-```
-
-    ##    user  system elapsed 
-    ##  26.707   0.066  26.708
+Code
 
 ``` r
 
+# permutation tests of the model terms (999 permutations; the seed makes them repeatable)
+permlme <- permmodels(model = mod, nperm = 999, seed = 3581)
 permlme
 ```
 
@@ -530,33 +654,35 @@ permlme
     ## Coefficients of (fixed) effects:
     ##                            Estimate Std. Error t value Perm_p_value
     ## (Intercept)                 80.0000     9.1070  8.7844           NA
-    ## nitro0.2                    18.5000     7.6829  2.4079        0.027
+    ## nitro0.2                    18.5000     7.6829  2.4079        0.025
     ## nitro0.4                    34.6667     7.6829  4.5122        0.001
     ## nitro0.6                    44.8333     7.6829  5.8354        0.001
-    ## VarietyMarvellous            6.6667     9.7150  0.6862        0.535
-    ## VarietyVictory              -8.5000     9.7150 -0.8749        0.397
-    ## nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068        0.731
-    ## nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835        0.696
-    ## nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295        0.684
-    ## nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307        0.967
-    ## nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.657
-    ## nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.868
+    ## VarietyMarvellous            6.6667     9.7150  0.6862        0.513
+    ## VarietyVictory              -8.5000     9.7150 -0.8749        0.402
+    ## nitro0.2:VarietyMarvellous   3.3333    10.8653  0.3068        0.772
+    ## nitro0.4:VarietyMarvellous  -4.1667    10.8653 -0.3835        0.702
+    ## nitro0.6:VarietyMarvellous  -4.6667    10.8653 -0.4295        0.667
+    ## nitro0.2:VarietyVictory     -0.3333    10.8653 -0.0307        0.972
+    ## nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.656
+    ## nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.827
     ## 
-    ## Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.
+    ## Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
     ## 
     ## ANOVA:
     ## Type I F tests (Freedman-Lane permutations; the model refitted to each permuted data set)
     ##               Df F value Perm_p_value
     ## nitro          3 37.6857        0.001
-    ## Variety        2  1.4853        0.277
-    ## nitro:Variety  6  0.3028        0.927
+    ## Variety        2  1.4853        0.265
+    ## nitro:Variety  6  0.3028        0.938
     ## 
-    ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
+    ## Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
+
+Code
 
 ``` r
 
-# Permutation Test for multiple comparisons
-predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", permlist=permlme, plot=FALSE)
+# permutation p-values for the pairwise comparisons of nitrogen within each variety
+predictmeans(model = mod, modelterm = "nitro:Variety", atvar = "Variety", adj = "BH", permlist = permlme)
 ```
 
     ## $`Predicted Means`
@@ -595,48 +721,50 @@ predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", pe
     ## [1] "For variable 'nitro' at each level of 'Variety'"
     ## 
     ## $`Golden Rain`
-    ##     0      0.2   0.4   0.6 Group
-    ## 0   1                      A    
-    ## 0.2 0.0375 1                B   
-    ## 0.4 0.003  0.054 1          BC  
-    ## 0.6 0.003  0.006 0.195 1     C  
+    ##     0     0.2   0.4   0.6 Group
+    ## 0   1                     A    
+    ## 0.2 0.042 1                B   
+    ## 0.4 0.003 0.048 1           C  
+    ## 0.6 0.003 0.008 0.198 1     C  
     ## 
     ## $Marvellous
-    ##     0     0.2    0.4    0.6 Group
-    ## 0   1                       A    
-    ## 0.2 0.016 1                  B   
-    ## 0.4 0.003 0.267  1           BC  
-    ## 0.6 0.003 0.0375 0.2568 1     C  
+    ##     0     0.2    0.4   0.6 Group
+    ## 0   1                      A    
+    ## 0.2 0.018 1                 B   
+    ## 0.4 0.003 0.269  1          BC  
+    ## 0.6 0.003 0.0345 0.269 1     C  
     ## 
     ## $Victory
-    ##     0      0.2    0.4   0.6 Group
-    ## 0   1                       A    
-    ## 0.2 0.0336 1                 B   
-    ## 0.4 0.003  0.0105 1           C  
-    ## 0.6 0.003  0.004  0.291 1     C  
+    ##     0     0.2   0.4   0.6 Group
+    ## 0   1                     A    
+    ## 0.2 0.024 1                B   
+    ## 0.4 0.002 0.015 1           C  
+    ## 0.6 0.002 0.002 0.315 1     C  
     ## 
     ## $mean_table
     ## $mean_table$Table
     ##        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-    ## 1  Golden Rain     0  80.0000 9.10701 NA  61.7860  98.2140       A  
-    ## 4  Golden Rain   0.2  98.5000 9.10701 NA  80.2860 116.7140        B 
-    ## 7  Golden Rain   0.4 114.6667 9.10701 NA  96.4526 132.8807        BC
-    ## 10 Golden Rain   0.6 124.8333 9.10701 NA 106.6193 143.0474         C
-    ## 2   Marvellous     0  86.6667 9.10701 NA  68.4526 104.8807       A  
-    ## 5   Marvellous   0.2 108.5000 9.10701 NA  90.2860 126.7140        B 
-    ## 8   Marvellous   0.4 117.1667 9.10701 NA  98.9526 135.3807        BC
-    ## 11  Marvellous   0.6 126.8333 9.10701 NA 108.6193 145.0474         C
-    ## 3      Victory     0  71.5000 9.10701 NA  53.2860  89.7140       A  
-    ## 6      Victory   0.2  89.6667 9.10701 NA  71.4526 107.8807        B 
-    ## 9      Victory   0.4 110.8333 9.10701 NA  92.6193 129.0474         C
-    ## 12     Victory   0.6 118.5000 9.10701 NA 100.2860 136.7140         C
+    ## 1  Golden Rain     0  80.0000 9.10701 NA  60.7019  99.2981       A  
+    ## 4  Golden Rain   0.2  98.5000 9.10701 NA  79.2019 117.7981        B 
+    ## 7  Golden Rain   0.4 114.6667 9.10701 NA  95.3686 133.9647         C
+    ## 10 Golden Rain   0.6 124.8333 9.10701 NA 105.5353 144.1314         C
+    ## 2   Marvellous     0  86.6667 9.10701 NA  67.3686 105.9647       A  
+    ## 5   Marvellous   0.2 108.5000 9.10701 NA  89.2019 127.7981        B 
+    ## 8   Marvellous   0.4 117.1667 9.10701 NA  97.8686 136.4647        BC
+    ## 11  Marvellous   0.6 126.8333 9.10701 NA 107.5353 146.1314         C
+    ## 3      Victory     0  71.5000 9.10701 NA  52.2019  90.7981       A  
+    ## 6      Victory   0.2  89.6667 9.10701 NA  70.3686 108.9647        B 
+    ## 9      Victory   0.4 110.8333 9.10701 NA  91.5353 130.1314         C
+    ## 12     Victory   0.6 118.5000 9.10701 NA  99.2019 137.7981         C
     ## 
     ## $mean_table$Note
     ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"
 
+Code
+
 ``` r
 
-# Permutation Test for specified contrasts
+# permutation p-values for two contrasts of the 12 nitro:Variety means
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
@@ -644,22 +772,24 @@ contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=perml
 
     ## Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 999 permutations)
     ##    contrast estimate std.error df statistic p.value p.adj conf.low conf.high
-    ##  contrast 1    -8.50     9.715 NA   -0.8749   0.382 0.382   -29.68     12.68
-    ##  contrast 2   -45.67     9.715 NA   -4.7006   0.001 0.001   -66.90    -24.44
+    ##  contrast 1    -8.50     9.715 NA   -0.8749   0.403 0.403   -28.92     11.92
+    ##  contrast 2   -45.67     9.715 NA   -4.7006   0.001 0.001   -66.30    -25.03
 
-## Example_2 Repeated Measurements (ATP data)
+## Example 2: repeated measurements (ATP data)
 
-ATP containing data from an experiment to study the effects of
-preserving liquids on the enzyme content of dog hearts. There were 23
-hearts and two treatment factors, A and B, each at two levels.
-Measurements were made of ATP as a percentage of total enzyme in the
-heart, at one and two hourly intervals during a twelve hour period
-following initial preservation.
+The ATP data come from an experiment on the effect of preserving liquids
+on the enzyme content of dog hearts. Twenty-three hearts were assigned
+to the combinations of two treatment factors, A and B, each with two
+levels. ATP, as a percentage of the total enzyme in the heart, was
+measured at one- and two-hour intervals over the twelve hours after
+preservation.
 
 ### Data Info
 
 - Structure
 - Plot
+
+Code
 
 ``` r
 
@@ -676,6 +806,8 @@ str(ATP)
     ##  $ ATP   : num  85.5 74.6 84.2 84 78.4 ...
     ##  $ time.v: num  0 1 2 3 4 5 6 8 10 12 ...
 
+Code
+
 ``` r
 
 ATP %>% 
@@ -685,7 +817,9 @@ ATP %>%
   facet_wrap(vars(heart))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-21-1.png)
+![](overview_files/figure-html/unnamed-chunk-22-1.png)
+
+Code
 
 ``` r
 
@@ -696,13 +830,15 @@ ATP %>%
   facet_grid(vars(A), vars(B))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-22-1.png)
+![](overview_files/figure-html/unnamed-chunk-23-1.png)
 
 ### Modelling
 
 - Model
 - Residual Plot
 - Test
+
+Code
 
 ``` r
 
@@ -772,16 +908,20 @@ summary(mod)
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
+Code
+
 ``` r
 
-residplot(mod, group="A") 
+residplot(mod, group = "A")
 ```
 
-![](overview_files/figure-html/unnamed-chunk-24-1.png)
+![](overview_files/figure-html/unnamed-chunk-25-1.png)
+
+Code
 
 ``` r
 
-#perform shapiro-wilk test
+# Shapiro-Wilk test of normality of the residuals
 shapiro.test(resid(mod))
 ```
 
@@ -791,22 +931,25 @@ shapiro.test(resid(mod))
     ## data:  resid(mod)
     ## W = 0.99105, p-value = 0.1704
 
+Code
+
 ``` r
 
-#perform bartlett test
-bartlett.test((ATP)^1.5 ~ interaction(A, B), data = ATP)
+# Bartlett and Levene tests of equal variance across the A:B groups
+bartlett.test(ATP^1.5 ~ interaction(A, B), data = ATP)
 ```
 
     ## 
     ##  Bartlett test of homogeneity of variances
     ## 
-    ## data:  (ATP)^1.5 by interaction(A, B)
+    ## data:  ATP^1.5 by interaction(A, B)
     ## Bartlett's K-squared = 16.015, df = 3, p-value = 0.001126
+
+Code
 
 ``` r
 
-#perform levene test
-car::leveneTest((ATP)^1.5 ~ A:B, data = ATP)
+car::leveneTest(ATP^1.5 ~ A:B, data = ATP)
 ```
 
     ## Levene's Test for Homogeneity of Variance (center = median)
@@ -819,6 +962,8 @@ car::leveneTest((ATP)^1.5 ~ A:B, data = ATP)
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -837,6 +982,8 @@ kable(anova(mod))
 
 - **$`R^2`$**
 
+Code
+
 ``` r
 
 R2_model(mod)
@@ -852,18 +999,16 @@ R2_model(mod)
 
 - Mean Table
 - Mean Plot
-- p-value Table
+- Pairwise Comparisons
+
+Code
 
 ``` r
 
 predm_out <- predictmeans(mod, "A:time", 
-                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-```
-
-``` r
-
-print(predm_out[1:4])
+predm_out
 ```
 
     ## $`Predicted Means`
@@ -905,7 +1050,7 @@ print(predm_out[1:4])
     ## 
     ## $LSD
     ##  Max.LSD  Min.LSD Aveg.LSD 
-    ## 86.65062 71.30758 80.20718 
+    ## 87.00785 87.00785 87.00785 
     ## attr(,"For the Same Level of Factor")
     ##                 A     time
     ## Aveg.LSD 73.04780 86.65062
@@ -914,14 +1059,131 @@ print(predm_out[1:4])
     ## attr(,"Significant level")
     ## [1] 0.05
     ## attr(,"Degree of freedom")
-    ## [1] 171
+    ## [1] 108.49
     ## attr(,"Note")
     ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
+    ## attr(,"Within levels of atvar")
+    ##    by pairs  min.SED  max.SED     crit  min.LSD aveg.LSD  max.LSD
+    ## 1   0     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 2   1     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 3   2     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 4   3     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 5   4     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 6   5     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 7   6     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 8   8     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 9  10     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 10 12     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## attr(,"equal")
+    ## [1] TRUE
+    ## 
+    ## $`Pairwise comparison p-value (adjusted by 'BH' method)`
+    ## [1] "For variable 'A' at each level of 'time'"
+    ## 
+    ## $`0`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.6692 1 A    
+    ## 
+    ## $`1`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0748 1 A    
+    ## 
+    ## $`2`
+    ##   1     2 Group
+    ## 1 1       A    
+    ## 2 0.236 1 A    
+    ## 
+    ## $`3`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.5117 1 A    
+    ## 
+    ## $`4`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.3123 1 A    
+    ## 
+    ## $`5`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.1995 1 A    
+    ## 
+    ## $`6`
+    ##   1     2 Group
+    ## 1 1       A    
+    ## 2 0.925 1 A    
+    ## 
+    ## $`8`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0089 1  B   
+    ## 
+    ## $`10`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0063 1  B   
+    ## 
+    ## $`12`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0039 1  B   
+    ## 
+    ## $mean_table
+    ## $mean_table$Table
+    ##    time A     Mean       SE     Df  LL(95%)  UL(95%) Bk_Mean Bk_LL(95%)
+    ## 1     0 1 727.8193 31.77063 108.49 664.8476 790.7910 80.9125    76.1754
+    ## 11    0 2 746.6278 30.29210 108.49 686.5867 806.6689 82.3006    77.8270
+    ## 2     1 1 679.6465 31.77063 108.49 616.6748 742.6181 77.3016    72.4498
+    ## 12    1 2 758.6166 30.29210 108.49 698.5755 818.6577 83.1792    78.7304
+    ## 3     2 1 730.3360 31.77063 108.49 667.3643 793.3077 81.0989    76.3675
+    ## 13    2 2 678.0270 30.29210 108.49 617.9859 738.0681 77.1788    72.5525
+    ## 4     3 1 683.8131 31.77063 108.49 620.8414 746.7848 77.6173    72.7758
+    ## 14    3 2 654.9116 30.29210 108.49 594.8705 714.9527 75.4145    70.7318
+    ## 5     4 1 662.6791 31.77063 108.49 599.7074 725.6508 76.0097    71.1147
+    ## 15    4 2 618.1147 30.29210 108.49 558.0736 678.1559 72.5626    67.7841
+    ## 6     5 1 614.4566 31.77063 108.49 551.4849 677.4282 72.2760    67.2495
+    ## 16    5 2 557.7880 30.29210 108.49 497.7469 617.8292 67.7609    62.8067
+    ## 7     6 1 505.0087 31.77063 108.49 442.0370 567.9804 63.4161    58.0282
+    ## 17    6 2 509.1520 30.29210 108.49 449.1108 569.1931 63.7624    58.6456
+    ## 8     8 1 390.4279 31.77063 108.49 327.4562 453.3996 53.4188    47.5082
+    ## 18    8 2 507.3286 30.29210 108.49 447.2875 567.3697 63.6101    58.4868
+    ## 9    10 1 321.2284 31.77063 108.49 258.2568 384.2001 46.9039    40.5541
+    ## 19   10 2 443.5690 30.29210 108.49 383.5278 503.6101 58.1622    52.7875
+    ## 10   12 1 275.4907 31.77063 108.49 212.5190 338.4623 42.3387    35.6122
+    ## 20   12 2 404.9472 30.29210 108.49 344.9061 464.9884 54.7351    49.1814
+    ##    Bk_UL(95%) LetterGrp
+    ## 1     85.5148         A
+    ## 11    86.6557         A
+    ## 2     82.0056         A
+    ## 12    87.5121         A
+    ## 3     85.6961         A
+    ## 13    81.6703         A
+    ## 4     82.3121         A
+    ## 14    79.9561         A
+    ## 5     80.7517         A
+    ## 15    77.1886         A
+    ## 6     77.1333         A
+    ## 16    72.5402         A
+    ## 7     68.5839         A
+    ## 17    68.6815         A
+    ## 8     59.0184        A 
+    ## 18    68.5347         B
+    ## 9     52.8492        A 
+    ## 19    63.2989         B
+    ## 10    48.5669        A 
+    ## 20    60.0198         B
+    ## 
+    ## $mean_table$Note
+    ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of time"
+
+Code
 
 ``` r
 
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 | time | A | Mean | SE | Df | LL(95%) | UL(95%) | Bk_Mean | Bk_LL(95%) | Bk_UL(95%) | LetterGrp |
@@ -947,133 +1209,64 @@ gt(predm_out$mean_table$Table,
 | 12 | 1 | 275.4907 | 31.77063 | 108.49 | 212.5190 | 338.4623 | 42.3387 | 35.6122 | 48.5669 | A |
 | 12 | 2 | 404.9472 | 30.29210 | 108.49 | 344.9061 | 464.9884 | 54.7351 | 49.1814 | 60.0198 | B |
 
-Group: Letter-based representation of pairwise comparisons at
-significant level '0.05' at each 'time' {.table .gt_table
+Within each time, means sharing a letter are not significantly different
+(BH-adjusted p-values, 5% level) {.table .gt_table
 quarto-disable-processing="false" quarto-bootstrap="false"}
 
-``` r
-
-predm_out$predictmeansPlot$meanPlot
-```
-
-![](overview_files/figure-html/unnamed-chunk-29-1.png)
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-29-2.png)
+![](overview_files/figure-html/unnamed-chunk-30-1.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansBarPlot
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-29-3.png)
+![](overview_files/figure-html/unnamed-chunk-30-2.png)
 
-- **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
-  the diagonal at each ‘time’**
+Code
 
 ``` r
 
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE), 
-             rownames_to_stub = TRUE))
-  }
-}
+autoplot(predm_out, type = "bar")
 ```
 
-\[1\] “0”
+![](overview_files/figure-html/unnamed-chunk-30-3.png)
 
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.6692 | 1   | A     |
+The pairwise comparisons within each time, one row per pair (`by` is the
+time; `p.adj` is BH-adjusted within each time):
 
-\[1\] “1”
+Code
 
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0748 | 1   | A     |
+``` r
 
-\[1\] “2”
-
-|     | 1     | 2   | Group |
-|-----|-------|-----|-------|
-| 1   | 1     |     | A     |
-| 2   | 0.236 | 1   | A     |
-
-\[1\] “3”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.5117 | 1   | A     |
-
-\[1\] “4”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.3123 | 1   | A     |
-
-\[1\] “5”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.1995 | 1   | A     |
-
-\[1\] “6”
-
-|     | 1     | 2   | Group |
-|-----|-------|-----|-------|
-| 1   | 1     |     | A     |
-| 2   | 0.925 | 1   | A     |
-
-\[1\] “8”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0089 | 1   | B     |
-
-\[1\] “10”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0063 | 1   | B     |
-
-\[1\] “12”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0039 | 1   | B     |
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
+```
 
 #### Predicted Means for “B:time”
 
 - Mean Table
 - Mean Plot
-- p-value Table
+- Pairwise Comparisons
+
+Code
 
 ``` r
 
 predm_out <- predictmeans(mod, "B:time", 
-                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-```
-
-``` r
-
-print(predm_out[1:4])
+predm_out
 ```
 
     ## $`Predicted Means`
@@ -1115,7 +1308,7 @@ print(predm_out[1:4])
     ## 
     ## $LSD
     ##  Max.LSD  Min.LSD Aveg.LSD 
-    ## 86.65062 71.30758 80.20718 
+    ## 87.00785 87.00785 87.00785 
     ## attr(,"For the Same Level of Factor")
     ##                 B     time
     ## Aveg.LSD 73.04780 86.65062
@@ -1124,14 +1317,131 @@ print(predm_out[1:4])
     ## attr(,"Significant level")
     ## [1] 0.05
     ## attr(,"Degree of freedom")
-    ## [1] 171
+    ## [1] 108.49
     ## attr(,"Note")
     ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
+    ## attr(,"Within levels of atvar")
+    ##    by pairs  min.SED  max.SED     crit  min.LSD aveg.LSD  max.LSD
+    ## 1   0     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 2   1     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 3   2     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 4   3     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 5   4     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 6   5     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 7   6     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 8   8     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 9  10     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## 10 12     1 43.89743 43.89743 1.982072 87.00785 87.00785 87.00785
+    ## attr(,"equal")
+    ## [1] TRUE
+    ## 
+    ## $`Pairwise comparison p-value (adjusted by 'BH' method)`
+    ## [1] "For variable 'B' at each level of 'time'"
+    ## 
+    ## $`0`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.3067 1 A    
+    ## 
+    ## $`1`
+    ##   1     2 Group
+    ## 1 1       A    
+    ## 2 0.397 1 A    
+    ## 
+    ## $`2`
+    ##   1     2 Group
+    ## 1 1       A    
+    ## 2 0.885 1 A    
+    ## 
+    ## $`3`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.4217 1 A    
+    ## 
+    ## $`4`
+    ##   1     2 Group
+    ## 1 1       A    
+    ## 2 0.306 1 A    
+    ## 
+    ## $`5`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0833 1 A    
+    ## 
+    ## $`6`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.1263 1 A    
+    ## 
+    ## $`8`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.0055 1  B   
+    ## 
+    ## $`10`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.1758 1 A    
+    ## 
+    ## $`12`
+    ##   1      2 Group
+    ## 1 1        A    
+    ## 2 0.3278 1 A    
+    ## 
+    ## $mean_table
+    ## $mean_table$Table
+    ##    time B     Mean       SE     Df  LL(95%)  UL(95%) Bk_Mean Bk_LL(95%)
+    ## 1     0 1 714.6817 30.29210 108.49 654.6406 774.7228 79.9359    75.3937
+    ## 11    0 2 759.7654 31.77063 108.49 696.7938 822.7371 83.2632    78.5964
+    ## 2     1 1 700.4676 30.29210 108.49 640.4265 760.5087 78.8725    74.2984
+    ## 12    1 2 737.7955 31.77063 108.49 674.8238 800.7672 81.6502    76.9355
+    ## 3     2 1 701.0004 30.29210 108.49 640.9593 761.0416 78.9124    74.3396
+    ## 13    2 2 707.3625 31.77063 108.49 644.3909 770.3342 79.3892    74.6047
+    ## 4     3 1 651.6610 30.29210 108.49 591.6199 711.7022 75.1648    70.4739
+    ## 14    3 2 687.0637 31.77063 108.49 624.0920 750.0353 77.8630    73.0296
+    ## 5     4 1 662.9725 30.29210 108.49 602.9314 723.0137 76.0321    71.3694
+    ## 15    4 2 617.8213 31.77063 108.49 554.8497 680.7930 72.5396    67.5228
+    ## 6     5 1 624.4836 30.29210 108.49 564.4425 684.5248 73.0602    68.2988
+    ## 16    5 2 547.7609 31.77063 108.49 484.7893 610.7326 66.9464    61.7119
+    ## 7     6 1 540.8985 30.29210 108.49 480.8574 600.9396 66.3861    61.3777
+    ## 17    6 2 473.2621 31.77063 108.49 410.2905 536.2338 60.7297    55.2155
+    ## 8     8 1 511.0495 30.29210 108.49 451.0084 571.0907 63.9208    58.8107
+    ## 18    8 2 386.7070 31.77063 108.49 323.7353 449.6787 53.0788    47.1477
+    ## 9    10 1 412.3104 30.29210 108.49 352.2692 472.3515 55.3966    49.8789
+    ## 19   10 2 352.4870 31.77063 108.49 289.5154 415.4587 49.8994    43.7637
+    ## 10   12 1 361.7963 30.29210 108.49 301.7552 421.8375 50.7742    44.9887
+    ## 20   12 2 318.6416 31.77063 108.49 255.6699 381.6132 46.6518    40.2828
+    ##    Bk_UL(95%) LetterGrp
+    ## 1     84.3524         A
+    ## 11    87.8026         A
+    ## 2     83.3175         A
+    ## 12    86.2325         A
+    ## 3     83.3564         A
+    ## 13    84.0336         A
+    ## 4     79.7136         A
+    ## 14    82.5508         A
+    ## 5     80.5560         A
+    ## 15    77.3886         A
+    ## 6     77.6711         A
+    ## 16    71.9837         A
+    ## 7     71.2121         A
+    ## 17    66.0039         A
+    ## 8     68.8341        A 
+    ## 18    58.6951         B
+    ## 9     60.6518         A
+    ## 19    55.6782         A
+    ## 10    56.2467         A
+    ## 20    52.6117         A
+    ## 
+    ## $mean_table$Note
+    ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of time"
+
+Code
 
 ``` r
 
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 | time | B | Mean | SE | Df | LL(95%) | UL(95%) | Bk_Mean | Bk_LL(95%) | Bk_UL(95%) | LetterGrp |
@@ -1157,134 +1467,65 @@ gt(predm_out$mean_table$Table,
 | 12 | 1 | 361.7963 | 30.29210 | 108.49 | 301.7552 | 421.8375 | 50.7742 | 44.9887 | 56.2467 | A |
 | 12 | 2 | 318.6416 | 31.77063 | 108.49 | 255.6699 | 381.6132 | 46.6518 | 40.2828 | 52.6117 | A |
 
-Group: Letter-based representation of pairwise comparisons at
-significant level '0.05' at each 'time' {.table .gt_table
+Within each time, means sharing a letter are not significantly different
+(BH-adjusted p-values, 5% level) {.table .gt_table
 quarto-disable-processing="false" quarto-bootstrap="false"}
 
-``` r
-
-predm_out$predictmeansPlot$meanPlot
-```
-
-![](overview_files/figure-html/unnamed-chunk-32-1.png)
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-32-2.png)
+![](overview_files/figure-html/unnamed-chunk-33-1.png)
+
+Code
 
 ``` r
 
-predm_out$predictmeansBarPlot
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-32-3.png)
+![](overview_files/figure-html/unnamed-chunk-33-2.png)
 
-- **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
-  the diagonal at each ‘time’**
+Code
 
 ``` r
 
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
-             rownames_to_stub = TRUE))
-  }
-}
+autoplot(predm_out, type = "bar")
 ```
 
-\[1\] “0”
+![](overview_files/figure-html/unnamed-chunk-33-3.png)
 
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.3067 | 1   | A     |
+The pairwise comparisons within each time, one row per pair (`by` is the
+time; `p.adj` is BH-adjusted within each time):
 
-\[1\] “1”
+Code
 
-|     | 1     | 2   | Group |
-|-----|-------|-----|-------|
-| 1   | 1     |     | A     |
-| 2   | 0.397 | 1   | A     |
+``` r
 
-\[1\] “2”
-
-|     | 1     | 2   | Group |
-|-----|-------|-----|-------|
-| 1   | 1     |     | A     |
-| 2   | 0.885 | 1   | A     |
-
-\[1\] “3”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.4217 | 1   | A     |
-
-\[1\] “4”
-
-|     | 1     | 2   | Group |
-|-----|-------|-----|-------|
-| 1   | 1     |     | A     |
-| 2   | 0.306 | 1   | A     |
-
-\[1\] “5”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0833 | 1   | A     |
-
-\[1\] “6”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.1263 | 1   | A     |
-
-\[1\] “8”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.0055 | 1   | B     |
-
-\[1\] “10”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.1758 | 1   | A     |
-
-\[1\] “12”
-
-|     | 1      | 2   | Group |
-|-----|--------|-----|-------|
-| 1   | 1      |     | A     |
-| 2   | 0.3278 | 1   | A     |
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
+```
 
 #### Predicted Means for “A:B:time”
 
 - Mean Table
 - Mean Plot
-- p-value Table
+- Pairwise Comparisons
 - p-value Plot
+
+Code
 
 ``` r
 
 predm_out <- predictmeans(mod, "A:B:time", 
-                          atvar="time", adj="BH", plot = TRUE, 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-```
-
-``` r
-
-print(predm_out[1:4])
+predm_out
 ```
 
     ## $`Predicted Means`
@@ -1328,7 +1569,7 @@ print(predm_out[1:4])
     ## 
     ## $LSD
     ##  Max.LSD  Min.LSD Aveg.LSD 
-    ## 125.4262 100.8441 118.0637 
+    ## 125.9433 120.0822 123.0128 
     ## attr(,"For the Same Level of Factor")
     ##                 A        B     time
     ## Aveg.LSD 113.3859 113.3859 122.5077
@@ -1337,14 +1578,191 @@ print(predm_out[1:4])
     ## attr(,"Significant level")
     ## [1] 0.05
     ## attr(,"Degree of freedom")
-    ## [1] 171
+    ## [1] 108.49
     ## attr(,"Note")
-    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons."
+    ## [1] "These LSDs are not adjusted: 'BH' is a step-wise method and has no critical value for all pairs. Use the adjusted p-values for the comparisons. The LSDs differ between pairs (120.1 to 125.9): no single LSD tests every pair; use the p-values, or each pair's LSD (pairs$lsd)."
+    ## attr(,"Within levels of atvar")
+    ##    by pairs  min.SED  max.SED     crit  min.LSD aveg.LSD  max.LSD
+    ## 1   0     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 2   1     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 3   2     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 4   3     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 5   4     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 6   5     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 7   6     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 8   8     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 9  10     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## 10 12     6 60.58421 63.54125 1.982072 120.0822 123.0128 125.9433
+    ## attr(,"equal")
+    ## [1] FALSE
+    ## 
+    ## $`Pairwise comparison p-value (adjusted by 'BH' method)`
+    ## [1] "For variable 'A and B' at each level of 'time'"
+    ## 
+    ## $`0`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.6112 1                   A    
+    ## 2 : 1 0.6112 0.8372 1            A    
+    ## 2 : 2 0.6112 0.8372 0.9799 1     A    
+    ## 
+    ## $`1`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.1844 1                   A    
+    ## 2 : 1 0.0906 0.7005 1            A    
+    ## 2 : 2 0.1726 0.8958 0.7005 1     A    
+    ## 
+    ## $`2`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.7113 1                   A    
+    ## 2 : 1 0.8248 0.7113 1            A    
+    ## 2 : 2 0.7113 0.7113 0.7113 1     A    
+    ## 
+    ## $`3`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.7211 1                   A    
+    ## 2 : 1 0.9929 0.7211 1            A    
+    ## 2 : 2 0.9929 0.7211 0.9929 1     A    
+    ## 
+    ## $`4`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.9221 1                   A    
+    ## 2 : 1 0.9221 0.9926 1            A    
+    ## 2 : 2 0.5331 0.5331 0.5331 1     A    
+    ## 
+    ## $`5`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.886  1                   A    
+    ## 2 : 1 0.886  0.886  1            A    
+    ## 2 : 2 0.0894 0.1062 0.0894 1     A    
+    ## 
+    ## $`6`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          A    
+    ## 1 : 2 0.6539 1                   A    
+    ## 2 : 1 0.6539 0.5939 1            A    
+    ## 2 : 2 0.5939 0.6539 0.5939 1     A    
+    ## 
+    ## $`8`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          AB   
+    ## 1 : 2 0.102  1                   A    
+    ## 2 : 1 0.0858 0.0015 1             B   
+    ## 2 : 2 0.9025 0.1046 0.0858 1     AB   
+    ## 
+    ## $`10`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          AB   
+    ## 1 : 2 0.5074 1                   A    
+    ## 2 : 1 0.0685 0.0299 1             B   
+    ## 2 : 2 0.3653 0.2041 0.3063 1     AB   
+    ## 
+    ## $`12`
+    ##       1 : 1  1 : 2  2 : 1  2 : 2 Group
+    ## 1 : 1 1                          AB   
+    ## 1 : 2 0.5586 1                   A    
+    ## 2 : 1 0.0826 0.0461 1             B   
+    ## 2 : 2 0.2358 0.1088 0.5041 1     AB   
+    ## 
+    ## $mean_table
+    ## $mean_table$Table
+    ##    time A B     Mean       SE     Df  LL(95%)  UL(95%) Bk_Mean Bk_LL(95%)
+    ## 1     0 1 1 683.4993 42.83950 108.49 598.5883 768.4103 77.5935    71.0262
+    ## 11    0 1 2 772.1393 46.92832 108.49 679.1240 865.1546 84.1648    77.2620
+    ## 21    0 2 1 745.8641 42.83950 108.49 660.9531 830.7751 82.2444    75.8776
+    ## 31    0 2 2 747.3915 42.83950 108.49 662.4805 832.3025 82.3567    75.9945
+    ## 2     1 1 1 625.6698 42.83950 108.49 540.7588 710.5808 73.1527    66.3747
+    ## 12    1 1 2 733.6232 46.92832 108.49 640.6079 826.6385 81.3421    74.3124
+    ## 22    1 2 1 775.2654 42.83950 108.49 690.3544 860.1764 84.3918    78.1115
+    ## 32    1 2 2 741.9678 42.83950 108.49 657.0568 826.8788 81.9578    75.5791
+    ## 3     2 1 1 707.7245 42.83950 108.49 622.8135 792.6355 79.4163    72.9299
+    ## 13    2 1 2 752.9475 46.92832 108.49 659.9322 845.9628 82.7643    75.7995
+    ## 23    2 2 1 694.2764 42.83950 108.49 609.3654 779.1874 78.4070    71.8762
+    ## 33    2 2 2 661.7776 42.83950 108.49 576.8666 746.6886 75.9407    69.2974
+    ## 4     3 1 1 651.3920 42.83950 108.49 566.4810 736.3029 75.1441    68.4632
+    ## 14    3 1 2 716.2343 46.92832 108.49 623.2190 809.2496 80.0516    72.9615
+    ## 24    3 2 1 651.9301 42.83950 108.49 567.0192 736.8411 75.1855    68.5065
+    ## 34    3 2 2 657.8931 42.83950 108.49 572.9821 742.8040 75.6433    68.9860
+    ## 5     4 1 1 672.0561 42.83950 108.49 587.1451 756.9671 76.7250    70.1181
+    ## 15    4 1 2 653.3022 46.92832 108.49 560.2868 746.3175 75.2909    67.9632
+    ## 25    4 2 1 653.8890 42.83950 108.49 568.9780 738.7999 75.3360    68.6642
+    ## 35    4 2 2 582.3405 42.83950 108.49 497.4295 667.2515 69.7351    62.7800
+    ## 6     5 1 1 619.0203 42.83950 108.49 534.1093 703.9313 72.6334    65.8294
+    ## 16    5 1 2 609.8928 46.92832 108.49 516.8775 702.9081 71.9177    64.4058
+    ## 26    5 2 1 629.9470 42.83950 108.49 545.0360 714.8580 73.4857    66.7242
+    ## 36    5 2 2 485.6291 42.83950 108.49 400.7181 570.5401 61.7831    54.3533
+    ## 7     6 1 1 522.4710 42.83950 108.49 437.5600 607.3819 64.8696    57.6357
+    ## 17    6 1 2 487.5464 46.92832 108.49 394.5311 580.5617 61.9456    53.7924
+    ## 27    6 2 1 559.3260 42.83950 108.49 474.4151 644.2370 67.8854    60.8283
+    ## 37    6 2 2 458.9779 42.83950 108.49 374.0669 543.8888 59.5015    51.9158
+    ## 8     8 1 1 448.9900 42.83950 108.49 364.0791 533.9010 58.6351    50.9875
+    ## 18    8 1 2 331.8658 46.92832 108.49 238.8504 424.8811 47.9338    38.4962
+    ## 28    8 2 1 573.1090 42.83950 108.49 488.1980 658.0200 68.9961    62.0008
+    ## 38    8 2 2 441.5482 42.83950 108.49 356.6372 526.4592 57.9854    50.2903
+    ## 9    10 1 1 342.3595 42.83950 108.49 257.4486 427.2705 48.9390    40.4694
+    ## 19   10 1 2 300.0973 46.92832 108.49 207.0820 393.1126 44.8237    35.0022
+    ## 29   10 2 1 482.2612 42.83950 108.49 397.3502 567.1722 61.4971    54.0483
+    ## 39   10 2 2 404.8767 42.83950 108.49 319.9657 489.7877 54.7287    46.7809
+    ## 10   12 1 1 294.1297 42.83950 108.49 209.2187 379.0407 44.2275    35.2425
+    ## 20   12 1 2 256.8516 46.92832 108.49 163.8363 349.8669 40.4068    29.9415
+    ## 30   12 2 1 429.4629 42.83950 108.49 344.5520 514.3739 56.9225    49.1477
+    ## 40   12 2 2 380.4315 42.83950 108.49 295.5205 465.3425 52.5030    44.3668
+    ##    Bk_UL(95%) LetterGrp
+    ## 1     83.8936         A
+    ## 11    90.7951         A
+    ## 21    88.3736         A
+    ## 31    88.4818         A
+    ## 2     79.6298         A
+    ## 12    88.0800         A
+    ## 22    90.4465         A
+    ## 32    88.0970         A
+    ## 3     85.6477         A
+    ## 13    89.4474         A
+    ## 23    84.6762         A
+    ## 33    82.3050         A
+    ## 4     81.5401         A
+    ## 14    86.8404         A
+    ## 24    81.5798         A
+    ## 34    82.0193         A
+    ## 5     83.0586         A
+    ## 15    82.2777         A
+    ## 25    81.7243         A
+    ## 35    76.3589         A
+    ## 6     79.1323         A
+    ## 16    79.0556         A
+    ## 26    79.9490         A
+    ## 36    68.7898         A
+    ## 7     71.7202         A
+    ## 17    69.5930         A
+    ## 27    74.5928         A
+    ## 37    66.6306         A
+    ## 8     65.8123        AB
+    ## 18    56.5169        A 
+    ## 28    75.6530         B
+    ## 38    65.1993        AB
+    ## 9     56.7286        AB
+    ## 19    53.6634        A 
+    ## 29    68.5188         B
+    ## 39    62.1353        AB
+    ## 10    52.3750        AB
+    ## 20    49.6518        A 
+    ## 30    64.1977         B
+    ## 40    60.0503        AB
+    ## 
+    ## $mean_table$Note
+    ## [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of time"
+
+Code
 
 ``` r
 
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 | time | A | B | Mean | SE | Df | LL(95%) | UL(95%) | Bk_Mean | Bk_LL(95%) | Bk_UL(95%) | LetterGrp |
@@ -1390,164 +1808,83 @@ gt(predm_out$mean_table$Table,
 | 12 | 2 | 1 | 429.4629 | 42.83950 | 108.49 | 344.5520 | 514.3739 | 56.9225 | 49.1477 | 64.1977 | B |
 | 12 | 2 | 2 | 380.4315 | 42.83950 | 108.49 | 295.5205 | 465.3425 | 52.5030 | 44.3668 | 60.0503 | AB |
 
-Group: Letter-based representation of pairwise comparisons at
-significant level '0.05' at each 'time' {.table .gt_table
+Within each time, means sharing a letter are not significantly different
+(BH-adjusted p-values, 5% level) {.table .gt_table
 quarto-disable-processing="false" quarto-bootstrap="false"}
 
-``` r
-
-predm_out$predictmeansPlot$meanPlot
-```
-
-![](overview_files/figure-html/unnamed-chunk-35-1.png)
+Code
 
 ``` r
 
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-35-2.png)
+![](overview_files/figure-html/unnamed-chunk-36-1.png)
 
-- **Pairwise p-value matrix has p-value (adjusted by ‘BH’ method) below
-  the diagonal at each ‘time’**
+Code
 
 ``` r
 
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
-             rownames_to_stub = TRUE))
-  }
-}
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-\[1\] “0”
+![](overview_files/figure-html/unnamed-chunk-36-2.png)
 
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.6112 | 1      |        |       | A     |
-| 2 : 1 | 0.6112 | 0.8372 | 1      |       | A     |
-| 2 : 2 | 0.6112 | 0.8372 | 0.9799 | 1     | A     |
+The pairwise comparisons within each time, one row per pair (`by` is the
+time; `p.adj` is BH-adjusted within each time):
 
-\[1\] “1”
+Code
 
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.1844 | 1      |        |       | A     |
-| 2 : 1 | 0.0906 | 0.7005 | 1      |       | A     |
-| 2 : 2 | 0.1726 | 0.8958 | 0.7005 | 1     | A     |
+``` r
 
-\[1\] “2”
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
+```
 
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.7113 | 1      |        |       | A     |
-| 2 : 1 | 0.8248 | 0.7113 | 1      |       | A     |
-| 2 : 2 | 0.7113 | 0.7113 | 0.7113 | 1     | A     |
-
-\[1\] “3”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.7211 | 1      |        |       | A     |
-| 2 : 1 | 0.9929 | 0.7211 | 1      |       | A     |
-| 2 : 2 | 0.9929 | 0.7211 | 0.9929 | 1     | A     |
-
-\[1\] “4”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.9221 | 1      |        |       | A     |
-| 2 : 1 | 0.9221 | 0.9926 | 1      |       | A     |
-| 2 : 2 | 0.5331 | 0.5331 | 0.5331 | 1     | A     |
-
-\[1\] “5”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.886  | 1      |        |       | A     |
-| 2 : 1 | 0.886  | 0.886  | 1      |       | A     |
-| 2 : 2 | 0.0894 | 0.1062 | 0.0894 | 1     | A     |
-
-\[1\] “6”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | A     |
-| 1 : 2 | 0.6539 | 1      |        |       | A     |
-| 2 : 1 | 0.6539 | 0.5939 | 1      |       | A     |
-| 2 : 2 | 0.5939 | 0.6539 | 0.5939 | 1     | A     |
-
-\[1\] “8”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | AB    |
-| 1 : 2 | 0.102  | 1      |        |       | A     |
-| 2 : 1 | 0.0858 | 0.0015 | 1      |       | B     |
-| 2 : 2 | 0.9025 | 0.1046 | 0.0858 | 1     | AB    |
-
-\[1\] “10”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | AB    |
-| 1 : 2 | 0.5074 | 1      |        |       | A     |
-| 2 : 1 | 0.0685 | 0.0299 | 1      |       | B     |
-| 2 : 2 | 0.3653 | 0.2041 | 0.3063 | 1     | AB    |
-
-\[1\] “12”
-
-|       | 1 : 1  | 1 : 2  | 2 : 1  | 2 : 2 | Group |
-|-------|--------|--------|--------|-------|-------|
-| 1 : 1 | 1      |        |        |       | AB    |
-| 1 : 2 | 0.5586 | 1      |        |       | A     |
-| 2 : 1 | 0.0826 | 0.0461 | 1      |       | B     |
-| 2 : 2 | 0.2358 | 0.1088 | 0.5041 | 1     | AB    |
+Code
 
 ``` r
 
 PMplot(predm_out$p_valueMatrix)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-37-1.png)
+![](overview_files/figure-html/unnamed-chunk-38-1.png)
 
 #### Highlights
 
-Options in function ‘predictmeans’:
+Options of
+[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
 
-- **{atvar=“time”}** sets multiple comparison within each level of
-  ‘time’, it also infects the mean_table and mean plots arrangement.
-  When ‘atvar’ is not NULL ‘pair’ turns to be TRUE automatically. Please
-  try to see any effects for ‘atvar=c(“A”, “B”)’ or ‘atvar=c(“B”, “A”)’.
+- `atvar = "time"` compares the means only within each time, and the
+  p-values are adjusted within each time. It also arranges `mean_table`
+  and the plots by time (one panel per time). Giving `atvar` turns the
+  comparisons on. Try `atvar = c("A", "B")` or `atvar = c("B", "A")`
+  with `"A:B:time"` to see the effect.
 
-- **{trans=function(x) x^(1/1.5)}** is a function for back
-  transformation e.g. ‘trans=exp’ for log, ‘trans=function(x) x^2’ for
-  sqrt.
+- `trans = function(x) x^(1/1.5)` back-transforms the means of the
+  transformed response `ATP^1.5` to the ATP scale (e.g. `trans = exp`
+  after [`log()`](https://rdrr.io/r/base/Log.html),
+  `trans = function(x) x^2` after
+  [`sqrt()`](https://rdrr.io/r/base/MathFun.html)). For a response
+  transformed in the model formula, such as `log(y)` or `sqrt(y)`, and
+  for any GLM, the back-transformation is found automatically.
 
-- For any GLM, the function produces associated back transformation
-  automatically.
+## Example 3: a GLM with a covariate (Drug data)
 
-## Example_3 GLM with Covariate (Drug data)
-
-Comparison of the effectiveness of three analgesic drugs to a standard
-drug, morphine (Finney, Probit analysis, 3rd Edition 1971, p.103). 14
-groups of mice were tested for response to the drugs at a range of
-doses. N is total number of mice in each group, R is number responding.
+The effectiveness of three analgesic drugs was compared with that of a
+standard drug, morphine (Finney, *Probit Analysis*, 3rd edition, 1971,
+p. 103). Fourteen groups of mice were given the drugs at a range of
+doses; `N` is the number of mice in each group and `R` the number that
+responded.
 
 ### Data Info
 
 - Structure
 - Summary
+
+Code
 
 ``` r
 
@@ -1561,6 +1898,8 @@ str(Drug)
     ##  $ N        : int  103 120 123 60 110 100 90 80 90 60 ...
     ##  $ R        : int  19 53 83 14 54 81 31 54 80 13 ...
     ##  $ log10Dose: num  0.176 0.477 0.778 0.176 0.477 ...
+
+Code
 
 ``` r
 
@@ -1586,6 +1925,8 @@ summary(Drug)
 
 - Model
 - Residual Plot
+
+Code
 
 ``` r
 
@@ -1621,14 +1962,18 @@ summary(mod)
     ## 
     ## Number of Fisher Scoring iterations: 3
 
+Code
+
 ``` r
 
 residplot(mod) 
 ```
 
-![](overview_files/figure-html/unnamed-chunk-41-1.png)
+![](overview_files/figure-html/unnamed-chunk-42-1.png)
 
 ### ANOVA
+
+Code
 
 ``` r
 
@@ -1643,10 +1988,12 @@ kable(car::Anova(mod))
 
 ### Covariate Means
 
-#### Predicted Means for “Treatment”
+#### Predicted Probabilities for “Drug”
 
 - Mean Table
 - Mean Plot
+
+Code
 
 ``` r
 
@@ -1659,13 +2006,15 @@ as.data.frame(covariate_out) %>%
   DT_df()
 ```
 
-Letters for the drugs at one dose: from comparison intervals, whose
-overlap agrees with the pairwise tests (overlap of 95% or 83.4%
-confidence intervals does not):
+Letters for the drugs at a single dose come from comparison intervals,
+whose overlap agrees with the pairwise tests (the overlap of 95% or
+83.4% confidence intervals does not; Cave, 2021):
+
+Code
 
 ``` r
 
-predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterCI = TRUE)$mean_table
+predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letter_ci = TRUE)$mean_table
 ```
 
     ## $Table
@@ -1683,83 +2032,71 @@ predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterC
     ## $Note
     ## [1] "Letter-based representation of pairwise comparisons by overlap of the comparison intervals (LL, UL: mean +/- 1.495 SE, 86.5% intervals): two means differ at significant level '0.05' when their intervals do not overlap (the SEDs differ: approximate, but every pair here agrees with its test)"
 
+Code
+
 ``` r
 
+# one panel per drug (the default)
 autoplot(covariate_out)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-45-1.png)
+![](overview_files/figure-html/unnamed-chunk-46-1.png)
+
+Code
 
 ``` r
 
-covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               plot = TRUE, plot_args = list(trellis = FALSE))
+# all drugs in one panel
+autoplot(covariate_out, panel = character(0))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-45-2.png)
+![](overview_files/figure-html/unnamed-chunk-46-2.png)
 
-    ## Curves of 'Drug' along log10Dose
-    ## 95% limits; asymptotic (z) df
-    ## response: back-transformed by the inverse link; mean
-    ##      Drug log10Dose estimate std.error  df conf.low conf.high response
-    ##  Morphine -0.124939   -1.533    0.2061 Inf   -1.937   -1.1290  0.06264
-    ##  Morphine -0.095837   -1.468    0.1979 Inf   -1.856   -1.0804  0.07102
-    ##  Morphine -0.066736   -1.403    0.1896 Inf   -1.775   -1.0318  0.08025
-    ##  Morphine -0.037635   -1.339    0.1815 Inf   -1.694   -0.9830  0.09034
-    ##  Morphine -0.008533   -1.274    0.1733 Inf   -1.614   -0.9341  0.10136
-    ##  Morphine  0.020568   -1.209    0.1653 Inf   -1.533   -0.8851  0.11331
-    ##  Morphine  0.049670   -1.144    0.1574 Inf   -1.453   -0.8359  0.12625
-    ##  Morphine  0.078771   -1.080    0.1495 Inf   -1.373   -0.7864  0.14018
-    ##  Morphine  0.107872   -1.015    0.1418 Inf   -1.293   -0.7368  0.15511
-    ##  Morphine  0.136974   -0.950    0.1342 Inf   -1.213   -0.6869  0.17106
-    ##  response.std.error response.conf.low response.conf.high
-    ##             0.02540           0.02637             0.1295
-    ##             0.02686           0.03173             0.1400
-    ##             0.02826           0.03794             0.1511
-    ##             0.02955           0.04511             0.1628
-    ##             0.03072           0.05330             0.1751
-    ##             0.03175           0.06262             0.1881
-    ##             0.03262           0.07314             0.2016
-    ##             0.03331           0.08494             0.2158
-    ##             0.03381           0.09806             0.2306
-    ##             0.03411           0.11255             0.2461
-    ## ... 218 more rows: as.data.frame(x) gives the table.
-    ## autoplot(x) draws the plot.
+Code
 
 ``` r
 
-covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
+# on the probit (model) scale, without the bands
+autoplot(covariate_out, scale = "model", panel = character(0), interval = "none")
 ```
 
-![](overview_files/figure-html/unnamed-chunk-45-3.png)
+![](overview_files/figure-html/unnamed-chunk-46-3.png)
 
 ### Highlights
 
-Options in function ‘covariatemeans’:
+Options of
+[`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md):
 
-- The confidence bands of the lines are for each line on its own:
-  whether two bands overlap is not a test of the two drugs.
-  `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letterCI = TRUE)`
+- The plots are drawn from the result by
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html):
+  `panel` and `group` choose which factor makes the panels and which the
+  colours, `scale = "model"` shows the probit scale, and
+  `interval = "none"` drops the bands.
+
+- The confidence bands are for each line on its own: whether two bands
+  overlap is not a test of the two drugs.
+  `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letter_ci = TRUE)`
   gives letters at a dose that agree with the pairwise tests, and
   `contr = c("Morphine", "Amidone")` in
   [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
   gives the difference of two drugs along the dose with its band.
 
-**DT_df** is a function for producing data table in html with ‘CSV’
-download button. To download the whole data, you need to select ‘All’
-entries.
+`DT_df()` (defined at the top of this article) shows a data frame as an
+HTML table with a CSV download button; choose ‘All’ entries to download
+every row.
 
-## Example_4 Semiparametric Regression with Group (WarsawApts data)
+## Example 4: semiparametric regression with groups (WarsawApts data)
 
-‘WarsawApts’ is a subset of the data set ‘apartments’ in the R package
-PBImisc. This dataset contains the prices of the apartments which were
-sold in Warsaw, Poland, during the calendar years 2007 to 2009.
+`WarsawApts` (package HRW) is a subset of the data set `apartments` in
+the package PBImisc: the prices of apartments sold in Warsaw, Poland,
+from 2007 to 2009, with their construction dates and districts.
 
 ### Data Info
 
 - Structure
 - Plot
+
+Code
 
 ``` r
 
@@ -1777,6 +2114,8 @@ str(WarsawApts)
     ##  $ construction.date: int  1970 1962 1950 1968 1952 2007 1961 1965 1968 1972 ...
     ##  $ apartment.price  : num  95.2 117.4 114.3 114.3 93.8 ...
 
+Code
+
 ``` r
 
 ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
@@ -1784,12 +2123,14 @@ ggplot(WarsawApts, aes(x=construction.date, y=apartment.price, color=district))+
   theme_bw(15)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-47-1.png)
+![](overview_files/figure-html/unnamed-chunk-48-1.png)
 
 ### Smooth without Group
 
 - Model
 - Residual Plot
+
+Code
 
 ``` r
 
@@ -1799,16 +2140,20 @@ mod1 <- semireg(apartment.price ~ s(construction.date, bs = "os", k = 25),
                 data = WarsawApts)
 ```
 
+Code
+
 ``` r
 
 residplot(mod1$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-49-1.png)
+![](overview_files/figure-html/unnamed-chunk-50-1.png)
 
-### ANOVA, RANOVA and $`R^2`$
+### ANOVA, Smooth Tests and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -1822,6 +2167,8 @@ kable(anova(mod1$semer))
 
 - **Tests of the smooth terms**
 
+Code
+
 ``` r
 
 kable(anova(mod1)$smooth)
@@ -1832,6 +2179,8 @@ kable(anova(mod1)$smooth)
 | s_construction_date | 2098.633 | -1772.452 | -1844.882 | 144.859 | 1e-04 | exact restricted LRT (10000 simulations) |
 
 - **$`R^2`$**
+
+Code
 
 ``` r
 
@@ -1847,6 +2196,8 @@ R2_model(mod1$semer)
 - Predict Table
 - Predict Plot
 
+Code
+
 ``` r
 
 pred_out1 <- semipred(mod1, covariate="construction.date")
@@ -1854,17 +2205,21 @@ DT_df(pred_out1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-54-1.png)
+![](overview_files/figure-html/unnamed-chunk-55-1.png)
 
 ### Smooth with Group
 
 - Model
 - Residual Plot
+
+Code
 
 ``` r
 
@@ -1874,16 +2229,20 @@ mod2 <- semireg(apartment.price ~ s(construction.date, by = district, bs = "os",
                 data = WarsawApts)
 ```
 
+Code
+
 ``` r
 
 residplot(mod2$semer, group="district")  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-56-1.png)
+![](overview_files/figure-html/unnamed-chunk-57-1.png)
 
-### ANOVA, RANOVA and $`R^2`$
+### ANOVA, Smooth Tests and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -1898,6 +2257,8 @@ kable(anova(mod2$semer))
 
 - **Tests of the smooth terms**
 
+Code
+
 ``` r
 
 kable(anova(mod2)$smooth)
@@ -1911,6 +2272,8 @@ kable(anova(mod2)$smooth)
 | s_construction_date_districtZoliborz | 51.292604 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
+
+Code
 
 ``` r
 
@@ -1934,6 +2297,8 @@ R2_model(mod2$semer)
 - Contrast Table
 - Contrast Plot
 
+Code
+
 ``` r
 
 pred_out2_1 <- semipred(mod2, "district", "construction.date")
@@ -1941,42 +2306,61 @@ DT_df(pred_out2_1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out2_1$plt
+autoplot(pred_out2_1)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-61-1.png)
+![](overview_files/figure-html/unnamed-chunk-62-1.png)
 
-Mean Contrast table for District ‘Mokotow’ vs ‘Srodmiescie’
+Code
+
+``` r
+
+# all districts in one panel
+autoplot(pred_out2_1, panel = character(0), data = FALSE)
+```
+
+![](overview_files/figure-html/unnamed-chunk-62-2.png)
+
+The difference between the districts Mokotow and Srodmiescie along the
+construction date, with its 95% confidence band (`significant` marks the
+dates where the band excludes zero):
+
+Code
 
 ``` r
 
 pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'))
-pred_out2_2$pred_df %>% 
-  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
-  mutate_if(is.numeric, round, digits = 4) %>% 
+as.data.frame(pred_out2_2, what = "pairs") %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>% 
   DT_df()
 ```
 
+Code
+
 ``` r
 
-pred_out2_2$plt
+autoplot(pred_out2_2)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-63-1.png)
+![](overview_files/figure-html/unnamed-chunk-64-1.png)
 
-## Example_5 Semiparametric Regression with Multiple Covariates (Caschool data)
+## Example 5: semiparametric regression with several covariates (Caschool data)
 
-A data is collected from 420 schools in United States cross-section from
-1998-1999, including county, grade span of district, percent qualifying
-for CalWORKS, computer per student, district average income, average
-math score.
+The `Caschool` data are a cross-section of 420 Californian school
+districts in 1998-1999: county, grade span of the district, percentage
+of pupils qualifying for CalWORKs (income assistance), computers per
+student, average district income and average mathematics score.
 
 ### Data Info
 
 - Structure
 - Summary
+
+Code
 
 ``` r
 
@@ -1995,6 +2379,8 @@ str(Caschool)
     ##  $ avginc    : num  22.69 9.82 8.98 8.98 9.08 ...
     ##  $ mathscr   : num  690 662 651 644 640 ...
     ##  $ log.avginc: num  3.12 2.28 2.19 2.19 2.21 ...
+
+Code
 
 ``` r
 
@@ -2023,6 +2409,8 @@ summary(Caschool)
 - Model
 - Residual Plot
 
+Code
+
 ``` r
 
 mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = "os", k = 5) +
@@ -2030,16 +2418,20 @@ mod <- semireg_tmb(mathscr ~ s(calwpct, bs = "os", k = 12) + s(log.avginc, bs = 
                    data = Caschool)
 ```
 
+Code
+
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-67-1.png)
+![](overview_files/figure-html/unnamed-chunk-68-1.png)
 
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -2053,6 +2445,8 @@ kable(Anova(mod$semer))
 | compstu    |  1.896853 |   1 |   0.1684309 |
 
 - **$`R^2`$**
+
+Code
 
 ``` r
 
@@ -2072,6 +2466,8 @@ R2_model(mod$semer)
 - compstu
 - Joint Plot
 
+Code
+
 ``` r
 
 pred_out1 <- semipred(mod, covariate = "calwpct")
@@ -2079,12 +2475,16 @@ DT_df(pred_out1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-70-2.png)
+![](overview_files/figure-html/unnamed-chunk-71-2.png)
+
+Code
 
 ``` r
 
@@ -2093,12 +2493,16 @@ DT_df(pred_out2$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out2$plt
+autoplot(pred_out2)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-71-2.png)
+![](overview_files/figure-html/unnamed-chunk-72-2.png)
+
+Code
 
 ``` r
 
@@ -2107,30 +2511,39 @@ DT_df(pred_out3$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
-``` r
-
-pred_out3$plt
-```
-
-![](overview_files/figure-html/unnamed-chunk-72-2.png)
+Code
 
 ``` r
 
-gridExtra::grid.arrange(pred_out1$plt, pred_out2$plt, pred_out3$plt, nrow = 1)
+autoplot(pred_out3)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-73-1.png)
+![](overview_files/figure-html/unnamed-chunk-73-2.png)
 
-## Example_6 Semiparametric Regression with Binomial Distribution (indonRespir data)
+Code
 
-Indonesian Children’s Health Study of respiratory infections for a
-cohort of 275 Indonesian children. The data are longitudinal with each
-child having between 1 and 6 repeated measurements.
+``` r
+
+gridExtra::grid.arrange(autoplot(pred_out1), autoplot(pred_out2), autoplot(pred_out3), nrow = 1)
+```
+
+![](overview_files/figure-html/unnamed-chunk-74-1.png)
+
+## Example 6: semiparametric regression with a binary response (indonRespir data)
+
+The Indonesian Children’s Health Study followed a cohort of 275 children
+for respiratory infections. The data are longitudinal: each child was
+examined between one and six times. The curves below are the probability
+of infection for a typical child (random effect zero); the pink ticks
+mark the ages of the children without (bottom) and with (top) an
+infection.
 
 ### Data Info
 
 - Structure
 - Summary
+
+Code
 
 ``` r
 
@@ -2155,6 +2568,8 @@ str(indonRespir)
     ##  $ visit5     : int  0 0 0 0 1 0 0 0 0 0 ...
     ##  $ visit6     : int  0 0 0 0 0 1 0 0 0 0 ...
     ##  $ sex        : Factor w/ 2 levels "male","female": 1 1 1 1 1 1 2 2 2 2 ...
+
+Code
 
 ``` r
 
@@ -2191,6 +2606,8 @@ summary(indonRespir)
 - Model
 - Residual Plot
 
+Code
+
 ``` r
 
 mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic + sex + height + stunted +
@@ -2198,16 +2615,20 @@ mod1 <- semireg_tmb(respirInfec ~ s(age, bs = "os", k = 25) + vitAdefic + sex + 
                     family = binomial, data = indonRespir)
 ```
 
+Code
+
 ``` r
 
 residplot(mod1$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-77-1.png)
+![](overview_files/figure-html/unnamed-chunk-78-1.png)
 
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -2229,6 +2650,8 @@ kable(car::Anova(mod1$semer))
 
 - **$`R^2`$**
 
+Code
+
 ``` r
 
 R2_model(mod1$semer)
@@ -2236,34 +2659,45 @@ R2_model(mod1$semer)
 
     ## # Adjusted R2 for mixed models (Piepho)
     ##  Total  Fixed Random  idnum  s_age 
-    ## 33.80% 17.33% 16.47% 13.99%  2.48%
+    ## 33.80% 17.33% 16.47% 13.99%  2.48% 
+    ## 
+    ## Advice:
+    ## i For a non-gaussian model the R2 is on the link (latent) scale: not
+    ##   comparable with an lm R2 or across families and links; use it to compare
+    ##   models of the same family.
 
 ### Prediction
 
 - Predict Table
 - Predict Plot
 
+Code
+
 ``` r
 
-pred_out1 <- semipred(mod1, "age", "age")
+pred_out1 <- semipred(mod1, covariate = "age")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out1$plt+
+autoplot(pred_out1, data = FALSE) +
   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink")+
   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-  ylim(0, 0.18)
+  coord_cartesian(ylim = c(0, 0.18))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-81-1.png)
+![](overview_files/figure-html/unnamed-chunk-82-1.png)
 
 ### Smooth with Group
 
 - Model
 - Residual Plot
+
+Code
 
 ``` r
 
@@ -2273,16 +2707,20 @@ mod2 <- semireg_tmb(respirInfec ~ s(age, by = sex, bs = "os", k = 25) + vitAdefi
                     family = binomial, data = indonRespir)
 ```
 
+Code
+
 ``` r
 
 residplot(mod2$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-83-1.png)
+![](overview_files/figure-html/unnamed-chunk-84-1.png)
 
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -2304,6 +2742,8 @@ kable(Anova(mod2$semer))
 
 - **$`R^2`$**
 
+Code
+
 ``` r
 
 R2_model(mod2$semer)
@@ -2313,7 +2753,12 @@ R2_model(mod2$semer)
     ##           Total           Fixed          Random           idnum   s_age_sexmale 
     ##          33.67%          16.27%          17.40%          14.70%           2.70% 
     ## s_age_sexfemale 
-    ##           0.00%
+    ##           0.00% 
+    ## 
+    ## Advice:
+    ## i For a non-gaussian model the R2 is on the link (latent) scale: not
+    ##   comparable with an lm R2 or across families and links; use it to compare
+    ##   models of the same family.
 
 ### Prediction with Group
 
@@ -2322,6 +2767,8 @@ R2_model(mod2$semer)
 - Contrast Table
 - Contrast Plot
 
+Code
+
 ``` r
 
 pred_out2_1 <- semipred(mod2, "sex", "age")
@@ -2329,43 +2776,53 @@ DT_df(pred_out2_1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out2_1$plt+
+autoplot(pred_out2_1, data = FALSE) +
   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-  ylim(0, 0.24)
+  coord_cartesian(ylim = c(0, 0.24))
 ```
 
-![](overview_files/figure-html/unnamed-chunk-87-1.png)
+![](overview_files/figure-html/unnamed-chunk-88-1.png)
 
-Mean Contrast table for Sex ‘male’ vs ‘female’
+The difference in the probability of infection between boys and girls
+along age, with its 95% confidence band:
+
+Code
 
 ``` r
 
 pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'))
-pred_out2_2$pred_df %>% 
-  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
-  mutate_if(is.numeric, round, digits = 4) %>% 
+as.data.frame(pred_out2_2, what = "pairs") %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>% 
   DT_df()
 ```
 
+Code
+
 ``` r
 
-pred_out2_2$plt
+autoplot(pred_out2_2)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-89-1.png)
+![](overview_files/figure-html/unnamed-chunk-90-1.png)
 
-## Example_7 Semiparametric Regression with Negtive Binomial Distribution (ragweed data)
+## Example 7: semiparametric regression with a negative binomial response (ragweed data)
 
-The ragweed data frame has data on ragweed levels and meteorological
-variables for 334 days in Kalamazoo, Michigan, U.S.A.
+The `ragweed` data (package HRW) give daily ragweed pollen counts and
+weather measurements for 334 days in Kalamazoo, Michigan, USA, over four
+years. The counts are overdispersed, so a negative binomial model is
+used.
 
 ### Data Info
 
 - Structure
 - Summary
+
+Code
 
 ``` r
 
@@ -2382,6 +2839,8 @@ str(ragweed)
     ##  $ temperatureResidual: num  0.649 -4.796 -3.521 1.207 8.14 ...
     ##  $ rain               : int  1 0 1 1 1 1 1 1 1 1 ...
     ##  $ windSpeed          : num  10.4 9.4 8.2 11.8 7.2 7.8 5.4 10.2 5.3 8.8 ...
+
+Code
 
 ``` r
 
@@ -2408,6 +2867,8 @@ summary(ragweed)
 - Model
 - Residual Plot
 
+Code
+
 ``` r
 
 # a seasonal curve for each year (with year and year:dayInSeason as fixed terms),
@@ -2417,16 +2878,20 @@ mod <- semireg_tmb(pollenCount ~ rain + s(dayInSeason, by = year, bs = "os") +
                    family = nbinom1, data = ragweed)
 ```
 
+Code
+
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-93-1.png)
+![](overview_files/figure-html/unnamed-chunk-94-1.png)
 
 ### ANOVA and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -2443,6 +2908,8 @@ kable(car::Anova(mod$semer))
 
 - **$`R^2`$**
 
+Code
+
 ``` r
 
 R2_model(mod$semer)
@@ -2454,12 +2921,19 @@ R2_model(mod$semer)
     ## s_dayInSeason_year1991 s_dayInSeason_year1992 s_dayInSeason_year1993 
     ##                 13.61%                 11.43%                 12.32% 
     ## s_dayInSeason_year1994  s_temperatureResidual            s_windSpeed 
-    ##                  6.53%                  0.00%                  0.00%
+    ##                  6.53%                  0.00%                  0.00% 
+    ## 
+    ## Advice:
+    ## i For a non-gaussian model the R2 is on the link (latent) scale: not
+    ##   comparable with an lm R2 or across families and links; use it to compare
+    ##   models of the same family.
 
 ### Prediction by Day in Season
 
 - Predict Table
 - Predict Plot
+
+Code
 
 ``` r
 
@@ -2468,23 +2942,30 @@ DT_df(pred_out1_1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out1_1$plt
+autoplot(pred_out1_1, data = FALSE)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-97-1.png)
+![](overview_files/figure-html/unnamed-chunk-98-1.png)
 
-## Example_8 Semiparametric Regression with Spatial Smooth (copper data)
+## Example 8: semiparametric regression with a spatial surface (copper data)
 
-Data copper records the copper grade quality associated with various
-sampling points’ X, Y, and Z coordinates within a designated area.
+The `copper` data give the copper grade of ore samples with the X, Y and
+Z coordinates of each sampling point in a mining area. The model has a
+curve in depth and a surface over the plane, on the log scale; the
+predictions are back-transformed with `trans = exp` (medians on the
+grade scale).
 
 ### Data Info
 
 - Structure
 - Summary
 - Data
+
+Code
 
 ``` r
 
@@ -2496,6 +2977,8 @@ str(copper)
     ##  $ ycoord: int  625 625 625 625 625 625 625 625 625 625 ...
     ##  $ zcoord: int  122 117 112 107 102 97 92 87 82 122 ...
     ##  $ grade : num  1.34 0.98 1.29 1.18 1.1 0.46 1.18 0.96 1.27 0.64 ...
+
+Code
 
 ``` r
 
@@ -2510,6 +2993,8 @@ summary(copper)
     ##  3rd Qu.:610.0   3rd Qu.:525.0   3rd Qu.:112.0   3rd Qu.:1.245  
     ##  Max.   :665.0   Max.   :625.0   Max.   :122.0   Max.   :3.200
 
+Code
+
 ``` r
 
 DT_df(copper)
@@ -2520,6 +3005,8 @@ DT_df(copper)
 - Model
 - Residual Plot
 
+Code
+
 ``` r
 
 # an O'Sullivan spline in depth, a thin-plate surface over the plane (their linear
@@ -2529,16 +3016,20 @@ mod <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps"
                data = copper)
 ```
 
+Code
+
 ``` r
 
 residplot(mod$semer)  
 ```
 
-![](overview_files/figure-html/unnamed-chunk-102-1.png)
+![](overview_files/figure-html/unnamed-chunk-103-1.png)
 
-### ANOVA, RANOVA and $`R^2`$
+### ANOVA, Smooth Tests and $`R^2`$
 
 - **ANOVA**
+
+Code
 
 ``` r
 
@@ -2557,6 +3048,8 @@ kable(anova(mod$semer))
 
 - **Tests of the smooth terms**
 
+Code
+
 ``` r
 
 kable(anova(mod)$smooth)
@@ -2568,6 +3061,8 @@ kable(anova(mod)$smooth)
 | s_xcoord_ycoord | 1.7857081 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
+
+Code
 
 ``` r
 
@@ -2586,6 +3081,8 @@ R2_model(mod$semer)
 - X, Y 2D Plot
 - X, Y 3D Plot
 
+Code
+
 ``` r
 
 pred_out1 <- semipred(mod, covariate="zcoord", trans=exp)
@@ -2593,48 +3090,47 @@ DT_df(pred_out1$pred_df %>%
         mutate_if(is.numeric, round, digits = 4))
 ```
 
+Code
+
 ``` r
 
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
-![](overview_files/figure-html/unnamed-chunk-107-1.png)
+![](overview_files/figure-html/unnamed-chunk-108-1.png)
+
+Code
 
 ``` r
 
-pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = TRUE))
+pred_out2 <- semipred(mod, covariate = c("xcoord", "ycoord"), trans = exp)
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
 
-``` r
-
-pred_out2$plt
-```
-
-![](overview_files/figure-html/unnamed-chunk-109-1.png)
+Code
 
 ``` r
 
-pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = FALSE, threeD = TRUE))
-pred_out3$plt
+autoplot(pred_out2)
 ```
 
-## **Future Plan**
+![](overview_files/figure-html/unnamed-chunk-110-1.png)
 
-- Extend **‘predictmeans’** to more popular models in R,
+Code
 
-- Build a comprehensive Shiny App based on **‘predictmeans’**,
+``` r
 
-- Make functions in **‘predictmeans’** working properly for **glmmTMB**
-  model with a complex variance-covariance structure.
+# the same surface in 3-D (plotly; drag to rotate)
+autoplot(pred_out2, type = "3d", data = FALSE)
+```
 
-## **Reference**
+## **References**
 
 - Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
   discovery rate: a practical and powerful approach to multiple testing.
   Journal of the Royal Statistical Society Series B, 57, 289–300.
-  <doi:10.1111/j.2517-6161.1995.tb02031.x>.
+  <https://doi.org/10.1111/j.2517-6161.1995.tb02031.x>.
   <https://www.jstor.org/stable/2346101>.
 
 - Cave, V. (2021). Confidence tricks: the 83.4% confidence interval for
@@ -2642,20 +3138,23 @@ pred_out3$plt
 
 - Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015).
   Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical
-  Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>.
+  Software, 67(1), 1-48. <https://doi.org/10.18637/jss.v067.i01>.
 
 - Harezlak J., Ruppert, D. & Wand, M.P. (2018). Semiparametric
   Regression with R. Springer; ISBN: 978-1-4939-8851-8.
 
-- Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
-  predicted means for linear models \[R package version 1.0.8\].
+- Kenward, M. G., and Roger, J. H. (1997). Small sample inference for
+  fixed effects from restricted maximum likelihood. Biometrics, 53,
+  983-997. <https://doi.org/10.2307/2533558>.
+
+- Luo, D., Ganesh, S., and Koolaard, J. predictmeans: predicted means
+  for linear and semiparametric models. R package.
   <https://CRAN.R-project.org/package=predictmeans>.
 
-- Piepho HP. An adjusted coefficient of determination (R2 ) for
-  generalized linear mixed models in one go. Biom J. 2023
-  Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1.
-  PMID: 37127864.
+- Piepho, H.-P. (2023). An adjusted coefficient of determination (R2)
+  for generalized linear mixed models in one go. Biometrical Journal,
+  65(7), e2200290. <https://doi.org/10.1002/bimj.202200290>.
 
-- R Core Team (2022). R: A language and environment for statistical
+- R Core Team (2025). R: A language and environment for statistical
   computing. R Foundation for Statistical Computing, Vienna, Austria.
   URL <https://www.R-project.org/>.

@@ -1,4 +1,4 @@
-# `copper` data
+# Copper Grade at Sampling Points
 
 Copper grade at sampling points with their X, Y and Z coordinates within
 a designated area. Used in the overview article to fit a semiparametric
@@ -29,7 +29,7 @@ A data frame with 439 rows and 4 columns:
 
 - grade:
 
-  copper grade.
+  copper grade (positive; modelled on the log scale below).
 
 `copperKnots`: the 20 knots (columns `xcoord`, `ycoord`) of M. P. Wand's
 thin-plate spline fit of these data (a geoadditive model fitted by

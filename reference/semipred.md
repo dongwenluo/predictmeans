@@ -1,4 +1,4 @@
-# Predicted Means of a Semi Paramatric Model with Covariate Variable(s)
+# Predicted Curves and Surfaces of a Semiparametric Model
 
 Predicted curves (or surfaces) of a semiparametric model along a
 covariate, with pointwise or simultaneous bands; their slopes (`deriv`),
@@ -14,48 +14,57 @@ returns.
 ## Usage
 
 ``` r
-semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
-         conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL,
+         boundary=NULL, conf_level=0.95, trans=NULL, contr_scale=c("model", "response"),
          band=c("pointwise", "simultaneous"),
-         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-         mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
+         unconditional=getOption("predictmeans.semi_unconditional"), deriv=0,
+         plot_args=list(), mean_type=c("conditional", "overall"),
+         bias_adjust=FALSE, sigma=NULL, plot=getOption("predictmeans.plot", FALSE), ...)
 ```
 
 ## Arguments
 
 - model:
 
-  A fit returned by `semireg` (`semireg` before 2.0).
+  A fit of
+  [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
+  or
+  [`semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
+  (`semireg` before 2.0).
 
 - modelterm:
 
-  Name (in "quotes") for indicating which factor term's predicted mean
-  to be calculated. The `modelterm` must be given exactly as it appears
-  in `semireg` model, e.g. "A" or "A:B". In case `modelterm` is the same
-  as `covariate` or `NULL`, them `semipred` will product predictmeans
-  with CI based on `covariate` only with out any grouping. Factors that
-  are not in `modelterm`, including `by` factors of the smooth terms,
-  are averaged over with equal weights, in both the parametric and the
-  smooth parts of the model.
+  Name (in "quotes") of the factor term whose curves are predicted, as
+  in the model formula, e.g. "A" or "A:B" (any number of factors: every
+  combination is computed; `autoplot(x, group = , panel = )` chooses the
+  layout). With `NULL` or the name of the covariate, one curve without
+  grouping. Factors that are not in `modelterm`, including `by` factors
+  of the smooth terms, are averaged over with equal weights, in both the
+  parametric and the smooth parts of the model.
 
 - covariate:
 
-  Name (in "quotes") of one or two (for `Ztps` smooth) the covariate
-  variables in the `semireg` shuch as "x1" or c("x1", "x2").
+  Name (in "quotes") of the covariate, or two names for a surface, e.g.
+  `c("x1", "x2")`.
 
 - sm_term:
 
-  Names (in "quotes") of smooth terms (from `smoothZ` list in `semireg`
-  model) used in the prediction such as "sm1_grp" or c("sm1_grp",
-  "sm2_grp"). The default is using all smooth terms which is
-  `sm_term=NULL`.
+  The smooths used in the prediction; the default `NULL` uses all of
+  them. `print(model)` (or `tidy(model)`) lists the smooths of the fit
+  with the values to use here. Each entry may be a term as written in
+  the formula (`"s(pressure, by = QB)"`, all its pieces), a smooth as
+  labelled (`"s(pressure):QB200"`, column `smooth`), a covariate
+  (`"pressure"`: every smooth of it, column `covariate`) or a
+  random-effect term (`"s_pressure_QB200"`, column `term`). Smooths of
+  other covariates enter the curves as a constant; the advice
+  `smooth_other_covariate` says when the prediction includes such
+  smooths. `settings$sm_term` records the blocks used.
 
 - contr:
 
-  A numeric (or character) vector with length of two (e.g. c(4, 1) or
-  c("d", "a")) which indicates to produce predicted mean with CI for
-  difference between `modelterm` level 4 ("d") vs level 1 ("a") along
-  `covariate`.
+  Two levels of `modelterm` (numbers or names, e.g. `c(4, 1)` or
+  `c("d", "a")`): the difference of their curves (level 4 minus level
+  1), with limits, along `covariate`.
 
 - at:
 
@@ -77,7 +86,7 @@ semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, bo
   of the model's data (the region the data cover, following their
   shape). `NULL` (default): the whole grid.
 
-- conf.level:
+- conf_level:
 
   Confidence level of the two-sided limits, default 0.95 (`level = 0.05`
   before 2.0; before 2.0 the limits used `qnorm(1 - level)`, i.e. 90%).
@@ -88,8 +97,23 @@ semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, bo
 
 - trans:
 
-  A function object for calculating the back transformed means, e.g.
-  `trans=exp`.
+  A function that back-transforms the curves, e.g. `trans = exp`.
+  Without it the curves are back-transformed by the inverse link of a
+  generalized fit, or by the inverse of a response transformed in the
+  formula (`log(y)`, `sqrt(y)`, `log(y + 1)`, ...), as in
+  [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
+  (one rule for both); `trans = I` keeps the model scale.
+
+- bias_adjust, sigma:
+
+  For back-transformed curves, as in
+  [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md):
+  by default a curve is the back-transformed fitted value (the median
+  for a transformed response, a typical cluster for a GLMM);
+  `bias_adjust = TRUE` gives the mean of the response, over the residual
+  variance (transformed response) and the variances of the random
+  intercepts other than the smooths (the smooths' random effects are the
+  curves themselves), or `sigma^2`.
 
 - mean_type:
 
@@ -104,8 +128,10 @@ semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, bo
 
 - plot_args:
 
-  A named list of plot settings (before 2.0 arguments of their own;
-  given so they stop with this spelling): `trellis` (`TRUE`, default:
+  Superseded by the arguments of
+  [`autoplot.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.md),
+  kept for 1.x scripts (before 2.0 arguments of their own; given so they
+  stop with this spelling). A named list: `trellis` (`TRUE`, default:
   one panel per level), `scales` (`"fixed"`, default, `"free"`,
   `"free_x"`, `"free_y"`: the axes of the panels), `plotord` (the order
   of the two factors of a two-way term, e.g. `c(2, 1)`; giving it draws
@@ -199,7 +225,9 @@ its table,
 [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
 the plot, and [`print()`](https://rdrr.io/r/base/print.html) shows a
 summary (see
-[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md)).
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md));
+notes in `attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
 
 - means:
 
@@ -226,7 +254,15 @@ summary (see
 - settings:
 
   The options: `df_method`, `band`, `deriv`, `unconditional`,
-  `back_transform`, ...
+  `back_transform`, ...; with `contr`, `test`: whether the curves differ
+  anywhere along the covariate, the max-\|t\| test (`statistic` the
+  largest \|t\| over the `points`, `p.value` the share of simulated
+  maxima at least as large, from the covariance of the fixed and smooth
+  coefficients: the smallest level at which the simultaneous band leaves
+  out zero somewhere). A Wald F test of the smooth coefficients is not
+  used: they are shrunken, and the statistic would not have an F
+  distribution. In a simulation of equal curves (200 data sets) it
+  rejected 3.0% at the 5% level.
 
 - significant:
 
@@ -235,8 +271,9 @@ summary (see
 
 - plt:
 
-  A ggplot object (a list of plotly plots for `threeD` surfaces by
-  group); drawn only when `plot = TRUE`.
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  of the result with `plot_args`: a ggplot (one plotly widget for
+  `threeD`); drawn only when `plot = TRUE`.
 
 - pred_df:
 
@@ -308,7 +345,7 @@ difference is in the table `pairs` in the layout of
 The ranges of the covariate where the curves differ are printed with the
 result and kept in `significant` and `attr(pred_df, "significant")`;
 with `band = "simultaneous"` they hold for the whole curve, and the
-curves differ somewhere at level `1 - conf.level` when there is such a
+curves differ somewhere at level `1 - conf_level` when there is such a
 range. (A joint F test, as
 [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
 gives, is not given: Wald tests of penalised smooth coefficients are not
@@ -320,16 +357,16 @@ With `deriv = 1` (`2`) each row of the prediction design is replaced by
 its first (second) derivative along the covariate, by central
 differences of the whole design (the fixed part and every smooth basis,
 on the same grid), so the slopes are those of the fitted curves for any
-basis; for the O'Sullivan basis (`bs = "os"`,
+basis; for the O'Sullivan basis (`bs = "os"`, 1.x
 [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md))
-they equal the exact derivatives of the basis, `ZOSull(drv = )` (as
-`smZ(drv = )`), to 1e-8. Standard errors, df and pointwise or
-simultaneous bands are computed as for the curves; generalized models
-give the slopes of the linear predictor (link scale). `pred_df` holds
-the slopes in the column of the response, with `includes0` and
-`significant`; the ranges of the covariate where the band lies above or
-below zero (the curve rises or falls) are printed with the result and
-kept in `attr(pred_df, "significant")`. A covariate scaled by
+they equal the exact derivatives of the basis (`ZOSull(drv = )`), to
+1e-8. Standard errors, df and pointwise or simultaneous bands are
+computed as for the curves; generalized models give the slopes of the
+linear predictor (link scale). `pred_df` holds the slopes in the column
+of the response, with `includes0` and `significant`; the ranges of the
+covariate where the band lies above or below zero (the curve rises or
+falls) are printed with the result and kept in
+`attr(pred_df, "significant")`. A covariate scaled by
 `semireg(nscale = TRUE)` is differentiated in its own units. The table
 `slopes` of the result has the slopes with `statistic` and `p.value` of
 slope = 0 (and `p.adj` with a simultaneous band), and `significant` the
@@ -357,6 +394,14 @@ them. `mean_type = "overall"`
 Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), *Semiparametric
 Regression*, Cambridge University Press.
 
+## See also
+
+[`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md),
+[`semiboundary`](https://dongwenluo.github.io/predictmeans/reference/semiboundary.md),
+[`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -381,6 +426,12 @@ anova(fm)   # fixed effects (Kenward-Roger) and a test of each smooth term
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
 #> Response: rate
+#> 
+#> Advice:
+#> ! A numeric covariate is in an interaction: Type III tests of the other
+#>   terms are at covariate = 0; centre the covariate if 0 is not a meaningful
+#>   value.
+#> 
 #>                    F Df Df.res    Pr(>F)    
 #> (Intercept) 212.0332  1 19.128 8.354e-12 ***
 #> QB            7.4995  1 19.128     0.013 *  
@@ -414,11 +465,15 @@ out
 #>  200    0.290    6.127    0.9275 28.55   4.2286     8.025
 #>  200    0.292    6.253    0.9252 28.35   4.3586     8.147
 #> ... 220 more rows: as.data.frame(x) gives the table.
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
 autoplot(out)
 
-autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
+# \donttest{
+autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"), panel = character(0))
 
+# the smooths of one term only, as written in the formula
+semipred(fm, "QB", "pressure", sm_term = "s(pressure, by = QB)")$settings$sm_term
+#> [1] "s_pressure_QB200" "s_pressure_QB300"
 # at given pressures
 semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 #> Curves of 'QB' along pressure
@@ -432,7 +487,7 @@ semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 #>  300      1.0    38.81    0.9263 36.80    36.94     40.69
 #>  300      1.5    50.58    0.9626 29.39    48.61     52.55
 #>  300      2.0    56.64    1.1303 28.41    54.32     58.95
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
 
 # the difference of the two curves, and where they differ
 dif <- semipred(fm, "QB", "pressure", contr = c("300", "200"), band = "simultaneous")
@@ -461,7 +516,7 @@ slp$significant
 #>   level  from       to direction
 #> 1   200 0.235 1.661020       > 0
 #> 2   300 0.235 2.060306       > 0
-# \donttest{
+
 # a surface: copper grade over the plane and a smooth in depth (data(copper))
 data(copper)
 fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),

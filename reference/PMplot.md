@@ -1,4 +1,4 @@
-# Level Plot of a Matrix of p-values.
+# Level Plot of a Matrix of p-values
 
 Plots the p-values of pairwise comparisons as a square grid of tiles,
 one for each pair of levels, like a correlation plot: the lower triangle
@@ -7,7 +7,7 @@ only, the tiles coloured by the size of the p-value.
 ## Usage
 
 ``` r
-PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
+PMplot(pmatrix, conf_level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
 ```
 
 ## Arguments
@@ -17,15 +17,15 @@ PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz
   A matrix with p-values from pairwise comparisons (the lower triangle
   is used), or a list of such matrices (e.g. `p_valueMatrix` of
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
-  with `atvar`), which are drawn as blocks down the diagonal of one
-  plot.
+  with `atvar`), which are drawn as one square panel each, titled by the
+  list's names (the levels of `atvar`).
 
-- conf.level:
+- conf_level:
 
-  The p-values below `1 - conf.level` are highlighted (`level = 0.05`
+  The p-values below `1 - conf_level` are highlighted (`level = 0.05`
   before 2.0). With the default 0.95 the tiles show four bands (up to
   0.01, 0.05, 0.1 and above); with any other value two (up to
-  `1 - conf.level` and above).
+  `1 - conf_level` and above).
 
 - mtitle:
 
@@ -40,8 +40,10 @@ PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz
 - ...:
 
   Not used: `level`, `margin`, `legendx`, `newwd` (before 2.0) stop with
-  their 2.0 spelling. (ggplot2 sizes the margins; the legend sits in the
-  empty upper triangle.)
+  their 2.0 spelling. (ggplot2 sizes the margins. The legend always
+  lists every band, in the order of the p-values; it sits in the empty
+  upper triangle of a single matrix of 6 or more rows, otherwise to the
+  right of the plot.)
 
 - values:
 
@@ -59,6 +61,11 @@ levels). Printing it draws the plot; it can be changed with the usual
 ggplot2 functions. Before 2.0 the plot was drawn with base graphics and
 nothing was returned: inside a function or a loop, wrap the call in
 [`print()`](https://rdrr.io/r/base/print.html).
+
+## See also
+
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`autoplot.predictmeans`](https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.md)
 
 ## Author
 

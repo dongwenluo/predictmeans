@@ -13,9 +13,9 @@ curves at each covariate value), with the same column names (`estimate`,
 under their own names. `tidy()` and
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) return
 them,
-[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
-returns the plot and [`print()`](https://rdrr.io/r/base/print.html)
-shows a short summary.
+[`autoplot.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.md)
+draws them and [`print()`](https://rdrr.io/r/base/print.html) shows a
+short summary.
 
 ## Usage
 
@@ -28,15 +28,12 @@ as.data.frame(x, row.names = NULL, optional = FALSE,
               what = c("means", "pairs", "slopes"), ...)
 
 # S3 method for class 'pm_curves'
-autoplot(object, ...)
-
-# S3 method for class 'pm_curves'
 print(x, n = 10, digits = 4, ...)
 ```
 
 ## Arguments
 
-- x, object:
+- x:
 
   A result of
   [`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md)
@@ -124,6 +121,11 @@ also `deriv`, `unconditional` and `boundary`, then `component`
 `significant` (in the result) holds the ranges of the covariate where
 the band asked for leaves out zero.
 
+## See also
+
+[`covariatemeans`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -148,7 +150,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #>      Victory   0.0    73.30     8.571 12.849    54.76     91.84
 #>      Victory   0.3    97.62     7.797  8.869    79.95    115.30
 #>      Victory   0.6   121.95     8.571 12.849   103.41    140.49
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
   as.data.frame(cm)
 #>       Variety nitro  estimate std.error        df  conf.low conf.high
 #> 1 Golden Rain   0.0  81.90000  8.570716 12.849059  63.36196 100.43804

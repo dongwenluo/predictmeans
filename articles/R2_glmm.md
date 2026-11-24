@@ -58,7 +58,12 @@ mod_poisson <- glmer(Egg ~ Treatment + Habitat + (1|Population/Container/individ
 R2_model(mod_poisson, over_disp = TRUE)
 #> # Adjusted R2 for mixed models (Piepho)
 #>  Total  Fixed Random 
-#> 50.93%  9.13% 41.79%
+#> 50.93%  9.13% 41.79% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 ```
 
 ## Example 3: clinical trial (binomial GLMM, three links)
@@ -81,19 +86,37 @@ R2_model(fit_grp("logit"))
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           75.73%            4.69%           71.04%            0.23% 
 #>           Clinic 
-#>           70.81%
+#>           70.81% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 R2_model(fit_grp("probit"))
 #> # Adjusted R2 for mixed models (Piepho)
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           77.90%            5.00%           72.90%            0.05% 
 #>           Clinic 
-#>           72.84%
+#>           72.84% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 R2_model(fit_grp("cloglog"))
 #> # Adjusted R2 for mixed models (Piepho)
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           72.63%            3.54%           69.09%            0.00% 
 #>           Clinic 
-#>           69.09%
+#>           69.09% 
+#> 
+#> Advice:
+#> ! The fit is singular: a variance estimated as zero gives no share to its
+#>   random effect, so the random part of R2 may be understated. Consider
+#>   simplifying the random effects.
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 ```
 
 ### Patient-level (binary) data
@@ -120,26 +143,44 @@ R2_model(fit_pat("logit"))
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           34.57%            2.23%           32.34%            0.11% 
 #>           Clinic 
-#>           32.24%
+#>           32.24% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 R2_model(fit_pat("probit"))
 #> # Adjusted R2 for mixed models (Piepho)
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           37.48%            2.50%           34.97%            0.03% 
 #>           Clinic 
-#>           34.95%
+#>           34.95% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 R2_model(fit_pat("cloglog"))
 #> # Adjusted R2 for mixed models (Piepho)
 #>            Total            Fixed           Random Treatment:Clinic 
 #>           37.65%            1.91%           35.74%            0.00% 
 #>           Clinic 
-#>           35.74%
+#>           35.74% 
+#> 
+#> Advice:
+#> ! The fit is singular: a variance estimated as zero gives no share to its
+#>   random effect, so the random part of R2 may be understated. Consider
+#>   simplifying the random effects.
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 ```
 
 ## References
 
 Piepho, H.-P. (2023). An adjusted coefficient of determination (R²) for
 generalized linear mixed models in one go. *Biometrical Journal*, 65(7),
-e2200290. <doi:10.1002/bimj.202200290>
+e2200290. <https://doi.org/10.1002/bimj.202200290>
 
 Nakagawa, S. and Schielzeth, H. (2013). A general and simple method for
 obtaining R² from generalized linear mixed-effects models. *Methods in

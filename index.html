@@ -4,25 +4,33 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>predictmeans: predicted means for linear and mixed models • predictmeans</title>
+<title>predictmeans: predicted means for linear, mixed and semiparametric models • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="predictmeans: predicted means for linear and mixed models">
-<meta name="description" content="Providing functions to diagnose and make inferences from various linear models, such as those obtained from aov, lm, glm, gls, lme, lmer, glmmTMB, gam and semireg. Inferences include predicted means and standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square and graphs.">
-<meta property="og:description" content="Providing functions to diagnose and make inferences from various linear models, such as those obtained from aov, lm, glm, gls, lme, lmer, glmmTMB, gam and semireg. Inferences include predicted means and standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square and graphs.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="predictmeans: predicted means for linear, mixed and semiparametric models">
+<meta name="description" content="predictmeans gives predicted means, standard errors, contrasts, multiple comparisons, permutation and bootstrap tests, adjusted R-squared and diagnostics for aov, lm, glm, gls, lme, lmer, glmer, glmmTMB, gam and semiparametric models, with defaults chosen on the evidence, results checked against SAS and Genstat, and advice when a fit needs care.
+">
+<meta property="og:description" content="predictmeans gives predicted means, standard errors, contrasts, multiple comparisons, permutation and bootstrap tests, adjusted R-squared and diagnostics for aov, lm, glm, gls, lme, lmer, glmer, glmmTMB, gam and semiparametric models, with defaults chosen on the evidence, results checked against SAS and Genstat, and advice when a fit needs care.
+">
 <meta property="og:image" content="https://dongwenluo.github.io/predictmeans/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,22 +44,31 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -70,7 +87,23 @@
 <img src="logo.png" class="logo" alt=""><h1 id="predictmeans-">predictmeans <a class="anchor" aria-label="anchor" href="#predictmeans-"></a>
 </h1>
 </div>
-<p>Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and contrasts for linear, generalized linear and mixed models — <code>aov</code>, <code>lm</code>, <code>glm</code>, <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>, <code>glmmTMB</code>, <code>gam</code> and semiparametric <code>semireg</code> models — with Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap tests, R² for mixed models and diagnostics. Results match SAS <code>LSMEANS</code> and emmeans.</p>
+<p>Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and contrasts for linear, generalized linear and mixed models — <code>aov</code>, <code>lm</code>, <code>glm</code>, <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>, <code>glmmTMB</code>, <code>gam</code> and semiparametric <code>semireg</code> models — with Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap tests, R² for mixed models and diagnostics.</p>
+<div class="section level2">
+<h2 id="why-predictmeans">Why predictmeans<a class="anchor" aria-label="anchor" href="#why-predictmeans"></a>
+</h2>
+<ul>
+<li>
+<strong>Defaults chosen on evidence</strong>: Kenward–Roger df and adjusted SEs for REML <code>lmer</code>; permutation p-values (b + 1)/(B + 1); <code>aov</code> with <code>Error()</code> analysed by strata (SEs from stratum mean squares, as Genstat); means over empty cells average the observed cells with equal weight, with a warning.</li>
+<li>
+<strong>Checked against outside references</strong> in the tests: real SAS PROC MIXED and Genstat runs, pbkrtest, <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme</a></code> and emmeans.</li>
+<li>
+<strong>Robust</strong>: works across model classes; stops with a clear message rather than return a silently wrong answer.</li>
+<li>
+<strong>Advice from the data</strong>: one line on what to do when this fit needs it (empty cells, singular fit, small df, …); <code>advice(x)</code> reads it, <code>options(predictmeans.advice = FALSE)</code> turns it off.</li>
+<li>
+<strong>Reproducible</strong>: resampling results are identical for any <code>ncore</code>.</li>
+</ul>
+</div>
 <div class="section level2">
 <h2 id="workflow">Workflow<a class="anchor" aria-label="anchor" href="#workflow"></a>
 </h2>
@@ -94,7 +127,7 @@
 <span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span>
 <span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">means</span>     <span class="co"># one row per mean: estimate, std.error, df, conf.low, conf.high, group, n, ...</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span>     <span class="co"># one row per comparison: estimate, std.error, df, statistic, p.value, p.adj, ...</span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span></code></pre></div>
@@ -178,7 +211,6 @@
 <li>GPL (&gt;= 2)</li>
 </ul>
 </div>
-
 
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>

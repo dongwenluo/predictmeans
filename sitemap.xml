@@ -1,7 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://dongwenluo.github.io/predictmeans/404.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/AGENTS.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/CLAUDE.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/HANDOVER.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/LICENSE-text.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/articles/R2-GLMM.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/articles/R2_glmm.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/articles/checking.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/articles/contrasts.html</loc></url>
@@ -23,14 +26,17 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Caschool.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Clinical.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/CookD.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/DataExam5.2.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Drug.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Kmatrix.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/PMplot.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/Poisson_ind.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/R2_model.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/SBMDfem.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/advice.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/anova.semireg.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/autoplot.predictmeans.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/bootmodels.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/contrast_family.html</loc></url>
@@ -49,6 +55,7 @@
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_check.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_coef.html</loc></url>
+<url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_data.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_joint.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/pm_slopes.html</loc></url>
 <url><loc>https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.html</loc></url>

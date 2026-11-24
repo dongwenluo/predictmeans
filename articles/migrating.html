@@ -5,21 +5,27 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Migrating from predictmeans 1.x • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Migrating from predictmeans 1.x">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Migrating from predictmeans 1.x">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,22 +39,31 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -80,7 +95,7 @@
 names, the printing and plot settings in the calls of the analysis
 functions, five functions, and the 1.x smooth interface
 (<code><a href="../reference/predictmeans-defunct.html">smZ()</a></code>, <code>smoothZ</code>). The means functions share
-one vocabulary: <code>conf.level</code>, <code>df_method</code>,
+one vocabulary: <code>conf_level</code>, <code>df_method</code>,
 <code>at</code>, <code>weights</code>, <code>vcov</code>,
 <code>plot</code>.</p>
 <p><strong>To update a 1.1.1 script, run it.</strong> A removed argument
@@ -92,7 +107,7 @@ in:</p>
 <span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Oats</span><span class="op">$</span><span class="va">nitro</span><span class="op">)</span></span>
 <span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span> <span class="op">*</span> <span class="va">Variety</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">Oats</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, level <span class="op">=</span> <span class="fl">0.1</span>, Df <span class="op">=</span> <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error : predictmeans(): 'level' was removed in predictmeans 2.0: use conf.level = 0.9.</span></span>
+<span><span class="co">#&gt; Error : predictmeans(): 'level' was removed in predictmeans 2.0: use conf_level = 0.9.</span></span>
 <span><span class="co">#&gt;   'Df' was removed in predictmeans 2.0: use df_method = 30.</span></span>
 <span><span class="co">#&gt; See vignette("migrating") for every change from 1.1.1.</span></span></code></pre></div>
 <p>Nothing is silently ignored. A rewritten call gives the same numbers
@@ -153,13 +168,13 @@ any model. Every 2.0 line below is run by
 <p>2.0</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>,</span>
-<span>  pairwise <span class="op">=</span> <span class="cn">TRUE</span>, conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, plotord <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  plottitle <span class="op">=</span> <span class="st">"Yield"</span><span class="op">)</span></span>
-<span><span class="co"># or plot = TRUE, plot_args = list(...)</span></span>
+<span>  pairwise <span class="op">=</span> <span class="cn">TRUE</span>, conf_level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, x <span class="op">=</span> <span class="st">"Variety"</span>, group <span class="op">=</span> <span class="st">"nitro"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Yield"</span><span class="op">)</span></span>
+<span><span class="co"># plot(pm, ...) prints it</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, df_method <span class="op">=</span> <span class="fl">30</span>,</span>
-<span>  plot <span class="op">=</span> <span class="st">"bar"</span><span class="op">)</span></span>
+<span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, df_method <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, type <span class="op">=</span> <span class="st">"bar"</span><span class="op">)</span></span>
 <span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"A"</span>,</span>
@@ -177,8 +192,17 @@ any model. Every 2.0 line below is run by
 <ul>
 <li>Nothing is printed and no plot is drawn during the call:
 <code>print(pm)</code> (or <code>pm</code> at the prompt) shows the
-tables, <code>autoplot(pm)</code> draws, and <code>plot = TRUE</code>
-draws the 1.x default plots in the call.</li>
+tables, <code>autoplot(pm)</code> (or <code>plot(pm)</code>) draws.
+<code><a href="../reference/predictmeans.html">predictmeans()</a></code> has no <code>plot</code> or
+<code>plot_args</code>: the 1.x plots are <code>autoplot(pm)</code>
+(means with one LSD bar), <code>type = "bar"</code>,
+<code>type = "ci"</code> (the back-transformed plot, with
+<code>data = TRUE</code> the observations) and
+<code>type = "pvalue"</code>; <code>x</code>, <code>group</code>,
+<code>panel</code> replace <code>plotord</code>,
+<code>lines = FALSE</code> <code>lineplot = FALSE</code>, and
+<code>+ labs()</code> / <code>+ theme_bw(14)</code> the titles and
+<code>basesz</code>.</li>
 <li>
 <code>trans</code> is needed only for a transformation outside the
 formula: <code>log(y + 1)</code> in the formula is detected and
@@ -214,7 +238,7 @@ need no <code>count = TRUE</code>.</li>
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fmc</span>, <span class="st">"Variety"</span>,</span>
 <span>  covariate <span class="op">=</span> <span class="st">"nitro"</span>,</span>
 <span>  at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.6</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
-<span>  conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span>  conf_level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cm</span>, trellis <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mtitle <span class="op">=</span> <span class="st">"Yield by nitrogen"</span><span class="op">)</span></span>
 <span></span>
@@ -256,7 +280,7 @@ need no <code>count = TRUE</code>.</li>
 <span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/permmodels.html">permmodels</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>; <span class="va">res</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">...</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/permstats.html">permstats</a></span><span class="op">(</span><span class="va">...</span>, conf_level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <p><code><a href="../reference/permmodels.html">permmodels()</a></code> uses Freedman–Lane permutations, so its
@@ -291,14 +315,14 @@ p-values are not those of <code><a href="../reference/predictmeans-defunct.html"
 <span><span class="fu"><a href="../reference/CookD.html">CookD</a></span><span class="op">(</span><span class="va">fm</span>, id <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/PMplot.html">PMplot</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">p_valueMatrix</span>,</span>
-<span>  conf.level <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></span>
+<span>  conf_level <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm</span>, conf.level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fm</span>, conf_level <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/R2_model.html">R2_model</a></span><span class="op">(</span><span class="va">fm</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  letterCI <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">mean_table</span></span></code></pre></div>
+<span>  letter_ci <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">mean_table</span></span></code></pre></div>
 </div>
 </div>
 <ul>
@@ -311,7 +335,7 @@ as numbers, not as text with a <code>%</code> sign.</li>
 <li>
 <code><a href="../reference/predictmeans-defunct.html">ci_mcp()</a></code> gave letters from the overlap of the intervals
 it was given. Overlap of 95% (or 83.4%) confidence intervals does not
-answer the pairwise tests; <code>letterCI = TRUE</code> gives letters
+answer the pairwise tests; <code>letter_ci = TRUE</code> gives letters
 from comparison intervals, which overlap exactly when a pair is not
 significant (<code><a href="../articles/predictmeans.html">vignette("predictmeans")</a></code>).</li>
 </ul>
@@ -341,13 +365,13 @@ significant (<code><a href="../articles/predictmeans.html">vignette("predictmean
 </td>
 <td>
 <code>level = 0.05</code> (a significance level)</td>
-<td><code>conf.level = 0.95</code></td>
+<td><code>conf_level = 0.95</code></td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/varcomp.html">varcomp()</a></code></td>
 <td>
 <code>level = 0.9</code> (a confidence level)</td>
-<td><code>conf.level = 0.9</code></td>
+<td><code>conf_level = 0.9</code></td>
 </tr>
 <tr class="odd">
 <td>
@@ -393,23 +417,21 @@ significant (<code><a href="../articles/predictmeans.html">vignette("predictmean
 <td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
 <td>
 <code>mplot</code>, <code>barplot</code>, <code>pplot</code>,
-<code>bkplot</code>
-</td>
+<code>bkplot</code>, and <code>plot</code> of earlier 2.0 versions</td>
 <td>
-<code>plot = c("mean", "bar", "pval", "back")</code>, the plots
-wanted</td>
+<code>autoplot(pm, type = "means")</code>, <code>"bar"</code>,
+<code>"pvalue"</code>, <code>"ci"</code>; <code>plot = FALSE</code> is
+still accepted</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
 <td>
 <code>lsd_bar</code>, <code>plotord</code>, <code>lineplot</code>,
 <code>plottitle</code>, <code>plotxlab</code>, <code>plotylab</code>,
-<code>jitterv</code>, <code>basesz</code>
+<code>jitterv</code>, <code>basesz</code>, and
+<code>plot_args</code>
 </td>
-<td>
-<code>autoplot(pm, ...)</code> or
-<code>plot_args = list(...)</code>
-</td>
+<td><code>autoplot(pm, interval = , x = , group = , panel = , lines = , data = TRUE, jitter = ) + labs(title, x, y) + theme_bw(size)</code></td>
 </tr>
 <tr class="odd">
 <td>
@@ -429,18 +451,25 @@ wanted</td>
 <code>ci</code>, <code>point</code>, <code>jitterv</code>
 </td>
 <td>
-<code>autoplot(cm, ...)</code> or
-<code>plot_args = list(...)</code>
-</td>
+<code>autoplot(cm, panel = , group = , title = , interval = , data = , jitter = )</code>;
+<code>plot_args = list(...)</code> still works (superseded)</td>
 </tr>
 <tr class="odd">
+<td><code><a href="../reference/covariatemeans.html">covariatemeans()</a></code></td>
+<td><code>cm$pltdf</code></td>
+<td>
+<code>cm$pred_df</code> (as <code><a href="../reference/semipred.html">semipred()</a></code>);
+<code>cm$pltdf</code> still gives it, with a message once per
+session</td>
+</tr>
+<tr class="even">
 <td><code><a href="../reference/semipred.html">semipred()</a></code></td>
 <td><code>semipred(semireg = fit)</code></td>
 <td>
 <code>semipred(fit)</code> (<code>model =</code>, as in every
 function)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/semipred.html">semipred()</a></code></td>
 <td>
 <code>trellis</code>, <code>scales</code>, <code>plotord</code>,
@@ -448,11 +477,11 @@ function)</td>
 <code>threeD</code>
 </td>
 <td>
-<code>autoplot(sp, ...)</code> or
-<code>plot_args = list(...)</code>
-</td>
+<code>autoplot(sp, panel = , scales = , group = , interval = , data = , jitter = , type = "3d")</code>;
+<code>plot_args = list(...)</code> still works (superseded);
+<code>threeD</code> gives one plotly widget, not a list</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>
 <code><a href="../reference/semipred.html">semipred()</a></code>, <code><a href="../reference/semireg.html">semireg()</a></code>,
 <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>, <code><a href="../reference/permmodels.html">permmodels()</a></code>,
@@ -462,7 +491,7 @@ function)</td>
 <td>removed: <code>print(x)</code>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>,
 <code><a href="../reference/residplot.html">residplot()</a></code>, <code><a href="../reference/CookD.html">CookD()</a></code>,
@@ -471,14 +500,14 @@ function)</td>
 <td><code>newwd</code></td>
 <td>removed: ggplot2 draws in the current device</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>
 <code><a href="../reference/semireg.html">semireg()</a></code>, <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>
 </td>
 <td><code>smoothZ = list(sm = smZ(x))</code></td>
 <td>smooths in the formula: <code>s(x, bs = "os")</code> (<a href="#smooth-models-smz-and-smoothz">below</a>)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/semireg.html">semireg()</a></code></td>
 <td>
 <code>ncenter</code>, <code>nscale</code>,
@@ -486,19 +515,19 @@ function)</td>
 </td>
 <td>removed: variables are used as they are</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/semireg.html">semireg()</a></code></td>
 <td><code>ngbinomial = TRUE</code></td>
 <td><code>semireg_tmb(family = glmmTMB::nbinom2)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>
 <code><a href="../reference/semireg.html">semireg()</a></code>, <code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>
 </td>
 <td><code>predict_info</code></td>
 <td>removed: always kept</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/permlmer.html">permlmer()</a></code></td>
 <td>
 <code>lmer0 =</code>, <code>lmer1 =</code>
@@ -507,13 +536,13 @@ function)</td>
 <code>model0 =</code>, <code>model1 =</code> (any class: lmer,
 glmer, glmmTMB)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/permmodels.html">permmodels()</a></code></td>
 <td>
 <code>fo = f</code> (the formula in a variable)</td>
 <td>removed: read from the model</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/residplot.html">residplot()</a></code></td>
 <td>
 <code>level = 2</code> (the random-effect term); <code>newwd</code>,
@@ -522,19 +551,30 @@ glmer, glmmTMB)</td>
 <td>
 <code>re_level = 2</code>; removed</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/CookD.html">CookD()</a></code></td>
 <td><code>idn = 5</code></td>
 <td>
 <code>id = 5</code>, as <code><a href="../reference/residplot.html">residplot()</a></code>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/PMplot.html">PMplot()</a></code></td>
 <td>
 <code>margin</code>, <code>legendx</code>
 </td>
 <td>removed: ggplot2 sizes the margins and the legend</td>
+</tr>
+<tr class="odd">
+<td>every function</td>
+<td>dotted argument names: <code>conf.level</code>,
+<code>letterCI</code>, <code>as.is</code>, <code>test.statistic</code>,
+<code>max.degree</code>, <code>drop.unused.levels</code>
+</td>
+<td>
+<code>conf_level</code>, <code>letter_ci</code>, <code>as_is</code>,
+<code>test_statistic</code>, <code>max_degree</code>,
+<code>drop_unused_levels</code> (one style: snake_case)</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/predictmeans-defunct.html">smZ()</a></code></td>
@@ -563,7 +603,7 @@ glmer, glmmTMB)</td>
 <tr class="even">
 <td><code><a href="../reference/predictmeans-defunct.html">ci_mcp()</a></code></td>
 <td></td>
-<td>removed: <code>predictmeans(..., letterCI = TRUE)</code>
+<td>removed: <code>predictmeans(..., letter_ci = TRUE)</code>
 </td>
 </tr>
 </tbody>
@@ -1047,9 +1087,15 @@ and <code>ranova()</code>
 </td>
 </tr>
 <tr class="even">
+<td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
+<td>plots</td>
+<td>drawn</td>
+<td>none: <code>autoplot(pm)</code> or <code>plot(pm)</code>
+</td>
+</tr>
+<tr class="odd">
 <td>
-<code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>,
-<code><a href="../reference/semipred.html">semipred()</a></code>
+<code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>, <code><a href="../reference/semipred.html">semipred()</a></code>
 </td>
 <td>plots</td>
 <td>drawn</td>
@@ -1058,14 +1104,14 @@ and <code>ranova()</code>
 <code>plot = TRUE</code>, or
 <code>options(predictmeans.plot = TRUE)</code> for a session</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>every function</td>
 <td>printing</td>
 <td>tables printed during the call</td>
 <td>nothing printed: <code>print(x)</code>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>
 </td>
@@ -1074,7 +1120,7 @@ and <code>ranova()</code>
 <td>Kenward–Roger adjusted (below); <code>vcov_adjust = FALSE</code> for
 1.x</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code>, <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code>,
 <code><a href="../reference/covariatemeans.html">covariatemeans()</a></code>
@@ -1084,6 +1130,18 @@ and <code>ranova()</code>
 <td>
 <code>df_method = "auto"</code> (table in
 <code><a href="../articles/predictmeans.html">vignette("predictmeans")</a></code>)</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/predictmeans.html">predictmeans()</a></code></td>
+<td><code>pairwise</code></td>
+<td>
+<code>FALSE</code>: no comparisons unless <code>TRUE</code>
+</td>
+<td>
+<code>NULL</code>: comparisons are made when <code>adj</code>,
+<code>atvar</code>, <code>permlist</code>, <code>letter_ci</code> or
+<code>pairwise = TRUE</code> asks for them; <code>pairwise</code> only
+sets what is printed</td>
 </tr>
 <tr class="even">
 <td>
@@ -1212,10 +1270,9 @@ function (<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="exter
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "Predicted Means"               "Standard Error of Means"      </span></span>
 <span><span class="co">#&gt;  [3] "Standard Error of Differences" "LSD"                          </span></span>
-<span><span class="co">#&gt;  [5] "Pairwise p-value"              "predictmeansPlot"             </span></span>
-<span><span class="co">#&gt;  [7] "predictmeansBarPlot"           "mean_table"                   </span></span>
-<span><span class="co">#&gt;  [9] "p_valueMatrix"                 "means"                        </span></span>
-<span><span class="co">#&gt; [11] "pairs"                         "settings"</span></span>
+<span><span class="co">#&gt;  [5] "Pairwise p-value"              "mean_table"                   </span></span>
+<span><span class="co">#&gt;  [7] "p_valueMatrix"                 "means"                        </span></span>
+<span><span class="co">#&gt;  [9] "pairs"                         "settings"</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">`Predicted Means`</span></span>
 <span><span class="co">#&gt; nitro</span></span>
 <span><span class="co">#&gt;        0      0.2      0.4      0.6 </span></span>
@@ -1250,7 +1307,7 @@ function (<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="exter
 <code>"scheffe"</code>, <code>"mvt"</code> (exact single-step);
 <code><a href="../reference/contrast_family.html">contrast_family()</a></code>, <code><a href="../reference/specify_contrast.html">specify_contrast()</a></code>,
 <code><a href="../reference/pm_joint.html">pm_joint()</a></code>, <code><a href="../reference/pm_slopes.html">pm_slopes()</a></code>; comparison intervals
-and <code>letterCI</code>. See <code><a href="../articles/contrasts.html">vignette("contrasts")</a></code>.</li>
+and <code>letter_ci</code>. See <code><a href="../articles/contrasts.html">vignette("contrasts")</a></code>.</li>
 <li>
 <strong>Response scale</strong>: back-transformation detected from
 the formula or the link, delta-method SEs, ratios and odds ratios.</li>

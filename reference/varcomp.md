@@ -17,9 +17,11 @@ variance, dispersion, or the negative binomial \\\theta\\).
 ## Usage
 
 ``` r
-varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+varcomp(model, ci = TRUE, conf_level = 0.95,
+        ci_method = c("Satterthwaite", "Wald", "profile"),
         information = c("observed", "average", "expected"), test = FALSE,
-        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
+        test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999,
+        ncore = 1, ...)
 ```
 
 ## Arguments
@@ -32,7 +34,7 @@ varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wal
 
   `TRUE` (the default): add confidence intervals.
 
-- conf.level:
+- conf_level:
 
   Confidence level of the intervals; the default is 0.95 (`level` before
   2.0).
@@ -87,7 +89,8 @@ varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wal
 
 - ncore:
 
-  Number of cores for the bootstrap (default 1; not on Windows).
+  Number of cores for the bootstrap (default 1; a socket cluster on
+  Windows). The p-values are the same for any `ncore`.
 
 ## Value
 
@@ -98,7 +101,10 @@ correlation and variance-function parameters named `cor.name` and
 with `ci = TRUE`, the limits. Values are rounded to 4 decimals;
 attribute `"ci_method"` says how the intervals were made. With
 `test = TRUE` also `LRT` and `p.value`, and class `"pm_varcomp"`
-(printed with the hypotheses).
+(printed with the hypotheses). Notes on this fit (e.g. a variance
+estimated at zero, few levels) are kept in `attr(, "advice")`; read them
+with
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md).
 
 ## Details
 
@@ -219,6 +225,13 @@ conditions. *Journal of the American Statistical Association*, 82,
 
 Stram, D. O. and Lee, J. W. (1994). Variance components testing in the
 longitudinal mixed effects model. *Biometrics*, 50, 1171-1177.
+
+## See also
+
+[`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md),
+[`R2_model`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md),
+[`se_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
 
 ## Author
 

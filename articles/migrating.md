@@ -4,7 +4,7 @@ predictmeans 2.0 removes options that did the same thing under two
 names, the printing and plot settings in the calls of the analysis
 functions, five functions, and the 1.x smooth interface
 ([`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md),
-`smoothZ`). The means functions share one vocabulary: `conf.level`,
+`smoothZ`). The means functions share one vocabulary: `conf_level`,
 `df_method`, `at`, `weights`, `vcov`, `plot`.
 
 **To update a 1.1.1 script, run it.** A removed argument or function
@@ -17,7 +17,7 @@ Oats <- as.data.frame(nlme::Oats)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 try(predictmeans(fm, "nitro", level = 0.1, Df = 30))
-#> Error : predictmeans(): 'level' was removed in predictmeans 2.0: use conf.level = 0.9.
+#> Error : predictmeans(): 'level' was removed in predictmeans 2.0: use conf_level = 0.9.
 #>   'Df' was removed in predictmeans 2.0: use df_method = 30.
 #> See vignette("migrating") for every change from 1.1.1.
 ```
@@ -77,13 +77,13 @@ df_term(fm, "nitro",
 ``` r
 
 pm <- predictmeans(fm, "nitro:Variety",
-  pairwise = TRUE, conf.level = 0.9)
-autoplot(pm, plotord = c(2, 1),
-  plottitle = "Yield")
-# or plot = TRUE, plot_args = list(...)
+  pairwise = TRUE, conf_level = 0.9)
+autoplot(pm, x = "Variety", group = "nitro") +
+  labs(title = "Yield")
+# plot(pm, ...) prints it
 
-predictmeans(fm, "nitro", df_method = 30,
-  plot = "bar")
+pm <- predictmeans(fm, "nitro", df_method = 30)
+autoplot(pm, type = "bar")
 
 
 predictmeans(fit, "A",
@@ -99,8 +99,15 @@ df_term(fm, "nitro",
 ```
 
 - Nothing is printed and no plot is drawn during the call: `print(pm)`
-  (or `pm` at the prompt) shows the tables, `autoplot(pm)` draws, and
-  `plot = TRUE` draws the 1.x default plots in the call.
+  (or `pm` at the prompt) shows the tables, `autoplot(pm)` (or
+  `plot(pm)`) draws.
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  has no `plot` or `plot_args`: the 1.x plots are `autoplot(pm)` (means
+  with one LSD bar), `type = "bar"`, `type = "ci"` (the back-transformed
+  plot, with `data = TRUE` the observations) and `type = "pvalue"`; `x`,
+  `group`, `panel` replace `plotord`, `lines = FALSE`
+  `lineplot = FALSE`, and `+ labs()` / `+ theme_bw(14)` the titles and
+  `basesz`.
 - `trans` is needed only for a transformation outside the formula:
   `log(y + 1)` in the formula is detected and back-transformed, constant
   included. Poisson and negative binomial means need no `count = TRUE`.
@@ -134,7 +141,7 @@ Kmatrix(fmc, "Variety", covariate = "nitro",
 cm <- covariatemeans(fmc, "Variety",
   covariate = "nitro",
   at = seq(0, 0.6, 0.1),
-  conf.level = 0.9)
+  conf_level = 0.9)
 autoplot(cm, trellis = FALSE,
   mtitle = "Yield by nitrogen")
 
@@ -176,7 +183,7 @@ permlmer(tmb0, tmb1)
 
 res <- permmodels(fit); res
 
-permstats(..., conf.level = 0.95)
+permstats(..., conf_level = 0.95)
 ```
 
 [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
@@ -214,14 +221,14 @@ residplot(fm, re_level = 2, id = 3)
 CookD(fm, id = 5)
 
 PMplot(pm$p_valueMatrix,
-  conf.level = 0.99)
+  conf_level = 0.99)
 
-varcomp(fm, conf.level = 0.9)
+varcomp(fm, conf_level = 0.9)
 
 R2_model(fm)
 
 predictmeans(fm, "nitro", pairwise = TRUE,
-  letterCI = TRUE)$mean_table
+  letter_ci = TRUE)$mean_table
 ```
 
 - `varcomp(level = 0.9)` was a confidence level already: the value
@@ -233,7 +240,7 @@ predictmeans(fm, "nitro", pairwise = TRUE,
 - [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
   gave letters from the overlap of the intervals it was given. Overlap
   of 95% (or 83.4%) confidence intervals does not answer the pairwise
-  tests; `letterCI = TRUE` gives letters from comparison intervals,
+  tests; `letter_ci = TRUE` gives letters from comparison intervals,
   which overlap exactly when a pair is not significant
   ([`vignette("predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md)).
 
@@ -241,20 +248,21 @@ predictmeans(fm, "nitro", pairwise = TRUE,
 
 | Function | 1.1.1 | 2.0 |
 |----|----|----|
-| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md), [`permstats()`](https://dongwenluo.github.io/predictmeans/reference/permstats.md), [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md) | `level = 0.05` (a significance level) | `conf.level = 0.95` |
-| [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md) | `level = 0.9` (a confidence level) | `conf.level = 0.9` |
+| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md), [`permstats()`](https://dongwenluo.github.io/predictmeans/reference/permstats.md), [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md) | `level = 0.05` (a significance level) | `conf_level = 0.95` |
+| [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md) | `level = 0.9` (a confidence level) | `conf_level = 0.9` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `Df = 10` | `df_method = 10` |
 | [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md) | `type =` | `df_method =` |
 | [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md), [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md) | `covariateV =` | `at =` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `trans = exp, transOff = 1` | `trans = function(x) exp(x) - 1` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `responsen =` | removed: the response is read from the model |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `count = TRUE` | removed: Poisson and negative binomial means are detected |
-| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `mplot`, `barplot`, `pplot`, `bkplot` | `plot = c("mean", "bar", "pval", "back")`, the plots wanted |
-| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `lsd_bar`, `plotord`, `lineplot`, `plottitle`, `plotxlab`, `plotylab`, `jitterv`, `basesz` | `autoplot(pm, ...)` or `plot_args = list(...)` |
+| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `mplot`, `barplot`, `pplot`, `bkplot`, and `plot` of earlier 2.0 versions | `autoplot(pm, type = "means")`, `"bar"`, `"pvalue"`, `"ci"`; `plot = FALSE` is still accepted |
+| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `lsd_bar`, `plotord`, `lineplot`, `plottitle`, `plotxlab`, `plotylab`, `jitterv`, `basesz`, and `plot_args` | `autoplot(pm, interval = , x = , group = , panel = , lines = , data = TRUE, jitter = ) + labs(title, x, y) + theme_bw(size)` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md) | `prtnum`, `ndecimal`, `prtplt` | removed: `print(pm, digits = )`; `autoplot(pm)` |
-| [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` | `autoplot(cm, ...)` or `plot_args = list(...)` |
+| [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` | `autoplot(cm, panel = , group = , title = , interval = , data = , jitter = )`; `plot_args = list(...)` still works (superseded) |
+| [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | `cm$pltdf` | `cm$pred_df` (as [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)); `cm$pltdf` still gives it, with a message once per session |
 | [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) | `semipred(semireg = fit)` | `semipred(fit)` (`model =`, as in every function) |
-| [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) | `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD` | `autoplot(sp, ...)` or `plot_args = list(...)` |
+| [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) | `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD` | `autoplot(sp, panel = , scales = , group = , interval = , data = , jitter = , type = "3d")`; `plot_args = list(...)` still works (superseded); `threeD` gives one plotly widget, not a list |
 | [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md), [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md), [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md), [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md), [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md) | `prt` | removed: `print(x)` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md), [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md), [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md) | `newwd` | removed: ggplot2 draws in the current device |
 | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md), [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md) | `smoothZ = list(sm = smZ(x))` | smooths in the formula: `s(x, bs = "os")` ([below](#smooth-models-smz-and-smoothz)) |
@@ -266,11 +274,12 @@ predictmeans(fm, "nitro", pairwise = TRUE,
 | [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md) | `level = 2` (the random-effect term); `newwd`, `ask` | `re_level = 2`; removed |
 | [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md) | `idn = 5` | `id = 5`, as [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md) |
 | [`PMplot()`](https://dongwenluo.github.io/predictmeans/reference/PMplot.md) | `margin`, `legendx` | removed: ggplot2 sizes the margins and the legend |
+| every function | dotted argument names: `conf.level`, `letterCI`, `as.is`, `test.statistic`, `max.degree`, `drop.unused.levels` | `conf_level`, `letter_ci`, `as_is`, `test_statistic`, `max_degree`, `drop_unused_levels` (one style: snake_case) |
 | [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: smooths in the formula |
 | [`permglmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md), [`permglmmTMB()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md) (they were the same function) |
 | [`permanova.lmer()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: `permmodels(model, type = )` |
 | [`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: `R2_model(model)` |
-| [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: `predictmeans(..., letterCI = TRUE)` |
+| [`ci_mcp()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md) |  | removed: `predictmeans(..., letter_ci = TRUE)` |
 
 Every other argument of 1.1.1 is kept, with its meaning.
 
@@ -710,10 +719,12 @@ itself, which is why the 2.0 fits are better.
 | Function | Setting | 1.1.1 | 2.0 |
 |----|----|----|----|
 | [`library(predictmeans)`](https://dongwenluo.github.io/predictmeans/) | packages attached | glmmTMB, lme4, nlme, lmerTest | lme4, nlme: add [`library(glmmTMB)`](https://github.com/glmmTMB/glmmTMB) to call `glmmTMB()` or `nbinom1`, and [`library(lmerTest)`](https://github.com/runehaubo/lmerTestR) for its [`summary()`](https://rdrr.io/r/base/summary.html) p-values and `ranova()` |
-| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) | plots | drawn | `plot = FALSE`: `autoplot(x)`, `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a session |
+| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | plots | drawn | none: `autoplot(pm)` or `plot(pm)` |
+| [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md), [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md) | plots | drawn | `plot = FALSE`: `autoplot(x)`, `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a session |
 | every function | printing | tables printed during the call | nothing printed: `print(x)` |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md) | standard errors of REML `lmer` fits | unadjusted, with Kenward–Roger df | Kenward–Roger adjusted (below); `vcov_adjust = FALSE` for 1.x |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md), [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md) | df | per model class | `df_method = "auto"` (table in [`vignette("predictmeans")`](https://dongwenluo.github.io/predictmeans/articles/predictmeans.md)) |
+| [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md) | `pairwise` | `FALSE`: no comparisons unless `TRUE` | `NULL`: comparisons are made when `adj`, `atvar`, `permlist`, `letter_ci` or `pairwise = TRUE` asks for them; `pairwise` only sets what is printed |
 | [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md), [`permlmer()`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md), [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md) | `ncore` | 3 | 1 |
 | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md) | `control` | `lmerControl(optimizer = "bobyqa")` | `lmerControl(optimizer = "nloptwrap")`: the same fit to the optimizer’s tolerance |
 | [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md) | centring | `ncenter = TRUE` centred every covariate | variables used as they are |
@@ -804,10 +815,9 @@ pm <- predictmeans(fm, "nitro", adj = "BH")
 names(pm)
 #>  [1] "Predicted Means"               "Standard Error of Means"      
 #>  [3] "Standard Error of Differences" "LSD"                          
-#>  [5] "Pairwise p-value"              "predictmeansPlot"             
-#>  [7] "predictmeansBarPlot"           "mean_table"                   
-#>  [9] "p_valueMatrix"                 "means"                        
-#> [11] "pairs"                         "settings"
+#>  [5] "Pairwise p-value"              "mean_table"                   
+#>  [7] "p_valueMatrix"                 "means"                        
+#>  [9] "pairs"                         "settings"
 pm$`Predicted Means`
 #> nitro
 #>        0      0.2      0.4      0.6 
@@ -838,7 +848,7 @@ pm$means
   [`specify_contrast()`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md),
   [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
   [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md);
-  comparison intervals and `letterCI`. See
+  comparison intervals and `letter_ci`. See
   [`vignette("contrasts")`](https://dongwenluo.github.io/predictmeans/articles/contrasts.md).
 - **Response scale**: back-transformation detected from the formula or
   the link, delta-method SEs, ratios and odds ratios.

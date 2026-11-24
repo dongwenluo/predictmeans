@@ -1,8 +1,9 @@
 # Matching SAS PROC MIXED
 
-predictmeans aims to give the numbers SAS PROC MIXED gives for the same
-model. This page shows which arguments correspond to which SAS options,
-and what has been checked.
+predictmeans can give the numbers SAS PROC MIXED gives for the same
+model; its defaults are chosen on evidence, not to match SAS. This page
+shows which arguments correspond to which SAS options, and what has been
+checked.
 
 ## Options
 
@@ -41,7 +42,7 @@ Oats$nitro <- factor(Oats$nitro)
 oats_wp <- droplevels(subset(Oats, !(Block == "I" & Variety == "Golden Rain")))
 fm <- lmer(yield ~ Variety * nitro + (1 | Block/Variety), data = oats_wp)
 dfs <- sapply(c("containment", "between-within", "Satterthwaite", "Kenward-Roger", "KR-expected"),
-              function(m) predictmeans(fm, "Variety", df_method = m, plot = FALSE)$pairs$df)
+              function(m) predictmeans(fm, "Variety", df_method = m)$pairs$df)
 rownames(dfs) <- c("Golden Rain - Marvellous", "Golden Rain - Victory", "Marvellous - Victory")
 round(dfs, 2)
 #>                          containment between-within Satterthwaite Kenward-Roger
@@ -69,3 +70,21 @@ runs. Their output was compared with predictmeans value by value
 (estimate, SE, df, limits) and Type 3 F test with its df agrees with
 what SAS prints, to its last digit, except LS-mean SEs that differ by
 about 2e-5 (relative) where the two programs stop their REML iterations.
+
+Other real SAS runs (scripts and output in `dev/sas/`) check
+Tukey–Kramer adjusted p-values and limits with `ADJDFE=ROW`
+(`tests/testthat/test-sas-adjust.R`), Kenward–Roger for AR(1) with
+missing values (`DDFM=KR(FIRSTORDER)`, `test-sas-ar1.R`), covariance
+parameters and `COVTEST` standard errors (`test-sas-reference.R`) and
+Type III tests with an empty cell (`test-anova-empty.R`).
+
+## Genstat
+
+Genstat 23.1 runs (`dev/genstat/`) are the reference for REML with
+`df_method = "KR-average"` (variance components, Wald tests and their
+df, means and SEDs), for
+[`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+standard errors, for the means over an empty cell, and for `aov` models
+with `Error()` and missing values (Genstat’s estimated missing values,
+stratum mean squares and means):
+`tests/testthat/test-genstat-reference.R` and `test-aov-missing.R`.

@@ -57,6 +57,11 @@ Yeo, I.-K. and Johnson, R. A. (2000), *A new family of power
 transformations to improve normality or symmetry*, Biometrika, 87(4),
 954-959.
 
+## See also
+
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`pm_check`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard

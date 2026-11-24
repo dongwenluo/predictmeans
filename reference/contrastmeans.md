@@ -1,23 +1,27 @@
 # Linear Contrast Tests for a Linear Model
 
-Performs t-tests (or permuted t-tests) of specified contrasts for linear
-models obtained from functions `aov`, `lm`, `glm`, `gls`, `lme`, or
-`lmer`.
+t tests (or permutation t tests) of given contrasts among the predicted
+means of a model term, for the models of
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+(`aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`).
 
 ## Usage
 
 ``` r
 contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
-                vcov_adjust=TRUE, weights=c("equal", "proportional", "outer", "cells", "flat"),
-                df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
-                conf.level=0.95, vcov=NULL, equivalence=NULL, ...)
+              vcov_adjust=TRUE,
+              weights=c("equal", "proportional", "outer", "cells", "flat"),
+              df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+      "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+              joint=FALSE, conf_level=0.95, vcov=NULL, equivalence=NULL, ...)
 ```
 
 ## Arguments
 
 - model:
 
-  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`.
+  A fitted model, as for
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 
 - modelterm:
 
@@ -27,9 +31,9 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
 
 - ctrmatrix:
 
-  A specified contrast matrix. If `ctrmatrix` is missing, the programe
-  will ask user to enter it. The columns can be named by level (e.g.
-  from
+  A specified contrast matrix. If it is missing, an edit window asks for
+  it (interactive sessions only). The columns can be named by level
+  (e.g. from
   [`specify_contrast`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md));
   levels that are not given get zero weight.
 
@@ -52,22 +56,24 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
 
 - permlist:
 
-  A model parameter list containing `nsim` parameters produced by the
-  function `permmodels`. When `permlist != NULL`, `df_method` is not
-  used. This is a key option for the permutation test. With the result
-  of `permmodels(method = "freedman-lane")` (`lm` and `aov` models),
-  each contrast is tested by Freedman-Lane permutations of the model in
-  which that contrast is 0. With a `permlist`, `vcov_adjust` is not used
-  (the permuted refits use the unadjusted covariance).
+  A list from
+  [`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md):
+  each contrast is then tested by permutation, with p-value \\(b +
+  1)/(B + 1)\\ (\\b\\ of the \\B\\ permuted \|t\| at least the observed
+  one), and `df_method` is not used. With the result of
+  `permmodels(method = "freedman-lane")` (`lm` and `aov` models), each
+  contrast is tested by Freedman-Lane permutations of the model in which
+  that contrast is 0. With a `permlist`, `vcov_adjust` is not used (the
+  permuted refits use the unadjusted covariance).
 
 - vcov_adjust:
 
-  For `lmer` models fitted by REML: if `TRUE` (the default), standard
-  errors use the Kenward-Roger adjusted covariance matrix of the fixed
-  effects, as SAS `DDFM=KR` and emmeans do, to go with the Kenward-Roger
-  degrees of freedom. `FALSE` uses the unadjusted covariance and
-  reproduces results of predictmeans 1.x. It has no effect for other
-  models.
+  For models fitted by REML (`lmer`, `lme`, `gls`) with Kenward-Roger
+  df: if `TRUE` (the default), standard errors use the Kenward-Roger
+  adjusted covariance matrix of the fixed effects, as SAS `DDFM=KR` and
+  emmeans do, to go with the Kenward-Roger degrees of freedom. `FALSE`
+  uses the unadjusted covariance and reproduces results of predictmeans
+  1.x. It has no effect for other models.
 
 - weights:
 
@@ -105,20 +111,19 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
   same permutations (for Freedman-Lane, the model with all the contrasts
   zero). The default is `FALSE`.
 
-- conf.level:
+- conf_level:
 
-  Confidence level of the limits of the contrasts (`lower.CL`,
-  `upper.CL`; `level = 0.05` before 2.0); the tests are at the
-  significance level `level = 1 - conf.level`. They are t limits of each
-  contrast, or with `permlist` permutation-t limits: estimate +- c SE,
-  with c the critical value of the permutation test (the k-th largest
-  permuted \|t\|, k = floor(level (nperm + 1))). With `adj`
-  "bonferroni", "sidak", "scheffe" or "mvt" (with `permlist`:
-  "bonferroni", "sidak", "mvt" or "westfall", from the largest permuted
-  \|t\| of the contrasts) the table also has `adj.lower.CL` and
-  `adj.upper.CL`: simultaneous limits that exclude 0 exactly when the
-  adjusted p-value is below `level`, as emmeans'
-  [`confint()`](https://rdrr.io/r/stats/confint.html) and SAS
+  Confidence level of the limits of the contrasts (`level = 0.05` before
+  2.0); the tests are at the significance level `1 - conf_level`. The
+  limits are t limits of each contrast, or with `permlist` permutation-t
+  limits: estimate +- c SE, with c the critical value of the permutation
+  test (the k-th largest permuted \|t\|, k = floor((1 - conf_level)
+  (nperm + 1))). With `adj` "bonferroni", "sidak", "scheffe" or "mvt"
+  (with `permlist`: "bonferroni", "sidak", "mvt" or "westfall", from the
+  largest permuted \|t\| of the contrasts) the table also has
+  `adj.lower.CL` and `adj.upper.CL`: simultaneous limits that exclude 0
+  exactly when the adjusted p-value is below `1 - conf_level`, as
+  emmeans' [`confint()`](https://rdrr.io/r/stats/confint.html) and SAS
   `AdjLower`/`AdjUpper`. The step-down and false discovery rate methods
   have none.
 
@@ -147,7 +152,7 @@ contrastmeans(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none", permlist,
   region \\-d\\ to \\d\\) or `c(lower, upper)`, on the scale of the
   comparisons (the link scale for GLMs: e.g. log ratios). The TOST
   p-value is the larger of the two one-sided p-values; below
-  `1 - conf.level`, the difference lies within the margins (as emmeans'
+  `1 - conf_level`, the difference lies within the margins (as emmeans'
   `test(..., side = "equivalence")`). Not adjusted for multiplicity;
   with a `permlist` it is t-based (normal-based in `contrastmeans`).
 
@@ -201,14 +206,24 @@ unrounded:
 
 - settings:
 
-  `modelterm`, `level`, `adjust`, `df_method`, `vcov_adjust`, `vcov`,
-  `equivalence`, `nperm`, `model_class`, `version`.
+  `modelterm`, `level` (significance level, `1 - conf_level`), `adjust`,
+  `df_method`, `vcov_adjust`, `vcov`, `equivalence`, `nperm`,
+  `model_class`, `version`.
 
 ## References
 
 Torsten Hothorn, Frank Bretz and Peter Westfall (2008), *Simultaneous
 Inference in General Parametric Models. Biometrical*, Journal 50(3),
 346–363.
+
+## See also
+
+[`specify_contrast`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md),
+[`contrast_family`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md),
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+[`tidy.predictmeans`](https://dongwenluo.github.io/predictmeans/reference/tidy.predictmeans.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
 
 ## Author
 
@@ -218,30 +233,13 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 
 ``` r
 library(predictmeans)
-# ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# library(lme4)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 
-## The contrast has a contrast matrix as follows:
-#     0:Golden Rain 0:Marvellous 0:Victory 
-#[1,]            -1            0         1 
-#[2,]             0            0         1 
-#     0.2:Golden Rain 0.2:Marvellous 0.2:Victory 
-#[1,]               0              0           0 
-#[2,]               0              0           0 
-#     0.4:Golden Rain  0.4:Marvellous 0.4:Victory
-#[1,]               0               0           0
-#[2,]               0              -1           0
-#      0.6:Golden Rain 0.6:Marvellous 0.6:Victory
-#[1,]                0              0           0
-#[2,]                0              0           0
-
-# 1. Enter above contrast matrix into a pop up window, then close the window
+# 1. Enter a contrast matrix in an edit window (interactive sessions only)
 if (interactive()) contrastmeans(fm, "nitro:Variety")
  
-# 2. Construct the contrast matrix directly
+# 2. Give the contrast matrix: Victory - Golden Rain at nitro 0, Victory at 0 - Marvellous at 0.4
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(fm, "nitro:Variety", ctrmatrix=cm)

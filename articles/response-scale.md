@@ -32,7 +32,7 @@ four drugs at several doses.
 
 data(Drug)
 fm_drug <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE, plot = FALSE)
+pm_drug <- predictmeans(fm_drug, "Drug", pairwise = TRUE)
 pm_drug$means[, c("Drug", "estimate", "response", "response.std.error",
                   "response.conf.low", "response.conf.high")]
 #>          Drug   estimate  response response.std.error response.conf.low
@@ -73,7 +73,7 @@ pm_drug$pairs[, c("level1", "level2", "estimate", "p.value",
 
 ``` r
 
-ggplot2::autoplot(pm_drug, type = "response")
+ggplot2::autoplot(pm_drug, type = "ci")
 ```
 
 ![](response-scale_files/figure-html/unnamed-chunk-5-1.png)
@@ -88,7 +88,7 @@ innermost random effect (one level per female) models overdispersion.
 data(Poisson_ind)
 fm_egg <- glmer(Egg ~ Treatment + Habitat + (1 | Population/Container/individual),
                 family = poisson, data = Poisson_ind)
-pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE, plot = FALSE)
+pm_egg <- predictmeans(fm_egg, "Treatment", pairwise = TRUE)
 pm_egg$means[, c("Treatment", "estimate", "response", "response.std.error",
                  "response.conf.low", "response.conf.high")]
 #>   Treatment estimate response response.std.error response.conf.low
@@ -120,8 +120,7 @@ back-transforming the average on the link scale:
 
 ``` r
 
-pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "response",
-                       plot = FALSE)
+pm_pop <- predictmeans(fm_egg, "Treatment", bias_adjust = TRUE, average = "response")
 pm_pop$means[, c("Treatment", "response", "response.std.error")]
 #>   Treatment response response.std.error
 #> 1       Exp 7.428952          1.2188717
@@ -146,8 +145,7 @@ means:
 data(Body_length)
 fm_len <- lmer(log(BodyL) ~ Treatment + Habitat + Sex + (1 | Population/Container),
                data = Body_length)
-pm_len <- predictmeans(fm_len, "Treatment", pairwise = TRUE, trans = exp,
-                       plot = FALSE)
+pm_len <- predictmeans(fm_len, "Treatment", pairwise = TRUE, trans = exp)
 pm_len$means[, c("Treatment", "estimate", "response", "response.std.error")]
 #>   Treatment estimate response response.std.error
 #> 1      Cont 2.621319 13.75386          0.3655397
@@ -167,7 +165,7 @@ patients in each treatment group at each of eight clinics.
 data(Clinical)
 fm_clin <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1 | Clinic),
                  family = binomial, data = Clinical)
-pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE, plot = FALSE)
+pm_clin <- predictmeans(fm_clin, "Treatment", pairwise = TRUE)
 pm_clin$means[, c("Treatment", "response", "response.conf.low", "response.conf.high")]
 #>   Treatment  response response.conf.low response.conf.high
 #> 1   control 0.2321034        0.07559056          0.5276915
@@ -187,11 +185,21 @@ default) or Nakagawa and Schielzeth’s marginal and conditional R².
 R2_model(fm_clin)
 #> # Adjusted R2 for mixed models (Piepho)
 #>  Total  Fixed Random Clinic 
-#> 75.71%  4.77% 70.94% 70.94%
+#> 75.71%  4.77% 70.94% 70.94% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 R2_model(fm_clin, method = "nakagawa")
 #> # R2 for mixed models (Nakagawa and Schielzeth)
 #>    Marginal Conditional 
-#>       2.71%      38.70%
+#>       2.71%      38.70% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 ```
 
 The two need not agree. For counts out of totals, as here, Piepho’s R²
@@ -289,7 +297,7 @@ cmp
 #>                   2.042
 #>                   2.062
 #> ... 118 more rows: as.data.frame(x) gives the table.
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
 ggplot2::autoplot(cmp)
 ```
 

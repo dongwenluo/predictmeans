@@ -30,35 +30,40 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 pm_check(fm)
 #> Checks of a lmerMod model (72 observations)
 #> 
-#>    check                                     
-#>    Fit                                       
-#>    Outliers (|residual| > 3)                 
-#>    Normality of residuals                    
-#>    Normality of random effects: Variety:Block
-#>    Normality of random effects: Block        
-#>    Equal variances: nitro                    
-#>    Equal variances: Variety                  
-#>    Interaction: nitro:Variety                
-#>    Straight line in nitro                    
-#>  result                                   p.value
-#>  no warnings                                     
-#>  0 of 72 (expected 0.2)                          
-#>  Shapiro-Wilk                             0.270  
-#>  Shapiro-Wilk, 18 levels                  0.564  
-#>  Shapiro-Wilk, 6 levels                   0.031  
-#>  SD ratio 1.32 (0.4 / 0)                  0.340  
-#>  SD ratio 1.37 (Golden Rain / Marvellous) 0.060  
-#>  Type III test                            0.932  
-#>  curvature, 2 df                          0.265  
+#> Fit
+#>   OK Fit                                         no warnings                   
 #> 
+#> Residuals
+#>   OK Outliers (|residual| > 3)                   0 of 72 (expected 0.2)        
+#>   OK Normality of residuals                      Shapiro-Wilk             0.270
+#>   OK Normality of random effects: Variety:Block  Shapiro-Wilk, 18 le...   0.564
+#>   OK Normality of random effects: Block          Shapiro-Wilk, 6 levels   0.031
+#> 
+#> Variance
+#>   OK Equal variances: nitro                      SD ratio 1.32 (0.4 ...   0.340
+#>   OK Equal variances: Variety                    SD ratio 1.37 (Gold...   0.060
+#>   OK Spread vs fitted values                     Spearman rho 0.04        0.751
+#> 
+#> Design
+#>   OK Balance of cells                            balanced (6 per cell)         
+#> 
+#> Terms
+#>   OK Interaction: nitro:Variety                  Type III test            0.932
+#>   OK Straight line in nitro                      curvature, 2 df          0.265
+#> 
+#> Notes
+#> - Normality of random effects: Variety:Block: Shapiro-Wilk, 18 levels.
 #> - Normality of random effects: Block: Few levels: little power.
-#> - Interaction: nitro:Variety: No evidence of interaction; keep the term
-#>     if the design calls for it.
+#> - Equal variances: nitro: SD ratio 1.32 (0.4 / 0).
+#> - Equal variances: Variety: SD ratio 1.37 (Golden Rain / Marvellous).
+#> - Interaction: nitro:Variety: No evidence of interaction; keep the term if
+#>     the design calls for it.
 #> - Straight line in nitro: The means of nitro are near a straight line:
-#>     nitro could also enter as a number (a response line); as a factor
-#>     it compares the levels.
+#>     nitro could also enter as a number (a response line); as a factor it
+#>     compares the levels.
 #> 
-#> Checks inform, they do not decide; see residplot() for the plots.
+#> Nothing flagged.
+#> (! worth a look, i information, OK no concern.) Checks inform, they do not decide; see residplot().
 ```
 
 Rows marked `!` are worth a look. Here none are. The notes say what each
@@ -124,35 +129,41 @@ gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)
 pm_check(gm)
 #> Checks of a glm model (54 observations)
 #> 
-#>    check                                   
-#>    Fit                                     
-#>  ! Outliers (|residual| > 3)               
-#>    Influence (Cook's distance)             
-#>    Normality of residuals (quantile)       
-#>    Equal variances: wool                   
-#>    Equal variances: tension                
-#>  ! Overdispersion (Pearson chi-square / df)
-#>    Interaction: wool:tension               
-#>  result                                                   p.value
-#>  no warnings                                                     
-#>  6 of 54 (expected 0.1): 5 (3.6), 24 (3.4), 4 (-3.2), ...        
-#>  largest 0.341 (5)                                               
-#>  Shapiro-Wilk                                             0.296  
-#>  SD ratio 1.41 (A / B)                                    0.023  
-#>  SD ratio 1.42 (L / H)                                    0.171  
-#>  3.76                                                     <1e-04 
-#>  Type III test                                            <1e-04 
+#> Fit
+#>   OK Fit                                   no warnings                         
 #> 
-#> ! Outliers (|residual| > 3): Check these observations (data entry,
-#>     unusual units) before anything else.
-#> ! Overdispersion (Pearson chi-square / df): More variation than the
-#>     distribution allows: SEs are too small. Consider a negative
-#>     binomial model or an observation-level random effect.
-#> - Interaction: wool:tension: The effect of one factor depends on the
-#>     other: compare the levels of one within each level of the other
-#>     (atvar or pm_joint(by = ...)).
+#> Residuals
+#>   !  Outliers (|residual| > 3)             6 of 54 (expected 0.1): 5...        
+#>   OK Influence (Cook's distance)           largest 0.341 (5)                   
+#>   OK Normality of residuals (quantile)     Shapiro-Wilk                   0.296
 #> 
-#> Checks inform, they do not decide; see residplot() for the plots.
+#> Variance
+#>   OK Equal variances: wool                 SD ratio 1.41 (A / B)          0.023
+#>   OK Equal variances: tension              SD ratio 1.42 (L / H)          0.171
+#> 
+#> Distribution
+#>   !  Dispersion (Pearson chi-square / df)  3.76 on 48 df                 <1e-04
+#> 
+#> Design
+#>   OK Balance of cells                      balanced (9 per cell)               
+#> 
+#> Terms
+#>   OK Interaction: wool:tension             Type III test                 <1e-04
+#> 
+#> Notes
+#> ! Outliers (|residual| > 3): 6 of 54 (expected 0.1): 5 (3.6), 24 (3.4), 4
+#>     (-3.2), .... Check these observations (data entry, unusual units)
+#>     before anything else.
+#> ! Dispersion (Pearson chi-square / df): Overdispersion: more variation than
+#>     the poisson distribution allows, so SEs are too small and tests too
+#>     liberal. Consider a negative binomial model, an observation-level
+#>     random effect, or a quasi family (glm).
+#> - Interaction: wool:tension: The effect of one factor depends on the other:
+#>     compare the levels of one within each level of the other (atvar or
+#>     pm_joint(by = ...)).
+#> 
+#> 2 worth a look: Outliers (|residual| > 3); Dispersion (Pearson chi-square / df).
+#> (! worth a look, i information, OK no concern.) Checks inform, they do not decide; see residplot().
 ```
 
 Two rows are flagged. Six residuals are beyond 3 where 0.1 are expected,
@@ -176,20 +187,34 @@ nb <- MASS::glm.nb(breaks ~ wool * tension, data = warpbreaks)
 pm_check(nb)
 #> Checks of a negbin model (54 observations)
 #> 
-#>    check                             result                 p.value
-#>    Fit                               no warnings                   
-#>    Outliers (|residual| > 3)         0 of 54 (expected 0.1)        
-#>    Influence (Cook's distance)       largest 0.107 (24)            
-#>    Normality of residuals (quantile) Shapiro-Wilk           0.229  
-#>    Equal variances: wool             SD ratio 1.32 (A / B)  0.044  
-#>    Equal variances: tension          SD ratio 1.19 (L / H)  0.531  
-#>    Interaction: wool:tension         Type III test          0.017  
+#> Fit
+#>   OK Fit                                   no warnings                         
 #> 
-#> - Interaction: wool:tension: The effect of one factor depends on the
-#>     other: compare the levels of one within each level of the other
-#>     (atvar or pm_joint(by = ...)).
+#> Residuals
+#>   OK Outliers (|residual| > 3)             0 of 54 (expected 0.1)              
+#>   OK Influence (Cook's distance)           largest 0.107 (24)                  
+#>   OK Normality of residuals (quantile)     Shapiro-Wilk                   0.229
 #> 
-#> Checks inform, they do not decide; see residplot() for the plots.
+#> Variance
+#>   OK Equal variances: wool                 SD ratio 1.32 (A / B)          0.044
+#>   OK Equal variances: tension              SD ratio 1.19 (L / H)          0.531
+#> 
+#> Distribution
+#>   OK Dispersion (Pearson chi-square / df)  1.08 on 48 df                  0.327
+#> 
+#> Design
+#>   OK Balance of cells                      balanced (9 per cell)               
+#> 
+#> Terms
+#>   OK Interaction: wool:tension             Type III test                  0.017
+#> 
+#> Notes
+#> - Interaction: wool:tension: The effect of one factor depends on the other:
+#>     compare the levels of one within each level of the other (atvar or
+#>     pm_joint(by = ...)).
+#> 
+#> Nothing flagged.
+#> (! worth a look, i information, OK no concern.) Checks inform, they do not decide; see residplot().
 ```
 
 No outliers remain. The interaction is still there, so compare the wools
@@ -197,14 +222,13 @@ within each tension:
 
 ``` r
 
-pm_nb <- predictmeans(nb, "wool:tension", atvar = "tension", pairwise = TRUE,
-                      plot = FALSE)
+pm_nb <- predictmeans(nb, "wool:tension", atvar = "tension", pairwise = TRUE)
 pm_nb$pairs[!is.na(pm_nb$pairs$by), c("level1", "level2", "ratio", "ratio.conf.low",
                                       "ratio.conf.high", "p.value")]
-#>    level1 level2     ratio ratio.conf.low ratio.conf.high     p.value
-#> 4     A:L    B:L 1.5787402      1.1593116        2.149914 0.003752862
-#> 8     A:M    B:M 0.8339768      0.6047698        1.150053 0.268175808
-#> 13    A:H    B:H 1.3076923      0.9374866        1.824089 0.114150116
+#>   level1 level2     ratio ratio.conf.low ratio.conf.high     p.value
+#> 1    A:L    B:L 1.5787402      1.1593116        2.149914 0.003752862
+#> 2    A:M    B:M 0.8339768      0.6047698        1.150053 0.268175808
+#> 3    A:H    B:H 1.3076923      0.9374866        1.824089 0.114150116
 ```
 
 For a Poisson, binomial or negative binomial model, the tests are z

@@ -5,21 +5,27 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Matching SAS PROC MIXED • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Matching SAS PROC MIXED">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Matching SAS PROC MIXED">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,22 +39,31 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -76,9 +91,10 @@
 
     
     
-<p>predictmeans aims to give the numbers SAS PROC MIXED gives for the
-same model. This page shows which arguments correspond to which SAS
-options, and what has been checked.</p>
+<p>predictmeans can give the numbers SAS PROC MIXED gives for the same
+model; its defaults are chosen on evidence, not to match SAS. This page
+shows which arguments correspond to which SAS options, and what has been
+checked.</p>
 <div class="section level2">
 <h2 id="options">Options<a class="anchor" aria-label="anchor" href="#options"></a>
 </h2>
@@ -185,7 +201,7 @@ expected information rejected 8.5% of true hypotheses.</p>
 <span><span class="va">oats_wp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html" class="external-link">droplevels</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">Oats</span>, <span class="op">!</span><span class="op">(</span><span class="va">Block</span> <span class="op">==</span> <span class="st">"I"</span> <span class="op">&amp;</span> <span class="va">Variety</span> <span class="op">==</span> <span class="st">"Golden Rain"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Variety</span> <span class="op">*</span> <span class="va">nitro</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">oats_wp</span><span class="op">)</span></span>
 <span><span class="va">dfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"containment"</span>, <span class="st">"between-within"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"Kenward-Roger"</span>, <span class="st">"KR-expected"</span><span class="op">)</span>,</span>
-<span>              <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="va">m</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">df</span><span class="op">)</span></span>
+<span>              <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">df</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">dfs</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Golden Rain - Marvellous"</span>, <span class="st">"Golden Rain - Victory"</span>, <span class="st">"Marvellous - Victory"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">dfs</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                          containment between-within Satterthwaite Kenward-Roger</span></span>
@@ -213,6 +229,26 @@ component, LS-mean, difference (estimate, SE, df, limits) and Type 3 F
 test with its df agrees with what SAS prints, to its last digit, except
 LS-mean SEs that differ by about 2e-5 (relative) where the two programs
 stop their REML iterations.</p>
+<p>Other real SAS runs (scripts and output in <code>dev/sas/</code>)
+check Tukey–Kramer adjusted p-values and limits with
+<code>ADJDFE=ROW</code> (<code>tests/testthat/test-sas-adjust.R</code>),
+Kenward–Roger for AR(1) with missing values
+(<code>DDFM=KR(FIRSTORDER)</code>, <code>test-sas-ar1.R</code>),
+covariance parameters and <code>COVTEST</code> standard errors
+(<code>test-sas-reference.R</code>) and Type III tests with an empty
+cell (<code>test-anova-empty.R</code>).</p>
+</div>
+<div class="section level2">
+<h2 id="genstat">Genstat<a class="anchor" aria-label="anchor" href="#genstat"></a>
+</h2>
+<p>Genstat 23.1 runs (<code>dev/genstat/</code>) are the reference for
+REML with <code>df_method = "KR-average"</code> (variance components,
+Wald tests and their df, means and SEDs), for <code><a href="../reference/varcomp.html">varcomp()</a></code>
+standard errors, for the means over an empty cell, and for
+<code>aov</code> models with <code>Error()</code> and missing values
+(Genstat’s estimated missing values, stratum mean squares and means):
+<code>tests/testthat/test-genstat-reference.R</code> and
+<code>test-aov-missing.R</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

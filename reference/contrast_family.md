@@ -40,7 +40,7 @@ family.
 
 ``` r
 contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly",
-                "eff", "del.eff"), ref = 1, by = NULL, max.degree = NULL)
+                "eff", "del.eff"), ref = 1, by = NULL, max_degree = NULL, ...)
 ```
 
 ## Arguments
@@ -68,10 +68,14 @@ contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec
   Optional name(s) of factor(s) of the term: build the family within
   each of their levels.
 
-- max.degree:
+- max_degree:
 
   For `"poly"`: the highest degree, the default is the number of
   levels - 1 (at most 6).
+
+- ...:
+
+  Not used: `max.degree` (before 2.0) stops with its 2.0 spelling.
 
 ## Value
 
@@ -79,6 +83,12 @@ A matrix with one row per contrast (named as in emmeans, e.g.
 `"0.2 - 0"`, `"linear"`; with `by` the group comes first, e.g.
 `"Victory: 0.2 - 0"`) and one column per level of the term. Levels whose
 means can't be estimated are left out of the families.
+
+## See also
+
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+[`specify_contrast`](https://dongwenluo.github.io/predictmeans/reference/specify_contrast.md),
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
 
 ## Author
 
@@ -92,7 +102,10 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   # Dunnett: each nitrogen level against no nitrogen, exact adjustment
   K <- Kmatrix(fm, "nitro")
-  contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"), adj = "mvt")
+  if (requireNamespace("mvtnorm", quietly = TRUE)) {
+    contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"),
+                  adj = "mvt")
+  }
 #> Contrasts of 'nitro' (95% limits; p.adj: mvt; Kenward-Roger df)
 #>  contrast estimate std.error df statistic   p.value     p.adj conf.low
 #>   0.2 - 0    19.50     4.436 45     4.396 6.657e-05 2.200e-04    10.57
@@ -104,7 +117,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #>      52.93       33.218         54.78
   # linear and quadratic trends in nitrogen within each variety
   K2 <- Kmatrix(fm, "nitro:Variety")
-  cf <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+  cf <- contrast_family(K2, "poly", by = "Variety", max_degree = 2)
   contrastmeans(fm, "nitro:Variety", ctrmatrix = cf)
 #> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)
 #>                contrast estimate std.error df statistic   p.value     p.adj
@@ -121,4 +134,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #>    -34.05     9.717
 #>    113.23   211.101
 #>    -32.38    11.384
+#> 
+#> Advice:
+#> i 6 contrasts tested without adjustment: some will be significant by
+#>   chance. If they are a family, use adj = "holm" (any design) or
+#>   "tukey"/"mvt" (all pairs).
 ```

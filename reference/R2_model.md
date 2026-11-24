@@ -3,13 +3,13 @@
 The R-squared of a model as a numeric result, for every model class of
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
 `method = "piepho"` (the default) gives the same values as
-[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
-(Piepho, 2023), as proportions: total, fixed, random and each
-random-effect component. `method = "nakagawa"` gives the marginal (fixed
-effects) and conditional (fixed and random effects) R-squared of
-Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014):
-the variance of each random-effect term is the mean of \\z_i' \Sigma
-z_i\\ over the observations.
+[`R2_glmm()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
+of predictmeans 1.x (removed in 2.0; Piepho, 2023), as proportions:
+total, fixed, random and each random-effect component.
+`method = "nakagawa"` gives the marginal (fixed effects) and conditional
+(fixed and random effects) R-squared of Nakagawa and Schielzeth (2013),
+with random slopes as Johnson (2014): the variance of each random-effect
+term is the mean of \\z_i' \Sigma z_i\\ over the observations.
 
 ## Usage
 
@@ -36,15 +36,20 @@ R2_model(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 
 - over_disp:
 
-  For `"piepho"` with `lmer`, `glmer` and `glmmTMB` models: as in
-  [`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md).
+  For `"piepho"` with `lmer`, `glmer` and `glmmTMB` models: `TRUE`
+  leaves an observation-level random effect (one level per observation,
+  modelling overdispersion) out of the random share; the model must have
+  one. Default `FALSE`.
 
 ## Value
 
 A named numeric vector of proportions (class `"pm_r2"`, printed as
 percentages). For `"nakagawa"`, `Marginal` and `Conditional`, with
 attribute `"variances"`: the fixed-effect, random-effect and
-observation-level variances.
+observation-level variances. The Nakagawa values agree with
+`performance::r2_nakagawa()` (`tests/testthat/test-r2-model.R`). Notes
+on the choice of method are kept in `attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
 
 ## Details
 
@@ -81,6 +86,11 @@ Ecology and Evolution*, 4, 133-142.
 Johnson, P. C. D. (2014), Extension of Nakagawa & Schielzeth's R2GLMM to
 random slopes models, *Methods in Ecology and Evolution*, 5, 944-946.
 
+## See also
+
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -106,4 +116,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> # Adjusted R2 (Piepho)
 #>  Total  Fixed Random 
 #> 63.54% 63.54%  0.00% 
+#> 
+#> Advice:
+#> i For a non-gaussian model the R2 is on the link (latent) scale: not
+#>   comparable with an lm R2 or across families and links; use it to compare
+#>   models of the same family.
 ```

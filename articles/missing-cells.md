@@ -20,7 +20,7 @@ In short:
 - **The table says so**: column `over` of `means` names the cells such a
   mean averages. Nothing read off the means can contradict the pair
   tests: when its pairs are not the differences of the shown means, such
-  a mean has no comparison interval, `letterCI` takes the letters from
+  a mean has no comparison interval, `letter_ci` takes the letters from
   the p-values, and
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   draws no comparison or half-LSD bar for it (an open point marks every
@@ -71,7 +71,7 @@ it). The cell means are those of the 11 combinations with data:
 
 ``` r
 
-pm_cells <- predictmeans(fm, "N:Variety", plot = FALSE)
+pm_cells <- predictmeans(fm, "N:Variety")
 nrow(pm_cells$means)
 #> [1] 11
 ```
@@ -82,7 +82,7 @@ warns:
 
 ``` r
 
-pm_n <- predictmeans(fm, "N", plot = FALSE)
+pm_n <- predictmeans(fm, "N")
 #> Warning: No data for N:Variety 0.6:Victory. The mean of N = 0.6 averages only
 #> its observed cells; its pairs use the cells both means have (column 'over').
 #> See vignette("missing-cells").
@@ -106,7 +106,7 @@ usual:
 
 ``` r
 
-pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE, plot = FALSE))
+pm_n2 <- suppressWarnings(predictmeans(fm, "N", pairwise = TRUE))
 pm_n2$pairs[, c("level1", "level2", "over", "estimate", "std.error", "p.value")]
 #>   level1 level2                            over   estimate std.error
 #> 1      0    0.2                            <NA> -19.500000  4.469636
@@ -149,6 +149,16 @@ anova(fm)
 #> Response: yield
 #> 
 #> Empty cells: each term is tested on the cells with data (see ?anova.lmerMod)
+#> 
+#> Advice:
+#> ! Empty cells: no type of test answers the question of a main effect over
+#>   all cells. Type III tests use the cells with data; better, state the
+#>   comparisons of interest on the cell means (pm_joint(),
+#>   predictmeans(pairwise = TRUE)).
+#> i Unbalanced data: Type III tests compare equally weighted cell means
+#>   (contrasts as sum-to-zero), meaningful with an interaction present. With
+#>   no interaction, Type II tests of main effects are more powerful.
+#> 
 #>                 F Df Df.res    Pr(>F)    
 #> N         22.3912  3 40.064 1.123e-08 ***
 #> Variety    1.9414  2 11.843    0.1865    
@@ -165,7 +175,7 @@ whenever another level loses a cell, and with scattered empty cells the
 cells common to all can shrink to one or none. Readings that treat the
 means as comparable are switched off for it instead: no comparison
 interval (its pairs are on common cells), letters from the p-values with
-`letterCI = TRUE`, an open point in
+`letter_ci = TRUE`, an open point in
 [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html):
 
 ``` r
@@ -180,16 +190,16 @@ e.g. nitrogen levels within each variety:
 
 ``` r
 
-pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
+pm_v <- predictmeans(fm, "N:Variety", atvar = "Variety", adj = "tukey")
 within <- subset(pm_v$pairs, !is.na(by))
 head(within[, c("level1", "level2", "by", "estimate", "p.adj")])
-#>             level1          level2          by  estimate        p.adj
-#> 4    0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000 0.0954457441
-#> 8     0:Marvellous  0.2:Marvellous  Marvellous -21.83333 0.0358722237
-#> 13       0:Victory     0.2:Victory     Victory -18.16667 0.0607716581
-#> 16   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667 0.0003454196
-#> 19 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667 0.1743690902
-#> 23    0:Marvellous  0.4:Marvellous  Marvellous -30.50000 0.0017427519
+#>            level1          level2          by  estimate        p.adj
+#> 1   0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000 9.544574e-02
+#> 2   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667 3.454196e-04
+#> 3   0:Golden Rain 0.6:Golden Rain Golden Rain -44.83333 5.393277e-06
+#> 4 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667 1.743691e-01
+#> 5 0.2:Golden Rain 0.6:Golden Rain Golden Rain -26.33333 8.011642e-03
+#> 6 0.4:Golden Rain 0.6:Golden Rain Golden Rain -10.16667 5.601008e-01
 ```
 
 or contrasts written with
@@ -225,7 +235,7 @@ dft <- dft[!(dft$date == "d2" & dft$farm == "F2" & dft$trt == "B"), ]
 dft$y <- 5 + as.integer(dft$farm) * as.integer(dft$date) + 0.5 * (dft$trt == "B") +
   rnorm(nrow(dft), 0, 0.3)
 fd <- lm(y ~ date/farm + date*trt, data = dft)
-predictmeans(fd, "date:trt", plot = FALSE)$means[, c("date", "trt", "estimate", "n")]
+predictmeans(fd, "date:trt")$means[, c("date", "trt", "estimate", "n")]
 #>   date trt estimate n
 #> 1   d1   A 6.491091 6
 #> 2   d1   B 6.835039 6
@@ -273,7 +283,7 @@ so:
 ``` r
 
 fs <- lm(y ~ droplet + conc + vol, data = spray)
-pv <- predictmeans(fs, "vol", pairwise = TRUE, plot = FALSE)
+pv <- predictmeans(fs, "vol", pairwise = TRUE)
 #> Warning: 'droplet' and 'vol' are confounded in the data: the means average over
 #> the combinations that exist (to say so: droplet/vol in the formula, leave one
 #> factor out, or weights = "cells"). No data for droplet:vol fine:130, fine:200,
@@ -309,10 +319,10 @@ better record of the design:
 ``` r
 
 fs2 <- lm(y ~ conc + droplet/vol, data = spray)
-pn <- predictmeans(fs2, "vol", plot = FALSE)
+pn <- predictmeans(fs2, "vol")
 #> 'vol' is not a term of the model: its factors do not interact there, so these means are the sums of their effects (the differences between the levels of one factor are the same at every level of the others).
 cbind(pn$means[, c("vol", "estimate")], fallback = pv$means$estimate,
-      cells = predictmeans(fs, "vol", weights = "cells", plot = FALSE)$means$estimate)
+      cells = predictmeans(fs, "vol", weights = "cells")$means$estimate)
 #>   vol estimate fallback    cells
 #> 1 130 5.030309 5.030309 4.987406
 #> 2 200 5.246957 5.246957 5.289860
@@ -337,7 +347,7 @@ for (v in c("date", "pasture", "trt", "farm")) past[[v]] <- factor(past[[v]])
 past$y <- as.integer(past$date) + as.integer(past$pasture)/2 + 0.5*(past$trt == "B") +
   rnorm(nrow(past), 0, 0.3)
 fp <- lm(y ~ date/farm + date/(trt + pasture)^2, data = past)
-pp <- predictmeans(fp, "date:trt", plot = FALSE)
+pp <- predictmeans(fp, "date:trt")
 #> Warning: 'farm' and 'pasture' are confounded in the data: the means average
 #> over the combinations that exist (to say so: farm/pasture in the formula, leave
 #> one factor out, or weights = "cells"). No data for date:farm d3:F1, d3:F2,
@@ -359,7 +369,7 @@ the model without `farm`:
 ``` r
 
 fp0 <- lm(y ~ date/(trt + pasture)^2, data = past)
-p0 <- suppressWarnings(predictmeans(fp0, "date:trt", plot = FALSE))
+p0 <- suppressWarnings(predictmeans(fp0, "date:trt"))
 cbind(pp$means[, c("date", "trt", "estimate")], without_farm = p0$means$estimate)
 #>   date trt estimate without_farm
 #> 1   d1   A 2.301947     2.301947

@@ -48,7 +48,9 @@ including `x`.
 
 ## See also
 
-[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+[`contrast_family`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md),
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
 
 ## Author
 
@@ -64,7 +66,8 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
     N_effect_Victory = `0.6:Victory` - `0:Victory`,
     N_effect_vs_others = (`0.6:Victory` - `0:Victory`) -
-                         ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`))/2)
+                         ((`0.6:Golden Rain` - `0:Golden Rain`) +
+                          (`0.6:Marvellous` - `0:Marvellous`))/2)
   contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 #> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; Kenward-Roger df)
 #>            contrast estimate std.error df statistic   p.value     p.adj

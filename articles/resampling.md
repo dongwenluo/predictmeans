@@ -96,7 +96,7 @@ perm
 #> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.670
 #> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.885
 #> 
-#> Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
 #> 
 #> ANOVA:
 #> Type I F tests (Freedman-Lane permutations; the model refitted to each permuted data set)
@@ -105,7 +105,12 @@ perm
 #> Variety        2  1.4853        0.260
 #> nitro:Variety  6  0.3028        0.925
 #> 
-#> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
+#> 
+#> Advice:
+#> ! Only 199 resamples: p-values at the floor (0.005) only say 'as small as
+#>   can be shown' (Monte Carlo SE about 0.015 at p = 0.05). Use nperm = 999
+#>   or more (4999 for reporting); 'seed' makes it reproducible.
 ```
 
 For `lm`, `aov`, `lme` and `gls` models the tables are the model’s own
@@ -120,12 +125,12 @@ permmodels(fm_cars, nperm = 999, type = "II", seed = 1)
 #> 
 #> Coefficients of (fixed) effects:
 #>              Estimate Std. Error t value Pr(>|t|) Perm_p_value
-#> (Intercept)   33.9908     1.8878 18.0056   0.0000           NA
+#> (Intercept)   33.9908     1.8878 18.0056   <1e-04           NA
 #> wt            -3.2056     0.7539 -4.2521   0.0002        0.001
 #> factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009
-#> factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003
+#> factor(cyl)8  -6.0709     1.6523 -3.6742    0.001        0.003
 #> 
-#> Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 #> ANOVA:
 #> Anova Table (Type II tests)
@@ -135,7 +140,7 @@ permmodels(fm_cars, nperm = 999, type = "II", seed = 1)
 #> factor(cyl)  95.2633  2  7.2856 0.0028        0.005
 #> Residuals   183.0586 28                            
 #> 
-#> Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
 ```
 
 ## Pairwise comparisons and contrasts
@@ -147,7 +152,7 @@ are equal, so its p-value does not depend on the other means:
 
 ``` r
 
-pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)
+pm <- predictmeans(fm, "nitro", permlist = perm, ncore = 1)
 pm$pairs[, c("level1", "level2", "estimate", "statistic", "p.value", "p.method")]
 #>   level1 level2   estimate statistic p.value    p.method
 #> 1      0    0.2 -19.500000 -4.396098   0.005 permutation
@@ -185,7 +190,7 @@ test does.
 
 ``` r
 
-pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall", plot = FALSE,
+pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall",
                     ncore = 1)
 pmw$pairs[, c("level1", "level2", "p.value", "p.adj")]
 #>   level1 level2 p.value p.adj
@@ -222,14 +227,19 @@ perm_clin
 #> (Intercept)    -1.1399     0.5591 -2.0389           NA
 #> Treatmentdrug   0.7207     0.3070  2.3474        0.075
 #> 
-#> Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
 #> 
 #> ANOVA:
 #> Type I F tests on the working (link) scale (Freedman-Lane permutations; the working linear mixed model refitted to each permuted data set)
 #>           Df F value Perm_p_value
 #> Treatment  1  5.5102        0.075
 #> 
-#> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
+#> 
+#> Advice:
+#> ! Only 199 resamples: p-values near 0.05 are uncertain (Monte Carlo SE
+#>   about 0.015 at p = 0.05). Use nperm = 999 or more (4999 for reporting);
+#>   'seed' makes it reproducible.
 ```
 
 ## Testing random effects: `varcomp(test = TRUE)`
@@ -391,7 +401,12 @@ boot
 #>           npar Sum Sq Mean Sq F value Boot_p_value
 #> Treatment    1 6.2054  6.2054  6.2054         0.03
 #> 
-#> Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model.
+#> Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model. The smallest attainable p-value is 1/(99 + 1) = 0.01.
+#> 
+#> Advice:
+#> ! Only 99 resamples: p-values near 0.05 are uncertain (Monte Carlo SE about
+#>   0.022 at p = 0.05). Use nperm = 999 or more (4999 for reporting); 'seed'
+#>   makes it reproducible.
 ```
 
 Its result is used as a `permlist`; the `pairs` table then says
@@ -399,7 +414,7 @@ Its result is used as a `permlist`; the `pairs` table then says
 
 ``` r
 
-pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE,
+pmb <- predictmeans(fm_clin, "Treatment", permlist = boot,
                     ncore = 1)
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 #>    level1 level2   estimate p.value  p.method
@@ -431,7 +446,7 @@ permmodels(fm_mt, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #> cyl6         -4.2556    1.2893 -3.3007        0.003
 #> cyl8         -6.0709    1.6077 -3.7761        0.004
 #> 
-#> Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 #> ANOVA:
 #> Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)
@@ -439,7 +454,7 @@ permmodels(fm_mt, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #> wt   1 18.0348        0.001
 #> cyl  2  7.1814        0.007
 #> 
-#> Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.
 ```
 
 Pairs and contrasts from this result use the robust statistics and

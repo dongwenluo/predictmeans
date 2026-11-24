@@ -5,21 +5,27 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Permutation and bootstrap tests • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Permutation and bootstrap tests">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Permutation and bootstrap tests">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,22 +39,31 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -170,7 +185,7 @@ Anderson and Legendre 1999 found the same for linear models).</li>
 <span><span class="co">#&gt; nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.670</span></span>
 <span><span class="co">#&gt; nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.885</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations.</span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Type I F tests (Freedman-Lane permutations; the model refitted to each permuted data set)</span></span>
@@ -179,7 +194,12 @@ Anderson and Legendre 1999 found the same for linear models).</li>
 <span><span class="co">#&gt; Variety        2  1.4853        0.260</span></span>
 <span><span class="co">#&gt; nitro:Variety  6  0.3028        0.925</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.</span></span></code></pre></div>
+<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Advice:</span></span>
+<span><span class="co">#&gt; ! Only 199 resamples: p-values at the floor (0.005) only say 'as small as</span></span>
+<span><span class="co">#&gt;   can be shown' (Monte Carlo SE about 0.015 at p = 0.05). Use nperm = 999</span></span>
+<span><span class="co">#&gt;   or more (4999 for reporting); 'seed' makes it reproducible.</span></span></code></pre></div>
 <p>For <code>lm</code>, <code>aov</code>, <code>lme</code> and
 <code>gls</code> models the tables are the model’s own tests with a
 <code>Perm_p_value</code> column; for the other classes they show the
@@ -191,12 +211,12 @@ data fixed at the fit).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;              Estimate Std. Error t value Pr(&gt;|t|) Perm_p_value</span></span>
-<span><span class="co">#&gt; (Intercept)   33.9908     1.8878 18.0056   0.0000           NA</span></span>
+<span><span class="co">#&gt; (Intercept)   33.9908     1.8878 18.0056   &lt;1e-04           NA</span></span>
 <span><span class="co">#&gt; wt            -3.2056     0.7539 -4.2521   0.0002        0.001</span></span>
 <span><span class="co">#&gt; factor(cyl)6  -4.2556     1.3861 -3.0702   0.0047        0.009</span></span>
-<span><span class="co">#&gt; factor(cyl)8  -6.0709     1.6523 -3.6742   0.0010        0.003</span></span>
+<span><span class="co">#&gt; factor(cyl)8  -6.0709     1.6523 -3.6742    0.001        0.003</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations.</span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Anova Table (Type II tests)</span></span>
@@ -206,7 +226,7 @@ data fixed at the fit).</p>
 <span><span class="co">#&gt; factor(cyl)  95.2633  2  7.2856 0.0028        0.005</span></span>
 <span><span class="co">#&gt; Residuals   183.0586 28                            </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations.</span></span></code></pre></div>
+<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '999' Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="pairwise-comparisons-and-contrasts">Pairwise comparisons and contrasts<a class="anchor" aria-label="anchor" href="#pairwise-comparisons-and-contrasts"></a>
@@ -217,7 +237,7 @@ Freedman–Lane each pair is tested with its own reduced model, in which
 that pair’s means are equal, so its p-value does not depend on the other
 means:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"statistic"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2   estimate statistic p.value    p.method</span></span>
 <span><span class="co">#&gt; 1      0    0.2 -19.500000 -4.396098   0.005 permutation</span></span>
@@ -247,7 +267,7 @@ family in each permuted data set (a permutation Tukey test), and
 powerful. In a simulation study this kept the familywise error rate as
 Tukey’s test does.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pmw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, adj <span class="op">=</span> <span class="st">"westfall"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<code class="sourceCode R"><span><span class="va">pmw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, permlist <span class="op">=</span> <span class="va">perm</span>, adj <span class="op">=</span> <span class="st">"westfall"</span>,</span>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmw</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"p.value"</span>, <span class="st">"p.adj"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2 p.value p.adj</span></span>
@@ -281,14 +301,19 @@ GLMM):</p>
 <span><span class="co">#&gt; (Intercept)    -1.1399     0.5591 -2.0389           NA</span></span>
 <span><span class="co">#&gt; Treatmentdrug   0.7207     0.3070  2.3474        0.075</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations.</span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Type I F tests on the working (link) scale (Freedman-Lane permutations; the working linear mixed model refitted to each permuted data set)</span></span>
 <span><span class="co">#&gt;           Df F value Perm_p_value</span></span>
 <span><span class="co">#&gt; Treatment  1  5.5102        0.075</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations.</span></span></code></pre></div>
+<span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Advice:</span></span>
+<span><span class="co">#&gt; ! Only 199 resamples: p-values near 0.05 are uncertain (Monte Carlo SE</span></span>
+<span><span class="co">#&gt;   about 0.015 at p = 0.05). Use nperm = 999 or more (4999 for reporting);</span></span>
+<span><span class="co">#&gt;   'seed' makes it reproducible.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="testing-random-effects-varcomptest-true">Testing random effects: <code>varcomp(test = TRUE)</code><a class="anchor" aria-label="anchor" href="#testing-random-effects-varcomptest-true"></a>
@@ -424,11 +449,16 @@ compares the statistics. For the clinical trial data:</p>
 <span><span class="co">#&gt;           npar Sum Sq Mean Sq F value Boot_p_value</span></span>
 <span><span class="co">#&gt; Treatment    1 6.2054  6.2054  6.2054         0.03</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model.</span></span></code></pre></div>
+<span><span class="co">#&gt; Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model. The smallest attainable p-value is 1/(99 + 1) = 0.01.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Advice:</span></span>
+<span><span class="co">#&gt; ! Only 99 resamples: p-values near 0.05 are uncertain (Monte Carlo SE about</span></span>
+<span><span class="co">#&gt;   0.022 at p = 0.05). Use nperm = 999 or more (4999 for reporting); 'seed'</span></span>
+<span><span class="co">#&gt;   makes it reproducible.</span></span></code></pre></div>
 <p>Its result is used as a <code>permlist</code>; the <code>pairs</code>
 table then says <code>"bootstrap"</code>:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<code class="sourceCode R"><span><span class="va">pmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_clin</span>, <span class="st">"Treatment"</span>, permlist <span class="op">=</span> <span class="va">boot</span>,</span>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    level1 level2   estimate p.value  p.method</span></span>
@@ -458,7 +488,7 @@ wild bootstrap), so each residual keeps its own variance:</p>
 <span><span class="co">#&gt; cyl6         -4.2556    1.2893 -3.3007        0.003</span></span>
 <span><span class="co">#&gt; cyl8         -6.0709    1.6077 -3.7761        0.004</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).</span></span>
+<span><span class="co">#&gt; Note: Perm_p_value of robust t test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)</span></span>
@@ -466,7 +496,7 @@ wild bootstrap), so each residual keeps its own variance:</p>
 <span><span class="co">#&gt; wt   1 18.0348        0.001</span></span>
 <span><span class="co">#&gt; cyl  2  7.1814        0.007</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap).</span></span></code></pre></div>
+<span><span class="co">#&gt; Note: Perm_p_value of robust F test is obtained using '999' sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.</span></span></code></pre></div>
 <p>Pairs and contrasts from this result use the robust statistics and
 robust standard errors. For mixed models, model the variances instead
 (e.g. <code>lme(..., weights = varIdent())</code>) and use

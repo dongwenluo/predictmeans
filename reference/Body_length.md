@@ -1,4 +1,4 @@
-# `Body_length` data
+# Body Length of Beetles (Simulated)
 
 Simulated body lengths of beetles reared in containers within
 populations, under two treatments in two habitats, of the kind used by

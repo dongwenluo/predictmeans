@@ -16,7 +16,7 @@ its row of the data.
 
 ``` r
 residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
-    interactive = FALSE, plot = TRUE, ...)
+    interactive = FALSE, plot = TRUE, dense = c("auto", "points", "bins"), ...)
 ```
 
 ## Arguments
@@ -29,7 +29,10 @@ residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
 
   Optional variable that colours the points: the name (in "quotes") of a
   variable in the data of the model, or a vector with one value per
-  observation. The default `"none"` uses one colour.
+  observation. The default `"none"` uses one colour. The plots have no
+  legend; `interactive = TRUE` shows each point's row and group on
+  hover, and the plots can be given one with
+  `+ ggplot2::theme(legend.position = "right")`.
 
 - re_level:
 
@@ -45,11 +48,12 @@ residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
 
 - id:
 
-  Number of the most extreme points labelled with their row names
-  (largest absolute residuals; for the Cook's distance plot the largest
-  distances); `FALSE` or 0 labels none. In 1.x `id = TRUE` let you click
-  on points; now `TRUE` labels 3 points, and `interactive = TRUE` shows
-  every point's row name.
+  Number of the most extreme points labelled with their row names in the
+  data (rows left out for missing values keep their numbers, so a label
+  is the row to look at; largest absolute residuals; for the Cook's
+  distance plot the largest distances); `FALSE` or 0 labels none. In 1.x
+  `id = TRUE` let you click on points; now `TRUE` labels 3 points, and
+  `interactive = TRUE` shows every point's row name.
 
 - ...:
 
@@ -65,6 +69,18 @@ residplot(model, group = "none", re_level = 1, slope = FALSE, id = 3,
 - plot:
 
   `FALSE`: do not draw; only return the plots.
+
+- dense:
+
+  How overlapping points are drawn. `"points"` (also `"auto"`, the
+  default): every point; beyond 200 points as open circles, more
+  transparent as their number grows, so dense regions show darker and no
+  point is hidden. `"bins"`: the scatter plots as shaded counts in a
+  grid of bins (darker: more points; no colour bar), with the points
+  that stand out (the `id` largest and those beyond 3 on the residual
+  scale) drawn on top. The Q-Q plot of more than 2000 residuals draws
+  every point in the tails (outside the central 95%) and an even
+  selection of the others.
 
 ## Value
 
@@ -85,16 +101,21 @@ The plots:
 2.  Normal Q-Q plot of the residuals: the points should lie near the
     line.
 
-3.  Mixed models: normal Q-Q plot of the random effects of term `level`.
-    `gls`: autocorrelation of the normalized residuals (with approximate
-    95% limits). Other models: square root of the absolute residuals
-    against fitted values (scale-location), for spread that changes with
-    the fitted values.
+3.  Mixed models: normal Q-Q plot of the random effects of term
+    `re_level`. `gls`: autocorrelation of the normalized residuals (with
+    approximate 95% limits). Other models: square root of the absolute
+    residuals against fitted values (scale-location), for spread that
+    changes with the fitted values.
 
-4.  `lm`, `aov` and `glm`: Cook's distances. Other models: fitted
-    against observed values; for a 0/1 response, the observed proportion
-    against the mean fitted probability in tenths of the fitted values
-    (calibration).
+4.  `lm`, `aov` and `glm`: Cook's distances. Other models (also `gam`:
+    Cook's distances of a penalized fit are only approximate): fitted
+    against observed values of the response as modelled (from
+    [`pm_data`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md):
+    the rows used in the fit; the axis is labelled with the response as
+    written, e.g. `log(yield + 1)`, or the observed proportion for
+    `cbind(successes, failures)`); for a 0/1 response (also a two-level
+    factor), the observed proportion against the mean fitted probability
+    in tenths of the fitted values (calibration).
 
 Residuals: standardized for `lm`
 ([`rstandard()`](https://rdrr.io/r/stats/influence.measures.html)),
@@ -106,14 +127,21 @@ when the model is right, so plots 1 and 2 are read as for a normal model
 (they use a fixed random seed, so the plots do not change between
 calls); fitted values are then on the link scale. Other families:
 standardized deviance residuals. `aov` with `Error()`: the residuals of
-the lowest stratum. The plots inform; they do not test. For a summary of
-checks, see also
+the lowest stratum. The plots inform; they do not test. For a table of
+checks see
+[`pm_check`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md);
+for Cook's distances of mixed models
 [`CookD`](https://dongwenluo.github.io/predictmeans/reference/CookD.md).
 
 ## References
 
 Dunn, P. K. and Smyth, G. K. (1996), Randomized quantile residuals,
 *Journal of Computational and Graphical Statistics*, 5, 236-244.
+
+## See also
+
+[`pm_check`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md),
+[`CookD`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
 
 ## Author
 

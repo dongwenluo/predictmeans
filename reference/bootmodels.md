@@ -4,9 +4,10 @@ Parametric bootstrap p-values for the terms and coefficients of a model.
 Responses are simulated from the model fitted without its fixed effects
 (only an intercept, any offset, and the same random effects and
 covariance structure: the global null hypothesis), the full model is
-refitted to each, and a p-value is the proportion of simulated
-statistics at least as large as the observed one. Useful for GLMs and
-GLMMs and small samples, where Wald or F tests can be poor.
+refitted to each, and a p-value is (b + 1)/(B + 1), b of the B simulated
+statistics being at least as large as the observed one. Results are the
+same for any `ncore`. Useful for GLMs and GLMMs and small samples, where
+Wald or F tests can be poor.
 
 ## Usage
 
@@ -59,7 +60,9 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 Invisibly, a list with `permlist` (the coefficients and covariance
 matrices of the refits), `COEFFICENTS` and `ANOVA` (the model's tables
 with a `Boot_p_value` column). Attribute `"resampling"` is
-`"parametric bootstrap"`.
+`"parametric bootstrap"`; advice (e.g. on too few samples) in
+`attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
 
 ## Details
 
@@ -82,6 +85,13 @@ fitted as Poisson it rejected 37% of true null hypotheses, where
 [`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
 (Freedman-Lane on the working scale) gave 7%.
 
+## See also
+
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+(`test_method = "bootstrap"`),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -94,7 +104,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   # \donttest{
   bt <- bootmodels(fm, nsim = 99, seed = 1)   # use 999 or more in practice
-  predictmeans(fm, "nitro", permlist = bt, plot = FALSE, ncore = 1)$pairs
+  predictmeans(fm, "nitro", permlist = bt)$pairs
 #>   level1 level2   estimate std.error df statistic p.value p.adj  conf.low
 #> 1      0    0.2 -19.500000  4.435752 NA -4.396098    0.01  0.01 -29.32367
 #> 2      0    0.4 -34.833333  4.435752 NA -7.852859    0.01  0.01 -43.98725

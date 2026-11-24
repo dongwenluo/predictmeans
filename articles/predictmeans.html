@@ -5,21 +5,27 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Getting started with predictmeans • predictmeans</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting started with predictmeans">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Getting started with predictmeans">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">predictmeans</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,22 +39,31 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
-    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+<li><a class="dropdown-item" href="../articles/predictmeans.html">Getting started with predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/checking.html">Checking the model</a></li>
     <li><a class="dropdown-item" href="../articles/response-scale.html">Link and response scale</a></li>
+    <li><a class="dropdown-item" href="../articles/contrasts.html">Contrasts, joint tests and slopes</a></li>
+    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/resampling.html">Permutation and bootstrap tests</a></li>
     <li><a class="dropdown-item" href="../articles/smooth.html">Smooth curves in mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/missing-cells.html">Missing cells and non-estimable means</a></li>
     <li><a class="dropdown-item" href="../articles/R2_glmm.html">Adjusted R² for generalized linear mixed models</a></li>
-    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
-    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Worked examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
-    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Checks against SAS and Genstat</h6></li>
+    <li><a class="dropdown-item" href="../articles/sas.html">Matching SAS PROC MIXED</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Upgrading</h6></li>
+    <li><a class="dropdown-item" href="../articles/migrating.html">Migrating from predictmeans 1.x</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-worked-examples" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Worked examples</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-worked-examples">
+<li><a class="dropdown-item" href="../articles/overview.html">Overview of predictmeans</a></li>
+    <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
+    <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -84,6 +99,38 @@ with Kenward–Roger or Satterthwaite degrees of freedom for mixed models,
 and permutation tests.</p>
 <p><img src="../reference/figures/workflow.png" class="r-plt" alt="From a fitted model to the report: diagnostics, tests, means and contrasts, variance components, then tables and plots" width="100%"></p>
 <div class="section level2">
+<h2 id="why-predictmeans">Why predictmeans<a class="anchor" aria-label="anchor" href="#why-predictmeans"></a>
+</h2>
+<ul>
+<li>
+<strong>Defaults chosen on evidence</strong> (simulation,
+literature): Kenward–Roger df and adjusted SEs for REML
+<code>lmer</code> fits; permutation p-values
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>b</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>B</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(b+1)/(B+1)</annotation></semantics></math>;
+<code>aov</code> with <code>Error()</code> analysed by strata, with SEs
+from the stratum mean squares (as Genstat); means over empty cells
+averaged with equal weight over the observed cells, with a warning
+naming them.</li>
+<li>
+<strong>Checked against outside references</strong> in the package
+tests: real SAS PROC MIXED and Genstat runs
+(<code><a href="../articles/sas.html">vignette("sas")</a></code>), pbkrtest, <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme</a></code> and
+emmeans.</li>
+<li>
+<strong>Robust across model classes</strong>: when a result cannot
+be computed correctly, the function stops with a message saying why,
+rather than returning a wrong number.</li>
+<li>
+<strong>Advice from the data</strong>: when this fit needs a caution
+(empty cells, singular fit, small df, …), the result says so in one line
+with what to do; read it with <code>advice(x)</code>, turn it off with
+<code>options(predictmeans.advice = FALSE)</code>.</li>
+<li>
+<strong>Reproducible</strong>: permutation and bootstrap results are
+identical for any <code>ncore</code>.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="a-split-plot-experiment">A split-plot experiment<a class="anchor" aria-label="anchor" href="#a-split-plot-experiment"></a>
 </h2>
 <p>The oats data (Yates 1935) are a split plot: three varieties on whole
@@ -98,29 +145,28 @@ plots within six blocks, four nitrogen levels on subplots.</p>
 <h2 id="predicted-means-and-pairwise-comparisons">Predicted means and pairwise comparisons<a class="anchor" aria-label="anchor" href="#predicted-means-and-pairwise-comparisons"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span>,</span>
-<span>                   plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span>, atvar <span class="op">=</span> <span class="st">"Variety"</span>, adj <span class="op">=</span> <span class="st">"tukey"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pm</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)</span></span>
 <span><span class="co">#&gt; Confidence limits: 95%</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  nitro     Variety estimate std.error    df conf.low conf.high group</span></span>
 <span><span class="co">#&gt;      0 Golden Rain    80.00     9.107 16.08    60.70      99.3   A  </span></span>
-<span><span class="co">#&gt;      0  Marvellous    86.67     9.107 16.08    67.37     106.0    A </span></span>
-<span><span class="co">#&gt;      0     Victory    71.50     9.107 16.08    52.20      90.8    A </span></span>
 <span><span class="co">#&gt;    0.2 Golden Rain    98.50     9.107 16.08    79.20     117.8   AB </span></span>
-<span><span class="co">#&gt;    0.2  Marvellous   108.50     9.107 16.08    89.20     127.8     B</span></span>
-<span><span class="co">#&gt;    0.2     Victory    89.67     9.107 16.08    70.37     109.0    A </span></span>
 <span><span class="co">#&gt;    0.4 Golden Rain   114.67     9.107 16.08    95.37     134.0    BC</span></span>
-<span><span class="co">#&gt;    0.4  Marvellous   117.17     9.107 16.08    97.87     136.5     B</span></span>
-<span><span class="co">#&gt;    0.4     Victory   110.83     9.107 16.08    91.54     130.1     B</span></span>
 <span><span class="co">#&gt;    0.6 Golden Rain   124.83     9.107 16.08   105.53     144.1     C</span></span>
+<span><span class="co">#&gt;      0  Marvellous    86.67     9.107 16.08    67.37     106.0    A </span></span>
+<span><span class="co">#&gt;    0.2  Marvellous   108.50     9.107 16.08    89.20     127.8     B</span></span>
+<span><span class="co">#&gt;    0.4  Marvellous   117.17     9.107 16.08    97.87     136.5     B</span></span>
 <span><span class="co">#&gt;    0.6  Marvellous   126.83     9.107 16.08   107.53     146.1     B</span></span>
+<span><span class="co">#&gt;      0     Victory    71.50     9.107 16.08    52.20      90.8    A </span></span>
+<span><span class="co">#&gt;    0.2     Victory    89.67     9.107 16.08    70.37     109.0    A </span></span>
+<span><span class="co">#&gt;    0.4     Victory   110.83     9.107 16.08    91.54     130.1     B</span></span>
 <span><span class="co">#&gt;    0.6     Victory   118.50     9.107 16.08    99.20     137.8     B</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 18 pairwise comparisons within each level of Variety.</span></span>
 <span><span class="co">#&gt; SED: min 7.683, mean 7.683, max 7.683</span></span>
-<span><span class="co">#&gt; LSD (5%, tukey): min 20.5, mean 20.5, max 20.5</span></span>
+<span><span class="co">#&gt; LSD (5%, tukey): 20.5 (equal for all pairs)</span></span>
 <span><span class="co">#&gt; p-values: t tests, adjusted by 'tukey'.</span></span>
 <span><span class="co">#&gt; Means sharing a letter are not significantly different at the 5% level within each level of Variety.</span></span>
 <span><span class="co">#&gt; Comparison intervals: mean +/- 1.125 SE (72.3% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.</span></span></code></pre></div>
@@ -135,58 +181,58 @@ each variety, with Tukey adjustment within each variety.</p>
 frames, so they are easy to filter, join or export.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">means</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   nitro     Variety  estimate std.error       df conf.low conf.high</span></span>
-<span><span class="co">#&gt; 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806</span></span>
-<span><span class="co">#&gt; 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472</span></span>
-<span><span class="co">#&gt; 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806</span></span>
-<span><span class="co">#&gt; 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806</span></span>
-<span><span class="co">#&gt; 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806</span></span>
-<span><span class="co">#&gt; 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472</span></span>
+<span><span class="co">#&gt;   nitro     Variety  estimate std.error       df  conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1     0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806</span></span>
+<span><span class="co">#&gt; 2   0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806</span></span>
+<span><span class="co">#&gt; 3   0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472</span></span>
+<span><span class="co">#&gt; 4   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139</span></span>
+<span><span class="co">#&gt; 5     0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472</span></span>
+<span><span class="co">#&gt; 6   0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806</span></span>
 <span><span class="co">#&gt;   comparison.low comparison.high group n estimable</span></span>
 <span><span class="co">#&gt; 1       69.75210        90.24790   A   6      TRUE</span></span>
-<span><span class="co">#&gt; 2       76.41877        96.91456    A  6      TRUE</span></span>
-<span><span class="co">#&gt; 3       61.25210        81.74790    A  6      TRUE</span></span>
-<span><span class="co">#&gt; 4       88.25210       108.74790   AB  6      TRUE</span></span>
-<span><span class="co">#&gt; 5       98.25210       118.74790     B 6      TRUE</span></span>
-<span><span class="co">#&gt; 6       79.41877        99.91456    A  6      TRUE</span></span>
+<span><span class="co">#&gt; 2       88.25210       108.74790   AB  6      TRUE</span></span>
+<span><span class="co">#&gt; 3      104.41877       124.91456    BC 6      TRUE</span></span>
+<span><span class="co">#&gt; 4      114.58544       135.08123     C 6      TRUE</span></span>
+<span><span class="co">#&gt; 5       76.41877        96.91456    A  6      TRUE</span></span>
+<span><span class="co">#&gt; 6       98.25210       118.74790     B 6      TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          level1          level2          by   estimate std.error       df</span></span>
-<span><span class="co">#&gt; 1 0:Golden Rain    0:Marvellous        &lt;NA&gt;  -6.666667  9.715020 30.23080</span></span>
-<span><span class="co">#&gt; 2 0:Golden Rain       0:Victory        &lt;NA&gt;   8.500000  9.715020 30.23080</span></span>
-<span><span class="co">#&gt; 3  0:Marvellous       0:Victory        &lt;NA&gt;  15.166667  9.715020 30.23080</span></span>
-<span><span class="co">#&gt; 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014</span></span>
-<span><span class="co">#&gt; 5  0:Marvellous 0.2:Golden Rain        &lt;NA&gt; -11.833333  9.715020 30.23080</span></span>
-<span><span class="co">#&gt; 6     0:Victory 0.2:Golden Rain        &lt;NA&gt; -27.000000  9.715020 30.23080</span></span>
-<span><span class="co">#&gt;    statistic     p.value      p.adj   conf.low conf.high      lsd adj.conf.low</span></span>
-<span><span class="co">#&gt; 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437           NA</span></span>
-<span><span class="co">#&gt; 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437           NA</span></span>
-<span><span class="co">#&gt; 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437           NA</span></span>
-<span><span class="co">#&gt; 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    -38.99579</span></span>
-<span><span class="co">#&gt; 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437           NA</span></span>
-<span><span class="co">#&gt; 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437           NA</span></span>
-<span><span class="co">#&gt;   adj.conf.high p.method</span></span>
-<span><span class="co">#&gt; 1            NA    tukey</span></span>
-<span><span class="co">#&gt; 2            NA    tukey</span></span>
-<span><span class="co">#&gt; 3            NA    tukey</span></span>
-<span><span class="co">#&gt; 4      1.995794    tukey</span></span>
-<span><span class="co">#&gt; 5            NA    tukey</span></span>
-<span><span class="co">#&gt; 6            NA    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;            level1          level2          by  estimate std.error       df</span></span>
+<span><span class="co">#&gt; 1   0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 2   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 3   0:Golden Rain 0.6:Golden Rain Golden Rain -44.83333  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 4 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 5 0.2:Golden Rain 0.6:Golden Rain Golden Rain -26.33333  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 6 0.4:Golden Rain 0.6:Golden Rain Golden Rain -10.16667  7.682948 45.00014</span></span>
+<span><span class="co">#&gt;   statistic      p.value        p.adj  conf.low   conf.high      lsd</span></span>
+<span><span class="co">#&gt; 1 -2.407930 2.020357e-02 9.004248e-02 -33.97425  -3.0257499 15.47425</span></span>
+<span><span class="co">#&gt; 2 -4.512157 4.576126e-05 2.600347e-04 -50.14092 -19.1924165 15.47425</span></span>
+<span><span class="co">#&gt; 3 -5.835434 5.476774e-07 3.213104e-06 -60.30758 -29.3590832 15.47425</span></span>
+<span><span class="co">#&gt; 4 -2.104227 4.097729e-02 1.673400e-01 -31.64092  -0.6924165 15.47425</span></span>
+<span><span class="co">#&gt; 5 -3.427504 1.312508e-03 6.939258e-03 -41.80758 -10.8590832 15.47425</span></span>
+<span><span class="co">#&gt; 6 -1.323277 1.924277e-01 5.532559e-01 -25.64092   5.3075835 15.47425</span></span>
+<span><span class="co">#&gt;   adj.conf.low adj.conf.high p.method</span></span>
+<span><span class="co">#&gt; 1    -38.99579      1.995794    tukey</span></span>
+<span><span class="co">#&gt; 2    -55.16246    -14.170873    tukey</span></span>
+<span><span class="co">#&gt; 3    -65.32913    -24.337540    tukey</span></span>
+<span><span class="co">#&gt; 4    -36.66246      4.329127    tukey</span></span>
+<span><span class="co">#&gt; 5    -46.82913     -5.837540    tukey</span></span>
+<span><span class="co">#&gt; 6    -30.66246     10.329127    tukey</span></span></code></pre></div>
 <p>The same tables come from <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or, with the
 generics package, <code>tidy()</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">pm</span>, what <span class="op">=</span> <span class="st">"pairs"</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          level1       level2   by  estimate std.error      df  statistic</span></span>
-<span><span class="co">#&gt; 1 0:Golden Rain 0:Marvellous &lt;NA&gt; -6.666667   9.71502 30.2308 -0.6862226</span></span>
-<span><span class="co">#&gt; 2 0:Golden Rain    0:Victory &lt;NA&gt;  8.500000   9.71502 30.2308  0.8749338</span></span>
-<span><span class="co">#&gt; 3  0:Marvellous    0:Victory &lt;NA&gt; 15.166667   9.71502 30.2308  1.5611564</span></span>
-<span><span class="co">#&gt;     p.value p.adj   conf.low conf.high      lsd adj.conf.low adj.conf.high</span></span>
-<span><span class="co">#&gt; 1 0.4978025    NA -26.501035  13.16770 19.83437           NA            NA</span></span>
-<span><span class="co">#&gt; 2 0.3885084    NA -11.334369  28.33437 19.83437           NA            NA</span></span>
-<span><span class="co">#&gt; 3 0.1288957    NA  -4.667702  35.00104 19.83437           NA            NA</span></span>
-<span><span class="co">#&gt;   p.method</span></span>
-<span><span class="co">#&gt; 1    tukey</span></span>
-<span><span class="co">#&gt; 2    tukey</span></span>
-<span><span class="co">#&gt; 3    tukey</span></span></code></pre></div>
+<span><span class="co">#&gt;          level1          level2          by  estimate std.error       df</span></span>
+<span><span class="co">#&gt; 1 0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 2 0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667  7.682948 45.00014</span></span>
+<span><span class="co">#&gt; 3 0:Golden Rain 0.6:Golden Rain Golden Rain -44.83333  7.682948 45.00014</span></span>
+<span><span class="co">#&gt;   statistic      p.value        p.adj  conf.low conf.high      lsd adj.conf.low</span></span>
+<span><span class="co">#&gt; 1 -2.407930 2.020357e-02 9.004248e-02 -33.97425  -3.02575 15.47425    -38.99579</span></span>
+<span><span class="co">#&gt; 2 -4.512157 4.576126e-05 2.600347e-04 -50.14092 -19.19242 15.47425    -55.16246</span></span>
+<span><span class="co">#&gt; 3 -5.835434 5.476774e-07 3.213104e-06 -60.30758 -29.35908 15.47425    -65.32913</span></span>
+<span><span class="co">#&gt;   adj.conf.high p.method</span></span>
+<span><span class="co">#&gt; 1      1.995794    tukey</span></span>
+<span><span class="co">#&gt; 2    -14.170873    tukey</span></span>
+<span><span class="co">#&gt; 3    -24.337540    tukey</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="plots">Plots<a class="anchor" aria-label="anchor" href="#plots"></a>
@@ -197,11 +243,20 @@ generics package, <code>tidy()</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, type <span class="op">=</span> <span class="st">"pvalue"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="predictmeans_files/figure-html/unnamed-chunk-7-2.png" class="r-plt" alt="" width="672"></p>
-<p><code><a href="../reference/predictmeans.html">predictmeans()</a></code> draws its classic plots with
-<code>plot = TRUE</code> (since 2.0 the default is <code>FALSE</code>;
-<code>options(predictmeans.plot = TRUE)</code> sets it for a session);
-<code>which.plots</code> chooses among the means, bar, p-value and
-back-transformed plots.</p>
+<p><code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> draws every plot from the result
+(<code><a href="../reference/predictmeans.html">predictmeans()</a></code> draws none): the means with one average LSD
+bar (the default), <code>type = "bar"</code>, <code>type = "ci"</code>
+(each mean with its confidence limits; on the response scale when the
+means are back-transformed) and <code>type = "pvalue"</code>.
+<code>data = TRUE</code> adds the observations; <code>x</code>,
+<code>group</code> and <code>panel</code> place the factors; with
+<code>atvar</code> each level is a panel with its own LSD.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, type <span class="op">=</span> <span class="st">"bar"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="predictmeans_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">pm</span>, type <span class="op">=</span> <span class="st">"ci"</span>, data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="predictmeans_files/figure-html/unnamed-chunk-8-2.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="degrees-of-freedom-and-standard-errors">Degrees of freedom and standard errors<a class="anchor" aria-label="anchor" href="#degrees-of-freedom-and-standard-errors"></a>
@@ -279,11 +334,11 @@ estimated dispersion (Gaussian, Gamma, quasi-)</td>
 <p><code>settings$df_method</code> of the result says which was used.
 For the split plot (a REML <code>lmer</code> fit) the default gives
 Kenward–Roger SEs and df. Other choices:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Satterthwaite df</span></span>
-<span><span class="va">pm_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="st">"Satterthwaite"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="st">"Satterthwaite"</span><span class="op">)</span></span>
 <span><span class="co"># SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors</span></span>
-<span><span class="va">pm_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="st">"containment"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pm_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, df_method <span class="op">=</span> <span class="st">"containment"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>Satterthwaite <span class="op">=</span> <span class="va">pm_s</span><span class="op">$</span><span class="va">means</span><span class="op">$</span><span class="va">df</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, containment <span class="op">=</span> <span class="va">pm_c</span><span class="op">$</span><span class="va">means</span><span class="op">$</span><span class="va">df</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                    [,1]</span></span>
 <span><span class="co">#&gt; Satterthwaite  8.868755</span></span>
@@ -320,8 +375,8 @@ and <code><a href="../reference/residplot.html">residplot()</a></code>, in
 <code>"proportional"</code> (as SAS <code>LSMEANS / OM</code>),
 <code>"outer"</code>, <code>"cells"</code> or <code>"flat"</code>, with
 the same definitions as emmeans.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, weights <span class="op">=</span> <span class="st">"proportional"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro"</span>, weights <span class="op">=</span> <span class="st">"proportional"</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;   nitro  estimate std.error       df  conf.low conf.high comparison.low</span></span>
 <span><span class="co">#&gt; 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186</span></span>
 <span><span class="co">#&gt; 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186</span></span>
@@ -338,7 +393,7 @@ the same definitions as emmeans.</p>
 </h2>
 <p><code><a href="../reference/specify_contrast.html">specify_contrast()</a></code> writes contrasts by the names of the
 means; <code><a href="../reference/contrastmeans.html">contrastmeans()</a></code> tests them.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/specify_contrast.html">specify_contrast</a></span><span class="op">(</span><span class="fu"><a href="../reference/Kmatrix.html">Kmatrix</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"nitro:Variety"</span><span class="op">)</span>,</span>
 <span>  N_effect_Victory <span class="op">=</span> <span class="va">`0.6:Victory`</span> <span class="op">-</span> <span class="va">`0:Victory`</span>,</span>
 <span>  N_effect_Victory_vs_others <span class="op">=</span> <span class="op">(</span><span class="va">`0.6:Victory`</span> <span class="op">-</span> <span class="va">`0:Victory`</span><span class="op">)</span> <span class="op">-</span></span>
@@ -360,10 +415,10 @@ Covariates are set to their means by default (<code>cov_reduce</code>
 changes that), and may enter the model through transformations such as
 <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code>, <code>ns()</code>, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> or smooth
 terms of a <code>gam</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Drug</span><span class="op">)</span></span>
 <span><span class="va">fm_glm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">R</span>, <span class="va">N</span> <span class="op">-</span> <span class="va">R</span><span class="op">)</span> <span class="op">~</span> <span class="va">Drug</span> <span class="op">+</span> <span class="va">log10Dose</span>, family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">Drug</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_glm</span>, <span class="st">"Drug"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
+<span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm_glm</span>, <span class="st">"Drug"</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;          Drug log10Dose   estimate std.error  df    conf.low  conf.high</span></span>
 <span><span class="co">#&gt; 1    Morphine  0.603011  0.1739917 0.1223041 Inf -0.06571997  0.4137034</span></span>
 <span><span class="co">#&gt; 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398</span></span>

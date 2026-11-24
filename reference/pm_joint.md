@@ -11,7 +11,8 @@ rows are tested together.
 
 ``` r
 pm_joint(model, modelterm, by = NULL, ctrmatrix = NULL,
-         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+         df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+           "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
          weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL)
 ```
 
@@ -136,6 +137,12 @@ own df).
 Kenward, M. G. and Roger, J. H. (1997), Small sample inference for fixed
 effects from restricted maximum likelihood, *Biometrics*, 53, 983-997.
 
+## See also
+
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+[`contrast_family`](https://dongwenluo.github.io/predictmeans/reference/contrast_family.md),
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -160,7 +167,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 3   0.4   2 30.2308 0.2156336 0.8072596
 #> 4   0.6   2 30.2308 0.4010511 0.6731259
   # a set of contrasts: linear and quadratic nitrogen trends together
-  pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max.degree = 2))
+  pm_joint(fm, "nitro", ctrmatrix = contrast_family(Kmatrix(fm, "nitro"), "poly", max_degree = 2))
 #>   df1      df2  F.ratio     p.value
 #> 1   2 45.00014 56.51839 5.31137e-13
 ```

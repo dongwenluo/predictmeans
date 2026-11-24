@@ -33,14 +33,14 @@ package mvtnorm.
 ``` r
 
 p <- sapply(c("none", "tukey", "mvt", "sidak", "scheffe", "holm"), function(a)
-  predictmeans(fm, "N", adj = a, plot = FALSE)$pairs$p.adj)
-pm <- predictmeans(fm, "N", plot = FALSE)
+  predictmeans(fm, "N", adj = a)$pairs$p.adj)
+pm <- predictmeans(fm, "N")
 data.frame(pair = paste(pm$pairs$level1, "-", pm$pairs$level2), signif(p, 3))
 #>        pair     none    tukey      mvt    sidak  scheffe     holm
 #> 1   0 - 0.2 6.66e-05 3.76e-04 3.66e-04 3.99e-04 1.01e-03 2.00e-04
 #> 2   0 - 0.4 5.65e-10 3.36e-09 1.32e-09 3.39e-09 1.55e-08 2.82e-09
 #> 3 0.2 - 0.4 1.21e-03 6.39e-03 6.38e-03 7.21e-03 1.34e-02 2.41e-03
-#> 4   0 - 0.6 6.70e-13 4.26e-12 1.73e-13 4.02e-12 2.15e-11 4.02e-12
+#> 4   0 - 0.6 6.70e-13 4.27e-12 1.73e-13 4.02e-12 2.15e-11 4.02e-12
 #> 5 0.2 - 0.6 1.58e-06 9.24e-06 5.43e-06 9.50e-06 3.12e-05 6.33e-06
 #> 6 0.4 - 0.6 4.46e-02 1.80e-01 1.80e-01 2.39e-01 2.48e-01 4.46e-02
 ```
@@ -67,7 +67,7 @@ control.
 
 ``` r
 
-pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE)$pairs
+pt <- predictmeans(fm, "N", adj = "tukey")$pairs
 pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
      "adj.conf.high", "p.adj")]
 #>   level1 level2   estimate  conf.low   conf.high adj.conf.low adj.conf.high
@@ -79,9 +79,9 @@ pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
 #> 6    0.4    0.6  -9.166667 -18.10073  -0.2326042    -20.99992      2.666585
 #>          p.adj
 #> 1 3.764251e-04
-#> 2 3.362210e-09
+#> 2 3.362209e-09
 #> 3 6.390152e-03
-#> 4 4.263701e-12
+#> 4 4.265699e-12
 #> 5 9.244650e-06
 #> 6 1.797189e-01
 ```
@@ -130,7 +130,7 @@ equally spaced):
 ``` r
 
 K2 <- Kmatrix(fm, "N:Variety")
-trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+trends <- contrast_family(K2, "poly", by = "Variety", max_degree = 2)
 contrastmeans(fm, "N:Variety", ctrmatrix = trends)
 #> Contrasts of 'N:Variety' (95% limits; p.adj: none; Kenward-Roger df)
 #>                contrast estimate std.error df statistic   p.value     p.adj
@@ -147,6 +147,11 @@ contrastmeans(fm, "N:Variety", ctrmatrix = trends)
 #>    -34.05     9.717
 #>    113.23   211.101
 #>    -32.38    11.384
+#> 
+#> Advice:
+#> i 6 contrasts tested without adjustment: some will be significant by
+#>   chance. If they are a family, use adj = "holm" (any design) or
+#>   "tukey"/"mvt" (all pairs).
 ```
 
 The result prints its table;
@@ -258,7 +263,7 @@ them:
 
 ``` r
 
-pmv <- predictmeans(fm, "N:Variety", plot = FALSE)
+pmv <- predictmeans(fm, "N:Variety")
 b <- coef(pmv)
 L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
 c(estimate = sum(L * b), SE = sqrt(drop(L %*% vcov(pmv) %*% L)))
@@ -293,7 +298,7 @@ then has `p.equiv`, the p-value of two one-sided t tests (TOST): below
 
 ``` r
 
-pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE)
+pe <- predictmeans(fm, "N", equivalence = 15)
 pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
 #>   level1 level2   estimate std.error    p.equiv
 #> 1      0    0.2 -19.500000  4.435752 0.84211224
@@ -322,7 +327,7 @@ the df stay the model’s:
 ``` r
 
 fl <- lm(yield ~ Block + N + Variety, data = Oats)
-pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE)
+pmh <- predictmeans(fl, "N", vcov = "HC3")
 pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 #>   level1 level2   estimate std.error      p.value
 #> 1      0    0.2 -19.500000  4.864548 1.688713e-04

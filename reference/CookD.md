@@ -1,8 +1,9 @@
-# Calculates and plots Cook's distances for a Linear (Mixed) Model
+# Cook's Distances of a Linear (Mixed) Model
 
-This function produces Cook's distance plots for a model obtained from
-functions `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`
-or [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html).
+Cook's distances of the observations (or groups of observations) of a
+model fitted by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`,
+`glmmTMB` or [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html), with
+a plot.
 
 ## Usage
 
@@ -19,15 +20,15 @@ CookD(model, group=NULL, plot=TRUE, id=3, ...)
 
 - group:
 
-  Name (in "quotes") for indicating how observations are deleted for
-  Cook's distance calculation. If `group!=NULL` then deletions will be
-  along levels of `group` variable, otherwise, will be along individual
-  observations.
+  Optional name (in "quotes") of a variable whose levels are deleted one
+  at a time (e.g. the clusters of a mixed model); the default `NULL`
+  deletes single observations.
 
 - plot:
 
-  A logical variable; if it is true, a plot of Cook's distance will be
-  presented. The default is TRUE.
+  `TRUE` (the default): draw the distances (ggplot2, as the Cook's
+  distance panel of
+  [`residplot`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)).
 
 - id:
 
@@ -66,6 +67,11 @@ Refitting a generalized linear mixed model for every observation takes
 time; `group` deletes whole clusters, usually the more useful check for
 mixed models.
 
+## See also
+
+[`residplot`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
+[`pm_check`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -76,7 +82,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# library(lme4)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 CookD(fm)
+
+CookD(fm, group = "Block")   # delete whole blocks
 ```

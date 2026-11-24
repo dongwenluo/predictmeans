@@ -8,7 +8,7 @@ check of the usual parametric test against the permutation distribution.
 ## Usage
 
 ``` r
-permstats(x, conf.level = 0.95, ...)
+permstats(x, conf_level = 0.95, ...)
 ```
 
 ## Arguments
@@ -20,10 +20,10 @@ permstats(x, conf.level = 0.95, ...)
   with Freedman-Lane permutations (`method = "auto"`, the default, or
   `"freedman-lane"`).
 
-- conf.level:
+- conf_level:
 
   The check of the parametric test is at the significance level
-  `1 - conf.level` (default 0.95, i.e. 0.05; `level = 0.05` before 2.0).
+  `1 - conf_level` (default 0.95, i.e. 0.05; `level = 0.05` before 2.0).
 
 - ...:
 
@@ -65,14 +65,14 @@ A data frame with one row per term and coefficient (rows
 - param.size:
 
   the proportion of permuted data sets in which the parametric test
-  rejects at `1 - conf.level`. The permuted data sets have no effect for
+  rejects at `1 - conf_level`. The permuted data sets have no effect for
   the tested term, so this is the type I error rate of the parametric
-  test for data like these: close to `1 - conf.level` when the
+  test for data like these: close to `1 - conf_level` when the
   parametric reference distribution suits the data, clearly above it
   when the parametric test is too liberal here (for example with unequal
   variances, overdispersion or few groups), below it when it is
   conservative. With few permutations it is rough (its standard error is
-  about `sqrt(a (1 - a) / nperm)`, `a = 1 - conf.level`).
+  about `sqrt(a (1 - a) / nperm)`, `a = 1 - conf_level`).
 
 ## Details
 
@@ -80,7 +80,7 @@ Every permuted data set comes from the model without the tested term
 (Freedman-Lane), so the permuted statistics show how the statistic
 behaves when that term has no effect but everything else in the data is
 kept. Comparing the parametric p-value with the permutation p-value, and
-`param.size` with `1 - conf.level`, shows whether the usual test can be
+`param.size` with `1 - conf_level`, shows whether the usual test can be
 trusted for these data. For mixed models the permuted statistics are
 Wald statistics (unadjusted covariance), so `param.size` checks the Wald
 F with the given df, not the Kenward-Roger test.

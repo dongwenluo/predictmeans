@@ -1,14 +1,14 @@
 # Permutation Index
 
-This function obtains permutation index for a dataset: free
-permutations, permutations within blocks, permutations of whole groups
-(e.g. whole plots), or of whole groups within blocks. The result can be
-given to
+Permutations allowed by the design: free, within blocks, of whole groups
+(e.g. whole plots), or of whole groups within blocks. Give the result to
 [`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
 or
 [`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
-(argument `perms`) for tests that permute only as the design allows
-(restricted, or design-based, permutation tests).
+(argument `perms`) for restricted (design-based) permutation tests; when
+its columns are every permutation the design allows, use `exact = TRUE`
+in
+[`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md).
 
 ## Usage
 
@@ -20,15 +20,16 @@ permindex(data, block=NULL, group=NULL, nsim=4999, seed)
 
 - data:
 
-  Data object used in the `model` fitting.
+  The data the model was fitted to.
 
 - block:
 
-  Name (in "quotes") for the blocking factor in the `data`.
+  Optional name (in "quotes") of the blocking factor in `data`.
 
 - group:
 
-  Name (in "quotes") for the group factor in the `data`.
+  Optional name (in "quotes") of the factor whose levels are permuted as
+  whole units.
 
 - nsim:
 
@@ -55,6 +56,11 @@ referred to the data sorted by `block` and `group`, so they were right
 only for data already in that order (the permutations are the same as
 before for sorted data and the same `seed`).
 
+## See also
+
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+[`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -68,42 +74,42 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   data <- data.frame(block, group)
   cbind(data, permindex(data, block="block", group="group", nsim=5))  
 #>    block group  1  2  3  4  5
-#> 1      1     1  1 10  1  1  1
-#> 2      1     1  4 11  3  4  4
-#> 3      1     1  3 12  4  3  2
-#> 4      1     1  2  9  2  2  3
-#> 5      1     2  5  3  7  6 11
-#> 6      1     2  6  4  6  5 10
-#> 7      1     2  7  1  8  7  9
-#> 8      1     2  8  2  5  8 12
-#> 9      1     3 11  6 12 10  7
-#> 10     1     3 12  7 11 12  5
-#> 11     1     3  9  5  9  9  8
-#> 12     1     3 10  8 10 11  6
-#> 13     2     1 21 24 16 17 22
-#> 14     2     1 23 23 13 18 21
-#> 15     2     1 22 22 14 20 24
-#> 16     2     1 24 21 15 19 23
-#> 17     2     2 13 19 24 16 15
-#> 18     2     2 16 17 23 13 13
-#> 19     2     2 14 18 21 14 14
-#> 20     2     2 15 20 22 15 16
-#> 21     2     3 17 13 20 22 18
-#> 22     2     3 20 14 19 24 19
-#> 23     2     3 18 15 17 21 20
-#> 24     2     3 19 16 18 23 17
-#> 25     3     1 31 34 27 30 29
-#> 26     3     1 29 35 25 31 30
-#> 27     3     1 32 36 26 29 31
-#> 28     3     1 30 33 28 32 32
-#> 29     3     2 28 25 31 27 33
-#> 30     3     2 26 28 30 25 35
-#> 31     3     2 27 27 29 26 34
-#> 32     3     2 25 26 32 28 36
-#> 33     3     3 36 32 36 36 28
-#> 34     3     3 35 31 35 34 25
-#> 35     3     3 34 30 33 35 27
-#> 36     3     3 33 29 34 33 26
+#> 1      1     1  1  6  3  3  1
+#> 2      1     1  2  7  2  2  4
+#> 3      1     1  3  8  4  4  2
+#> 4      1     1  4  5  1  1  3
+#> 5      1     2  7 11  8  8 11
+#> 6      1     2  8  9  7  5 10
+#> 7      1     2  5 10  5  7  9
+#> 8      1     2  6 12  6  6 12
+#> 9      1     3  9  2  9 10  7
+#> 10     1     3 10  3 10 12  5
+#> 11     1     3 11  1 12  9  8
+#> 12     1     3 12  4 11 11  6
+#> 13     2     1 17 15 16 17 22
+#> 14     2     1 19 13 15 18 21
+#> 15     2     1 18 14 13 20 24
+#> 16     2     1 20 16 14 19 23
+#> 17     2     2 23 24 20 16 15
+#> 18     2     2 24 23 19 13 13
+#> 19     2     2 22 22 17 14 14
+#> 20     2     2 21 21 18 15 16
+#> 21     2     3 13 20 21 22 18
+#> 22     2     3 16 19 24 24 19
+#> 23     2     3 14 18 23 21 20
+#> 24     2     3 15 17 22 23 17
+#> 25     3     1 34 35 27 30 29
+#> 26     3     1 35 33 26 31 30
+#> 27     3     1 36 34 25 29 31
+#> 28     3     1 33 36 28 32 32
+#> 29     3     2 27 28 36 27 33
+#> 30     3     2 25 27 33 25 35
+#> 31     3     2 28 26 34 26 34
+#> 32     3     2 26 25 35 28 36
+#> 33     3     3 32 30 32 36 28
+#> 34     3     3 31 31 31 34 25
+#> 35     3     3 30 32 29 35 27
+#> 36     3     3 29 29 30 33 26
                         # Permute group as a whole within each block first, 
                         # then permute obs within each group.
   cbind(data, permindex(data, block="block",  nsim=5)) 
@@ -233,26 +239,31 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> Coefficients of (fixed) effects:
 #>             Estimate Std. Error t value Pr(>|t|) Perm_p_value
-#> (Intercept)  79.3889     3.7668 21.0759   0.0000           NA
-#> Block.L      29.4823     4.6134  6.3906   0.0000        0.070
+#> (Intercept)  79.3889     3.7668 21.0759   <1e-04           NA
+#> Block.L      29.4823     4.6134  6.3906   <1e-04        0.070
 #> Block.Q      20.0124     4.6134  4.3379   0.0001        1.000
 #> Block.C       5.3728     4.6134  1.1646   0.2486        0.005
 #> Block^4       4.7718     4.6134  1.0343   0.3049        1.000
 #> Block^5      -1.2651     4.6134 -0.2742   0.7848        0.005
 #> nitro0.2     19.5000     5.3271  3.6605   0.0005        0.005
-#> nitro0.4     34.8333     5.3271  6.5389   0.0000        0.005
-#> nitro0.6     44.0000     5.3271  8.2597   0.0000        0.005
+#> nitro0.4     34.8333     5.3271  6.5389   <1e-04        0.005
+#> nitro0.6     44.0000     5.3271  8.2597   <1e-04        0.005
 #> 
-#> Note: Perm_p_value of t test is obtained using ‘199’ Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using ‘199’ Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
 #> 
 #> ANOVA:
 #> Analysis of Variance Table
 #> Response: yield
 #>           Df   Sum Sq   Mean Sq F value Pr(>F) Perm_p_value
-#> Block      5 15875.28 3175.0556 12.4317      0            1
-#> nitro      3 20020.50 6673.5000 26.1297      0        0.005
+#> Block      5 15875.28 3175.0556 12.4317 <1e-04            1
+#> nitro      3 20020.50 6673.5000 26.1297 <1e-04        0.005
 #> Residuals 63 16090.17  255.3995                            
 #> 
-#> Note: Perm_p_value of F test is obtained using ‘199’ Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using ‘199’ Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
+#> 
+#> Advice:
+#> ! Only 199 resamples: p-values at the floor (0.005) only say 'as small as
+#>   can be shown' (Monte Carlo SE about 0.015 at p = 0.05). Use nperm = 999
+#>   or more (4999 for reporting); 'seed' makes it reproducible.
 #> 
 ```

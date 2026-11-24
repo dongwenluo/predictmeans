@@ -70,6 +70,12 @@ anova(fm)
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
 #> Response: rate
+#> 
+#> Advice:
+#> ! A numeric covariate is in an interaction: Type III tests of the other
+#>   terms are at covariate = 0; centre the covariate if 0 is not a meaningful
+#>   value.
+#> 
 #>                    F Df Df.res    Pr(>F)    
 #> (Intercept) 212.0332  1 19.128 8.354e-12 ***
 #> QB            7.4995  1 19.128     0.013 *  
@@ -107,7 +113,7 @@ cur
 #>  200    0.290    6.127    0.9275 28.55   4.2286     8.025
 #>  200    0.292    6.253    0.9252 28.35   4.3586     8.147
 #> ... 220 more rows: as.data.frame(x) gives the table.
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
 autoplot(cur)
 ```
 
@@ -117,9 +123,9 @@ The result prints a summary and holds its tables in the layout of
 [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md):
 `as.data.frame(cur)` (or `cur$means`) has `estimate`, `std.error`, `df`,
 `conf.low` and `conf.high` with the pressure under its own name. Nothing
-is drawn unless asked (`plot = TRUE`, or
-[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) as
-here). The 1.x table is still in `cur$pred_df`.
+is drawn unless asked
+([`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+as here, or `plot = TRUE`). The 1.x table is still in `cur$pred_df`.
 
 The band is pointwise: at each pressure it covers the true curve with
 95% probability (`level = 0.05`). Before version 2.0 these limits were
@@ -180,6 +186,24 @@ of `predictmeans()$pairs`, with `p.adj`: the share of the simulated
 maxima at least as large, below 0.05 exactly where the simultaneous band
 leaves out zero.
 
+## Which smooths: `sm_term`
+
+By default the curves use every smooth of the fit. `sm_term` picks some:
+a term as written in the formula, a smooth as labelled, a covariate (all
+its smooths) or a block name (`names(fm$u_lst)`). `settings$sm_term`
+records the blocks used:
+
+``` r
+
+semipred(fm, "QB", "pressure", sm_term = "s(pressure, by = QB)")$settings$sm_term
+#> [1] "s_pressure_QB200" "s_pressure_QB300"
+semipred(fm, "QB", "pressure", sm_term = "s(pressure):QB300")$settings$sm_term
+#> [1] "s_pressure_QB300"
+```
+
+A smooth of another covariate adds a constant to the curves; the
+result’s advice says so (see the additive model below).
+
 ## Slopes and curvature: `deriv`
 
 `deriv = 1` gives the slope of each curve along the covariate,
@@ -199,7 +223,7 @@ slp$significant
 autoplot(slp)
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-8-1.png)
+![](smooth_files/figure-html/unnamed-chunk-9-1.png)
 
 `contr` with `deriv` compares the slopes of two curves. The derivatives
 are those of the whole fitted curve (fixed and smooth parts), for any
@@ -317,6 +341,27 @@ anova(fx)$smooth[c("term", "variance", "LRT", "p.value")]
 #> 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01
 ```
 
+The curves of all six combinations are computed at once;
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+chooses the layout without computing again: by default the first factor
+colours the curves and the second makes the panels; `group` and `panel`
+swap them, and two panel factors give a grid:
+
+``` r
+
+c2 <- semipred(fx, "f1:f2", "x")
+autoplot(c2)
+```
+
+![](smooth_files/figure-html/unnamed-chunk-13-1.png)
+
+``` r
+
+autoplot(c2, group = "f2", panel = "f1", data = FALSE)
+```
+
+![](smooth_files/figure-html/unnamed-chunk-13-2.png)
+
 The test is conservative: in 200 simulated data sets like these, with no
 `f2` or `f1:f2` differences, it rejected at the 5% level in 1-3% of
 them, and it found the `f1` difference in all (`dev/sim-semireg-lrt.R`).
@@ -347,7 +392,7 @@ rr$significant
 autoplot(rr)
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-12-1.png)
+![](smooth_files/figure-html/unnamed-chunk-14-1.png)
 
 **Subject-specific curves.** `(s(age, k = 10) | idnum)` gives each
 subject a random straight line, `(age | idnum)`, and a random spline
@@ -369,7 +414,7 @@ logLik(fg$semer)
 autoplot(semipred(fg, "age", "age"))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-13-1.png)
+![](smooth_files/figure-html/unnamed-chunk-15-1.png)
 
 The population curve leaves out the subjects’ curves; `anova(fg)` would
 test whether they are needed beyond straight lines.
@@ -395,7 +440,17 @@ anova(fa)$smooth[c("term", "variance", "LRT", "p.value")]
 autoplot(semipred(fa, covariate = "x1"))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-14-1.png)
+![](smooth_files/figure-html/unnamed-chunk-16-1.png)
+
+``` r
+
+autoplot(semipred(fa, covariate = "x1", sm_term = "x1"))
+```
+
+![](smooth_files/figure-html/unnamed-chunk-16-2.png)
+
+The first curve includes `s(x2, by = z)` as a constant (its advice says
+so); with `sm_term = "x1"` it is the smooth of `x1` alone.
 
 **A surface.** Copper grade over a mining area (`data(copper)`): a
 thin-plate surface over the plane (`bs = "ztps"`) and a curve in depth,
@@ -409,7 +464,7 @@ fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps"
 autoplot(semipred(fcu, covariate = c("xcoord", "ycoord"), trans = exp))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-15-1.png)
+![](smooth_files/figure-html/unnamed-chunk-17-1.png)
 
 **Binary responses.** The probability of a response over `x` for two
 groups, with a random effect of cluster; `contr` gives the log odds
@@ -426,7 +481,7 @@ fbin <- semireg(y ~ s(x, by = g, bs = "os", k = 6) + (1 | cl), family = binomial
 autoplot(semipred(fbin, "g", "x"))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-16-1.png)
+![](smooth_files/figure-html/unnamed-chunk-18-1.png)
 
 ``` r
 
@@ -491,7 +546,7 @@ anova(fo)$smooth[c("term", "variance", "LRT", "p.value")]
 autoplot(semipred(fo, covariate = c("inversion.base.height", "inversion.base.temp")))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-18-1.png)
+![](smooth_files/figure-html/unnamed-chunk-20-1.png)
 
 **A basis of your own.** A seasonal cycle on a straight trend: two years
 of daily values and a Fourier basis (`bs = "user"`, with no fixed part
@@ -510,7 +565,7 @@ fs <- semireg(y ~ day + s(day, bs = "user", xt = list(basis = season, null = "no
 autoplot(semipred(fs, covariate = "day"))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-19-1.png)
+![](smooth_files/figure-html/unnamed-chunk-21-1.png)
 
 ## Examples from the semiparametric regression literature
 
@@ -554,7 +609,7 @@ autoplot(semipred(fsc, covariate = c("longitude", "latitude"), boundary = scallo
                   trans = sinh))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-21-1.png)
+![](smooth_files/figure-html/unnamed-chunk-23-1.png)
 
 **Union membership over the wage** (`wageTUnion`): penalised spline
 logistic regression, the probability with its band:
@@ -567,7 +622,7 @@ fw <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial,
 autoplot(semipred(fw, "wage", "wage"))
 ```
 
-![](smooth_files/figure-html/unnamed-chunk-22-1.png)
+![](smooth_files/figure-html/unnamed-chunk-24-1.png)
 
 ## From 1.x
 

@@ -10,6 +10,29 @@ tests.
 contrasts, variance components, then tables and
 plots](../reference/figures/workflow.png)
 
+## Why predictmeans
+
+- **Defaults chosen on evidence** (simulation, literature):
+  Kenward–Roger df and adjusted SEs for REML `lmer` fits; permutation
+  p-values $`(b+1)/(B+1)`$; `aov` with `Error()` analysed by strata,
+  with SEs from the stratum mean squares (as Genstat); means over empty
+  cells averaged with equal weight over the observed cells, with a
+  warning naming them.
+- **Checked against outside references** in the package tests: real SAS
+  PROC MIXED and Genstat runs
+  ([`vignette("sas")`](https://dongwenluo.github.io/predictmeans/articles/sas.md)),
+  pbkrtest, [`nlme::lme`](https://rdrr.io/pkg/nlme/man/lme.html) and
+  emmeans.
+- **Robust across model classes**: when a result cannot be computed
+  correctly, the function stops with a message saying why, rather than
+  returning a wrong number.
+- **Advice from the data**: when this fit needs a caution (empty cells,
+  singular fit, small df, …), the result says so in one line with what
+  to do; read it with `advice(x)`, turn it off with
+  `options(predictmeans.advice = FALSE)`.
+- **Reproducible**: permutation and bootstrap results are identical for
+  any `ncore`.
+
 ## A split-plot experiment
 
 The oats data (Yates 1935) are a split plot: three varieties on whole
@@ -27,29 +50,28 @@ fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
 ``` r
 
-pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey",
-                   plot = FALSE)
+pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
 summary(pm)
 #> Predicted means for 'nitro:Variety' (lmerMod model; df: Kenward-Roger, Kenward-Roger adjusted SEs)
 #> Confidence limits: 95%
 #> 
 #>  nitro     Variety estimate std.error    df conf.low conf.high group
 #>      0 Golden Rain    80.00     9.107 16.08    60.70      99.3   A  
-#>      0  Marvellous    86.67     9.107 16.08    67.37     106.0    A 
-#>      0     Victory    71.50     9.107 16.08    52.20      90.8    A 
 #>    0.2 Golden Rain    98.50     9.107 16.08    79.20     117.8   AB 
-#>    0.2  Marvellous   108.50     9.107 16.08    89.20     127.8     B
-#>    0.2     Victory    89.67     9.107 16.08    70.37     109.0    A 
 #>    0.4 Golden Rain   114.67     9.107 16.08    95.37     134.0    BC
-#>    0.4  Marvellous   117.17     9.107 16.08    97.87     136.5     B
-#>    0.4     Victory   110.83     9.107 16.08    91.54     130.1     B
 #>    0.6 Golden Rain   124.83     9.107 16.08   105.53     144.1     C
+#>      0  Marvellous    86.67     9.107 16.08    67.37     106.0    A 
+#>    0.2  Marvellous   108.50     9.107 16.08    89.20     127.8     B
+#>    0.4  Marvellous   117.17     9.107 16.08    97.87     136.5     B
 #>    0.6  Marvellous   126.83     9.107 16.08   107.53     146.1     B
+#>      0     Victory    71.50     9.107 16.08    52.20      90.8    A 
+#>    0.2     Victory    89.67     9.107 16.08    70.37     109.0    A 
+#>    0.4     Victory   110.83     9.107 16.08    91.54     130.1     B
 #>    0.6     Victory   118.50     9.107 16.08    99.20     137.8     B
 #> 
 #> 18 pairwise comparisons within each level of Variety.
 #> SED: min 7.683, mean 7.683, max 7.683
-#> LSD (5%, tukey): min 20.5, mean 20.5, max 20.5
+#> LSD (5%, tukey): 20.5 (equal for all pairs)
 #> p-values: t tests, adjusted by 'tukey'.
 #> Means sharing a letter are not significantly different at the 5% level within each level of Variety.
 #> Comparison intervals: mean +/- 1.125 SE (72.3% intervals); means differ at the 5% level when these do not overlap. The 95% confidence limits are not for comparing means.
@@ -67,42 +89,42 @@ or export.
 ``` r
 
 head(pm$means)
-#>   nitro     Variety  estimate std.error       df conf.low conf.high
-#> 1     0 Golden Rain  80.00000   9.10701 16.08144 60.70194  99.29806
-#> 2     0  Marvellous  86.66667   9.10701 16.08144 67.36861 105.96472
-#> 3     0     Victory  71.50000   9.10701 16.08144 52.20194  90.79806
-#> 4   0.2 Golden Rain  98.50000   9.10701 16.08144 79.20194 117.79806
-#> 5   0.2  Marvellous 108.50000   9.10701 16.08144 89.20194 127.79806
-#> 6   0.2     Victory  89.66667   9.10701 16.08144 70.36861 108.96472
+#>   nitro     Variety  estimate std.error       df  conf.low conf.high
+#> 1     0 Golden Rain  80.00000   9.10701 16.08144  60.70194  99.29806
+#> 2   0.2 Golden Rain  98.50000   9.10701 16.08144  79.20194 117.79806
+#> 3   0.4 Golden Rain 114.66667   9.10701 16.08144  95.36861 133.96472
+#> 4   0.6 Golden Rain 124.83333   9.10701 16.08144 105.53528 144.13139
+#> 5     0  Marvellous  86.66667   9.10701 16.08144  67.36861 105.96472
+#> 6   0.2  Marvellous 108.50000   9.10701 16.08144  89.20194 127.79806
 #>   comparison.low comparison.high group n estimable
 #> 1       69.75210        90.24790   A   6      TRUE
-#> 2       76.41877        96.91456    A  6      TRUE
-#> 3       61.25210        81.74790    A  6      TRUE
-#> 4       88.25210       108.74790   AB  6      TRUE
-#> 5       98.25210       118.74790     B 6      TRUE
-#> 6       79.41877        99.91456    A  6      TRUE
+#> 2       88.25210       108.74790   AB  6      TRUE
+#> 3      104.41877       124.91456    BC 6      TRUE
+#> 4      114.58544       135.08123     C 6      TRUE
+#> 5       76.41877        96.91456    A  6      TRUE
+#> 6       98.25210       118.74790     B 6      TRUE
 head(pm$pairs)
-#>          level1          level2          by   estimate std.error       df
-#> 1 0:Golden Rain    0:Marvellous        <NA>  -6.666667  9.715020 30.23080
-#> 2 0:Golden Rain       0:Victory        <NA>   8.500000  9.715020 30.23080
-#> 3  0:Marvellous       0:Victory        <NA>  15.166667  9.715020 30.23080
-#> 4 0:Golden Rain 0.2:Golden Rain Golden Rain -18.500000  7.682948 45.00014
-#> 5  0:Marvellous 0.2:Golden Rain        <NA> -11.833333  9.715020 30.23080
-#> 6     0:Victory 0.2:Golden Rain        <NA> -27.000000  9.715020 30.23080
-#>    statistic     p.value      p.adj   conf.low conf.high      lsd adj.conf.low
-#> 1 -0.6862226 0.497802546         NA -26.501035 13.167702 19.83437           NA
-#> 2  0.8749338 0.388508422         NA -11.334369 28.334369 19.83437           NA
-#> 3  1.5611564 0.128895695         NA  -4.667702 35.001035 19.83437           NA
-#> 4 -2.4079299 0.020203566 0.09004248 -33.974250 -3.025750 15.47425    -38.99579
-#> 5 -1.2180451 0.232628340         NA -31.667702  8.001035 19.83437           NA
-#> 6 -2.7792016 0.009281361         NA -46.834369 -7.165631 19.83437           NA
-#>   adj.conf.high p.method
-#> 1            NA    tukey
-#> 2            NA    tukey
-#> 3            NA    tukey
-#> 4      1.995794    tukey
-#> 5            NA    tukey
-#> 6            NA    tukey
+#>            level1          level2          by  estimate std.error       df
+#> 1   0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000  7.682948 45.00014
+#> 2   0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667  7.682948 45.00014
+#> 3   0:Golden Rain 0.6:Golden Rain Golden Rain -44.83333  7.682948 45.00014
+#> 4 0.2:Golden Rain 0.4:Golden Rain Golden Rain -16.16667  7.682948 45.00014
+#> 5 0.2:Golden Rain 0.6:Golden Rain Golden Rain -26.33333  7.682948 45.00014
+#> 6 0.4:Golden Rain 0.6:Golden Rain Golden Rain -10.16667  7.682948 45.00014
+#>   statistic      p.value        p.adj  conf.low   conf.high      lsd
+#> 1 -2.407930 2.020357e-02 9.004248e-02 -33.97425  -3.0257499 15.47425
+#> 2 -4.512157 4.576126e-05 2.600347e-04 -50.14092 -19.1924165 15.47425
+#> 3 -5.835434 5.476774e-07 3.213104e-06 -60.30758 -29.3590832 15.47425
+#> 4 -2.104227 4.097729e-02 1.673400e-01 -31.64092  -0.6924165 15.47425
+#> 5 -3.427504 1.312508e-03 6.939258e-03 -41.80758 -10.8590832 15.47425
+#> 6 -1.323277 1.924277e-01 5.532559e-01 -25.64092   5.3075835 15.47425
+#>   adj.conf.low adj.conf.high p.method
+#> 1    -38.99579      1.995794    tukey
+#> 2    -55.16246    -14.170873    tukey
+#> 3    -65.32913    -24.337540    tukey
+#> 4    -36.66246      4.329127    tukey
+#> 5    -46.82913     -5.837540    tukey
+#> 6    -30.66246     10.329127    tukey
 ```
 
 The same tables come from
@@ -112,18 +134,18 @@ the generics package, `tidy()`:
 ``` r
 
 head(as.data.frame(pm, what = "pairs"), 3)
-#>          level1       level2   by  estimate std.error      df  statistic
-#> 1 0:Golden Rain 0:Marvellous <NA> -6.666667   9.71502 30.2308 -0.6862226
-#> 2 0:Golden Rain    0:Victory <NA>  8.500000   9.71502 30.2308  0.8749338
-#> 3  0:Marvellous    0:Victory <NA> 15.166667   9.71502 30.2308  1.5611564
-#>     p.value p.adj   conf.low conf.high      lsd adj.conf.low adj.conf.high
-#> 1 0.4978025    NA -26.501035  13.16770 19.83437           NA            NA
-#> 2 0.3885084    NA -11.334369  28.33437 19.83437           NA            NA
-#> 3 0.1288957    NA  -4.667702  35.00104 19.83437           NA            NA
-#>   p.method
-#> 1    tukey
-#> 2    tukey
-#> 3    tukey
+#>          level1          level2          by  estimate std.error       df
+#> 1 0:Golden Rain 0.2:Golden Rain Golden Rain -18.50000  7.682948 45.00014
+#> 2 0:Golden Rain 0.4:Golden Rain Golden Rain -34.66667  7.682948 45.00014
+#> 3 0:Golden Rain 0.6:Golden Rain Golden Rain -44.83333  7.682948 45.00014
+#>   statistic      p.value        p.adj  conf.low conf.high      lsd adj.conf.low
+#> 1 -2.407930 2.020357e-02 9.004248e-02 -33.97425  -3.02575 15.47425    -38.99579
+#> 2 -4.512157 4.576126e-05 2.600347e-04 -50.14092 -19.19242 15.47425    -55.16246
+#> 3 -5.835434 5.476774e-07 3.213104e-06 -60.30758 -29.35908 15.47425    -65.32913
+#>   adj.conf.high p.method
+#> 1      1.995794    tukey
+#> 2    -14.170873    tukey
+#> 3    -24.337540    tukey
 ```
 
 ## Plots
@@ -142,11 +164,29 @@ ggplot2::autoplot(pm, type = "pvalue")
 
 ![](predictmeans_files/figure-html/unnamed-chunk-7-2.png)
 
-[`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
-draws its classic plots with `plot = TRUE` (since 2.0 the default is
-`FALSE`; `options(predictmeans.plot = TRUE)` sets it for a session);
-`which.plots` chooses among the means, bar, p-value and back-transformed
-plots.
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+draws every plot from the result
+([`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+draws none): the means with one average LSD bar (the default),
+`type = "bar"`, `type = "ci"` (each mean with its confidence limits; on
+the response scale when the means are back-transformed) and
+`type = "pvalue"`. `data = TRUE` adds the observations; `x`, `group` and
+`panel` place the factors; with `atvar` each level is a panel with its
+own LSD.
+
+``` r
+
+ggplot2::autoplot(pm, type = "bar")
+```
+
+![](predictmeans_files/figure-html/unnamed-chunk-8-1.png)
+
+``` r
+
+ggplot2::autoplot(pm, type = "ci", data = TRUE)
+```
+
+![](predictmeans_files/figure-html/unnamed-chunk-8-2.png)
 
 ## Degrees of freedom and standard errors
 
@@ -168,9 +208,9 @@ Other choices:
 ``` r
 
 # Satterthwaite df
-pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite", plot = FALSE)
+pm_s <- predictmeans(fm, "Variety", df_method = "Satterthwaite")
 # SAS DDFM=CONTAIN (containment) df, with unadjusted standard errors
-pm_c <- predictmeans(fm, "Variety", df_method = "containment", plot = FALSE)
+pm_c <- predictmeans(fm, "Variety", df_method = "containment")
 rbind(Satterthwaite = pm_s$means$df[1], containment = pm_c$means$df[1])
 #>                    [,1]
 #> Satterthwaite  8.868755
@@ -212,7 +252,7 @@ definitions as emmeans.
 
 ``` r
 
-predictmeans(fm, "nitro", weights = "proportional", plot = FALSE)$means
+predictmeans(fm, "nitro", weights = "proportional")$means
 #>   nitro  estimate std.error       df  conf.low conf.high comparison.low
 #> 1     0  79.38889  7.174754 6.791824  62.31730  96.46047       74.92186
 #> 2   0.2  98.88889  7.174754 6.791824  81.81730 115.96047       94.42186
@@ -261,7 +301,7 @@ through transformations such as
 
 data(Drug)
 fm_glm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial, data = Drug)
-predictmeans(fm_glm, "Drug", pairwise = TRUE, plot = FALSE)$means
+predictmeans(fm_glm, "Drug", pairwise = TRUE)$means
 #>          Drug log10Dose   estimate std.error  df    conf.low  conf.high
 #> 1    Morphine  0.603011  0.1739917 0.1223041 Inf -0.06571997  0.4137034
 #> 2     Amidone  0.603011  0.5660805 0.1370736 Inf  0.29742128  0.8347398

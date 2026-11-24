@@ -1,8 +1,9 @@
-# Permutation Test of random or fixed effects for `lmer`, `glmer` and `glmmTMB` models.
+# Permutation Test of Random or Fixed Effects of Mixed Models
 
-This function provides permutation tests for the terms in a linear mixed
-model of `lmer`, and in a generalized linear mixed model of `glmer` or
-`glmmTMB`.
+Permutation likelihood ratio test of two nested `lmer`, `glmer` or
+`glmmTMB` models. The p-value is (b + 1)/(B + 1), b of the B permuted
+statistics being at least as large as the observed one; results are the
+same for any `ncore`.
 
 ## Usage
 
@@ -15,12 +16,12 @@ permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 
 - model0:
 
-  `lmer` (or `glmer`, `glmmTMB`) model under H0 (`model0` before 2.0);
-  it must be nested within `model1`.
+  `lmer` (or `glmer`, `glmmTMB`) model under H0 (`lmer0` before 2.0); it
+  must be nested within `model1`.
 
 - model1:
 
-  `lmer` (or `glmer`, `glmmTMB`) model under H1 (`model1` before 2.0).
+  `lmer` (or `glmer`, `glmmTMB`) model under H1 (`lmer1` before 2.0).
 
 - ...:
 
@@ -33,16 +34,16 @@ permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
 
 - nperm:
 
-  Number of permutation, the default value is 999.
+  Number of permutations; default 999.
 
 - ncore:
 
-  Number of cores for parallel computing, the default value is 1 (before
-  predictmeans 2.0: 3).
+  Number of cores (default 1; before predictmeans 2.0: 3).
 
 - plot:
 
-  Plot permutation distribution or not, the default value is FALSE.
+  `TRUE`: plot the permutation distribution of the statistic. Default
+  `FALSE`.
 
 - seed:
 
@@ -81,14 +82,20 @@ statistics are compared after rounding to 4 decimals, so an observed
 statistic of 0 (the tested variance estimated at 0) gives a p-value
 of 1. Since predictmeans 2.0 the square root is symmetric, so the
 results do not depend on the order of the data (1.x used the Cholesky
-factor).
+factor). Models with the same fixed effects (tests of random effects)
+are compared by the REML likelihood ratio; models with different fixed
+effects are first refitted by ML, so the permuted statistic is the ML
+likelihood ratio that [`anova()`](https://rdrr.io/r/stats/anova.html)
+prints in column `Chisq` (before 2.0 it was the ML likelihood at the
+REML estimates). Check: the identity permutation gives `Perm-p` = 1
+(`tests/testthat/test-permlmer.R`).
 
 For GLMMs (`glmer` or `glmmTMB`; since predictmeans 2.0),
 `method = "working"` does the same on the working (link) scale: `model0`
 is linearised at its fit (working response \\z = \eta + (y - \mu)
 d\eta/d\mu\\, working variance \\\phi V(\mu)/(a (d\mu/d\eta)^2)\\; the
 covariance of z also has the random effects, as in
-[`R2_glmm`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)),
+[`R2_model`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md)),
 the decorrelated working residuals are permuted, and the statistic is
 the likelihood-ratio statistic of weighted linear mixed models fitted to
 the working responses (REML when the two models have the same fixed
@@ -117,6 +124,13 @@ Effects in Linear Mixed Models. Biometrics*, Journal 68(2).
 Peter K. Dunn and Gordon K. Smyth (1996), *Randomized Quantile
 Residuals*. Journal of Computational and Graphical Statistics, 5(3),
 236-244.
+
+## See also
+
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
+(`test = TRUE`),
+[`permindex`](https://dongwenluo.github.io/predictmeans/reference/permindex.md)
 
 ## Author
 
@@ -169,14 +183,13 @@ fm0 <- lmer(yield ~ nitro+Variety+(1|Block/Variety), data=Oats)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 # \donttest{
 permlmer(fm0, fm, nperm=99, ncore=1)
-#> refitting model(s) with ML (instead of REML)
 #> Data: Oats
 #> Models:
 #> lmer0: yield ~ nitro + Variety + (1 | Block/Variety)
 #> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)
 #>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    9 616.04 636.53 -299.02    598.04                            
-#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.98
+#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.97
 
 ## A GLMM: do tick counts vary between locations, beyond broods?
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)

@@ -1,14 +1,16 @@
-# Permutation Test of Linear Model
+# Permutation Tests of the Terms and Coefficients of a Model
 
-This function provides permutation t-tests for coefficients of (fixed)
-effects and permutation F-tests for the terms in a linear model such as
-`aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer` and `glmmTMB`.
+Permutation t tests of the coefficients of the fixed effects and
+permutation F (or chi-square) tests of the terms of a model fitted by
+`aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer` or `glmmTMB`. p-values
+are (b + 1)/(B + 1): b of the B permuted statistics at least as large as
+the observed one. Results are the same for any `ncore`.
 
 ## Usage
 
 ``` r
 permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
-  test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+  test_statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
   method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 ```
 
@@ -25,37 +27,40 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 - type:
 
-  type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are
-  equivalent to the corresponding Arabic numerals. Type III tests are
-  those of sum-to-zero contrasts whatever contrasts the model was fitted
-  with (as SAS Type 3);
+  The type of the tests: "I", "II" or "III" (or 1, 2, 3). Type III tests
+  are those of sum-to-zero contrasts whatever contrasts the model was
+  fitted with (as SAS Type 3);
   [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html) gives them
   only for models fitted with such contrasts (with R's default treatment
   contrasts it tests each main effect at the first level of the other
   factors).
 
-- test.statistic:
+- test_statistic:
 
-  For type I ANOVA, F test is applied to all models, while for type II
-  and III ANOVA, F test is performed for `lm`, Chisq test for `lme` and
-  `gls` model, Chisq or F tests for `lmer` model and Likelihood ratio,
-  Wald or F tests for `glm` model. The F tests of an `lmer` model are
-  Kenward-Roger F tests with the observed information of the variance
-  parameters, as in the rest of predictmeans
+  The statistic of Type II and III tests with `method = "raw"`: F for
+  `lm`; chi-square for `lme` and `gls`; `"Chisq"` or `"F"` for `lmer`;
+  `"LR"`, `"Wald"` or `"F"` for `glm`. Type I tests use F. A statistic
+  the model does not have is replaced by the one it has, with a message;
+  with `method = "freedman-lane"` the F (or t) statistics are permuted
+  and a different `test_statistic` is ignored with a message. The F
+  tests of an `lmer` model are Kenward-Roger F tests with the observed
+  information of the variance parameters, as in the rest of predictmeans
   ([`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html) uses the
   expected information; the two agree for balanced data).
 
 - exact:
 
-  A logical variable to indicate whether or not exact no. of
-  permutations will be used (applicable only to free the permutation
-  case). The default is FALSE.
+  `TRUE`: `perms` holds every permutation the design allows (a complete
+  enumeration), so p-values are the proportion of them with a statistic
+  at least as large as the observed one. Otherwise (the default `FALSE`)
+  the observed data count as one of the permutations: p = (b + 1)/(B +
+  1), never 0. `exact = TRUE` without `perms`, or with repeated columns,
+  is ignored with a warning.
 
 - data:
 
-  In some cases, you need to provide the data set used in model fitting,
-  especially when you have applied some variable trnasformation in the
-  model.
+  The data the model was fitted to, when they cannot be found from the
+  model's call (e.g. after transforming variables outside the data).
 
 - ...:
 
@@ -67,12 +72,13 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 - ncore:
 
-  Number of cores for parallel computing, the default value is 1 (before
-  predictmeans 2.0: 3).
+  Number of cores (default 1; before predictmeans 2.0: 3). Each
+  permutation has its own seed, so the results do not depend on `ncore`.
 
 - seed:
 
-  Specify a random number generator seed, for reproducible results.
+  A random number seed, for reproducible results; the user's random
+  number stream is left as it was.
 
 - method:
 
@@ -130,14 +136,20 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 
 ## Value
 
-The function produces permutation t-test table for coefficients of
-(fixed) effects, permutation ANOVA table for model terms and (with
-`method = "raw"`) a model parameter list `permlist`, a list containing
-`nsim=4999` times permutation refitted `model` parameters which are used
-in functions `predictmeans` and `contrastmeans`. With
-`method = "freedman-lane"`, `permlist` is `NULL` and the result has a
-fourth component, `perm`: what is needed to test any comparison with the
-same permutations. Give the whole result to
+A list of class `"pm_permmodels"`: `COEFFICENTS` (permutation t tests of
+the coefficients), `ANOVA` (permutation tests of the terms, of the
+`type` asked for) and `permlist` (with `method = "raw"`: the
+coefficients and covariance of each refit, for
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+and
+[`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)).
+Values are stored rounded to 4 decimals; the notes give the smallest
+attainable p-value, 1/(B + 1). Advice on the number of permutations is
+kept in `attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
+With `method = "freedman-lane"`, `permlist` is `NULL` and the result has
+a fourth component, `perm`: what is needed to test any comparison with
+the same permutations. Give the whole result to
 [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
 or
 [`contrastmeans`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
@@ -178,8 +190,9 @@ other designs the two methods agreed.
 For mixed models with a covariate with extreme values related to the
 tested term, the same study found the `"raw"` scheme slightly liberal
 (6.3% at the 5% level), while the Satterthwaite F test kept the level
-(4.6%); prefer the Kenward-Roger or Satterthwaite F test there (e.g.
-[`anova()`](https://rdrr.io/r/stats/anova.html) of an lmerTest fit, or
+(4.6%); prefer the Kenward-Roger or Satterthwaite F test there
+([`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+or
 [`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)),
 or `method = "freedman-lane"` (4.6%).
 
@@ -240,6 +253,15 @@ Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of
 reported significance levels. *Journal of Business & Economic
 Statistics*, 1, 292-298.
 
+## See also
+
+[`permlmer`](https://dongwenluo.github.io/predictmeans/reference/permlmer.md),
+[`permindex`](https://dongwenluo.github.io/predictmeans/reference/permindex.md),
+[`permstats`](https://dongwenluo.github.io/predictmeans/reference/permstats.md),
+[`permcombine`](https://dongwenluo.github.io/predictmeans/reference/permcombine.md),
+[`bootmodels`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -259,7 +281,7 @@ permlme <- permmodels(model=fm, nperm=99, ncore=1)
 
 ## Permutation test for multiple comparisons
 predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
-  permlist=permlme, plot=FALSE, ncore=1)
+  permlist=permlme)
 #> $`Predicted Means`
 #>       Variety Golden Rain Marvellous  Victory
 #> nitro                                        
@@ -319,18 +341,18 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #> $mean_table
 #> $mean_table$Table
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
-#> 1  Golden Rain     0  80.0000 9.10696 NA  61.7861  98.2139       A  
-#> 4  Golden Rain   0.2  98.5000 9.10696 NA  80.2861 116.7139        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 NA  96.4528 132.8806         C
-#> 10 Golden Rain   0.6 124.8333 9.10696 NA 106.6194 143.0472         C
-#> 2   Marvellous     0  86.6667 9.10696 NA  68.4528 104.8806        A 
-#> 5   Marvellous   0.2 108.5000 9.10696 NA  90.2861 126.7139        AB
-#> 8   Marvellous   0.4 117.1667 9.10696 NA  98.9528 135.3806         B
-#> 11  Marvellous   0.6 126.8333 9.10696 NA 108.6194 145.0472         B
-#> 3      Victory     0  71.5000 9.10696 NA  53.2861  89.7139       A  
-#> 6      Victory   0.2  89.6667 9.10696 NA  71.4528 107.8806        B 
-#> 9      Victory   0.4 110.8333 9.10696 NA  92.6194 129.0472         C
-#> 12     Victory   0.6 118.5000 9.10696 NA 100.2861 136.7139         C
+#> 1  Golden Rain     0  80.0000 9.10696 NA  60.7021  99.2979       A  
+#> 4  Golden Rain   0.2  98.5000 9.10696 NA  79.2021 117.7979        B 
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  95.3688 133.9645         C
+#> 10 Golden Rain   0.6 124.8333 9.10696 NA 105.5355 144.1312         C
+#> 2   Marvellous     0  86.6667 9.10696 NA  67.3688 105.9645        A 
+#> 5   Marvellous   0.2 108.5000 9.10696 NA  89.2021 127.7979        AB
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  97.8688 136.4645         B
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 107.5355 146.1312         B
+#> 3      Victory     0  71.5000 9.10696 NA  52.2021  90.7979       A  
+#> 6      Victory   0.2  89.6667 9.10696 NA  70.3688 108.9645        B 
+#> 9      Victory   0.4 110.8333 9.10696 NA  91.5355 130.1312         C
+#> 12     Victory   0.6 118.5000 9.10696 NA  99.2021 137.7979         C
 #> 
 #> $mean_table$Note
 #> [1] "Letter-based representation of pairwise comparisons at significant level '0.05' at each level of Variety"
@@ -365,7 +387,7 @@ permmodels(fm3, nperm = 99, type = "II", seed = 1, ncore = 1)
 #> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295         0.66
 #> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994         0.92
 #> 
-#> Note: Perm_p_value of t test is obtained using ‘99’ Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using ‘99’ Freedman-Lane permutations. The smallest attainable p-value is 1/(99 + 1) = 0.01.
 #> 
 #> ANOVA:
 #> Type II F tests (Freedman-Lane permutations; the model refitted to each permuted data set)
@@ -374,7 +396,12 @@ permmodels(fm3, nperm = 99, type = "II", seed = 1, ncore = 1)
 #> Variety        2  1.4853         0.24
 #> nitro:Variety  6  0.3028         0.93
 #> 
-#> Note: Perm_p_value of F test is obtained using ‘99’ Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using ‘99’ Freedman-Lane permutations. The smallest attainable p-value is 1/(99 + 1) = 0.01.
+#> 
+#> Advice:
+#> ! Only 99 resamples: p-values at the floor (0.01) only say 'as small as can
+#>   be shown' (Monte Carlo SE about 0.022 at p = 0.05). Use nperm = 999 or
+#>   more (4999 for reporting); 'seed' makes it reproducible.
 #> 
 permmodels(fm3, nperm = 999, type = "II", seed = 1, refit = FALSE)
 #> 
@@ -393,7 +420,7 @@ permmodels(fm3, nperm = 999, type = "II", seed = 1, refit = FALSE)
 #> nitro0.4:VarietyVictory      4.6667    10.8653  0.4295        0.688
 #> nitro0.6:VarietyVictory      2.1667    10.8653  0.1994        0.849
 #> 
-#> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations.
+#> Note: Perm_p_value of t test is obtained using ‘999’ Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 #> ANOVA:
 #> Type II F tests with the covariance of the data fixed at the fitted model
@@ -402,7 +429,7 @@ permmodels(fm3, nperm = 999, type = "II", seed = 1, refit = FALSE)
 #> Variety        2  1.4853        0.230
 #> nitro:Variety  6  0.3028        0.939
 #> 
-#> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations.
+#> Note: Perm_p_value of F test is obtained using ‘999’ Freedman-Lane permutations. The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 # }
 
@@ -411,7 +438,7 @@ mtcars$cyl <- factor(mtcars$cyl)
 fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
 pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 ## ... and for the pairwise comparisons of the cyl means
-predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+predictmeans(fm2, "cyl", permlist = pfl)$pairs
 #>   level1 level2 estimate std.error df statistic p.value p.adj  conf.low
 #> 1      4      6 4.255582  1.386073 NA  3.070244   0.009 0.009  1.281825
 #> 2      4      8 6.070860  1.652288 NA  3.674214   0.003 0.003  2.625644
@@ -430,7 +457,7 @@ permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #> cyl6         -4.2556    1.2893 -3.3007        0.003
 #> cyl8         -6.0709    1.6077 -3.7761        0.004
 #> 
-#> Note: Perm_p_value of robust t test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> Note: Perm_p_value of robust t test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 #> ANOVA:
 #> Type II robust (HC3) Wald F tests (Freedman-Lane residuals, sign flips)
@@ -438,6 +465,6 @@ permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #> wt   1 18.0348        0.001
 #> cyl  2  7.1814        0.007
 #> 
-#> Note: Perm_p_value of robust F test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap).
+#> Note: Perm_p_value of robust F test is obtained using ‘999’ sign flips of the Freedman-Lane residuals (wild bootstrap). The smallest attainable p-value is 1/(999 + 1) = 0.001.
 #> 
 ```

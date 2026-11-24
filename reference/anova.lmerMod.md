@@ -21,15 +21,24 @@ lmerTest, which predictmeans attached before 2.0. With several models,
 
 - type:
 
-  `"III"` (default), `"II"` or `"I"`.
+  `"III"` (default), `"II"` or `"I"`; also `3`, `2`, `1`.
 
 - ddf:
 
   `"Kenward-Roger"` (default), `"Satterthwaite"` or `"lme4"`.
 
+- advice:
+
+  Logical: add a note on the choice of type when the data are unbalanced
+  or have empty cells (default `TRUE`).
+
 ## Value
 
-An `anova` table.
+An `anova` table: for each term the numerator df, the denominator df
+(column heading names the method), the F value and its p-value. With
+`advice = TRUE` a note on the type is kept in `attr(, "advice")` (read
+it with
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
 
 ## Details
 
@@ -56,6 +65,45 @@ fits are of class `lmerModLmerTest`: their
 (Satterthwaite by default), and this method applies to fits of
 [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html). Everything
 else in predictmeans works the same with either class.
+
+## Which type of test
+
+With balanced data (equal numbers in all cells) Types I, II and III give
+the same tests. With unbalanced data:
+
+- Type I:
+
+  sequential: each term adjusted for the terms before it, so the order
+  in the formula matters. Use it when the order is meaningful, e.g. a
+  block or a covariate to be removed first.
+
+- Type II:
+
+  each term adjusted for all terms that do not contain it (the principle
+  of marginality). The most powerful tests of main effects when the
+  interactions are negligible; with an interaction present the main
+  effects are not well defined.
+
+- Type III:
+
+  each term adjusted for all others, testing equally weighted cell
+  means; meaningful with an interaction present, and here independent of
+  the model's contrasts. A covariate in an interaction makes the other
+  terms be tested at covariate = 0: centre it.
+
+With empty cells no type answers the question of a main effect over all
+cells: Type III uses the cells with data (and says so). State the
+comparisons of interest on the cell means instead, with
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md)
+or
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md).
+
+## See also
+
+[`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md),
+[`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+[`df_term`](https://dongwenluo.github.io/predictmeans/reference/df_term.md),
+[`permmodels`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
 
 ## Examples
 

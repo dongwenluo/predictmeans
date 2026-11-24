@@ -1,13 +1,18 @@
-# Fitting Semi Parametric Models Using lme4 Ecosystem
+# Semiparametric Mixed Models Fitted with lme4
 
-Fit a semi parametric model based on lme4 ecosystem including `lmer`,
-`glmer` and `glmer.nb`.
+Fit a semiparametric (additive mixed) model with lme4 (`lmer` for
+gaussian, `glmer` for other families): smooth terms written in the
+formula, as in [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html), are
+fitted as random effects. For negative binomial, zero-inflated or
+correlated data use
+[`semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md).
 
 ## Usage
 
 ``` r
-semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
-        start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+semireg(formula, data, family = NULL, REML = TRUE,
+        control = lmerControl(optimizer = "nloptwrap"),
+        start = NULL, verbose = FALSE, drop_unused_levels = TRUE, subset, weights,
         offset, contrasts = NULL, ...)
 ```
 
@@ -30,7 +35,8 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 - family:
 
-  A GLM family, see glm and family.
+  A GLM family (see [`family`](https://rdrr.io/r/stats/family.html));
+  `NULL` (the default) is gaussian.
 
 - REML:
 
@@ -48,13 +54,13 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 - start:
 
-  Starting value list as used by lmer or glmer.
+  Starting values, as for `lmer` or `glmer`.
 
 - verbose:
 
-  Passed on to fitting lme4 fitting routines.
+  Passed on to the lme4 fitting functions.
 
-- drop.unused.levels:
+- drop_unused_levels:
 
   By default unused levels are dropped from factors before fitting. For
   some smooths involving factor variables you might want to turn this
@@ -84,7 +90,8 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 - contrasts:
 
-  An optional list. See the contrasts.arg of model.matrix.default.
+  An optional list, as `contrasts.arg` of
+  [`model.matrix.default`](https://rdrr.io/r/stats/model.matrix.html).
 
 - ...:
 
@@ -99,16 +106,45 @@ semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimiz
 
 ## Value
 
-A list of class `semireg`;
-[`print()`](https://rdrr.io/r/base/print.html) shows the fitted model
-and the random-effect term of each smooth,
-[`summary()`](https://rdrr.io/r/base/summary.html) the summary of the
-fitted model, [`anova()`](https://rdrr.io/r/stats/anova.html) tests of
-its terms. Its elements:
+A list of class `semireg`.
+[`print()`](https://rdrr.io/r/base/print.html) shows a short account of
+the fit: the formula as written, the smooth terms (one row per
+random-effect block: the smooth, its random-effect term, its covariate,
+basis, basis dimension, smoothing variance and whether it is estimated
+as a straight line), the fixed effects, the other variance components
+and any advice. The `smooth`, `term` and `covariate` columns are the
+values
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
+takes for `sm_term` and `covariate`.
+[`summary()`](https://rdrr.io/r/base/summary.html) adds the summary of
+the fitted mixed model (`summary(fit)$model`); `tidy(fit)` returns the
+smooth table and `tidy(fit, "fixed")` the fixed effects with standard
+errors. [`coef()`](https://rdrr.io/r/stats/coef.html),
+[`fixef()`](https://rdrr.io/pkg/nlme/man/fixed.effects.html),
+[`vcov()`](https://rdrr.io/r/stats/vcov.html),
+[`fitted()`](https://rdrr.io/r/stats/fitted.values.html),
+[`residuals()`](https://rdrr.io/r/stats/residuals.html),
+[`logLik()`](https://rdrr.io/r/stats/logLik.html),
+[`AIC()`](https://rdrr.io/r/stats/AIC.html),
+[`nobs()`](https://rdrr.io/r/stats/nobs.html),
+[`family()`](https://rdrr.io/r/stats/family.html),
+[`VarCorr()`](https://rdrr.io/pkg/nlme/man/VarCorr.html) and
+[`ranef()`](https://rdrr.io/pkg/nlme/man/random.effects.html) work as
+for the fitted mixed model, and
+[`formula()`](https://rdrr.io/r/stats/formula.html) gives the formula as
+written. [`anova()`](https://rdrr.io/r/stats/anova.html) tests the terms
+and smooths; notes on the fit are in `attr(, "advice")`
+([`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md)).
+Its elements:
 
 - semer:
 
-  A mer model used in the fitting.
+  The fitted `lmer` or `glmer` model (class `semerMod` for gaussian
+  fits).
+
+- call:
+
+  The call of `semireg()`.
 
 - data:
 
@@ -162,11 +198,10 @@ its terms. Its elements:
 
 ## Details
 
-A semi parametric model can be parameterized as a linear (or generalized
-linear) mixed model in which its random effects are smooth functions of
-some covariates (named \<e2\>\<80\>\<98\>smooth term\<e2\>\<80\>\<99\>).
-`semireg` follows the approach suggested by Wand and Ormerod (2008) and
-represents the 'smooth term' using O'Sullivan-type of Z.
+A semiparametric model is fitted as a linear (or generalized linear)
+mixed model whose random effects are the penalised parts of smooth
+functions of covariates (Wand and Ormerod, 2008); each smooth's variance
+is its smoothing parameter, estimated by (RE)ML.
 
 ## Smooth terms in the formula
 
@@ -189,8 +224,8 @@ its group slopes:
 | `s(x, f, bs = "fs")` | random curves per level, one variance | none |
 | `(s(x, k = 10) | g)` | random curve per level of `g`: `(x | g)` (correlated intercepts and slopes) plus a spline deviation per level, one variance | none |
 | `s(x1, x2)` | isotropic surface (thin plate) | `x1 + x2` |
-| `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots, as `smZ(x, k = 10)`; `xt = list(knots = , range = )` sets the interior knots and the range | `x` |
-| `s(x1, x2, bs = "ztps", k = 6)` | thin plate of `Ztps()`, as `smZ(cbind(x1, x2), type = "Ztps", k = 6)` with `k = 6`; `xt = list(knots = )` sets the knots (a two-column matrix) | `x1 + x2` |
+| `s(x, bs = "os", k = 10)` | O'Sullivan spline with `k` interior knots (1.x `smZ(x, k = 10)`); `xt = list(knots = , range = )` sets the interior knots and the range | `x` |
+| `s(x1, x2, bs = "ztps", k = 6)` | low-rank thin plate with `k` knots (1.x `smZ(cbind(x1, x2), type = "Ztps", k = 6)`); `xt = list(knots = )` sets the knots (a two-column matrix) | `x1 + x2` |
 | `s(x, bs = "user", xt = list(basis = f))` | a basis of your own: `f(x)` (`f(x1, x2)` for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in `smoothZ`); checked before the fit (see below); `xt = list(basis = f, null = "constant")` or `"none"` for a smaller fixed part | `x` (`x1 + x2`) |
 | `t2(x1, x2)`, `t2(x1, x2, bs = c("cr", "ps"), k = c(6, 8))` | tensor-product surface (covariates on different scales), a variance per penalty; `te()` is fitted as `t2()` | `x1 + x2 + x1:x2` |
 | `s(x, bs = "cs")`, `"ts"` | shrinkage smooths (no unpenalised part) | none |
@@ -287,7 +322,8 @@ is on that scale.
 
 Moving from 1.x:
 [`smZ()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans-defunct.md)
-and `smoothZ` were removed in 2.0;
+and `smoothZ` are superseded and were removed in 2.0 (they stop with a
+pointer to the formula syntax);
 [`vignette("migrating")`](https://dongwenluo.github.io/predictmeans/articles/migrating.md)
 shows each `smoothZ = list(sm = smZ(...))` form beside its formula form,
 which gives the same fit (checked in `dev/check-smz-migration.R`). The
@@ -312,6 +348,14 @@ Wood, S.N., Scheipl, F. and Faraway, J.J. (2013). Straightforward
 intermediate rank tensor product smoothing in mixed models. *Statistics
 and Computing*, **23**, 341-360.
 
+## See also
+
+[`semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md),
+[`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md),
+[`semipred`](https://dongwenluo.github.io/predictmeans/reference/semipred.md),
+[`varcomp`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md),
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -330,6 +374,12 @@ anova(fm)       # fixed effects (Kenward-Roger df) and a likelihood ratio test o
 #> Analysis of Deviance Table (Type III Wald F tests with Kenward-Roger df)
 #> 
 #> Response: rate
+#> 
+#> Advice:
+#> ! A numeric covariate is in an interaction: Type III tests of the other
+#>   terms are at covariate = 0; centre the covariate if 0 is not a meaningful
+#>   value.
+#> 
 #>                    F Df Df.res    Pr(>F)    
 #> (Intercept) 212.0332  1 19.128 8.354e-12 ***
 #> QB            7.4995  1 19.128     0.013 *  
@@ -385,7 +435,6 @@ dx <- expand.grid(x = seq(0, 1, length = 15), f1 = factor(c("p", "q")), f2 = fac
                   rep = 1:3)
 dx$y <- sin(2*pi*dx$x) + (dx$f1 == "q")*sin(pi*dx$x)^2 + rnorm(nrow(dx), 0, 0.2)
 fx <- semireg(y ~ s(x, f1*f2, bs = "os", k = 6), data = dx)
-#> Warning: number of items to replace is not a multiple of replacement length
 varcomp(fx, test = TRUE)
 #>                         vcov     SE  2.5 %      97.5 %     LRT   p.value
 #> s_x_f1_f2.(Intercept) 0.0000     NA 0.0000          NA  0.0000 1.0000000
@@ -399,6 +448,14 @@ varcomp(fx, test = TRUE)
 #>   s_x_f2.(Intercept): smooth s_x_f2 dropped; 0.5 chi2(0) + 0.5 chi2(1)
 #>   s_x_f1.(Intercept): smooth s_x_f1 dropped; 0.5 chi2(0) + 0.5 chi2(1)
 #>   s_x.(Intercept): smooth s_x dropped; 0.5 chi2(0) + 0.5 chi2(1)
+#> 
+#> Advice:
+#> ! A variance is estimated as zero (or a correlation as +-1): its interval
+#>   and SE are not reliable, and 'no variation' is not shown. Test it (test =
+#>   TRUE) or simplify the random effects.
+#> i To test a variance against zero use varcomp(test = TRUE): it uses the
+#>   boundary (mixture or bootstrap) reference, not the naive chi-square,
+#>   which is conservative.
 
 ## 4. An additive model with a varying coefficient: a smooth in x1, and the effect of z
 ##    changing smoothly with x2 (numeric 'by')

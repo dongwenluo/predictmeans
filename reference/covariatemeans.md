@@ -9,10 +9,11 @@ and the plot, which `autoplot()` returns.
 ## Usage
 
 ``` r
-covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL,
-  conf.level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
+covariatemeans(model, modelterm=NULL, covariate, as_is=FALSE, at=NULL, data=NULL,
+  conf_level=0.95, trans=NULL, cov_reduce=mean, exclude=NULL,
   weights=c("equal", "proportional", "outer", "cells", "flat"),
-  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+  df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+    "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov_adjust=TRUE, contr=NULL, contr_scale=c("model", "response"),
   band=c("pointwise", "simultaneous"), bias_adjust=FALSE, sigma=NULL,
   mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE),
@@ -23,19 +24,22 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL
 
 - model:
 
-  Model object returned by `aov`, `lm`, `glm`, `gls`, `lme`, and `lmer`.
+  A fitted model, as for
+  [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+  (`aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB`, `gam`).
 
 - modelterm:
 
-  Name (in "quotes") for indicating which factor term's predicted mean
-  to be calculated. The `modelterm` must be given exactly as it appears
-  in the printed model, e.g. "A" or "A:B".
+  Name (in "quotes") of the factor term whose lines are predicted, e.g.
+  "A" or "A:B", given exactly as it appears in the printed model.
 
 - covariate:
 
-  Name (in "quotes") of one the covariate variables in the `model`.
+  Name (in "quotes") of a covariate of `model`, or two names for
+  surfaces (then `at` is a matrix with a column per covariate, or `NULL`
+  for a grid; not with `contr` or `as_is`).
 
-- as.is:
+- as_is:
 
   `TRUE`: each line only over the range of the covariate observed in its
   group (rows outside it are left out of the result); the default
@@ -50,17 +54,16 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL
 
 - data:
 
-  In some cases, you need to provide the data set used in model fitting,
-  especially when you have applied some variable trnasformation in the
-  model.
+  The data used to fit the model; needed in some cases, e.g. when a
+  variable is transformed in the model formula.
 
-- conf.level:
+- conf_level:
 
   The confidence level of the limits, the default is 0.95
   (`level = 0.05` before 2.0). The limits are for each line on its own:
   whether the bands of two groups overlap is not a test of their
   difference (the lines are estimated from the same model and are
-  correlated; see `letterCI` in
+  correlated; see `letter_ci` in
   [`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)).
   Use `contr` for the band of the difference between two groups, or
   compare groups at chosen covariate values with
@@ -82,36 +85,16 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL
 
 - plot_args:
 
-  A named list of plot settings (names may be abbreviated):
-
-  `trellis`
-
-  :   `TRUE` (default): one panel per level.
-
-  `plotord`
-
-  :   The order of the factors for two or three way terms (e.g.
-      `c(2, 1)` or `c("B", "A")`): the first gives the colours, the
-      second (and third) the panels. Giving it draws the plot.
-
-  `mtitle`
-
-  :   The main title.
-
-  `ci`
-
-  :   Draw the confidence band (default `TRUE`).
-
-  `point`
-
-  :   Draw the data points (default `TRUE`).
-
-  `jitterv`
-
-  :   Jitter of the points in x and y (default 0).
-
-  Before 2.0 these were arguments of their own; given so they stop with
-  this spelling.
+  Superseded by the arguments of
+  [`autoplot.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.md),
+  kept for 1.x scripts: a named list (names may be abbreviated) of
+  `trellis` (`FALSE`: one panel; `panel = character(0)`), `plotord` (the
+  order of the factors, e.g. `c(2, 1)` or `c("B", "A")`: the first
+  colours the lines, the others make the panels; `group`, `panel`;
+  giving it draws the plot), `mtitle` (`title`), `ci` (`interval`),
+  `point` (`data`), `jitterv` (`jitter`), `scales` and the colours of
+  `style`. Before 2.0 these were arguments of their own; given so they
+  stop with this spelling.
 
 - ...:
 
@@ -181,7 +164,7 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL
 - band:
 
   With `contr`: `"pointwise"` (the default) gives limits at the
-  confidence level `conf.level` for each covariate value on its own;
+  confidence level `conf_level` for each covariate value on its own;
   `"simultaneous"` gives Scheffe limits that hold for all covariate
   values together, for saying over which range of the covariate the
   lines differ.
@@ -200,9 +183,12 @@ covariatemeans(model, modelterm=NULL, covariate, as.is=FALSE, at=NULL, data=NULL
 - plot:
 
   Draw the plot now? The default is `FALSE` (since 2.0; 1.x drew it):
-  the plot is in the result (`autoplot()` returns it). `plot = TRUE`, or
-  `options(predictmeans.plot = TRUE)` for a whole session, draws it as
-  1.x did; `plot_args = list(plotord = )` also draws it.
+  `autoplot()` of the result draws it
+  ([`autoplot.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.md):
+  layouts, scales, data), and `$plt` holds the default plot.
+  `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a whole
+  session, draws it as 1.x did; `plot_args = list(plotord = )` also
+  draws it.
 
 - bias_adjust, sigma:
 
@@ -253,13 +239,15 @@ them, `autoplot()` the plot, and
 
 - plt:
 
-  The plot (a `ggplot`); drawn only with `plot = TRUE`.
+  `autoplot()` of the result with `plot_args` (a `ggplot`); drawn only
+  with `plot = TRUE`.
 
-- pltdf:
+- pred_df:
 
-  The data of the plot as in 1.x: the fitted values with their limits,
-  or with `contr` the differences on the model scale and, when there is
-  a back-transformation, on the response scale.
+  (`pltdf` before 2.0; `x$pltdf` still gives it, with a message once per
+  session) The 1.x table: the fitted values with their limits, or with
+  `contr` the differences on the model scale and, when there is a
+  back-transformation, on the response scale.
 
 - test, significant:
 
@@ -304,7 +292,7 @@ cluster (random effects at zero), as the lines are.
 
 1.  At one covariate value chosen beforehand: the pointwise band
     (`band = "pointwise"`); the lines differ at the level
-    `1 - conf.level` when it leaves out zero (one for a ratio).
+    `1 - conf_level` when it leaves out zero (one for a ratio).
 
 2.  Over which range of the covariate: looking at many values needs
     wider limits. `band = "simultaneous"` uses Scheffe's critical value
@@ -316,13 +304,13 @@ cluster (random effects at zero), as the lines are.
 3.  Whether the lines differ anywhere: the joint F test that all the
     differences along the covariate are zero (`test` in the result).
 
-Each set of limits in `pltdf` has a column that says whether it includes
-the value of no difference: `includes0` for `diff`, `ratio.includes1` or
-`odds.ratio.includes1` (always equal to `includes0`) and
-`response.includes0` for the response-scale difference (which can differ
-from `includes0` near the boundary). Column `significant` (`!includes0`)
-and `significant` in the result (the ranges of the covariate) follow the
-band asked for, on the model scale.
+Each set of limits in `pred_df` has a column that says whether it
+includes the value of no difference: `includes0` for `diff`,
+`ratio.includes1` or `odds.ratio.includes1` (always equal to
+`includes0`) and `response.includes0` for the response-scale difference
+(which can differ from `includes0` near the boundary). Column
+`significant` (`!includes0`) and `significant` in the result (the ranges
+of the covariate) follow the band asked for, on the model scale.
 
 ## Zero inflation (glmmTMB)
 
@@ -339,6 +327,14 @@ them. `mean_type = "overall"`
 [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md))
 gives the overall means and their ratios.
 
+## See also
+
+[`autoplot.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_curves.md),
+[`tidy.pm_curves`](https://dongwenluo.github.io/predictmeans/reference/tidy.pm_curves.md),
+[`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md),
+[`pm_slopes`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md),
+[`predictmeans`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md)
+
 ## Author
 
 Dongwen Luo, Siva Ganesh and John Koolaard
@@ -349,10 +345,10 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   library(predictmeans)
   data(Oats, package="nlme")
   fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-# library(lme4)
-# fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   cm <- covariatemeans(fm, "Variety", covariate="nitro")
   ggplot2::autoplot(cm)
+
+  ggplot2::autoplot(cm, panel = character(0), data = FALSE)   # one panel, no data
 
   covariatemeans(fm, "Variety", covariate="nitro", at=seq(0, 0.6, 0.3))
 #> Curves of 'Variety' along nitro
@@ -367,7 +363,7 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #>      Victory   0.0    73.30     8.571 12.849    54.76     91.84
 #>      Victory   0.3    97.62     7.797  8.869    79.95    115.30
 #>      Victory   0.6   121.95     8.571 12.849   103.41    140.49
-#> autoplot(x) draws the plot.
+#> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).
 # the difference between two varieties along nitro, with a simultaneous band
 # (the two levels by name, or by number: contr=c(1, 3))
   cd <- covariatemeans(fm, "Variety", covariate="nitro", contr=c("Golden Rain", "Victory"),
