@@ -17,15 +17,17 @@
 ## Returns list(beta, u, V (p + q square), cond (q), tab (group, level, term,
 ## variance: the term's variance component), rows (per group: the factor of
 ## the data rows), data, fixed (fixed-effect factors), family).
-pm_ranef_cov <- function(model) {
-  model <- pm_fit(model)
-  if (inherits(model, "merMod")) return(pm_ranef_cov_mer(model))
-  if (inherits(model, "glmmTMB")) return(pm_ranef_cov_tmb(model))
-  if (inherits(model, "lme")) return(pm_ranef_cov_lme(model))
-  if (inherits(model, "aovlist")) {
-    stop("se_ranef() needs a model with random effects; an aov with Error() has strata, not predicted random ",
-         "effects: fit the strata as random effects (lmer(), lme()).", call. = FALSE)
-  }
+## (One method per class: merMod, glmmTMB, lme; semireg passes on its fit.)
+pm_ranef_cov <- function(model) UseMethod("pm_ranef_cov")
+#' @exportS3Method NULL
+pm_ranef_cov.semireg <- function(model) pm_ranef_cov(pm_fit(model))
+#' @exportS3Method NULL
+pm_ranef_cov.aovlist <- function(model) {
+  stop("se_ranef() needs a model with random effects; an aov with Error() has strata, not predicted random ",
+       "effects: fit the strata as random effects (lmer(), lme()).", call. = FALSE)
+}
+#' @exportS3Method NULL
+pm_ranef_cov.default <- function(model) {
   stop("se_ranef() needs a model with random effects (lmer, glmer, glmmTMB, lme or semireg); a ", class(model)[1],
        " model has none.", call. = FALSE)
 }
@@ -43,7 +45,8 @@ pm_ranef_tab_mer <- function(model, flist, re) {
   }))
 }
 
-pm_ranef_cov_mer <- function(model) {
+#' @exportS3Method NULL
+pm_ranef_cov.merMod <- function(model) {
   X <- lme4::getME(model, "X")
   Z <- lme4::getME(model, "Z")
   Lambda <- lme4::getME(model, "Lambda")
@@ -68,7 +71,8 @@ pm_ranef_cov_mer <- function(model) {
        family = stats::family(model), cond_label = "lme4 condVar: Var(u | y), fixed effects known")
 }
 
-pm_ranef_cov_tmb <- function(model) {
+#' @exportS3Method NULL
+pm_ranef_cov.glmmTMB <- function(model) {
   pm_need("TMB", "se_ranef() of glmmTMB fits")
   X <- lme4::getME(model, "X")
   q <- ncol(lme4::getME(model, "Z"))
@@ -90,7 +94,8 @@ pm_ranef_cov_tmb <- function(model) {
        cond_label = "glmmTMB condVar (TMB sdreport): includes the uncertainty of the fixed effects and variance parameters")
 }
 
-pm_ranef_cov_lme <- function(model) {
+#' @exportS3Method NULL
+pm_ranef_cov.lme <- function(model) {
   R <- pm_nlme_reml(model)                     # stops when V cannot be rebuilt
   Srel <- R$Srel
   Zs <- attr(Srel, "Zs")

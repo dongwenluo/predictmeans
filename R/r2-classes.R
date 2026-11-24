@@ -36,18 +36,20 @@ pm_r2_shares <- function(p) {
   c(Total = fixed + random, Fixed = fixed, Random = random, tr_random/(n - 1)/full)
 }
 
-pm_r2_parts <- function(model) {
-  if (inherits(model, "aovlist")) return(pm_r2_parts_aovlist(model))
-  if (inherits(model, "gam")) return(pm_r2_parts_gam(model))
-  if (inherits(model, "glm")) return(pm_r2_parts_glm(model))
-  if (inherits(model, "mlm")) stop("R2_model() does not handle models with several responses.", call. = FALSE)
-  if (inherits(model, "lm")) return(pm_r2_parts_lm(model))
-  if (inherits(model, c("lme", "gls"))) return(pm_r2_parts_nlme(model))
+## One method per class: aovlist, gam, glm, lm (and aov), lme and gls.
+pm_r2_parts <- function(model) UseMethod("pm_r2_parts")
+#' @exportS3Method NULL
+pm_r2_parts.mlm <- function(model) stop("R2_model() does not handle models with several responses.", call. = FALSE)
+#' @exportS3Method NULL
+pm_r2_parts.gls <- function(model) pm_r2_parts.lme(model)
+#' @exportS3Method NULL
+pm_r2_parts.default <- function(model) {
   stop("R2_model() handles lm, aov (also with Error()), glm, gls, lme, lmer, glmer, glmmTMB, gam and semireg models.",
        call. = FALSE)
 }
 
-pm_r2_parts_lm <- function(model) {
+#' @exportS3Method NULL
+pm_r2_parts.lm <- function(model) {
   b <- model$coefficients
   est <- !is.na(b)
   X <- stats::model.matrix(model)[, est, drop = FALSE]
@@ -67,7 +69,8 @@ pm_r2_resvar <- function(wk) {
   wk$resvar
 }
 
-pm_r2_parts_glm <- function(model) {
+#' @exportS3Method NULL
+pm_r2_parts.glm <- function(model) {
   wk <- pm_working_glm(model)
   keep <- model$prior.weights > 0
   rv <- pm_r2_resvar(wk)
@@ -79,7 +82,8 @@ pm_r2_parts_glm <- function(model) {
 ## gam: the smooths are part of the mean (Fixed; cov(b) is mgcv's Bayesian
 ## Vp, so the bias term takes their effective df), except random-effect
 ## smooths (bs = "re"), which are Random with the variance of gam.vcomp().
-pm_r2_parts_gam <- function(model) {
+#' @exportS3Method NULL
+pm_r2_parts.gam <- function(model) {
   wk <- tryCatch(pm_working_glm(model), error = function(e) NULL)
   if (is.null(wk) || !all(is.finite(wk$resvar[model$prior.weights > 0]))) {
     stop("R2_model() does not handle this gam family (", stats::family(model)$family, ").", call. = FALSE)
@@ -112,7 +116,8 @@ pm_r2_parts_gam <- function(model) {
 ## gls and lme: the covariance of the data from pm_nlme_sigma() (any
 ## correlation and variance structure); the random effects of lme by level
 ## and component.
-pm_r2_parts_nlme <- function(model) {
+#' @exportS3Method NULL
+pm_r2_parts.lme <- function(model) {
   dat <- pm_get_data(model)
   b <- if (inherits(model, "lme")) nlme::fixef(model) else stats::coef(model)
   X <- stats::model.matrix(stats::formula(model), dat)[, names(b), drop = FALSE]
@@ -144,7 +149,8 @@ pm_r2_parts_nlme <- function(model) {
 ## aov with Error(): the estimates combined over the strata and the stratum
 ## variance components of varcomp() (the analysis of variance estimates,
 ## which may be negative).
-pm_r2_parts_aovlist <- function(model) {
+#' @exportS3Method NULL
+pm_r2_parts.aovlist <- function(model) {
   carrier <- pm_aov_carrier(model)
   res <- suppressMessages(pm_aov_strata(carrier))
   b <- res$mp$coef

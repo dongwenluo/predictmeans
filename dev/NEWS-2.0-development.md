@@ -590,6 +590,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   of an aov fit with Error(), else the model) replaces the block in 6 front
   ends (predictmeans, contrastmeans, covariatemeans, Kmatrix, pm_joint,
   pm_slopes). Snapshots identical to main; 17 related test files pass.
+* Part A3 (2026-11-24): `pm_ranef_cov()` (`R/ranef-cov.R`; methods merMod,
+  glmmTMB, lme, semireg, aovlist and default refusals) and `pm_r2_parts()`
+  (`R/r2-classes.R`; aovlist, gam, glm, lm, mlm refusal, lme, gls, default)
+  are internal S3 generics instead of class ladders; the workers became the
+  methods. Snapshots identical to main; `R2_model()` and `se_ranef()` on 12
+  fits of every class identical to main, refusals included.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
