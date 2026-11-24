@@ -32,23 +32,31 @@ pm_model_parm <- function(model, df = NULL, ...) {
 ## and for lmer one df per term of the type I table (df_type: Kenward-Roger
 ## for REML fits, Satterthwaite for ML, or containment / between-within).
 ## Other classes: df.residual(), else Inf (normal-based; see ?pm_coef).
-pm_model_df <- function(model, df_type = NULL, vcov_adj = NULL, ...) {
-  if (inherits(model, "gam")) return(model$df.residual)
-  if (inherits(model, "lm")) {          # aov, lm, glm
-    class(model) <- "lm"
-    return(summary(model)$df[2])
-  }
-  if (inherits(model, "gls")) return(model$dims[["N"]] - model$dims[["p"]])
-  if (inherits(model, "lmerMod")) {
-    if (is.null(df_type)) df_type <- if (lme4::getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
-    L_list <- get_contrasts_type1(model)
-    if (identical(df_type, "containment")) return(pm_containment_df(model)[names(L_list)])
-    if (identical(df_type, "between-within")) return(pm_betwithin_df(model)[names(L_list)])
-    return(sapply(L_list, function(L) mean(pm_df_term(model, ctrmatrix = L, type = df_type, vcov_adj = vcov_adj))))
-  }
-  if (inherits(model, c("glmerMod", "glmmTMB"))) return(summary(model)$AICtab["df.resid"])
-  if (inherits(model, "lme")) return(0)
-  pm_residual_df(model)
+pm_model_df <- function(model, ...) UseMethod("pm_model_df")
+#' @exportS3Method NULL
+pm_model_df.default <- function(model, ...) pm_residual_df(model)
+#' @exportS3Method NULL
+pm_model_df.gam <- function(model, ...) model$df.residual
+#' @exportS3Method NULL
+pm_model_df.lm <- function(model, ...) {          # aov, lm, glm
+  class(model) <- "lm"
+  summary(model)$df[2]
+}
+#' @exportS3Method NULL
+pm_model_df.gls <- function(model, ...) model$dims[["N"]] - model$dims[["p"]]
+#' @exportS3Method NULL
+pm_model_df.lme <- function(model, ...) 0          # nlme's own df rules apply (pm_inference())
+#' @exportS3Method NULL
+pm_model_df.glmerMod <- function(model, ...) summary(model)$AICtab["df.resid"]
+#' @exportS3Method NULL
+pm_model_df.glmmTMB <- pm_model_df.glmerMod
+#' @exportS3Method NULL
+pm_model_df.lmerMod <- function(model, df_type = NULL, vcov_adj = NULL, ...) {
+  if (is.null(df_type)) df_type <- if (lme4::getME(model, "is_REML")) "Kenward-Roger" else "Satterthwaite"
+  L_list <- get_contrasts_type1(model)
+  if (identical(df_type, "containment")) return(pm_containment_df(model)[names(L_list)])
+  if (identical(df_type, "between-within")) return(pm_betwithin_df(model)[names(L_list)])
+  sapply(L_list, function(L) mean(pm_df_term(model, ctrmatrix = L, type = df_type, vcov_adj = vcov_adj)))
 }
 
 ## The columns of a K (or L) matrix that go with the model's estimable

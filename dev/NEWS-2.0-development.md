@@ -596,6 +596,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   are internal S3 generics instead of class ladders; the workers became the
   methods. Snapshots identical to main; `R2_model()` and `se_ranef()` on 12
   fits of every class identical to main, refusals included.
+* Part A4 (2026-11-24): the df rules. `pm_df_method()` (`R/inference.R`)
+  keeps the rules for every class (inner-outer, residual) and hands the rest
+  to the internal generic `pm_df_rule()` (methods glm, glmerMod, glmmTMB,
+  lme, gls, lmerMod, default; NextMethod() where the old code fell through);
+  the model's df (`pm_model_df()`, `R/mymodelparm.R`) is a generic too.
+  Checks: snapshots identical to main; 108 cases (12 classes x 9 df_method
+  values) give the same df, adjustment and the same 58 warnings and
+  messages as main; 18 df-related test files pass (SAS, Genstat, tree
+  examples included). S3 dispatch on lme4's S4 fits follows their S4 classes
+  (semerMod reaches the lmerMod method).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
