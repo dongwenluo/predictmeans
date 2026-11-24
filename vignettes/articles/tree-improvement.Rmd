@@ -20,11 +20,22 @@ local({
 ```
 
 
+This article gives R code for the worked examples of the book *Experimental Design and Analysis for Tree
+Improvement* (Williams, Matheson and Harwood, 2002). The data sets come with the package
+[eda4treeR](https://CRAN.R-project.org/package=eda4treeR) (Yaseen et al., 2023). Each example follows the
+book: the data, the model, a check of the residuals, the analysis of variance and the predicted means with
+their pairwise comparisons, computed with predictmeans. Section titles give the book's example number and
+page. Where the analysis here differs from the book's, the text says why. The code of each step is folded:
+click **Code** to see it.
+
+Mixed models are fitted with `lme4::lmer()` (attached with predictmeans). Their F tests (`anova()`) and
+predicted means use Kenward-Roger standard errors and degrees of freedom, as SAS PROC MIXED `DDFM=KR`
+(Kenward and Roger, 1997); variance components are from `varcomp()`.
+
 ```{r}
 #| label: setup
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
 library(eda4treeR)
 library(gridExtra)
 library(car)
@@ -905,6 +916,9 @@ print(dfSummary(DataExam5.1,
 ### Modelling
 
 -   ANOVA
+One value per site and seedlot (a plot mean), so the full model leaves no residual: its F tests are
+empty (NaN) until the book's pooled residual mean square is added below.
+
 ```{r}
 fm5.2 <- lm(ht ~ site*seedlot, DataExam5.1)
 kable(anova(fm5.2), digits = 4) 
@@ -932,8 +946,7 @@ gt(data.frame(seedlot_mean[, 19:27, drop=FALSE], check.names = FALSE, row.names 
 fm5.2_aT <- anova(fm5.2)
 fm5.2_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(208, 208* 1040, 1040)
 fm5.2_aT$`F value`[3] <- fm5.2_aT$`Mean Sq`[3]/fm5.2_aT$`Mean Sq`[4]
-fm5.2_aT$`Pr(>F)`[3] <- df(fm5.2_aT$`F value`[3], fm5.2_aT$Df[3]
-, fm5.2_aT$Df[4])
+fm5.2_aT$`Pr(>F)`[3] <- pf(fm5.2_aT$`F value`[3], fm5.2_aT$Df[3], fm5.2_aT$Df[4], lower.tail = FALSE)
 kable(fm5.2_aT, digits = 4)
 ```
 
@@ -1015,8 +1028,7 @@ Table_5.8 <- fm5.2_aT[1:3,] %>%
   bind_rows(mod_5.1_aTN) %>% 
   bind_rows(fm5.2_aT[4,])
 Table_5.8$`F value`[5] <- Table_5.8$`Mean Sq`[5]/Table_5.8$`Mean Sq`[6]
-Table_5.8$`Pr(>F)`[5] <- df(Table_5.8$`F value`[5], Table_5.8$Df[5]
-, Table_5.8$Df[6])
+Table_5.8$`Pr(>F)`[5] <- pf(Table_5.8$`F value`[5], Table_5.8$Df[5], Table_5.8$Df[6], lower.tail = FALSE)
 kable(Table_5.8, digits = 4)
 ```
 
@@ -1026,9 +1038,15 @@ autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", plot_args = list(trellis
 ```
 
 -   Table of seedlot mean and regression coefficients
+
+Site means absorb the main slope on `sitemean` (it is constant within a site), so the model estimates only
+the differences between the seedlots' slopes (`sitemean:seedlot`). As in joint regression analysis, the
+slopes are scaled to average 1. For this complete table they equal the book's Table 5.7.
+
 ```{r}
 predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE)$mean_table
-predm_seedlot$reg_coef <- c(NA, coef(mod_5.1)[-1:-31])
+d <- c(0, coef(mod_5.1)[grep("^sitemean:seedlot", names(coef(mod_5.1)))])   # slope differences from the first seedlot
+predm_seedlot$reg_coef <- 1 + d - mean(d)
 gt(predm_seedlot)
 ```
 
@@ -1071,6 +1089,9 @@ method = 'render')
 
 -   ANOVA
 
+One value per site and seedlot (a plot mean), so the full model leaves no residual: its F tests are
+empty (NaN) until the book's pooled residual mean square is added below.
+
 ```{r}
 fm5.6 <- lm(ht ~ site*seedlot, DataExam5.2)
 kable(anova(fm5.6), digits = 4) 
@@ -1081,8 +1102,7 @@ kable(anova(fm5.6), digits = 4)
 fm5.6_aT <- anova(fm5.6)
 fm5.6_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(384, 384*964, 964)
 fm5.6_aT$`F value`[3] <- fm5.6_aT$`Mean Sq`[3]/fm5.6_aT$`Mean Sq`[4]
-fm5.6_aT$`Pr(>F)`[3] <- df(fm5.6_aT$`F value`[3], fm5.6_aT$Df[3]
-, fm5.6_aT$Df[4])
+fm5.6_aT$`Pr(>F)`[3] <- pf(fm5.6_aT$`F value`[3], fm5.6_aT$Df[3], fm5.6_aT$Df[4], lower.tail = FALSE)
 kable(fm5.6_aT, digits = 4)
 ```
 
@@ -1156,8 +1176,7 @@ Table_5.10 <- fm5.6_aT[1:3,] %>%
   bind_rows(mod_5.2_aTN) %>% 
   bind_rows(fm5.6_aT[4,])
 Table_5.10$`F value`[5] <- Table_5.10$`Mean Sq`[5]/Table_5.10$`Mean Sq`[6]
-Table_5.10$`Pr(>F)`[5] <- df(Table_5.10$`F value`[5], Table_5.10$Df[5]
-, Table_5.10$Df[6])
+Table_5.10$`Pr(>F)`[5] <- pf(Table_5.10$`F value`[5], Table_5.10$Df[5], Table_5.10$Df[6], lower.tail = FALSE)
 kable(Table_5.10, digits = 4)
 ```
 
@@ -1167,9 +1186,15 @@ autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", plot_args = list(trellis
 ```
 
 -   Table of seedlot mean and regression coefficients
+
+Site means absorb the main slope on `sitemean` (it is constant within a site), so the model estimates only
+the differences between the seedlots' slopes (`sitemean:seedlot`). As in joint regression analysis, the
+slopes are scaled to average 1. With the incomplete table the model adjusts each slope for the sites the seedlot was not grown at, so they differ a little from the separate regressions of Table 5.9.
+
 ```{r}
 predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE)$mean_table
-predm_seedlotN$reg_coef <- c(NA, coef(mod_5.2)[-1:-43])
+d <- c(0, coef(mod_5.2)[grep("^sitemean:seedlot", names(coef(mod_5.2)))])   # slope differences from the first seedlot
+predm_seedlotN$reg_coef <- 1 + d - mean(d)
 gt(predm_seedlotN)
 ```
 
@@ -1215,21 +1240,19 @@ print(dfSummary(DataExam8.1,
 
 #### Model
 
+Inoculation was applied to whole replicates, so it is tested in the replicate stratum (2 df). Each
+row-by-column position within a replicate is one plot, the residual unit, so `Error(repl)` gives the two
+strata (`Error(repl/(row:col))` adds a stratum that is the residual itself). The means and SEDs below are
+computed by strata and agree with Genstat.
+
 ```{r}
-fm8.2 <- aov(dbh ~ inoc*(country/prov) + Error(repl/(row:col))
-, data = DataExam8.1)
+fm8.2 <- aov(dbh ~ inoc*(country/prov) + Error(repl), data = DataExam8.1)
 summary(fm8.2)
 ```
 
 #### Residual Plot
 
 ```{r}
-fm8.2 <- lmer(dbh ~ inoc*(country/prov) + (1|repl/(row:col)), 
-              control=lmerControl(check.nobs.vs.nlev = "ignore",
-                                  check.nobs.vs.rankZ = "ignore",
-                                  check.nobs.vs.nRE="ignore",
-                                  optimizer ="Nelder_Mead"),
-              data = DataExam8.1)
 residplot(fm8.2) 
 ```
 
@@ -1288,7 +1311,7 @@ residplot(fm8.4)
 
 -   ANOVA
 ```{r}
-kable(anova(fm8.4, type=1, ddf = "Kenward-Roger"), digits = 4)
+kable(anova(fm8.4, type = 1), digits = 4)
 ```
 
 -   adjusted $R^2$
@@ -1334,8 +1357,7 @@ fm8.6 <- aov(dbh ~ country + country:prov, data = DataExam8.1)
 fm8.6_aT <- anova(fm8.6)
 fm8.6_aT["Residuals", c("Df", "Sum Sq", "Mean Sq")] <- c(119, 119* 0.1951, 0.1951)
 fm8.6_aT$`F value`[1:2] <- fm8.6_aT$`Mean Sq`[1:2]/fm8.6_aT$`Mean Sq`[3]
-fm8.6_aT$`Pr(>F)`[1:2] <- df(fm8.6_aT$`F value`[1:2], fm8.6_aT$Df[1:2]
-, rep(fm8.6_aT$Df[3], 2))
+fm8.6_aT$`Pr(>F)`[1:2] <- pf(fm8.6_aT$`F value`[1:2], fm8.6_aT$Df[1:2], rep(fm8.6_aT$Df[3], 2), lower.tail = FALSE)
 kable(fm8.6_aT, digits = 4)
 ```
 
@@ -1407,14 +1429,12 @@ residplot(fm8.7)
 
 -   ANOVA
 
-Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). With lmerTest
-attached, `anova(fm8.7)` is lmerTest's (Satterthwaite df, unadjusted F); `as(fm8.7, "lmerMod")` gives
-predictmeans' table. Genstat's "sequentially adding terms" gives the same tests for `repl` and
+Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). Genstat's "sequentially adding terms" gives the same tests for `repl` and
 `contcompf.standard`, and different ones for `column` and `contcompf`, because it builds the sequential
 hypotheses from the fitted variances (see `?anova.lmerMod`).
 
 ```{r}
-kable(anova(as(fm8.7, "lmerMod"), type = 1), digits = 4)
+kable(anova(fm8.7, type = 1), digits = 4)
 ```
 
 -   Adjusted $R^2$
@@ -1463,7 +1483,16 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 
 
 
-## **Reference**
+## **References**
+
+-   Williams, E. R., Matheson, A. C. and Harwood, C. E. (2002). *Experimental Design and Analysis for Tree
+Improvement*, 2nd edition. CSIRO Publishing, Collingwood, Victoria.
+
+-   Yaseen, M., Ullah, S., Eskridge, K. M. and Williams, E. (2023). eda4treeR: Experimental Design and
+Analysis for Tree Improvement. R package. <https://CRAN.R-project.org/package=eda4treeR>.
+
+-   Kenward, M. G. and Roger, J. H. (1997). Small sample inference for fixed effects from restricted maximum
+likelihood. *Biometrics*, 53, 983--997. <https://doi.org/10.2307/2533558>.
 
 -   Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
 discovery rate: a practical and powerful approach to multiple
@@ -1477,8 +1506,8 @@ testing. Journal of the Royal Statistical Society Series B, 57,
 Fitting Linear Mixed-Effects Models Using lme4. Journal of
 Statistical Software, 67(1), 1-48. <https://doi.org/10.18637/jss.v067.i01>.
 
--   Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
-predicted means for linear models [R package version 1.0.8].
+-   Luo, D., Ganesh, S. and Koolaard, J. (2026). predictmeans: predicted means for linear and
+semiparametric models. R package version 2.0.0.
 <https://CRAN.R-project.org/package=predictmeans>.
 
 -   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. <https://doi.org/10.1002/bimj.202200290>. Epub 2023 May 1. PMID: 37127864.

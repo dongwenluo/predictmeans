@@ -2816,3 +2816,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   16.86/207); it had 0 df. (4) `pm_design_balance()`: "empty" only for cells
   of interaction terms not absent by design (nested pairs). Test in
   `test-tree-examples.R`.
+* Article tree-improvement (2026-11-25): no lmerTest (anova() is
+  predictmeans' KR table); introduction and the book (Williams, Matheson and
+  Harwood 2002), eda4treeR and Kenward-Roger in the references; p-values of
+  the hand-made tables used the F density `df()`, now `pf(lower.tail =
+  FALSE)` (5 tables); Example 8.1 by strata with `Error(repl)` (= Genstat,
+  the reference test) instead of an lmer refit with a plot term equal to the
+  residual (lme4 checks switched off); the seedlot "regression coefficients"
+  of Examples 5.1/5.2 were slope differences from the first seedlot (NA for
+  it), now slopes scaled to average 1 (= Table 5.7 for the complete table);
+  notes for the saturated site x seedlot models. Rendered here without errors.
+  Found: `pm_slopes()` gives 0 with SE 0 for a slope that is not estimable
+  (sitemean aliased with site) - to fix.
