@@ -44,7 +44,7 @@ pm_lmm_parts <- function(model) {
     }
     return(list(X = X, y = y, asgn = attr(lme4::getME(model, "X"), "assign"), Terms = stats::terms(model),
                 ord = seq_along(y), Wfit = Wof(model), Wof = Wof, fit_reduced = fit_reduced,
-                refit_full = function(ys) quiet(lme4::refit(model, ys + resp$offset)),
+                refit_full = function(ys) quiet(pm_mer_refit(model, ys + resp$offset)),
                 coefvcov = function(m) list(b = lme4::fixef(m), V = as.matrix(stats::vcov(m))),
                 packages = "lme4"))
   }

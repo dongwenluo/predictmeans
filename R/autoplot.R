@@ -339,10 +339,12 @@ pm_plot_means <- function(means, lay, obs, type, interval, lines, jitter, bar, f
   if (!is.null(obs)) {
     pos <- if (one) ggplot2::position_jitter(width = jitter, height = 0, seed = 1) else
       ggplot2::position_jitterdodge(jitter.width = jitter, jitter.height = 0, dodge.width = dodge_w, seed = 1)
+    # position_jitterdodge() dodges by fill or colour (ggplot2 < 3.5 ignores
+    # 'group'); the open grey circles draw no fill, and it adds no legend
     aes_o <- if (one) ggplot2::aes(x = .data[[x]], y = .data$.yplot) else
-      ggplot2::aes(x = .data[[x]], y = .data$.yplot, group = .data[[grp]])
+      ggplot2::aes(x = .data[[x]], y = .data$.yplot, group = .data[[grp]], fill = .data[[grp]])
     p <- p + ggplot2::geom_point(aes_o, data = obs, inherit.aes = FALSE, position = pos, colour = "grey50",
-                                 shape = 1, size = 1.4, alpha = 0.7)
+                                 shape = 1, size = 1.4, alpha = 0.7, show.legend = FALSE)
   }
   if (type == "means") {
     if (lines) p <- p + if (one) ggplot2::geom_line(linewidth = 0.5) else

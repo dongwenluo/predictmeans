@@ -118,3 +118,14 @@ pm_mer_data <- function(model) {
   fr <- fr[, !grepl("^\\(", names(fr)), drop = FALSE]
   as.data.frame(lapply(fr, function(v) if (is.matrix(v)) as.vector(v) else v))
 }
+
+## lme4::refit() with a new response for the rows the fit used. lme4 1.1-35
+## (and other versions before the fix) drops the fit's NA rows again from a
+## response that has none ("replacement has 58 rows, data has 59"), unless
+## the response carries an "na.action" attribute: so mark it as subset. All
+## refits of lme4 fits with a new response go through here.
+pm_mer_refit <- function(model, y, ...) {
+  na <- attr(model@frame, "na.action")
+  if (!is.null(na) && is.null(dim(y)) && is.null(attr(y, "na.action"))) attr(y, "na.action") <- na
+  lme4::refit(model, newresp = y, ...)
+}

@@ -538,6 +538,22 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   made-up class with reversed, partly aliased coefficients equals `lm()`;
   mismatched names stop (`test-model-classes.R`). All 107 results of
   `dev/snapshot-*.R` identical to main at tolerance 0.
+* Checks on an older stack (R 4.3.3, lme4 1.1-35, ggplot2 3.4.4, glmmTMB
+  1.1.8) after merging the local Copilot work (2026-11-24) found two faults
+  and two version-dependent tolerances:
+  - `autoplot()` with `data = TRUE` and a grouping factor used
+    `position_jitterdodge()` with only `group`, which ggplot2 < 3.5 refuses;
+    the points now also map `fill` (open circles draw no fill;
+    `show.legend = FALSE`, so no extra legend).
+  - lme4 1.1-35 `refit()` drops a fit's NA rows again from the new response
+    unless it carries an "na.action" attribute, so every permutation,
+    bootstrap and variance-component refit of an `lmer`/`glmer` fit with
+    missing values failed ("permutation can't produce useful data!"). All
+    such refits now go through `pm_mer_refit()` (`R/utils-refit.R`), which
+    sets the attribute. Test: `test-permlmer.R`.
+  - Tolerances: Piepho's Table 2 binomial GLMM to 0.01 (as the Poisson
+    one); `se_ranef(type = "conditional")` against lme4's glmer `condVar`
+    to 1e-4 (1e-6 with lme4 2.1-0, 3e-5 with 1.1-35).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

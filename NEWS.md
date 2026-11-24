@@ -198,6 +198,10 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Bug fixes
 
+* `autoplot()` of means by group with the data (`data = TRUE`) works with ggplot2 3.4, as `DESCRIPTION`
+  promises (it stopped: "position_jitterdodge() requires at least one aesthetic to dodge by").
+* Permutation tests, `bootmodels()` and variance-component tests of `lmer`/`glmer` fits with missing values
+  work with older lme4 (1.1-35 dropped the missing rows twice in `refit()`).
 * A `glmmTMB` fit with aliased coefficients (e.g. combinations of levels without data) no longer stops
   every means function with "logical subscript too long"; the means equal those of the same `lmer` ML fit.
 * `semireg()` with a deviation smooth `s(x, f1*f2)` no longer gives the warning "number of items to replace".

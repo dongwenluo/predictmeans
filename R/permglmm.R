@@ -74,7 +74,7 @@ pm_permglmm <- function(m0, m1, nperm, ncore, seed, perms, method, plot, labels)
     obs <- lrt(l1, l0)
     stat <- function(k) {
       zs <- W0$xb + W$mult(e[idx[, k]])
-      lrt(quiet(lme4::refit(l1, zs)), quiet(lme4::refit(l0, zs)))
+      lrt(quiet(pm_mer_refit(l1, zs)), quiet(pm_mer_refit(l0, zs)))
     }
   } else {
     # 0/1 responses: refits of the GLMMs themselves
@@ -93,7 +93,7 @@ pm_permglmm <- function(m0, m1, nperm, ncore, seed, perms, method, plot, labels)
       ctl <- lme4::glmerControl(optimizer = "bobyqa", calc.derivs = FALSE, check.conv.singular = "ignore")
       g0 <- quiet(pm_refit(m0, nAGQ = 0, control = ctl))
       g1 <- quiet(pm_refit(m1, nAGQ = 0, control = ctl))
-      refit_y <- function(m, y) quiet(lme4::refit(m, y))
+      refit_y <- function(m, y) quiet(pm_mer_refit(m, y))
     }
     mu0 <- if (tmb) stats::fitted(g0) else g0@resp$mu      # conditional on the H0 random effects
     y <- W0$y

@@ -436,7 +436,7 @@ pm_vc_boot_parts <- function(m) {
     # proportion would lose the weights)
     resp <- if (fam$family == "binomial" && any(w != 1)) function(y) cbind(round(y*w), round(w - y*w)) else
       function(y) y
-    return(list(sim = sim, ll = function(y) as.numeric(stats::logLik(quiet(lme4::refit(m, newresp = resp(y)))))))
+    return(list(sim = sim, ll = function(y) as.numeric(stats::logLik(quiet(pm_mer_refit(m, resp(y)))))))
   }
   if (inherits(m, "glmmTMB")) {
     if (is.null(tmbf)) {

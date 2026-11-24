@@ -195,7 +195,7 @@ permlmer <- function(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, per
   lrtest2 <- pm_perm_map(seq_len(nperm), function(k) {
     y <- permy(k)
     nconv <- 0L
-    quiet_refit <- function(m) withCallingHandlers(suppressMessages(refit(m, y)), warning = function(w) {
+    quiet_refit <- function(m) withCallingHandlers(suppressMessages(pm_mer_refit(m, y)), warning = function(w) {
       if (grepl("converge", conditionMessage(w))) { nconv <<- nconv + 1L; invokeRestart("muffleWarning") }
     })
     lr <- as.numeric(2*(logLik(quiet_refit(lmer1), REML=ref) - logLik(quiet_refit(lmer0), REML=ref)))

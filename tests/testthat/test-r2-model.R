@@ -127,5 +127,6 @@ test_that("Piepho R2 reproduces Table 2 of Piepho (2023) (SAS GLIMMIX values, %)
   expect_lt(max(abs(r2(egg, over_disp = TRUE) - c(Fixed = 9.13, Random = 41.80, Total = 50.93))), 0.01)
   colour <- lme4::glmer(Colour ~ Treatment + Habitat + (1 | Population/Container), family = binomial,
                         data = e$Binary_color)
-  expect_lt(max(abs(r2(colour) - c(Fixed = 7.46, Random = 21.99, Total = 29.46))), 0.005)
+  # (GLMMs to 0.01: the glmer estimates move with lme4's version, by 0.006 for lme4 1.1-35)
+  expect_lt(max(abs(r2(colour) - c(Fixed = 7.46, Random = 21.99, Total = 29.46))), 0.01)
 })

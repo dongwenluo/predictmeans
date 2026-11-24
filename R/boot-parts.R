@@ -30,7 +30,7 @@ pm_boot_parts <- function(model) {
   if (inherits(model, "merMod")) {
     null_fit <- quiet(pm_refit(model, formula = null_f))
     return(list(null_fit = null_fit, simulate = function(nsim) stats::simulate(null_fit, nsim = nsim),
-                refit = function(y) quiet(lme4::refit(model, newresp = y)), packages = "lme4"))
+                refit = function(y) quiet(pm_mer_refit(model, y)), packages = "lme4"))
   }
   if (inherits(model, c("lme", "gls"))) {
     fa <- if (inherits(model, "lme")) "fixed" else "model"

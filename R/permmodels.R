@@ -318,7 +318,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     Ls <- if (type %in% c("I", "1")) pm_type1_L(getME(model, "X"), attr(terms(model), "term.labels")) else NULL
     one <- function(k) {
       r <- idx[, k]
-      rfitmodel <- refit(model, xbeta[r] + W$mult(wterrors[r]))
+      rfitmodel <- pm_mer_refit(model, xbeta[r] + W$mult(wterrors[r]))
       if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test_statistic, Ls, map3)
     }
     packages <- "lme4"

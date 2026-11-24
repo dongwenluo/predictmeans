@@ -66,3 +66,18 @@ test_that("permlmer(): different fixed effects are tested by the ML likelihood r
   a <- permlmer(m0, m1, nperm = 19, seed = 1)
   expect_equal(a$`Perm-p`[2], 1/20)
 })
+
+test_that("refits of lmer fits with a missing response work with every lme4 version", {
+  # lme4 1.1-35 refit() dropped the NA rows twice ("replacement has 58 rows, data has 59")
+  set.seed(3)
+  d <- data.frame(g = gl(10, 6), x = rnorm(60))
+  d$y <- d$x + rnorm(10)[d$g] + rnorm(60)
+  d$y[c(3, 17)] <- NA
+  m <- lmer(y ~ x + (1 | g), d)
+  r <- predictmeans:::pm_mer_refit(m, lme4::getME(m, "y"))
+  expect_equal(lme4::fixef(r), lme4::fixef(m), tolerance = 1e-6)
+  expect_identical(nobs(r), nobs(m))
+  m0 <- lmer(y ~ 1 + (1 | g), d, REML = FALSE)
+  res <- suppressMessages(permlmer(m0, update(m, REML = FALSE), nperm = 9, seed = 1))
+  expect_true(is.finite(res$`Perm-p`[2]))
+})
