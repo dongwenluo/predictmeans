@@ -7,6 +7,15 @@
 \alias{as.data.frame.pm_ranef}
 \alias{as.list.pm_ranef}
 \title{Standard Errors of the Predicted Random Effects}
+\usage{
+se_ranef(
+  object,
+  rand_term = NULL,
+  type = c("prediction", "conditional"),
+  predict = FALSE,
+  conf_level = 0.95
+)
+}
 \arguments{
 \item{object}{An \code{lmer}, \code{glmer}, \code{glmmTMB} (conditional model), \code{lme} or
 \code{\link{semireg}} fit.}

@@ -41,9 +41,6 @@
 #' data(Dialyzer, package = "nlme")
 #' fm <- semireg(rate ~ s(pressure, QB, k = 6) + (1 | Subject), data = Dialyzer)
 #' anova(fm)
-#' @name anova.semireg
-NULL
-
 #' @exportS3Method anova semireg
 anova.semireg <- function(object, type = c("III", "II", "I"), smooth = TRUE, ...) {
   type <- pm_anova_type(type[1])

@@ -3,6 +3,9 @@
 \name{anova.semireg}
 \alias{anova.semireg}
 \title{Tests for a Semi-Parametric Model}
+\usage{
+\method{anova}{semireg}(object, type = c("III", "II", "I"), smooth = TRUE, ...)
+}
 \arguments{
 \item{object}{A \code{\link{semireg}} or \code{\link{semireg_tmb}} fit.}
 

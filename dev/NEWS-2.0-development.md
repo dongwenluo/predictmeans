@@ -554,6 +554,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - Tolerances: Piepho's Table 2 binomial GLMM to 0.01 (as the Poisson
     one); `se_ranef(type = "conditional")` against lme4's glmer `condVar`
     to 1e-4 (1e-6 with lme4 2.1-0, 3e-5 with 1.1-35).
+* CRAN pre-tests of the 2.0.0 submission (2026-11-24): "Rd files without
+  \usage: anova.lmerMod.Rd, anova.semireg.Rd, se_ranef.Rd" (r-devel Debian).
+  Their roxygen blocks were detached (`@name x` + `NULL`); now on the
+  functions, so roxygen writes `\usage` (`\method{anova}{lmerMod}` etc.).
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

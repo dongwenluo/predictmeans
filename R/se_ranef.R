@@ -63,10 +63,7 @@
 #' se_ranef(fm, "Block", type = "conditional")     # 1.x numbers
 #' se_ranef(fm, "Variety:Block", predict = TRUE)   # cell values
 #' as.list(se_ranef(fm, type = "conditional"))     # 1.x list of matrices
-#' @name se_ranef
 #' @aliases print.pm_ranef tidy.pm_ranef as.data.frame.pm_ranef as.list.pm_ranef
-NULL
-
 #' @export
 se_ranef <- function(object, rand_term = NULL, type = c("prediction", "conditional"), predict = FALSE,
                      conf_level = 0.95) {
