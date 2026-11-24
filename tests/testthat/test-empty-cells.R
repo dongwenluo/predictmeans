@@ -183,8 +183,8 @@ test_that("means over empty cells are labelled, and nothing read off them contra
   # the multiplier from the one pair left: overlap = its test
   p <- pm$pairs[1, ]
   expect_equal(cmp$mult, qt(0.975, p$df)*p$std.error/sum(m$std.error[1:2]), tolerance = 1e-10)
-  # letterCI: letters from the p-values instead (Marvellous vs Victory: p = 0.07)
-  expect_message(pl <- suppressWarnings(predictmeans(fm, "Variety", letterCI = TRUE, plot = FALSE)),
+  # letter_ci: letters from the p-values instead (Marvellous vs Victory: p = 0.07)
+  expect_message(pl <- suppressWarnings(predictmeans(fm, "Variety", letter_ci = TRUE, plot = FALSE)),
                  "letters are from the p-values")
   expect_equal(pl$means$group, pm$means$group)
   expect_equal(pm$means$group, c("A", "A", "A"))
@@ -192,10 +192,10 @@ test_that("means over empty cells are labelled, and nothing read off them contra
   # the plot: an open point, no comparison bar, a caption
   g <- ggplot2::autoplot(pm, interval = "comparison")
   b <- ggplot2::ggplot_build(g)
-  expect_equal(b$data[[2]]$shape, c(16, 16, 1))
-  expect_true(all(is.na(b$data[[3]][3, c("ymin", "ymax")])))
+  expect_equal(pm_layer(g, "GeomPoint")$shape, c(16, 16, 1))
+  expect_true(all(is.na(pm_layer(g, "GeomErrorbar")[3, c("ymin", "ymax")])))
   expect_match(g$labels$caption, "Open points")
-  expect_equal(nrow(ggplot2::ggplot_build(ggplot2::autoplot(pm))$data[[3]]), 3)   # confidence limits: all
+  expect_equal(nrow(pm_layer(ggplot2::autoplot(pm, interval = "ci"), "GeomErrorbar")), 3)   # confidence limits: all
   # complete data: no 'over' column, no caption, intervals for all
   pf <- q(predictmeans(q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = Oats)), "Variety",
                        pairwise = TRUE, plot = FALSE))

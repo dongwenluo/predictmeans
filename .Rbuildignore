@@ -5,9 +5,13 @@
 ^dev$
 ^LICENSE$
 ^\.github$
-^CLAUDE\.md$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
 ^vignettes/articles$
 ^cran-comments\.md$
+^\.posit$
+^\.gitattributes$
+^AGENTS\.md$
+^CLAUDE\.md$
+^HANDOVER\.md$

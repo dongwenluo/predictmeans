@@ -1,31 +1,38 @@
 
+#' @exportS3Method NULL
 model.frame.gls <- function(formula, ...) {
   model.frame(formula(formula), pm_get_data(formula),...)
 }
 
+#' @exportS3Method NULL
 model.frame.lme <- function(formula, ...) {
   formula$data
 }
 
+#' @exportS3Method NULL
 model.matrix.aovlist <- function(object, ...) {
     stop(sQuote("predicted.means"), " does not support objects of class ",
          sQuote("aovlist"))
 }
 
+#' @exportS3Method NULL
 model.matrix.gls <- function(object, ...) {
     model.matrix(terms(object), data = pm_get_data(object), ...)
 }
 
+#' @exportS3Method NULL
 model.matrix.lme <- function(object, ...) {
   # 'data' may be given in '...' (as for other model.matrix() methods)
   if ("data" %in% names(list(...))) model.matrix(terms(object), ...)
   else model.matrix(terms(object), data = model.frame(object), ...)
 }
 
+#' @exportS3Method NULL
 terms.gls <- function(x, ...) {
   terms(model.frame(x),...)
 }
 
+#' @exportS3Method NULL
 terms.lme <- function (x, ...) {
   v <- x$terms
   if (is.null(v)) {

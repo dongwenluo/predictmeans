@@ -3,7 +3,6 @@
 \name{tidy.pm_curves}
 \alias{tidy.pm_curves}
 \alias{as.data.frame.pm_curves}
-\alias{autoplot.pm_curves}
 \alias{print.pm_curves}
 \title{Curves and Their Differences as Data Frames}
 \usage{
@@ -12,12 +11,10 @@
 \method{as.data.frame}{pm_curves}(x, row.names = NULL, optional = FALSE,
               what = c("means", "pairs", "slopes"), ...)
 
-\method{autoplot}{pm_curves}(object, ...)
-
 \method{print}{pm_curves}(x, n = 10, digits = 4, ...)
 }
 \arguments{
-\item{x, object}{A result of \code{\link{covariatemeans}} or \code{\link{semipred}}.}
+\item{x}{A result of \code{\link{covariatemeans}} or \code{\link{semipred}}.}
 
 \item{what}{Which table: \code{"means"}, \code{"pairs"} or \code{"slopes"}. The default is the one the result
 has (\code{"pairs"} for a result with \code{contr}, \code{"slopes"} for \code{semipred(deriv = 1)}).}
@@ -67,7 +64,7 @@ The results of \code{\link{covariatemeans}} and \code{\link{semipred}} hold thei
 (\code{semipred(deriv = )}) and, with \code{contr}, \code{pairs} (the difference of two curves at each
 covariate value), with the same column names (\code{estimate}, \code{std.error}, \code{df}, \code{conf.low},
 \code{conf.high}, ...) and the covariates under their own names. \code{tidy()} and \code{as.data.frame()} return
-them, \code{autoplot()} returns the plot and \code{print()} shows a short summary.
+them, \code{\link{autoplot.pm_curves}} draws them and \code{print()} shows a short summary.
 }
 \examples{
   library(predictmeans)
@@ -80,6 +77,9 @@ them, \code{autoplot()} returns the plot and \code{print()} shows a short summar
                        band="simultaneous")
   head(as.data.frame(cd))
   if (requireNamespace("ggplot2", quietly = TRUE)) ggplot2::autoplot(cd)
+}
+\seealso{
+\code{\link{covariatemeans}}, \code{\link{semipred}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

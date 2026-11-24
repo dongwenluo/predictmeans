@@ -10,12 +10,14 @@
 #' of \code{lm}, \code{aov} and \code{glm} models (residual variance, dispersion, or the negative binomial
 #' \eqn{\theta}).
 #' @usage
-#' varcomp(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+#' varcomp(model, ci = TRUE, conf_level = 0.95,
+#'         ci_method = c("Satterthwaite", "Wald", "profile"),
 #'         information = c("observed", "average", "expected"), test = FALSE,
-#'         test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...)
+#'         test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999,
+#'         ncore = 1, ...)
 #' @param model A fitted model (see Description).
 #' @param ci \code{TRUE} (the default): add confidence intervals.
-#' @param conf.level Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).
+#' @param conf_level Confidence level of the intervals; the default is 0.95 (\code{level} before 2.0).
 #' @param ... Not used: \code{level} (before 2.0) stops with its 2.0 spelling.
 #' @param ci_method How the intervals of variances are made: \code{"Satterthwaite"} (the default) chi-square
 #'   intervals with \eqn{\nu = 2 (estimate/SE)^2} df, as SAS PROC MIXED (\code{COVTEST CL}); \code{"Wald"} Wald
@@ -37,7 +39,8 @@
 #'   with a fixed seed, so the p-values repeat).
 #' @param nboot Maximum number of bootstrap samples per test (default 999); a test stops early once 20 simulated
 #'   statistics reach the observed one.
-#' @param ncore Number of cores for the bootstrap (default 1; not on Windows).
+#' @param ncore Number of cores for the bootstrap (default 1; a socket cluster on Windows). The p-values are the
+#'   same for any \code{ncore}.
 #' @section Tests:
 #' With \code{test = TRUE} each row gets the likelihood ratio test of the model one would fit without it
 #' (columns \code{LRT} and \code{p.value}; the hypotheses and reference distributions are printed below the
@@ -114,7 +117,8 @@
 #'   \code{cor.name} and \code{var.name}; \code{residual}) and columns \code{vcov} (the estimate), \code{SE} and,
 #'   with \code{ci = TRUE}, the limits. Values are rounded to 4 decimals; attribute \code{"ci_method"} says how
 #'   the intervals were made. With \code{test = TRUE} also \code{LRT} and \code{p.value}, and class
-#'   \code{"pm_varcomp"} (printed with the hypotheses).
+#'   \code{"pm_varcomp"} (printed with the hypotheses). Notes on this fit (e.g. a variance estimated at zero, few
+#'   levels) are kept in \code{attr(, "advice")}; read them with \code{\link{advice}}.
 #' @references
 #' Besag, J. and Clifford, P. (1991). Sequential Monte Carlo p-values. \emph{Biometrika}, 78, 301-304.
 #'
@@ -126,6 +130,7 @@
 #'
 #' Stram, D. O. and Lee, J. W. (1994). Variance components testing in the longitudinal mixed effects model.
 #' \emph{Biometrics}, 50, 1171-1177.
+#' @seealso \code{\link{anova.semireg}}, \code{\link{R2_model}}, \code{\link{se_ranef}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -160,20 +165,31 @@
 #' @name varcomp
 NULL
 
-varcomp <- function(model, ci = TRUE, conf.level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
+#' @export
+varcomp <- function(model, ci = TRUE, conf_level = 0.95, ci_method = c("Satterthwaite", "Wald", "profile"),
                     information = c("observed", "average", "expected"), test = FALSE,
                     test_method = c("auto", "mixture", "bootstrap"), nsim = 10000, nboot = 999, ncore = 1, ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("varcomp", match.call(), strict = TRUE, formals_of = formals(sys.function()))
-  pm_conf_alpha(conf.level)                        # (checks it)
-  level <- conf.level                              # a confidence level, as before 2.0
+  pm_conf_alpha(conf_level)                        # (checks it)
+  level <- conf_level                              # a confidence level, as before 2.0
   ci_method <- match.arg(ci_method)
   information <- match.arg(information)
   test_method <- match.arg(test_method)
   if (isTRUE(test)) {
-    tab <- varcomp(model, ci = ci, conf.level = conf.level, ci_method = ci_method, information = information)
-    return(pm_vc_add_tests(tab, model, test_method, nsim, nboot, ncore))
+    tab <- varcomp(model, ci = ci, conf_level = conf_level, ci_method = ci_method, information = information)
+    return(pm_add_advice(pm_vc_add_tests(tab, model, test_method, nsim, nboot, ncore),
+                         pm_varcomp_advice(model, tab, test = TRUE)))
   }
+  tab <- pm_varcomp_fit(model, ci, level, ci_method, information)
+  tab <- pm_add_advice(tab, pm_varcomp_advice(model, tab, test = FALSE))
+  # printed with its advice (print.pm_varcomp())
+  if (!is.null(attr(tab, "advice")) && !inherits(tab, "pm_varcomp")) class(tab) <- c("pm_varcomp", class(tab))
+  tab
+}
+
+## The table of varcomp() (no tests): by model class.
+pm_varcomp_fit <- function(model, ci, level, ci_method, information) {
   if (inherits(model, "semireg")) model <- model$semer
   if (ci_method == "profile" && !inherits(model, c("lmerMod", "glmerMod"))) {
     message("Profile intervals are for lmer and glmer models; Satterthwaite intervals instead.")
@@ -227,11 +243,13 @@ pm_vc_add_tests <- function(tab, model, method, nsim, nboot = 999, ncore = 1) {
   tab
 }
 
+#' @exportS3Method print pm_varcomp
 print.pm_varcomp <- function(x, ...) {
   tests <- attr(x, "tests")
   y <- x
   class(y) <- setdiff(class(y), "pm_varcomp")
   attr(y, "tests") <- NULL
+  attr(y, "advice") <- NULL
   print(y, ...)
   if (!is.null(tests) && nrow(tests)) {
     cat("\nTests (likelihood ratio, each row's model refitted):\n")
@@ -241,6 +259,7 @@ print.pm_varcomp <- function(x, ...) {
           if (nzchar(tests$note[k])) paste0(" [", tests$note[k], "]"), "\n", sep = "")
     }
   }
+  pm_print_advice(x)
   invisible(x)
 }
 
@@ -670,6 +689,24 @@ pm_gam_vcomp_matrix <- function(vc) {
 ## residual df. SEs from var(MS_s) = 2 MS_s^2/df_s (independent strata);
 ## Satterthwaite's chi-square intervals for positive estimates.
 pm_vc_aov <- function(model, ci, level) {
+  e <- pm_vc_aov_est(model)
+  rows <- e$rows
+  est <- e$est
+  V <- e$V
+  # (Satterthwaite's interval from the mean squares, nu = (sum a_i MS_i)^2 /
+  # sum (a_i MS_i)^2/df_i, is the common rule: nu = 2 (est/SE)^2)
+  nm <- ifelse(rows == "Within", "residual", rows)
+  ord <- c(setdiff(seq_along(rows), which(rows == "Within")), which(rows == "Within"))
+  out <- pm_vc_table(stats::setNames(est, nm)[ord], V[ord, ord, drop = FALSE], type = rep("var", length(rows)),
+                     ci = ci, level = level)
+  if (any(est < 0)) attr(out, "note") <- "A negative estimate: that stratum varies less than the one below it."
+  out
+}
+
+## The estimates of pm_vc_aov(), unrounded: list(rows (stratum names), est,
+## V (their covariance)). Also the variance of the bias adjustment of aov()
+## with Error() (pm_bias_sigma2(), R/response-scale.R).
+pm_vc_aov_est <- function(model) {
   carrier <- pm_aov_carrier(model)
   res <- suppressMessages(pm_aov_strata(carrier))
   strata <- res$strata
@@ -707,13 +744,6 @@ pm_vc_aov <- function(model, ci, level) {
   A <- solve(C)
   est <- drop(A %*% ms[rows])
   vms <- 2 * ms[rows]^2 / dfs[rows]
-  V <- A %*% diag(vms, nrow = length(rows)) %*% t(A)
-  # (Satterthwaite's interval from the mean squares, nu = (sum a_i MS_i)^2 /
-  # sum (a_i MS_i)^2/df_i, is the common rule: nu = 2 (est/SE)^2)
-  nm <- ifelse(rows == "Within", "residual", rows)
-  ord <- c(setdiff(seq_along(rows), which(rows == "Within")), which(rows == "Within"))
-  out <- pm_vc_table(stats::setNames(est, nm)[ord], V[ord, ord, drop = FALSE], type = rep("var", length(rows)),
-                     ci = ci, level = level)
-  if (any(est < 0)) attr(out, "note") <- "A negative estimate: that stratum varies less than the one below it."
-  out
+  V <- tcrossprod(A * rep(sqrt(vms), each = nrow(A)))     # A diag(vms) A'
+  list(rows = rows, est = est, V = V)
 }

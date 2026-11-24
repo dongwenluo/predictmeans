@@ -2,19 +2,19 @@
 % Please edit documentation in R/PMplot.R
 \name{PMplot}
 \alias{PMplot}
-\title{Level Plot of a Matrix of p-values.}
+\title{Level Plot of a Matrix of p-values}
 \usage{
-PMplot(pmatrix, conf.level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
+PMplot(pmatrix, conf_level=0.95, mtitle=NULL, xylabel=NULL, values=FALSE, basesz=12, ...)
 }
 \arguments{
 \item{pmatrix}{A matrix with p-values from pairwise comparisons (the lower
 triangle is used), or a list of such matrices (e.g. \code{p_valueMatrix} of
-\code{\link{predictmeans}} with \code{atvar}), which are drawn as blocks
-down the diagonal of one plot.}
+\code{\link{predictmeans}} with \code{atvar}), which are drawn as one square
+panel each, titled by the list's names (the levels of \code{atvar}).}
 
-\item{conf.level}{The p-values below \code{1 - conf.level} are highlighted (\code{level = 0.05} before 2.0).
+\item{conf_level}{The p-values below \code{1 - conf_level} are highlighted (\code{level = 0.05} before 2.0).
 With the default 0.95 the tiles show four bands (up to 0.01, 0.05, 0.1 and above); with any other value two
-(up to \code{1 - conf.level} and above).}
+(up to \code{1 - conf_level} and above).}
 
 \item{mtitle}{The main title in the graph.}
 
@@ -23,7 +23,8 @@ matrix (or of the list's matrices together). The default uses the row
 names of the matrix, else the row numbers.}
 
 \item{...}{Not used: \code{level}, \code{margin}, \code{legendx}, \code{newwd} (before 2.0) stop with their 2.0
-spelling. (ggplot2 sizes the margins; the legend sits in the empty upper triangle.)}
+spelling. (ggplot2 sizes the margins. The legend always lists every band, in the order of the p-values; it
+sits in the empty upper triangle of a single matrix of 6 or more rows, otherwise to the right of the plot.)}
 
 \item{values}{Whether to print each p-value on its tile (the default is
 \code{FALSE}). Useful for up to about 15 levels.}
@@ -56,6 +57,9 @@ the tiles coloured by the size of the p-value.
   fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
   predictout <- predictmeans(fm, "nitro:Variety", atvar="Variety", adj="BH")
   PMplot(predictout$p_valueMatrix)
+}
+\seealso{
+\code{\link{predictmeans}}, \code{\link{autoplot.predictmeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

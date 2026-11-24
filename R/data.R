@@ -1,9 +1,9 @@
 ## Help pages of the data sets (roxygen2 sources).
 
-#' \code{ATP} containing data
+#' ATP Content of Preserved Dog Hearts
 #'
 #' @description
-#' \code{ATP} containing data from an experiment to study the effects 
+#' Data from an experiment to study the effects 
 #' of preserving liquids on the enzyme content of dog hearts. There were 23 hearts 
 #' and two treatment factors, A and B, each at two levels. Measurements were made 
 #' of ATP as a percentage of total enzyme in the heart, at one and two hourly
@@ -11,19 +11,23 @@
 #' @usage
 #' data(ATP)
 #' @format
-#' \code{ATP} is a 230 row data frame with the following columns 
+#' A data frame with 230 rows (23 hearts, 10 times) and 5 columns:
 #' \describe{
-#' \item{heart}{dog heart id.}
-#' \item{time}{time in hour for \code{ATP} measurement.}
-#' \item{A}{treatment with two levels.}
-#' \item{B}{treatment with two levels.}
-#' \item{ATP}{percentage of total enzyme in the heart.}
+#' \item{heart}{factor, 23 dog hearts.}
+#' \item{time}{factor, time of measurement (hours after preservation; 10 levels).}
+#' \item{A}{factor, treatment A (2 levels).}
+#' \item{B}{factor, treatment B (2 levels).}
+#' \item{ATP}{ATP as a percentage of total enzyme in the heart (\%).}
 #' }
+#' @examples
+#' data(ATP)
+#' fm <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)
+#' predictmeans(fm, "A:B", pairwise = TRUE)$means
 #' @name ATP
 #' @docType data
 NULL
 
-#' \code{Body_length} data
+#' Body Length of Beetles (Simulated)
 #'
 #' @description
 #' Simulated body lengths of beetles reared in containers within populations, under two
@@ -53,47 +57,60 @@ NULL
 #' @docType data
 NULL
 
-#' \code{Clinical} data
+#' Multicentre Clinical Trial of a Skin Treatment
 #'
 #' @description
-#' \code{Clinical} data is from a multicentre randomized clinical trial (Beitler
+#' Favourable responses in a multicentre randomized clinical trial of a topical drug against a control (Beitler
 #'  & Landis 1985, Biometrics).
 #' @usage
 #' data(Clinical)
 #' @format
-#' \code{Clinical} is a 16 row data frame with the following columns 
+#' A data frame with 16 rows and 4 columns:
 #' \describe{
-#' \item{Clinic}{8 centres id.}
-#' \item{Treatment}{2 skin treatments (control or active drug).}
-#' \item{Favorable}{number that produced a favourable response.}
-#' \item{Total}{number of patients in each treatment group.}
+#' \item{Clinic}{factor, 8 centres.}
+#' \item{Treatment}{factor, \code{control} or \code{drug}.}
+#' \item{Favorable}{number of patients with a favourable response.}
+#' \item{Total}{number of patients in the clinic and treatment group.}
 #' }
+#' @source
+#' Beitler, P. J. and Landis, J. R. (1985). A mixed-effects model for categorical data. \emph{Biometrics}, 41, 991-1000.
+#' @examples
+#' data(Clinical)
+#' gm <- glmer(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
+#'             family = binomial, data = Clinical)
+#' predictmeans(gm, "Treatment")$means   # probability scale
 #' @name Clinical
 #' @docType data
 NULL
 
-#' \code{Drug} data
+#' Potency of Analgesic Drugs in Mice
 #'
 #' @description
-#' The data is for the comparison of the effectiveness of three analgesic drugs 
+#' Data for the comparison of the effectiveness of three analgesic drugs 
 #' to a standard drug, morphine (Finney, Probit analysis, 3rd Edition 1971, p.103). 14 groups 
 #' of mice were tested for response to the drugs at a range of doses.
 #' @usage
 #' data(Drug)
 #' @format
-#' \code{Drug} is a 14 row data frame with the following columns 
+#' A data frame with 14 rows and 5 columns:
 #' \describe{
-#' \item{Drug}{type of drug.}
-#' \item{Dose}{dose volumn.}
-#' \item{N}{total number of mice in each group.}
-#' \item{R}{number responding mice in each group.}
-#' \item{log10Dose}{log10 transformed dose volumn.}
+#' \item{Drug}{factor, 4 drugs (Morphine, Amidone, ...).}
+#' \item{Dose}{dose (units as in Finney, 1971).}
+#' \item{N}{number of mice in the group.}
+#' \item{R}{number of mice responding.}
+#' \item{log10Dose}{\code{log10(Dose)}.}
 #' }
+#' @source
+#' Finney, D. J. (1971). \emph{Probit Analysis}, 3rd edition. Cambridge University Press, p. 103.
+#' @examples
+#' data(Drug)
+#' gm <- glm(cbind(R, N - R) ~ Drug + log10Dose, family = binomial(link = "probit"), data = Drug)
+#' predictmeans(gm, "Drug", covariate = c(log10Dose = 0.5))$means
 #' @name Drug
 #' @docType data
 NULL
 
-#' \code{Poisson_ind} data
+#' Egg Counts of Beetles (Simulated)
 #'
 #' @description
 #' Simulated egg counts of individual female beetles in containers within populations, under
@@ -117,11 +134,17 @@ NULL
 #' Nakagawa, S. and Schielzeth, H. (2013), A general and simple method for obtaining
 #' \eqn{R^2} from generalized linear mixed-effects models. \emph{Methods in Ecology and
 #' Evolution}, 4, 133--142.
+#' @examples
+#' data(Poisson_ind)
+#' gm <- glmer(Egg ~ Treatment + Habitat + (1|Population/Container) + (1|individual:Container),
+#'             family = poisson, data = Poisson_ind)
+#' R2_model(gm)
+#' R2_model(gm, over_disp = TRUE)   # without the overdispersion term
 #' @name Poisson_ind
 #' @docType data
 NULL
 
-#' \code{copper} data
+#' Copper Grade at Sampling Points
 #'
 #' @description
 #' Copper grade at sampling points with their X, Y and Z coordinates within a designated
@@ -136,7 +159,7 @@ NULL
 #' \item{xcoord}{X coordinate of the sampling point.}
 #' \item{ycoord}{Y coordinate of the sampling point.}
 #' \item{zcoord}{Z coordinate of the sampling point.}
-#' \item{grade}{copper grade.}
+#' \item{grade}{copper grade (positive; modelled on the log scale below).}
 #' }
 #' \code{copperKnots}: the 20 knots (columns \code{xcoord}, \code{ycoord}) of M. P. Wand's thin-plate spline
 #' fit of these data (a geoadditive model fitted by \code{lme()}), which \code{\link{semireg}} reproduces.
@@ -157,6 +180,41 @@ NULL
 #' }
 #' @aliases copperKnots
 #' @name copper
+#' @docType data
+NULL
+
+#' Heights of Trees: 37 Seedlots at 6 Sites
+#'
+#' @description
+#' Mean heights of 37 seedlots (26 Acacia, Allocasuarina and Casuarina species) grown at six sites in Thailand,
+#' the data of Table 5.2 of Williams, Matheson and Harwood, used there for a regression of each seedlot on
+#' the site mean (Finlay-Wilkinson regression). 30 site-seedlot combinations have no height.
+#' @usage
+#' data(DataExam5.2)
+#' @format
+#' A data frame with 222 rows and 4 columns:
+#' \describe{
+#' \item{site}{factor, 6 sites.}
+#' \item{seedlot}{factor, 37 seedlot numbers.}
+#' \item{ht}{height (cm); NA when the seedlot was not measured at the site.}
+#' \item{sitemean}{the mean of \code{ht} at the site (one value per site).}
+#' }
+#' @details
+#' \code{sitemean} takes one value per site, so in \code{ht ~ site + sitemean * seedlot} it is aliased with
+#' \code{site} (its coefficient is NA); see the section "Covariates aliased with a factor" of
+#' \code{\link{predictmeans}}. On the four sites and 27 seedlots with complete data (and \code{sitemean}
+#' recomputed for them) \code{predictmeans()} reproduces the means and slopes of the book's Table 5.7
+#' (\code{tests/testthat/test-level-covariate.R}).
+#' @source
+#' Williams, E. R., Matheson, A. C. and Harwood, C. E. \emph{Experimental Design and Analysis for Tree
+#' Improvement}, 3rd edition. CSIRO Publishing, Table 5.2.
+#' @examples
+#' data(DataExam5.2)
+#' fit <- lm(ht ~ site + sitemean * seedlot, data = DataExam5.2)
+#' head(predictmeans(fit, "seedlot", plot = FALSE)$mean_table)
+#' # each seedlot averaged over the sites where it was measured
+#' head(predictmeans(fit, "seedlot", plot = FALSE, weights = "cells")$mean_table)
+#' @name DataExam5.2
 #' @docType data
 NULL
 

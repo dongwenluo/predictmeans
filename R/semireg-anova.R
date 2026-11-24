@@ -20,12 +20,16 @@
 #' block of the deviation curves tests whether the curves of the levels of \code{f} have the same shape. For small
 #' samples \code{\link{permlmer}} or \code{\link{bootmodels}} on \code{fit$semer} give resampling tests.
 #' @param object A \code{\link{semireg}} or \code{\link{semireg_tmb}} fit.
-#' @param type \code{"III"} (default) or \code{"II"}: the type of the tests of the fixed effects.
+#' @param type \code{"III"} (default), \code{"II"} or \code{"I"} (also \code{3}, \code{2}, \code{1}): the type of
+#'   the tests of the fixed effects. Type I is sequential (Satterthwaite F for gaussian fits, Wald chi-square
+#'   otherwise); see \code{\link{anova.lmerMod}} for which type to use.
 #' @param smooth Logical: test the smooth terms (refits the model once per smooth block)? The default is TRUE.
 #' @param ... Not used.
 #' @return A list of class \code{"pm_semi_anova"} with \code{fixed} (the table of the fixed effects) and
 #'   \code{smooth} (a data frame: the variance of each smooth block, the log-likelihoods of the model with and without
-#'   it, the likelihood ratio statistic, its p-value and the reference distribution), printed together.
+#'   it, the likelihood ratio statistic, its p-value and the reference distribution), printed together. Advice on the
+#'   type of tests is kept as for \code{\link{anova.lmerMod}} (see \code{\link{advice}}).
+#' @seealso \code{\link{anova.lmerMod}}, \code{\link{varcomp}}, \code{\link{semipred}}
 #' @references
 #' Crainiceanu, C. M. and Ruppert, D. (2004). Likelihood ratio tests in linear mixed models with one variance
 #' component. \emph{Journal of the Royal Statistical Society B}, 66, 165-185.
@@ -40,15 +44,18 @@
 #' @name anova.semireg
 NULL
 
-anova.semireg <- function(object, type = c("III", "II"), smooth = TRUE, ...) {
-  type <- match.arg(type)
+#' @exportS3Method anova semireg
+anova.semireg <- function(object, type = c("III", "II", "I"), smooth = TRUE, ...) {
+  type <- pm_anova_type(type[1])
   semer <- object$semer
-  fixed <- if (inherits(semer, "lmerMod")) pm_anova(semer, type = type, test.statistic = "F") else
-    pm_anova(semer, type = type, test.statistic = "Chisq")
+  fixed <- if (type == "I") pm_anova_type1(semer) else if (inherits(semer, "lmerMod"))
+    pm_anova(semer, type = type, test_statistic = "F") else pm_anova(semer, type = type, test_statistic = "Chisq")
+  fixed <- pm_anova_add_advice(fixed, semer, type)
   sm <- if (isTRUE(smooth)) pm_sr_smooth_tests(object)
   structure(list(fixed = fixed, smooth = sm), class = "pm_semi_anova")
 }
 
+#' @exportS3Method print pm_semi_anova
 print.pm_semi_anova <- function(x, digits = 4, ...) {
   print(x$fixed)
   if (!is.null(x$smooth)) {
@@ -112,6 +119,8 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALS
   if (identical(r$engine, "glmmTMB")) {
     cl <- call("pm_semireg_tmb", formula = f_new, data = quote(sr_data), smoothZ = quote(sr_Z), family = r$family,
                ziformula = r$ziformula, dispformula = r$dispformula, REML = r$REML, predict_info = FALSE)
+    if (!is.null(r$weights)) cl$weights <- quote(sr_w)
+    if (!is.null(r$offset)) cl$offset <- quote(sr_off)
   } else if (!length(keep) && !length(other_txt)) {
     # no random term left: lm / glm (REML log-likelihood for a gaussian REML fit)
     environment(fixed) <- e
@@ -141,4 +150,5 @@ pm_sr_refit <- function(object, drop = character(0), random = NULL, whole = FALS
 }
 
 ## logLik of an lm on the REML scale when the full fit was REML.
+#' @exportS3Method logLik pm_lm_reml
 logLik.pm_lm_reml <- function(object, ...) stats::logLik(object$fit, REML = isTRUE(attr(object, "REML")))

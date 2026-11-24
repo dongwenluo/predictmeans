@@ -12,22 +12,25 @@ pm_check(model, plot = FALSE)
 \item{plot}{\code{TRUE}: also draw the diagnostic plots of \code{\link{residplot}}.}
 }
 \value{
-A data frame of class \code{"pm_check"}: \code{check}, \code{result}, \code{p.value}, \code{look} and
-  \code{note}; printed as a table with the notes below it.
+A data frame of class \code{"pm_check"}: \code{section}, \code{check}, \code{result}, \code{p.value},
+  \code{look}, \code{status} (\code{"!"} worth a look, \code{"i"} information, \code{"OK"}) and \code{note};
+  printed by section with the notes below. \code{summary()} keeps only the rows worth a look. The rows worth a
+  look are also kept as advice (\code{\link{advice}}).
 }
 \description{
-A table of checks of a model's assumptions and structure, with a plain note on each: the fit itself (singular
-or not converged), outliers and influential observations, normality of the residuals and of the random effects,
-equal variances across the levels of each factor, overdispersion (Poisson and binomial models), interactions,
-whether a factor with numeric levels follows a straight line, and coefficients that cannot be estimated. For any
-model that \code{\link{predictmeans}} handles.
+A table of checks of a model's assumptions and structure, grouped in sections, with a plain note on each: the fit
+itself (singular or not converged); the residuals (outliers, influence, normality, a transformation); the
+variance (equal across factor levels, constant with the fitted values); the distribution of generalized models
+(over- and underdispersion, excess zeros, separation); the design (balance and empty cells, aliasing,
+collinearity, few levels of a random effect); and the terms (interactions, straight lines). For any model that
+\code{\link{predictmeans}} handles.
 }
 \details{
-The checks inform; they do not decide. Rows marked \code{look = TRUE} are worth a look at the plots of
-\code{\link{residplot}}. Keep the terms the design calls for (blocks, whole plots, the treatment structure):
-dropping a term because its test is not significant makes the later tests and intervals too optimistic. Tests of
-normality and of equal variances reject small departures in large data sets and miss large ones in small data
-sets; the plots say how large a departure is.
+The checks inform; they do not decide. Rows marked \code{!} are worth a look at the plots of
+\code{\link{residplot}}; rows marked \code{i} are information. Keep the terms the design calls for (blocks, whole
+plots, the treatment structure): dropping a term because its test is not significant makes the later tests and
+intervals too optimistic. Tests of normality and of equal variances reject small departures in large data sets
+and miss large ones in small data sets; the plots say how large a departure is.
 \describe{
 \item{Fit}{singular fits (a variance component estimated as zero) and convergence warnings.}
 \item{Outliers}{residuals beyond 3 (of the residuals \code{\link{residplot}} uses: standardized, normalized or
@@ -39,19 +42,30 @@ sets; the plots say how large a departure is.
 \item{Transformation of the response}{(\code{lm} and \code{aov} with a positive response that is not
   transformed in the formula) the Box-Cox power the residuals favour: the profile likelihood estimate of
   \eqn{\lambda} and its 95\% interval (Box and Cox, 1964; as \code{MASS::boxcox()}). Worth a look when the
-  interval leaves out 1 (no transformation); the note names the usual transformation within the interval
-  (\eqn{\lambda} = 0: log; 0.5: square root; -1: reciprocal), to write in the formula as \code{log(y)},
-  \code{sqrt(y)} or \code{\link{pm_boxcox}(y, lambda)}. It is judged on the residuals of the model, not on the
-  raw response; for counts and proportions a generalized linear (mixed) model is usually the better choice.}
+  interval leaves out 1 (no transformation); the note names the usual transformation within the interval.}
 \item{Equal variances}{for each factor: the ratio of the largest to the smallest standard deviation of the
   residuals within its levels, and the Brown-Forsythe test (ANOVA of the absolute deviations from the medians).}
-\item{Overdispersion}{Poisson and binomial (with more than one trial) models: Pearson chi-square / residual df,
-  about 1 when the variance function is right.}
-\item{Interaction}{the Type III test of each interaction term (as \code{permmodels(type = "III")}).}
-\item{Straight line}{for a factor with numeric levels (e.g. nitrogen rates 0, 0.2, 0.4, 0.6) and at least three
-  of them: the joint test of the polynomial contrasts above the linear one (with the actual spacing of the
-  levels), from \code{\link{pm_joint}}.}
+\item{Spread vs fitted values}{(gaussian models) Spearman correlation of the absolute residuals with the fitted
+  values; worth a look when \eqn{|\rho| \ge 0.2} and p < 0.01 (the variance grows with the mean).}
+\item{Dispersion}{(Poisson, binomial with more than one trial, negative binomial; \code{glm}, \code{glmer},
+  \code{glmmTMB}) Pearson chi-square / residual df, about 1 when the variance function is right; overdispersion
+  (ratio > 1.5, p < 0.01) makes SEs too small, underdispersion (ratio < 0.7, p < 0.01) too large. For mixed
+  models the residual df counts the variance parameters, an approximation. A 0/1 response carries no information
+  on dispersion; for families with an estimated dispersion (Gamma, quasi) its estimate is shown.}
+\item{Zero counts}{(Poisson, negative binomial) the observed zeros against those simulated from the fitted model
+  (200 simulations, fixed seed; the user's random numbers are not changed); worth a look when there are more
+  (p < 0.01).}
+\item{Separation}{(binomial) fitted probabilities of 0 or 1, or coefficients beyond 10 on the logit scale or with
+  standard errors above 50: the estimates and Wald tests of these terms are unreliable.}
+\item{Balance of cells}{of the crossed fixed factors: balanced, unbalanced or with empty cells; unbalanced data
+  make Type I, II and III tests differ (see \code{\link{anova.lmerMod}}, section 'Which type of test').}
 \item{Estimability}{coefficients dropped as aliased (empty cells or confounded factors).}
+\item{Collinearity}{(models of main effects only) the generalized variance inflation factor of each term,
+  \eqn{GVIF^{1/(2 df)}} (Fox and Monette, 1992); above \eqn{\sqrt{10}} is worth a look.}
+\item{Random-effect levels}{a grouping factor with fewer than 5 levels: its variance is poorly estimated.}
+\item{Interaction}{the Type III test of each interaction term (as \code{permmodels(type = "III")}).}
+\item{Straight line}{for a factor with numeric levels and at least three of them: the joint test of the
+  polynomial contrasts above the linear one (with the actual spacing of the levels), from \code{\link{pm_joint}}.}
 }
 }
 \examples{
@@ -63,6 +77,14 @@ pm_check(fm)
 # counts: overdispersion
 gm <- glm(breaks ~ wool * tension, family = poisson, data = warpbreaks)
 pm_check(gm)
+summary(pm_check(gm))
+}
+\references{
+Fox, J. and Monette, G. (1992). Generalized collinearity diagnostics. \emph{Journal of the American Statistical
+Association}, 87, 178-183.
+}
+\seealso{
+\code{\link{residplot}}, \code{\link{CookD}}, \code{\link{advice}}, \code{\link{pm_boxcox}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

@@ -1,8 +1,8 @@
-#' Calculates and plots Cook's distances for a Linear (Mixed) Model
+#' Cook's Distances of a Linear (Mixed) Model
 #'
 #' @description
-#' This function produces Cook's distance plots for a model obtained from functions \code{aov}, \code{lm},
-#'   \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{mgcv::gam}.
+#' Cook's distances of the observations (or groups of observations) of a model fitted by \code{aov}, \code{lm},
+#'   \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{mgcv::gam}, with a plot.
 #' @details
 #' Cook's distance of an observation (or of a group of observations, \code{group}) is
 #' \eqn{D = (\hat\beta - \hat\beta_{(-i)})' V^{-1} (\hat\beta - \hat\beta_{(-i)}) / p}, where
@@ -19,24 +19,27 @@
 #' CookD(model, group=NULL, plot=TRUE, id=3, ...)
 #' @param model Model object returned by \code{aov} (without \code{Error()}), \code{lm}, \code{glm}, \code{gls},
 #'   \code{lme}, \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{gam}.
-#' @param group Name (in "quotes") for indicating how observations are deleted for Cook's distance calculation. If \code{group!=NULL} then deletions will be along levels of \code{group} variable, otherwise, will be along individual observations.
-#' @param plot A logical variable; if it is true, a plot of Cook's distance will be presented. The default is TRUE.
+#' @param group Optional name (in "quotes") of a variable whose levels are deleted one at a time (e.g. the
+#'   clusters of a mixed model); the default \code{NULL} deletes single observations.
+#' @param plot \code{TRUE} (the default): draw the distances (\pkg{ggplot2}, as the Cook's distance panel of
+#'   \code{\link{residplot}}).
 #' @param id The number of the largest Cook's distances labelled in the plot (\code{idn} before 2.0, now as in
 #'   \code{\link{residplot}}). The default value is 3.
 #' @param ... Not used: \code{idn}, \code{newwd} (before 2.0) stop with their 2.0 spelling.
 #' @return Invisibly, the Cook's distances (named by observation or group).
+#' @seealso \code{\link{residplot}}, \code{\link{pm_check}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
-#' # library(lme4)
-#' # fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 #' CookD(fm)
+#' CookD(fm, group = "Block")   # delete whole blocks
 #' @name CookD
 NULL
 
+#' @export
 CookD <- function (model, group=NULL, plot=TRUE, id=3, ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("CookD", match.call(), strict = TRUE, formals_of = formals(sys.function()))
@@ -101,13 +104,29 @@ CookD <- function (model, group=NULL, plot=TRUE, id=3, ...) {
     CookD <- rowSums((rK %*% vb.inv) * rK)/p
   }
   names(CookD) <- rn
-  if (plot) {
-    outD <- !is.na(CookD) & CookD >= sort(CookD, decreasing =TRUE)[min(id, sum(!is.na(CookD)))]   # Outlying Di's
-    labid <- names(CookD)
-    plot(CookD,  xlab="Obs. number", col="blue", ylim=c(0, max(CookD, na.rm = TRUE)+0.005),
-         main="Cook's Distance", ylab = "Cook's distance", type = "h")
-    text((seq_along(CookD))[outD], CookD[outD], labid[outD], pos=3)          # Annotation
-    points((seq_along(CookD))[outD], CookD[outD], pch=16, col="blue")
-  }
+  if (plot) print(pm_cookd_plot(CookD, id, group))
   return(invisible(CookD))
+}
+
+## The plot of CookD(): a spike per observation or group, the 'id' largest
+## labelled, as the Cook's distance panel of residplot().
+pm_cookd_plot <- function(cd, id = 3, group = NULL) {
+  grp <- !(is.null(group) || group %in% c("NULL", ""))
+  d <- data.frame(case = seq_along(cd), cook = unname(cd), label = names(cd))
+  ok <- is.finite(d$cook)
+  k <- if (isTRUE(id)) 3L else if (isFALSE(id) || is.null(id)) 0L else as.integer(id)
+  top <- if (k > 0 && any(ok)) utils::head(order(d$cook, decreasing = TRUE, na.last = NA), k) else integer(0)
+  col <- "steelblue"
+  p <- ggplot2::ggplot(d[ok, ], ggplot2::aes(x = .data$case, y = .data$cook)) +
+    ggplot2::geom_segment(ggplot2::aes(xend = .data$case, yend = 0), colour = col) +
+    ggplot2::geom_point(data = d[top, , drop = FALSE], colour = col, size = 2) +
+    ggplot2::geom_text(ggplot2::aes(label = .data$label), data = d[top, , drop = FALSE], vjust = -0.6, size = 3,
+                       colour = "grey20") +
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.1))) +
+    ggplot2::labs(title = "Cook's distance", x = if (grp) paste("Level of", group) else "Observation",
+                  y = "Cook's distance") +
+    ggplot2::theme_bw()
+  # few groups: name them on the axis
+  if (grp && nrow(d) <= 30) p <- p + ggplot2::scale_x_continuous(breaks = d$case, labels = d$label)
+  p
 }

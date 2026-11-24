@@ -35,11 +35,12 @@ The arguments start with a dot so that contrasts can be given any name, includin
   cm <- specify_contrast(Kmatrix(fm, "nitro:Variety"),
     N_effect_Victory = `0.6:Victory` - `0:Victory`,
     N_effect_vs_others = (`0.6:Victory` - `0:Victory`) -
-                         ((`0.6:Golden Rain` - `0:Golden Rain`) + (`0.6:Marvellous` - `0:Marvellous`))/2)
+                         ((`0.6:Golden Rain` - `0:Golden Rain`) +
+                          (`0.6:Marvellous` - `0:Marvellous`))/2)
   contrastmeans(fm, "nitro:Variety", ctrmatrix = cm)
 }
 \seealso{
-\code{\link{contrastmeans}}
+\code{\link{contrastmeans}}, \code{\link{contrast_family}}, \code{\link{pm_joint}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

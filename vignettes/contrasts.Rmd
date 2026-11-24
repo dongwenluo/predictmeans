@@ -40,8 +40,8 @@ is computed by package mvtnorm.
 
 ```{r, eval = has_mvt}
 p <- sapply(c("none", "tukey", "mvt", "sidak", "scheffe", "holm"), function(a)
-  predictmeans(fm, "N", adj = a, plot = FALSE)$pairs$p.adj)
-pm <- predictmeans(fm, "N", plot = FALSE)
+  predictmeans(fm, "N", adj = a)$pairs$p.adj)
+pm <- predictmeans(fm, "N")
 data.frame(pair = paste(pm$pairs$level1, "-", pm$pairs$level2), signif(p, 3))
 ```
 
@@ -61,7 +61,7 @@ each comparison on its own. The step-down and false discovery rate methods (`"ho
 control.
 
 ```{r}
-pt <- predictmeans(fm, "N", adj = "tukey", plot = FALSE)$pairs
+pt <- predictmeans(fm, "N", adj = "tukey")$pairs
 pt[c("level1", "level2", "estimate", "conf.low", "conf.high", "adj.conf.low",
      "adj.conf.high", "p.adj")]
 ```
@@ -91,7 +91,7 @@ orthogonal polynomial coefficients (the nitrogen levels are equally spaced):
 
 ```{r}
 K2 <- Kmatrix(fm, "N:Variety")
-trends <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+trends <- contrast_family(K2, "poly", by = "Variety", max_degree = 2)
 contrastmeans(fm, "N:Variety", ctrmatrix = trends)
 ```
 
@@ -156,7 +156,7 @@ matrix (Kenward–Roger adjusted for REML `lmer` fits), named by the levels. Any
 can be computed from them:
 
 ```{r}
-pmv <- predictmeans(fm, "N:Variety", plot = FALSE)
+pmv <- predictmeans(fm, "N:Variety")
 b <- coef(pmv)
 L <- (names(b) == "0.6:Victory") - (names(b) == "0.6:Golden Rain")
 c(estimate = sum(L * b), SE = sqrt(drop(L %*% vcov(pmv) %*% L)))
@@ -181,7 +181,7 @@ give the margin with `equivalence` (a number `d` for the region `-d` to `d`, or
 tests (TOST): below `level`, the difference lies within the margin.
 
 ```{r}
-pe <- predictmeans(fm, "N", equivalence = 15, plot = FALSE)
+pe <- predictmeans(fm, "N", equivalence = 15)
 pe$pairs[, c("level1", "level2", "estimate", "std.error", "p.equiv")]
 ```
 
@@ -197,7 +197,7 @@ the model's:
 
 ```{r}
 fl <- lm(yield ~ Block + N + Variety, data = Oats)
-pmh <- predictmeans(fl, "N", vcov = "HC3", plot = FALSE)
+pmh <- predictmeans(fl, "N", vcov = "HC3")
 pmh$pairs[, c("level1", "level2", "estimate", "std.error", "p.value")]
 pmh$settings$vcov
 contrastmeans(fl, "N", ctrmatrix = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0)), vcov = ~ Block)

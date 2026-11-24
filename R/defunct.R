@@ -8,7 +8,7 @@
 #'   \code{smZ()}, \code{smoothZ =} \tab smooths in the formula of \code{\link{semireg}} or \code{\link{semireg_tmb}},
 #'     e.g. \code{smoothZ = list(sm = smZ(x))} is \code{s(x, bs = "os")} \cr
 #'   \code{permglmer()}, \code{permglmmTMB()} \tab \code{\link{permlmer}()} (they were the same function) \cr
-#'   \code{ci_mcp()} \tab \code{\link{predictmeans}(..., letterCI = TRUE)}: letters from comparison intervals,
+#'   \code{ci_mcp()} \tab \code{\link{predictmeans}(..., letter_ci = TRUE)}: letters from comparison intervals,
 #'     whose overlap agrees with the pairwise tests (overlap of confidence intervals does not) \cr
 #'   \code{R2_glmm()} \tab \code{\link{R2_model}(model)}: the same values, as numbers \cr
 #'   \code{permanova.lmer()} \tab \code{\link{permmodels}(model, type = )}: Freedman-Lane permutations, so the
@@ -29,7 +29,7 @@ NULL
 ##
 ## Columns: fun (the function), arg (the 1.1.1 argument), use (the 2.0
 ## spelling; "%s" is filled with the value given, through 'value': "same" or
-## "one_minus" for level -> conf.level).
+## "one_minus" for level -> conf_level).
 pm_defunct_rows <- function() {
   r <- function(fun, arg, use, value = "") data.frame(fun = fun, arg = arg, use = use, value = value)
   plot_set <- function(fun, args) r(fun, args, paste0("plot_args = list(", args, " = ...) or autoplot()"))
@@ -38,8 +38,8 @@ pm_defunct_rows <- function() {
   rbind(
     # one vocabulary for the means functions (D1, D2, D4)
     r(means, "Df", "df_method = %s", "same"),
-    r(c(means, "pm_slopes", "semipred", "permstats", "PMplot"), "level", "conf.level = %s", "one_minus"),
-    r("varcomp", "level", "conf.level = %s (it was a confidence level already)", "same"),
+    r(c(means, "pm_slopes", "semipred", "permstats", "PMplot"), "level", "conf_level = %s", "one_minus"),
+    r("varcomp", "level", "conf_level = %s (it was a confidence level already)", "same"),
     r(c("covariatemeans", "semipred", "Kmatrix"), "covariateV", "at = %s", "same"),
     r("df_term", "type", "df_method = %s", "same"),
     r("df_term", "vcov_adj", "nothing: the adjusted covariance is computed from df_method"),
@@ -51,10 +51,12 @@ pm_defunct_rows <- function() {
     r(c("predictmeans", "Kmatrix"), "prtnum", print_dig),
     r("predictmeans", "ndecimal", print_dig),
     r(c("semipred", "semireg", "semireg_tmb", "permmodels", "bootmodels"), "prt", "print(x)"),
-    # plots (D10): analysis functions keep only 'plot'
-    plot_set("predictmeans", c("lsd_bar", "plotord", "lineplot", "plottitle", "plotxlab", "plotylab", "jitterv", "basesz")),
-    r("predictmeans", c("mplot", "barplot", "pplot", "bkplot", "which.plots"), "plot = c(\"mean\", \"bar\", \"pval\", \"back\") (the plots wanted)"),
-    r("predictmeans", "prtplt", "plot = TRUE: plots are drawn and returned (autoplot())"),
+    # plots (D10; 2026-11-22: predictmeans() draws none, autoplot() does)
+    r("predictmeans", c("plot", "which.plots", "mplot", "barplot", "pplot", "bkplot", "prtplt"),
+      "autoplot(x) or plot(x) on the result: type = \"means\" (mean), \"bar\" (bar), \"ci\" (back), \"pvalue\" (pval)"),
+    r("predictmeans", "plot_args", "autoplot(x, ...) on the result: x, group, panel for plotord; lines for lineplot; interval = \"lsd\"/\"none\" for lsd_bar; data = TRUE, jitter for jitterv; + labs(title, x, y) and + theme_bw(basesz) for the titles and size"),
+    r("predictmeans", c("plotord", "lineplot", "lsd_bar", "jitterv"), "autoplot(x, ...) on the result (x, group, panel; lines; interval; jitter)"),
+    r("predictmeans", c("plottitle", "plotxlab", "plotylab", "basesz"), "autoplot(x) + labs(title, x, y) + theme_bw(size) on the result"),
     plot_set("covariatemeans", c("trellis", "plotord", "mtitle", "ci", "point", "jitterv")),
     plot_set("semipred", c("trellis", "scales", "plotord", "ci", "point", "jitterv", "threeD")),
     r(c("predictmeans", "covariatemeans", "residplot", "CookD", "PMplot"), "newwd", "nothing: ggplot2 draws in the current device"),
@@ -72,7 +74,14 @@ pm_defunct_rows <- function() {
     r("semireg", c("ncenter", "nscale", "resp_scale"), "nothing: the variables are used as they are (centring moved knots given in the data's units)"),
     r("semireg", "ngbinomial", "semireg_tmb(family = glmmTMB::nbinom2) (the maximum-likelihood fit)"),
     r(c("semireg", "semireg_tmb"), "predict_info", "nothing: the prediction information is always kept"),
-    r("permmodels", "fo", "nothing: the formula is read from the model")
+    r("permmodels", "fo", "nothing: the formula is read from the model"),
+    # snake_case names (2026-11-23): one style for every argument of the package
+    r(c(means, "pm_slopes", "semipred", "permstats", "PMplot", "varcomp"), "conf.level", "conf_level = %s", "same"),
+    r("predictmeans", "letterCI", "letter_ci = %s", "same"),
+    r("covariatemeans", "as.is", "as_is = %s", "same"),
+    r("permmodels", "test.statistic", "test_statistic = %s", "same"),
+    r("semireg", "drop.unused.levels", "drop_unused_levels = %s", "same"),
+    r("contrast_family", "max.degree", "max_degree = %s", "same")
   )
 }
 pm_defunct_table <- pm_defunct_rows()
@@ -83,7 +92,7 @@ pm_defunct_funs <- c(
   permglmer = "permlmer()",
   permglmmTMB = "permlmer()",
   permanova.lmer = "permmodels(model, type = ) (Freedman-Lane permutations; p-values differ from permanova.lmer()'s refits)",
-  ci_mcp = "predictmeans(..., letterCI = TRUE): letters from comparison intervals that agree with the tests",
+  ci_mcp = "predictmeans(..., letter_ci = TRUE): letters from comparison intervals that agree with the tests",
   R2_glmm = "R2_model(model) (the same values, as numbers)"
 )
 
@@ -112,6 +121,12 @@ pm_defunct_msg <- function(row, value) {
 pm_defunct <- function(fun, call, env = parent.frame(2), strict = FALSE, formals_of = NULL) {
   given <- names(as.list(call))[-1]
   given <- given[!is.na(given) & nzchar(given)]
+  # predictmeans(plot = FALSE) asks for nothing removed (1.x and earlier 2.0
+  # scripts): accepted; any other value of 'plot' stops
+  if (fun == "predictmeans" && "plot" %in% given && isFALSE(tryCatch(eval(call[["plot"]], env),
+                                                                     error = function(e) NA))) {
+    given <- setdiff(given, "plot")
+  }
   if (!length(given)) return(invisible(NULL))
   tab <- pm_defunct_table[pm_defunct_table$fun == fun, , drop = FALSE]
   # match.call() gives the function's own arguments in full; the other names
@@ -124,7 +139,7 @@ pm_defunct <- function(fun, call, env = parent.frame(2), strict = FALSE, formals
       row <- tab[k[h], , drop = FALSE]
       expr <- call[[given[h]]]
       value <- if (nzchar(row$value)) tryCatch(eval(expr, env), error = function(e) expr) else NULL
-      # the value when it is short (level = a -> conf.level = 0.95), else what was written (model = fit)
+      # the value when it is short (level = a -> conf_level = 0.95), else what was written (model = fit)
       if (!(is.atomic(value) && length(value) <= 10)) value <- expr
       pm_defunct_msg(row, value)
     }, character(1))

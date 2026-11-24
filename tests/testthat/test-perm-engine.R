@@ -105,3 +105,42 @@ test_that("refits work for models fitted in a function with formula and family v
   rg <- permmodels(g, method = "raw", nperm = 9, ncore = 1, seed = 1)
   expect_identical(length(rg$permlist), 9L)
 })
+
+test_that("exact = TRUE counts the observed statistic unless perms enumerate every permutation", {
+  data("sleepstudy", package = "lme4", envir = environment())
+  # random draws: exact = TRUE is ignored with a warning; p is never 0
+  expect_snapshot(r <- permmodels(lm(Reaction ~ Days, sleepstudy), nperm = 19, seed = 1, exact = TRUE))
+  expect_equal(r$COEFFICENTS["Days", "Perm_p_value"], 1/20)
+  # all 24 permutations of 4 observations: the exact p-value, without the +1
+  d4 <- data.frame(y = c(1.2, 3.1, 2.2, 5.3), x = 1:4)
+  perm_all <- function(v) if (length(v) == 1) list(v) else
+    do.call(c, lapply(seq_along(v), function(i) lapply(perm_all(v[-i]), function(r) c(v[i], r))))
+  P <- do.call(cbind, perm_all(1:4))
+  for (m in c("raw", "freedman-lane")) {
+    e <- permmodels(lm(y ~ x, d4), perms = P, exact = TRUE, method = m)
+    expect_equal(e$COEFFICENTS["x", "Perm_p_value"], 4/24, tolerance = 1e-3, label = m)
+  }
+  # repeated columns are not an enumeration (column 1, the identity, twice: 4 + 1 + 1 of 25 + 1)
+  expect_snapshot(e <- permmodels(lm(y ~ x, d4), perms = cbind(P, P[, 1]), exact = TRUE, method = "raw"))
+  expect_equal(e$COEFFICENTS["x", "Perm_p_value"], 6/26, tolerance = 1e-3)
+})
+
+test_that("permmodels() prints tiny model p-values as <1e-04 and notes the smallest attainable permutation p-value", {
+  data("sleepstudy", package = "lme4", envir = environment())
+  r <- permmodels(lm(Reaction ~ Days, sleepstudy), nperm = 19, seed = 1, method = "raw")
+  # the stored tables keep numbers (scripts and tidy() read them)
+  expect_type(r$COEFFICENTS[, "Pr(>|t|)"], "double")
+  expect_equal(unname(r$COEFFICENTS["Days", "Pr(>|t|)"]), 0)
+  expect_match(r$notes$coef, "smallest attainable p-value is 1/(19 + 1) = 0.05", fixed = TRUE)
+  expect_match(r$notes$anova, "1/(19 + 1) = 0.05", fixed = TRUE)
+  pt <- predictmeans:::pm_perm_print_table(r$COEFFICENTS)
+  expect_identical(pt[["Pr(>|t|)"]], c("<1e-04", "<1e-04"))
+  expect_equal(pt$Perm_p_value, r$COEFFICENTS[, "Perm_p_value"], ignore_attr = TRUE)   # floor, not rewritten
+  expect_snapshot(print(r))
+  # p-values above 1e-4 stay as they are; blanks stay blank
+  tab <- data.frame(`Pr(>F)` = c(0.0276, 0, NA), check.names = FALSE)
+  expect_identical(predictmeans:::pm_perm_print_table(tab)[["Pr(>F)"]], c("0.0276", "<1e-04", ""))
+  # complete enumeration: the floor is 1/nperm
+  r2 <- predictmeans:::pm_permmodels_result(list(), "a.", "b.", nperm = 24, exact = TRUE)
+  expect_match(r2$notes$coef, "1/24 = 0.0417")
+})

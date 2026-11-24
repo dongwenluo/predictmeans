@@ -4,7 +4,22 @@ Predicted (least-squares) means, standard errors, LSDs, pairwise comparisons and
 contrasts for linear, generalized linear and mixed models — `aov`, `lm`, `glm`, `gls`,
 `lme`, `lmer`, `glmer`, `glmmTMB`, `gam` and semiparametric `semireg` models — with
 Kenward–Roger, Satterthwaite or containment degrees of freedom, permutation and bootstrap
-tests, R² for mixed models and diagnostics. Results match SAS `LSMEANS` and emmeans.
+tests, R² for mixed models and diagnostics.
+
+## Why predictmeans
+
+- **Defaults chosen on evidence**: Kenward–Roger df and adjusted SEs for REML `lmer`;
+  permutation p-values (b + 1)/(B + 1); `aov` with `Error()` analysed by strata (SEs
+  from stratum mean squares, as Genstat); means over empty cells average the observed
+  cells with equal weight, with a warning.
+- **Checked against outside references** in the tests: real SAS PROC MIXED and Genstat
+  runs, pbkrtest, `nlme::lme` and emmeans.
+- **Robust**: works across model classes; stops with a clear message rather than
+  return a silently wrong answer.
+- **Advice from the data**: one line on what to do when this fit needs it (empty cells,
+  singular fit, small df, ...); `advice(x)` reads it, `options(predictmeans.advice = FALSE)`
+  turns it off.
+- **Reproducible**: resampling results are identical for any `ncore`.
 
 ## Workflow
 
@@ -25,7 +40,7 @@ Oats <- as.data.frame(nlme::Oats)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = Oats)
 
-pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey", plot = FALSE)
+pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
 pm$means     # one row per mean: estimate, std.error, df, conf.low, conf.high, group, n, ...
 pm$pairs     # one row per comparison: estimate, std.error, df, statistic, p.value, p.adj, ...
 ggplot2::autoplot(pm)

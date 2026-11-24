@@ -47,22 +47,29 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
   n <- nrow(X)
   q <- ncol(Z)
 
+  # prior weights w: Sigma = sigma^2 (W^-1 + U U'), W = diag(w), and the
+  # residual variance parameter has derivative R = W^-1 (not I). Whitened with
+  # D = W^1/2: Sigma^-1 = D (I + Ut Ut')^-1 D / sigma^2, Ut = D U. Below,
+  # "Sigma^-2" stands for Sigma^-1 R Sigma^-1 (the two agree when w = 1).
+  w <- stats::weights(model)
+  sw <- sqrt(w)
   U <- Z %*% Lambda
-  K <- as.matrix(Matrix::crossprod(U))
+  Ut <- sw * U
+  K <- as.matrix(Matrix::crossprod(Ut))
   M <- solve(diag(q) + K)
   Sinv <- function(Y) {                       # Sigma^-1 %*% Y
-    Y <- as.matrix(Y)
-    (Y - as.matrix(U %*% (M %*% as.matrix(Matrix::crossprod(U, Y)))))/s2
+    Y <- sw * as.matrix(Y)
+    sw * (Y - as.matrix(Ut %*% (M %*% as.matrix(Matrix::crossprod(Ut, Y)))))/s2
   }
   SX <- Sinv(X)                               # Sigma^-1 X        (n x p)
   SZ <- Sinv(Z)                               # Sigma^-1 Z        (n x q)
   A <- as.matrix(Matrix::crossprod(Z, SZ))     # Z' Sigma^-1 Z     (q x q)
-  B <- crossprod(SZ)                          # Z' Sigma^-2 Z     (q x q)
+  B <- crossprod(SZ, SZ/w)                    # Z' Sigma^-1 R Sigma^-1 Z (q x q)
   ZSX <- as.matrix(Matrix::crossprod(Z, SX))  # Z' Sigma^-1 X     (q x p)
-  ZS2X <- crossprod(SZ, SX)                   # Z' Sigma^-2 X     (q x p)
-  S2X <- Sinv(SX)                             # Sigma^-2 X        (n x p)
+  ZS2X <- crossprod(SZ, SX/w)                 # Z' Sigma^-1 R Sigma^-1 X (q x p)
+  S2X <- Sinv(SX/w)                           # Sigma^-1 R Sigma^-1 X (n x p)
   MK <- M %*% K
-  trS2 <- (n - 2 * sum(diag(MK)) + sum(MK * t(MK)))/s2^2   # tr(Sigma^-2)
+  trS2 <- (n - 2 * sum(diag(MK)) + sum(MK * t(MK)))/s2^2   # tr((Sigma^-1 R)^2)
 
   # derivative matrices E_k (q x q) for each random-effect (co)variance
   Gp <- lme4::getME(model, "Gp")
@@ -110,7 +117,7 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
   PP <- vector("list", n_g)
   EZSX <- lapply(E, function(Ek) as.matrix(Ek %*% ZSX))
   for (k in seq_len(n_re)) PP[[k]] <- pm_upper_sym(-crossprod(ZSX, EZSX[[k]]))
-  PP[[n_g]] <- pm_upper_sym(-crossprod(SX))
+  PP[[n_g]] <- pm_upper_sym(-crossprod(SX, SX/w))
 
   # Q_rs = X' Sigma^-1 G_r Sigma^-1 G_s Sigma^-1 X and trace terms
   index <- function(i, j) if (i <= j) (i - 1) * (n_g - i/2) + j else (j - 1) * (n_g - j/2) + i
@@ -125,7 +132,7 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
       QQ[[index(r, s)]] <- crossprod(EZSX[[r]], ZS2X)
       Ktrace[r, s] <- Ktrace[s, r] <- sum(as.matrix(E[[r]]) * B)
     } else {
-      QQ[[index(r, s)]] <- crossprod(SX, S2X)
+      QQ[[index(r, s)]] <- crossprod(SX/w, S2X)
       Ktrace[r, s] <- trS2
     }
   }
@@ -145,9 +152,9 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
       sv <- Sinv(v)
       sv - SX %*% (Phi %*% crossprod(X, sv))
     }
-    Py <- Sinv(lme4::getME(model, "y") - X %*% lme4::fixef(model))
+    Py <- Sinv(lme4::getME(model, "y") - lme4::getME(model, "offset") - X %*% lme4::fixef(model))
     ZPy <- as.matrix(Matrix::crossprod(Z, Py))
-    a <- c(lapply(E, function(Ek) as.matrix(Z %*% (Ek %*% ZPy))), list(Py))   # G_r P y
+    a <- c(lapply(E, function(Ek) as.matrix(Z %*% (Ek %*% ZPy))), list(Py/w))   # G_r P y
     Pa <- lapply(a, Pv)
     Yq <- matrix(NA, n_g, n_g)
     for (r in seq_len(n_g)) for (s in r:n_g) Yq[r, s] <- Yq[s, r] <- sum(a[[r]] * Pa[[s]])
@@ -155,9 +162,18 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
   } else {
     IO <- IE2/2
   }
+  # the expected information is positive (semi)definite; the observed and
+  # average ones need not be away from the maximum: then the expected one is
+  # used, with a message (pm_kr_info_check()); before 2.0.0 an indefinite
+  # matrix was inverted anyway (a "covariance" that is not one, nonsense df)
   keep <- c(!boundary, TRUE)                   # the residual variance is always kept
+  information_used <- information
+  if (information != "expected" && !pm_kr_info_check(IO[keep, keep, drop = FALSE], information)) {
+    IO <- IE2/2
+    information_used <- "expected"
+  }
   IOk <- IO[keep, keep, drop = FALSE]
-  condi <- min(abs(eigen(IOk, only.values = TRUE)$values))
+  condi <- min(abs(eigen(IOk, symmetric = TRUE, only.values = TRUE)$values))
   WW <- matrix(0, n_g, n_g)
   WW[keep, keep] <- pm_upper_sym(if (condi > 1e-10) solve(IOk) else MASS::ginv(IOk))
   UU <- matrix(0, ncol(X), ncol(X))
@@ -174,18 +190,23 @@ pm_vcov_kr <- function(model, information = c("observed", "expected", "average")
   attr(PhiA, "P") <- PP
   attr(PhiA, "W") <- WW
   attr(PhiA, "condi") <- condi
-  attr(PhiA, "information") <- information
+  attr(PhiA, "information") <- information_used
   attr(PhiA, "boundary") <- boundary
   PhiA
 }
 
 ## Kenward-Roger F test of L beta = 0 (as pbkrtest::KRmodcomp(model, L)$test["Ftest", ]).
+## L is first reduced to linearly independent rows (q = its rank), as
+## pbkrtest does; a df that is not positive and finite stops
+## (pm_kr_ddf_formula() in R/df-kr.R).
 pm_kr_ftest <- function(model, L, PhiA = pm_vcov_kr(model)) {
   if (!is.matrix(L)) L <- matrix(L, nrow = 1)
+  r <- qr(t(L))
+  L <- L[r$pivot[seq_len(r$rank)], , drop = FALSE]
   Phi <- as.matrix(stats::vcov(model))
   beta <- if (inherits(model, "merMod")) lme4::fixef(model) else if (inherits(model, "lme")) nlme::fixef(model) else
     stats::coef(model)
-  Theta <- t(L) %*% solve(L %*% Phi %*% t(L), L)
+  Theta <- crossprod(L, solve(L %*% tcrossprod(Phi, L), L))
   P <- attr(PhiA, "P")
   W <- attr(PhiA, "W")
   A1 <- A2 <- 0
@@ -198,24 +219,26 @@ pm_kr_ftest <- function(model, L, PhiA = pm_vcov_kr(model)) {
     A1 <- A1 + e * W[ii, jj] * (sum(diag(ui)) * sum(diag(uj)))
     A2 <- A2 + e * W[ii, jj] * sum(ui * t(uj))
   }
-  q <- as.numeric(Matrix::rankMatrix(L))
-  B <- (1/(2 * q)) * (A1 + 6 * A2)
-  g <- ((q + 1) * A1 - (q + 4) * A2)/((q + 2) * A2)
-  c1 <- g/(3 * q + 2 * (1 - g))
-  c2 <- (q - g)/(3 * q + 2 * (1 - g))
-  c3 <- (q + 2 - g)/(3 * q + 2 * (1 - g))
-  V0 <- 1 + c1 * B
-  V1 <- 1 - c2 * B
-  V2 <- 1 - c3 * B
-  V0 <- ifelse(abs(V0) < 1e-10, 0, V0)
-  x <- 1 - A2/q
-  ratio <- if (abs(x) < 1e-14 && abs(V1) < 1e-14) 1 else x/V1
-  rho <- 1/q * ratio^2 * V0/V2
-  ddf <- 4 + (q + 2)/(q * rho - 1)
+  q <- nrow(L)
+  ddf <- pm_kr_ddf_formula(A1, A2, q)$ddf
   F_scaling <- if (abs(ddf - 2) < 0.01) 1 else ddf * (1 - A2/q)/(ddf - 2)
-  b <- L %*% beta
-  Wald <- as.numeric(t(b) %*% solve(L %*% as.matrix(PhiA) %*% t(L), b))
+  Wald <- pm_wald_quad(L, beta, PhiA)
   Fstat <- F_scaling * Wald/q
   c(stat = Fstat, ndf = q, ddf = ddf, F.scaling = F_scaling,
     p.value = stats::pf(Fstat, q, ddf, lower.tail = FALSE))
+}
+
+## Is the observed (or average) information of the variance parameters
+## positive definite? The one check for lmer (pm_vcov_kr()) and nlme
+## (pm_vcov_kr_nlme()) models. FALSE, with a message, when an eigenvalue is
+## not positive (relative to the largest): the fit is not at a clear maximum
+## in some direction of the variance parameters (a flat or poorly identified
+## likelihood), and its inverse is no covariance. The caller then uses the
+## expected information, which is positive definite.
+pm_kr_info_check <- function(I, information, tol = 1e-8) {
+  ev <- eigen((I + t(I))/2, symmetric = TRUE, only.values = TRUE)$values
+  if (length(ev) && min(ev) > tol * max(abs(ev), 1e-300)) return(TRUE)
+  message("Kenward-Roger: the ", information, " information of the variance parameters is not positive definite ",
+          "(smallest eigenvalue ", format(min(ev), digits = 3), "); using the expected information (as \"KR-expected\").")
+  FALSE
 }

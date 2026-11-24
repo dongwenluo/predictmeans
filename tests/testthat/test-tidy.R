@@ -129,3 +129,24 @@ test_that("marginaleffects::hypotheses() works on predictmeans results", {
   expect_equal(as.numeric(h$estimate), -pm$pairs$estimate[1], tolerance = 1e-8)
   expect_equal(as.numeric(h$std.error), pm$pairs$std.error[1], tolerance = 1e-6)
 })
+
+test_that("with a permlist the limits of the means are the model's t limits at conf_level (not +- 2 SE)", {
+  Oats <- as.data.frame(nlme::Oats)
+  Oats$nitro <- factor(Oats$nitro)
+  fm <- lm(yield ~ Block + nitro, Oats)
+  pl <- permmodels(fm, nperm = 19, seed = 1)
+  p0 <- predictmeans(fm, "nitro")
+  for (cl in c(0.95, 0.99)) {
+    pp <- predictmeans(fm, "nitro", permlist = pl, conf_level = cl)
+    crit <- qt(1 - (1 - cl)/2, df.residual(fm))
+    expect_equal(pp$means$conf.low, pp$means$estimate - crit * pp$means$std.error, label = cl)
+    expect_true(all(is.na(pp$means$df)))
+    expect_equal(pp$mean_table$Table[[paste0("LL(", cl * 100, "%)")]], round(pp$means$conf.low, 4))
+  }
+  expect_equal(predictmeans(fm, "nitro", permlist = pl)$means$conf.low, p0$means$conf.low)
+  # back-transformed limits too
+  fg <- glm(round(yield/10) ~ Block + nitro, poisson, Oats)
+  pg <- predictmeans(fg, "nitro", permlist = permmodels(fg, nperm = 19, seed = 1), conf_level = 0.9)
+  expect_equal(pg$means$response.conf.low, exp(pg$means$estimate - qnorm(0.95) * pg$means$std.error))
+  expect_snapshot(print(summary(predictmeans(fm, "nitro", permlist = pl))))
+})

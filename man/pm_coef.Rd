@@ -4,7 +4,6 @@
 \alias{pm_coef}
 \alias{pm_vcov}
 \alias{pm_basis}
-\alias{pm_data}
 \alias{pm_df}
 \alias{pm_linkinv}
 \alias{pm_contrasts}
@@ -13,7 +12,6 @@
 pm_coef(model, ...)
 pm_vcov(model, ...)
 pm_basis(model, newdata, ...)
-pm_data(model, ...)
 pm_df(model, L, ...)
 pm_linkinv(model, ...)
 pm_contrasts(model, ...)
@@ -48,8 +46,9 @@ corresponding generic only; nothing inside predictmeans needs to change.
   without a column stops with a message (a column for an aliased coefficient may be there or not). Default: \code{model.matrix()} of the model's terms (with their stored
   \code{predvars}, so \code{poly()}, \code{ns()}, \code{scale()} etc. use the fitted basis), contrasts and factor
   levels. The \code{gam} method uses the linear predictor matrix of package \pkg{mgcv}.}
-  \item{\code{pm_data(model)}}{The data used to fit the model, or \code{NULL} (the default), in which case they are
-  found from the \code{data} argument of the call, \code{getData()}, the model frame or the formula environment.}
+  \item{\code{pm_data(model)}}{The data used to fit the model. The default method (see \code{\link{pm_data}})
+  finds them from the \code{data} argument of the call, \code{getData()} or the model frame; \code{Kmatrix()} uses
+  a \code{pm_data()} method only when the class has its own.}
   \item{\code{pm_df(model, L)}}{Denominator degrees of freedom for each row of \code{L}, or \code{NULL} (the
   default) to use the model's single residual df: \code{df.residual(model)}, or \code{Inf} (normal-based) when
   there is none. Kenward-Roger df for \code{lmer} and the rules of \pkg{nlme} for \code{lme} are built in.}
@@ -64,23 +63,28 @@ its call (\code{getCall()}) or a \code{pm_data()} method so that the data can be
 }
 \examples{
   library(predictmeans)
-  # A made-up model class that wraps lm() and has only four methods.
+  # A made-up model class that wraps lm() and has only four methods. (Methods are
+  # found where predictmeans looks for them: in a package's namespace or, as
+  # here, in the global environment; registerS3method() also works.)
   fit_mymodel <- function(formula, data) {
     structure(list(fit = lm(formula, data), call = match.call()), class = "mymodel")
   }
-  coef.mymodel <- function(object, ...) coef(object$fit)
-  vcov.mymodel <- function(object, ...) vcov(object$fit)
-  terms.mymodel <- function(x, ...) terms(x$fit)
-  df.residual.mymodel <- function(object, ...) object$fit$df.residual
+  registerS3method("coef", "mymodel", function(object, ...) coef(object$fit))
+  registerS3method("vcov", "mymodel", function(object, ...) vcov(object$fit))
+  registerS3method("terms", "mymodel", function(x, ...) terms(x$fit))
+  registerS3method("df.residual", "mymodel", function(object, ...) object$fit$df.residual)
 
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   m <- fit_mymodel(yield ~ Block + nitro*Variety, data = Oats)
-  predictmeans(m, "nitro", plot = FALSE)$means
+  predictmeans(m, "nitro")$means
 
   # Degrees of freedom of its own, e.g. normal-based:
-  pm_df.mymodel <- function(model, L, ...) rep(Inf, nrow(L))
-  predictmeans(m, "nitro", plot = FALSE)$means
+  registerS3method("pm_df", "mymodel", function(model, L, ...) rep(Inf, nrow(L)))
+  predictmeans(m, "nitro")$means
+}
+\seealso{
+\code{\link{Kmatrix}}, \code{\link{pm_data}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

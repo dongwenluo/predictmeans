@@ -2,25 +2,25 @@
 % Please edit documentation in R/permlmer.R
 \name{permlmer}
 \alias{permlmer}
-\title{Permutation Test of random or fixed effects for \code{lmer}, \code{glmer} and \code{glmmTMB} models.}
+\title{Permutation Test of Random or Fixed Effects of Mixed Models}
 \usage{
 permlmer(model0, model1, nperm = 999, ncore=1, plot=FALSE, seed, perms=NULL,
          method=c("auto", "working", "quantile"), ...)
 }
 \arguments{
-\item{model0}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0 (\code{model0} before 2.0); it must
+\item{model0}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H0 (\code{lmer0} before 2.0); it must
 be nested within \code{model1}.}
 
-\item{model1}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1 (\code{model1} before 2.0).}
+\item{model1}{\code{lmer} (or \code{glmer}, \code{glmmTMB}) model under H1 (\code{lmer1} before 2.0).}
 
 \item{...}{Not used: \code{lmer0}, \code{lmer1} (before 2.0) stop with their 2.0 spelling. \code{permglmer()} and
 \code{permglmmTMB()}, the same function under other names before 2.0, were removed: use \code{permlmer()}.}
 
-\item{nperm}{Number of permutation, the default value is 999.}
+\item{nperm}{Number of permutations; default 999.}
 
-\item{ncore}{Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).}
+\item{ncore}{Number of cores (default 1; before predictmeans 2.0: 3).}
 
-\item{plot}{Plot permutation distribution or not, the default value is FALSE.}
+\item{plot}{\code{TRUE}: plot the permutation distribution of the statistic. Default \code{FALSE}.}
 
 \item{seed}{Specify a random number generator seed, for reproducible results. The user's random number stream is
 left as it was.}
@@ -38,8 +38,9 @@ attribute \code{"method"} says which method was used, and attribute \code{"failu
 that failed and were left out (if any).
 }
 \description{
-This function provides permutation tests for the terms in a linear mixed model of \code{lmer}, and in a generalized
-linear mixed model of \code{glmer} or \code{glmmTMB}.
+Permutation likelihood ratio test of two nested \code{lmer}, \code{glmer} or \code{glmmTMB} models. The p-value
+is (b + 1)/(B + 1), b of the B permuted statistics being at least as large as the observed one; results are the
+same for any \code{ncore}.
 }
 \details{
 The residuals of \code{model0} are decorrelated with the symmetric square root of their covariance under
@@ -47,11 +48,15 @@ The residuals of \code{model0} are decorrelated with the symmetric square root o
 are refitted to each permuted data set. The likelihood-ratio statistics are compared after rounding to 4 decimals, so an
 observed statistic of 0 (the tested variance estimated at 0) gives a p-value of 1. Since predictmeans 2.0 the square root
 is symmetric, so the results do not depend on the order of the data (1.x used the Cholesky factor).
+Models with the same fixed effects (tests of random effects) are compared by the REML likelihood ratio; models
+with different fixed effects are first refitted by ML, so the permuted statistic is the ML likelihood ratio
+that \code{anova()} prints in column \code{Chisq} (before 2.0 it was the ML likelihood at the REML estimates).
+Check: the identity permutation gives \code{Perm-p} = 1 (\file{tests/testthat/test-permlmer.R}).
 
 For GLMMs (\code{glmer} or \code{glmmTMB}; since predictmeans 2.0), \code{method = "working"} does the same on the
 working (link) scale: \code{model0} is linearised at its fit (working response \eqn{z = \eta + (y - \mu) d\eta/d\mu},
 working variance \eqn{\phi V(\mu)/(a (d\mu/d\eta)^2)}; the covariance of z also has the random effects, as in
-\code{\link{R2_glmm}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
+\code{\link{R2_model}}), the decorrelated working residuals are permuted, and the statistic is the likelihood-ratio
 statistic of weighted linear mixed models fitted to the working responses (REML when the two models have the same
 fixed effects, ML otherwise). In simulations it kept the 5\% level for counts and for binomial data with several
 trials, and was much more robust than the usual likelihood-ratio test when counts were overdispersed. For 0/1
@@ -96,6 +101,9 @@ Oliver E. Lee and Thomas M. Braun (2012),
 
 Peter K. Dunn and Gordon K. Smyth (1996),
     \emph{Randomized Quantile Residuals}. Journal of Computational and Graphical Statistics, 5(3), 236-244.
+}
+\seealso{
+\code{\link{permmodels}}, \code{\link{varcomp}} (\code{test = TRUE}), \code{\link{permindex}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

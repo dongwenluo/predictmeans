@@ -14,16 +14,18 @@
 #' term (containment, between-within, \pkg{nlme}'s df) the smallest df of the terms with the covariate; otherwise the
 #' residual df.
 #' @usage
-#' pm_slopes(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
-#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
+#' pm_slopes(model, covariate, modelterm, at = NULL, conf_level = 0.95, adj = "none",
+#'           df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment",
+#'             "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'           vcov_adjust = TRUE,
-#'           weights = c("equal", "proportional", "outer", "cells", "flat"), vcov = NULL, ...)
+#'           weights = c("equal", "proportional", "outer", "cells", "flat"),
+#'           vcov = NULL, ...)
 #' @param model A fitted model, as for \code{\link{predictmeans}}.
 #' @param covariate Name (in "quotes") of the numeric covariate.
 #' @param modelterm Name (in "quotes") of the factor term whose levels get a slope each, e.g. \code{"Variety"}.
 #' @param at The value of the covariate where the slopes are taken (matters only when the covariate enters the model
 #'   non-linearly); the default is its mean.
-#' @param conf.level Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).
+#' @param conf_level Confidence level of the limits, the default is 0.95 (\code{level = 0.05} before 2.0).
 #' @param adj Adjustment of the p-values of the pairwise comparisons of slopes, as in \code{\link{predictmeans}}.
 #' @param df_method,vcov_adjust,weights,vcov As in \code{\link{predictmeans}}.
 #' @param ... Not used: \code{level} (before 2.0) stops with its 2.0 spelling.
@@ -37,9 +39,10 @@
 #'   slope of \code{level2}), \code{std.error}, \code{df}, \code{statistic}, \code{p.value}, \code{p.adj},
 #'   \code{conf.low}, \code{conf.high} and, with the adjustments that have them (tukey, bonferroni, sidak, scheffe,
 #'   mvt), \code{adj.conf.low}, \code{adj.conf.high}: simultaneous limits that leave out 0 exactly when
-#'   \code{p.adj} is below \code{1 - conf.level}.}
+#'   \code{p.adj} is below \code{1 - conf_level}.}
 #' \item{settings}{\code{modelterm}, \code{covariate}, \code{at}, \code{level}, \code{adjust}, \code{df_method},
 #'   \code{vcov_adjust}, \code{vcov}, \code{model_class}, \code{version}.}
+#' @seealso \code{\link{covariatemeans}}, \code{\link{predictmeans}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -52,12 +55,13 @@
 #' @name pm_slopes
 NULL
 
-pm_slopes <- function(model, covariate, modelterm, at = NULL, conf.level = 0.95, adj = "none",
+#' @export
+pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95, adj = "none",
                       df_method = c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
                       vcov_adjust = TRUE, weights = c("equal", "proportional", "outer", "cells", "flat"),
                       vcov = NULL, ...) {
   pm_defunct("pm_slopes", match.call(), strict = TRUE, formals_of = formals(sys.function()))
-  level <- pm_conf_alpha(conf.level)
+  level <- pm_conf_alpha(conf_level)
   vcov_adjust_default <- missing(vcov_adjust)
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
@@ -126,18 +130,22 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf.level = 0.95,
                    df_method = inf$label, vcov_adjust = isTRUE(inf$vcov_adjust),
                    vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label,
                    model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
-  structure(list(slopes = slopes, pairs = pairs, settings = settings), class = "pm_slopes",
-            covariate = covariate, at = at, adjust = adj)
+  out <- structure(list(slopes = slopes, pairs = pairs, settings = settings), class = "pm_slopes",
+                   covariate = covariate, at = at, adjust = adj)
+  pm_add_advice(out, tryCatch(pm_slopes_advice(out, model), error = function(e) NULL))
 }
 
+#' @exportS3Method generics::tidy pm_slopes
 tidy.pm_slopes <- function(x, what = c("slopes", "pairs"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"))       # R/tidy.R
 }
 
+#' @exportS3Method as.data.frame pm_slopes
 as.data.frame.pm_slopes <- function(x, row.names = NULL, optional = FALSE, what = c("slopes", "pairs"), ...) {
   pm_result_table(x, if (!missing(what)) what, c("slopes", "pairs"), row.names)
 }
 
+#' @exportS3Method print pm_slopes
 print.pm_slopes <- function(x, digits = 4, ...) {
   s <- x$settings
   cat("Slopes of", sQuote(attr(x, "covariate")), "at", format(attr(x, "at"), digits = digits),
@@ -147,5 +155,6 @@ print.pm_slopes <- function(x, digits = 4, ...) {
     cat("\nPairwise differences of slopes (p.adj: ", attr(x, "adjust"), ")\n\n", sep = "")
     print(x$pairs, digits = digits, row.names = FALSE)
   }
+  pm_print_advice(x)
   invisible(x)
 }

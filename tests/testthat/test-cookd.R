@@ -53,3 +53,19 @@ test_that("CookD() refuses aov with Error() and other classes, with a clear mess
   expect_error(CookD(aov(yield ~ nitro + Error(Block), O)), "Error\\(\\)")
   expect_error(CookD(list(a = 1)), "handles lm, aov, glm")
 })
+
+test_that("CookD() draws a ggplot with the largest distances labelled", {
+  O <- as.data.frame(nlme::Oats); O$nitro <- factor(O$nitro)
+  fl <- lm(yield ~ Block + nitro * Variety, O)
+  cd <- CookD(fl, plot = FALSE)
+  p <- pm_cookd_plot(cd, id = 2)
+  expect_s3_class(p, "ggplot")
+  lab <- Filter(function(l) inherits(l$geom, "GeomText"), p$layers)[[1]]$data
+  expect_setequal(lab$label, names(sort(cd, decreasing = TRUE))[1:2])
+  expect_no_error(ggplot2::ggplot_build(p))
+  # group deletions: the groups on the x axis
+  pg <- pm_cookd_plot(CookD(fl, group = "Block", plot = FALSE), group = "Block")
+  expect_identical(pg$labels$x, "Level of Block")
+  grDevices::pdf(NULL); on.exit(grDevices::dev.off())
+  expect_equal(CookD(fl), cd)                                   # drawing does not change the result
+})

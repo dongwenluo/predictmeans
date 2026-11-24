@@ -28,7 +28,7 @@ test_that("permstats(): parametric and permutation p-values, effect sizes, size 
   Fo <- s["cyl", "statistic"]
   expect_equal(s["cyl", "ses"], (Fo - mean(Fs)) / sd(Fs), tolerance = 1e-6)
   expect_equal(s["cyl", "param.size"], mean(pf(Fs, 2, df.residual(fm), lower.tail = FALSE) <= 0.05), tolerance = 1e-6)
-  expect_equal(permstats(r, conf.level = 0.5)["cyl", "param.size"],
+  expect_equal(permstats(r, conf_level = 0.5)["cyl", "param.size"],
                mean(pf(Fs, 2, df.residual(fm), lower.tail = FALSE) <= 0.5), tolerance = 1e-6)
   expect_error(permstats(permmodels(fm, nperm = 9, method = "raw")), "Freedman-Lane")
 })

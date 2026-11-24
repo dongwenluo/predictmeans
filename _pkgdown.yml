@@ -2,37 +2,101 @@ url: https://dongwenluo.github.io/predictmeans/
 
 template:
   bootstrap: 5
+  bootswatch: flatly
+  bslib:
+    primary: "#000080"
+    border-radius: 0.5rem
+    btn-border-radius: 0.5rem
 
 home:
-  title: "predictmeans: predicted means for linear and mixed models"
+  sidebar:
+    structure: [links, license, citation, authors, dev]
+  title: "predictmeans: predicted means for linear, mixed and semiparametric models"
+  description: >
+    predictmeans gives predicted means, standard errors, contrasts, multiple
+    comparisons, permutation and bootstrap tests, adjusted R-squared and
+    diagnostics for aov, lm, glm, gls, lme, lmer, glmer, glmmTMB, gam and
+    semiparametric models, with defaults chosen on the evidence, results
+    checked against SAS and Genstat, and advice when a fit needs care.
 
 navbar:
   structure:
-    left: [intro, reference, articles, news]
+    left: [intro, reference, articles, examples, news]
     right: [search, github]
+  components:
+    intro:
+      text: Get started
+      href: articles/predictmeans.html
+    articles:
+      text: Articles
+      menu:
+      - text: Getting started with predictmeans
+        href: articles/predictmeans.html
+      - text: Checking the model
+        href: articles/checking.html
+      - text: Link and response scale
+        href: articles/response-scale.html
+      - text: Contrasts, joint tests and slopes
+        href: articles/contrasts.html
+      - text: Missing cells and non-estimable means
+        href: articles/missing-cells.html
+      - text: Permutation and bootstrap tests
+        href: articles/resampling.html
+      - text: Smooth curves in mixed models
+        href: articles/smooth.html
+      - text: Adjusted R² for generalized linear mixed models
+        href: articles/R2_glmm.html
+      - text: -------
+      - text: Checks against SAS and Genstat
+      - text: Matching SAS PROC MIXED
+        href: articles/sas.html
+      - text: -------
+      - text: Upgrading
+      - text: Migrating from predictmeans 1.x
+        href: articles/migrating.html
+    examples:
+      text: Worked examples
+      menu:
+      - text: Overview of predictmeans
+        href: articles/overview.html
+      - text: Experimental design and analysis for tree improvement
+        href: articles/tree-improvement.html
+      - text: "Adjusted R² for GLMMs: Piepho (2023) examples"
+        href: articles/R2-GLMM.html
+    news:
+      text: News
+      href: news/index.html
 
 articles:
-- title: Articles
+- title: Using predictmeans
   navbar: ~
   contents:
   - predictmeans
   - checking
-  - contrasts
   - response-scale
+  - contrasts
+  - missing-cells
   - resampling
   - smooth
-  - missing-cells
   - R2_glmm
+- title: Checks against SAS and Genstat
+  navbar: ~
+  contents:
   - sas
+- title: Upgrading
+  navbar: ~
+  contents:
   - migrating
 - title: Worked examples
-  navbar: Worked examples
+  navbar: ~
   contents:
   - articles/overview
   - articles/tree-improvement
+  - articles/R2-GLMM
 
 reference:
 - title: Predicted means and comparisons
+  desc: Means of factor terms with their standard errors, intervals and pairwise comparisons; contrasts, joint tests and slopes.
   contents:
   - predictmeans
   - covariatemeans
@@ -42,24 +106,28 @@ reference:
   - pm_joint
   - pm_slopes
   - Kmatrix
-- title: Results
+- title: Results and plots
+  desc: Stable tables (tidy, as.data.frame), plots drawn from results, and the advice kept with every result.
   contents:
   - tidy.predictmeans
   - tidy.pm_curves
   - autoplot.predictmeans
+  - autoplot.pm_curves
   - PMplot
+  - advice
 - title: Degrees of freedom, tests and diagnostics
+  desc: F tests with Kenward-Roger df, R-squared, variance components and model checks.
   contents:
   - anova.lmerMod
   - df_term
   - R2_model
   - varcomp
   - se_ranef
-  - CookD
   - residplot
+  - CookD
   - pm_check
   - pm_boxcox
-- title: Permutation tests
+- title: Permutation and bootstrap tests
   contents:
   - permmodels
   - permlmer
@@ -68,6 +136,7 @@ reference:
   - permcombine
   - bootmodels
 - title: Semiparametric regression
+  desc: Penalized splines and surfaces fitted as mixed models, with predictions, differences and derivatives.
   contents:
   - semireg
   - semireg_tmb
@@ -77,6 +146,7 @@ reference:
 - title: Extending to new model classes
   contents:
   - pm_coef
+  - pm_data
 - title: Data
   contents:
   - ATP
@@ -84,13 +154,18 @@ reference:
   - Clinical
   - Caschool
   - copper
+  - DataExam5.2
   - Drug
   - growthIndiana
   - ozoneCalif
+  - Poisson_ind
   - SBMDfem
   - scallop
   - wageTUnion
-  - Poisson_ind
 - title: Package
   contents:
   - predictmeans-package
+  - predictmeans-defunct
+
+news:
+  cran_dates: false

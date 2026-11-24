@@ -2,26 +2,28 @@
 % Please edit documentation in R/misc.R
 \name{df_term}
 \alias{df_term}
-\title{Calculate degree of freedom of a modelterm (contrast) for a lmer model}
+\title{Denominator Degrees of Freedom of the Means or Contrasts of an lmer Model}
 \usage{
 df_term(model, modelterm, covariate=NULL, ctrmatrix=NULL, ctrnames=NULL,
-          df_method=c("Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average"), ...)
+        df_method=c("Kenward-Roger", "Satterthwaite", "containment",
+          "between-within", "KR-expected", "KR-average"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{lmer}.}
 
-\item{modelterm}{Name (in "quotes") for indicating which factor term's degree of freedom to be calculated. 
-The \code{modelterm} must be given exactly as it appears in the model formlar, e.g. "A" or "A:B".}
+\item{modelterm}{Name (in "quotes") of the model term whose means get df, as written in the model formula,
+e.g. "A" or "A:B".}
 
-\item{covariate}{Name (in "quotes") of one the covariate variables in the \code{model}.}
+\item{covariate}{Name (in "quotes") of a covariate in the \code{model}, passed to \code{\link{Kmatrix}}.}
 
-\item{ctrmatrix}{A specified contrast matrix. If \code{ctrmatrix} isn't NULL, the programe will ignore modelterm 
-and calculate degree of freedom for the \code{ctrmatrix}.}
+\item{ctrmatrix}{A contrast matrix on the fixed-effect coefficients (one column per coefficient of
+\code{fixef(model)}). When given, \code{modelterm} is ignored (except for "containment" and
+"between-within", which need it).}
 
-\item{ctrnames}{Names of the specified contrasts, e.g. c("A vs D", "C vs B", ...)}
+\item{ctrnames}{Names of the rows of \code{ctrmatrix}, e.g. c("A vs D", "C vs B").}
 
-\item{df_method}{The method for the degrees of freedom (called \code{type} before 2.0). 
-The choices are "Kenward-Roger", "Satterthwaite" and "containment". The default method is "Kenward-Roger".
+\item{df_method}{The method for the degrees of freedom (called \code{type} before 2.0): "Kenward-Roger" (the
+default), "Satterthwaite", "containment", "between-within", "KR-expected" or "KR-average".
 Kenward-Roger needs a REML fit; for models fitted by ML, Satterthwaite is used with a warning.
 "containment" gives the SAS \code{DDFM=CONTAIN} df of \code{modelterm} (needed then) for every row, and
 "between-within" the SAS \code{DDFM=BETWITHIN} df (see \code{\link{predictmeans}}). "Kenward-Roger" uses the
@@ -30,37 +32,33 @@ information, as \pkg{pbkrtest} and \pkg{emmeans}; "KR-average" the average infor
 
 \item{...}{Arguments removed in 2.0 (\code{type}, \code{vcov_adj}) stop with their 2.0 spelling.}
 }
+\value{
+A numeric vector of df, one per mean of \code{modelterm} (rows of \code{Kmatrix(model, modelterm)$K})
+  or per row of \code{ctrmatrix}.
+}
 \description{
-Calculate the degree of freedom of a modelterm (contrast) for a \code{lmer} model 
-  using "Kenward-Roger" or "Satterthwaite" method.
+The denominator df of each mean of a model term, or of each row of a contrast matrix, for an \code{lmer} fit:
+  Kenward-Roger (default), Satterthwaite, containment or between-within.
+}
+\details{
+Kenward-Roger df that cannot be computed fall back to Satterthwaite with a warning. The Satterthwaite df equal
+those of \pkg{lmerTest} and the Kenward-Roger df those of \pkg{pbkrtest} (\code{"KR-expected"}) and SAS
+\code{DDFM=KR} (\file{tests/testthat/test-satterthwaite.R}, \file{test-kr-sas.R}).
 }
 \examples{
 library(predictmeans)
-# ftable(xtabs(yield ~ Block+Variety+nitro, data=Oats))
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 df_term(fm, "nitro:Variety")
-## The contrast has a contrast matrix as follows:
-#     0:Golden Rain 0:Marvellous 0:Victory 
-#[1,]            -1            0         1 
-#[2,]             0            0         1 
-#     0.2:Golden Rain 0.2:Marvellous 0.2:Victory 
-#[1,]               0              0           0 
-#[2,]               0              0           0 
-#     0.4:Golden Rain  0.4:Marvellous 0.4:Victory
-#[1,]               0               0           0
-#[2,]               0              -1           0
-#      0.6:Golden Rain 0.6:Marvellous 0.6:Victory
-#[1,]                0              0           0
-#[2,]                0              0           0
-
-# 1. Enter above contrast matrix into a pop up window, then close the window
-if (interactive()) df_term(fm, "nitro:Variety")
- 
-# 2. Construct the contrast matrix directly
-cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
+df_term(fm, "nitro:Variety", df_method = "containment")
+# two contrasts of the 12 coefficients
+cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 df_term(fm, ctrmatrix=cm, df_method="Satterthwaite")
+}
+\seealso{
+\code{\link{predictmeans}} (argument \code{df_method}), \code{\link{anova.lmerMod}},
+  \code{\link{contrastmeans}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

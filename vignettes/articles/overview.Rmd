@@ -3,8 +3,20 @@ title: "Overview of predictmeans"
 author: "Dongwen Luo"
 ---
 
+
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+```{r, include = FALSE}
+# show code folded: click 'Code' to open it
+local({
+  hook <- knitr::knit_hooks$get("source")
+  knitr::knit_hooks$set(source = function(x, options) {
+    paste0("\n<details class=\"code-fold\"><summary>Code</summary>\n\n", hook(x, options), "\n\n</details>\n")
+  })
+})
 ```
 
 
@@ -12,7 +24,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align =
 #| label: setup
 library(tidyverse)
 library(predictmeans)
-library(lmerTest)   # summary() with t tests; anova() of lmer fits has F tests with predictmeans 2.0 alone
+library(lmerTest)   # t tests in summary(); predictmeans alone gives anova() F tests for lmer fits
 library(HRW)
 library(gridExtra)
 library(car)
@@ -22,8 +34,8 @@ library(knitr)
 
 data(copper, package = "predictmeans")
 
+# an HTML table with a CSV download button (choose 'All' entries to download every row)
 DT_df <- function(df){
-  require(DT)
   stopifnot(is.data.frame(df))
   
   df |>
@@ -41,46 +53,28 @@ DT_df <- function(df){
 }
 ```
 
-## **Outline**
-
-::: {style="font-size: 200%;"}
-
--   Motivation
-
--   Overview 
-
--   Examples 
-
--   Future Plan
-
-::: 
-
 ## **Motivation**
 
 ::: {style="font-size: 150%;"}
 
--   **Mixed Effects Models:** Essential for statistical analysis (e.g., split-plot experiments, repeated measurements, meta-analysis). However, popular R packages like 'nlme' and 'lme4' only provide model effects and ANOVA outputs, lacking further inference (predicted means, multiple comparisons, confidence intervals).
+-   **Mixed-effects models** are needed for split-plot experiments, repeated measurements, meta-analysis and many other designs. The packages that fit them ('nlme', 'lme4', 'glmmTMB') give the model coefficients and an ANOVA table, but not the inference a study usually reports: predicted means, their standard errors, confidence intervals and multiple comparisons.
 
--   **Permutation Tests:** Ideal for small sample sizes, non-normal distributions, or when parametric test assumptions are unmet. They offer robust and flexible hypothesis testing in such scenarios.
+-   **Permutation tests** need no distributional assumption: they suit small samples and data that are not normal, where the assumptions of parametric tests are in doubt.
 
--   **Semiparametric Regression:** Combines parametric and non-parametric effects for predictive variables. Widely valuable across astronomy, biology, medicine, economics, and finance applications.
+-   **Semiparametric regression** combines parametric terms with smooth curves and surfaces, for relationships whose shape is not known in advance. It is used widely, from biology and medicine to economics.
 
--   **Package 'predictmeans':** Offers diagnostic and inference functions for various models ('aov', 'lm', 'glm', etc.). Inferences include predicted means, standard errors, contrasts, multiple comparisons, permutation tests, adjusted R-square, and graphical representations.  <https://cran.r-project.org/web/packages/predictmeans/index.html>.
+-   **predictmeans** provides diagnostics and inference for models fitted by `aov`, `lm`, `glm`, `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and `gam`, and its own semiparametric models (`semireg()`): predicted means with standard errors and confidence intervals, contrasts, multiple comparisons, permutation tests, adjusted R-squared, and plots. Its defaults are chosen on the statistical evidence (e.g. Kenward-Roger degrees of freedom for REML fits), its results are checked against SAS and Genstat in the package tests, and it adds a one-line note when this fit and data call for care (`advice()`). <https://CRAN.R-project.org/package=predictmeans>
 ::: 
 
 ## **Overview**
 
 ### **Main Functions Flowchart**
 
-![](overview%20flow%20chart.jpg)
+![The workflow of predictmeans](figures/workflow.png){width=1031px style="max-width:100%"}
 
-### Contents
+## Example 1: split-plot design (Oats data)
 
-![](predictmeans%20help.jpg)
-
-## Example_1 Split-plot Design (Oats data)
-
-In the split-plot design shown here, the treatments are three varieties of oats (Victory, Golden rain and Marvellous) and four levels of nitrogen (0, 0.2, 0.4 and 0.6 cwt). As it is feasible to work with smaller plots for fertiliser than for varieties, the six blocks were initially split into three whole-plots and then each whole-plot was split into four subplots. The varieties were allocated (at random) to the whole-plots within each block, and the nitrogen levels (at random) to the subplots within each whole-plot. In a randomized-block design, we have a hierarchical structure with blocks and then plots within blocks.
+The treatments are three oat varieties (Victory, Golden Rain and Marvellous) and four rates of nitrogen (0, 0.2, 0.4 and 0.6 cwt per acre). Fertiliser can be applied to smaller plots than a variety can be sown in, so each of the six blocks was split into three whole plots, and each whole plot into four subplots. The varieties were randomized to the whole plots within each block, and the nitrogen rates to the subplots within each whole plot. The model therefore has two error strata: blocks, and whole plots within blocks.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -121,27 +115,27 @@ summary(mod, corr=FALSE)
 #### Residual Plot
 
 ```{r}
-residplot(mod, group="nitro")  # id=TRUE
+residplot(mod, group = "nitro")
 ```
 
 #### Highlights
 
-Options in function 'residplot':
+Options of `residplot()`:
 
--   **{id=TRUE}** is useful to identify any outliers.
+-   `id = 3` (the default) labels the three most extreme points with their row numbers in the data, so outliers can be found; `interactive = TRUE` shows every point's row on hover.
 
--   **{group="nitro"}** is useful to identify variation pattern along 'nitro' groups.
+-   `group = "nitro"` colours the points by nitrogen rate, to show whether the spread differs between groups.
 
 #### Test
 
+Formal tests of the assumptions, for reference; with small samples they have little power, and with large ones they flag departures too small to matter, so read them with the plots. `pm_check(mod)` gives a table of checks with advice.
+
 ```{r}
-#perform shapiro-wilk test
+# Shapiro-Wilk test of normality of the residuals
 shapiro.test(resid(mod))
 
-#perform bartlett test
-bartlett.test(yield ~ interaction(nitro:Variety), data = Oats)
-
-#perform levene test 
+# Bartlett and Levene tests of equal variance across treatment combinations
+bartlett.test(yield ~ interaction(nitro, Variety), data = Oats)
 car::leveneTest(yield ~ nitro:Variety, data = Oats)
 ```
 
@@ -167,10 +161,10 @@ R2_model(mod)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
-print(predm_out[1:4])
+predm_out <- predictmeans(mod, "nitro", meandecr=TRUE, adj="BH")
+predm_out
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+   caption = "Means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 ##### Mean Plot
@@ -178,9 +172,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 ##### p-value Table & Plot
@@ -188,7 +182,7 @@ predm_out$predictmeansBarPlot
 ```{r}
 gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
    rownames_to_stub=TRUE, 
-   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+   caption = "t values above the diagonal; BH-adjusted p-values below") %>% 
   cols_width(everything() ~ px(130))
 ```
 
@@ -206,10 +200,10 @@ PMplot(predm_out$p_valueMatrix)
 
 ```{r}
 #| fig.show: hide
-predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, plot = c("mean", "bar", "pval", "back"), adj="BH")
-print(predm_out[1:4])
+predm_out <- predictmeans(mod, "nitro:Variety", meandecr=TRUE, adj="BH")
+predm_out
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05'")
+   caption = "Means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 ##### Mean Plot
@@ -217,9 +211,9 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
 ##### p-value Table & Plot
@@ -227,7 +221,7 @@ predm_out$predictmeansBarPlot
 ```{r}
 gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE), 
    rownames_to_stub=TRUE,
-   caption = "The matrix has t-value above the diagonal, p-value (adjusted by 'BH' method) below the diagonal") %>% 
+   caption = "t values above the diagonal; BH-adjusted p-values below") %>% 
   cols_width(everything() ~ px(130))
 ```
 
@@ -240,50 +234,46 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmeans':
+Options of `predictmeans()`:
 
--   **{pairwise=TRUE}** is for multiple comparison without p-value adjusted ('adj' has default value 'none'). 
+-   `pairwise = TRUE` compares every pair of means with unadjusted p-values (`adj = "none"`, the default).
 
--   **{adj="BH"}** is for multiple comparison with p-value adjusted by "BH" method ('pairwise' will be TRUE automatically when 'adj' is not none).
+-   `adj = "BH"` compares the pairs with p-values adjusted by the Benjamini-Hochberg method (false discovery rate); any `adj` other than `"none"` turns the comparisons on. `"tukey"`, `"holm"`, `"bonferroni"` and others are available.
 
--   **{plot=c("mean", "bar", "pval", "back")}** draws the plots named, including the bar chart (`plot = TRUE`: the default plots).
+-   `meandecr = TRUE` sorts `mean_table` by decreasing mean, `FALSE` by increasing mean.
 
--   **{meandecr=TRUE}** is for descending means in 'mean_table'.
+-   Plots are drawn from the result: `autoplot(predm_out)` (means with one LSD bar), `type = "bar"`, `type = "ci"` (each mean with its confidence limits; `data = TRUE` adds the observations) and `type = "pvalue"`. `plot(predm_out)` draws the first.
 
--   **{meandecr=FALSE}** is for ascending means in 'mean_table'.
-
--   **Pairwise LSD** is available only when adj='none' or 'bonferroni'.
+-   The LSD is the least significant difference at the chosen adjustment; when the standard errors of the differences are not all equal it is shown as a range.
 
 ### Permutation Test {.tabset .tabset-pills}
 
 
 #### For Model Term
 ```{r}
-# Permutation Test for model terms
-system.time(
-  permlme <- permmodels(model=mod, nperm=999)
-)
+# permutation tests of the model terms (999 permutations; the seed makes them repeatable)
+permlme <- permmodels(model = mod, nperm = 999, seed = 3581)
 permlme
 ```
 
 #### For Multiple Comparisons
 ```{r}
-# Permutation Test for multiple comparisons
-predictmeans(model=mod, modelterm="nitro:Variety", atvar="Variety", adj="BH", permlist=permlme, plot=FALSE)
+# permutation p-values for the pairwise comparisons of nitrogen within each variety
+predictmeans(model = mod, modelterm = "nitro:Variety", atvar = "Variety", adj = "BH", permlist = permlme)
 ```
 
 #### For Contrasts
 ```{r}
-# Permutation Test for specified contrasts
+# permutation p-values for two contrasts of the 12 nitro:Variety means
 cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
             c(0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0))
 contrastmeans(model=mod, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 ```
 
 
-## Example_2 Repeated Measurements (ATP data)
+## Example 2: repeated measurements (ATP data)
 
-ATP containing data from an experiment to study the effects of preserving liquids on the enzyme content of dog hearts. There were 23 hearts and two treatment factors, A and B, each at two levels. Measurements were made of ATP as a percentage of total enzyme in the heart, at one and two hourly intervals during a twelve hour period following initial preservation.
+The ATP data come from an experiment on the effect of preserving liquids on the enzyme content of dog hearts. Twenty-three hearts were assigned to the combinations of two treatment factors, A and B, each with two levels. ATP, as a percentage of the total enzyme in the heart, was measured at one- and two-hour intervals over the twelve hours after preservation.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -330,20 +320,18 @@ summary(mod)
 #### Residual Plot
 
 ```{r}
-residplot(mod, group="A") 
+residplot(mod, group = "A")
 ```
 
 #### Test
 
 ```{r}
-#perform shapiro-wilk test
+# Shapiro-Wilk test of normality of the residuals
 shapiro.test(resid(mod))
 
-#perform bartlett test
-bartlett.test((ATP)^1.5 ~ interaction(A, B), data = ATP)
-
-#perform levene test
-car::leveneTest((ATP)^1.5 ~ A:B, data = ATP)
+# Bartlett and Levene tests of equal variance across the A:B groups
+bartlett.test(ATP^1.5 ~ interaction(A, B), data = ATP)
+car::leveneTest(ATP^1.5 ~ A:B, data = ATP)
 ```
 
 
@@ -368,11 +356,11 @@ R2_model(mod)
 ```{r}
 #| fig.show: hide
 predm_out <- predictmeans(mod, "A:time", 
-                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-print(predm_out[1:4])
+predm_out
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 ##### Mean Plot
@@ -380,25 +368,20 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
-##### p-value Table
+##### Pairwise Comparisons
 
--   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+The pairwise comparisons within each time, one row per pair (`by` is the time; `p.adj` is BH-adjusted within each time):
+
 ```{r}
-#| results='asis'
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE), 
-             rownames_to_stub = TRUE))
-  }
-}
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
 ```
 
 
@@ -410,11 +393,11 @@ for (i in 6:15){
 ```{r}
 #| fig.show: hide
 predm_out <- predictmeans(mod, "B:time", 
-                          atvar="time", adj="BH", plot = c("mean", "bar", "pval", "back"), 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-print(predm_out[1:4])
+predm_out
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 ##### Mean Plot
@@ -422,25 +405,20 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
-predm_out$predictmeansBarPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
+autoplot(predm_out, type = "bar")
 ```
 
-##### p-value Table
+##### Pairwise Comparisons
 
--   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+The pairwise comparisons within each time, one row per pair (`by` is the time; `p.adj` is BH-adjusted within each time):
+
 ```{r}
-#| results='asis'
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
-             rownames_to_stub = TRUE))
-  }
-}
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
 ```
 
 
@@ -452,11 +430,11 @@ for (i in 6:15){
 ```{r}
 #| fig.show: hide
 predm_out <- predictmeans(mod, "A:B:time", 
-                          atvar="time", adj="BH", plot = TRUE, 
+                          atvar="time", adj="BH", 
                           trans=function(x) x^(1/1.5))
-print(predm_out[1:4])
+predm_out
 gt(predm_out$mean_table$Table, 
-   caption = "Group: Letter-based representation of pairwise comparisons at significant level '0.05' at each 'time'")
+   caption = "Within each time, means sharing a letter are not significantly different (BH-adjusted p-values, 5% level)")
 ```
 
 ##### Mean Plot
@@ -464,24 +442,19 @@ gt(predm_out$mean_table$Table,
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-predm_out$predictmeansPlot$meanPlot
-predm_out$predictmeansPlot$ciPlot
+autoplot(predm_out)
+autoplot(predm_out, type = "ci", data = TRUE)
 ```
 
-##### p-value Table
+##### Pairwise Comparisons
 
--   **Pairwise p-value matrix has p-value (adjusted by 'BH' method) below the diagonal at each 'time'**
+The pairwise comparisons within each time, one row per pair (`by` is the time; `p.adj` is BH-adjusted within each time):
+
 ```{r}
-#| results='asis'
-for (i in 6:15){
-  if (i==1) {
-    cat(paste("\n", predm_out[[i]], "\n\n", sp=""))
-  }else{
-    print(names(predm_out[i]))
-    print(gt(as.data.frame.matrix(predm_out[[i]], check.names=FALSE),
-             rownames_to_stub = TRUE))
-  }
-}
+as.data.frame(predm_out, what = "pairs") %>%
+  select(by, level1, level2, estimate, std.error, df, p.value, p.adj) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  DT_df()
 ```
 
 ##### p-value Plot
@@ -495,18 +468,16 @@ PMplot(predm_out$p_valueMatrix)
 
 #### Highlights
 
-Options in function 'predictmeans':
+Options of `predictmeans()`:
 
--   **{atvar="time"}** sets multiple comparison within each level of 'time', it also infects the mean_table and mean plots arrangement. When 'atvar' is not NULL 'pair' turns to be TRUE automatically. Please try to see any effects for 'atvar=c("A", "B")' or 'atvar=c("B", "A")'.
+-   `atvar = "time"` compares the means only within each time, and the p-values are adjusted within each time. It also arranges `mean_table` and the plots by time (one panel per time). Giving `atvar` turns the comparisons on. Try `atvar = c("A", "B")` or `atvar = c("B", "A")` with `"A:B:time"` to see the effect.
 
--   **{trans=function(x) x^(1/1.5)}** is a function for back transformation e.g. 'trans=exp' for log, 'trans=function(x) x^2' for sqrt. 
-
--   For any GLM, the function produces associated back transformation automatically.
+-   `trans = function(x) x^(1/1.5)` back-transforms the means of the transformed response `ATP^1.5` to the ATP scale (e.g. `trans = exp` after `log()`, `trans = function(x) x^2` after `sqrt()`). For a response transformed in the model formula, such as `log(y)` or `sqrt(y)`, and for any GLM, the back-transformation is found automatically.
 
 
-## Example_3 GLM with Covariate (Drug data)
+## Example 3: a GLM with a covariate (Drug data)
 
-Comparison of the effectiveness of three analgesic drugs to a standard drug, morphine (Finney, Probit analysis, 3rd Edition 1971, p.103). 14 groups of mice were tested for response to the drugs at a range of doses. N is total number of mice in each group, R is number responding.
+The effectiveness of three analgesic drugs was compared with that of a standard drug, morphine (Finney, *Probit Analysis*, 3rd edition, 1971, p. 103). Fourteen groups of mice were given the drugs at a range of doses; `N` is the number of mice in each group and `R` the number that responded.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -550,7 +521,7 @@ kable(car::Anova(mod))
 
 ### Covariate Means
 
-#### Predicted Means for "Treatment" {.tabset .tabset-pills}
+#### Predicted Probabilities for "Drug" {.tabset .tabset-pills}
 
 ##### Mean Table
 
@@ -564,11 +535,10 @@ as.data.frame(covariate_out) %>%
   DT_df()
 ```
 
-Letters for the drugs at one dose: from comparison intervals, whose overlap agrees with the pairwise tests
-(overlap of 95% or 83.4% confidence intervals does not):
+Letters for the drugs at a single dose come from comparison intervals, whose overlap agrees with the pairwise tests (the overlap of 95% or 83.4% confidence intervals does not; Cave, 2021):
 
 ```{r}
-predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterCI = TRUE)$mean_table
+predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letter_ci = TRUE)$mean_table
 ```
 
 ##### Mean Plot
@@ -576,29 +546,32 @@ predictmeans(mod, "Drug", covariate = c(log10Dose = 1), pairwise = TRUE, letterC
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
+# one panel per drug (the default)
 autoplot(covariate_out)
-covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               plot = TRUE, plot_args = list(trellis = FALSE))
-covariatemeans(model=mod, modelterm="Drug", covariate="log10Dose", 
-               trans=I, plot_args = list(trellis = FALSE, ci = FALSE))$plt
+# all drugs in one panel
+autoplot(covariate_out, panel = character(0))
+# on the probit (model) scale, without the bands
+autoplot(covariate_out, scale = "model", panel = character(0), interval = "none")
 ```
 
 
 ### Highlights
 
-Options in function 'covariatemeans':
+Options of `covariatemeans()`:
 
--   The confidence bands of the lines are for each line on its own: whether two bands overlap is not a test
-    of the two drugs. `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letterCI = TRUE)` gives letters
+-   The plots are drawn from the result by `autoplot()`: `panel` and `group` choose which factor makes the panels and which the colours, `scale = "model"` shows the probit scale, and `interval = "none"` drops the bands.
+
+-   The confidence bands are for each line on its own: whether two bands overlap is not a test
+    of the two drugs. `predictmeans(mod, "Drug", covariate = c(log10Dose = ), letter_ci = TRUE)` gives letters
     at a dose that agree with the pairwise tests, and `contr = c("Morphine", "Amidone")` in `covariatemeans()`
     gives the difference of two drugs along the dose with its band.
 
-**DT_df** is a function for producing data table in html with 'CSV' download button. To download the whole data, you need to select 'All' entries.
+`DT_df()` (defined at the top of this article) shows a data frame as an HTML table with a CSV download button; choose 'All' entries to download every row.
 
 
-## Example_4 Semiparametric Regression with Group (WarsawApts data)
+## Example 4: semiparametric regression with groups (WarsawApts data)
 
-'WarsawApts' is a subset of the data set 'apartments' in the R package PBImisc. This dataset contains the prices of the apartments which were sold in Warsaw, Poland, during the calendar years 2007 to 2009.
+`WarsawApts` (package HRW) is a subset of the data set `apartments` in the package PBImisc: the prices of apartments sold in Warsaw, Poland, from 2007 to 2009, with their construction dates and districts.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -641,7 +614,7 @@ residplot(mod1$semer)
 ```
 
 
-### ANOVA, RANOVA and $R^2$
+### ANOVA, Smooth Tests and $R^2$
 
 -   **ANOVA**
 
@@ -676,7 +649,7 @@ DT_df(pred_out1$pred_df %>%
 ```{r}
 #| fig-width: 9
 #| fig-height: 7
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
 
@@ -698,7 +671,7 @@ residplot(mod2$semer, group="district")
 ```
 
 
-### ANOVA, RANOVA and $R^2$
+### ANOVA, Smooth Tests and $R^2$
 
 -   **ANOVA**
 
@@ -733,18 +706,19 @@ DT_df(pred_out2_1$pred_df %>%
 ```{r}
 #| fig-width: 9
 #| fig-height: 7
-pred_out2_1$plt
+autoplot(pred_out2_1)
+# all districts in one panel
+autoplot(pred_out2_1, panel = character(0), data = FALSE)
 ```
 
 #### Contrast Table
 
-Mean Contrast table for District 'Mokotow' vs 'Srodmiescie' 
+The difference between the districts Mokotow and Srodmiescie along the construction date, with its 95% confidence band (`significant` marks the dates where the band excludes zero):
 
 ```{r}
 pred_out2_2 <- semipred(mod2, "district", "construction.date", contr=c('Mokotow', 'Srodmiescie'))
-pred_out2_2$pred_df %>% 
-  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>% 
-  mutate_if(is.numeric, round, digits = 4) %>% 
+as.data.frame(pred_out2_2, what = "pairs") %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>% 
   DT_df()
 ```
 
@@ -753,13 +727,13 @@ pred_out2_2$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out2_2$plt
+autoplot(pred_out2_2)
 ```
 
 
-## Example_5 Semiparametric Regression with Multiple Covariates (Caschool data)
+## Example 5: semiparametric regression with several covariates (Caschool data)
 
-A data is collected from 420 schools in United States cross-section from 1998-1999, including county, grade span of district, percent qualifying for CalWORKS, computer per student, district average income, average math score.
+The `Caschool` data are a cross-section of 420 Californian school districts in 1998-1999: county, grade span of the district, percentage of pupils qualifying for CalWORKs (income assistance), computers per student, average district income and average mathematics score.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -820,7 +794,7 @@ R2_model(mod$semer)
 pred_out1 <- semipred(mod, covariate = "calwpct")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
 #### log.avginc
@@ -829,7 +803,7 @@ pred_out1$plt
 pred_out2 <- semipred(mod, covariate = "log.avginc")
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
-pred_out2$plt
+autoplot(pred_out2)
 ```
 
 #### compstu
@@ -838,7 +812,7 @@ pred_out2$plt
 pred_out3 <- semipred(mod, covariate = "compstu")
 DT_df(pred_out3$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
-pred_out3$plt
+autoplot(pred_out3)
 ```
 
 #### Joint Plot
@@ -846,14 +820,14 @@ pred_out3$plt
 ```{r}
 #| fig-width: 9
 #| fig-height: 8
-gridExtra::grid.arrange(pred_out1$plt, pred_out2$plt, pred_out3$plt, nrow = 1)
+gridExtra::grid.arrange(autoplot(pred_out1), autoplot(pred_out2), autoplot(pred_out3), nrow = 1)
 ```
 
 
 
-## Example_6 Semiparametric Regression with Binomial Distribution (indonRespir data)
+## Example 6: semiparametric regression with a binary response (indonRespir data)
 
-Indonesian Children's Health Study of respiratory infections for a cohort of 275 Indonesian children. The data are longitudinal with each child having between 1 and 6 repeated measurements.
+The Indonesian Children's Health Study followed a cohort of 275 children for respiratory infections. The data are longitudinal: each child was examined between one and six times. The curves below are the probability of infection for a typical child (random effect zero); the pink ticks mark the ages of the children without (bottom) and with (top) an infection.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -910,7 +884,7 @@ R2_model(mod1$semer)
 #### Predict Table
 
 ```{r}
-pred_out1 <- semipred(mod1, "age", "age")
+pred_out1 <- semipred(mod1, covariate = "age")
 DT_df(pred_out1$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -920,10 +894,10 @@ DT_df(pred_out1$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out1$plt+
+autoplot(pred_out1, data = FALSE) +
   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink")+
   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-  ylim(0, 0.18)
+  coord_cartesian(ylim = c(0, 0.18))
 ```
 
 
@@ -974,21 +948,20 @@ DT_df(pred_out2_1$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out2_1$plt+
+autoplot(pred_out2_1, data = FALSE) +
   geom_rug(data = subset(indonRespir, respirInfec==0), sides = "b", col="deeppink") +
   geom_rug(data = subset(indonRespir, respirInfec==1), sides = "t", col="deeppink")+
-  ylim(0, 0.24)
+  coord_cartesian(ylim = c(0, 0.24))
 ```
 
 #### Contrast Table
 
-Mean Contrast table for Sex 'male' vs 'female'
+The difference in the probability of infection between boys and girls along age, with its 95% confidence band:
 
 ```{r}
 pred_out2_2 <- semipred(mod2, "sex", "age", contr=c('male', 'female'))
-pred_out2_2$pred_df %>% 
-  mutate(P_value=ifelse(LL*UL > 0, "p-value < 0.05", "p-value > 0.05")) %>%
-  mutate_if(is.numeric, round, digits = 4) %>% 
+as.data.frame(pred_out2_2, what = "pairs") %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>% 
   DT_df()
 ```
 
@@ -997,13 +970,13 @@ pred_out2_2$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out2_2$plt
+autoplot(pred_out2_2)
 ```
 
 
-## Example_7 Semiparametric Regression with Negtive Binomial Distribution (ragweed data)
+## Example 7: semiparametric regression with a negative binomial response (ragweed data)
 
-The ragweed data frame has data on ragweed levels and meteorological variables for 334 days in Kalamazoo, Michigan, U.S.A.
+The `ragweed` data (package HRW) give daily ragweed pollen counts and weather measurements for 334 days in Kalamazoo, Michigan, USA, over four years. The counts are overdispersed, so a negative binomial model is used.
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -1070,13 +1043,13 @@ DT_df(pred_out1_1$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out1_1$plt
+autoplot(pred_out1_1, data = FALSE)
 ```
 
 
-## Example_8 Semiparametric Regression with Spatial Smooth (copper data)
+## Example 8: semiparametric regression with a spatial surface (copper data)
 
-Data copper records the copper grade quality associated with various sampling points' X, Y, and Z coordinates within a designated area.
+The `copper` data give the copper grade of ore samples with the X, Y and Z coordinates of each sampling point in a mining area. The model has a curve in depth and a surface over the plane, on the log scale; the predictions are back-transformed with `trans = exp` (medians on the grade scale).
 
 ### Data Info {.tabset .tabset-pills}
 
@@ -1118,7 +1091,7 @@ residplot(mod$semer)
 ```
 
 
-### ANOVA, RANOVA and $R^2$
+### ANOVA, Smooth Tests and $R^2$
 
 -   **ANOVA**
 
@@ -1155,13 +1128,13 @@ DT_df(pred_out1$pred_df %>%
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
-pred_out1$plt
+autoplot(pred_out1)
 ```
 
 #### X, Y Table
 
 ```{r}
-pred_out2 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = TRUE))
+pred_out2 <- semipred(mod, covariate = c("xcoord", "ycoord"), trans = exp)
 DT_df(pred_out2$pred_df %>% 
         mutate_if(is.numeric, round, digits = 4))
 ```
@@ -1169,52 +1142,39 @@ DT_df(pred_out2$pred_df %>%
 #### X, Y 2D Plot
 
 ```{r}
-pred_out2$plt
+autoplot(pred_out2)
 ```
 
 #### X, Y 3D Plot
 
 ```{r}
-pred_out3 <- semipred(mod, covariate=c("xcoord", "ycoord"), trans=exp, plot_args = list(point = FALSE, threeD = TRUE))
-pred_out3$plt
+# the same surface in 3-D (plotly; drag to rotate)
+autoplot(pred_out2, type = "3d", data = FALSE)
 ```
 
 
-## **Future Plan**
-
-::: {style="font-size: 200%;"}
-
--   Extend **'predictmeans'** to more popular models in R,
-
--   Build a comprehensive Shiny App based on **'predictmeans'**,
-
--   Make functions in **'predictmeans'** working properly for **glmmTMB** model with a complex variance-covariance structure.
-
-:::
-
-
-## **Reference**
+## **References**
 
 -   Benjamini, Y., and Hochberg, Y. (1995). Controlling the false
 discovery rate: a practical and powerful approach to multiple
 testing. Journal of the Royal Statistical Society Series B, 57,
-289--300. <doi:10.1111/j.2517-6161.1995.tb02031.x>.
+289--300. <https://doi.org/10.1111/j.2517-6161.1995.tb02031.x>.
 <https://www.jstor.org/stable/2346101>.
 
 -   Cave, V. (2021). Confidence tricks: the 83.4% confidence interval for comparing means. https://vsni.co.uk/blogs/confidence_trick.
 
 -   Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015).
 Fitting Linear Mixed-Effects Models Using lme4. Journal of
-Statistical Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>.
+Statistical Software, 67(1), 1-48. <https://doi.org/10.18637/jss.v067.i01>.
 
 -   Harezlak J., Ruppert, D. & Wand, M.P. (2018). Semiparametric Regression with R. Springer; ISBN: 978-1-4939-8851-8.
 
--   Luo, D., Ganesh, S., & Koolaard, J. (2022). Predictmeans: calculate
-predicted means for linear models [R package version 1.0.8].
-<https://CRAN.R-project.org/package=predictmeans>.
+-   Kenward, M. G., and Roger, J. H. (1997). Small sample inference for fixed effects from restricted maximum likelihood. Biometrics, 53, 983-997. <https://doi.org/10.2307/2533558>.
 
--   Piepho HP. An adjusted coefficient of determination (R2 ) for generalized linear mixed models in one go. Biom J. 2023 Oct;65(7):e2200290. doi: 10.1002/bimj.202200290. Epub 2023 May 1. PMID: 37127864.
+-   Luo, D., Ganesh, S., and Koolaard, J. predictmeans: predicted means for linear and semiparametric models. R package. <https://CRAN.R-project.org/package=predictmeans>.
 
--   R Core Team (2022). R: A language and environment for statistical
+-   Piepho, H.-P. (2023). An adjusted coefficient of determination (R2) for generalized linear mixed models in one go. Biometrical Journal, 65(7), e2200290. <https://doi.org/10.1002/bimj.202200290>.
+
+-   R Core Team (2025). R: A language and environment for statistical
 computing. R Foundation for Statistical Computing, Vienna, Austria.
 URL <https://www.R-project.org/>.

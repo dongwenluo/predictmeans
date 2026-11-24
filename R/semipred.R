@@ -1,4 +1,4 @@
-#' Predicted Means of a Semi Paramatric Model with Covariate Variable(s)
+#' Predicted Curves and Surfaces of a Semiparametric Model
 #'
 #' @description
 #' Predicted curves (or surfaces) of a semiparametric model along a covariate, with pointwise or simultaneous
@@ -6,37 +6,53 @@
 #' tables in the layout of \code{\link{predictmeans}} (see \code{\link{tidy.pm_curves}}) and the plot, which
 #' \code{autoplot()} returns.
 #' @usage
-#' semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
-#'          conf.level=0.95, trans=NULL, contr_scale=c("model", "response"),
+#' semipred(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL,
+#'          boundary=NULL, conf_level=0.95, trans=NULL, contr_scale=c("model", "response"),
 #'          band=c("pointwise", "simultaneous"),
-#'          unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-#'          mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...)
-#' @param model A fit returned by \code{semireg} (\code{semireg} before 2.0).
-#' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated. 
-#'   The \code{modelterm} must be given exactly as it appears in \code{semireg} model, e.g. "A" or "A:B". In case \code{modelterm} is the same as \code{covariate} or \code{NULL}, them \code{semipred} will product predictmeans with CI based on \code{covariate} only with out any grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
-#' @param covariate Name (in "quotes") of one or two (for \code{Ztps} smooth) the covariate variables in the \code{semireg} shuch as "x1" or c("x1", "x2").
-#' @param sm_term Names (in "quotes") of smooth terms (from \code{smoothZ} list in \code{semireg} model) used in the prediction such as "sm1_grp" or c("sm1_grp", "sm2_grp"). The default is using all smooth terms which is \code{sm_term=NULL}.
-#' @param contr A numeric (or character) vector with length of two (e.g. c(4, 1) or c("d", "a")) which indicates to produce predicted mean with CI for difference between \code{modelterm} level 4 ("d") vs level 1 ("a") along \code{covariate}.
+#'          unconditional=getOption("predictmeans.semi_unconditional"), deriv=0,
+#'          plot_args=list(), mean_type=c("conditional", "overall"),
+#'          bias_adjust=FALSE, sigma=NULL, plot=getOption("predictmeans.plot", FALSE), ...)
+#' @param model A fit of \code{\link{semireg}} or \code{\link{semireg_tmb}} (\code{semireg} before 2.0).
+#' @param modelterm Name (in "quotes") of the factor term whose curves are predicted, as in the model formula, e.g. "A" or "A:B"
+#'   (any number of factors: every combination is computed; \code{autoplot(x, group = , panel = )} chooses the layout).
+#'   With \code{NULL} or the name of the covariate, one curve without grouping. Factors that are not in \code{modelterm}, including \code{by} factors of the smooth terms, are averaged over with equal weights, in both the parametric and the smooth parts of the model.
+#' @param covariate Name (in "quotes") of the covariate, or two names for a surface, e.g. \code{c("x1", "x2")}.
+#' @param sm_term The smooths used in the prediction; the default \code{NULL} uses all of them. \code{print(model)}
+#'   (or \code{tidy(model)}) lists the smooths of the fit with the values to use here. Each entry may be a
+#'   term as written in the formula (\code{"s(pressure, by = QB)"}, all its pieces), a smooth as labelled
+#'   (\code{"s(pressure):QB200"}, column \code{smooth}), a covariate (\code{"pressure"}: every smooth of it, column
+#'   \code{covariate}) or a random-effect term (\code{"s_pressure_QB200"}, column \code{term}). Smooths of other covariates enter the curves as
+#'   a constant; the advice \code{smooth_other_covariate} says when the prediction includes such smooths.
+#'   \code{settings$sm_term} records the blocks used.
+#' @param contr Two levels of \code{modelterm} (numbers or names, e.g. \code{c(4, 1)} or \code{c("d", "a")}): the difference of their curves (level 4 minus level 1), with limits, along \code{covariate}.
 #' @param at The values of \code{covariate} to predict at (\code{covariateV} before 2.0): a numeric vector (one covariate) or a matrix with one named column per covariate (two covariates, e.g. for a \code{Ztps} smooth); each row of the matrix is one prediction point.
 #' @param boundary For two covariates (a surface): the region where predictions are shown. A matrix or data frame of two
 #'   columns (the covariates in the order of \code{covariate}), the vertices of a polygon, or of several rings separated
 #'   by a row of \code{NA} (a point is inside when it is inside an odd number of them: separate pieces and holes), such
 #'   as \code{\link{semiboundary}()} returns; or \code{TRUE} for \code{semiboundary()} of the model's data (the region
 #'   the data cover, following their shape). \code{NULL} (default): the whole grid.
-#' @param conf.level Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
+#' @param conf_level Confidence level of the two-sided limits, default 0.95 (\code{level = 0.05} before 2.0;
 #'   before 2.0 the limits used \code{qnorm(1 - level)}, i.e. 90\%). For gaussian fits the limits are t limits
 #'   with Satterthwaite df at each point (column \code{df}; see Details); for generalized fits t limits with the
 #'   df of the design's strata (inner-outer, as for GLMMs), normal limits when the model has no random term
 #'   besides the smooths.
-#' @param trans A function object for calculating the back transformed means, e.g. \code{trans=exp}.
+#' @param trans A function that back-transforms the curves, e.g. \code{trans = exp}. Without it the curves are
+#'   back-transformed by the inverse link of a generalized fit, or by the inverse of a response transformed in the
+#'   formula (\code{log(y)}, \code{sqrt(y)}, \code{log(y + 1)}, ...), as in \code{\link{covariatemeans}} (one rule
+#'   for both); \code{trans = I} keeps the model scale.
+#' @param bias_adjust,sigma For back-transformed curves, as in \code{\link{covariatemeans}}: by default a curve is the
+#'   back-transformed fitted value (the median for a transformed response, a typical cluster for a GLMM);
+#'   \code{bias_adjust = TRUE} gives the mean of the response, over the residual variance (transformed response) and
+#'   the variances of the random intercepts other than the smooths (the smooths' random effects are the curves
+#'   themselves), or \code{sigma^2}.
 #' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}; ignored, with a message,
 #'   for other models): \code{"conditional"} (default), curves of the means of the count part, \eqn{\mu};
 #'   \code{"overall"}, curves of the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
 #'   their bands \eqn{\exp(\log m \mp crit\,SE)} with the SE of \eqn{\log m} from the joint covariance of the
 #'   count and zero-inflation coefficients (delta method), and with \code{contr} the ratio and the difference of the
 #'   overall means. Log-link count families only.
-#' @param plot_args A named list of plot settings (before 2.0 arguments of their own; given so they stop with this
-#'   spelling): \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
+#' @param plot_args Superseded by the arguments of \code{\link{autoplot.pm_curves}}, kept for 1.x scripts (before
+#'   2.0 arguments of their own; given so they stop with this spelling). A named list: \code{trellis} (\code{TRUE}, default: one panel per level), \code{scales} (\code{"fixed"},
 #'   default, \code{"free"}, \code{"free_x"}, \code{"free_y"}: the axes of the panels), \code{plotord} (the order
 #'   of the two factors of a two-way term, e.g. \code{c(2, 1)}; giving it draws the plot), \code{ci} (draw the
 #'   bands, \code{TRUE}), \code{point} (draw the data, \code{TRUE}), \code{jitterv} (jitter of the points, 0),
@@ -80,7 +96,7 @@
 #' With \code{deriv = 1} (\code{2}) each row of the prediction design is replaced by its first (second) derivative
 #' along the covariate, by central differences of the whole design (the fixed part and every smooth basis, on the
 #' same grid), so the slopes are those of the fitted curves for any basis; for the O'Sullivan basis (\code{bs = "os"},
-#' \code{smZ()}) they equal the exact derivatives of the basis, \code{ZOSull(drv = )} (as \code{smZ(drv = )}),
+#' 1.x \code{smZ()}) they equal the exact derivatives of the basis (\code{ZOSull(drv = )}),
 #' to 1e-8. Standard errors, df and pointwise or simultaneous bands are computed as for the curves; generalized
 #' models give the slopes of the linear predictor (link scale). \code{pred_df} holds the slopes in the column of the
 #' response, with \code{includes0} and \code{significant}; the ranges of the covariate where the band lies above or
@@ -131,7 +147,7 @@
 #' is in the table \code{pairs} in the layout of \code{predictmeans()}. The ranges of the
 #' covariate where the curves differ are printed with the result and kept in \code{significant} and
 #' \code{attr(pred_df, "significant")}; with
-#' \code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf.level}
+#' \code{band = "simultaneous"} they hold for the whole curve, and the curves differ somewhere at level \code{1 - conf_level}
 #' when there is such a range. (A joint F test, as \code{covariatemeans()} gives, is not given: Wald tests of
 #' penalised smooth coefficients are not reliable.)
 #' @section Zero inflation (glmmTMB):
@@ -144,7 +160,7 @@
 #' means and their ratios.
 #' @return
 #' An object of class \code{c("semipred", "pm_curves")}, a list. \code{tidy()} and \code{as.data.frame()} return its
-#' table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}).
+#' table, \code{autoplot()} the plot, and \code{print()} shows a summary (see \code{\link{tidy.pm_curves}}); notes in \code{attr(, "advice")} (\code{\link{advice}}).
 #' \item{means}{The curves: the factor columns of \code{modelterm}, the covariate(s), \code{estimate},
 #'   \code{std.error}, \code{df}, \code{conf.low}, \code{conf.high} on the model scale (pointwise limits), with a
 #'   simultaneous band \code{adj.conf.low}, \code{adj.conf.high}; for generalized fits and with \code{trans} also
@@ -156,17 +172,23 @@
 #'   simultaneous band \code{p.adj} is the share of the simulated maxima at least as large (below 0.05 exactly where
 #'   the band leaves out zero; the smallest value is 1/10000).}
 #' \item{settings}{The options: \code{df_method}, \code{band}, \code{deriv}, \code{unconditional},
-#'   \code{back_transform}, ...}
+#'   \code{back_transform}, ...; with \code{contr}, \code{test}: whether the curves differ anywhere along the
+#'   covariate, the max-|t| test (\code{statistic} the largest |t| over the \code{points}, \code{p.value} the share of
+#'   simulated maxima at least as large, from the covariance of the fixed and smooth coefficients: the smallest level at
+#'   which the simultaneous band leaves out zero somewhere). A Wald F test of the smooth coefficients is not used:
+#'   they are shrunken, and the statistic would not have an F distribution. In a simulation of equal curves
+#'   (200 data sets) it rejected 3.0\% at the 5\% level.}
 #' \item{significant}{With \code{contr} or \code{deriv}: the ranges of the covariate where the band asked for
 #'   leaves out zero.}
-#' \item{plt}{A ggplot object (a list of plotly plots for \code{threeD} surfaces by group); drawn only when
-#'   \code{plot = TRUE}.}
+#' \item{plt}{\code{autoplot()} of the result with \code{plot_args}: a ggplot (one plotly widget for \code{threeD});
+#'   drawn only when \code{plot = TRUE}.}
 #' \item{pred_df}{The 1.x table: a data.frame with the predicted values, their limits \code{LL} and \code{UL} (the band asked for), \code{SE} and
 #'   \code{df}; for generalized fits the means and limits are on the response scale (limits \code{h(eta -+ crit SE)}),
 #'   \code{SE} on the link scale and \code{SE_mu} on the response scale (delta method), \code{df} when the limits
 #'   are t; with \code{contr} the columns described in Details.}
 #' @references
 #' Ruppert, D., Wand, M. P. and Carroll, R. J. (2003), \emph{Semiparametric Regression}, Cambridge University Press.
+#' @seealso \code{\link{semireg}}, \code{\link{tidy.pm_curves}}, \code{\link{semiboundary}}, \code{\link{covariatemeans}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -187,7 +209,10 @@
 #' out <- semipred(fm, "QB", "pressure")
 #' out
 #' autoplot(out)
-#' autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"))
+#' \donttest{
+#' autoplot(semipred(fm, "QB", "pressure", band = "simultaneous"), panel = character(0))
+#' # the smooths of one term only, as written in the formula
+#' semipred(fm, "QB", "pressure", sm_term = "s(pressure, by = QB)")$settings$sm_term
 #' # at given pressures
 #' semipred(fm, "QB", "pressure", at = c(0.5, 1, 1.5, 2))
 #'
@@ -199,7 +224,7 @@
 #' # slopes of the curves, and where they differ from zero over the whole range
 #' slp <- semipred(fm, "QB", "pressure", deriv = 1, band = "simultaneous")
 #' slp$significant
-#' \donttest{
+#'
 #' # a surface: copper grade over the plane and a smooth in depth (data(copper))
 #' data(copper)
 #' fcu <- semireg(log(grade) ~ s(zcoord, bs = "os") + s(xcoord, ycoord, bs = "ztps", k = 6),
@@ -219,42 +244,39 @@
 #' @name semipred
 NULL
 
+#' @export
 semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL, at=NULL, boundary=NULL,
-                     conf.level=0.95, trans=NULL, contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
+                     conf_level=0.95, trans=NULL, contr_scale=c("model", "response"), band=c("pointwise", "simultaneous"),
                      unconditional=getOption("predictmeans.semi_unconditional"), deriv=0, plot_args=list(),
-                     mean_type=c("conditional", "overall"), plot=getOption("predictmeans.plot", FALSE), ...) {
-  # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
-  pm_defunct("semipred", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+                     mean_type=c("conditional", "overall"), bias_adjust=FALSE, sigma=NULL,
+                     plot=getOption("predictmeans.plot", FALSE), ...) {
+  # arguments removed in 2.0, conf_level, plot settings, zero inflation (one
+  # preamble with covariatemeans(), R/covariatemeans.R)
+  if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
+  pre <- pm_curve_preamble("semipred", match.call(), formals(sys.function()), conf_level, plot_args, plot,
+                           model, mean_type, deriv)
   semireg <- model
   covariateV <- at
-  level <- pm_conf_alpha(conf.level)
-  if (!deriv %in% 0:2) stop("'deriv' must be 0, 1 or 2.", call. = FALSE)
-  # plot settings and colours (R/plot-style.R), one list
-  pa <- pm_plot_args(plot_args, c(pm_semi_plot_defaults, pm_curve_style_defaults))
-  sty <- pa[names(pm_curve_style_defaults)]
-  trellis <- pa$trellis; plotord <- pa$plotord; ci <- pa$ci; point <- pa$point; jitterv <- pa$jitterv
-  threeD <- pa$threeD
-  scales <- match.arg(pa$scales, c("fixed", "free", "free_x", "free_y"))
-  mean_type <- pm_zi_check(semireg, match.arg(mean_type), deriv)      # R/zero-inflation.R
-  pm_zi_message(semireg, mean_type)
+  level <- pre$level; mean_type <- pre$mean_type; draw <- pre$draw
   if (deriv > 0) {
     if (length(covariate) != 1) stop("'deriv' needs one covariate.", call. = FALSE)
     if (!is.null(trans)) stop("'trans' is not used with 'deriv': derivatives are on the model scale.", call. = FALSE)
-    point <- FALSE
   }
+  trans_arg <- trans
   contr_scale <- match.arg(contr_scale)
   band <- match.arg(band)
   simultaneous <- band == "simultaneous"
-  # draw the plot now? only when asked, as predictmeans(): plot = TRUE or a
-  # plot order; the plot is in the result either way
-  draw <- isTRUE(plot) || (!is.null(plotord) && !all(plotord %in% c("NULL", "")))
 
   stopifnot(inherits(semireg, "semireg"), !is.null(semireg$CovMat))
-  
-  if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {  
+
+  if (is.null(modelterm) || all(modelterm%in%c("NULL", ""))) {
     modelterm <- covariate
   }
-  
+  vars_tab <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
+  # the plot settings as autoplot() arguments (also checks plotord)
+  pargs <- pm_curve_plot_args(pre$pa, if (is.null(vars_tab)) character(0) else vars_tab,
+                              if (!is.null(contr)) contr_scale)
+
   mod_df <- semireg$data
   if (isFALSE(boundary)) boundary <- NULL
   if (isTRUE(boundary)) {
@@ -264,33 +286,31 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   }
   if (!is.null(contr)) {
     trans <- NULL
-    stopifnot("'modelterm' must be a single term"=length(unlist(strsplit(modelterm, "\\:")))==1) 
-    
-    if(length(contr) != 2){
-      stop("contr must be a character vector of length 2")
+    if (length(unlist(strsplit(modelterm, "\\:"))) != 1 || setequal(modelterm, covariate)) {
+      stop("'contr' compares two levels of one factor: 'modelterm' must be a single factor.", call. = FALSE)
     }
-    
-    if(is.character(contr)){
-      grp_fct <- mod_df[[modelterm]]
-      grp_fct_levl <- levels(grp_fct)
-      
-      i = match(contr, grp_fct_levl)
-      if(any(is.na(i))){
-        stop(paste("The entries", paste0(contr[is.na(i)], sep = ", "), "do not match any level in ", modelterm))
-      }else{
-        contr = i
-      }
+    if (length(contr) != 2) stop("'contr' must name two levels of '", modelterm, "'.", call. = FALSE)
+    if (is.character(contr)) {
+      grp_fct_levl <- levels(factor(mod_df[[modelterm]]))
+      i <- match(contr, grp_fct_levl)
+      if (anyNA(i)) stop("'contr' must be two levels of '", modelterm, "': ", paste(grp_fct_levl, collapse = ", "),
+                         "; not ", paste(contr[is.na(i)], collapse = ", "), ".", call. = FALSE)
+      contr <- i
     }
   }
-  
+
   if (!is.null(covariateV) && length(covariate) > 1) {
-    stopifnot(is.matrix(covariateV), dim(covariateV)[2] == length(covariate))
+    if (!(is.matrix(covariateV) && ncol(covariateV) == length(covariate))) {
+      stop("With ", length(covariate), " covariates 'at' must be a matrix with one column per covariate ",
+           "(each row a point).", call. = FALSE)
+    }
     colnames(covariateV) <- covariate
   }
-  
+
+  sm_term <- pm_sm_resolve(semireg, sm_term)
   des <- pm_semi_design(semireg, modelterm, covariate, covariateV, sm_term, mod_df, unconditional = unconditional)
-  semer <- des$semer; mod_df <- des$mod_df; pred_df <- des$pred_df
-  response <- des$response; response0 <- des$response0
+  semer <- des$semer; pred_df <- des$pred_df
+  response <- des$response
   if (deriv > 0) des <- pm_semi_deriv(semireg, des, modelterm, covariate, sm_term, mod_df, deriv)
   D_mx <- des$D_mx; beta_u <- des$beta_u; sm_Cov <- des$sm_Cov; sig.epsHat <- des$sig.epsHat
   ncond <- ncol(D_mx)
@@ -332,7 +352,7 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   df_mx <- if (is.null(contr)) df_of(D_mx) else rep(Inf, nrow(D_mx))
   sim_m <- if (is.null(contr)) sim_of(D_mx, df_mx)
   crit <- if (is.null(contr)) sim_m$crit else stats::qnorm(1 - level/2)
-  stderr <- sig.epsHat*sqrt(diag(D_mx%*%sm_Cov%*%t(D_mx)))
+  stderr <- sig.epsHat*sqrt(rowSums(as.matrix(D_mx %*% sm_Cov) * as.matrix(D_mx)))
   y_hat <- as.numeric(D_mx%*%beta_u)
   eta_hat <- y_hat                                 # the model scale, for the stable tables
   unc <- if (is.null(unconditional)) {
@@ -340,352 +360,255 @@ semipred <- function(model, modelterm=NULL, covariate, sm_term=NULL, contr=NULL,
   } else isTRUE(unconditional)
   LL <- y_hat - crit*stderr
   UL <- y_hat + crit*stderr
-  
-  if (is.null(trans)) {
-    if (!isLMM(semer) && deriv == 0) {
+  glmm <- !isLMM(semer) && deriv == 0              # a generalized fit's curves: back-transformed by the inverse link
+  fam <- if (!isLMM(semer)) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
+
+  # the back-transformation of the curves: one rule with covariatemeans()
+  # (pm_cov_back()): 'trans', else the inverse link, else the inverse of a
+  # response transformed in the formula (log(y), sqrt(y), ...); bias_adjust
+  # gives the mean of the response instead of the back-transformed fitted value
+  # (the smooths' random effects are the curves, not variation to average over)
+  bt <- if (deriv == 0) pm_cov_back(semer, trans, bias_adjust, sigma, exclude = names(semireg$smooths$maps)) else list(h = NULL, d = NULL, kind = "none",
+                                                                             link_scale = FALSE, adjusted = FALSE)
+  if (deriv > 0 && !isFALSE(bias_adjust)) warning("'bias_adjust' is not used with 'deriv' (model scale).", call. = FALSE)
+  if (is.null(trans) && !is.null(bt$h) && !glmm) trans <- bt$h      # a transformed response: its inverse
+  if (is.null(trans) || (glmm && isTRUE(bt$link_scale) && !isTRUE(bt$adjusted))) {
+    if (glmm) {
       # the means and limits back-transformed with the inverse link, as
       # predictmeans() and covariatemeans() do: h(eta), h(eta -+ crit SE), and
       # the delta-method SE |h'(eta)| SE. (Before 2.0: limits h(eta) -+ crit
       # SE_mu, clipped to [0, 1] for binomial, with SE_mu from the weight
       # h'(eta)^2 / V(mu), which is |h'(eta)| only for canonical links.)
-      fam <- if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family
-      family_n <- fam$family
       stderr_mu <- abs(fam$mu.eta(y_hat))*stderr
       lim <- cbind(fam$linkinv(LL), fam$linkinv(UL))
       y_hat <- fam$linkinv(y_hat)
       LL <- pmin(lim[, 1], lim[, 2])
       UL <- pmax(lim[, 1], lim[, 2])
-      if (family_n == "binomial"){
-        if (is.factor(mod_df[[response]])) {
-          mod_df[[response]] <- as.numeric(mod_df[[response]]) - 1
-        }else if (!is.null(dim(mod_df[, response])) && ncol(mod_df[, response])==2) {
-          mod_df[["Proportion"]] <- mod_df[, response][,1]/rowSums(mod_df[, response])
-          response <- "Proportion"
-        }		
-      } 
       pred_df$SE <- stderr                         # the link scale (the limits are h(eta -+ crit SE))
       pred_df$SE_mu <- stderr_mu
       if (any(is.finite(df_mx))) pred_df$df <- df_mx
-    }else {
+    } else {
       pred_df$SE <- stderr
       pred_df$df <- df_mx
     }
-  }else{
-    y_hat <- trans(y_hat)
-    LL <- trans(LL)
-    UL <- trans(UL)
-    mod_df[["Trans_y"]] <- trans(mod_df[[response]])
-    response <- "Trans_y"
+  } else {
+    h1 <- if (!is.null(bt$h)) bt$h else trans
+    y_hat <- h1(y_hat)
+    lim <- cbind(h1(LL), h1(UL))
+    LL <- pmin(lim[, 1], lim[, 2])
+    UL <- pmax(lim[, 1], lim[, 2])
+    response <- "Trans_y"                          # the 1.x column of pred_df
   }
   # the back-transformation of the stable tables: 'trans', or the inverse
   # link of a generalized fit (curves only; slopes stay on the link scale)
-  glm_back <- is.null(trans) && !isLMM(semer) && deriv == 0
-  fam_b <- if (glm_back) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
-  h_tab <- if (!is.null(trans)) trans else if (glm_back) fam_b$linkinv
-  d_tab <- if (!is.null(trans)) function(e) pm_back_deriv(trans, e, semer, FALSE) else if (glm_back) fam_b$mu.eta
-  back_info <- if (!is.null(h_tab)) list(
-    by = if (!is.null(trans)) "trans" else "the inverse link",
-    estimate = if (!is.null(trans)) "the back-transformed fitted value" else if (pm_sr_design_re(semireg))
-      "typical cluster (random effects at zero)" else "mean",
-    average = "link")
-  
+  glm_back <- isTRUE(bt$link_scale)
+  h_tab <- bt$h
+  d_tab <- bt$d
+  back_info <- if (!is.null(h_tab)) {
+    if (isTRUE(bt$adjusted)) list(by = if (glm_back) "the inverse link" else if (!is.null(trans_arg)) "trans" else
+                                    "the inverse of the response transformation",
+                                  estimate = "mean (bias adjusted)", average = "link")
+    else list(by = if (!is.null(trans_arg)) "trans" else if (glm_back) "the inverse link" else
+                "the inverse of the response transformation",
+              estimate = if (glm_back) (if (pm_sr_design_re(semireg)) "typical cluster (random effects at zero)" else
+                                          "mean") else "median of the original scale (bias_adjust = TRUE gives the mean)",
+              average = "link")
+  }
+
   pred_df[[response]] <- y_hat
   pred_df$LL <- LL
   pred_df$UL <- UL
-  
-  for (i in names(pred_df)){
-    if (is(pred_df[,i], "AsIs")) pred_df[,i] <- as.numeric(pred_df[,i])
+  for (i in names(pred_df)) {
+    if (is(pred_df[, i], "AsIs")) pred_df[, i] <- as.numeric(pred_df[, i])
   }
 
   # the stable table of the curves or slopes (R/curves.R): model-scale
   # values, pointwise limits, the simultaneous band in adj.conf.*, the
   # covariates in their own units
-  vars_tab <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
-  curve_tab <- pairs_tab <- significant <- contr_lev <- NULL
+  curve_tab <- pairs_tab <- significant <- contr_lev <- curve_test <- NULL
+  inside <- function(d) if (length(covariate) == 2 && !is.null(boundary)) pm_points_in_poly(d[, covariate], boundary) else
+    rep(TRUE, nrow(d))
   if (is.null(contr)) {
     curve_tab <- pm_curve_means(pred_df[, c(vars_tab, covariate), drop = FALSE], eta_hat, stderr, df_mx,
                                 stats::qt(1 - level/2, df_mx), h = h_tab, d = d_tab,
                                 crit_s = if (simultaneous) sim_m$crit, test = deriv > 0,
                                 p_adj = if (simultaneous && deriv > 0) pm_sim_padj(sim_m, eta_hat/stderr, df_mx))
     if (length(covariate) == 2 && !is.null(boundary)) {
-      curve_tab <- curve_tab[pm_points_in_poly(curve_tab[, covariate], boundary), , drop = FALSE]
+      curve_tab <- curve_tab[inside(curve_tab), , drop = FALSE]
       rownames(curve_tab) <- NULL
+      pred_df <- droplevels(pred_df[inside(pred_df), , drop = FALSE])
     }
+  } else {
+    # the difference between the two curves (surfaces): the one calculation of
+    # covariatemeans(contr = ) (pm_diff_table(), R/covariatemeans.R), with the
+    # covariance of the fixed and smooth coefficients
+    grp_fct <- pred_df[[modelterm]]
+    grp_fct_levl <- levels(grp_fct)
+    plt_df_lst <- lapply(split(pred_df, grp_fct), function(x) x[, !names(x) %in% modelterm])
+    plt_df_contr <- plt_df_lst[[grp_fct_levl[contr[1]]]] - plt_df_lst[[grp_fct_levl[contr[2]]]]
+    diff_covarn <- setdiff(names(plt_df_contr), c("SE", response, "LL", "UL"))
+    plt_df_contr[, diff_covarn] <- plt_df_lst[[grp_fct_levl[contr[1]]]][, diff_covarn]
+    D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
+    D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
+    D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
+    df_c <- df_of(D_a - D_b)
+    sim_c <- sim_of(D_a - D_b, df_c)
+    crit_c <- sim_c$crit
+    one <- length(covariate) == 1
+    res <- pm_diff_table(if (one) plt_df_contr[[covariate]] else seq_len(nrow(D_a)), D_a, D_b, beta_u,
+                         sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
+                         h = bt$h, d1 = bt$d, kind = bt$kind)
+    tab <- res$table
+    pairs_tab <- pm_diff_pairs(tab, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
+                               crit_s = if (simultaneous) crit_c,
+                               p_adj = if (simultaneous) pm_sim_padj(sim_c, tab$diff/tab$ses, df_c),
+                               x = plt_df_contr[, covariate, drop = FALSE])
+    contr_lev <- grp_fct_levl[contr]
+    # do the curves differ anywhere? The max-|t| test over the covariate
+    # values: the p-value is the smallest level at which the simultaneous band
+    # of the difference leaves out zero somewhere (simulated with the
+    # covariance of the fixed and smooth coefficients, as the band). A Wald F
+    # test of the shrunken smooth coefficients would not have an F
+    # distribution; this one needs none.
+    sim_t <- if (simultaneous) sim_c else pm_sim_crit(D_a - D_b, sm_Cov, level, df = df_c, draws = TRUE)
+    t_c <- tab$diff/tab$ses
+    p_any <- suppressWarnings(min(pm_sim_padj(sim_t, t_c, df_c), na.rm = TRUE))
+    curve_test <- if (is.finite(p_any)) data.frame(statistic = max(abs(t_c), na.rm = TRUE), method = "max-|t| (simulated)",
+                                                     points = sum(is.finite(t_c)), p.value = p_any)
+    if (one) {
+      significant <- res$significant
+    } else if (!is.null(boundary)) {
+      pairs_tab <- pairs_tab[inside(pairs_tab), , drop = FALSE]
+      rownames(pairs_tab) <- NULL
+    }
+    if (glmm) {
+      # a GLMM: the columns of covariatemeans(contr = ); SE_contr on the model scale
+      if (!one) {
+        resp_sc <- contr_scale == "response"
+        plt_df_contr[[response]] <- if (resp_sc) tab$response.diff else tab$diff
+        plt_df_contr$LL <- if (resp_sc) tab$response.LL else tab$LL
+        plt_df_contr$UL <- if (resp_sc) tab$response.UL else tab$UL
+      }
+      pred_df <- cbind(plt_df_contr[setdiff(diff_covarn, c("SE_mu", "significant"))],
+                       tab[setdiff(names(tab), c("xvar", "Df"))])
+      pred_df$SE_contr <- tab$ses
+    } else {
+      # a linear model: the 1.x columns, then the indicator columns
+      plt_df_contr[[response]] <- tab$diff
+      plt_df_contr$LL <- tab$LL
+      plt_df_contr$UL <- tab$UL
+      if (!one) plt_df_contr$significant <- tab$significant
+      pred_df <- plt_df_contr
+      pred_df$SE_contr <- tab$ses
+      pred_df$df <- tab$Df
+      pred_df$SE <- NULL
+      pred_df$SE_mu <- NULL
+      pred_df$includes0 <- tab$includes0
+      pred_df$significant <- tab$significant
+    }
+    if (one) attr(pred_df, "significant") <- res$significant
   }
-  
-  if (setequal(modelterm, covariate)) {
-    if (length(covariate)==1) {
-      # the data underneath, then the band, then the line on top
-      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)))) +
-        labs(x=covariate, y=response) +
-        theme_bw()
-      if (point) plt <- plt + geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response))),
-                                         colour = sty$points, alpha = sty$point_alpha, size = sty$point_size,
-                                         position = position_jitter(width = jitterv, height = jitterv))
-      if (ci) plt <- plt + geom_ribbon(aes(ymin = LL, ymax = UL), fill = sty$band, alpha = sty$alpha, colour = NA)
-      plt <- plt + geom_line(colour = sty$line, linewidth = sty$linewidth)
-      if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
-    }else if(length(covariate)==2) {
-      if (!is.null(boundary)){
-        inBdry <- pm_points_in_poly(pred_df[, covariate], boundary)
-        pred_df <- droplevels(pred_df[inBdry,])
-      }
-      
-      if (threeD) {
-        pm_need("plotly", "3-D plots (threeD = TRUE)")
-        plt <- plotly::plot_ly(pred_df, x = formula(paste("~", covariate[1])), 
-                               y = formula(paste("~", covariate[2])),
-                               z = formula(paste("~", response)), 
-                               intensity = formula(paste("~", response)), 
-                               type = 'mesh3d',
-                               opacity = 0.7) 
-        
-        if (point) plt <- plotly::add_trace(plt, x = mod_df[[covariate[1]]], y = mod_df[[covariate[2]]], 
-                                            z = mod_df[[response]], mode = "markers", type = "scatter3d", 
-                                            marker = list(size = 2.5, color = sty$surface_points, symbol = 104))						
-      }else{		
-        plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) +
-          geom_contour_filled() +
-          labs(x=covariate[1], y=covariate[2], z=response)
-        if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)   
-        if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))		
-      }
-      
-    }
-  }else{
-    vars <- unlist(strsplit(modelterm, "\\:"))
-    if (length(vars)==1) {
-      if (length(covariate)==1) {
-        if (is.null(contr)) {
-          plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))))+
-            labs(x=covariate, y=response, col=modelterm) +
-            theme_bw()	
-          if (point) plt <- plt + 
-              geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = modelterm))),
-                         alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))+
-              labs(col=modelterm)
-          if (ci) plt <- plt + 
-              geom_ribbon(aes(ymin = LL, ymax = UL, fill=eval(parse(text = modelterm))), alpha = sty$alpha, colour = NA)+
-              labs(fill=modelterm)
-          plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[modelterm]])))
-          if (trellis)  plt <- plt + 
-              facet_wrap(formula(paste("~", modelterm)), scales=scales) 
-          if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))  
-        }else{
-          grp_fct <- pred_df[[modelterm]]
-          grp_fct_levl <- levels(grp_fct)
-          plt_df_lst <- lapply(split(pred_df, grp_fct), function(x) x[, !names(x) %in% modelterm])
-          plt_df_contr <- plt_df_lst[[grp_fct_levl[contr[1]]]] - plt_df_lst[[grp_fct_levl[contr[2]]]]		  
-          diff_covarn <- setdiff(names(plt_df_contr), c("SE", response, "LL", "UL"))
-          plt_df_contr[,diff_covarn] <- plt_df_lst[[grp_fct_levl[contr[1]]]][, diff_covarn]
-          
-          # the difference between the two curves: the one calculation of
-          # covariatemeans(contr = ) (pm_diff_table(), R/covariatemeans.R),
-          # with the covariance of the fixed and smooth coefficients
-          D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
-          D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
-          D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
-          df_c <- df_of(D_a - D_b)
-          sim_c <- sim_of(D_a - D_b, df_c)
-          crit_c <- sim_c$crit
-          glmm <- !isLMM(semer) && deriv == 0
-          fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
-          res <- pm_diff_table(plt_df_contr[[covariate]], D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
-                               h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
-                               kind = if (glmm) switch(fam$link, log = "ratio", logit = "odds.ratio", "none") else "none")
-          band_c <- if (simultaneous) "simultaneous" else "pointwise"
-          plt <- pm_diff_plot(res, covariate, grp_fct_levl[contr], modelterm, level, band_c, contr_scale,
-                              typical = glmm, style = sty)
-          if (response == "response_y") plt <- plt + labs(y = paste("The difference of ", response0, "\n", sep = ""))
-          pairs_tab <- pm_diff_pairs(res$table, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
-                                     crit_s = if (simultaneous) crit_c,
-                                     p_adj = if (simultaneous) pm_sim_padj(sim_c, res$table$diff/res$table$ses, df_c),
-                                     x = plt_df_contr[, covariate, drop = FALSE])
-          contr_lev <- grp_fct_levl[contr]
-          significant <- res$significant
-          tab <- res$table
-          if (glmm) {
-            # a GLMM: the columns of covariatemeans(contr = ); SE_contr on the model scale
-            pred_df <- cbind(plt_df_contr[setdiff(diff_covarn, "SE_mu")], tab[setdiff(names(tab), c("xvar", "Df"))])
-            pred_df$SE_contr <- tab$ses
-          } else {
-            # a linear model: the 1.x columns, then the indicator columns
-            plt_df_contr[[response]] <- tab$diff
-            plt_df_contr$LL <- tab$LL
-            plt_df_contr$UL <- tab$UL
-            pred_df <- plt_df_contr
-            pred_df$SE_contr <- tab$ses
-            pred_df$df <- tab$Df
-            pred_df$SE <- NULL
-            pred_df$SE_mu <- NULL
-            pred_df$includes0 <- tab$includes0
-            pred_df$significant <- tab$significant
-          }
-          attr(pred_df, "significant") <- res$significant
-        }
-      }else if(length(covariate)==2) {
-        if (is.null(contr)) {
-          if (!is.null(boundary)){
-            inBdry <- pm_points_in_poly(pred_df[, covariate], boundary)
-            pred_df <- droplevels(pred_df[inBdry,])
-          }
-          
-          if (threeD) {
-            pm_need("plotly", "3-D plots (threeD = TRUE)")
-            grp_fct <- pred_df[[modelterm]]
-            plt <- lapply(split(pred_df, grp_fct), function(x) {
-              plotly::plot_ly(droplevels(x), x = formula(paste("~", covariate[1])), 
-                              y = formula(paste("~", covariate[2])),
-                              z = formula(paste("~", response)), 
-                              intensity = formula(paste("~", response)), 
-                              type = 'mesh3d',
-                              opacity = 0.7
-              ) 
-            })
-            
-            if (point) {
-              mod_df_lst <- split(mod_df, mod_df[[modelterm]])
-              for (i in names(mod_df_lst)) {
-                plt[[i]] <- plotly::add_trace(plt[[i]], x = mod_df_lst[[i]][[covariate[1]]], y = mod_df_lst[[i]][[covariate[2]]], 
-                                              z = mod_df_lst[[i]][[response]], mode = "markers", type = "scatter3d", 
-                                              marker = list(size = 2.5, color = sty$surface_points, symbol = 104)) 
-                
-              }
-            }
-          }else{		
-            plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) +
-              geom_contour_filled()+
-              facet_wrap(formula(paste("~", modelterm)), scales=scales)+
-              labs(x=covariate[1], y=covariate[2], z=response) 
-            if (point) plt <- plt + geom_point(data=mod_df, col=sty$surface_points, size=1.5)
-            if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))			
-          }          
-        }else{
-          grp_fct <- pred_df[[modelterm]]
-          grp_fct_levl <- levels(grp_fct)
-          plt_df_lst <- lapply(split(pred_df, grp_fct), function(x) x[, !names(x) %in% modelterm])
-          plt_df_contr <- plt_df_lst[[grp_fct_levl[contr[1]]]] - plt_df_lst[[grp_fct_levl[contr[2]]]]
-          diff_covarn <- setdiff(names(plt_df_contr), c("SE", response, "LL", "UL"))
-          plt_df_contr[,diff_covarn] <- plt_df_lst[[grp_fct_levl[contr[1]]]][, diff_covarn]
-          
-          # the difference of the two surfaces: pm_diff_table() as for one
-          # covariate (R/covariatemeans.R); the plot shows the model scale (or
-          # the response scale, contr_scale = "response") and marks the points
-          # where the model-scale band leaves out zero
-          D_mx_lst <- lapply(split(data.frame(as.matrix(D_mx)), grp_fct), as.matrix)
-          D_a <- D_mx_lst[[grp_fct_levl[contr[1]]]]
-          D_b <- D_mx_lst[[grp_fct_levl[contr[2]]]]
-          df_c <- df_of(D_a - D_b)
-          sim_c <- sim_of(D_a - D_b, df_c)
-          crit_c <- sim_c$crit
-          glmm <- !isLMM(semer)
-          fam <- if (glmm) (if (inherits(semer, "glmmTMB")) semer$modelInfo$family else slot(semer, "resp")$family)
-          res <- pm_diff_table(seq_len(nrow(D_a)), D_a, D_b, beta_u, sig.epsHat^2*as.matrix(sm_Cov), df_c, crit_c,
-                               h = if (glmm) fam$linkinv, d1 = if (glmm) fam$mu.eta,
-                               kind = if (glmm) switch(fam$link, log = "ratio", logit = "odds.ratio", "none") else "none")
-          tab <- res$table
-          pairs_tab <- pm_diff_pairs(tab, covariate, grp_fct_levl[contr], level, kind = res$kind, back = res$back,
-                                     crit_s = if (simultaneous) crit_c,
-                                     p_adj = if (simultaneous) pm_sim_padj(sim_c, tab$diff/tab$ses, df_c),
-                                     x = plt_df_contr[, covariate, drop = FALSE])
-          contr_lev <- grp_fct_levl[contr]
-          if (!is.null(boundary)) {
-            pairs_tab <- pairs_tab[pm_points_in_poly(pairs_tab[, covariate], boundary), , drop = FALSE]
-            rownames(pairs_tab) <- NULL
-          }
-          resp_sc <- glmm && contr_scale == "response"
-          plt_df_contr[[response]] <- if (resp_sc) tab$response.diff else tab$diff
-          plt_df_contr$LL <- if (resp_sc) tab$response.LL else tab$LL
-          plt_df_contr$UL <- if (resp_sc) tab$response.UL else tab$UL
-          plt_df_contr$significant <- tab$significant
-          stderr_contr <- tab$ses
 
-          if (!is.null(boundary)){
-            inBdry <- pm_points_in_poly(plt_df_contr[, covariate], boundary)
-            plt_df_contrN <- droplevels(plt_df_contr[inBdry,])
-          }else plt_df_contrN <- plt_df_contr
-          plt_df_contrSub <- plt_df_contrN[plt_df_contrN$significant, , drop = FALSE]
-          
-          plt <- ggplot(plt_df_contrN, aes(x=eval(parse(text = covariate[1])), y=eval(parse(text = covariate[2])), z=eval(parse(text = response)))) + 
-            geom_contour_filled() +
-            geom_point(data=plt_df_contrSub, col=sty$surface_points, size=2.5, shape=22) +
-            ggtitle(pm_wrap_title(paste("Factor", modelterm, "level", grp_fct_levl[contr[1]], "vs level", grp_fct_levl[contr[2]], "with Points at the Area out of", (1-level) * 100, if (simultaneous) "% simultaneous band" else "% CI"), 11)) +
-            labs(x=covariate[1], y=paste("The difference of ", response, "\n", sep=""), z=response) +
-            theme_bw() +
-            theme(plot.title = element_text(hjust = 0.5)) 			
-          if (response == "response_y") plt <- plt + labs(y=paste("The difference of ", response0, "\n", sep=""))
-          if (glmm) {
-            pred_df <- cbind(plt_df_contr[setdiff(diff_covarn, c("SE_mu", "significant"))], tab[setdiff(names(tab), c("xvar", "Df"))])
-            pred_df$SE_contr <- tab$ses
-          } else {
-            pred_df <- plt_df_contr
-            pred_df$SE_contr <- stderr_contr
-            pred_df$df <- tab$Df
-            pred_df$SE <- NULL
-            pred_df$SE_mu <- NULL
-            pred_df$includes0 <- tab$includes0
-            pred_df$significant <- tab$significant
-          }
-        }
-      }
-    }else if (length(vars)==2) {	 
-      if (is.null(plotord) || all(plotord%in%c("NULL", ""))) plotord <- 1:2
-      fact1 <- (vars[plotord])[1]
-      fact2 <- (vars[plotord])[2]
-      plt <- ggplot(pred_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))))+         	  
-        labs(x=covariate, y=response, col=fact1) + 
-        facet_wrap(formula(paste("~", fact2)), scales=scales)+		
-        theme_bw()
-      if (response == "response_y") plt <- plt + labs(y=paste(response0, "\n", sep=""))
-      if (point) plt <- plt + 
-        geom_point(data=mod_df, aes(x=eval(parse(text = covariate)), y=eval(parse(text = response)), col=eval(parse(text = fact1))),
-                   alpha = sty$point_alpha, size = sty$point_size, position = position_jitter(width = jitterv, height = jitterv))
-      if (ci) plt <- plt +
-        geom_ribbon(data=pred_df, aes(ymin = LL, ymax = UL, fill=eval(parse(text = fact1))), alpha = sty$alpha, colour = NA) +
-        labs(fill=fact1)
-      plt <- plt + geom_line(linewidth = sty$linewidth) + pm_group_scales(sty, nlevels(factor(pred_df[[fact1]])))
-    }
+  if (deriv > 0 && is.null(contr)) {
+    pred_df$includes0 <- pred_df$LL <= 0 & pred_df$UL >= 0
+    pred_df$significant <- !pred_df$includes0
+    sig <- pm_deriv_ranges(pred_df, vars_tab, covariate)
+    attr(pred_df, "significant") <- sig
+    significant <- if (is.null(sig)) data.frame(level = character(0), from = numeric(0), to = numeric(0),
+                                                direction = character(0), stringsAsFactors = FALSE) else sig
   }
-  #     facet_grid(formula(paste(Variable1, "~", Variable2)))
 
-  if (deriv > 0) {
-    ylab <- paste0(if (deriv == 1) "Slope" else "Curvature", " of ", if (response == "response_y") response0 else response,
-                   " (d", if (deriv == 2) "2", "/d", covariate, if (deriv == 2) "2", if (!isLMM(semer)) ", link scale", ")")
-    if (is.null(contr)) {
-      pred_df$includes0 <- pred_df$LL <= 0 & pred_df$UL >= 0
-      pred_df$significant <- !pred_df$includes0
-      by <- if (!setequal(modelterm, covariate)) unlist(strsplit(modelterm, ":"))
-      sig <- pm_deriv_ranges(pred_df, by, covariate)
-      attr(pred_df, "significant") <- sig
-      significant <- if (is.null(sig)) data.frame(level = character(0), from = numeric(0), to = numeric(0),
-                                                  direction = character(0), stringsAsFactors = FALSE) else sig
-      if (inherits(plt, "ggplot")) {
-        plt <- plt + geom_hline(yintercept = 0, linetype = 2, colour = sty$ref) + labs(y = ylab)
-        # one slope: bars where its band leaves out 0
-        if (!length(by)) plt <- plt + pm_sig_bars(sig, pred_df[[covariate]], sty)
-      }
-    } else if (inherits(plt, "ggplot")) {
-      plt <- plt + labs(y = paste0("The difference of the ", tolower(substr(ylab, 1, 1)), substring(ylab, 2)))
-      if (!is.null(plt$labels$title))
-        plt <- plt + ggtitle(sub("^Difference between", paste("Difference between the", if (deriv == 1) "slopes" else
-          "curvatures", "of"), plt$labels$title))
-    }
-  }
-  
-  if (draw) {
-    if (length(covariate)==2 && threeD && !setequal(modelterm, covariate)) {
-      for (i in names(plt)) suppressWarnings(print(plt[[i]]))
-    }else suppressWarnings(print(plt))
-  }
   rownames(pred_df) <- NULL
   settings <- pm_curve_settings(semireg, modelterm, covariate, level, df_label, mean_type, back_info,
-                                contr = contr_lev, band = band,
+                                contr = contr_lev, band = band, test = curve_test,
                                 vcov = if (unc) "unconditional (smoothing-parameter uncertainty included)" else
                                   "conditional on the smoothing parameters",
-                                deriv = deriv, unconditional = unc, boundary = !is.null(boundary))
-  pm_curve_result(means = if (deriv == 0) curve_tab, slopes = if (deriv > 0) curve_tab, pairs = pairs_tab,
-                  settings = settings, legacy = list(plt = plt, pred_df = pred_df, significant = significant),
-                  fun = "semipred")
+                                deriv = deriv, unconditional = unc, boundary = !is.null(boundary),
+                                sm_term = des$sm_term,
+                                response = pm_response_label_info(semireg, trans_arg, glm_back, !is.null(h_tab), from_formula = is.null(trans_arg)),
+                                contr_scale = if (!is.null(contr)) contr_scale)
+  out <- pm_curve_result(means = if (deriv == 0) curve_tab, slopes = if (deriv > 0) curve_tab, pairs = pairs_tab,
+                         settings = settings, legacy = list(plt = FALSE, pred_df = pred_df, significant = significant),
+                         fun = "semipred")
+  attr(out, "plot_data") <- pm_curve_plot_data(semireg, c(vars_tab, covariate), trans = trans_arg)
+  out <- pm_add_advice(out, tryCatch(pm_semipred_advice(out, semireg), error = function(e) NULL),
+                       pm_sm_covariate_advice(semireg, des$sm_term, covariate))
+  pm_curve_add_plot(out, pargs, draw)
+}
+
+## The smooth blocks of 'sm_term' (NULL: all). Each entry may be a block name
+## (names(fit$u_lst), e.g. "s_pressure_QB200"), a smooth as mgcv labels it
+## ("s(pressure):QB200"), a term as written in the formula
+## ("s(pressure, by = QB, k = 4)": all its blocks, matched by its covariates
+## and its 'by' or factor term) or a covariate ("pressure": every smooth of
+## it). Returns block names in the order of the fit.
+pm_sm_resolve <- function(fit, sm_term = NULL) {
+  if (is.null(sm_term)) return(NULL)
+  sm <- fit$smooths
+  if (is.null(sm)) return(sm_term)                 # (1.x smoothZ fits: pm_semi_design() stops)
+  blk <- intersect(names(fit$u_lst), names(sm$maps))
+  # per block: the mgcv labels, covariates and 'by' variables of its smooths
+  info <- lapply(blk, function(b) {
+    s <- sm$sms[vapply(sm$maps[[b]], `[[`, 1L, "sm")]
+    by <- unique(vapply(s, `[[`, "", "by"))
+    by <- unique(c(by, unlist(sm$derived[intersect(by, names(sm$derived))])))
+    list(labels = vapply(s, `[[`, "", "label"), vars = unique(unlist(lapply(s, `[[`, "term"))), by = by,
+         pm = any(startsWith(vapply(s, function(z) as.character(if (is.null(z$id)) "" else z$id), ""), "pm:")))
+  })
+  names(info) <- blk
+  norm <- function(z) gsub("\\s+", "", z)
+  as_term <- function(t) {
+    e <- tryCatch(str2lang(t), error = function(err) NULL)
+    if (!is.call(e) || !deparse(e[[1]]) %in% c("s", "te", "t2", "ti")) return(NULL)
+    a <- as.list(e)[-1]
+    nm <- if (is.null(names(a))) rep("", length(a)) else names(a)
+    un <- lapply(a[nm == ""], all.vars)
+    v <- unlist(un)
+    fac <- if ("by" %in% nm) all.vars(a[["by"]]) else character(0)
+    # s(x, f1*f2): the factor term is an unnamed argument; its variables are not covariates
+    cov_vars <- unique(unlist(lapply(info, `[[`, "vars")))
+    fac <- c(fac, setdiff(v, cov_vars))
+    # derived factors (f1_f2 of s(x, f1*f2)) count when all their factors are given
+    fac <- c(fac, names(Filter(function(d) all(d %in% fac), sm$derived)))
+    list(vars = intersect(v, cov_vars), fac = fac)
+  }
+  pick <- lapply(sm_term, function(t) {
+    if (t %in% blk) return(t)
+    hit <- blk[vapply(info, function(i) norm(t) %in% norm(i$labels), logical(1))]
+    if (length(hit)) return(hit)
+    tm <- as_term(t)
+    if (!is.null(tm) && length(tm$vars)) {
+      # a factor term: the blocks of its factors, and the common curve of an
+      # expanded s(x, f1*f2); none: the plain smooth only
+      hit <- blk[vapply(info, function(i) setequal(i$vars, tm$vars) &&
+                          if (length(tm$fac)) all(i$by %in% c(tm$fac, "NA")) && (any(i$by %in% tm$fac) || i$pm) else
+                            all(i$by == "NA") && !i$pm, logical(1))]
+      if (length(hit)) return(hit)
+    }
+    hit <- blk[vapply(info, function(i) t %in% i$vars, logical(1))]
+    if (length(hit)) return(hit)
+    stop("'sm_term' \"", t, "\" is not a smooth of this fit. Give smooths as labelled (",
+         paste(unique(unlist(lapply(info, `[[`, "labels"))), collapse = ", "), "), terms as written in the formula, ",
+         "block names (", paste(blk, collapse = ", "), ") or covariates (",
+         paste(unique(unlist(lapply(info, `[[`, "vars"))), collapse = ", "), ").", call. = FALSE)
+  })
+  blk[blk %in% unlist(pick)]
+}
+
+## Advice: smooths in the prediction that do not involve 'covariate' (they add
+## a constant, their average over the grid, to the curve).
+pm_sm_covariate_advice <- function(fit, blocks, covariate) {
+  sm <- fit$smooths
+  if (is.null(sm) || !length(blocks)) return(NULL)
+  other <- blocks[vapply(blocks, function(b) {
+    v <- unique(unlist(lapply(sm$sms[vapply(sm$maps[[b]], `[[`, 1L, "sm")], `[[`, "term")))
+    !any(covariate %in% v)
+  }, logical(1))]
+  if (!length(other)) return(NULL)
+  pm_advice("smooth_other_covariate", paste0(
+    "The smooth(s) ", paste(other, collapse = ", "), " do not involve ", paste(covariate, collapse = ", "),
+    ": they enter the curves as a constant (at the reference values of their own covariates). ",
+    "sm_term = \"", covariate[1], "\" uses the smooths of ", covariate[1], " only."), "note")
 }
 
 ## Has a semireg fit random terms besides its smooths (blocks, plots, ...)?
@@ -729,7 +652,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
   # the rows of CovMat of the fixed effects and of the given smooth blocks, in
   # the order of the fit (that of u_lst and of Z); with unconditional = TRUE
   # the covariance includes the uncertainty of the smoothing parameters
-  # (pm_sr_uncond(), R/semireg-engine.R)
+  # (pm_sr_uncond(), R/semireg-engine.R; computed once per fit)
   ci <- semireg$Cov_ind
   # default: with the correction for generalized models (not gaussian ones),
   # as the coverage simulation showed (dev/sim-curve-difference.R)
@@ -744,7 +667,7 @@ pm_semi_design <- function(semireg, modelterm, covariate, covariateV, sm_term, m
     idx <- cov_idx(blocks)
     V <- fullCovMat[idx, idx]
     if (isTRUE(unconditional)) {
-      corr <- pm_sr_uncond(semireg)
+      corr <- pm_sr_uncond_cached(semireg)
       if (!is.null(corr)) V <- as.matrix(V) + corr[idx, idx]
     }
     V

@@ -62,7 +62,8 @@ test_that("bs = \"user\": the basis function is checked before the fit", {
   expect_error(fit(function(x) ZOSull(x, intKnots = stats::quantile(x, 1:4/5), range.x = range(x) + c(-0.1, 0.1))),
                "depends on the data it is given")
   # a single value must give one row (prediction at one covariate value)
-  expect_error(fit(function(x) cbind(1, ob(x))), "for 1 value it returned")
+  # (a column instead of a row for one value; before 2.0.0 ZOSull() itself gave a wrong shape here)
+  expect_error(fit(function(x) { B <- ob(x); if (length(x) == 1) t(B) else B }), "for 1 value it returned")
   expect_error(fit(function(x) { if (length(x) < 20) stop("needs 20 values"); ob(x) }),
                "failed on a single value \\(as at prediction\\): needs 20 values")
   expect_error(fit(one_row(function(B, x) cbind(B, B[, 1] + B[, 2]))), "linearly dependent columns \\(rank 6 of 7\\)")

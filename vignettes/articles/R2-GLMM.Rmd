@@ -1,0 +1,353 @@
+---
+title: "Adjusted R² for generalized linear mixed models"
+author: "Dongwen Luo"
+---
+
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+```{r, include = FALSE}
+# show code folded: click 'Code' to open it
+local({
+  hook <- knitr::knit_hooks$get("source")
+  knitr::knit_hooks$set(source = function(x, options) {
+    paste0("\n<details class=\"code-fold\"><summary>Code</summary>\n\n", hook(x, options), "\n\n</details>\n")
+  })
+})
+```
+
+```{r}
+#| label: setup
+library(predictmeans)
+library(tidyverse)
+```
+
+## The function `R2_model()`
+
+`R2_model()` gives an adjusted coefficient of determination (R²) for linear and generalized linear mixed models,
+by the method of Piepho (2023). In predictmeans 1.x this was `R2_glmm()`; `R2_model()` gives the same values and
+also works for models without random effects (`lm`, `glm`, `gls`) and for `lme`, `glmmTMB`, `gam` and `semireg`
+fits.
+
+Piepho's R² starts from the average variance of the data: the mean of half the expected squared difference over all
+pairs of observations, which equals the expected sample variance. This is split into the variance of the fixed
+effects and the variance of each random-effect term; the shares of these in the total are the fixed, random and
+total R², and the random share is split further into one share per random-effect term. Three features matter in
+practice:
+
+-   **Adjusted.** The variance of the fixed effects is corrected for the bias from estimating them, so that for a
+    linear model without random effects the result is exactly the usual adjusted R². Because of the correction the
+    fixed share can be slightly negative when the fixed effects explain almost nothing.
+-   **One fit.** Only the model of interest is fitted; no null model is needed (hence "in one go").
+-   **Covariance taken into account.** The average variance accounts for the covariance between observations that
+    share a random effect, which Nakagawa and Schielzeth's R² ignores.
+
+For a generalized linear mixed model the variances are taken on the scale of the linear predictor, where the
+effects are additive. The residual variance on that scale depends on the family and link, and `R2_model()` chooses
+it automatically: for binary data the exact variance of the latent distribution ($\pi^2/3$ for the logit link, 1 for
+the probit link, $\pi^2/6$ for the complementary log-log link); for other data a first-order approximation (for
+Poisson counts with a log link, the inverse of the mean).
+
+Every example below is one of Piepho (2023). The values from `R2_model()` are compared with those in the paper,
+which were computed with SAS PROC GLIMMIX.
+
+```{r}
+args(R2_model)
+```
+
+-   `method = "piepho"` (the default) gives the total, fixed and random shares and each random-effect component.
+    `method = "nakagawa"` gives the marginal and conditional R² of Nakagawa and Schielzeth (2013).
+-   `over_disp = TRUE` treats an observation-level random effect (one level per observation, used to model
+    overdispersion) as part of the residual variance, not as explained variance.
+
+A caution, which the printed result repeats as advice for non-gaussian models: an R² on the latent scale is not
+comparable with the R² of a linear model, nor across families or links. Use it to compare models of the same family
+and link fitted to the same data, at the same level of aggregation (see Example 4).
+
+## Example 1: body length (linear mixed model)
+
+The `Body_length` data (Nakagawa and Schielzeth, 2013) are simulated body lengths of beetles in 120 containers
+nested in 12 populations, with two treatments, two habitats and both sexes. Piepho (2023, Table 2) gives 40.09%
+(fixed), 33.30% (random) and 73.39% (total), and Nakagawa and Schielzeth's marginal and conditional R² as 39.16% and
+74.09%.
+
+```{r}
+data(Body_length)
+str(Body_length)
+```
+
+```{r}
+mod_BodyL <- lmer(BodyL ~ Treatment + Habitat + Sex + (1 | Population/Container),
+                  data = Body_length)
+summary(mod_BodyL, corr = FALSE)
+```
+
+```{r}
+R2_model(mod_BodyL)
+```
+
+The values agree with the paper exactly. For comparison, Nakagawa and Schielzeth's marginal (fixed effects) and
+conditional (fixed and random effects) R², which are the counterparts of the fixed and total shares. Their fixed
+share is larger because it has no correction for the estimation of the fixed effects, so it slightly overstates
+the variance explained by them:
+
+```{r}
+R2_model(mod_BodyL, method = "nakagawa")
+```
+
+## Example 2: egg counts (Poisson GLMM with overdispersion)
+
+The `Poisson_ind` data are simulated egg counts of females from the same design. Each female is one level of
+`individual` within her container, so `(1 | Population/Container/individual)` includes an observation-level
+random effect that models overdispersion. With `over_disp = TRUE` its variance counts as residual, not explained,
+variance, as in the paper. Piepho (2023, Table 2, Laplace fit) gives 9.13% (fixed), 41.80% (random) and 50.93%
+(total).
+
+```{r}
+data(Poisson_ind)
+str(Poisson_ind)
+```
+
+```{r}
+mod_poisson <- glmer(Egg ~ Treatment + Habitat + (1 | Population/Container/individual),
+                     family = poisson, data = Poisson_ind)
+summary(mod_poisson, corr = FALSE)
+```
+
+```{r}
+R2_model(mod_poisson, over_disp = TRUE)
+```
+
+## Example 3: colour morph (binary GLMM)
+
+The `Binary_color` data are simulated colour morphs (0 or 1) of males from the same design. Piepho (2023, Table 2)
+gives 7.46% (fixed), 21.99% (random) and 29.46% (total).
+
+```{r}
+load("data/Binary_color.RData")
+str(Binary_color)
+```
+
+```{r}
+mod_color <- glmer(Colour ~ Treatment + Habitat + (1 | Population/Container),
+                   family = binomial, data = Binary_color)
+summary(mod_color, corr = FALSE)
+```
+
+```{r}
+R2_model(mod_color)
+```
+
+## Example 4: clinical trial (binomial GLMM, three links)
+
+The `Clinical` data (Beitler and Landis, 1985) give the number of patients with a favourable response out of the
+patients in each treatment group (drug or control) at each of eight clinics. The model has a random effect for
+clinics and for treatments within clinics.
+
+### Data at clinic level
+
+```{r}
+data(Clinical)
+Clinical$Unfavorable <- Clinical$Total - Clinical$Favorable
+str(Clinical)
+```
+
+```{r}
+fit_clinic <- function(link) {
+  glmer(cbind(Favorable, Unfavorable) ~ Treatment + (1 | Clinic/Treatment),
+        family = binomial(link = link), data = Clinical)
+}
+mod_clinic_logit <- fit_clinic("logit")
+summary(mod_clinic_logit, corr = FALSE)
+```
+
+```{r}
+R2_model(mod_clinic_logit)
+R2_model(fit_clinic("probit"))
+R2_model(fit_clinic("cloglog"))
+```
+
+Piepho (2023, Table 3) gives, at the clinic-by-treatment level (fixed / random / total):
+
+| Link    | Fixed | Random | Total |
+|---------|------:|-------:|------:|
+| logit   |  4.66 |  71.34 | 75.99 |
+| probit  |  5.03 |  72.84 | 77.87 |
+| cloglog |  3.44 |  69.21 | 72.66 |
+
+The values from `R2_model()` are within 0.3 percentage points of these. The small differences come from the fit:
+the paper used adaptive Gauss-Hermite quadrature in SAS, while `glmer()` with nested random effects can only use the
+Laplace approximation, which gives slightly different variance components.
+
+### Data at patient level
+
+The same data with one row per patient (1 = favourable, 0 = not). The model and its estimates are the same, but the
+R² values are much smaller, and they are meant to be: they answer a different question. At the
+clinic-by-treatment level the unit is a group of patients, whose proportion of favourable responses varies much less
+than a single patient's outcome. As Piepho (2023) puts it, the patient-level analysis is relevant when considering
+the value of the treatment for an individual patient, and the clinic-by-treatment level when the treatments are
+compared for entire clinics. So state the level with any R² for binomial data, and compare R² values only at the same
+level.
+
+Piepho (2023, Table 3) gives, at the patient level:
+
+| Link    | Fixed | Random | Total |
+|---------|------:|-------:|------:|
+| logit   |  2.23 |  32.76 | 34.99 |
+| probit  |  2.52 |  34.92 | 37.44 |
+| cloglog |  1.86 |  35.87 | 37.74 |
+
+```{r}
+Clinical_N <- Clinical %>%
+  pivot_longer(c(Favorable, Unfavorable), names_to = "outcome", values_to = "n") %>%
+  uncount(n) %>%
+  mutate(favour = as.integer(outcome == "Favorable")) %>%
+  select(Clinic, Treatment, favour)
+str(Clinical_N)
+```
+
+```{r}
+fit_patient <- function(link) {
+  glmer(favour ~ Treatment + (1 | Clinic/Treatment),
+        family = binomial(link = link), data = Clinical_N)
+}
+R2_model(fit_patient("logit"))
+R2_model(fit_patient("probit"))
+R2_model(fit_patient("cloglog"))
+```
+
+## Example 5: foot shape of lambs (binomial GLMM with probit link)
+
+The `Footshape_binomial` data give deformities in the feet of lambs, the progeny of 34 sires, scored in three ordered
+categories (`k1`, `k2`, `k3`; `n` lambs in total per sire), with four contrasts (`yr`, `b1`, `b2`, `b3`) as fixed
+effects; 2513 lambs in all (Gilmour, Anderson and Rae, 1987). The ordinal response is
+analysed here as two binary splits: category 1 against categories 2 and 3 (`m` = `k1` lambs), and categories 1 and 2
+against category 3 (`m12` = `k1` + `k2` lambs). A probit link matches the threshold model usual for such traits, and
+the random share of the R² is then the share of the latent variance due to sires. (Piepho, 2023, also fits the
+ordinal response directly with a cumulative probit model; `R2_model()` does not handle such models.)
+
+As in Example 4 there are two levels. The sire level is relevant in breeding programmes, where sires are selected
+on the proportions of their progeny in each category; the lamb level is relevant for the status of individual lambs.
+Piepho (2023, Table 5) gives (fixed / random / total):
+
+| Split               | Sire level            | Lamb level          |
+|---------------------|-----------------------|---------------------|
+| K1 vs K2 and K3     | 50.06 / 32.72 / 82.78 | 5.54 / 4.34 / 9.88  |
+| K1 and K2 vs K3     | 59.54 / 9.06 / 68.60  | 20.19 / 3.09 / 23.28 |
+
+The values from `R2_model()` below agree with these to within 0.2 percentage points (quadrature in SAS against the
+Laplace approximation in `glmer()`).
+
+### Data at sire level
+
+```{r}
+load("data/Footshape_binomial.RData")
+str(Footshape_binomial)
+```
+
+```{r}
+mod_sire_k1 <- glmer(cbind(m, n - m) ~ yr + b1 + b2 + b3 + (1 | sire),
+                     family = binomial(link = "probit"), data = Footshape_binomial)
+summary(mod_sire_k1, corr = FALSE)
+R2_model(mod_sire_k1)
+```
+
+```{r}
+mod_sire_k12 <- glmer(cbind(m12, n - m12) ~ yr + b1 + b2 + b3 + (1 | sire),
+                      family = binomial(link = "probit"), data = Footshape_binomial)
+summary(mod_sire_k12, corr = FALSE)
+R2_model(mod_sire_k12)
+```
+
+### Data at lamb level
+
+With one row per lamb the R² values are much smaller than those from the sire totals, as in Example 4.
+
+```{r}
+lambs <- function(data, success) {
+  data %>%
+    mutate(yes = .data[[success]], no = n - .data[[success]]) %>%
+    select(yr, b1, b2, b3, sire, yes, no) %>%
+    pivot_longer(c(yes, no), names_to = "outcome", values_to = "count") %>%
+    uncount(count) %>%
+    mutate(y = as.integer(outcome == "yes"))
+}
+Footshape_k1 <- lambs(Footshape_binomial, "m")
+Footshape_k12 <- lambs(Footshape_binomial, "m12")
+str(Footshape_k1)
+```
+
+```{r}
+mod_lamb_k1 <- glmer(y ~ yr + b1 + b2 + b3 + (1 | sire),
+                     family = binomial(link = "probit"), data = Footshape_k1)
+R2_model(mod_lamb_k1)
+
+mod_lamb_k12 <- glmer(y ~ yr + b1 + b2 + b3 + (1 | sire),
+                      family = binomial(link = "probit"), data = Footshape_k12)
+R2_model(mod_lamb_k12)
+```
+
+### Ordinal model at lamb level
+
+The three categories can also be modelled together with a cumulative probit (proportional odds) model, fitted here
+with `ordinal::clmm()`. `R2_model()` does not handle such models, but the lamb-level R² is easy to compute by hand
+from Piepho's formulas: the latent residual variance is 1 (probit), the fixed share is the bias-corrected variance of
+the linear predictor, and the sire share is the sire variance times the factor for unequal family sizes.
+
+```{r}
+Footshape_long <- Footshape_binomial %>%
+  select(yr, b1, b2, b3, sire, k1, k2, k3) %>%
+  pivot_longer(c(k1, k2, k3), names_to = "category", values_to = "count") %>%
+  uncount(count) %>%
+  mutate(category = factor(category, ordered = TRUE))
+
+mod_ord <- ordinal::clmm(category ~ yr + b1 + b2 + b3 + (1 | sire), data = Footshape_long,
+                         link = "probit", nAGQ = 10)
+
+n <- nrow(Footshape_long)
+X <- scale(as.matrix(Footshape_long[c("yr", "b1", "b2", "b3")]), scale = FALSE)
+b <- mod_ord$beta
+fixed <- (sum((X %*% b)^2) - sum(diag(crossprod(X) %*% vcov(mod_ord)[names(b), names(b)]))) / (n - 1)
+sizes <- table(Footshape_long$sire)
+sire <- as.numeric(ordinal::VarCorr(mod_ord)$sire) * (n - sum(sizes^2) / n) / (n - 1)
+round(100 * c(Fixed = fixed, Random = sire, Total = fixed + sire) / (fixed + sire + 1), 2)
+```
+
+Piepho (2023, Table 5) gives 6.75% (fixed), 4.18% (random) and 10.93% (total) for this model.
+
+## Summary
+
+`R2_model()` computes Piepho's adjusted R² for `lmer`, `glmer` and `glmmTMB` fits (and for models without random
+effects), choosing the residual variance for the family and link automatically. It splits the explained variance
+into the fixed effects and each random-effect term, and with `over_disp = TRUE` handles an observation-level random
+effect for overdispersion. On every example of Piepho (2023) it reproduces the published values: exactly for the
+normal, Poisson and binary examples fitted by the Laplace approximation, and to within 0.4 percentage points where the
+paper used quadrature. R² values of non-gaussian models are on the latent scale, and for binomial data they depend
+on the level of aggregation (groups or individuals), which answers a different question at each level: state the
+level, and compare R² values only between models of the same family and link at the same level.
+
+## References
+
+Bates, D., Maechler, M., Bolker, B. and Walker, S. (2015). Fitting linear mixed-effects models using lme4.
+*Journal of Statistical Software*, 67(1), 1-48. <https://doi.org/10.18637/jss.v067.i01>
+
+Beitler, P. J. and Landis, J. R. (1985). A mixed-effects model for categorical data. *Biometrics*, 41, 991-1000.
+
+Gilmour, A. R., Anderson, R. D. and Rae, A. L. (1987). Variance components on an underlying scale for ordered
+multiple threshold categorical data using a generalized linear mixed model. *Journal of Animal Breeding and
+Genetics*, 104, 149-155.
+
+Luo, D., Ganesh, S. and Koolaard, J. predictmeans: predicted means for linear and semiparametric models. R package.
+https://CRAN.R-project.org/package=predictmeans
+
+Nakagawa, S. and Schielzeth, H. (2013). A general and simple method for obtaining R² from generalized linear
+mixed-effects models. *Methods in Ecology and Evolution*, 4, 133-142.
+
+Piepho, H.-P. (2023). An adjusted coefficient of determination (R²) for generalized linear mixed models in one go.
+*Biometrical Journal*, 65(7), e2200290. <https://doi.org/10.1002/bimj.202200290>
+
+R Core Team (2025). *R: A language and environment for statistical computing*. R Foundation for Statistical
+Computing, Vienna, Austria. https://www.R-project.org/

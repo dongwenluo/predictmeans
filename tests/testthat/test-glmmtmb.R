@@ -186,14 +186,14 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
   q <- function(e) suppressWarnings(suppressMessages(e))
   m <- glmmTMB::glmmTMB(y ~ trt * x + (1 | site), ziformula = ~trt, family = poisson, data = d)
   xs <- c(2, 5, 8)
-  pd <- q(covariatemeans(m, "trt", "x", at = xs, mean_type = "overall"))$pltdf
+  pd <- q(covariatemeans(m, "trt", "x", at = xs, mean_type = "overall"))$pred_df
   expect_equal(pd$Mean, unname(predict(m, data.frame(x = pd$xvar, trt = pd$trt, site = NA), type = "response",
                                        re.form = NA, allow.new.levels = TRUE)), tolerance = 1e-8)
   skip_if_not_installed("emmeans")
   em <- summary(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"))
   o <- match(paste(em$trt, em$x), paste(pd$trt, pd$xvar))
   expect_equal(pd$Mean[o] * pd$ses[o], em$SE, tolerance = 1e-6)     # SE of m = m x SE of log m
-  cc <- q(covariatemeans(m, "trt", "x", at = xs, contr = c("b", "a"), mean_type = "overall"))$pltdf
+  cc <- q(covariatemeans(m, "trt", "x", at = xs, contr = c("b", "a"), mean_type = "overall"))$pred_df
   emc <- summary(emmeans::contrast(emmeans::emmeans(m, ~ trt | x, at = list(x = xs), component = "response"),
                                    "revpairwise"))
   expect_equal(cc$response.diff, emc$estimate, tolerance = 1e-6)

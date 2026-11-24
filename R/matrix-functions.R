@@ -1,96 +1,69 @@
-
-
-
 ##------------------------------------------------------------------------
-## block-diagonal matrix addition, multiplication, and trace functions matrix_list
+## Block-diagonal covariance matrices of nlme fits: lists of dense blocks,
+## one per group (attribute "groups": the group of each observation, in the
+## data's order). Used by build-variance-matrices.R and the permutation code.
 ##------------------------------------------------------------------------
 
-# turn matrix into a list of sub-matrices
-
-sub_f <- function(x, fac, dim) {
-  function(f) switch(dim,
-                     row = x[fac==f, ,drop=FALSE],
-                     col = x[ ,fac==f, drop=FALSE],
-                     both = x[fac==f, fac==f, drop=FALSE])
-}
-
+## Split a matrix by a factor: its rows ("row"), columns ("col") or diagonal
+## blocks ("both"); a vector gives diagonal matrices.
 matrix_list <- function(x, fac, dim) {
   if (is.vector(x)) {
-    if (dim != "both") {
-      stop(paste0("Object must be a matrix in order to subset by ",dim,"."))
-    }
-    x_list <- split(x, fac)
-    lapply(x_list, function(x) diag(x, nrow = length(x)))
-  } else {
-    lapply(levels(fac), sub_f(x, fac, dim))
+    if (dim != "both") stop("Object must be a matrix in order to subset by ", dim, ".")
+    return(lapply(split(x, fac), function(v) diag(v, nrow = length(v))))
   }
+  lapply(levels(fac), function(f) switch(dim,
+                                         row = x[fac == f, , drop = FALSE],
+                                         col = x[, fac == f, drop = FALSE],
+                                         both = x[fac == f, fac == f, drop = FALSE]))
 }
 
-# turn block-diagonal into regular matrix
-
-unblock <- function(A, block = attr(A, "groups")) {
-
-  if (is.null(block)) {
-    block <- factor(rep(names(A), times = sapply(A, function(x) dim(x)[1])))
-  }
-  n <- length(block)
-  mat <- matrix(0, n, n)
-  for (i in levels(block)) {
-    index <- i == block
-    mat[index,index] <- A[[i]]
-  }
-  return(mat)
+## A sparse n x n matrix with the blocks 'A' (a list, named as 'pos') at the
+## observations 'pos' (a list of row indices per block).
+pm_place_blocks <- function(A, pos, n) {
+  nm <- if (is.null(names(A))) names(pos) else names(A)
+  parts <- lapply(seq_along(A), function(k) {
+    i <- pos[[nm[k]]]
+    B <- as.matrix(A[[k]])
+    data.frame(i = rep(i, times = length(i)), j = rep(i, each = length(i)), x = as.vector(B))
+  })
+  d <- do.call(rbind, parts)
+  Matrix::sparseMatrix(i = d$i, j = d$j, x = d$x, dims = c(n, n))
 }
 
-
-# sum of two conformable block-diagonal matrices
-
-sum_blockblock <- function(A, B)
-  mapply(function(a,b) a + b, a = A, b = B, SIMPLIFY = FALSE)
-
-
-# generic matrix minus block-diagonal
-
-matrix_minus_block <- function(A, B, block=attr(B, "groups")) {
-  if (is.null(block)) {
-    block <- rep(names(B), times = sapply(B, function(x) dim(x)[1]))
+## The connected components of the non-zero pattern of a symmetric matrix:
+## an integer label per row (observations in one component are correlated).
+pm_sparse_components <- function(S) {
+  S <- methods::as(methods::as(S, "generalMatrix"), "TsparseMatrix")
+  n <- nrow(S)
+  lab <- seq_len(n)
+  i <- S@i + 1L
+  j <- S@j + 1L
+  repeat {                                       # each row takes the smallest label among its neighbours
+    m <- pmin(lab[i], lab[j])
+    agg <- tapply(m, i, min)
+    at <- as.integer(names(agg))
+    new <- lab
+    new[at] <- pmin(new[at], agg)
+    new <- new[new]                              # labels are row numbers: jump to the label's label
+    if (identical(new, lab)) break
+    lab <- new
   }
-
-  mat <- A
-  for (i in unique(block)) {
-    index <- i == block
-    mat[index,index] <- mat[index, index] - B[[i]]
-  }
-  return(mat)
+  match(lab, unique(lab))
 }
 
-
-# block-diagonal minus generic matrix
-
-block_minus_matrix <- function(A, B, block = attr(A, "groups")) {
-  if (is.null(block)) {
-    block <- rep(names(A), times = sapply(A, function(x) dim(x)[1]))
-  }
-  mat <- -B
-  for (i in unique(block)) {
-    index <- i == block
-    mat[index,index] <- mat[index, index] + A[[i]]
-  }
-  return(mat)
-}
-
+## Add the blocks 'small_mat' (one per level of 'indices') into 'big_mat'.
 add_submatrices <- function(indices, small_mat, big_mat) {
   levs <- levels(indices)
-  if (nlevels(indices) != length(small_mat)) {
-    stop("Levels of indices do not match entries of small_mat.")
-  }
+  if (nlevels(indices) != length(small_mat)) stop("Levels of indices do not match entries of small_mat.")
   for (i in seq_along(levs)) {
     ind <- levs[i] == indices
-    big_mat[ind,ind] <- big_mat[ind,ind] + small_mat[[i]]
+    big_mat[ind, ind] <- big_mat[ind, ind] + small_mat[[i]]
   }
   big_mat
 }
 
+## Add the blocks of a finer grouping into those of a coarser one that nests
+## it (crosswalk: data frame of the fine and the coarse group of each row).
 add_bdiag <- function(small_mats, big_mats, crosswalk) {
   small_indices <- lapply(split(crosswalk[[1]], crosswalk[[2]]), droplevels)
   big_indices <- unique(crosswalk)
@@ -99,35 +72,20 @@ add_bdiag <- function(small_mats, big_mats, crosswalk) {
   Map(add_submatrices, indices = small_indices, small_mat = small_mats_list, big_mat = big_mats)
 }
 
-# sum of conformable diagonal matrix and block-diagonal matrix
-
-add_diag <- function(d, M) {
-  diag(M) <- diag(M) + d
-  M
-}
-
-add_diag_bdiag <- function(diag_mats, big_mats) {
-  Map(add_diag, d = diag_mats, M = big_mats)
-}
-
+## Rows of B reordered to follow the blocks of A (the block order); returns
+## list(B reordered, the original row of each new row).
 get_order <- function(A, B, block = attr(A, "groups")) {
-  if (is.null(names(A))) {
-    names(A) <- seq_along(A)
-  }
+  if (is.null(names(A))) names(A) <- seq_along(A)
   A_names <- names(A)
-  C_indx <- rep(A_names, times = sapply(A, function(x) dim(x)[1]))
-  if (is.null(block)) {
-    block <- C_indx
-  }
+  C_indx <- rep(A_names, times = vapply(A, nrow, 1L))
+  if (is.null(block)) block <- C_indx
   C <- B
   B_index <- rep(0, nrow(B))
-
   for (b in A_names) {
     ind <- block == b
     ind_C <- C_indx == b
-    C[ind_C, ] <-  B[ind,]
-	B_index[ind_C] <- which(ind)
+    C[ind_C, ] <- B[ind, ]
+    B_index[ind_C] <- which(ind)
   }
-
-  return(list(C, B_index))
+  list(C, B_index)
 }

@@ -7,3 +7,9 @@ docs/
 inst/doc
 tests/testthat/Rplots.pdf
 Rplots.pdf
+.posit/
+renv/library/
+renv/staging/
+renv/local/
+conversation-export.*
+dev/conversations/

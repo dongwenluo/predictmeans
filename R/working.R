@@ -44,7 +44,8 @@ pm_working_glm <- function(model) {
   mu <- model$fitted.values
   mu_eta <- fam$mu.eta(eta_full)
   a <- model$prior.weights
-  phi <- summary(model)$dispersion
+  # gam: its scale estimate (summary.gam() gives the same, with more work)
+  phi <- if (inherits(model, "gam")) model$sig2 else summary(model)$dispersion
   b <- stats::coef(model)
   X <- stats::model.matrix(model)[, !is.na(b), drop = FALSE]
   resvar <- phi * fam$variance(mu) / (a * mu_eta^2)

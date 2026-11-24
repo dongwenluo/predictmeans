@@ -3,7 +3,7 @@
 \docType{data}
 \name{Poisson_ind}
 \alias{Poisson_ind}
-\title{\code{Poisson_ind} data}
+\title{Egg Counts of Beetles (Simulated)}
 \format{
 A data frame with 480 rows and 7 columns:
 \describe{
@@ -24,6 +24,13 @@ Simulated egg counts of individual female beetles in containers within populatio
 two treatments in two habitats, of the kind used by Nakagawa and Schielzeth (2013). Used
 in the \code{R2_glmm} vignette for a Poisson GLMM with an individual-level (overdispersion)
 random effect.
+}
+\examples{
+data(Poisson_ind)
+gm <- glmer(Egg ~ Treatment + Habitat + (1|Population/Container) + (1|individual:Container),
+            family = poisson, data = Poisson_ind)
+R2_model(gm)
+R2_model(gm, over_disp = TRUE)   # without the overdispersion term
 }
 \references{
 Nakagawa, S. and Schielzeth, H. (2013), A general and simple method for obtaining

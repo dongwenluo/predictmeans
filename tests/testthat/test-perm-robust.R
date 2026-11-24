@@ -58,7 +58,7 @@ test_that("pairs and contrasts with a robust permlist use robust t and robust li
   d <- robust_data()
   fm <- lm(y ~ x + A, data = d)
   r <- permmodels(fm, nperm = 199, seed = 1, robust = TRUE)
-  pr <- predictmeans(fm, "A", permlist = r, plot = FALSE, conf.level = 0.9)$pairs
+  pr <- predictmeans(fm, "A", permlist = r, plot = FALSE, conf_level = 0.9)$pairs
   # limits: estimate +/- critical value x robust SE of the pair
   V <- hc3(fm)
   L <- rbind(c(0, 0, -1, 0), c(0, 0, 0, -1), c(0, 0, 1, -1))
@@ -69,7 +69,7 @@ test_that("pairs and contrasts with a robust permlist use robust t and robust li
   expect_equal(pr$conf.high - pr$estimate, pr$lsd)
   # contrastmeans() gives the same limits for the same pairs
   cn <- rbind(c(-1, 1, 0), c(-1, 0, 1), c(0, -1, 1))
-  ct <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, conf.level = 0.9)[[1]]
+  ct <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, conf_level = 0.9)[[1]]
   expect_equal(unname(abs(ct[, "upper.CL"] - ct[, "lower.CL"])), round(pr$conf.high - pr$conf.low, 4), tolerance = 1e-3)
   # joint F of the contrasts: the robust Wald F of A
   cj <- contrastmeans(fm, "A", ctrmatrix = cn, permlist = r, joint = TRUE)

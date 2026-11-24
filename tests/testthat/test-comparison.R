@@ -1,5 +1,5 @@
 ## Comparison intervals (R/comparison.R): intervals whose overlap answers the
-## pairwise tests; letterCI reads its letters from them.
+## pairwise tests; letter_ci reads its letters from them.
 
 cmp_oats <- function() transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
 # do the comparison intervals of each pair overlap?
@@ -20,7 +20,7 @@ test_that("independent means with equal SEs: the 83.4% interval of the literatur
   expect_true(cm$exact)
   # z version: 83.42% (Austin & Hux 2002; Maghsoodloo & Huang 2010); here with t on 68 df
   expect_equal(1 - 2*pnorm(-qnorm(0.975)/sqrt(2)), 0.8342, tolerance = 1e-4)
-  expect_equal(cm$conf.level, 1 - 2*pt(-qt(0.975, df)/sqrt(2), df), tolerance = 1e-10)
+  expect_equal(cm$conf_level, 1 - 2*pt(-qt(0.975, df)/sqrt(2), df), tolerance = 1e-10)
   expect_equal(r$means$comparison.high - r$means$estimate, cm$mult*r$means$std.error, tolerance = 1e-10)
   # half an LSD on each side of a mean: the same interval
   expect_equal(r$means$comparison.high - r$means$estimate, rep(r$pairs$lsd[1]/2, 4), tolerance = 1e-10)
@@ -43,7 +43,7 @@ test_that("correlated means (random blocks): narrower than 83.4%, and overlap st
   r <- predictmeans(fm, "nitro", pairwise = TRUE)
   cm <- r$settings$comparison
   expect_true(cm$exact)
-  expect_lt(cm$conf.level, 0.6)                                  # the SED (5.1) is smaller than one SE (7.3)
+  expect_lt(cm$conf_level, 0.6)                                  # the SED (5.1) is smaller than one SE (7.3)
   expect_equal(cm$mult, r$pairs$lsd[1]/(2*r$means$std.error[1]), tolerance = 1e-8)
   o <- cmp_no_overlap(r)
   expect_identical(o$no, o$p$p.value < 0.05)
@@ -84,14 +84,14 @@ test_that("unequal SEDs: one average multiplier, and the pairs judged differentl
   expect_identical(oa$no, oa$p$p.adj < 0.05)
 })
 
-test_that("letterCI: letters from the comparison intervals shown in the mean table, at the test level", {
+test_that("letter_ci: letters from the comparison intervals shown in the mean table, at the test level", {
   O <- cmp_oats()
   fm <- lme4::lmer(yield ~ nitro + Variety + (1 | Block), data = O)
-  r <- predictmeans(fm, "nitro", letterCI = TRUE)
+  r <- predictmeans(fm, "nitro", letter_ci = TRUE)
   tab <- r$mean_table$Table
   cm <- r$settings$comparison
   expect_equal(r$settings$level, 0.05)                          # (1.x: 0.166, the level of the intervals)
-  lab <- paste0("LL(", round(100*cm$conf.level, 1), "%)")
+  lab <- paste0("LL(", round(100*cm$conf_level, 1), "%)")
   expect_true(lab %in% names(tab))
   expect_equal(tab[[lab]], round(r$means$comparison.low, 4))
   expect_match(r$mean_table$Note, "comparison intervals")
@@ -102,12 +102,12 @@ test_that("letterCI: letters from the comparison intervals shown in the mean tab
   expect_equal(r$means$conf.low, rp$means$conf.low)
   # within 'atvar' groups
   fs <- lme4::lmer(yield ~ nitro * Variety + (1 | Block/Variety), data = O)
-  ra <- predictmeans(fs, "nitro:Variety", atvar = "Variety", letterCI = TRUE)
+  ra <- predictmeans(fs, "nitro:Variety", atvar = "Variety", letter_ci = TRUE)
   rb <- predictmeans(fs, "nitro:Variety", atvar = "Variety", pairwise = TRUE)
   expect_identical(trimws(ra$mean_table$Table$LetterGrp), trimws(rb$mean_table$Table$LetterGrp))
   # back-transformed limits follow
   O$ly <- log(O$yield)
-  rl <- predictmeans(lm(ly ~ Block + nitro, O), "nitro", letterCI = TRUE, trans = exp)
+  rl <- predictmeans(lm(ly ~ Block + nitro, O), "nitro", letter_ci = TRUE, trans = exp)
   tl <- rl$mean_table$Table
   expect_equal(tl[[grep("^Bk_LL", names(tl))]], round(exp(rl$means$comparison.low), 4))
 })
@@ -117,12 +117,12 @@ test_that("autoplot(interval = 'comparison') draws them; no pairs, no intervals"
   fm <- lm(yield ~ Block + nitro * Variety, data = O)
   r <- predictmeans(fm, "nitro", adj = "tukey")
   g <- ggplot2::autoplot(r, interval = "comparison")
-  eb <- ggplot2::layer_data(g, 3)
+  eb <- pm_layer(g, "GeomErrorbar")
   expect_equal(eb$ymin, r$means$comparison.low)
   expect_match(g$labels$subtitle, "5% level \\(tukey\\) when their bars do not overlap")
-  # half-LSD bars go with the adjusted p-values too
-  gl <- ggplot2::layer_data(ggplot2::autoplot(r, interval = "lsd"), 3)
-  expect_equal(gl$ymax - gl$ymin, rep(r$LSD[["Aveg.LSD"]], 4), tolerance = 1e-4)
+  # the one LSD bar goes with the adjusted p-values too
+  gl <- pm_layer(ggplot2::autoplot(r), "GeomErrorbar")
+  expect_equal(gl$ymax - gl$ymin, r$LSD[["Aveg.LSD"]], tolerance = 1e-4)
   # a result without them (one mean, or the pairs not tabulated)
   none <- r
   none$means$comparison.low <- none$means$comparison.high <- NULL

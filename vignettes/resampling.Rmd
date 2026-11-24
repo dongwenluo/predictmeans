@@ -89,7 +89,7 @@ model, in which that pair's means are equal, so its p-value does not depend on t
 means:
 
 ```{r}
-pm <- predictmeans(fm, "nitro", permlist = perm, plot = FALSE, ncore = 1)
+pm <- predictmeans(fm, "nitro", permlist = perm, ncore = 1)
 pm$pairs[, c("level1", "level2", "estimate", "statistic", "p.value", "p.method")]
 ```
 
@@ -109,7 +109,7 @@ same step by step, which is more powerful. In a simulation study this kept the
 familywise error rate as Tukey's test does.
 
 ```{r}
-pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall", plot = FALSE,
+pmw <- predictmeans(fm, "nitro", permlist = perm, adj = "westfall",
                     ncore = 1)
 pmw$pairs[, c("level1", "level2", "p.value", "p.adj")]
 ```
@@ -228,7 +228,7 @@ boot
 Its result is used as a `permlist`; the `pairs` table then says `"bootstrap"`:
 
 ```{r}
-pmb <- predictmeans(fm_clin, "Treatment", permlist = boot, plot = FALSE,
+pmb <- predictmeans(fm_clin, "Treatment", permlist = boot,
                     ncore = 1)
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 ```

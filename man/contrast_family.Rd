@@ -5,7 +5,7 @@
 \title{Families of Contrasts among Means}
 \usage{
 contrast_family(.x, family = c("pairwise", "revpairwise", "trt.vs.ctrl", "consec", "poly",
-                "eff", "del.eff"), ref = 1, by = NULL, max.degree = NULL)
+                "eff", "del.eff"), ref = 1, by = NULL, max_degree = NULL, ...)
 }
 \arguments{
 \item{.x}{A \code{\link{Kmatrix}} or \code{\link{predictmeans}} result for the model term, or a character vector of
@@ -18,7 +18,9 @@ default is the first level.}
 
 \item{by}{Optional name(s) of factor(s) of the term: build the family within each of their levels.}
 
-\item{max.degree}{For \code{"poly"}: the highest degree, the default is the number of levels - 1 (at most 6).}
+\item{max_degree}{For \code{"poly"}: the highest degree, the default is the number of levels - 1 (at most 6).}
+
+\item{\dots}{Not used: \code{max.degree} (before 2.0) stops with its 2.0 spelling.}
 }
 \value{
 A matrix with one row per contrast (named as in \pkg{emmeans}, e.g. \code{"0.2 - 0"}, \code{"linear"}; with
@@ -48,11 +50,17 @@ family.
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
   # Dunnett: each nitrogen level against no nitrogen, exact adjustment
   K <- Kmatrix(fm, "nitro")
-  contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"), adj = "mvt")
+  if (requireNamespace("mvtnorm", quietly = TRUE)) {
+    contrastmeans(fm, "nitro", ctrmatrix = contrast_family(K, "trt.vs.ctrl"),
+                  adj = "mvt")
+  }
   # linear and quadratic trends in nitrogen within each variety
   K2 <- Kmatrix(fm, "nitro:Variety")
-  cf <- contrast_family(K2, "poly", by = "Variety", max.degree = 2)
+  cf <- contrast_family(K2, "poly", by = "Variety", max_degree = 2)
   contrastmeans(fm, "nitro:Variety", ctrmatrix = cf)
+}
+\seealso{
+\code{\link{contrastmeans}}, \code{\link{specify_contrast}}, \code{\link{pm_joint}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard

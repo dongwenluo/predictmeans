@@ -1,32 +1,41 @@
-#' Permutation Test of Linear Model
+#' Permutation Tests of the Terms and Coefficients of a Model
 #'
 #' @description
-#' This function provides permutation t-tests for coefficients of (fixed) effects and permutation F-tests 
-#' for the terms in a linear model such as \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
-#' \code{glmer} and \code{glmmTMB}.
+#' Permutation t tests of the coefficients of the fixed effects and permutation F (or chi-square) tests of the
+#' terms of a model fitted by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer} or
+#' \code{glmmTMB}. p-values are (b + 1)/(B + 1): b of the B permuted statistics at least as large as the observed
+#' one. Results are the same for any \code{ncore}.
 #' @usage
 #' permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3), 
-#'   test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+#'   test_statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
 #'   method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
 #'   \code{glmer} or \code{glmmTMB}.
 #' @param nperm The number of permutations. The default is 4999.
-#' @param type type of ANOVA test, "I", "II", "III", 1, 2, or 3. Roman numerals are equivalent to the corresponding Arabic numerals.
+#' @param type The type of the tests: "I", "II" or "III" (or 1, 2, 3).
 #'   Type III tests are those of sum-to-zero contrasts whatever contrasts the model was fitted with (as SAS Type 3);
 #'   \code{car::Anova()} gives them only for models fitted with such contrasts (with R's default treatment contrasts
 #'   it tests each main effect at the first level of the other factors).
-#' @param test.statistic For type I ANOVA, F test is applied to all models, while for type II and III ANOVA, F test is performed for \code{lm}, 
-#'   Chisq test for \code{lme} and \code{gls} model, Chisq or F tests for \code{lmer} model and Likelihood ratio, Wald or F tests for \code{glm} model.
+#' @param test_statistic The statistic of Type II and III tests with \code{method = "raw"}: F for \code{lm};
+#'   chi-square for \code{lme} and \code{gls}; \code{"Chisq"} or \code{"F"} for \code{lmer}; \code{"LR"},
+#'   \code{"Wald"} or \code{"F"} for \code{glm}. Type I tests use F. A statistic the model does not have is
+#'   replaced by the one it has, with a message; with \code{method = "freedman-lane"} the F (or t) statistics are
+#'   permuted and a different \code{test_statistic} is ignored with a message.
 #'   The F tests of an \code{lmer} model are Kenward-Roger F tests with the observed information of the variance
 #'   parameters, as in the rest of predictmeans (\code{car::Anova()} uses the expected information; the two agree
 #'   for balanced data).
-#' @param exact A logical variable to indicate whether or not exact no. of permutations will be used (applicable only to free the permutation case). The default is FALSE.
-#' @param data In some cases, you need to provide the data set used in model fitting, especially when you have applied some variable trnasformation in the model.
+#' @param exact \code{TRUE}: \code{perms} holds every permutation the design allows (a complete enumeration), so
+#'   p-values are the proportion of them with a statistic at least as large as the observed one. Otherwise (the
+#'   default \code{FALSE}) the observed data count as one of the permutations: p = (b + 1)/(B + 1), never 0.
+#'   \code{exact = TRUE} without \code{perms}, or with repeated columns, is ignored with a warning.
+#' @param data The data the model was fitted to, when they cannot be found from the model's call (e.g. after
+#'   transforming variables outside the data).
 #' @param ... Not used: \code{prt} and \code{fo} (before 2.0) stop with their 2.0 spelling. Nothing is printed during
 #'   the call: \code{print()} of the result shows the tables. A model whose formula is held in a variable
 #'   (\code{lm(f, data)}; 1.x's \code{fo}) is detected and refitted in this session only.
-#' @param ncore Number of cores for parallel computing, the default value is 1 (before predictmeans 2.0: 3).
-#' @param seed Specify a random number generator seed, for reproducible results.
+#' @param ncore Number of cores (default 1; before predictmeans 2.0: 3). Each permutation has its own seed, so
+#'   the results do not depend on \code{ncore}.
+#' @param seed A random number seed, for reproducible results; the user's random number stream is left as it was.
 #' @param method How the data are permuted: \code{"freedman-lane"} or \code{"raw"}; \code{"auto"} (the default)
 #'   chooses the more robust one for the model class, which is \code{"freedman-lane"} for every class at present.
 #'   \code{"raw"} is the scheme of predictmeans 1.x. See Details.
@@ -57,7 +66,11 @@
 #'   \code{car::Anova(model, type = "II", white.adjust = "hc3")}. Not with \code{perms}. The default is
 #'   \code{FALSE}.
 #' @return
-#' The function produces permutation t-test table for coefficients of (fixed) effects, permutation ANOVA table for model terms and (with \code{method = "raw"}) a model parameter list \code{permlist}, a list containing \code{nsim=4999} times permutation refitted \code{model} parameters which are used in functions \code{predictmeans} and \code{contrastmeans}.
+#' A list of class \code{"pm_permmodels"}: \code{COEFFICENTS} (permutation t tests of the coefficients),
+#' \code{ANOVA} (permutation tests of the terms, of the \code{type} asked for) and \code{permlist} (with
+#' \code{method = "raw"}: the coefficients and covariance of each refit, for \code{\link{predictmeans}} and
+#' \code{\link{contrastmeans}}). Values are stored rounded to 4 decimals; the notes give the smallest attainable
+#' p-value, 1/(B + 1). Advice on the number of permutations is kept in \code{attr(, "advice")} (\code{\link{advice}}).
 #' With \code{method = "freedman-lane"}, \code{permlist} is \code{NULL} and the result has a fourth component,
 #' \code{perm}: what is needed to test any comparison with the same permutations. Give the whole result to
 #' \code{\link{predictmeans}} or \code{\link{contrastmeans}} (argument \code{permlist}) for Freedman-Lane p-values of
@@ -84,7 +97,7 @@
 #'
 #' For mixed models with a covariate with extreme values related to the tested term, the same study found
 #' the \code{"raw"} scheme slightly liberal (6.3\% at the 5\% level), while the Satterthwaite F test kept the level
-#' (4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (e.g. \code{anova()} of an \pkg{lmerTest} fit, or
+#' (4.6\%); prefer the Kenward-Roger or Satterthwaite F test there (\code{\link{anova.lmerMod}} or
 #' \code{\link{pm_joint}}), or \code{method = "freedman-lane"} (4.6\%).
 #'
 #' Since predictmeans 2.0, \code{method = "freedman-lane"} also handles \code{lmer}, \code{lme} and \code{gls} models,
@@ -122,6 +135,7 @@
 #'
 #' Freedman, D. and Lane, D. (1983). A nonstochastic interpretation of reported significance levels.
 #' \emph{Journal of Business & Economic Statistics}, 1, 292-298.
+#' @seealso \code{\link{permlmer}}, \code{\link{permindex}}, \code{\link{permstats}}, \code{\link{permcombine}}, \code{\link{bootmodels}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -137,7 +151,7 @@
 #'
 #' ## Permutation test for multiple comparisons
 #' predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
-#'   permlist=permlme, plot=FALSE, ncore=1)
+#'   permlist=permlme)
 #'
 #' ## Permutation test for specified contrasts
 #' cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -155,7 +169,7 @@
 #' fm2 <- lm(mpg ~ wt + cyl, data = mtcars)
 #' pfl <- permmodels(fm2, nperm = 999, type = "II", seed = 1, method = "freedman-lane")
 #' ## ... and for the pairwise comparisons of the cyl means
-#' predictmeans(fm2, "cyl", permlist = pfl, plot = FALSE)$pairs
+#' predictmeans(fm2, "cyl", permlist = pfl)$pairs
 #' ## Robust (HC3) statistics, for error variances that differ between the cyl groups
 #' permmodels(fm2, nperm = 999, type = "II", seed = 1, robust = TRUE)
 #' @name permmodels
@@ -166,12 +180,12 @@ NULL
 ## values are computed from that covariance (as summary() does) instead of
 ## calling summary(), which would compute it again. 'map3': the Type III map
 ## of the observed fit (R/anova.R), the same for every refit.
-pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL, map3 = NULL) {
+pm_perm_stats <- function(rfitmodel, type, test_statistic, Ls = NULL, map3 = NULL) {
   mp <- mymodelparm(rfitmodel, df = 0)[1:2]
   if (type %in% c("I", "1")) {
     # lmer: lmerTest's type I F (Wald tests of the hypotheses Ls), as in the observed table
     aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else pm_anova_seq(rfitmodel)
-  } else aT <- pm_anova(rfitmodel, type=type, test.statistic=test.statistic, type3_map=map3)
+  } else aT <- pm_anova(rfitmodel, type=type, test_statistic=test_statistic, type3_map=map3)
   if (inherits(rfitmodel, "lmerMod")) {
     se <- sqrt(diag(mp$vcov))
     coefT <- cbind("Estimate" = mp$coef, "Std. Error" = se, "t value" = mp$coef/se)
@@ -179,8 +193,9 @@ pm_perm_stats <- function(rfitmodel, type, test.statistic, Ls = NULL, map3 = NUL
   list(mp, aT, coefT)
 }
 
+#' @export
 permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
-                       test.statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
+                       test_statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
                        method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("permmodels", match.call(), strict = TRUE, formals_of = formals(sys.function()))
@@ -191,25 +206,36 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
-  type <- as.character(type)
-  type <- match.arg(type)
-  test.statistic <- match.arg(test.statistic)	
+  type <- pm_anova_type(type[1])
+  ts_given <- !missing(test_statistic)
+  test_statistic <- match.arg(test_statistic)
   method <- match.arg(method)
   if (method == "auto") method <- pm_perm_auto_method(model)
   seed <- if (missing(seed)) NULL else seed
   if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
+  exact <- pm_perm_exact(exact, perms)
   if (isTRUE(robust)) {
     if (method != "freedman-lane") stop("robust = TRUE needs method = \"freedman-lane\".", call. = FALSE)
     return(pm_perm_fl_robust(model, nperm, type, exact, seed, perms))
   }
   if (method == "freedman-lane") {
+    if (ts_given && test_statistic != "F")
+      message("test_statistic = \"", test_statistic, "\" is used only with method = \"raw\"; ",
+              "Freedman-Lane permutes F (or t) statistics.")
     if (class(model)[1] == "aovlist") stop("permmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
                                                  "lme) instead.", call. = FALSE)
     return(pm_perm_fl(model, nperm, type, exact, seed, perms, refit, ncore))
   }
-  if (inherits(model, "glm") && !(test.statistic %in% c("LR", "Wald", "F"))) test.statistic <- "LR"
-  if (any(inherits(model, "gls"), inherits(model, "lme"))) test.statistic <- "Chisq"
-  if (type %in% c("I", "1")) test.statistic <- "F"	  
+  asked <- test_statistic
+  if (inherits(model, "glm") && !(test_statistic %in% c("LR", "Wald", "F"))) test_statistic <- "LR"
+  if (any(inherits(model, "gls"), inherits(model, "lme"))) test_statistic <- "Chisq"
+  if (type %in% c("I", "1")) test_statistic <- "F"
+  # tell only a user who chose the statistic, not one who left the default
+  if (ts_given && test_statistic != asked)
+    message("test_statistic = \"", asked, "\" is not available here; \"", test_statistic, "\" is used (",
+            if (type %in% c("I", "1")) "Type I tests are F tests" else
+              if (inherits(model, c("gls", "lme"))) "gls/lme tests are Chisq" else
+                "glm tests are LR, Wald or F", ").")
   if (class(model)[1]=="aovlist") stop("permmodels() does not handle aov models with Error(): fit the error strata as random effects (lmer or ",
                                                  "lme) instead.", call. = FALSE)
   if (inherits(model, c("glmerMod", "glmmTMB"))) {
@@ -238,7 +264,7 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       d <- mod_df
       d[yname] <- mod_df[idx[, k], yname, drop = FALSE]
       rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic, map3 = map3)
+      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
     }
     packages <- character()
   }
@@ -255,20 +281,18 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     Terms <- terms(model)
     yname <- as.character(attr(Terms, "variables"))[[2]]
     y <- nlme::getResponse(model)
-    X_y <- cbind(X, y)
-    V_list <- build_Sigma_mats(model, sigma_scale =FALSE)
-    ord_X_y <- get_order(A=V_list, B=X_y)
-    X_y <- ord_X_y[[1]]
-    mod_df <- mod_df[ord_X_y[[2]], ]
+    # rows by group, and the order-invariant square root of the block-diagonal V (R/whiten.R)
+    nw <- pm_nlme_whiten(model, cbind(X, y))
+    X_y <- nw$B
+    mod_df <- mod_df[nw$ord, ]
     xbeta <- as.vector(X_y[, col_names]%*%beta)
     errors <- X_y[, "y"] - xbeta
-    # order-invariant square root of the block-diagonal V (R/whiten.R)
-    W <- pm_whiten_blocks(V_list)
+    W <- nw$W
     wterrors <- W$solve(errors)    
     idx <- pm_perm_source(length(errors), seed, perms)(nperm)
     if (!is.null(perms)) {
       # the data were reordered by group: map the user's permutations
-      ord <- ord_X_y[[2]]
+      ord <- nw$ord
       idx <- matrix(order(ord)[idx[ord, , drop = FALSE]], nrow = length(ord))
     }
     one <- function(k) {
@@ -276,31 +300,26 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
       d <- mod_df
       d[, yname] <- xbeta[r] + W$mult(wterrors[r])
       rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test.statistic, map3 = map3)
+      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
     }
     packages <- "nlme"
   }
   
   if (inherits(model, "lmerMod")) { 
-    # fitted values and decorrelated residuals are permuted together
-    lmer_var_names <- all.vars(stats::formula(model))   # (the call may hold a formula object)
-	lmer_var_names <- lmer_var_names[lmer_var_names!="pi"]
-	mod_df <- as.data.frame(pm_mer_data(model))
-	mod_df <- na.omit(mod_df[, lmer_var_names])	
-	model <- pm_refit(model, data=mod_df, check=TRUE)
-    fixef <- fixef(model) 
-    Lambda <- getME(model, "Lambda")
-    # V = Z Lambda Lambda' Z' + I; W is its order-invariant square root (R/whiten.R)
-    W <- pm_whiten(getME(model, "Z") %*% Lambda)
-    xbeta <- as.vector(getME(model, "X")%*%fixef)
-    errors <- getME(model, "y") - xbeta
-    wterrors <- W$solve(errors)
-    idx <- pm_perm_source(length(errors), seed, perms)(nperm)
+    # fitted values and decorrelated residuals are permuted together. refit()
+    # replaces only the response of the rows used, so prior weights, offsets and
+    # NA handling stay as fitted (2.0 refitted to the formula variables: weights lost)
+    # V = Z Lambda Lambda' Z' + diag(1/w); W its order-invariant square root (R/whiten.R)
+    pp <- pm_mer_perm_parts(model)
+    W <- pp$W
+    xbeta <- pp$xbeta
+    wterrors <- pp$wterrors
+    idx <- pm_perm_source(length(xbeta), seed, perms)(nperm)
     Ls <- if (type %in% c("I", "1")) pm_type1_L(getME(model, "X"), attr(terms(model), "term.labels")) else NULL
     one <- function(k) {
       r <- idx[, k]
       rfitmodel <- refit(model, xbeta[r] + W$mult(wterrors[r]))
-      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test.statistic, Ls, map3)
+      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test_statistic, Ls, map3)
     }
     packages <- "lme4"
   }
@@ -333,9 +352,9 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     stats_value <- colnames(key_anova)[grep("F.value",colnames(key_anova))]
     if (class(model)[1] %in% c("glm")) stats_value <- "Deviance"
   }else{
-    key_anova <- pm_anova(model, type=type, test.statistic=test.statistic)
-    if (class(model)[1] %in% c("lm", "aov")) stats_value <- "F value"  else stats_value <-  test.statistic 
-    if (class(model)[1] %in% c("glm")) stats_value <- switch(test.statistic, LR = "LR Chisq", Wald = "Chisq", F = ifelse(type %in% c("2", "II"), "F value", "F values"))  
+    key_anova <- pm_anova(model, type=type, test_statistic=test_statistic)
+    if (class(model)[1] %in% c("lm", "aov")) stats_value <- "F value"  else stats_value <-  test_statistic 
+    if (class(model)[1] %in% c("glm")) stats_value <- switch(test_statistic, LR = "LR Chisq", Wald = "Chisq", F = ifelse(type %in% c("2", "II"), "F value", "F values"))  
   }
   stats.p <- pm_perm_p(key_anova[, stats_value], sapply(permmod, function(x) x[[2]][, stats_value]), exact)
   if ("(Intercept)" %in% rownames(key_anova)) stats.p[1] <- NA
@@ -348,8 +367,8 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     list("permlist"=permlist, "COEFFICENTS"=COEFFICENTS, "ANOVA"=ANOVA),
     if (!is.null(COEFFICENTS)) paste0("Note: Perm_p_value of t test is obtained using ", sQuote(nperm), " permutations",
                                       failnote, "."),
-    paste0("Note: Perm_p_value of ", test.statistic, " test is obtained using ", sQuote(nperm), " permutations",
-           failnote, "."))
+    paste0("Note: Perm_p_value of ", test_statistic, " test is obtained using ", sQuote(nperm), " permutations",
+           failnote, "."), nperm = nperm - failures, exact = exact)
   if (failures > 0) attr(out, "failures") <- failures
   out
 }

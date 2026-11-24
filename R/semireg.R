@@ -1,9 +1,9 @@
-#' Fitting Semi Parametric Models Using lme4 Ecosystem
+#' Semiparametric Mixed Models Fitted with lme4
 #'
 #' @description
-#' Fit a semi parametric model based on lme4 ecosystem including \code{lmer}, \code{glmer} and \code{glmer.nb}.
+#' Fit a semiparametric (additive mixed) model with \pkg{lme4} (\code{lmer} for gaussian, \code{glmer} for other families): smooth terms written in the formula, as in \code{mgcv::gam}, are fitted as random effects. For negative binomial, zero-inflated or correlated data use \code{\link{semireg_tmb}}.
 #' @details
-#' A semi parametric model can be parameterized as a linear (or generalized linear) mixed model in which its random effects are smooth functions of some covariates (named <e2><80><98>smooth term<e2><80><99>). \code{semireg} follows the approach suggested by Wand and Ormerod (2008) and represents the 'smooth term' using O'Sullivan-type of Z.
+#' A semiparametric model is fitted as a linear (or generalized linear) mixed model whose random effects are the penalised parts of smooth functions of covariates (Wand and Ormerod, 2008); each smooth's variance is its smoothing parameter, estimated by (RE)ML.
 #' @section Smooth terms in the formula:
 #' Smooths can be written in the model formula, as for \code{mgcv::gam}, next to fixed and lme4 random terms:
 #' \code{y ~ A + s(x, by = A) + (1 | Block)}. Each smooth is set up by mgcv (bases, knots, identifiability
@@ -19,8 +19,8 @@
 #'   \code{s(x, f, bs = "fs")} \tab random curves per level, one variance \tab none \cr
 #'   \code{(s(x, k = 10) | g)} \tab random curve per level of \code{g}: \code{(x | g)} (correlated intercepts and slopes) plus a spline deviation per level, one variance \tab none \cr
 #'   \code{s(x1, x2)} \tab isotropic surface (thin plate) \tab \code{x1 + x2} \cr
-#'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots, as \code{smZ(x, k = 10)}; \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
-#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab thin plate of \code{Ztps()}, as \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)} with \code{k = 6}; \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
+#'   \code{s(x, bs = "os", k = 10)} \tab O'Sullivan spline with \code{k} interior knots (1.x \code{smZ(x, k = 10)}); \code{xt = list(knots = , range = )} sets the interior knots and the range \tab \code{x} \cr
+#'   \code{s(x1, x2, bs = "ztps", k = 6)} \tab low-rank thin plate with \code{k} knots (1.x \code{smZ(cbind(x1, x2), type = "Ztps", k = 6)}); \code{xt = list(knots = )} sets the knots (a two-column matrix) \tab \code{x1 + x2} \cr
 #'   \code{s(x, bs = "user", xt = list(basis = f))} \tab a basis of your own: \code{f(x)} (\code{f(x1, x2)} for two covariates) returns a matrix with a row per value, whose columns get iid random coefficients with one variance (as a matrix in \code{smoothZ}); checked before the fit (see below); \code{xt = list(basis = f, null = "constant")} or \code{"none"} for a smaller fixed part \tab \code{x} (\code{x1 + x2}) \cr
 #'   \code{t2(x1, x2)}, \code{t2(x1, x2, bs = c("cr", "ps"), k = c(6, 8))} \tab tensor-product surface (covariates on different scales), a variance per penalty; \code{te()} is fitted as \code{t2()} \tab \code{x1 + x2 + x1:x2} \cr
 #'   \code{s(x, bs = "cs")}, \code{"ts"} \tab shrinkage smooths (no unpenalised part) \tab none \cr
@@ -76,35 +76,46 @@
 #' squares equal to the number of observations), so that the optimizer starts near the optimum; the variance of a
 #' smooth block reported by \code{VarCorr()} or \code{varcomp()} is on that scale.
 #'
-#' Moving from 1.x: \code{smZ()} and \code{smoothZ} were removed in 2.0; \code{vignette("migrating")} shows each
+#' Moving from 1.x: \code{smZ()} and \code{smoothZ} are superseded and were removed in 2.0 (they stop with a pointer to the formula syntax); \code{vignette("migrating")} shows each
 #' \code{smoothZ = list(sm = smZ(...))} form beside its formula form, which gives the same fit (checked in
 #' \code{dev/check-smz-migration.R}). The variables are no longer centred (1.x's \code{ncenter = TRUE}), which put knots
 #' given in the data's units (\code{smZ(x, intKnots = )}) in the wrong place.
 #' @usage
-#' semireg(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
-#'         start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights,
+#' semireg(formula, data, family = NULL, REML = TRUE,
+#'         control = lmerControl(optimizer = "nloptwrap"),
+#'         start = NULL, verbose = FALSE, drop_unused_levels = TRUE, subset, weights,
 #'         offset, contrasts = NULL, ...)
 #' @param formula A two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars ("|") separating expressions for design matrices from grouping factors.
 #' @param data A data frame or list containing the model response variable and covariates required by the formula. By default the variables are taken from environment(formula), typically the environment from which semireg is called.
-#' @param family A GLM family, see glm and family.
+#' @param family A GLM family (see \code{\link{family}}); \code{NULL} (the default) is gaussian.
 #' @param REML Logical scalar - Should the estimates be chosen to optimize the REML criterion (as opposed to the log-likelihood)?
 #' @param control A list (of correct class, resulting from lmerControl() or glmerControl() respectively) containing control parameters, including the nonlinear optimizer to be used and parameters to be passed through to the nonlinear optimizer, see the *lmerControl documentation for details. The default is \code{lmerControl(optimizer = "nloptwrap")} (\code{"bobyqa"} in 1.x), also used for generalized fits.
-#' @param start Starting value list as used by lmer or glmer.
-#' @param verbose Passed on to fitting lme4 fitting routines.
-#' @param drop.unused.levels By default unused levels are dropped from factors before fitting. For some smooths involving factor variables you might want to turn this off. Only do so if you know what you are doing.
+#' @param start Starting values, as for \code{lmer} or \code{glmer}.
+#' @param verbose Passed on to the lme4 fitting functions.
+#' @param drop_unused_levels By default unused levels are dropped from factors before fitting. For some smooths involving factor variables you might want to turn this off. Only do so if you know what you are doing.
 #' @param subset An optional expression indicating the subset of the rows of data that should be used in the fit. This can be a logical vector, or a numeric vector indicating which observation numbers are to be included, or a character vector of the row names to be included. All observations are included by default.
 #' @param weights An optional vector of <e2><80><98>prior weights<e2><80><99> to be used in the fitting process. Should be NULL or a numeric vector.
 #' @param offset This can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. One or more offset terms can be included in the formula instead or as well, and if more than one is specified their sum is used. See model.offset.
-#' @param contrasts An optional list. See the contrasts.arg of model.matrix.default.
+#' @param contrasts An optional list, as \code{contrasts.arg} of \code{\link{model.matrix.default}}.
 #' @param ... Further arguments for passing on to model setup routines. Arguments removed in 2.0 (\code{smoothZ},
 #'   \code{ncenter}, \code{nscale}, \code{resp_scale}, \code{prt}, \code{predict_info}, \code{ngbinomial}) stop with their 2.0 spelling; nothing is printed during the fit
 #'   (\code{print(fit$semer)}). For a negative binomial model use \code{\link{semireg_tmb}(family =
 #'   glmmTMB::nbinom2)}: the 1.x \code{ngbinomial = TRUE} estimated theta from a Poisson fit, which is not the
 #'   maximum-likelihood fit.
 #' @return
-#' A list of class \code{semireg}; \code{print()} shows the fitted model and the random-effect term of each
-#' smooth, \code{summary()} the summary of the fitted model, \code{anova()} tests of its terms. Its elements:
-#' \item{semer}{A mer model used in the fitting.}
+#' A list of class \code{semireg}. \code{print()} shows a short account of the fit: the formula as written, the
+#' smooth terms (one row per random-effect block: the smooth, its random-effect term, its covariate, basis, basis
+#' dimension, smoothing variance and whether it is estimated as a straight line), the fixed effects, the other
+#' variance components and any advice. The \code{smooth}, \code{term} and \code{covariate} columns are the values
+#' \code{\link{semipred}} takes for \code{sm_term} and \code{covariate}. \code{summary()} adds the summary of the fitted
+#' mixed model (\code{summary(fit)$model}); \code{tidy(fit)} returns the smooth table and \code{tidy(fit, "fixed")} the
+#' fixed effects with standard errors. \code{coef()}, \code{fixef()}, \code{vcov()}, \code{fitted()},
+#' \code{residuals()}, \code{logLik()}, \code{AIC()}, \code{nobs()}, \code{family()}, \code{VarCorr()} and
+#' \code{ranef()} work as for the fitted mixed model, and \code{formula()} gives the formula as written.
+#' \code{anova()} tests the terms and smooths; notes on the fit are in \code{attr(, "advice")} (\code{\link{advice}}).
+#' Its elements:
+#' \item{semer}{The fitted \code{lmer} or \code{glmer} model (class \code{semerMod} for gaussian fits).}
+#' \item{call}{The call of \code{semireg()}.}
 #' \item{data}{A data.frame with generated variables in the fitting.}
 #' \item{fomul_vars}{Name of variables in the formula of semireg model.}
 #' \item{sm_vars}{Names of the variables of the smooths.}
@@ -127,6 +138,7 @@
 #'
 #' Wood, S.N., Scheipl, F. and Faraway, J.J. (2013). Straightforward intermediate rank tensor product smoothing in
 #' mixed models. \emph{Statistics and Computing}, \bold{23}, 341-360.
+#' @seealso \code{\link{semireg_tmb}}, \code{\link{anova.semireg}}, \code{\link{semipred}}, \code{\link{varcomp}}, \code{\link{predictmeans}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -214,8 +226,9 @@
 #' @name semireg
 NULL
 
+#' @export
 semireg <- function(formula, data, family = NULL, REML = TRUE, control = lmerControl(optimizer = "nloptwrap"),
-                    start = NULL, verbose = FALSE, drop.unused.levels = TRUE, subset, weights, offset, contrasts = NULL,
+                    start = NULL, verbose = FALSE, drop_unused_levels = TRUE, subset, weights, offset, contrasts = NULL,
                     ...)
 {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
@@ -232,7 +245,7 @@ semireg <- function(formula, data, family = NULL, REML = TRUE, control = lmerCon
 pm_semireg_lme4 <- function(formula, data, family = NULL, REML = TRUE,
                             smoothZ = list(),
                             control = lmerControl(optimizer="nloptwrap"), start = NULL,
-                            verbose = FALSE, drop.unused.levels=TRUE, subset, weights,
+                            verbose = FALSE, drop_unused_levels=TRUE, subset, weights,
                             offset, contrasts = NULL, predict_info=TRUE, ...)
 {
   mc <- match.call()
@@ -271,7 +284,7 @@ pm_semireg_lme4 <- function(formula, data, family = NULL, REML = TRUE,
   lmerc$formula <- st$formula
 
   # the structure without fitting, the smooth designs in Z, one fit
-  fit <- pm_sr_fit_lme4(lmerc, st, gaus, family, control, start, verbose, drop.unused.levels, mc, env, ...)
+  fit <- pm_sr_fit_lme4(lmerc, st, gaus, family, control, start, verbose, drop_unused_levels, mc, env, ...)
   semer <- fit$semer
   if (gaus) {
     # an lmerMod that keeps the deviance function of the fitted model (with
@@ -293,8 +306,11 @@ pm_semireg_lme4 <- function(formula, data, family = NULL, REML = TRUE,
     w <- if (gaus) semer@resp$weights else semer@resp$sqrtWrkWt()^2
     u_ind <- vapply(getME(semer, "Ztlist"), function(x) x@Dim[1], numeric(1))
     names(u_ind) <- sub("\\.\\(Intercept\\)$", "", names(u_ind))
+    # lme4's GLMM working weights already include 1/sigma^2 (Gamma,
+    # inverse.gaussian; sigma() is 1 for binomial and poisson): CovMat is kept
+    # relative to sigma^2, as semipred() multiplies by it
     info <- pm_sr_info(getME(semer, "X"), Z, getME(semer, "Lambda"), w, unlist(ranef(semer)), u_ind,
-                       names(st$Zt))
+                       names(st$Zt), s2 = if (gaus) 1 else stats::sigma(semer)^2)
   }
   # what a refit needs (tests of the smooth terms, anova.semireg())
   refit <- list(engine = "lme4", formula = st$formula, data = st$data, smoothZ = st$smoothZN,
@@ -312,6 +328,7 @@ methods::setClass("semerMod", contains = "lmerMod", slots = c(semireg_info = "li
 ## lmerTest::ranova() does): the smooth terms (1 | name) still in the formula
 ## keep their spline bases, instead of being refitted as plain random
 ## intercepts. anova(fit) tests the smooth terms without it.
+#' @exportS3Method update semerMod
 update.semerMod <- function(object, formula = NULL, ...) {
   info <- object@semireg_info
   if (is.null(formula) || length(list(...))) {

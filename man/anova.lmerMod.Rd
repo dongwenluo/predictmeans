@@ -8,12 +8,17 @@
 
 \item{...}{Other fitted models: then lme4's comparison of the models.}
 
-\item{type}{\code{"III"} (default), \code{"II"} or \code{"I"}.}
+\item{type}{\code{"III"} (default), \code{"II"} or \code{"I"}; also \code{3}, \code{2}, \code{1}.}
 
 \item{ddf}{\code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.}
+
+\item{advice}{Logical: add a note on the choice of type when the data are unbalanced or have empty cells
+(default \code{TRUE}).}
 }
 \value{
-An \code{anova} table.
+An \code{anova} table: for each term the numerator df, the denominator df (column heading names the
+  method), the F value and its p-value. With \code{advice = TRUE} a note on the type is kept in
+  \code{attr(, "advice")} (read it with \code{\link{advice}}).
 }
 \description{
 \code{anova()} of a single \code{lmer} fit (and of a gaussian \code{\link{semireg}} fit, \code{fit$semer}) gives
@@ -36,6 +41,24 @@ With \pkg{lmerTest} attached, \code{lmer()} is lmerTest's and its fits are of cl
 \code{anova()} and \code{summary()} are lmerTest's (Satterthwaite by default), and this method applies to fits of
 \code{lme4::lmer()}. Everything else in predictmeans works the same with either class.
 }
+\section{Which type of test}{
+
+With balanced data (equal numbers in all cells) Types I, II and III give the same tests. With unbalanced data:
+\describe{
+\item{Type I}{sequential: each term adjusted for the terms before it, so the order in the formula matters. Use
+  it when the order is meaningful, e.g. a block or a covariate to be removed first.}
+\item{Type II}{each term adjusted for all terms that do not contain it (the principle of marginality). The most
+  powerful tests of main effects when the interactions are negligible; with an interaction present the main
+  effects are not well defined.}
+\item{Type III}{each term adjusted for all others, testing equally weighted cell means; meaningful with an
+  interaction present, and here independent of the model's contrasts. A covariate in an interaction makes the
+  other terms be tested at covariate = 0: centre it.}
+}
+With empty cells no type answers the question of a main effect over all cells: Type III uses the cells with
+data (and says so). State the comparisons of interest on the cell means instead, with \code{\link{pm_joint}} or
+\code{\link{predictmeans}}.
+}
+
 \examples{
 library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
@@ -43,4 +66,7 @@ fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
 anova(fm)
 anova(fm, ddf = "Satterthwaite")
 anova(fm, type = "I")
+}
+\seealso{
+\code{\link{anova.semireg}}, \code{\link{pm_joint}}, \code{\link{df_term}}, \code{\link{permmodels}}
 }

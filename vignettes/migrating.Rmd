@@ -13,7 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 
 predictmeans 2.0 removes options that did the same thing under two names, the printing and plot settings in
 the calls of the analysis functions, five functions, and the 1.x smooth interface (`smZ()`, `smoothZ`). The
-means functions share one vocabulary: `conf.level`, `df_method`, `at`, `weights`, `vcov`, `plot`.
+means functions share one vocabulary: `conf_level`, `df_method`, `at`, `weights`, `vcov`, `plot`.
 
 **To update a 1.1.1 script, run it.** A removed argument or function stops with its 2.0 spelling, the value you
 gave filled in:
@@ -87,13 +87,13 @@ df_term(fm, "nitro",
 
 ```r
 pm <- predictmeans(fm, "nitro:Variety",
-  pairwise = TRUE, conf.level = 0.9)
-autoplot(pm, plotord = c(2, 1),
-  plottitle = "Yield")
-# or plot = TRUE, plot_args = list(...)
+  pairwise = TRUE, conf_level = 0.9)
+autoplot(pm, x = "Variety", group = "nitro") +
+  labs(title = "Yield")
+# plot(pm, ...) prints it
 
-predictmeans(fm, "nitro", df_method = 30,
-  plot = "bar")
+pm <- predictmeans(fm, "nitro", df_method = 30)
+autoplot(pm, type = "bar")
 
 
 predictmeans(fit, "A",
@@ -111,7 +111,10 @@ df_term(fm, "nitro",
 </div></div>
 
 - Nothing is printed and no plot is drawn during the call: `print(pm)` (or `pm` at the prompt) shows the
-  tables, `autoplot(pm)` draws, and `plot = TRUE` draws the 1.x default plots in the call.
+  tables, `autoplot(pm)` (or `plot(pm)`) draws. `predictmeans()` has no `plot` or `plot_args`: the 1.x plots are
+  `autoplot(pm)` (means with one LSD bar), `type = "bar"`, `type = "ci"` (the back-transformed plot, with
+  `data = TRUE` the observations) and `type = "pvalue"`; `x`, `group`, `panel` replace `plotord`, `lines = FALSE`
+  `lineplot = FALSE`, and `+ labs()` / `+ theme_bw(14)` the titles and `basesz`.
 - `trans` is needed only for a transformation outside the formula: `log(y + 1)` in the formula is detected and
   back-transformed, constant included. Poisson and negative binomial means need no `count = TRUE`.
 
@@ -146,7 +149,7 @@ Kmatrix(fmc, "Variety", covariate = "nitro",
 cm <- covariatemeans(fmc, "Variety",
   covariate = "nitro",
   at = seq(0, 0.6, 0.1),
-  conf.level = 0.9)
+  conf_level = 0.9)
 autoplot(cm, trellis = FALSE,
   mtitle = "Yield by nitrogen")
 
@@ -192,7 +195,7 @@ permlmer(tmb0, tmb1)
 
 res <- permmodels(fit); res
 
-permstats(..., conf.level = 0.95)
+permstats(..., conf_level = 0.95)
 ```
 
 </div></div>
@@ -232,14 +235,14 @@ residplot(fm, re_level = 2, id = 3)
 CookD(fm, id = 5)
 
 PMplot(pm$p_valueMatrix,
-  conf.level = 0.99)
+  conf_level = 0.99)
 
-varcomp(fm, conf.level = 0.9)
+varcomp(fm, conf_level = 0.9)
 
 R2_model(fm)
 
 predictmeans(fm, "nitro", pairwise = TRUE,
-  letterCI = TRUE)$mean_table
+  letter_ci = TRUE)$mean_table
 ```
 
 </div></div>
@@ -247,27 +250,28 @@ predictmeans(fm, "nitro", pairwise = TRUE,
 - `varcomp(level = 0.9)` was a confidence level already: the value stays.
 - `R2_model()` gives the values of `R2_glmm()` as numbers, not as text with a `%` sign.
 - `ci_mcp()` gave letters from the overlap of the intervals it was given. Overlap of 95% (or 83.4%) confidence
-  intervals does not answer the pairwise tests; `letterCI = TRUE` gives letters from comparison intervals,
+  intervals does not answer the pairwise tests; `letter_ci = TRUE` gives letters from comparison intervals,
   which overlap exactly when a pair is not significant (`vignette("predictmeans")`).
 
 ## Every argument and function
 
 | Function | 1.1.1 | 2.0 |
 |---|---|---|
-| `predictmeans()`, `contrastmeans()`, `covariatemeans()`, `pm_slopes()`, `semipred()`, `permstats()`, `PMplot()` | `level = 0.05` (a significance level) | `conf.level = 0.95` |
-| `varcomp()` | `level = 0.9` (a confidence level) | `conf.level = 0.9` |
+| `predictmeans()`, `contrastmeans()`, `covariatemeans()`, `pm_slopes()`, `semipred()`, `permstats()`, `PMplot()` | `level = 0.05` (a significance level) | `conf_level = 0.95` |
+| `varcomp()` | `level = 0.9` (a confidence level) | `conf_level = 0.9` |
 | `predictmeans()`, `contrastmeans()`, `covariatemeans()` | `Df = 10` | `df_method = 10` |
 | `df_term()` | `type = ` | `df_method = ` |
 | `covariatemeans()`, `semipred()`, `Kmatrix()` | `covariateV = ` | `at = ` |
 | `predictmeans()`, `covariatemeans()` | `trans = exp, transOff = 1` | `trans = function(x) exp(x) - 1` |
 | `predictmeans()`, `covariatemeans()` | `responsen = ` | removed: the response is read from the model |
 | `predictmeans()` | `count = TRUE` | removed: Poisson and negative binomial means are detected |
-| `predictmeans()` | `mplot`, `barplot`, `pplot`, `bkplot` | `plot = c("mean", "bar", "pval", "back")`, the plots wanted |
-| `predictmeans()` | `lsd_bar`, `plotord`, `lineplot`, `plottitle`, `plotxlab`, `plotylab`, `jitterv`, `basesz` | `autoplot(pm, ...)` or `plot_args = list(...)` |
+| `predictmeans()` | `mplot`, `barplot`, `pplot`, `bkplot`, and `plot` of earlier 2.0 versions | `autoplot(pm, type = "means")`, `"bar"`, `"pvalue"`, `"ci"`; `plot = FALSE` is still accepted |
+| `predictmeans()` | `lsd_bar`, `plotord`, `lineplot`, `plottitle`, `plotxlab`, `plotylab`, `jitterv`, `basesz`, and `plot_args` | `autoplot(pm, interval = , x = , group = , panel = , lines = , data = TRUE, jitter = ) + labs(title, x, y) + theme_bw(size)` |
 | `predictmeans()`, `Kmatrix()` | `prtnum`, `ndecimal`, `prtplt` | removed: `print(pm, digits = )`; `autoplot(pm)` |
-| `covariatemeans()` | `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` | `autoplot(cm, ...)` or `plot_args = list(...)` |
+| `covariatemeans()` | `trellis`, `plotord`, `mtitle`, `ci`, `point`, `jitterv` | `autoplot(cm, panel = , group = , title = , interval = , data = , jitter = )`; `plot_args = list(...)` still works (superseded) |
+| `covariatemeans()` | `cm$pltdf` | `cm$pred_df` (as `semipred()`); `cm$pltdf` still gives it, with a message once per session |
 | `semipred()` | `semipred(semireg = fit)` | `semipred(fit)` (`model = `, as in every function) |
-| `semipred()` | `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD` | `autoplot(sp, ...)` or `plot_args = list(...)` |
+| `semipred()` | `trellis`, `scales`, `plotord`, `ci`, `point`, `jitterv`, `threeD` | `autoplot(sp, panel = , scales = , group = , interval = , data = , jitter = , type = "3d")`; `plot_args = list(...)` still works (superseded); `threeD` gives one plotly widget, not a list |
 | `semipred()`, `semireg()`, `semireg_tmb()`, `permmodels()`, `bootmodels()` | `prt` | removed: `print(x)` |
 | `predictmeans()`, `covariatemeans()`, `residplot()`, `CookD()`, `PMplot()` | `newwd` | removed: ggplot2 draws in the current device |
 | `semireg()`, `semireg_tmb()` | `smoothZ = list(sm = smZ(x))` | smooths in the formula: `s(x, bs = "os")` ([below](#smooth-models-smz-and-smoothz)) |
@@ -279,11 +283,12 @@ predictmeans(fm, "nitro", pairwise = TRUE,
 | `residplot()` | `level = 2` (the random-effect term); `newwd`, `ask` | `re_level = 2`; removed |
 | `CookD()` | `idn = 5` | `id = 5`, as `residplot()` |
 | `PMplot()` | `margin`, `legendx` | removed: ggplot2 sizes the margins and the legend |
+| every function | dotted argument names: `conf.level`, `letterCI`, `as.is`, `test.statistic`, `max.degree`, `drop.unused.levels` | `conf_level`, `letter_ci`, `as_is`, `test_statistic`, `max_degree`, `drop_unused_levels` (one style: snake_case) |
 | `smZ()` | | removed: smooths in the formula |
 | `permglmer()`, `permglmmTMB()` | | removed: `permlmer()` (they were the same function) |
 | `permanova.lmer()` | | removed: `permmodels(model, type = )` |
 | `R2_glmm()` | | removed: `R2_model(model)` |
-| `ci_mcp()` | | removed: `predictmeans(..., letterCI = TRUE)` |
+| `ci_mcp()` | | removed: `predictmeans(..., letter_ci = TRUE)` |
 
 Every other argument of 1.1.1 is kept, with its meaning.
 
@@ -772,10 +777,12 @@ are shrunk towards each other. The formula form adds the slopes itself, which is
 | Function | Setting | 1.1.1 | 2.0 |
 |---|---|---|---|
 | `library(predictmeans)` | packages attached | glmmTMB, lme4, nlme, lmerTest | lme4, nlme: add `library(glmmTMB)` to call `glmmTMB()` or `nbinom1`, and `library(lmerTest)` for its `summary()` p-values and `ranova()` |
-| `predictmeans()`, `covariatemeans()`, `semipred()` | plots | drawn | `plot = FALSE`: `autoplot(x)`, `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a session |
+| `predictmeans()` | plots | drawn | none: `autoplot(pm)` or `plot(pm)` |
+| `covariatemeans()`, `semipred()` | plots | drawn | `plot = FALSE`: `autoplot(x)`, `plot = TRUE`, or `options(predictmeans.plot = TRUE)` for a session |
 | every function | printing | tables printed during the call | nothing printed: `print(x)` |
 | `predictmeans()`, `contrastmeans()` | standard errors of REML `lmer` fits | unadjusted, with Kenward–Roger df | Kenward–Roger adjusted (below); `vcov_adjust = FALSE` for 1.x |
 | `predictmeans()`, `contrastmeans()`, `covariatemeans()` | df | per model class | `df_method = "auto"` (table in `vignette("predictmeans")`) |
+| `predictmeans()` | `pairwise` | `FALSE`: no comparisons unless `TRUE` | `NULL`: comparisons are made when `adj`, `atvar`, `permlist`, `letter_ci` or `pairwise = TRUE` asks for them; `pairwise` only sets what is printed |
 | `predictmeans()`, `permlmer()`, `permmodels()` | `ncore` | 3 | 1 |
 | `semireg()` | `control` | `lmerControl(optimizer = "bobyqa")` | `lmerControl(optimizer = "nloptwrap")`: the same fit to the optimizer's tolerance |
 | `semireg()` | centring | `ncenter = TRUE` centred every covariate | variables used as they are |
@@ -850,7 +857,7 @@ pm$means
   `"between-within"`, `"inner-outer"`, or a number.
 - **Averaging weights**: `weights = "proportional"` (SAS `OM`), `"outer"`, `"cells"`, `"flat"`.
 - **Comparisons**: `adj = "sidak"`, `"scheffe"`, `"mvt"` (exact single-step); `contrast_family()`,
-  `specify_contrast()`, `pm_joint()`, `pm_slopes()`; comparison intervals and `letterCI`.
+  `specify_contrast()`, `pm_joint()`, `pm_slopes()`; comparison intervals and `letter_ci`.
   See `vignette("contrasts")`.
 - **Response scale**: back-transformation detected from the formula or the link, delta-method SEs, ratios and
   odds ratios.

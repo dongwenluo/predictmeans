@@ -1,5 +1,6 @@
 ## Removed in 2.0: R2_model(model) gives the same values (as numbers; R2_glmm()
 ## gave them as rounded percentages).
+#' @export
 R2_glmm <- function(...) pm_defunct_fun("R2_glmm")
 
 ## Piepho's R2 in percent: Total, Fixed, Random and each random component.
@@ -139,7 +140,8 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
 #'
 #' @description
 #' The R-squared of a model as a numeric result, for every model class of \code{\link{predictmeans}}. \code{method = "piepho"} (the default) gives the same values as
-#' \code{\link{R2_glmm}} (Piepho, 2023), as proportions: total, fixed, random and each random-effect component.
+#' \code{R2_glmm()} of predictmeans 1.x (removed in 2.0; Piepho, 2023), as proportions: total, fixed, random and
+#' each random-effect component.
 #' \code{method = "nakagawa"} gives the marginal (fixed effects) and conditional (fixed and random effects) R-squared of
 #' Nakagawa and Schielzeth (2013), with random slopes as Johnson (2014): the variance of each random-effect term is the
 #' mean of \eqn{z_i' \Sigma z_i} over the observations.
@@ -164,12 +166,15 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
 #' @param method \code{"piepho"} (every class) or \code{"nakagawa"} (\code{lmer}, \code{glmer}, \code{glmmTMB} and
 #'   \code{lme}; for \code{lme} with a variance or correlation structure the observation-level variance is the mean
 #'   residual variance).
-#' @param over_disp For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: as in
-#' \code{\link{R2_glmm}}.
+#' @param over_disp For \code{"piepho"} with \code{lmer}, \code{glmer} and \code{glmmTMB} models: \code{TRUE}
+#'   leaves an observation-level random effect (one level per observation, modelling overdispersion) out of the
+#'   random share; the model must have one. Default \code{FALSE}.
 #' @return
 #' A named numeric vector of proportions (class \code{"pm_r2"}, printed as percentages). For \code{"nakagawa"},
 #' \code{Marginal} and \code{Conditional}, with attribute \code{"variances"}: the fixed-effect, random-effect and
-#' observation-level variances.
+#' observation-level variances. The Nakagawa values agree with \code{performance::r2_nakagawa()}
+#' (\file{tests/testthat/test-r2-model.R}). Notes on the choice of method are kept in \code{attr(, "advice")}
+#' (\code{\link{advice}}).
 #' @references
 #' Piepho, H.-P. (2023), An adjusted coefficient of determination (R2) for generalized linear mixed models in one go,
 #' \emph{Biometrical Journal}, 65(7), 2200290.
@@ -179,6 +184,7 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
 #'
 #' Johnson, P. C. D. (2014), Extension of Nakagawa & Schielzeth's R2GLMM to random slopes models, \emph{Methods in
 #' Ecology and Evolution}, 5, 944-946.
+#' @seealso \code{\link{varcomp}}, \code{\link{advice}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -191,8 +197,14 @@ pm_r2_piepho <- function(model, over_disp=FALSE){
 #' @name R2_model
 NULL
 
+#' @export
 R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE) {
   method <- match.arg(method)
+  pm_add_advice(pm_r2_model(model, method, over_disp), pm_r2_advice(model, method))
+}
+
+## R2_model() without the advice.
+pm_r2_model <- function(model, method, over_disp) {
   if (inherits(model, "semireg")) model <- model$semer
   if (method == "nakagawa" && inherits(model, "lme")) return(pm_r2_nakagawa_lme(model))
   if (!inherits(model, c("lmerMod", "glmerMod", "glmmTMB"))) {
@@ -210,10 +222,11 @@ R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
   beta <- if (inherits(model, "glmmTMB")) glmmTMB::fixef(model)$cond[colnames(X)] else lme4::fixef(model)[colnames(X)]
   var_fixed <- stats::var(drop(X %*% beta))
   Z <- lme4::getME(model, "Z")
+  # sparse: z_i' G z_i for each row, G = I (x) vcov block diagonal
   var_random <- sum(vapply(pm_re_terms(model), function(tm) {
-    Zt <- as.matrix(Z[, tm$cols, drop = FALSE])
-    G <- kronecker(diag(tm$nl), tm$vcov)
-    mean(rowSums((Zt %*% G) * Zt))
+    Zt <- Z[, tm$cols, drop = FALSE]
+    G <- Matrix::kronecker(Matrix::Diagonal(tm$nl), tm$vcov)
+    mean(Matrix::rowSums((Zt %*% G) * Zt))
   }, numeric(1)))
   fam <- if (inherits(model, "lmerMod")) list(family = "gaussian", link = "identity") else stats::family(model)
   var_obs <- if (identical(fam$family, "gaussian")) {
@@ -228,11 +241,13 @@ R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
             method = "nakagawa", variances = c(fixed = var_fixed, random = var_random, observation = var_obs))
 }
 
+#' @exportS3Method print pm_r2
 print.pm_r2 <- function(x, digits = 2, ...) {
   m <- attr(x, "method")
   cat(if (identical(m, "nakagawa")) "# R2 for mixed models (Nakagawa and Schielzeth)\n" else
     if (length(x) == 3 && x[["Random"]] == 0) "# Adjusted R2 (Piepho)\n" else "# Adjusted R2 for mixed models (Piepho)\n")
   print(stats::setNames(paste0(format(round(100*unclass(x), digits), nsmall = digits), "%"), names(x)), quote = FALSE)
+  pm_print_advice(x)
   invisible(x)
 }
 

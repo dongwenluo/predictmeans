@@ -32,6 +32,7 @@
 #'
 #' Yeo, I.-K. and Johnson, R. A. (2000), \emph{A new family of power transformations to improve normality or
 #' symmetry}, Biometrika, 87(4), 954-959.
+#' @seealso \code{\link{predictmeans}}, \code{\link{pm_check}}
 #' @author
 #' Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
@@ -44,6 +45,7 @@
 #' @aliases pm_yeojohnson
 NULL
 
+#' @export
 pm_boxcox <- function(y, lambda) {
   pm_check_lambda(lambda)
   if (any(y <= 0, na.rm = TRUE)) stop("pm_boxcox() needs positive values; pm_yeojohnson() takes any.", call. = FALSE)
@@ -54,6 +56,7 @@ pm_boxcox_inv <- function(lambda) {
   function(x) pmax(lambda*x + 1, 0)^(1/lambda)
 }
 
+#' @export
 pm_yeojohnson <- function(y, lambda) {
   pm_check_lambda(lambda)
   out <- y
@@ -215,8 +218,11 @@ pm_bias_funs <- function(bf, s2, method = c("exact", "taylor")) {
 pm_back_label <- function(means, by, link_scale, model, bias_adjusted, average = "link") {
   if (is.null(means$response)) return(NULL)
   random <- inherits(model, c("merMod", "glmmTMB", "lme"))
+  user_on_link <- !link_scale && !is.null(pm_link_trans(model))
   estimate <- if (bias_adjusted) {
     "mean (bias adjusted)"
+  } else if (user_on_link) {
+    "the user's 'trans' of the link-scale mean (not the model's inverse link)"
   } else if (link_scale && !random) {
     "mean"
   } else if (link_scale) {
