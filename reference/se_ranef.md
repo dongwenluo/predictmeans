@@ -44,6 +44,21 @@ that fixed level plus \\\hat u\\. Its SE is from the joint covariance of
 slopes: `NA`). For GLMMs the response scale is added by the inverse link
 (SE by the delta method).
 
+## Usage
+
+``` r
+se_ranef(
+  object,
+  rand_term = NULL,
+  type = c("prediction", "conditional"),
+  predict = FALSE,
+  conf_level = 0.95
+)
+
+# S3 method for class 'pm_ranef'
+print(x, n = 10, digits = 4, ...)
+```
+
 ## Arguments
 
 - object:

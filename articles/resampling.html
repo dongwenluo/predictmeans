@@ -298,15 +298,15 @@ GLMM):</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;               Estimate Std. Error t value Perm_p_value</span></span>
-<span><span class="co">#&gt; (Intercept)    -1.1399     0.5591 -2.0389           NA</span></span>
-<span><span class="co">#&gt; Treatmentdrug   0.7207     0.3070  2.3474        0.075</span></span>
+<span><span class="co">#&gt; (Intercept)    -1.1399      0.559 -2.0390           NA</span></span>
+<span><span class="co">#&gt; Treatmentdrug   0.7207      0.307  2.3476        0.075</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Type I F tests on the working (link) scale (Freedman-Lane permutations; the working linear mixed model refitted to each permuted data set)</span></span>
 <span><span class="co">#&gt;           Df F value Perm_p_value</span></span>
-<span><span class="co">#&gt; Treatment  1  5.5102        0.075</span></span>
+<span><span class="co">#&gt; Treatment  1  5.5114        0.075</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -386,9 +386,9 @@ the slope for <code>Days</code> vary between subjects?</p>
 <span><span class="co">#&gt; Models:</span></span>
 <span><span class="co">#&gt; lmer0: Reaction ~ Days + (1 | Subject)</span></span>
 <span><span class="co">#&gt; lmer1: Reaction ~ Days + (Days | Subject)</span></span>
-<span><span class="co">#&gt;       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
-<span><span class="co">#&gt; lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span></span>
-<span><span class="co">#&gt; lmer1    6 1755.6 1774.8 -871.81    1743.6 42.837  2   4.99e-10   0.01</span></span></code></pre></div>
+<span><span class="co">#&gt;       npar    AIC    BIC  logLik deviance  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
+<span><span class="co">#&gt; lmer0    4 1794.5 1807.2 -893.23   1786.5                            </span></span>
+<span><span class="co">#&gt; lmer1    6 1755.6 1774.8 -871.81   1743.6 42.837  2   4.99e-10   0.01</span></span></code></pre></div>
 <p>For GLMMs (<code>glmer</code> or <code>glmmTMB</code>) the same is
 done on the working scale. For 0/1 responses, where the working scale
 fails with rare events or tiny clusters, randomised quantile residuals
@@ -404,9 +404,9 @@ vary between locations, beyond the variation between broods?</p>
 <span><span class="co">#&gt; Models:</span></span>
 <span><span class="co">#&gt; m0: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD)</span></span>
 <span><span class="co">#&gt; m1: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION)</span></span>
-<span><span class="co">#&gt;    npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
-<span><span class="co">#&gt; m0    5 1988.1 2008.1 -989.04    1978.1                            </span></span>
-<span><span class="co">#&gt; m1    6 1987.9 2011.9 -987.94    1975.9 2.1992  1    0.13809   0.08</span></span></code></pre></div>
+<span><span class="co">#&gt;    npar    AIC    BIC  logLik deviance  Chisq Df Pr(&gt;Chisq) Perm-p</span></span>
+<span><span class="co">#&gt; m0    5 1988.1 2008.1 -989.04   1978.1                            </span></span>
+<span><span class="co">#&gt; m1    6 1987.9 2011.9 -987.94   1975.9 2.1992  1    0.13808   0.08</span></span></code></pre></div>
 <p>For an ANOVA table of the fixed terms of an <code>lmer</code> or
 <code>glmer</code> model with permutation p-values, use
 <code><a href="../reference/permmodels.html">permmodels()</a></code> (above).</p>
@@ -441,13 +441,13 @@ compares the statistics. For the clinical trial data:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients of (fixed) effects:</span></span>
 <span><span class="co">#&gt;               Estimate Std. Error z value Pr(&gt;|z|) Boot_p_value</span></span>
-<span><span class="co">#&gt; (Intercept)    -1.1965     0.5529 -2.1641   0.0305           NA</span></span>
-<span><span class="co">#&gt; Treatmentdrug   0.7382     0.3004  2.4575   0.0140         0.03</span></span>
+<span><span class="co">#&gt; (Intercept)    -1.1960     0.5501 -2.1740   0.0297           NA</span></span>
+<span><span class="co">#&gt; Treatmentdrug   0.7379     0.2975  2.4802   0.0131         0.03</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ANOVA:</span></span>
 <span><span class="co">#&gt; Analysis of Variance Table</span></span>
 <span><span class="co">#&gt;           npar Sum Sq Mean Sq F value Boot_p_value</span></span>
-<span><span class="co">#&gt; Treatment    1 6.2054  6.2054  6.2054         0.03</span></span>
+<span><span class="co">#&gt; Treatment    1 6.2004  6.2004  6.2004         0.03</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model. The smallest attainable p-value is 1/(99 + 1) = 0.01.</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -462,7 +462,7 @@ table then says <code>"bootstrap"</code>:</p>
 <span>                    ncore <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">pmb</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"p.value"</span>, <span class="st">"p.method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    level1 level2   estimate p.value  p.method</span></span>
-<span><span class="co">#&gt; 1 control   drug -0.7382041    0.03 bootstrap</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 control   drug -0.7378753    0.03 bootstrap</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="unequal-variances-robust-true">Unequal variances: <code>robust = TRUE</code><a class="anchor" aria-label="anchor" href="#unequal-variances-robust-true"></a>

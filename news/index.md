@@ -453,6 +453,10 @@ shows 1.1.1 and 2.0 code side by side.
 
 ### Documentation
 
+- The help pages of [`anova()`](https://rdrr.io/r/stats/anova.html) for
+  `lmer` and `semireg` fits and of
+  [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
+  show their usage (CRAN pre-test: “Rd files without ”).
 - New vignettes: “Migrating from predictmeans 1.x”, “Checking the
   model”, “Missing cells and non-estimable means”, “Smooth curves in
   mixed models”, “Permutation and bootstrap tests”, “Link and response

@@ -6,6 +6,13 @@ or
 [`semireg_tmb`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
 fit, with the package's own code (no lmerTest needed).
 
+## Usage
+
+``` r
+# S3 method for class 'semireg'
+anova(object, type = c("III", "II", "I"), smooth = TRUE, ...)
+```
+
 ## Arguments
 
 - object:

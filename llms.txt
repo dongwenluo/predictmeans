@@ -145,7 +145,7 @@ advice kept with every result.
 F tests with Kenward-Roger df, R-squared, variance components and model
 checks.
 
-- [`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
+- [`anova(`*`<lmerMod>`*`)`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
   : ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df
 - [`df_term()`](https://dongwenluo.github.io/predictmeans/reference/df_term.md)
   : Denominator Degrees of Freedom of the Means or Contrasts of an lmer
@@ -154,11 +154,8 @@ checks.
   : R-squared of a Model as Numbers
 - [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md)
   : Variance Components with Standard Errors and Confidence Intervals
-- [`se_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
-  [`print.pm_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
-  [`tidy.pm_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
-  [`as.data.frame.pm_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
-  [`as.list.pm_ranef`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
+- [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
+  [`print(`*`<pm_ranef>`*`)`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
   : Standard Errors of the Predicted Random Effects
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
   : Diagnostic Plots for a Fitted Model
@@ -194,7 +191,7 @@ differences and derivatives.
   : Semiparametric Mixed Models Fitted with lme4
 - [`semireg_tmb()`](https://dongwenluo.github.io/predictmeans/reference/semireg_tmb.md)
   : Semiparametric Mixed Models Fitted with glmmTMB
-- [`anova.semireg`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md)
+- [`anova(`*`<semireg>`*`)`](https://dongwenluo.github.io/predictmeans/reference/anova.semireg.md)
   : Tests for a Semi-Parametric Model
 - [`semipred()`](https://dongwenluo.github.io/predictmeans/reference/semipred.md)
   : Predicted Curves and Surfaces of a Semiparametric Model

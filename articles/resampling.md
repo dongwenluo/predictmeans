@@ -224,15 +224,15 @@ perm_clin
 #> 
 #> Coefficients of (fixed) effects:
 #>               Estimate Std. Error t value Perm_p_value
-#> (Intercept)    -1.1399     0.5591 -2.0389           NA
-#> Treatmentdrug   0.7207     0.3070  2.3474        0.075
+#> (Intercept)    -1.1399      0.559 -2.0390           NA
+#> Treatmentdrug   0.7207      0.307  2.3476        0.075
 #> 
 #> Note: Perm_p_value of t test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
 #> 
 #> ANOVA:
 #> Type I F tests on the working (link) scale (Freedman-Lane permutations; the working linear mixed model refitted to each permuted data set)
 #>           Df F value Perm_p_value
-#> Treatment  1  5.5102        0.075
+#> Treatment  1  5.5114        0.075
 #> 
 #> Note: Perm_p_value of F test is obtained using '199' Freedman-Lane permutations. The smallest attainable p-value is 1/(199 + 1) = 0.005.
 #> 
@@ -324,9 +324,9 @@ permlmer(fm0, fm1, nperm = 99, ncore = 1, seed = 1)
 #> Models:
 #> lmer0: Reaction ~ Days + (1 | Subject)
 #> lmer1: Reaction ~ Days + (Days | Subject)
-#>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
-#> lmer0    4 1794.5 1807.2 -893.23    1786.5                            
-#> lmer1    6 1755.6 1774.8 -871.81    1743.6 42.837  2   4.99e-10   0.01
+#>       npar    AIC    BIC  logLik deviance  Chisq Df Pr(>Chisq) Perm-p
+#> lmer0    4 1794.5 1807.2 -893.23   1786.5                            
+#> lmer1    6 1755.6 1774.8 -871.81   1743.6 42.837  2   4.99e-10   0.01
 ```
 
 For GLMMs (`glmer` or `glmmTMB`) the same is done on the working scale.
@@ -345,9 +345,9 @@ permlmer(gm1, gm2, nperm = 99, ncore = 1, seed = 1)
 #> Models:
 #> m0: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD)
 #> m1: TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD) + (1 | LOCATION)
-#>    npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
-#> m0    5 1988.1 2008.1 -989.04    1978.1                            
-#> m1    6 1987.9 2011.9 -987.94    1975.9 2.1992  1    0.13809   0.08
+#>    npar    AIC    BIC  logLik deviance  Chisq Df Pr(>Chisq) Perm-p
+#> m0    5 1988.1 2008.1 -989.04   1978.1                            
+#> m1    6 1987.9 2011.9 -987.94   1975.9 2.1992  1    0.13808   0.08
 ```
 
 For an ANOVA table of the fixed terms of an `lmer` or `glmer` model with
@@ -393,13 +393,13 @@ boot
 #> 
 #> Coefficients of (fixed) effects:
 #>               Estimate Std. Error z value Pr(>|z|) Boot_p_value
-#> (Intercept)    -1.1965     0.5529 -2.1641   0.0305           NA
-#> Treatmentdrug   0.7382     0.3004  2.4575   0.0140         0.03
+#> (Intercept)    -1.1960     0.5501 -2.1740   0.0297           NA
+#> Treatmentdrug   0.7379     0.2975  2.4802   0.0131         0.03
 #> 
 #> ANOVA:
 #> Analysis of Variance Table
 #>           npar Sum Sq Mean Sq F value Boot_p_value
-#> Treatment    1 6.2054  6.2054  6.2054         0.03
+#> Treatment    1 6.2004  6.2004  6.2004         0.03
 #> 
 #> Note: Boot_p_value is from '99' parametric bootstrap samples under the global null model. The smallest attainable p-value is 1/(99 + 1) = 0.01.
 #> 
@@ -418,7 +418,7 @@ pmb <- predictmeans(fm_clin, "Treatment", permlist = boot,
                     ncore = 1)
 pmb$pairs[, c("level1", "level2", "estimate", "p.value", "p.method")]
 #>    level1 level2   estimate p.value  p.method
-#> 1 control   drug -0.7382041    0.03 bootstrap
+#> 1 control   drug -0.7378753    0.03 bootstrap
 ```
 
 ## Unequal variances: `robust = TRUE`

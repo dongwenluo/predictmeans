@@ -9,6 +9,19 @@ by default, as SAS PROC MIXED `DDFM=KR`. This replaces the tables of
 lmerTest, which predictmeans attached before 2.0. With several models,
 `anova(m1, m2)` is lme4's likelihood ratio comparison, unchanged.
 
+## Usage
+
+``` r
+# S3 method for class 'lmerMod'
+anova(
+  object,
+  ...,
+  type = c("III", "II", "I"),
+  ddf = c("Kenward-Roger", "Satterthwaite", "lme4"),
+  advice = TRUE
+)
+```
+
 ## Arguments
 
 - object:

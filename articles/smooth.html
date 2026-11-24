@@ -198,9 +198,9 @@ line.</p>
 <span><span class="co">#&gt;   value.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                    F Df Df.res    Pr(&gt;F)    </span></span>
-<span><span class="co">#&gt; (Intercept) 212.0332  1 19.128 8.354e-12 ***</span></span>
-<span><span class="co">#&gt; QB            7.4995  1 19.128     0.013 *  </span></span>
-<span><span class="co">#&gt; QB:pressure 850.3842  2 19.129 &lt; 2.2e-16 ***</span></span>
+<span><span class="co">#&gt; (Intercept) 212.1021  1 19.141 8.241e-12 ***</span></span>
+<span><span class="co">#&gt; QB            7.5018  1 19.141   0.01299 *  </span></span>
+<span><span class="co">#&gt; QB:pressure 850.4323  2 19.131 &lt; 2.2e-16 ***</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -222,20 +222,22 @@ line.</p>
 <span><span class="co">#&gt; Curves of 'QB' along pressure</span></span>
 <span><span class="co">#&gt; 95% limits; Satterthwaite (fixed + smooth coefficients) df</span></span>
 <span><span class="co">#&gt;   QB pressure estimate std.error    df conf.low conf.high</span></span>
-<span><span class="co">#&gt;  200    0.235    2.720    1.0383 40.53   0.6225     4.818</span></span>
-<span><span class="co">#&gt;  200    0.240    3.030    1.0224 38.63   0.9612     5.099</span></span>
-<span><span class="co">#&gt;  200    0.245    3.340    1.0080 36.95   1.2971     5.382</span></span>
-<span><span class="co">#&gt;  200    0.250    3.650    0.9950 35.47   1.6305     5.669</span></span>
-<span><span class="co">#&gt;  200    0.255    3.960    0.9833 34.17   1.9616     5.957</span></span>
-<span><span class="co">#&gt;  200    0.260    4.270    0.9727 33.02   2.2906     6.248</span></span>
-<span><span class="co">#&gt;  200    0.280    5.508    0.9396 29.67   3.5886     7.428</span></span>
-<span><span class="co">#&gt;  200    0.285    5.818    0.9332 29.07   3.9093     7.726</span></span>
-<span><span class="co">#&gt;  200    0.290    6.127    0.9275 28.55   4.2286     8.025</span></span>
-<span><span class="co">#&gt;  200    0.292    6.253    0.9252 28.35   4.3586     8.147</span></span>
+<span><span class="co">#&gt;  200    0.235    2.720    1.0382 40.55   0.6227     4.818</span></span>
+<span><span class="co">#&gt;  200    0.240    3.030    1.0223 38.65   0.9614     5.098</span></span>
+<span><span class="co">#&gt;  200    0.245    3.340    1.0079 36.97   1.2973     5.382</span></span>
+<span><span class="co">#&gt;  200    0.250    3.650    0.9949 35.49   1.6308     5.668</span></span>
+<span><span class="co">#&gt;  200    0.255    3.960    0.9832 34.19   1.9619     5.957</span></span>
+<span><span class="co">#&gt;  200    0.260    4.270    0.9726 33.04   2.2909     6.248</span></span>
+<span><span class="co">#&gt;  200    0.280    5.508    0.9395 29.69   3.5889     7.428</span></span>
+<span><span class="co">#&gt;  200    0.285    5.818    0.9331 29.09   3.9096     7.726</span></span>
+<span><span class="co">#&gt;  200    0.290    6.127    0.9273 28.56   4.2289     8.025</span></span>
+<span><span class="co">#&gt;  200    0.292    6.253    0.9251 28.36   4.3589     8.147</span></span>
 <span><span class="co">#&gt; ... 220 more rows: as.data.frame(x) gives the table.</span></span>
 <span><span class="co">#&gt; autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cur</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-5-1.png" alt="plot of chunk unnamed-chunk-5"><div class="figcaption">plot of chunk unnamed-chunk-5</div>
+</div>
 <p>The result prints a summary and holds its tables in the layout of
 <code><a href="../reference/predictmeans.html">predictmeans()</a></code>: <code>as.data.frame(cur)</code> (or
 <code>cur$means</code>) has <code>estimate</code>,
@@ -259,14 +261,16 @@ curve over its whole range:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">pressure</span>, df <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">df</span>, pointwise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">qt</a></span><span class="op">(</span><span class="fl">0.975</span>, <span class="va">p</span><span class="op">$</span><span class="va">df</span><span class="op">)</span>,</span>
 <span>                simultaneous <span class="op">=</span> <span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">adj.conf.high</span> <span class="op">-</span> <span class="va">p</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span> <span class="op">/</span> <span class="va">p</span><span class="op">$</span><span class="va">std.error</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   pressure       df pointwise simultaneous</span></span>
-<span><span class="co">#&gt; 1    0.235 40.52855  2.020255     3.096108</span></span>
-<span><span class="co">#&gt; 2    0.240 38.62697  2.023316     3.105515</span></span>
-<span><span class="co">#&gt; 3    0.245 36.94778  2.026289     3.114675</span></span>
-<span><span class="co">#&gt; 4    0.250 35.46806  2.029151     3.123511</span></span>
-<span><span class="co">#&gt; 5    0.255 34.16605  2.031881     3.131961</span></span>
-<span><span class="co">#&gt; 6    0.260 33.02154  2.034465     3.139976</span></span>
+<span><span class="co">#&gt; 1    0.235 40.55229  2.020218     3.086001</span></span>
+<span><span class="co">#&gt; 2    0.240 38.64948  2.023278     3.095321</span></span>
+<span><span class="co">#&gt; 3    0.245 36.96916  2.026250     3.104397</span></span>
+<span><span class="co">#&gt; 4    0.250 35.48841  2.029110     3.113152</span></span>
+<span><span class="co">#&gt; 5    0.255 34.18547  2.031838     3.121524</span></span>
+<span><span class="co">#&gt; 6    0.260 33.04013  2.034421     3.129465</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-6-1.png" alt="plot of chunk unnamed-chunk-6"><div class="figcaption">plot of chunk unnamed-chunk-6</div>
+</div>
 <p>The critical values come from 10,000 draws of the estimates’
 distribution (a multivariate t), with a fixed seed, so the band is the
 same each time. In the table the pointwise limits stay in
@@ -288,7 +292,9 @@ ultrafiltration rate from a pressure of about 1.2 upwards:</p>
 <span><span class="co">#&gt;       from   to direction</span></span>
 <span><span class="co">#&gt; 1 1.204694 3.03         &gt;</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">dif</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-7-1.png" alt="plot of chunk unnamed-chunk-7"><div class="figcaption">plot of chunk unnamed-chunk-7</div>
+</div>
 <p><code>as.data.frame(dif)</code> has the difference at each pressure
 in the columns of <code>predictmeans()$pairs</code>, with
 <code>p.adj</code>: the share of the simulated maxima at least as large,
@@ -327,7 +333,9 @@ the t test of slope = 0:</p>
 <span><span class="co">#&gt; 1   200 0.235 1.661020       &gt; 0</span></span>
 <span><span class="co">#&gt; 2   300 0.235 2.060306       &gt; 0</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">slp</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-9-1.png" alt="plot of chunk unnamed-chunk-9"><div class="figcaption">plot of chunk unnamed-chunk-9</div>
+</div>
 <p><code>contr</code> with <code>deriv</code> compares the slopes of two
 curves. The derivatives are those of the whole fitted curve (fixed and
 smooth parts), for any basis, and for the O’Sullivan basis equal the
@@ -349,7 +357,7 @@ pressure or at values given by name:</p>
 <span><span class="co">#&gt; Predicted means of 'QB' from a semireg model (smooth terms included)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   QB estimate std.error    df conf.low conf.high group</span></span>
-<span><span class="co">#&gt;  200    44.66    0.9740 29.45    42.66     46.65    A </span></span>
+<span><span class="co">#&gt;  200    44.66    0.9740 29.46    42.66     46.65    A </span></span>
 <span><span class="co">#&gt;  300    51.21    0.9723 29.27    49.22     53.20     B</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Pairwise comparisons (t tests, Satterthwaite df; p.adj: none)</span></span>
@@ -360,8 +368,8 @@ pressure or at values given by name:</p>
 <span><span class="co">#&gt;     -3.744 2.813        t</span></span>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>pressure <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span>
 <span><span class="co">#&gt;    QB estimate std.error       df conf.low conf.high group</span></span>
-<span><span class="co">#&gt; 1 200 36.30263 0.9244804 36.54632 34.42867  38.17659     A</span></span>
-<span><span class="co">#&gt; 2 300 38.81293 0.9262667 36.79558 36.93578  40.69007     A</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 200 36.30263 0.9244460 36.55883 34.42876  38.17650     A</span></span>
+<span><span class="co">#&gt; 2 300 38.81292 0.9262326 36.80822 36.93587  40.68998     A</span></span></code></pre></div>
 <p>For gaussian fits the tests are t tests with Satterthwaite df (next
 section), and <code><a href="../reference/semipred.html">semipred()</a></code> uses the same df for its bands
 (column <code>df</code>); generalized fits get the df of the design’s
@@ -398,7 +406,7 @@ bands of the curves cover 0.91 instead of 0.95
 <span><span class="co">#&gt;    A estimate std.error       df conf.low conf.high group</span></span>
 <span><span class="co">#&gt; 1 a1 2.353834 0.2423023 8.659082 1.802401  2.905267     A</span></span>
 <span><span class="co">#&gt; 2 a2 2.415646 0.2431558 8.781221 1.863493  2.967798     A</span></span>
-<span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.703587 2.143640  3.247028     A</span></span>
+<span><span class="co">#&gt; 3 a3 2.695334 0.2426143 8.703586 2.143640  3.247028     A</span></span>
 <span><span class="va">pm</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2    estimate std.error       df   p.value</span></span>
 <span><span class="co">#&gt; 1     a1     a2 -0.06181205 0.1991743 17.61641 0.7599429</span></span>
@@ -424,10 +432,10 @@ their sizes. Here the shapes differ by <code>f1</code> only:</p>
 <span><span class="va">fx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, <span class="va">f1</span><span class="op">*</span><span class="va">f2</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dd</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fx</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"variance"</span>, <span class="st">"LRT"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;        term     variance        LRT      p.value</span></span>
-<span><span class="co">#&gt; 1       s_x 0.3163539389  5.7060123 8.453451e-03</span></span>
-<span><span class="co">#&gt; 2    s_x_f1 0.0927799765 26.9861474 1.024594e-07</span></span>
+<span><span class="co">#&gt; 1       s_x 0.3163464627  5.7060123 8.453451e-03</span></span>
+<span><span class="co">#&gt; 2    s_x_f1 0.0927804876 26.9861474 1.024594e-07</span></span>
 <span><span class="co">#&gt; 3    s_x_f2 0.0000000000  0.0000000 1.000000e+00</span></span>
-<span><span class="co">#&gt; 4 s_x_f1_f2 0.0002386318  0.1328028 3.577718e-01</span></span></code></pre></div>
+<span><span class="co">#&gt; 4 s_x_f1_f2 0.0002386152  0.1328028 3.577718e-01</span></span></code></pre></div>
 <p>The curves of all six combinations are computed at once;
 <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> chooses the layout without computing again: by
 default the first factor colours the curves and the second makes the
@@ -436,10 +444,14 @@ panel factors give a grid:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">c2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fx</span>, <span class="st">"f1:f2"</span>, <span class="st">"x"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">c2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-13-1.png" alt="plot of chunk unnamed-chunk-13"><div class="figcaption">plot of chunk unnamed-chunk-13</div>
+</div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">c2</span>, group <span class="op">=</span> <span class="st">"f2"</span>, panel <span class="op">=</span> <span class="st">"f1"</span>, data <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-13-2.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-13-2.png" alt="plot of chunk unnamed-chunk-13"><div class="figcaption">plot of chunk unnamed-chunk-13</div>
+</div>
 <p>The test is conservative: in 200 simulated data sets like these, with
 no <code>f2</code> or <code>f1:f2</code> differences, it rejected at the
 5% level in 1-3% of them, and it found the <code>f1</code> difference in
@@ -464,7 +476,9 @@ a simultaneous band and the ranges where the ratio differs from 1:</p>
 <span><span class="co">#&gt;        from to direction</span></span>
 <span><span class="co">#&gt; 1 0.7241379  3         &gt;</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">rr</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-14-1.png" alt="plot of chunk unnamed-chunk-14"><div class="figcaption">plot of chunk unnamed-chunk-14</div>
+</div>
 <p><strong>Subject-specific curves.</strong>
 <code>(s(age, k = 10) | idnum)</code> gives each subject a random
 straight line, <code>(age | idnum)</code>, and a random spline deviation
@@ -482,7 +496,9 @@ Wand (2018, section 9.2); the fit is the same as that of their
 <span><span class="fu"><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik</a></span><span class="op">(</span><span class="va">fg</span><span class="op">$</span><span class="va">semer</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 'log Lik.' -935.7451 (df=8)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fg</span>, <span class="st">"age"</span>, <span class="st">"age"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-15-1.png" alt="plot of chunk unnamed-chunk-15"><div class="figcaption">plot of chunk unnamed-chunk-15</div>
+</div>
 <p>The population curve leaves out the subjects’ curves;
 <code>anova(fg)</code> would test whether they are needed beyond
 straight lines.</p>
@@ -506,10 +522,14 @@ additive model with a curve in <code>x1</code>, and an effect of
 <span><span class="co">#&gt; 1   s_x1 0.03875716 122.8299 7.596575e-29</span></span>
 <span><span class="co">#&gt; 2 s_x2_z 0.33715120 188.0839 4.164359e-43</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fa</span>, covariate <span class="op">=</span> <span class="st">"x1"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-16-1.png" alt="plot of chunk unnamed-chunk-16"><div class="figcaption">plot of chunk unnamed-chunk-16</div>
+</div>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fa</span>, covariate <span class="op">=</span> <span class="st">"x1"</span>, sm_term <span class="op">=</span> <span class="st">"x1"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-16-2.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-16-2.png" alt="plot of chunk unnamed-chunk-16"><div class="figcaption">plot of chunk unnamed-chunk-16</div>
+</div>
 <p>The first curve includes <code>s(x2, by = z)</code> as a constant
 (its advice says so); with <code>sm_term = "x1"</code> it is the smooth
 of <code>x1</code> alone.</p>
@@ -522,7 +542,9 @@ back-transformed for the plots:</p>
 <span><span class="va">fcu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">grade</span><span class="op">)</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">zcoord</span>, bs <span class="op">=</span> <span class="st">"os"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">xcoord</span>, <span class="va">ycoord</span>, bs <span class="op">=</span> <span class="st">"ztps"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span>
 <span>               data <span class="op">=</span> <span class="va">copper</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fcu</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xcoord"</span>, <span class="st">"ycoord"</span><span class="op">)</span>, trans <span class="op">=</span> <span class="va">exp</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-17-1.png" alt="plot of chunk unnamed-chunk-17"><div class="figcaption">plot of chunk unnamed-chunk-17</div>
+</div>
 <p><strong>Binary responses.</strong> The probability of a response over
 <code>x</code> for two groups, with a random effect of cluster;
 <code>contr</code> gives the log odds ratio of the curves and the odds
@@ -535,17 +557,19 @@ ratio:</p>
 <span><span class="va">fbin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x</span>, by <span class="op">=</span> <span class="va">g</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">cl</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>,</span>
 <span>                data <span class="op">=</span> <span class="va">db</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-18-1.png" alt="plot of chunk unnamed-chunk-18"><div class="figcaption">plot of chunk unnamed-chunk-18</div>
+</div>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b"</span>, <span class="st">"a"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"odds.ratio"</span>, <span class="st">"odds.ratio.conf.low"</span>, <span class="st">"odds.ratio.conf.high"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            x odds.ratio odds.ratio.conf.low odds.ratio.conf.high</span></span>
-<span><span class="co">#&gt; 1 0.00000000  0.6345286           0.1770954             2.273501</span></span>
-<span><span class="co">#&gt; 2 0.02040816  0.7156140           0.2424221             2.112445</span></span>
-<span><span class="co">#&gt; 3 0.04081633  0.8016197           0.3171040             2.026446</span></span>
-<span><span class="co">#&gt; 4 0.04166667  0.8052848           0.3203437             2.024337</span></span>
-<span><span class="co">#&gt; 5 0.06122449  0.8906737           0.3951446             2.007619</span></span>
-<span><span class="co">#&gt; 6 0.08163265  0.9802307           0.4676728             2.054540</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 0.00000000  0.6344880           0.1771507             2.272501</span></span>
+<span><span class="co">#&gt; 2 0.02040816  0.7155785           0.2424612             2.111895</span></span>
+<span><span class="co">#&gt; 3 0.04081633  0.8015901           0.3171198             2.026196</span></span>
+<span><span class="co">#&gt; 4 0.04166667  0.8052554           0.3203585             2.024096</span></span>
+<span><span class="co">#&gt; 5 0.06122449  0.8906503           0.3951402             2.007535</span></span>
+<span><span class="co">#&gt; 6 0.08163265  0.9802133           0.4676642             2.054504</span></span></code></pre></div>
 <p><strong>Repeated measures with serial correlation.</strong> Curves
 over time for three treatments, twelve subjects, AR(1) correlation of
 the residuals within a subject (<code><a href="../reference/semireg_tmb.html">semireg_tmb()</a></code>, glmmTMB’s
@@ -564,9 +588,9 @@ Satterthwaite df:</p>
 <span><span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">far</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level1"</span>, <span class="st">"level2"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span>, <span class="st">"p.value"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   level1 level2    estimate std.error       df   p.value</span></span>
-<span><span class="co">#&gt; 1     a1     a2 -0.21464779 0.3486296 20.14254 0.5449940</span></span>
-<span><span class="co">#&gt; 2     a1     a3 -0.30286816 0.3191345 17.10317 0.3558238</span></span>
-<span><span class="co">#&gt; 3     a2     a3 -0.08822037 0.3358213 19.06262 0.7955997</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     a1     a2 -0.21465001 0.3486298 20.25819 0.5449510</span></span>
+<span><span class="co">#&gt; 2     a1     a3 -0.30286196 0.3191329 17.20377 0.3557549</span></span>
+<span><span class="co">#&gt; 3     a2     a3 -0.08821194 0.3358201 19.09499 0.7956133</span></span></code></pre></div>
 <p><strong>A tensor-product surface.</strong> Two covariates on
 different scales (<code>data(ozoneCalif)</code>: inversion base height
 in feet, its temperature in degrees F) call for <code>t2()</code>, whose
@@ -589,7 +613,9 @@ to the fixed effects:</p>
 <span><span class="co">#&gt; 3 1.906844e-01</span></span>
 <span><span class="co">#&gt; 4 1.868689e-03</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fo</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"inversion.base.height"</span>, <span class="st">"inversion.base.temp"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-20-1.png" alt="plot of chunk unnamed-chunk-20"><div class="figcaption">plot of chunk unnamed-chunk-20</div>
+</div>
 <p><strong>A basis of your own.</strong> A seasonal cycle on a straight
 trend: two years of daily values and a Fourier basis
 (<code>bs = "user"</code>, with no fixed part of its own,
@@ -604,7 +630,9 @@ given.</p>
 <span><span class="va">fs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">day</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">day</span>, bs <span class="op">=</span> <span class="st">"user"</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>basis <span class="op">=</span> <span class="va">season</span>, null <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>              data <span class="op">=</span> <span class="va">ds</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fs</span>, covariate <span class="op">=</span> <span class="st">"day"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-21-1.png" alt="plot of chunk unnamed-chunk-21"><div class="figcaption">plot of chunk unnamed-chunk-21</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="examples-from-the-semiparametric-regression-literature">Examples from the semiparametric regression literature<a class="anchor" aria-label="anchor" href="#examples-from-the-semiparametric-regression-literature"></a>
@@ -632,7 +660,7 @@ girl; the groups compared at age 15:</p>
 <span><span class="co">#&gt; 1     Asian 0.9918785 0.01647278 274.8882 0.9594497  1.024307    A </span></span>
 <span><span class="co">#&gt; 2     Black 1.0980570 0.01440646 274.1369 1.0696956  1.126418     B</span></span>
 <span><span class="co">#&gt; 3  Hispanic 1.0050416 0.01642609 289.7213 0.9727120  1.037371    A </span></span>
-<span><span class="co">#&gt; 4     White 1.0179401 0.01610810 264.8705 0.9862239  1.049656    A</span></span></code></pre></div>
+<span><span class="co">#&gt; 4     White 1.0179401 0.01610810 264.8706 0.9862239  1.049656    A</span></span></code></pre></div>
 <p><strong>Scallop catches over the sea floor</strong>
 (<code>scallop</code>): a thin-plate surface with the knots of the
 original fit, drawn inside the boundary of the survey area on the scale
@@ -644,7 +672,9 @@ of the catch:</p>
 <span>               data <span class="op">=</span> <span class="va">scallop</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fsc</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"longitude"</span>, <span class="st">"latitude"</span><span class="op">)</span>, boundary <span class="op">=</span> <span class="va">scallopBdry</span>,</span>
 <span>                  trans <span class="op">=</span> <span class="va">sinh</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-23-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-23-1.png" alt="plot of chunk unnamed-chunk-23"><div class="figcaption">plot of chunk unnamed-chunk-23</div>
+</div>
 <p><strong>Union membership over the wage</strong>
 (<code>wageTUnion</code>): penalised spline logistic regression, the
 probability with its band:</p>
@@ -653,7 +683,9 @@ probability with its band:</p>
 <span><span class="va">fw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/semireg.html">semireg</a></span><span class="op">(</span><span class="va">unionMember</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">wage</span>, bs <span class="op">=</span> <span class="st">"os"</span>, k <span class="op">=</span> <span class="fl">15</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span>,</span>
 <span>              data <span class="op">=</span> <span class="va">wageTUnion</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu"><a href="../reference/semipred.html">semipred</a></span><span class="op">(</span><span class="va">fw</span>, <span class="st">"wage"</span>, <span class="st">"wage"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="smooth_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" alt="" width="672"></p>
+<div class="float">
+<img src="smooth-unnamed-chunk-24-1.png" alt="plot of chunk unnamed-chunk-24"><div class="figcaption">plot of chunk unnamed-chunk-24</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="from-1-x">From 1.x<a class="anchor" aria-label="anchor" href="#from-1-x"></a>

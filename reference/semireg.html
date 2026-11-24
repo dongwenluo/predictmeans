@@ -320,7 +320,7 @@ mixed models. <em>Statistics and Computing</em>, <b>23</b>, 341-360.</p>
 <span class="r-in"><span>               data <span class="op">=</span> <span class="va">sp</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fsp</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2   estimate std.error       df  statistic    p.value      p.adj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.2449559 0.1611056 25.50375 -1.5204680 0.14069552 0.14069552</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2 -0.2449559 0.1611056 25.50375 -1.5204680 0.14069551 0.14069551</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3  0.1291968 0.1602868 25.01663  0.8060353 0.42781848 0.42781848</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3  0.3741527 0.1615742 25.78521  2.3156705 0.02879782 0.02879782</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      conf.low  conf.high       lsd p.method</span>
@@ -338,7 +338,7 @@ mixed models. <em>Statistics and Computing</em>, <b>23</b>, 341-360.</p>
 <span class="r-in"><span><span class="fu"><a href="varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fx</span>, test <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                         vcov     SE  2.5 %      97.5 %     LRT   p.value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_x_f1_f2.(Intercept) 0.0000     NA 0.0000          NA  0.0000 1.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> s_x_f2.(Intercept)    0.0005 0.0011 0.0001 191055.5255  0.3757 0.2700000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> s_x_f2.(Intercept)    0.0005 0.0011 0.0001 191055.2871  0.3757 0.2700000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_x_f1.(Intercept)    0.0532 0.0426 0.0173      0.6851 11.6162 0.0003269</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_x.(Intercept)       0.3776 0.2198 0.1559      1.8653  7.1297 0.0037910</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> residual              0.0345 0.0039 0.0280      0.0435      NA        NA</span>
@@ -393,7 +393,7 @@ mixed models. <em>Statistics and Computing</em>, <b>23</b>, 341-360.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4 t2_inversion_base_height_inversion_base_temp_3 12.919219 -1022.055</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   logLik.without          LRT      p.value                      test</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1      -1040.213 3.631529e+01 8.392096e-10 0.5 chi2(0) + 0.5 chi2(1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      -1022.055 2.169145e-10 4.999941e-01 0.5 chi2(0) + 0.5 chi2(1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      -1022.055 2.171419e-10 4.999941e-01 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3      -1022.438 7.662851e-01 1.906844e-01 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4      -1026.259 8.407200e+00 1.868689e-03 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-in"><span><span class="fu"><a href="semipred.html">semipred</a></span><span class="op">(</span><span class="va">fo</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"inversion.base.height"</span>, <span class="st">"inversion.base.temp"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">plt</span></span></span>
@@ -432,10 +432,10 @@ mixed models. <em>Statistics and Computing</em>, <b>23</b>, 341-360.</p>
 <span class="r-in"><span>  <span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fw</span>, <span class="st">"district"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>construction.date <span class="op">=</span> <span class="fl">1980</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">means</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      district estimate std.error  df conf.low conf.high group</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     Mokotow 130.9225  3.510809 401 124.0207  137.8244    A </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Srodmiescie 138.2202  8.320780 401 121.8624  154.5780    A </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        Wola 118.9150  3.389961 401 112.2507  125.5794     B</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4    Zoliborz 131.6012  5.959483 401 119.8854  143.3169    AB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     Mokotow 130.9224  3.510868 401 124.0204  137.8244    A </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Srodmiescie 138.2199  8.320740 401 121.8621  154.5776    A </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        Wola 118.9151  3.389983 401 112.2507  125.5795     B</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    Zoliborz 131.6010  5.959415 401 119.8854  143.3166    AB</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

@@ -854,7 +854,7 @@ print(predm_out[1:4])
     ## $`Predicted Means`
     ## seedlot
     ##       Acacia    Angophora    Casuarina    Melaleuca Petalostigma 
-    ##      10.2937       7.1000       5.5125       4.9437       2.7312 
+    ##      10.2938       7.1000       5.5125       4.9437       2.7313 
     ## 
     ## $`Standard Error of Means`
     ## All means have the same SE 
@@ -886,11 +886,11 @@ gt(predm_out$mean_table$Table,
 
 | seedlot      | Mean    | SE      | Df   | LL(95%) | UL(95%) | LetterGrp |
 |--------------|---------|---------|------|---------|---------|-----------|
-| Acacia       | 10.2937 | 0.74201 | 3.51 | 8.1151  | 12.4724 | A         |
+| Acacia       | 10.2938 | 0.74201 | 3.51 | 8.1151  | 12.4724 | A         |
 | Angophora    | 7.1000  | 0.74201 | 3.51 | 4.9213  | 9.2787  | B         |
 | Casuarina    | 5.5125  | 0.74201 | 3.51 | 3.3338  | 7.6912  | BC        |
 | Melaleuca    | 4.9437  | 0.74201 | 3.51 | 2.7651  | 7.1224  | BC        |
-| Petalostigma | 2.7312  | 0.74201 | 3.51 | 0.5526  | 4.9099  | C         |
+| Petalostigma | 2.7313  | 0.74201 | 3.51 | 0.5526  | 4.9099  | C         |
 
 Group: Letter-based representation of pairwise comparisons at
 significant level '0.05' {.table .gt_table
