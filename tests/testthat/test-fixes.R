@@ -18,6 +18,7 @@ test_that("trans = NULL means no back-transformation (B2)", {
 })
 
 test_that("contrastmeans() and predictmeans() give the same permutation p-value (B3)", {
+  skip_on_cran()
   fm <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = oats())
   perm <- suppressWarnings(permmodels(fm, method = "raw", nperm = 49, ncore = 1, seed = 11))
   pm <- predictmeans(fm, "nitro", permlist = perm, adj = "none", plot = FALSE, ncore = 1)
@@ -43,6 +44,7 @@ test_that("contrastmeans() without ctrmatrix needs an interactive session", {
 })
 
 test_that("CookD() works for lmer models and agrees with lme", {
+  skip_on_cran()
   data("ATP", package = "predictmeans", envir = environment())
   fa <- suppressMessages(lmer(ATP ~ A*B + (1|heart), data = ATP))
   fl <- lme(ATP ~ A*B, random = ~1|heart, data = ATP)
@@ -52,6 +54,7 @@ test_that("CookD() works for lmer models and agrees with lme", {
 })
 
 test_that("r2_pct(R2_model()): glmmTMB data found outside the global environment; clear over_disp error", {
+  skip_on_cran()
   data("Clinical", package = "predictmeans", envir = environment())
   local_fit <- function(dat) glmmTMB::glmmTMB(cbind(Favorable, Total - Favorable) ~ Treatment + (1|Clinic),
                                      family = binomial, data = dat)
@@ -75,6 +78,7 @@ test_that("r2_pct(R2_model()) over_disp leaves out an observation-level random e
 })
 
 test_that("permmodels() and CookD() refit the model on its own data (B12)", {
+  skip_on_cran()
   # A local data set whose name also exists on the search path (nlme::Oats)
   Oats <- oats()
   fm <- lme(yield ~ nitro*Variety, random = ~1|Block/Variety, data = Oats)
@@ -149,6 +153,7 @@ test_that("Kenward-Roger adjusted SEs are the default for REML lmer fits", {
 })
 
 test_that("permmodels() gives the same tables for lme4 and lmerTest fits", {
+  skip_on_cran()
   d <- oats()
   f1 <- lme4::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
   f2 <- lmerTest::lmer(yield ~ nitro*Variety + (1|Block/Variety), data = d)
@@ -160,6 +165,7 @@ test_that("permmodels() gives the same tables for lme4 and lmerTest fits", {
 })
 
 test_that("residplot(): glmmTMB with aliased columns; random part in the column order of Z", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off())

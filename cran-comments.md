@@ -1,9 +1,21 @@
-## Status
+## Resubmission
 
-Version 2.0.0, not submitted yet. Submitted to win-builder (R-release and
-R-devel) on 2026-11-24; results come by email to the maintainer. mac-builder
-returned "HTTP 502 Bad Gateway" twice on 2026-11-24; resubmit with
-`devtools::check_mac_release()`. Fill in the results below before submitting.
+This is a resubmission of predictmeans 2.0.0. The CRAN pre-tests of the
+first submission (2026-11-24) gave three NOTEs; in this version:
+
+* "Overall checktime 21 min > 10 min" (r-devel-windows): the tests took
+  13 min. Slow tests (the comparisons with SAS, Genstat and emmeans,
+  permutation and bootstrap runs, simulations) now skip on CRAN
+  (`skip_on_cran()`); every exported function is still called by a test that
+  runs on CRAN. Two long vignettes are precomputed. On our Linux machine the
+  tests run as on CRAN took 430 s and now take 58 s, the vignettes 80 s and
+  now about 23 s; the whole check run as on CRAN takes 3.7 min there.
+  Win-builder R-devel: (to be filled in from the new run).
+* "Rd files without \usage: anova.lmerMod.Rd, anova.semireg.Rd,
+  se_ranef.Rd" (r-devel-linux-debian): fixed; the usage sections are there.
+* "Possibly misspelled words in DESCRIPTION: Kenward, PROC": both are names,
+  Kenward of Kenward and Roger (1997), cited with its DOI, and the 'SAS'
+  procedure PROC MIXED.
 
 ## Test environments
 
@@ -21,7 +33,10 @@ returned "HTTP 502 Bad Gateway" twice on 2026-11-24; resubmit with
 Local (Windows, R 4.6.2): 0 errors | 0 warnings | 0 notes.
 
 win-builder R-release: (pending)
-win-builder R-devel: (pending)
+win-builder R-devel (2026-11-17 r90926 ucrt): 1 NOTE (CRAN incoming
+feasibility): the maintainer, and "Possibly misspelled words in DESCRIPTION:
+Kenward, PROC". Both are names: Kenward of Kenward and Roger (1997), cited
+with its DOI, and the 'SAS' procedure PROC MIXED.
 mac-builder R-release: (pending)
 
 The full test suite (3,853 expectations, `NOT_CRAN=true`) passes with 0
@@ -29,10 +44,10 @@ failures and 0 warnings. All URLs checked with `urlchecker::url_check()`.
 
 ## Reverse dependencies
 
-To be checked with `.github/workflows/revdep-check.yaml`
-(`dev/revdep-check.R`), which checks every CRAN package that depends on,
-imports or suggests predictmeans with the CRAN version and with this version.
-Results to be added here.
+One reverse dependency, eda4treeR 1.1.0, checked with
+`.github/workflows/revdep-check.yaml` (`dev/revdep-check.R`) on 2026-11-24
+(R 4.6.2, Ubuntu): `R CMD check` status OK with predictmeans 1.1.1 (CRAN) and
+OK with 2.0.0. No new problems.
 
 ## Notes for CRAN
 

@@ -216,6 +216,13 @@ effective**. Check every change against all four before it is done:
 - Timings: `Rscript dev/benchmarks.R`. Pull requests are timed against their
   base branch in CI (`dev/benchmarks-ci.R`; fails when a key timing is over
   1.5 times the base's and at least 0.1 s longer).
+- Precomputed vignettes (CRAN check time, 2026-11-24): `resampling` and
+  `smooth` are edited in `vignettes/<name>.Rmd.orig` (left out of the
+  package); `Rscript dev/precompute-vignettes.R` writes `vignettes/<name>.Rmd`
+  with results and figures. Never edit those two `.Rmd` files by hand; re-run
+  the script after any change that can change their output, and commit the
+  `.Rmd` and `vignettes/<name>-*.png`. Tests run on CRAN only when under
+  0.5 s; slower ones start with `skip_on_cran()` (CRAN-mode suite about 60 s).
 - Run `R CMD check` once, at the end of a block (with `cran = TRUE` before a
   release); during the work run only the related tests.
 - Add a short user-facing entry to the 2.0.0 note in `NEWS.md` (in its right

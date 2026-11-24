@@ -29,6 +29,7 @@ test_that("gls with an unstructured covariance: Satterthwaite df equal SAS", {
 })
 
 test_that("ML fits of lme and gls: Satterthwaite from the ML log-likelihood, as ML lmer (lmerTest)", {
+  skip_on_cran()
   o <- as.data.frame(nlme::Oats)
   o$nitro <- factor(o$nitro)
   o$Variety <- factor(o$Variety, ordered = FALSE)
@@ -53,6 +54,7 @@ test_that("ML fits of lme and gls: Satterthwaite from the ML log-likelihood, as 
 })
 
 test_that("Kenward-Roger for gls and lme: SAS DDFM=KR F tests, and lme equals lmer", {
+  skip_on_cran()
   r <- rep_data()
   g <- nlme::gls(Y ~ Group * Time, data = r, correlation = nlme::corSymm(form = ~ as.integer(Time) | Subj),
                  weights = nlme::varIdent(form = ~ 1 | Time))
@@ -99,6 +101,7 @@ test_that("lme: Satterthwaite df equal lmer's (and SAS's) for the split plot wit
 })
 
 test_that("the observed information from its formula equals the Hessian of the log-likelihood", {
+  skip_on_cran()
   # pm_nlme_info(): T/2 - expected + 2 average, the second derivatives of the
   # covariance from its pieces only; against numDeriv's Hessian of -2 logLik
   r <- rep_data()

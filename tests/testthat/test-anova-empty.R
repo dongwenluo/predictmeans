@@ -20,6 +20,7 @@ sas_contrasts <- function(levs) {
 }
 
 test_that("anova() of an lmer fit with an empty cell: each term on the cells with data, = pm_joint()", {
+  skip_on_cran()
   q <- function(e) suppressWarnings(suppressMessages(e))
   d <- oats_empty()
   fm <- q(lme4::lmer(yield ~ N * Variety + (1 | Block/Variety), data = d$empty))

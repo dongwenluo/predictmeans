@@ -21,6 +21,7 @@ sf_data <- function(n = 400, seed = 1) {
 }
 
 test_that("formula smooths: the same fit as gam(method = 'REML'), fixed parts added automatically", {
+  skip_on_cran()
   d <- sf_data()
   q <- function(e) suppressWarnings(suppressMessages(e))
   cases <- list(
@@ -64,6 +65,7 @@ test_that("bs = 'os' and 'ztps': the mixed model with the O'Sullivan or thin-pla
 })
 
 test_that("semipred() and predictmeans() on formula smooths equal predict.gam(): curves, SEs, differences", {
+  skip_on_cran()
   d <- sf_data()
   fit <- suppressMessages(semireg(y ~ s(x, by = f) + s(z), data = d))
   g <- mgcv::gam(y ~ f + s(x, by = f) + s(z), data = d, method = "REML")
@@ -88,6 +90,7 @@ test_that("semipred() and predictmeans() on formula smooths equal predict.gam():
 })
 
 test_that("formula smooths in GLMMs and glmmTMB; negative binomial SEs of semireg_tmb() no longer scaled by theta", {
+  skip_on_cran()
   q <- function(e) suppressWarnings(suppressMessages(e))
   set.seed(4)
   n <- 600
@@ -123,6 +126,7 @@ test_that("formula smooths: refusals with a message", {
 })
 
 test_that("s(x, f): common curve + deviation curves with one variance, as the same model in lme", {
+  skip_on_cran()
   q <- function(e) suppressWarnings(suppressMessages(e))
   set.seed(7)
   n <- 480
@@ -175,6 +179,7 @@ test_that("s(x, f): common curve + deviation curves with one variance, as the sa
 })
 
 test_that("random curves (s(x) | g): (x | g) plus a spline deviation per level with one variance", {
+  skip_on_cran()
   d <- sf_data()
   q <- function(e) suppressWarnings(suppressMessages(e))
   ctl <- lme4::lmerControl(optimizer = "bobyqa")
@@ -222,6 +227,7 @@ test_that("smooths with fewer distinct covariate values than basis columns: exac
 })
 
 test_that("objects of the session in xt or k of random curves and t2() are not taken for data", {
+  skip_on_cran()
   set.seed(1)
   d <- data.frame(x = rep(seq(0, 1, length = 10), 12), z = runif(120), id = factor(rep(1:12, each = 10)),
                   g = factor(rep(1:2, each = 60)))
@@ -240,6 +246,7 @@ test_that("objects of the session in xt or k of random curves and t2() are not t
 })
 
 test_that("print() and summary() of a fit show the model, not the list", {
+  skip_on_cran()
   fit <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
   out <- capture.output(print(fit))
   expect_true(any(grepl("Semiparametric lmer fit", out)))
@@ -260,6 +267,7 @@ test_that("print() and summary() of a fit show the model, not the list", {
 })
 
 test_that("extractors of a semireg fit are those of its mixed model", {
+  skip_on_cran()
   fit <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (1 | Subject), data = nlme::Dialyzer)
   m <- fit$semer
   expect_identical(coef(fit), lme4::fixef(m))

@@ -97,6 +97,7 @@ test_that("semipred(): two-sided t limits with Satterthwaite df; simultaneous ba
 })
 
 test_that("semipred(contr = ): the difference of two curves as covariatemeans(contr = ); GLMMs on both scales", {
+  skip_on_cran()
   skip_if_not_installed("HRW")
   data("WarsawApts", package = "HRW", envir = environment())
   W <- WarsawApts
@@ -148,6 +149,7 @@ test_that("semipred(contr = ): the difference of two curves as covariatemeans(co
 })
 
 test_that("the covariance behind semipred()'s bands is that of the fitted model, for every family", {
+  skip_on_cran()
   # sigma^2 CovMat is the covariance of (fixed, random - their true values)
   # given the variance parameters: its fixed-effect block must equal the
   # model's own vcov() (lme4's, from the penalised least squares fit)
@@ -239,6 +241,7 @@ test_that("semipred(contr = ) with two covariates: the difference of two surface
 })
 
 test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives of the O'Sullivan basis", {
+  skip_on_cran()
   set.seed(3)
   d <- data.frame(x = runif(150, 0, 10))
   d$y <- sin(d$x/1.5) + rnorm(150, 0, 0.3)
@@ -277,6 +280,7 @@ test_that("semipred(deriv = ): slopes and curvatures equal the exact derivatives
 })
 
 test_that("semipred(deriv = , contr = ): the difference of two slopes; generalized fits on the link scale", {
+  skip_on_cran()
   set.seed(11)
   sp <- expand.grid(t = 0:10, A = factor(c("a1", "a2", "a3")), Block = factor(1:6))
   sp$y <- 2 + sin(sp$t/2) + 0.08*(sp$A == "a2")*sp$t + rnorm(6, 0, 0.5)[sp$Block] + rnorm(nrow(sp), 0, 0.3)
@@ -300,6 +304,7 @@ test_that("semipred(deriv = , contr = ): the difference of two slopes; generaliz
 })
 
 test_that("plot_args sets the colours: band under its line, reference line, bars where a difference is clear", {
+  skip_on_cran()
   data(Dialyzer, package = "nlme", envir = environment())
   fm <- suppressMessages(semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject),
                                  data = Dialyzer))
@@ -330,6 +335,7 @@ test_that("generalized fits: SE on the link scale next to SE_mu, the limits h(et
 })
 
 test_that("CovMat of a Gamma semireg() fit is relative to sigma^2 (no double scaling)", {
+  skip_on_cran()
   set.seed(2291)
   d <- data.frame(x = runif(200), g = gl(20, 10))
   d$y <- rgamma(200, shape = 2, rate = 2/exp(1 + sin(2 * pi * d$x) + rnorm(20, sd = 0.3)[d$g]))
@@ -367,6 +373,7 @@ test_that("ZOSull() gives a matrix for one value, and O'Sullivan predictions out
 })
 
 test_that("the unconditional correction is computed once per fit (fit$cache) and gives the same curves", {
+  skip_on_cran()
   set.seed(2291)
   d <- data.frame(x = runif(200), g = gl(20, 10))
   d$y <- rpois(200, exp(1 + sin(2 * pi * d$x) + rnorm(20, sd = 0.3)[d$g]))
@@ -392,6 +399,7 @@ test_that("the unconditional correction is computed once per fit (fit$cache) and
 })
 
 test_that("semipred(contr = ): the max-|t| test of equal curves; one back-transformation with covariatemeans()", {
+  skip_on_cran()
   set.seed(4421)
   d <- data.frame(x = rep(seq(0, 1, length = 30), 2), g = factor(rep(c("a", "b"), each = 30)))
   d$y <- sin(3 * d$x) + 0.6 * (d$g == "b") * d$x + rnorm(60, sd = 0.15)

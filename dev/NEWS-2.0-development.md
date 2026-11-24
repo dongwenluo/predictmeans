@@ -554,6 +554,26 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   - Tolerances: Piepho's Table 2 binomial GLMM to 0.01 (as the Poisson
     one); `se_ranef(type = "conditional")` against lme4's glmer `condVar`
     to 1e-4 (1e-6 with lme4 2.1-0, 3e-5 with 1.1-35).
+* CRAN pre-tests of the 2.0.0 submission (2026-11-24): "Rd files without
+  \usage: anova.lmerMod.Rd, anova.semireg.Rd, se_ranef.Rd" (r-devel Debian).
+  Their roxygen blocks were detached (`@name x` + `NULL`); now on the
+  functions, so roxygen writes `\usage` (`\method{anova}{lmerMod}` etc.).
+* CRAN pre-test "Overall checktime 21 min > 10 min" (r-devel-windows; tests
+  13 min). Tests timed as CRAN runs them (`NOT_CRAN` unset): 430 s here, 4
+  tests took 166 s. The 114 tests over 0.5 s now start with
+  `skip_on_cran()` (they still run on GitHub, locally and with `NOT_CRAN`):
+  CRAN-mode tests 58 s, 0 failures. Every exported function is still
+  called by a test CRAN runs (checked by tracing all exports); two quick
+  tests added for the four that were not (`semireg_tmb()`, the removed
+  `permanova.lmer()`/`permglmer()`/`permglmmTMB()` stubs).
+* Vignettes `resampling` (31 s) and `smooth` (28 s), 74% of the vignette
+  build time, are precomputed (maintainer's choice, 2026-11-24): sources in
+  `vignettes/*.Rmd.orig`, knitted by `dev/precompute-vignettes.R` into the
+  `.Rmd` with results and 16 figures (696 KB; the HTML size is unchanged,
+  960 KB). Their build now takes 2.6 s. Rule in CLAUDE.md and AGENTS.md.
+* `se_ranef` help: with `\usage` (above), R CMD check warned "Documented
+  arguments not in \usage: x, n, digits, ..." (the print method's);
+  `print.pm_ranef` now shares the page (`@rdname`), with its usage line.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

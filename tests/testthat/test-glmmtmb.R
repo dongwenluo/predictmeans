@@ -3,6 +3,7 @@
 # betadisp). These tests cover the code that handles both versions.
 
 test_that("r2_pct(R2_model()) on a gaussian glmmTMB fit equals the lmer result", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
@@ -15,6 +16,7 @@ test_that("r2_pct(R2_model()) on a gaussian glmmTMB fit equals the lmer result",
 })
 
 test_that("glmmTMB random-effect covariance from VarCorr(): equals lmer's; blocks in the order of Z", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   # a correlated term, not singular, so both fits reach the same optimum
   f <- Reaction ~ Days + (Days | Subject)
@@ -42,6 +44,7 @@ test_that("glmmTMB random-effect covariance from VarCorr(): equals lmer's; block
 })
 
 test_that("r2_pct(R2_model()): glmmTMB with correlated terms equals lmer; components split by column", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   pct <- function(x) as.numeric(sub("%", "", x))
   f <- Reaction ~ Days + (Days | Subject)
@@ -65,6 +68,7 @@ test_that("r2_pct(R2_model()): glmmTMB with correlated terms equals lmer; compon
 })
 
 test_that("r2_pct(R2_model()): glmmTMB with zero-inflation random effects or aliased columns", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   set.seed(1)
   d <- data.frame(g = factor(rep(1:10, each = 20)), x = rnorm(200))
@@ -104,6 +108,7 @@ test_that("semireg_tmb() with predict_info and semipred() run, with r2_pct(R2_mo
 })
 
 test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left as it was", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   f <- Reaction ~ Days + (Days | Subject)
   m1 <- lme4::lmer(f, data = lme4::sleepstudy)
@@ -124,6 +129,7 @@ test_that("varcomp() for glmmTMB: lmer's variances and SEs, Wald CIs, fit left a
 })
 
 test_that("zero inflation: the means are the conditional ones, said in a message and in settings", {
+  skip_on_cran()
   set.seed(7)
   d <- expand.grid(trt = factor(c("a", "b")), site = factor(1:10), r = 1:10)
   d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
@@ -139,6 +145,7 @@ test_that("zero inflation: the means are the conditional ones, said in a message
 })
 
 test_that("mean_type = 'overall': overall means (1 - pi) mu, equal to glmmTMB and emmeans", {
+  skip_on_cran()
   set.seed(7)
   d <- expand.grid(trt = factor(c("a", "b")), dose = factor(c("lo", "hi")), site = factor(1:10), r = 1:6)
   d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
@@ -161,6 +168,7 @@ test_that("mean_type = 'overall': overall means (1 - pi) mu, equal to glmmTMB an
 })
 
 test_that("semireg_tmb() with zero inflation: the covariance accounts for the extra zeros", {
+  skip_on_cran()
   # the working weights of the count part alone gave SEs 5-20% too small; the
   # covariance now equals the inverse of the (beta, b) block of TMB's joint precision
   skip_if_not_installed("TMB")
@@ -179,6 +187,7 @@ test_that("semireg_tmb() with zero inflation: the covariance accounts for the ex
 })
 
 test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and ratios of overall means", {
+  skip_on_cran()
   set.seed(7)
   d <- expand.grid(x = seq(0, 10, length = 25), trt = factor(c("a", "b")), site = factor(1:6))
   d$y <- ifelse(runif(nrow(d)) < ifelse(d$trt == "a", 0.2, 0.4), 0,
@@ -210,6 +219,7 @@ test_that("mean_type = 'overall' in covariatemeans() and semipred(): curves and 
 })
 
 test_that("a rank-deficient glmmTMB fit (aliased columns dropped) gives the means of the lmer ML fit", {
+  skip_on_cran()
   # an empty cell aliases one interaction coefficient; glmmTMB drops it from
   # its model matrix but fixef() reports it as NA (seen with glmmTMB 1.1.8)
   set.seed(7)

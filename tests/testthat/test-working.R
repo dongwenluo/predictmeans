@@ -13,6 +13,7 @@ glmm_data <- function() {
 }
 
 test_that("working response and variances of glm, glmer and glmmTMB fits agree", {
+  skip_on_cran()
   d <- glmm_data()
   # glm: z = eta (without offset) + working residuals; resvar = phi / working weights
   m <- glm(y ~ A + offset(log(t)), family = poisson, data = d)

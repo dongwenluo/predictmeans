@@ -3,6 +3,15 @@
 \name{anova.lmerMod}
 \alias{anova.lmerMod}
 \title{ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df}
+\usage{
+\method{anova}{lmerMod}(
+  object,
+  ...,
+  type = c("III", "II", "I"),
+  ddf = c("Kenward-Roger", "Satterthwaite", "lme4"),
+  advice = TRUE
+)
+}
 \arguments{
 \item{object}{An \code{lmer} fit (class \code{lmerMod}).}
 

@@ -49,6 +49,7 @@ test_that("LSDs: SED x the critical value, or 2 x SED with permutation", {
 })
 
 test_that("the printed LSDs go with the adjusted p-values: the critical value of 'adj' and its family", {
+  skip_on_cran()
   O <- transform(as.data.frame(nlme::Oats), nitro = factor(nitro))
   fm <- lm(yield ~ Block + nitro*Variety, data = O)
   df <- df.residual(fm)

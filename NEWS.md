@@ -229,6 +229,8 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Documentation
 
+* The help pages of `anova()` for `lmer` and `semireg` fits and of `se_ranef()` show their usage (CRAN
+  pre-test: "Rd files without \usage").
 * New vignettes: "Migrating from predictmeans 1.x", "Checking the model", "Missing cells and non-estimable
   means", "Smooth curves in mixed models", "Permutation and bootstrap tests", "Link and response scale",
   "Contrasts, joint tests and slopes", and "Matching SAS PROC MIXED" (the SAS and Genstat reference runs).

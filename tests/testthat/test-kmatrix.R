@@ -56,6 +56,7 @@ test_that("character predictors, factor() terms and offsets match emmeans", {
 })
 
 test_that("mixed models with transformed covariates match emmeans", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   d <- sim_data()
   expect_K_matches_emmeans(suppressMessages(lmer(y ~ A + poly(x, 2) + (1|blk), d)), "A", ~A)
@@ -184,6 +185,7 @@ test_that("predictmeans() works with transformed covariates", {
 })
 
 test_that("vectorised Kenward-Roger df equal pbkrtest::Lb_ddf() row by row", {
+  skip_on_cran()
   skip_if_not_installed("pbkrtest")
   data("ATP", package = "predictmeans", envir = environment())
   fm <- lmer(ATP ~ A*B*time + (1|heart), data = ATP)

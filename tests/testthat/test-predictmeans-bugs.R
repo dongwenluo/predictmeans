@@ -36,6 +36,7 @@ test_that("a user-supplied Df is used for every pair of an lmer model", {
 })
 
 test_that("factor levels containing ':' give the same results (B4)", {
+  skip_on_cran()
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   Oats <- Oats[-c(1, 2, 30), ]                 # unbalanced: SEDs differ
@@ -157,6 +158,7 @@ test_that("letters: one helper handles NA p-values overall and within atvar grou
 })
 
 test_that("trans is used for identity-link models (gaussian glm and glmmTMB)", {
+  skip_on_cran()
   d <- as.data.frame(nlme::Oats)
   d$Variety <- factor(d$Variety, ordered = FALSE)
   d$Block <- factor(d$Block, ordered = FALSE)

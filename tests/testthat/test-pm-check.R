@@ -92,6 +92,7 @@ test_that("problems are flagged: overdispersion, outliers, unequal variances, al
 })
 
 test_that("other classes run: lme, gls, glmer, glmmTMB, aov with Error()", {
+  skip_on_cran()
   o <- as.data.frame(nlme::Oats); o$nitro <- factor(o$nitro)
   for (m in list(nlme::lme(yield ~ nitro * Variety, random = ~ 1 | Block/Variety, data = o),
                  nlme::gls(yield ~ nitro * Variety, correlation = nlme::corCompSymm(form = ~ 1 | Block), data = o),

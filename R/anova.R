@@ -578,9 +578,6 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' anova(fm)
 #' anova(fm, ddf = "Satterthwaite")
 #' anova(fm, type = "I")
-#' @name anova.lmerMod
-NULL
-
 #' @exportS3Method anova lmerMod
 anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
                           ddf = c("Kenward-Roger", "Satterthwaite", "lme4"), advice = TRUE) {

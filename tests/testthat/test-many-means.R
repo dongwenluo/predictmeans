@@ -2,6 +2,7 @@
 ## summarised from the covariance of the means, without a row per pair.
 
 test_that("the SED and LSD summaries without a pair table equal those from the pairs", {
+  skip_on_cran()
   set.seed(11)
   d <- expand.grid(A = factor(1:4), B = factor(1:3), Block = factor(1:8))
   d$y <- as.numeric(d$A) + rnorm(8)[d$Block] + rnorm(nrow(d))

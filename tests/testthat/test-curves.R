@@ -1,6 +1,7 @@
 ## covariatemeans() results in the layout of predictmeans() (R/curves.R)
 
 test_that("covariatemeans(): classed result, means in the predictmeans layout, no plot unless asked", {
+  skip_on_cran()
   O <- as.data.frame(nlme::Oats)
   fm <- lm(yield ~ Block + nitro * Variety, data = O)
   xs <- c(0, 0.3, 0.6)
@@ -95,6 +96,7 @@ test_that("covariatemeans(contr = ): pairs in the predictmeans layout; Scheffe p
 })
 
 test_that("semipred(): the layout of predictmeans(); the simultaneous band in adj.conf.*, with p.adj that agrees", {
+  skip_on_cran()
   data(Dialyzer, package = "nlme")
   fm <- semireg(rate ~ s(pressure, by = QB, bs = "os", k = 4) + (pressure | Subject), data = Dialyzer)
   while (!is.null(grDevices::dev.list())) grDevices::dev.off()
@@ -145,6 +147,7 @@ test_that("semipred(): the layout of predictmeans(); the simultaneous band in ad
 })
 
 test_that("semipred(): generalized fits have response columns; surfaces keep the boundary", {
+  skip_on_cran()
   set.seed(4)
   db <- expand.grid(x = seq(0, 1, length = 25), g = factor(c("a", "b")), cl = factor(1:12))
   db$y <- rbinom(nrow(db), 1, plogis(-1 + 2*sin(pi*db$x) + 0.8*(db$g == "b")*db$x + rnorm(12, 0, 0.5)[db$cl]))

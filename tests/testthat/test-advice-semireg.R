@@ -20,6 +20,7 @@ test_that("semireg(): a smooth estimated as a straight line is advised, a curve 
 })
 
 test_that("semipred(): extrapolation and pointwise regions", {
+  skip_on_cran()
   d <- sr_data()
   fit <- suppressMessages(semireg(y ~ s(x) + (1 | g), data = d))
   expect_length(ids_of(semipred(fit, "x", "x")), 0)

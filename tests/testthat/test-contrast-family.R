@@ -11,6 +11,7 @@ test_that("contrast_family() gives emmeans' coefficient matrices", {
 })
 
 test_that("Dunnett and trends within 'by' groups through contrastmeans() match emmeans", {
+  skip_on_cran()
   skip_if_not_installed("emmeans")
   skip_if_not_installed("mvtnorm")
   d <- as.data.frame(nlme::Oats)

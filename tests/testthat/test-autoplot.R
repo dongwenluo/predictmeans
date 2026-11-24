@@ -5,6 +5,7 @@ oats_fac <- function() {
 }
 
 test_that("autoplot() draws the means with one LSD bar per atvar panel", {
+  skip_on_cran()
   fm <- lm(yield ~ Block + nitro*Variety, data = oats_fac())
   pm <- predictmeans(fm, "nitro:Variety", atvar = "Variety", adj = "tukey")
   p <- ggplot2::autoplot(pm)
@@ -125,6 +126,7 @@ test_that("results keep the observations for data = TRUE, not the model", {
 })
 
 test_that("plot() draws autoplot()", {
+  skip_on_cran()
   pm <- predictmeans(lm(yield ~ nitro, data = oats_fac()), "nitro")
   pdf(NULL)
   on.exit(dev.off())

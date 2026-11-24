@@ -14,6 +14,7 @@ test_that("permlmer() gives p = 1 when the tested variance is estimated at 0", {
 })
 
 test_that("permlmer() and permmodels(method = \"raw\") use the prior weights and offset of lmer fits", {
+  skip_on_cran()
   set.seed(6121)
   d <- data.frame(g = gl(12, 5), x = rnorm(60), w = runif(60, 0.3, 3), o = rnorm(60))
   d$y <- 1 + 0.4 * d$x + rnorm(12)[d$g] + rnorm(60)/sqrt(d$w) + d$o
@@ -48,6 +49,7 @@ test_that("permlmer() and permmodels(method = \"raw\") use the prior weights and
 })
 
 test_that("permlmer(): different fixed effects are tested by the ML likelihood ratio that anova() prints", {
+  skip_on_cran()
   Oats <- as.data.frame(nlme::Oats)
   Oats$nitro <- factor(Oats$nitro)
   m0 <- lmer(yield ~ Variety + (1 | Block/Variety), Oats)

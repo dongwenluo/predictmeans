@@ -10,6 +10,7 @@ io_oats <- function() {
 }
 
 test_that("pm_inner_outer_df() equals nlme's fixDF (coefficients and terms) for nested random effects", {
+  skip_on_cran()
   o <- io_oats()
   set.seed(3)
   d <- expand.grid(rep = 1:3, plot = 1:4, block = 1:4, site = 1:5)
@@ -67,6 +68,7 @@ test_that("GLMMs: inner-outer by default; a treatment on whole clusters gets the
 })
 
 test_that("glmmTMB gets the same inner-outer df as glmer", {
+  skip_on_cran()
   skip_if_not_installed("glmmTMB")
   d <- io_clusters()
   g <- lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)

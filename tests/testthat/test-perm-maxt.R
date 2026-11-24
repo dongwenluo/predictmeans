@@ -20,6 +20,7 @@ test_that("pm_perm_maxT() follows Westfall and Young", {
 })
 
 test_that("predictmeans(): permutation Tukey and Westfall with a permlist", {
+  skip_on_cran()
   Oats <- as.data.frame(nlme::Oats); Oats$nitro <- factor(Oats$nitro)
   fm <- lm(yield ~ Block + nitro * Variety, data = Oats)
   r <- permmodels(fm, nperm = 999, seed = 1)

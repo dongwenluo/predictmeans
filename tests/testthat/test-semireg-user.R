@@ -12,6 +12,7 @@ rg <- c(-0.1, 10.1)
 ob <- function(x) ZOSull(x, intKnots = kn, range.x = rg)
 
 test_that("bs = \"user\" with the O'Sullivan basis is the bs = \"os\" fit (curves, slopes, means, fixed terms)", {
+  skip_on_cran()
   sp <- user_data()
   fo <- q(semireg(y ~ s(t, by = A, bs = "os", xt = list(knots = kn, range = rg)) + (1 | Block), data = sp))
   fu <- q(semireg(y ~ s(t, by = A, bs = "user", xt = list(basis = ob)) + (1 | Block), data = sp))

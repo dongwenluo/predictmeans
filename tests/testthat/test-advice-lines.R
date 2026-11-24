@@ -21,6 +21,7 @@ test_that("pm_slopes(): equal by model, at a value, extrapolation", {
 })
 
 test_that("covariatemeans(): extrapolation and pointwise regions", {
+  skip_on_cran()
   d <- lines_data()
   mi <- lm(y ~ g * x, d)
   expect_length(ids_of(covariatemeans(mi, "g", "x")), 0)
