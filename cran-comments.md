@@ -29,10 +29,10 @@ failures and 0 warnings. All URLs checked with `urlchecker::url_check()`.
 
 ## Reverse dependencies
 
-To be checked with `.github/workflows/revdep-check.yaml`
-(`dev/revdep-check.R`), which checks every CRAN package that depends on,
-imports or suggests predictmeans with the CRAN version and with this version.
-Results to be added here.
+One reverse dependency, eda4treeR 1.1.0, checked with
+`.github/workflows/revdep-check.yaml` (`dev/revdep-check.R`) on 2026-11-24
+(R 4.6.2, Ubuntu): `R CMD check` status OK with predictmeans 1.1.1 (CRAN) and
+OK with 2.0.0. No new problems.
 
 ## Notes for CRAN
 
