@@ -45,6 +45,18 @@
 #' pm_df(model, L, ...)
 #' pm_linkinv(model, ...)
 #' pm_contrasts(model, ...)
+#' @section What a new class gets:
+#' \describe{
+#'   \item{Means, pairs and contrasts}{\code{predictmeans()}, \code{contrastmeans()}, \code{pm_joint()},
+#'   \code{pm_slopes()}, \code{Kmatrix()} need \code{coef()} (or \code{pm_coef()}), \code{vcov()} (or
+#'   \code{pm_vcov()}) and \code{terms()}, plus the data (found from the call, or a \code{pm_data()} method).
+#'   The columns of \code{pm_basis()} are matched to the coefficients by name.}
+#'   \item{Residual plots}{\code{residplot()} and \code{pm_check()} also need \code{fitted()} and
+#'   \code{residuals()} methods (residuals divided by their SD); without them they stop and say so.}
+#'   \item{The rest}{\code{anova()}, \code{CookD()}, \code{R2_model()}, \code{varcomp()}, \code{se_ranef()},
+#'   \code{permmodels()} and \code{bootmodels()} have their own code for the classes they list, and stop with
+#'   that list for any other class.}
+#' }
 #' @param model A fitted model.
 #' @param newdata A data frame of predictor values (the reference grid).
 #' @param L A matrix of linear functions of the coefficients, one row per contrast or mean.

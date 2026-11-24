@@ -624,6 +624,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `pm_cookd_setup()`. Checks: snapshots identical; residplot(), pm_check()
   and CookD() on 11 classes (33 cases) identical to main, refusals included;
   diagnostic tests pass.
+* Part A7 (2026-11-24): wrap-up. Class branches outside methods: 340 on
+  main -> 252 (90 internal S3 methods; the largest left: residplot 19,
+  permmodels 18, anova 16, pm_check 16, varcomp 15; most decide what to show
+  or test, not how to read a fit). A made-up class with only `coef`, `vcov`,
+  `terms` was run through every front end: means, pairs, `Kmatrix()` work;
+  `residplot()`/`pm_check()` stopped with "attempt to set an attribute on
+  NULL" and now stop with a message naming `fitted()`/`residuals()`
+  (`pm_resid_data()`); with those two methods they work. The other functions
+  stop with the list of classes they handle. Contract written in `?pm_coef`
+  (section "What a new class gets"); test in `test-adapter.R`. The internal
+  generics stay internal until Part B (new classes) has used them.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

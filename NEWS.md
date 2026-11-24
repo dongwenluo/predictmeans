@@ -196,6 +196,9 @@ shows 1.1.1 and 2.0 code side by side.
   without a column stops with a message, never a silent mismatch.
 * `pm_coef()` of an `aov` fit keeps its aliased coefficients as `NA`, as for `lm` and `glm`; every front end
   now reads a fit's coefficients and covariance only through `pm_coef()` and `pm_vcov()`.
+* `?pm_coef` says what a new model class gets: means and pairs need `coef()`, `vcov()` and `terms()`;
+  `residplot()` and `pm_check()` also `fitted()` and `residuals()` (else they stop and say so); the other
+  functions list the classes they handle.
 * New data sets, including `Caschool`, `DataExam5.2`, `copper` and M. P. Wand's examples.
 
 ## Bug fixes

@@ -147,6 +147,10 @@ pm_resid_data <- function(model) {
                                                            " stratum)")))
   }
   fitted_r <- as.vector(stats::fitted(model))
+  if (!length(fitted_r) || is.null(stats::residuals(model))) {
+    stop("residplot() and pm_check() need fitted() and residuals() for a ", class(model)[1], " model (methods of ",
+         "those generics; see ?pm_coef).", call. = FALSE)
+  }
   observed <- pm_resid_observed(model, length(fitted_r))
   if (!is.null(qfam)) {
     r <- pm_qresid(model, qfam, fitted_r)
