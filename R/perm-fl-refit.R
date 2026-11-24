@@ -20,34 +20,43 @@
 ## What the refits need, for lmer and nlme models. Rows are used in the
 ## model's own order ('ord' reorders them by group for nlme, as the
 ## whitening of nlme models needs; identity for lmer).
-pm_lmm_parts <- function(model) {
+pm_lmm_parts <- function(model) UseMethod("pm_lmm_parts")
+
+#' @exportS3Method NULL
+pm_lmm_parts.lmerMod <- function(model) {
   ctl <- lme4::lmerControl(calc.derivs = FALSE, check.conv.singular = "ignore")
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
-  if (inherits(model, "lmerMod")) {
-    resp <- model@resp
-    X <- as.matrix(lme4::getME(model, "X"))
-    y <- resp$y - resp$offset
-    wts <- resp$weights
-    Wof <- function(m) pm_mer_whiten(m)
-    bars <- vapply(pm_findbars(stats::formula(model)),
-                   function(b) paste0("(", paste(deparse(b), collapse = ""), ")"), "")
-    d <- pm_model_rows(model)
-    fit_reduced <- function(XN) {
-      dd <- d
-      dd$.pm_y <- y
-      dd$.pm_X <- XN
-      .pm_wts <- wts
-      f <- stats::as.formula(paste(".pm_y ~ 0 + .pm_X +", paste(bars, collapse = " + ")))
-      environment(f) <- environment()
-      m0 <- quiet(lme4::lmer(f, data = dd, weights = .pm_wts, REML = lme4::isREML(model), control = ctl))
-      list(f0 = as.vector(XN %*% lme4::fixef(m0)), W = Wof(m0))
-    }
-    return(list(X = X, y = y, asgn = attr(lme4::getME(model, "X"), "assign"), Terms = stats::terms(model),
-                ord = seq_along(y), Wfit = Wof(model), Wof = Wof, fit_reduced = fit_reduced,
-                refit_full = function(ys) quiet(pm_mer_refit(model, ys + resp$offset)),
-                coefvcov = function(m) list(b = lme4::fixef(m), V = as.matrix(stats::vcov(m))),
-                packages = "lme4"))
+  resp <- model@resp
+  X <- as.matrix(lme4::getME(model, "X"))
+  y <- resp$y - resp$offset
+  wts <- resp$weights
+  Wof <- function(m) pm_mer_whiten(m)
+  bars <- vapply(pm_findbars(stats::formula(model)),
+                 function(b) paste0("(", paste(deparse(b), collapse = ""), ")"), "")
+  d <- pm_model_rows(model)
+  fit_reduced <- function(XN) {
+    dd <- d
+    dd$.pm_y <- y
+    dd$.pm_X <- XN
+    .pm_wts <- wts
+    f <- stats::as.formula(paste(".pm_y ~ 0 + .pm_X +", paste(bars, collapse = " + ")))
+    environment(f) <- environment()
+    m0 <- quiet(lme4::lmer(f, data = dd, weights = .pm_wts, REML = lme4::isREML(model), control = ctl))
+    list(f0 = as.vector(XN %*% lme4::fixef(m0)), W = Wof(m0))
   }
+  return(list(X = X, y = y, asgn = attr(lme4::getME(model, "X"), "assign"), Terms = stats::terms(model),
+              ord = seq_along(y), Wfit = Wof(model), Wof = Wof, fit_reduced = fit_reduced,
+              refit_full = function(ys) quiet(pm_mer_refit(model, ys + resp$offset)),
+              coefvcov = function(m) list(b = lme4::fixef(m), V = as.matrix(stats::vcov(m))),
+              packages = "lme4"))
+}
+
+## lme and gls (also any other class sent here, as before)
+#' @exportS3Method NULL
+pm_lmm_parts.default <- function(model) {
+  ctl <- lme4::lmerControl(calc.derivs = FALSE, check.conv.singular = "ignore")
+  quiet <- function(expr) suppressWarnings(suppressMessages(expr))
+
   # lme and gls
   d <- as.data.frame(pm_get_data(model))
   Terms <- stats::terms(model)

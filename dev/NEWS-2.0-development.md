@@ -606,6 +606,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   messages as main; 18 df-related test files pass (SAS, Genstat, tree
   examples included). S3 dispatch on lme4's S4 fits follows their S4 classes
   (semerMod reaches the lmerMod method).
+* Part A5 (2026-11-24): refit ladders as internal S3 generics, one method per
+  class: `pm_perm_raw()` (permmodels(method = "raw"): lm, lme/gls, lmerMod;
+  the default now stops with a clear message instead of "object 'one' not
+  found"), `pm_boot_fit()` (bootmodels: merMod, lme/gls, lm/glmmTMB),
+  `pm_fl_design()` (Freedman-Lane: lm, glm/glmerMod/glmmTMB, lmerMod,
+  lme/gls) and `pm_lmm_parts()` (lmerMod, nlme). The refits themselves go
+  through `pm_mer_refit()` and `pm_refit()` (`R/utils-refit.R`). Checks:
+  snapshots identical; permmodels() raw and Freedman-Lane and bootmodels()
+  on 8 classes (24 cases) identical to main with fixed seeds, refusals
+  included; 15 permutation/bootstrap test files pass.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
