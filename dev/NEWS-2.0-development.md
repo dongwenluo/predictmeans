@@ -571,6 +571,9 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   `vignettes/*.Rmd.orig`, knitted by `dev/precompute-vignettes.R` into the
   `.Rmd` with results and 16 figures (696 KB; the HTML size is unchanged,
   960 KB). Their build now takes 2.6 s. Rule in CLAUDE.md and AGENTS.md.
+* `se_ranef` help: with `\usage` (above), R CMD check warned "Documented
+  arguments not in \usage: x, n, digits, ..." (the print method's);
+  `print.pm_ranef` now shares the page (`@rdname`), with its usage line.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

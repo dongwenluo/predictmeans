@@ -15,6 +15,8 @@ se_ranef(
   predict = FALSE,
   conf_level = 0.95
 )
+
+\method{print}{pm_ranef}(x, n = 10, digits = 4, ...)
 }
 \arguments{
 \item{object}{An \code{lmer}, \code{glmer}, \code{glmmTMB} (conditional model), \code{lme} or

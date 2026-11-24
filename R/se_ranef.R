@@ -190,6 +190,7 @@ pm_ranef_advice <- function(object, rc, out, type) {
   do.call(rbind, unname(rows))
 }
 
+#' @rdname se_ranef
 #' @exportS3Method print pm_ranef
 print.pm_ranef <- function(x, n = 10, digits = 4, ...) {
   s <- attr(x, "settings")
