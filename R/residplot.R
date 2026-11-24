@@ -155,22 +155,7 @@ pm_resid_data <- function(model) {
                                 observed = as.vector(observed)),
                      xlab = "Linear predictor", rlab = "Randomized quantile residuals", olab = attr(observed, "label")))
   }
-  r <- if (inherits(model, "gam")) {                   # mgcv: before glm, which gam objects also are
-    stats::residuals(model, type = "deviance") / sqrt(model$scale)
-  } else if (inherits(model, "glm")) {
-    stats::rstandard(model, type = "deviance")
-  } else if (inherits(model, "lm")) {
-    stats::rstandard(model)
-  } else if (inherits(model, c("lme", "gls"))) {
-    stats::residuals(model, type = "normalized")
-  } else if (inherits(model, "merMod")) {
-    if (lme4::isLMM(model)) stats::residuals(model, scaled = TRUE) else stats::residuals(model, type = "pearson")
-  } else if (inherits(model, "glmmTMB")) {
-    stats::residuals(model, type = "pearson")
-  } else {
-    rr <- stats::residuals(model)
-    rr / stats::sd(rr, na.rm = TRUE)
-  }
+  r <- pm_std_resid(model)                           # R/diag-adapter.R
   glmlike <- inherits(model, c("glm", "glmerMod")) || (inherits(model, "glmmTMB") &&
                                                          !identical(stats::family(model)$family, "gaussian"))
   rlab <- if (inherits(model, "glm")) "Standardized deviance residuals" else
@@ -309,14 +294,7 @@ pm_resid_group <- function(model, group, d) {
 
 ## The random effects of term number 're_level' (column 2 with slope = TRUE), or NULL.
 pm_resid_ranef <- function(model, level, slope) {
-  re <- tryCatch({
-    if (inherits(model, "lme")) {
-      r <- nlme::ranef(model)
-      if (is.data.frame(r)) r <- list(r)
-      r
-    } else if (inherits(model, "merMod")) lme4::ranef(model)
-    else if (inherits(model, "glmmTMB")) lme4::ranef(model)[["cond"]]
-  }, error = function(e) NULL)
+  re <- tryCatch(pm_ranef_list(model), error = function(e) NULL)
   if (is.null(re) || !length(re)) return(NULL)
   if (level > length(re)) stop("'re_level' is larger than the number of random-effect terms (", length(re), ").",
                                call. = FALSE)

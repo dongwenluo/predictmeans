@@ -616,6 +616,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   snapshots identical; permmodels() raw and Freedman-Lane and bootmodels()
   on 8 classes (24 cases) identical to main with fixed seeds, refusals
   included; 15 permutation/bootstrap test files pass.
+* Part A6 (2026-11-24): diagnostics. New `R/diag-adapter.R` with internal
+  generics `pm_std_resid()`, `pm_ranef_list()`, `pm_re_levels()`,
+  `pm_fixed_terms()` and `pm_fit_warnings()`, used by `residplot()` and
+  `pm_check()` (their class branches 27 -> 16 and 27 -> 13; the rest decide
+  what a plot shows, not how to read a fit); `CookD()`'s class set-up is
+  `pm_cookd_setup()`. Checks: snapshots identical; residplot(), pm_check()
+  and CookD() on 11 classes (33 cases) identical to main, refusals included;
+  diagnostic tests pass.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

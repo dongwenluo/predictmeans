@@ -279,8 +279,7 @@ pm_check <- function(model, plot = FALSE) {
   }
 
   ## interactions and straight lines
-  tl <- tryCatch(attr(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE)
-                                   else model), "term.labels"), error = function(e) NULL)
+  tl <- tryCatch(attr(pm_fixed_terms(model), "term.labels"), error = function(e) NULL)
   if (inherits(model, "aovlist")) tl <- NULL
   inter <- tl[grepl(":", tl)]
   if (length(inter)) {
@@ -386,38 +385,15 @@ summary.pm_check <- function(object, ...) {
 
 ## Warnings about the fit: singular, not converged.
 pm_check_fit <- function(model) {
-  out <- character(0)
-  if (inherits(model, "merMod")) {
-    if (isTRUE(pm_singular(model))) out <- c(out, "singular (a variance component is zero)")
-    msg <- model@optinfo$conv$lme4$messages
-    if (length(msg)) out <- c(out, paste("convergence:", msg[1]))
-  } else if (inherits(model, "glmmTMB")) {
-    if (isFALSE(model$sdr$pdHess)) out <- c(out, "Hessian not positive definite")
-  } else if (inherits(model, "lme")) {
-    if (is.character(model$apVar)) out <- c(out, "variance parameters: approximate covariance not positive definite")
-  }
+  out <- pm_fit_warnings(model)                       # R/diag-adapter.R
   paste(out, collapse = "; ")[length(out) > 0]
 }
 
 ## Number of random-effect terms.
-pm_check_nre <- function(model) {
-  re <- tryCatch(if (inherits(model, "lme")) {
-    r <- nlme::ranef(model); if (is.data.frame(r)) 1L else length(r)
-  } else if (inherits(model, "merMod")) length(lme4::ranef(model))
-  else if (inherits(model, "glmmTMB")) length(lme4::ranef(model)[["cond"]]) else 0L, error = function(e) 0L)
-  re
-}
+pm_check_nre <- function(model) tryCatch(length(pm_ranef_list(model)), error = function(e) 0L)
 
 ## Number of levels of each grouping factor of the random effects (NULL if none).
-pm_check_re_levels <- function(model) {
-  tryCatch({
-    if (inherits(model, "merMod")) lme4::ngrps(model)
-    else if (inherits(model, "lme")) {
-      g <- model$dims$ngrps
-      g[setdiff(names(g), c("X", "y"))]
-    } else if (inherits(model, "glmmTMB")) vapply(model$modelInfo$reTrms$cond$flist, nlevels, 1L)
-  }, error = function(e) NULL)
-}
+pm_check_re_levels <- function(model) tryCatch(pm_re_levels(model), error = function(e) NULL)
 
 ## The data rows of the residuals (NULL if they cannot be matched).
 pm_check_frame <- function(model, n) {
@@ -433,8 +409,7 @@ pm_check_frame <- function(model, n) {
 
 ## The factors of the fixed effects (variables in the frame).
 pm_check_factors <- function(model, frame) {
-  vars <- tryCatch(all.vars(stats::delete.response(stats::terms(
-    if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model))), error = function(e) character(0))
+  vars <- tryCatch(all.vars(stats::delete.response(pm_fixed_terms(model))), error = function(e) character(0))
   vars <- intersect(vars, names(frame))
   vars[vapply(vars, function(v) is.factor(frame[[v]]) || is.character(frame[[v]]), logical(1))]
 }
@@ -533,8 +508,7 @@ pm_check_separation <- function(model) {
 ## intercept.
 pm_check_gvif <- function(model) {
   if (inherits(model, c("aovlist", "gam"))) return(NULL)
-  tl <- attr(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model),
-             "term.labels")
+  tl <- attr(pm_fixed_terms(model), "term.labels")
   if (length(tl) < 2 || any(grepl(":", tl))) return(NULL)
   b <- pm_coef(model)
   b <- b[!is.na(b)]
