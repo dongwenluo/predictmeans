@@ -566,6 +566,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   called by a test CRAN runs (checked by tracing all exports); two quick
   tests added for the four that were not (`semireg_tmb()`, the removed
   `permanova.lmer()`/`permglmer()`/`permglmmTMB()` stubs).
+* Vignettes `resampling` (31 s) and `smooth` (28 s), 74% of the vignette
+  build time, are precomputed (maintainer's choice, 2026-11-24): sources in
+  `vignettes/*.Rmd.orig`, knitted by `dev/precompute-vignettes.R` into the
+  `.Rmd` with results and 16 figures (696 KB; the HTML size is unchanged,
+  960 KB). Their build now takes 2.6 s. Rule in CLAUDE.md and AGENTS.md.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).

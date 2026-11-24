@@ -18,6 +18,10 @@ them in full.
   package (`.Rbuildignore`) and the site: build it with `dev/build-site.R`
   (pkgdown publishes every top-level `.md`; the GitHub workflow removes them too).
 
+- `vignettes/resampling.Rmd` and `vignettes/smooth.Rmd` are generated: edit the
+  `.Rmd.orig` files, then `Rscript dev/precompute-vignettes.R` (CRAN check time).
+- A new slow test (over 0.5 s) starts with `skip_on_cran()`.
+
 ## Testing traps
 
 - Run `options(warnPartialMatchDollar = FALSE)` first: if an earlier session
