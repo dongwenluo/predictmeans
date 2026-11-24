@@ -41,7 +41,9 @@ Type III hypotheses do not depend on the contrasts the model was fitted with (su
 With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
 contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
 cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
-Type II are those of \code{car::Anova()}; Type I (sequential) are lmerTest's, always with Satterthwaite df.
+Type II are those of \code{car::Anova()}; Type I (sequential) are those of SAS (\code{HTYPE=1}) and lmerTest, built
+from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds them from
+\eqn{X'V^{-1}X} (the estimated variances), and its tests of the middle terms differ with unbalanced data.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
 own table (sums of squares and F values without df or p-values).

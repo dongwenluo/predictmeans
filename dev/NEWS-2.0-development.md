@@ -2798,3 +2798,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * `HRW::pointsInPoly()` is replaced by an internal copy. It also closes open
   polygons correctly; HRW's version adds a spurious vertex when the last
   vertex does not repeat the first.
+* anova() of lmer fits (2026-11-25), from the maintainer's question on the
+  tree-improvement article (Exam 8.2, `fm8.7`): (1) the article's model
+  `(1 | contcompv:clone)` added one random "clone" for all 20 standard plots
+  (clone "0"), confounded with `contcompf` (F 4.8 on 43 df); now
+  `(0 + dummy(contcompf, "1") | clone)` = Genstat's contcompv.clone. (2)
+  `anova(type = "I")` ignored `ddf` (always Satterthwaite): now
+  `pm_lmer_type1()` with Kenward-Roger by default. SAS run
+  (`dev/sas/type1-exam8.2.sas`, output PDF): SAS builds Type 1 hypotheses from
+  X'X, as lmerTest, and ours equals it with KR (2.05/26.5, 1.48/19.3,
+  73.36/255, 16.86/207) and Satterthwaite (1.49, 74.49, 17.25). Genstat's
+  "sequentially adding terms" uses X'V^-1X (Wald 8.20, 7.99, 72.66, 51.75,
+  reproduced exactly) with KR-average d.d.f.; kept as a documented
+  difference: X'X hypotheses depend on the design only, KR assumes a fixed
+  hypothesis. (3) Type III: a nested term (factors without a lower-order term,
+  `pm_type3_nested_C()`) is tested within the outer levels (3 df, = SAS
+  16.86/207); it had 0 df. (4) `pm_design_balance()`: "empty" only for cells
+  of interaction terms not absent by design (nested pairs). Test in
+  `test-tree-examples.R`.

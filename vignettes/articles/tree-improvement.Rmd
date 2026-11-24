@@ -1384,9 +1384,16 @@ print(dfSummary(DataExam8.2,
 
 
 #### Model
+
+Clone effects are random for the test clones only (`contcompf` = 1); the four standards are fixed effects
+(`contcompf:standard`). This is Genstat's `contcompv.clone` with `contcompv` = 1 for test clones and 0 for
+standards. `(1 | contcompv:clone)` would instead add one more random "clone" holding all 20 standard plots
+(their `clone` is `"0"`), confounded with the fixed `contcompf` effect: it changes the test of `contcompf`
+(F 4.8 on 43 df instead of 73 on 255).
+
 ```{r}
-fm8.7 <- lmer(dbh ~ repl + column +
-contcompf + contcompf:standard + (1| repl:row) + (1| repl:column) +(1| contcompv:clone), data = DataExam8.2)
+fm8.7 <- lmer(dbh ~ repl + column + contcompf + contcompf:standard + (1 | repl:row) + (1 | repl:column) +
+                (0 + dummy(contcompf, "1") | clone), data = DataExam8.2)
 summary(fm8.7, corr=FALSE)
 ```
 
@@ -1399,8 +1406,15 @@ residplot(fm8.7)
 ### ANOVA, adjusted $R^2$, Varcomp
 
 -   ANOVA
+
+Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). With lmerTest
+attached, `anova(fm8.7)` is lmerTest's (Satterthwaite df, unadjusted F); `as(fm8.7, "lmerMod")` gives
+predictmeans' table. Genstat's "sequentially adding terms" gives the same tests for `repl` and
+`contcompf.standard`, and different ones for `column` and `contcompf`, because it builds the sequential
+hypotheses from the fitted variances (see `?anova.lmerMod`).
+
 ```{r}
-kable(anova(fm8.7, type=1), digits=4)
+kable(anova(as(fm8.7, "lmerMod"), type = 1), digits = 4)
 ```
 
 -   Adjusted $R^2$

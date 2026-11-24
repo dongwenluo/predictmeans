@@ -215,3 +215,29 @@ test_that("Exam 8.2, clone trial with standards (REML; random rows, columns and 
   js <- pm_joint(m, "contcompf:standard", ctrmatrix = st)
   expect_equal(c(js$F.ratio, js$df2), c(16.86, 207), tolerance = 5e-3)
 })
+
+test_that("Exam 8.2: Type 1 and Type 3 tables = SAS PROC MIXED (HTYPE=1,3; DDFM=KR and SATTERTHWAITE)", {
+  skip_on_cran()
+  # dev/sas/type1-exam8.2.sas, run 2026-11-25 (dev/sas/type1-exam8.2-sas-output.pdf). SAS builds Type 1
+  # hypotheses from X'X; Genstat's sequential Wald from X'V^-1X (column 7.99, contcompf 72.66) differs.
+  d <- tree_data("ex8.2.csv")
+  for (v in c("repl", "row", "column", "standard", "clone")) d[[v]] <- factor(d[[v]])
+  d$contcompv <- d$contcompf
+  d$contcompf <- factor(d$contcompf)
+  m <- suppressMessages(lme4::lmer(dbhmean ~ repl + column + contcompf + contcompf:standard + (1 | repl:row) +
+                                     (1 | repl:column) + (0 + contcompv | clone), data = d))
+  chk <- function(a, F, ddf) {
+    expect_lt(max(abs(unname(a[["F value"]] %||% a[["F"]]) - F)), 0.006)             # SAS prints 2 decimals
+    expect_equal(unname(a[["DenDF"]] %||% a[["Df.res"]]), ddf, tolerance = 5e-3)     # SAS prints 3 digits
+  }
+  a1 <- anova(m, type = "I", advice = FALSE)
+  expect_match(attr(a1, "heading"), "Kenward-Roger")
+  chk(a1, c(2.05, 1.48, 73.36, 16.86), c(26.5, 19.3, 255, 207))
+  chk(anova(m, type = "I", ddf = "Satterthwaite", advice = FALSE), c(2.05, 1.49, 74.49, 17.25),
+      c(26.5, 19.3, 255, 207))
+  # the nested term (standard within contcompf) is tested on 3 df, with no empty-cell note
+  a3 <- anova(m, type = "III")
+  expect_equal(a3$Df, c(4, 5, 1, 3))
+  chk(a3, c(2.05, 1.55, 72.03, 16.86), c(26.5, 19.6, 255, 207))
+  expect_false(any(grepl("Empty cells", c(attr(a3, "heading"), advice(a3)$message))))
+})

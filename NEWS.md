@@ -78,6 +78,10 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Changes that affect results
 
+* `anova(<lmer fit>, type = "I")` now uses Kenward-Roger df and F, like Types II and III, and `ddf =
+  "Satterthwaite"` gives the previous table; both equal SAS PROC MIXED `HTYPE=1`. Type III tests a nested term
+  (`A + A:B`) within each level of the outer factor, as SAS (it had 0 df), and the "empty cells" note no longer
+  appears for nested factors or for factors that only have main effects.
 * REML `lmer` fits use Kenward-Roger adjusted standard errors in `predictmeans()`, `contrastmeans()` and
   `covariatemeans()`, as SAS `DDFM=KR` and emmeans. Unbalanced designs change slightly. 1.x:
   `vcov_adjust = FALSE`.

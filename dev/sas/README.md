@@ -18,8 +18,9 @@ inline). At SAS's variance estimates (Block 284.80, Block:Variety 110.97, residu
 `se_ranef(type = "prediction")` equals Std Err Pred for all 23 levels to 1e-4 (SAS's 4
 decimals), and the BLUPs to 2e-4. At lme4's own REML fit (284.96, 110.97, 171.53) the SEs
 agree to 1.7e-4 relative. Test: `test-se-ranef.R`.
-`type1-exam8.2.sas` (to run, 2026-11-24): Type 1 tests of the Exam 8.2 clone trial (data inline), to see whether
-PROC MIXED builds sequential hypotheses from X'V^-1X (as Genstat) or from X'X (as lmerTest); for `anova(type = "I")`.
+`type1-exam8.2.sas` (run 2026-11-25, `type1-exam8.2-sas-output.pdf`; test in `test-tree-examples.R`): Type 1 tests of the Exam 8.2 clone trial (data inline), to see whether
+PROC MIXED builds sequential hypotheses from X'V^-1X (as Genstat) or from X'X (as lmerTest): X'X. `anova(type = "I")`
+equals SAS with DDFM=KR and SATTERTHWAITE; Type 3 too, the nested term contcompf*std included.
 `pm-reference-emptycells.sas` (run 2026-11-18, `sas-results-2026-11-18-emptycells.txt`; every value agrees, and the hypotheses equal SAS Type IV here): Type III F tests
 with an empty cell (oats without Victory x 0.6), written as contrasts on the
 cell means, for `anova()` (`R/anova.R`, `pm_type3_map_cells()`; the same
