@@ -21,7 +21,10 @@ returned "HTTP 502 Bad Gateway" twice on 2026-11-24; resubmit with
 Local (Windows, R 4.6.2): 0 errors | 0 warnings | 0 notes.
 
 win-builder R-release: (pending)
-win-builder R-devel: (pending)
+win-builder R-devel (2026-11-17 r90926 ucrt): 1 NOTE (CRAN incoming
+feasibility): the maintainer, and "Possibly misspelled words in DESCRIPTION:
+Kenward, PROC". Both are names: Kenward of Kenward and Roger (1997), cited
+with its DOI, and the 'SAS' procedure PROC MIXED.
 mac-builder R-release: (pending)
 
 The full test suite (3,853 expectations, `NOT_CRAN=true`) passes with 0
