@@ -2954,3 +2954,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   it; Monte Carlo SE of the simulated form printed; generic h2_no_se removed;
   subsets print as tables; plan row O16 complete.
 
+
+* residvariogram() (2026-11-25; decisions V1-V6 in dev/review-variogram.md,
+  maintainer: positions must count over the whole field, not within blocks):
+  `R/variogram.R`. Grid lags by shifting the residual matrix (both diagonals,
+  pair counts found once), default lags up to half the field; distance classes
+  [k, k+1) x step with directions (+-segment/2, angles mod 180) and haversine
+  km; Matheron or Cressie-Hawkins. Residuals of residplot(), scaled per trial.
+  Envelope: global scaled MAD envelope (Myllymaki et al. 2017; centre and
+  spread from all B + 1 curves) from data simulated from the fitted model:
+  lm/aov exactly (D (I - H) z), other classes simulate + refit through
+  pm_boot_fit(); permuting residuals was rejected: 15% false alarms at 5% in a
+  blocked trial (block residuals sum to 0). Simulation (12 x 10 field, 4
+  blocks): size 5.75% (lm, 400 trials), 4.5% (lmer, 200); power at AR1 phi 0.5
+  57-58%. Advice variogram_spatial, variogram_trend, variogram_incomplete
+  (`pm_variogram_advice()`, R/advice.R); pm_check(row, col, coords, by) adds
+  the row. Checks: Genstat Example 8.3.1 (Brooms Barn, 48 entries; data from
+  the maintainer in tests/testthat/_data/variogram), brute force over all
+  pairs (grid, robust), haversine, lm simulation = refits; test-variogram.R.

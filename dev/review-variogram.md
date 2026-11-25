@@ -1,4 +1,4 @@
-# Residual variogram for field trials (review note, 2026-11-25)
+# Residual variogram for field trials (review note, 2026-11-25; done: `residvariogram()`)
 
 For the maintainer's decisions before any code.
 
@@ -72,9 +72,13 @@ calling it. Alternative: `residplot(type = "variogram")`.
 `residplot()`), standardised by their SD so that trials with different error
 variances share a scale.
 
-**V3. Reference band.** Proposal: a global envelope from permutations within
-each trial (99), with the advice based on it; pointwise bands only as an
-option.
+**V3. Reference band.** Agreed 2026-11-25 as a global envelope; changed in the
+work from permutations to simulations of the fitted model: permuting residuals
+gave 15% false alarms at 5% in a blocked trial (residuals of a block sum to 0,
+so neighbours are negatively correlated by the fit itself). Simulated data,
+refitted (lm/aov exactly, without refits), carry the same correlation: size
+5.75% (lm) and 4.5% (lmer) in 400 and 200 null trials. Permutations only for a
+numeric vector of values.
 
 **V4. Coordinates.** Proposal: grid lags for row/column data, distance classes
 for coordinates; latitude/longitude in km.

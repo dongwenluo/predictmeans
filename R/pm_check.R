@@ -7,9 +7,11 @@
 #' (over- and underdispersion, excess zeros, separation); the design (balance and empty cells, aliasing,
 #' collinearity, few levels of a random effect); and the terms (interactions, straight lines). For any model that
 #' \code{\link{predictmeans}} handles.
-#' @usage pm_check(model, plot = FALSE)
+#' @usage pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL)
 #' @param model A fitted model, as for \code{\link{residplot}}.
 #' @param plot \code{TRUE}: also draw the diagnostic plots of \code{\link{residplot}}.
+#' @param row,col,coords,by The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
+#'   for spatial pattern in the residuals (the global test of the residual variogram, 99 simulations).
 #' @details
 #' The checks inform; they do not decide. Rows marked \code{!} are worth a look at the plots of
 #' \code{\link{residplot}}; rows marked \code{i} are information. Keep the terms the design calls for (blocks, whole
@@ -59,7 +61,7 @@
 #' @references
 #' Fox, J. and Monette, G. (1992). Generalized collinearity diagnostics. \emph{Journal of the American Statistical
 #' Association}, 87, 178-183.
-#' @seealso \code{\link{residplot}}, \code{\link{CookD}}, \code{\link{advice}}, \code{\link{pm_boxcox}}
+#' @seealso \code{\link{residplot}}, \code{\link{CookD}}, \code{\link{advice}}, \code{\link{pm_boxcox}}, \code{\link{residvariogram}}
 #' @author Dongwen Luo, Siva Ganesh and John Koolaard
 #' @examples
 #' library(predictmeans)
@@ -78,7 +80,11 @@ NULL
 pm_check_sections <- c("Fit", "Residuals", "Variance", "Distribution", "Design", "Terms")
 
 #' @export
-pm_check <- function(model, plot = FALSE) {
+pm_check <- function(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL) {
+  # the spatial check needs the data of the call's model (a semireg fit keeps them)
+  vario <- if (!is.null(row) || !is.null(col) || !is.null(coords)) {
+    residvariogram(model, row = row, col = col, coords = coords, by = by, plot = FALSE)
+  }
   model <- pm_fit(model)
   out <- list()
   add <- function(section, check, result, p = NA_real_, note = "", look = FALSE, info = FALSE) {
@@ -114,6 +120,17 @@ pm_check <- function(model, plot = FALSE) {
              if (length(ord) > 3) ", ..."),
       note = if (length(big)) "Check these observations (data entry, unusual units) before anything else." else "",
       look = length(big) > 0 && (p_count < 0.01 || pmax_r < 0.01))
+
+  ## spatial pattern (only with a layout): the residual variogram's global test
+  if (!is.null(vario)) {
+    tst <- attr(vario, "test")
+    p_sp <- if (attr(vario, "nsim") > 0) min(1, min(tst$p.value) * nrow(tst)) else NA_real_  # Bonferroni over trials
+    a <- pm_advice_get(vario)
+    a <- a[a$id %in% c("variogram_spatial", "variogram_trend"), , drop = FALSE]
+    add("Residuals", "Spatial pattern (residual variogram)",
+        if (is.na(p_sp)) "no envelope for this class" else paste0("global envelope, ", attr(vario, "nsim"), " simulations"),
+        p_sp, note = if (nrow(a)) paste(a$text, collapse = " ") else "", look = nrow(a) > 0)
+  }
 
   ## influence (models with closed-form Cook's distances)
   if (inherits(model, "lm") && !inherits(model, c("aovlist", "gam"))) {

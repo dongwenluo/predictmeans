@@ -125,6 +125,8 @@ reference:
   - se_ranef
   - heritability
   - residplot
+  - residvariogram
+  - autoplot.pm_variogram
   - CookD
   - pm_check
   - pm_boxcox
