@@ -190,6 +190,11 @@ test_that("Genstat REML (dev/genstat/heritability.gen, run 2026-11-25): componen
                tolerance = 2e-3)
   # Genstat, genotypes fixed (block variance re-estimated): average variance of differences 2.212
   expect_equal(predictmeans:::pm_h2_vblue(m, "gen"), 2.212, tolerance = 5e-4)
+  # run 2 (METHOD=Fisher): average variance of differences of the BLUPs 1.760; VHERITABILITY 0.7988
+  cp <- predictmeans:::pm_h2_components(m, "gen")
+  expect_equal(predictmeans:::pm_h2_vdiff(cp$C), 1.760, tolerance = 5e-4)
+  h <- heritability(m, "gen", method = "all", nsim = 500, seed = 1)
+  expect_equal(round(h$estimate[h$method %in% c("cullis", "oakey")], 4), c(0.7988, 0.7988))
   set.seed(3)
   f <- expand.grid(tree = 1:4, fam = factor(1:30), blk = factor(1:6))
   f$y <- rnorm(30, 0, 1)[f$fam] + rnorm(6, 0, 1)[f$blk] + rnorm(180, 0, 0.7)[interaction(f$fam, f$blk)] +

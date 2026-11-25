@@ -2935,4 +2935,8 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   1 of dev/genstat/heritability.gen: components and the BLUE variance (2.212,
   refit) agree; A1 to rerun (METHOD=Fisher for SEDs of BLUPs; VHERITABILITY
   without PRINT=*).
+* Genstat run 2 of heritability.gen (2026-11-25): average variance of
+  differences of the BLUPs 1.760 (ours 1.75987) and VHERITABILITY's
+  generalized heritability 0.7988 (= our Cullis and Oakey, 0.79879). With run
+  1 every number of the script agrees; tests added.
 

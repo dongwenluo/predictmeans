@@ -1,7 +1,8 @@
 \ Heritability reference for predictmeans::heritability() (R/heritability.R).
 \ Run 1 (2026-11-25, genstat-results-2026-11-25-heritability.txt): components of A and B and
 \ the BLUE variance (2.212) agree; A1 needed METHOD=Fisher for SEDs of BLUPs and
-\ VHERITABILITY printed nothing with PRINT=* (fixed below): please run part A1 again.
+\ VHERITABILITY printed nothing with PRINT=* (fixed below). Run 2: BLUP variance 1.760,
+\ VHERITABILITY 0.7988 (= Cullis, Oakey); everything agrees.
 \ Please save the whole Output window (File > Save) and send that file; the
 \ first run may need small syntax fixes (VHERITABILITY may not exist in older
 \ versions: then delete those lines; the average variances of differences of
