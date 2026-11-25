@@ -39,7 +39,9 @@ pm_io_parts <- function(model, drop = character(0)) {
     tt <- stats::delete.response(stats::terms(pm_nobars(stats::formula(model))))
     X <- stats::model.matrix(tt, model$model, contrasts.arg = model$contrasts)
     fl <- as.list(model$gfList)
-    return(list(X = X, flist = fl[!names(fl) %in% drop]))
+    # the J - 1 cut points replace the one intercept: J - 2 more parameters, estimated within
+    # (the residual stratum; = SAS GLIMMIX's df for terms within clusters, dev/sas/ordinal.sas)
+    return(list(X = X, flist = fl[!names(fl) %in% drop], extra = length(model$alpha) - 1))
   }
   stop("df_method = \"inner-outer\" needs a model with random effects (lmer, glmer, glmmTMB, clmm, lme).", call. = FALSE)
 }
@@ -95,7 +97,7 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     nlev[k] - rk(M)
   }
   Zall <- do.call(cbind, lapply(fl, function(g) stats::model.matrix(~ g - 1)))
-  res_df <- N - rk(cbind(X, Zall))
+  res_df <- N - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
   sdf <- vapply(seq_along(fl), stratum_df, numeric(1))
   # stratum of each column: the coarsest factor within which it is constant
   # (its number of groups), or the residual stratum (Inf)

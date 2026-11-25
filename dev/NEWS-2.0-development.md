@@ -3065,3 +3065,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   and the expected information; NEWS: other vglm families now stop; tests at
   1e-6 with vglm.control(epsilon = 1e-12), exact SEs K V K', reverse for all
   families, probit, loglog, equidistant, large covariate, sm.* and poissonff.
+* Ordinal models against SAS (dev/sas/ordinal.sas, run 2026-11-26):
+  test-ordinal-sas.R. clm = PROC LOGISTIC Newton, vglm = Fisher scoring (the
+  vglm/clm SE difference is expected vs observed information), probabilities
+  to 4e-7, probit/cloglog/adjacent-category, clmm = GLIMMIX Laplace. clmm df:
+  the residual stratum now subtracts the J - 2 extra cut points (57 for wine,
+  = GLIMMIX; was 60); between-cluster terms keep the inner-outer df (GLIMMIX
+  containment 53 vs predictmeans 4, chosen by the simulation).

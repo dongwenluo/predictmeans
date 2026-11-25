@@ -270,7 +270,7 @@ Oats Block 0.0128 and Block×Variety 0.0028 (½χ²₀ + ½χ²₁); cbpp herd <
 χ²₃). `covtest indep` did not test the covariance: it gave the zero-G test
 again (66.53, 3 df); the covariance reference is PROC MIXED's `type=vc` fit.
 
-## ordinal.sas (2026-11-25, to run)
+## ordinal.sas (run 2026-11-26: ordinal-results-2026-11-26.pdf; test-ordinal-sas.R)
 
 Reference for the ordinal models of B1-B3a (`R/ordinal.R`): PROC LOGISTIC cumulative
 logit (Newton = observed information, as `clm`; Fisher = expected, as `vglm`), probit,
@@ -278,3 +278,12 @@ cloglog and adjacent-category links, and PROC GLIMMIX (Laplace) for `clmm` with 
 containment df, on `ordinal::wine` and the 6-cluster data of `test-ordinal.R` (data
 inline). Output: parameter estimates and covariances to 16 digits (HTML, saved as
 PDF); every predictmeans number for these models is computed from them in R.
+
+Results: clm = Newton and vglm = Fisher scoring to SAS's 4 decimals (estimates, SEs: the
+vglm/clm SE difference is expected vs observed information); class probabilities to 4e-7;
+probit, cloglog, adjacent-category (= minus vglm acat) to 1e-4; clmm = GLIMMIX Laplace to
+6e-5 (variance 2.6e-6). df: GLIMMIX containment gives 57 within judges (predictmeans had
+60: the 3 extra cut points were not subtracted; fixed) and 53 for a treatment between 6
+clusters, where predictmeans keeps the inner-outer 4 (z-like df rejected 11% at 5% in the
+simulation). The `%show` macro's 16-digit tables did not print (ODS dataset names); the
+procedures' own tables were enough at 1e-4. Fix the macro before a next run.

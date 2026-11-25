@@ -130,10 +130,11 @@ test_that("clmm: latent means and class probabilities equal emmeans; inner-outer
   e <- e[order(e$temp, e$contact), ]
   expect_equal(r$means$estimate, e$emmean, tolerance = 1e-6)
   expect_equal(r$means$std.error, e$SE, tolerance = 1e-6)
-  # temp and contact vary within judges: the df of the within-judge stratum, N - rank(X, Z)
+  # temp and contact vary within judges: the df of the within-judge stratum, N - rank(X, Z) less the
+  # 3 extra cut points: 57, as SAS GLIMMIX (dev/sas/ordinal.sas)
   expect_equal(r$settings$df_method, "inner-outer")
-  expect_equal(unique(r$pairs$df), 72 - (4 + 9 - 1))
-  expect_equal(r$pairs$p.value, 2 * pt(-abs(r$pairs$estimate / r$pairs$std.error), 60), tolerance = 1e-10)
+  expect_equal(unique(r$pairs$df), 72 - (4 + 9 - 1) - 3)
+  expect_equal(r$pairs$p.value, 2 * pt(-abs(r$pairs$estimate / r$pairs$std.error), 57), tolerance = 1e-10)
   ep <- as.data.frame(pairs(emmeans::emmeans(m, ~ temp * contact), adjust = "none"))
   expect_equal(sort(abs(r$pairs$estimate)), sort(abs(ep$estimate)), tolerance = 1e-6)
   p <- predictmeans(m, "temp:contact", mean_type = "prob")
