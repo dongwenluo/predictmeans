@@ -40,7 +40,7 @@ data(wageTUnion)
 fit <- semireg(unionMember ~ s(wage, bs = "os", k = 15), family = binomial, data = wageTUnion)
 anova(fit)$smooth
 #>     term  variance    logLik logLik.without      LRT      p.value
-#> 1 s_wage 0.6171743 -237.6536      -245.2499 15.19253 4.854346e-05
+#> 1 s_wage 0.6171738 -237.6536      -245.2499 15.19253 4.854346e-05
 #>                        test
 #> 1 0.5 chi2(0) + 0.5 chi2(1)
 semipred(fit, "wage", "wage")$plt

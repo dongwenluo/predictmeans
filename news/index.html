@@ -253,6 +253,7 @@
 <h4 id="model-checking-and-advice-2-0-0">Model checking and advice<a class="anchor" aria-label="anchor" href="#model-checking-and-advice-2-0-0"></a></h4>
 <ul><li>
 <code><a href="../reference/pm_check.html">pm_check()</a></code>: a table of checks of a fitted model (outliers, influence, normality, equal variances, dispersion, separation, collinearity, …).</li>
+<li>New <code><a href="../reference/residvariogram.html">residvariogram()</a></code>: the sample variogram of a model’s residuals over a row x column field layout or coordinates (also latitude/longitude, by direction), one per trial with <code>by</code>, with a global envelope from data simulated from the fitted model and a test of spatial pattern; advice suggests a spatial model when neighbouring plots are more alike than the model allows. The estimator reproduces Genstat’s <code>FVARIOGRAM</code> (Brooms Barn example). <code>pm_check(row = , col = )</code> adds the check. Rows or columns numbered within blocks stop with a message.</li>
 <li>Advice printed with results when the fit or data call for it; <code><a href="../reference/advice.html">advice()</a></code> returns it, <code>options(predictmeans.advice = FALSE)</code> hides it.</li>
 </ul></div>
 <div class="section level4">

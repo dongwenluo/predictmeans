@@ -70,6 +70,10 @@ checks.
   : Heritability on a Line-Mean (Entry-Mean) Basis
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
   : Diagnostic Plots for a Fitted Model
+- [`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
+  : Sample Variogram of the Residuals
+- [`autoplot(`*`<pm_variogram>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_variogram.md)
+  : Plot a Residual Variogram
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
   : Cook's Distances of a Linear (Mixed) Model
 - [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)

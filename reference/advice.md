@@ -32,6 +32,8 @@ advice(x)
   [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md),
   [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md),
   [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md),
+  [`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md),
+  [`heritability()`](https://dongwenluo.github.io/predictmeans/reference/heritability.md),
   [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md),
   [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md),
   [`semireg()`](https://dongwenluo.github.io/predictmeans/reference/semireg.md),
@@ -70,6 +72,10 @@ A data frame with columns `id` (stable, listed below), `level`
 | `anova_empty_cells` | anova | empty cells: no type tests a main effect over all cells |
 | `anova_covariate_zero` | anova | Type III with a covariate in an interaction (tests at covariate = 0) |
 | `check_<name>` | pm_check | a check worth a look (the note of its row) |
+| `variogram_spatial` | residvariogram | neighbouring plots more alike than the model allows |
+| `variogram_neighbours` | residvariogram | neighbouring plots less alike than the model allows (competition) |
+| `variogram_trend` | residvariogram | the variogram leaves the envelope at longer lags only |
+| `variogram_incomplete` | residvariogram | more than 10% of the grid positions empty |
 | `few_permutations` | permmodels, bootmodels | fewer than 999 resamples and a p-value at the floor or near 0.05 |
 | `r2_latent_scale` | R2_model | a non-gaussian model: R2 on the link scale |
 | `variance_at_zero` | varcomp, se_ranef | a variance estimated as zero |

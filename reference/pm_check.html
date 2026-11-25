@@ -77,7 +77,7 @@ collinearity, few levels of a random effect); and the terms (interactions, strai
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pm_check</span><span class="op">(</span><span class="va">model</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pm_check</span><span class="op">(</span><span class="va">model</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, row <span class="op">=</span> <span class="cn">NULL</span>, col <span class="op">=</span> <span class="cn">NULL</span>, coords <span class="op">=</span> <span class="cn">NULL</span>, by <span class="op">=</span> <span class="cn">NULL</span>, data <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -90,6 +90,11 @@ collinearity, few levels of a random effect); and the terms (interactions, strai
 
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
 <dd><p><code>TRUE</code>: also draw the diagnostic plots of <code><a href="residplot.html">residplot</a></code>.</p></dd>
+
+
+<dt id="arg-row-col-coords-by-data">row, col, coords, by, data<a class="anchor" aria-label="anchor" href="#arg-row-col-coords-by-data"></a></dt>
+<dd><p>The layout of the plots, as in <code><a href="residvariogram.html">residvariogram</a></code>: when given, a row checks
+for spatial pattern in the residuals (the global test of the residual variogram, 99 simulations).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -180,7 +185,7 @@ Association</em>, 87, 178-183.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="residplot.html">residplot</a></code>, <code><a href="CookD.html">CookD</a></code>, <code><a href="advice.html">advice</a></code>, <code><a href="pm_boxcox.html">pm_boxcox</a></code></p></div>
+    <div class="dont-index"><p><code><a href="residplot.html">residplot</a></code>, <code><a href="CookD.html">CookD</a></code>, <code><a href="advice.html">advice</a></code>, <code><a href="pm_boxcox.html">pm_boxcox</a></code>, <code><a href="residvariogram.html">residvariogram</a></code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

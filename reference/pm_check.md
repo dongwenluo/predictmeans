@@ -14,7 +14,7 @@ handles.
 ## Usage
 
 ``` r
-pm_check(model, plot = FALSE)
+pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL)
 ```
 
 ## Arguments
@@ -28,6 +28,13 @@ pm_check(model, plot = FALSE)
 
   `TRUE`: also draw the diagnostic plots of
   [`residplot`](https://dongwenluo.github.io/predictmeans/reference/residplot.md).
+
+- row, col, coords, by, data:
+
+  The layout of the plots, as in
+  [`residvariogram`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md):
+  when given, a row checks for spatial pattern in the residuals (the
+  global test of the residual variogram, 99 simulations).
 
 ## Value
 
@@ -166,7 +173,8 @@ Fox, J. and Monette, G. (1992). Generalized collinearity diagnostics.
 [`residplot`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
 [`CookD`](https://dongwenluo.github.io/predictmeans/reference/CookD.md),
 [`advice`](https://dongwenluo.github.io/predictmeans/reference/advice.md),
-[`pm_boxcox`](https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.md)
+[`pm_boxcox`](https://dongwenluo.github.io/predictmeans/reference/pm_boxcox.md),
+[`residvariogram`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
 
 ## Author
 
