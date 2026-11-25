@@ -68,42 +68,72 @@ pm_ord_parts <- function(model) {
 }
 
 ## The parts of a vglm fit (B3a): ordinal families with parallel = TRUE only.
+## eta = J alpha + x'b (J: the constraint matrix of the intercepts, I for free
+## cut points, e.g. cbind(1, 0:3) for equidistant ones). probs(b, alpha, x):
+## the family's linkinv; deta(eta): its Jacobian in eta (finite differences
+## on eta, with steps scaled to eta, then the chain rule in pm_ord_class()).
 pm_ord_parts_vglm <- function(model) {
-  fam <- model@family@vfamily[1]
-  if (fam %in% c("multinomial")) {
-    stop("vglm multinomial fits are not yet handled (they have no single latent scale; planned: class ",
-         "probabilities, dev/review-vglm.md B3b).", call. = FALSE)
-  }
-  if (!fam %in% c("cumulative", "propodds", "acat", "cratio", "sratio")) {
-    stop("predictmeans handles vglm fits of the ordinal families cumulative, propodds, acat, cratio and sratio; ",
-         "not ", fam, ".", call. = FALSE)
-  }
+  fi <- pm_ord_vglm_info(model)
   cm <- VGAM::constraints(model)
-  if (!"(Intercept)" %in% names(cm)) stop("The vglm fit has no intercepts (cut points).", call. = FALSE)
   slope <- cm[names(cm) != "(Intercept)"]
   if (!all(vapply(slope, function(C) ncol(C) == 1 && all(C == 1), logical(1)))) {
     stop("predictmeans handles vglm fits with parallel = TRUE (one coefficient per term for all cut points); ",
          "non-parallel fits have no single latent scale (planned, dev/review-vglm.md B3b).", call. = FALSE)
   }
+  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
+    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
+         "with bs(), ns(), poly() or scale().", call. = FALSE)
+  }
+  J <- cm[["(Intercept)"]]
   cf <- VGAM::coef(model)
   ic <- grep("^\\(Intercept\\)", names(cf))
   alpha <- cf[ic]
   b <- cf[-ic]
   V <- VGAM::vcov(model)
   nm <- c(names(b), names(alpha))
-  if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V))) {
+  if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V)) || nrow(J) < 1 || ncol(J) != length(alpha)) {
     stop("The vglm fit has no usable covariance matrix of its coefficients.", call. = FALSE)
   }
-  lev <- colnames(VGAM::fitted(model))
-  linkinv <- function(eta) as.vector(model@family@linkinv(matrix(eta, nrow = 1), extra = model@extra))
-  # the sign: does a larger eta (all predictors) raise the mean class?
+  # (two rows: VGAM's acat(reverse = TRUE) linkinv drops a one-row matrix)
+  linkinv <- function(eta) as.vector(model@family@linkinv(rbind(eta, eta), extra = model@extra)[1, ])
+  lev <- fi$levels
+  # the sign: does a larger eta (all predictors) raise the mean class? At the
+  # average linear predictor of the data (the cut points alone, x = 0, can be
+  # far from the data, where the probabilities are flat)
   mc <- function(e) sum(seq_along(lev) * linkinv(e))
-  s <- sign(mc(alpha + 0.01) - mc(alpha - 0.01))
+  e0 <- colMeans(model@predictors)
+  s <- sign(mc(e0 + 0.01) - mc(e0 - 0.01))
   if (s == 0) stop("Could not find the direction of the vglm family's predictors.", call. = FALSE)
-  link <- sub("link$", "", model@misc$link[1])
-  list(b = b, alpha = alpha, J = diag(length(alpha)), V = V[nm, nm, drop = FALSE], link = link, levels = lev,
-       sb = s, st = s, family = if (fam == "propodds") "cumulative" else fam,
-       probs = function(b, alpha, x) linkinv(alpha + sum(x * b)))
+  list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = pm_ord_vglm_link(fi), levels = lev,
+       sb = s, st = s, family = fi$family,
+       probs = function(b, alpha, x) linkinv(as.vector(J %*% alpha) + sum(x * b)),
+       deta = function(eta) pm_fd_jac(linkinv, eta))
+}
+
+## Family, link and class labels of a vglm fit, without the covariance (for
+## labels); stops for families that are not ordinal.
+pm_ord_vglm_info <- function(model) {
+  fam <- model@family@vfamily[1]
+  if (fam == "multinomial") {
+    stop("vglm multinomial fits are not yet handled (they have no single latent scale; planned: class ",
+         "probabilities, dev/review-vglm.md B3b).", call. = FALSE)
+  }
+  if (!fam %in% c("cumulative", "acat", "cratio", "sratio")) {
+    stop("predictmeans handles vglm fits of the ordinal families cumulative, propodds, acat, cratio and sratio; ",
+         "not ", fam, " (vglm fits of other families are not supported).", call. = FALSE)
+  }
+  list(family = fam, link = unname(sub("link$", "", model@misc$link[1])), reverse = isTRUE(model@misc$reverse),
+       levels = colnames(model@y))
+}
+
+## The link in clm's convention (P(Y <= j) = F(theta_j - eta)): a cumulative
+## fit with reverse = TRUE models P(Y > j), so its cloglog is clm's loglog and
+## the other way round (symmetric links are the same).
+pm_ord_vglm_link <- function(fi) {
+  if (fi$family == "cumulative" && fi$reverse) {
+    return(switch(fi$link, cloglog = "loglog", loglog = "cloglog", fi$link))
+  }
+  fi$link
 }
 
 ## The checks of an ordinal fit and of the options of a call, for every front
@@ -207,7 +237,7 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
   be <- p$b[!is.na(p$b)]
   X <- as.matrix(K)[, names(be), drop = FALSE]
   th <- as.vector(p$J %*% p$alpha)
-  nj <- length(th)
+  nj <- length(p$levels) - 1
   z <- pm_ci_crit(1 - conf_level, Inf)                          # z: the df of these models (pm_df_rule)
   rows <- lapply(seq_len(nrow(X)), function(k) {
     x <- X[k, ]
@@ -220,11 +250,11 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
       G <- rbind(0, cbind(-outer(f, x), f * p$J), 0)
       P <- diff(cum)
       GP <- G[-1, , drop = FALSE] - G[-(nj + 2), , drop = FALSE]
-    } else {                                     # vglm: the family's linkinv, gradients by finite differences
-      nb <- length(be)
-      pf <- function(psi) p$probs(psi[seq_len(nb)], psi[-seq_len(nb)], x)
-      P <- pf(c(be, p$alpha))
-      GP <- pm_fd_jac(pf, c(be, p$alpha))
+    } else {                                     # vglm: the family's linkinv; d eta / d(b, alpha) = [x 1', J]
+      eta <- as.vector(p$J %*% p$alpha) + sum(x * be)
+      P <- p$probs(be, p$alpha, x)
+      De <- p$deta(eta)
+      GP <- De %*% cbind(matrix(x, length(eta), length(x), byrow = TRUE), p$J)
     }
     if (what == "mean_class") {
       g <- colSums(seq_along(P) * GP)

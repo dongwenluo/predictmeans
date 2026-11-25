@@ -119,7 +119,9 @@ pm_response_info <- function(model, trans = NULL, link_scale = NULL) {
   inverse <- if (user) trans else if (!is.null(rt)) rt$fun else NULL
   if (inherits(m, pm_ord_classes)) {
     # cumulative link models (R/ordinal.R): means on the latent scale, not back-transformed
-    op <- pm_ord_parts(m)
+    # (vglm: link and family only, without the covariance)
+    op <- if (inherits(m, "vglm")) { fi <- pm_ord_vglm_info(m); list(link = pm_ord_vglm_link(fi), family = fi$family) }
+          else pm_ord_parts(m)
     lk <- op$link
     return(list(expr = expr, name = name, scale = "latent", link = if (lk == "logistic") "logit" else lk,
                 family = op$family, back = if (user) "trans" else NA_character_, inverse = if (user) trans))

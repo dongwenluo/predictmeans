@@ -161,7 +161,8 @@ shows 1.1.1 and 2.0 code side by side.
   rejected 11% of true nulls at 5% with 6 clusters). Checked against emmeans. Summaries say "z tests" when the df
   are infinite. `VGAM::vglm()` fits of the ordinal families `cumulative`, `propodds`, `acat`, `cratio` and `sratio`
   with `parallel = TRUE`: the same latent means, oriented so that a positive difference means higher classes,
-  whatever the family and `reverse`.
+  whatever the family and `reverse` (SEs from VGAM's expected information). vglm fits of other families
+  (e.g. `poissonff`), which gave link-scale means with t tests before, now stop with a message.
 
 ### Mixed models and variance components
 

@@ -3050,3 +3050,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the expected information, clm the observed); acat/cratio/sratio cell
   probabilities = predict() to 1e-8, SEs = numDeriv delta method on vglm's
   vcov to 1e-5; sign for every family. VGAM added to Suggests.
+* B3a Rule no. 1 review (2026-11-25, 10 findings, all fixed): intercept
+  constraints used (J = the intercept constraint matrix; equidistant cut
+  points gave wrong means; now = clm(threshold = "equidistant")); VGAM smart
+  terms (sm.*) stop (NaN or wrong means: not rebuilt on the grid);
+  probability gradients by finite differences in eta (step scaled to eta)
+  and the chain rule [x 1', J] (the coefficient step gave SEs wrong by up to
+  360% for covariates near 5e5; now = analytic to 1e-6 at x ~ 5000) and 10x
+  fewer linkinv calls; acat(reverse = TRUE) linkinv with two rows; the sign
+  found at the average linear predictor of the data (the cut points alone can
+  be far from the data); link unnamed and given in clm's convention (a
+  cumulative cloglog with reverse = TRUE is clm's loglog); labels from
+  pm_ord_vglm_info() without the covariance; help text for acat/cratio/sratio
+  and the expected information; NEWS: other vglm families now stop; tests at
+  1e-6 with vglm.control(epsilon = 1e-12), exact SEs K V K', reverse for all
+  families, probit, loglog, equidistant, large covariate, sm.* and poissonff.
