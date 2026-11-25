@@ -138,7 +138,7 @@ Piepho, H.-P. and Möhring, J. (2007). Computing heritability and selection resp
 breeding trials. \emph{Genetics}, 177, 1881-1888.
 
 Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019). Heritability in plant breeding on a
-genotype-difference basis. \emph{Genetics}, 212, 991-1008.
+genotype-difference basis. \emph{Genetics}, 212(4), 991-1008. \doi{10.1534/genetics.119.302134}
 }
 \seealso{
 \code{\link{varcomp}}, \code{\link{se_ranef}}

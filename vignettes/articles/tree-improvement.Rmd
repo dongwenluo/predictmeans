@@ -1597,7 +1597,7 @@ with correlated data. *Journal of Agricultural, Biological, and Environmental St
 breeding trials. *Genetics*, 177, 1881--1888.
 
 -   Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019). Heritability in plant breeding on a
-genotype-difference basis. *Genetics*, 212, 991--1008.
+genotype-difference basis. *Genetics*, 212(4), 991--1008 (August 2019). <https://doi.org/10.1534/genetics.119.302134>.
 
 -   Kenward, M. G. and Roger, J. H. (1997). Small sample inference for fixed effects from restricted maximum
 likelihood. *Biometrics*, 53, 983--997. <https://doi.org/10.2307/2533558>.
