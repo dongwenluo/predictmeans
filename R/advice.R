@@ -80,6 +80,8 @@ pm_advice_get <- function(x) {
 #'   \code{variogram_neighbours} \tab residvariogram \tab neighbouring plots less alike than the model allows (competition) \cr
 #'   \code{variogram_trend} \tab residvariogram \tab the variogram leaves the envelope at longer lags only \cr
 #'   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
+#'   \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
+#'   \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
 #'   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
 #'   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
@@ -612,6 +614,29 @@ pm_variogram_advice <- function(x) {
     rows$gap <- pm_advice("variogram_incomplete", paste0(
       "More than 10% of the row x column positions have no plot", where(gaps), ": some lags have fewer pairs and ",
       "vary more."), "note")
+  }
+  if (!length(rows)) return(NULL)
+  do.call(rbind, unname(rows))
+}
+
+## Advice of predictmeans(mean_type = "prob" / "mean_class") for ordinal models
+## (R/ordinal.R): the means average over (or fix) other variables of the model,
+## so the class probabilities are at the averaged latent mean (D2), not
+## averages of probabilities; and the mean class scores the classes 1, 2, ...
+pm_ordinal_advice <- function(model, modelterm, what) {
+  others <- setdiff(all.vars(stats::delete.response(stats::terms(model))), strsplit(modelterm, ":")[[1]])
+  rows <- list()
+  if (length(others)) {
+    rows$avg <- pm_advice("ordinal_latent_average", paste0(
+      "The ", if (what == "prob") "class probabilities" else "mean classes", " are at the latent means, which ",
+      "average over (or fix) ", paste(others, collapse = ", "), ": not averages of the probabilities in each cell ",
+      "(as emmeans gives). Include ", paste(others, collapse = ", "), " in 'modelterm' for the probabilities of ",
+      "each cell."), "note")
+  }
+  if (what == "mean_class") {
+    rows$mc <- pm_advice("ordinal_mean_class", paste(
+      "The mean class scores the classes 1, 2, 3, ... as equally spaced; use mean_type = \"prob\" when they are not."),
+      "note")
   }
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))

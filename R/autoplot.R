@@ -295,6 +295,11 @@ pm_plot_data <- function(object, data, vars, scale) {
   if (is.null(d$.y_orig)) d$.y_orig <- d$.y
   miss <- setdiff(vars, names(d))
   if (length(miss)) stop("The data have no column '", paste(miss, collapse = "', '"), "'.", call. = FALSE)
+  if (scale == "model" && identical(r$scale, "latent")) {
+    message("The data are not shown with latent means (classes of an ordinal response); mean_type = \"prob\" gives ",
+            "the class probabilities.")
+    return(NULL)
+  }
   link <- identical(r$scale, "link")
   if (scale == "model" && link) {
     out <- NULL
@@ -472,7 +477,7 @@ summary.predictmeans <- function(object, digits = 4, ...) {
   pairs <- object$pairs
   if (!is.null(pairs) && !is.null(pairs$by)) pairs <- pairs[!is.na(pairs$by), , drop = FALSE]
   # the SED and LSD summaries of the result (also there without a pairs table)
-  structure(list(table = tab, settings = s, pairs = pairs, nonestimable = sum(!means$estimable),
+  structure(list(table = tab, settings = s, pairs = pairs, nonestimable = sum(!means$estimable), probs = object$probs,
                  sed = object[["Standard Error of Differences"]], lsd = object$LSD, digits = digits),
             class = "summary.predictmeans", advice = attr(object, "advice"))
 }
@@ -486,9 +491,22 @@ print.summary.predictmeans <- function(x, ...) {
       if (isTRUE(s$vcov_adjust)) ", Kenward-Roger adjusted SEs" else "",
       if (!is.null(s$vcov) && !identical(s$vcov, "model")) paste0(", covariance: ", s$vcov) else "", ")\n", sep = "")
   cat("Confidence limits: ", conf, if (identical(s$df_method, "permutation"))
-    " (the model's t limits of each mean; the permutation tests are of the comparisons)", "\n\n", sep = "")
+    " (the model's t limits of each mean; the permutation tests are of the comparisons)", "\n", sep = "")
+  if (identical(s$response$scale, "latent")) {
+    cat("Scale: latent mean of ", s$response$name, " (", s$response$link, "); differences are ",
+        if (s$response$link == "logit") "log odds ratios of a higher class, the same at every cut point" else
+          paste0("on the ", s$response$link, " scale (a positive difference: higher classes more likely)"),
+        "; class probabilities: mean_type = \"prob\"\n", sep = "")
+  }
+  cat("\n")
   print(x$table, row.names = FALSE, digits = x$digits)
   cat("\n")
+  if (!is.null(x$probs)) {
+    cat(if (identical(attr(x$probs, "what"), "mean_class")) "Mean class" else "Class probabilities",
+        " at each mean (delta-method SEs):\n", sep = "")
+    print(x$probs, row.names = FALSE, digits = x$digits)
+    cat("\n")
+  }
   p <- x$pairs
   if (is.null(p) && is.numeric(x$sed) && all(c("Max.SED", "Min.SED", "Aveg.SED") %in% names(x$sed))) {
     # no comparisons asked for: the summaries over all pairs of means

@@ -53,6 +53,8 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{variogram_neighbours} \tab residvariogram \tab neighbouring plots less alike than the model allows (competition) \cr
   \code{variogram_trend} \tab residvariogram \tab the variogram leaves the envelope at longer lags only \cr
   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
+  \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
+  \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
