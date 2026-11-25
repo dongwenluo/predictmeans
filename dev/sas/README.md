@@ -269,3 +269,12 @@ Oats Block 0.0128 and Block×Variety 0.0028 (½χ²₀ + ½χ²₁); cbpp herd <
 `zerog` (drop the whole term, 3 df) is reported as a standard test (unadjusted
 χ²₃). `covtest indep` did not test the covariance: it gave the zero-G test
 again (66.53, 3 df); the covariance reference is PROC MIXED's `type=vc` fit.
+
+## ordinal.sas (2026-11-25, to run)
+
+Reference for the ordinal models of B1-B3a (`R/ordinal.R`): PROC LOGISTIC cumulative
+logit (Newton = observed information, as `clm`; Fisher = expected, as `vglm`), probit,
+cloglog and adjacent-category links, and PROC GLIMMIX (Laplace) for `clmm` with its
+containment df, on `ordinal::wine` and the 6-cluster data of `test-ordinal.R` (data
+inline). Output: parameter estimates and covariances to 16 digits (HTML, saved as
+PDF); every predictmeans number for these models is computed from them in R.
