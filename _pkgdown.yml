@@ -123,6 +123,7 @@ reference:
   - R2_model
   - varcomp
   - se_ranef
+  - heritability
   - residplot
   - CookD
   - pm_check

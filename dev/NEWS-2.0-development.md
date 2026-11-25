@@ -2879,3 +2879,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   position) were functions of nitro (curves estimable only at mean nitro);
   both tests now use models whose curves exist. Snapshots of
   covariatemeans() and semipred() identical to main.
+* heritability(), step 1 (2026-11-25; maintainer's decisions H1-H6 in
+  dev/review-heritability.md): `R/heritability.R` for lmer. Pieces from one
+  place each: components (VarCorr; SE of the standard form by the delta
+  method on pm_lmer_varpar(), as varcomp()), the prediction error covariance
+  of the genotype BLUPs (pm_ranef_cov()), vBLUE from the fixed-genotype refit
+  (Kmatrix() means, unadjusted covariance). Checks: balanced - standard =
+  Cullis = Piepho = Oakey (1e-6; inti::H2cal 0.837 for standard and Piepho);
+  unbalanced - Cullis = Henderson's equations by hand (1e-8), Piepho =
+  emmeans unadjusted (inti 0.797 uses emmeans's KR covariance, ours 0.7982 =
+  Piepho and Möhring's unadjusted), Oakey = mean of the non-zero eigenvalues
+  of I - C/s2g (one exactly zero, the genotype mean with the intercept) =
+  Cullis for independent genotypes; several environments - the standard form
+  by hand. inti's Cullis (0.823 balanced) is an approximation (2 x mean
+  conditional variance, covariances ignored). Next: bootstrap SE for the
+  mixed-model forms, family and repeatability forms, advice, more classes.
