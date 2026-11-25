@@ -3,8 +3,9 @@
 ## random effects at 0 (a typical subject, as emmeans; D4); its covariance of
 ## (b, alpha) is the block of vcov() without the random-effect parameters.
 
-## The classes handled here (one list for every check in the package).
-pm_ord_classes <- c("polr", "clm", "clmm", "vglm")
+## The classes of a class response (one list for every check in the package);
+## multinom and the vglm fits of pm_cat_is() go to R/categorical.R.
+pm_ord_classes <- c("polr", "clm", "clmm", "vglm", "multinom")
 ##
 ## Both fit P(Y <= j) = F(theta_j - eta), eta = x'b without an intercept, cut
 ## points theta = J alpha (J = I for polr and for clm's flexible thresholds;
@@ -30,6 +31,7 @@ pm_ord_classes <- c("polr", "clm", "clmm", "vglm")
 ## estimable b and alpha (in that order), the link and the class labels of a
 ## polr or clm fit; stops for what is not handled.
 pm_ord_parts <- function(model) {
+  if (pm_cat_is(model)) pm_cat_stop(model)
   if (inherits(model, "vglm")) return(pm_ord_parts_vglm(model))
   if (inherits(model, "polr")) {
     if (is.null(model$Hessian)) {
@@ -75,15 +77,7 @@ pm_ord_parts <- function(model) {
 pm_ord_parts_vglm <- function(model) {
   fi <- pm_ord_vglm_info(model)
   cm <- VGAM::constraints(model)
-  slope <- cm[names(cm) != "(Intercept)"]
-  if (!all(vapply(slope, function(C) ncol(C) == 1 && all(C == 1), logical(1)))) {
-    stop("predictmeans handles vglm fits with parallel = TRUE (one coefficient per term for all cut points); ",
-         "non-parallel fits have no single latent scale (planned, dev/review-vglm.md B3b).", call. = FALSE)
-  }
-  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
-    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
-         "with bs(), ns(), poly() or scale().", call. = FALSE)
-  }
+  pm_vglm_smart_stop(model)
   J <- cm[["(Intercept)"]]
   cf <- VGAM::coef(model)
   ic <- grep("^\\(Intercept\\)", names(cf))
@@ -114,13 +108,10 @@ pm_ord_parts_vglm <- function(model) {
 ## labels); stops for families that are not ordinal.
 pm_ord_vglm_info <- function(model) {
   fam <- model@family@vfamily[1]
-  if (fam == "multinomial") {
-    stop("vglm multinomial fits are not yet handled (they have no single latent scale; planned: class ",
-         "probabilities, dev/review-vglm.md B3b).", call. = FALSE)
-  }
+  if (pm_cat_is(model)) pm_cat_stop(model)
   if (!fam %in% c("cumulative", "acat", "cratio", "sratio")) {
-    stop("predictmeans handles vglm fits of the ordinal families cumulative, propodds, acat, cratio and sratio; ",
-         "not ", fam, " (vglm fits of other families are not supported).", call. = FALSE)
+    stop("predictmeans handles vglm fits of the families cumulative, propodds, acat, cratio, sratio and ",
+         "multinomial; not ", fam, " (vglm fits of other families are not supported).", call. = FALSE)
   }
   list(family = fam, link = unname(sub("link$", "", model@misc$link[1])), reverse = isTRUE(model@misc$reverse),
        levels = colnames(model@y))
@@ -143,14 +134,29 @@ pm_ord_vglm_link <- function(fi) {
 ## built for the latent parametrisation) stop: the class scale is mean_type's.
 pm_ord_check <- function(model, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
   pm_ord_parts(model)
+  pm_class_opt_stop(model, paste0("the means are on the latent scale; for the class scale use mean_type = \"prob\" ",
+                                  "or \"mean_class\" in predictmeans()"), trans, bias_adjust, sigma, vcov, permlist)
+  invisible(TRUE)
+}
+
+## The options built for one scale with a residual variance, which models of
+## a class response do not take: a stop naming those given ('why': the scale
+## of the means). One place for pm_ord_check() and pm_cat_check().
+pm_class_opt_stop <- function(model, why, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
   bad <- c(trans = !is.null(trans) && !identical(trans, I), bias_adjust = !isFALSE(bias_adjust),
            sigma = !is.null(sigma), vcov = !is.null(vcov), permlist = !is.null(permlist))
   if (any(bad)) {
-    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1],
-         " models: the means are on the latent scale; for the class scale use mean_type = \"prob\" or ",
-         "\"mean_class\" in predictmeans().", call. = FALSE)
+    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1], " models: ",
+         why, ".", call. = FALSE)
   }
-  invisible(TRUE)
+}
+
+## VGAM's smart terms are not rebuilt on the grid of the means: a stop.
+pm_vglm_smart_stop <- function(model) {
+  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
+    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
+         "with bs(), ns(), poly() or scale().", call. = FALSE)
+  }
 }
 
 ## The coefficients on the latent scale and their covariance: ((Intercept) =

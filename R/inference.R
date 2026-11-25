@@ -185,6 +185,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 ## (Genstat). Returns list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
   kr_info <- switch(df_method, "KR-expected" = "expected", "KR-average" = "average", "observed")
+  # class means of multinomial and non-parallel fits (R/categorical.R): z, whatever df_method
+  if (inherits(model, "pm_catfit")) return(pm_df_rule(model, df_method, kr_info))
   glmm <- inherits(model, c("glmerMod", "glmmTMB", "clmm"))
   if (identical(df_method, "inner-outer") || (glmm && df_method %in% c("auto", "Kenward-Roger", "KR-expected",
                                                                          "KR-average", "Satterthwaite"))) {

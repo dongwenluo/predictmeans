@@ -131,6 +131,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
 
   weights <- match.arg(weights)
   model <- pm_means_model(model)
+  if (pm_cat_is(model)) pm_cat_stop(model)        # a vector of means per row (R/categorical.R)
 
   ## 1. The model and the data of its fixed-effect variables
   info <- pm_model_info(model, data, exclude)

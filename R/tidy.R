@@ -193,9 +193,17 @@ pm_tidy_parts <- function(e) {
       pairs[[paste0(pre, ".conf.low")]] <- exp(cm - crit_p*ci_se)
       pairs[[paste0(pre, ".conf.high")]] <- exp(cm + crit_p*ci_se)
     }
+    # class probabilities (R/categorical.R): pairs of two classes compare different things, left out
+    cv <- if (inherits(model, "pm_catfit")) model$var
+    if (!is.null(cv) && cv %in% names(label)) {
+      cl <- as.character(label[[cv]])
+      pairs <- pairs[cl[pt$i] == cl[pt$j], , drop = FALSE]
+    }
   }
 
   ## Settings
+  # class probabilities (R/categorical.R) are averaged on the probability (response) scale
+  if (inherits(model, "pm_catfit") && model$what != "link") avg <- "response"
   df_method <- if (perm) {
     "permutation"
   } else if (length(g("Df")) && isTRUE(g("df_user"))) {
@@ -223,7 +231,7 @@ pm_tidy_parts <- function(e) {
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     component = if (is.null(pm_zi_component(model))) NA_character_ else g("mean_type"),
-    model_class = class(model)[1],
+    model_class = class(pm_cat_fit(model))[1],     # (the fit, not predictmeans' carrier: R/categorical.R)
     version = as.character(utils::packageVersion("predictmeans"))
   )
   zi <- pm_zi_component(model)

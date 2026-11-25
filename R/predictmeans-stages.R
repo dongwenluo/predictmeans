@@ -47,11 +47,24 @@ pm_setup <- function(a) {
   model <- a$model
   modelterm <- a$modelterm
   pm_check_modelterm(model, modelterm)
-  pm_note_not_a_term(model, modelterm)
+  # (class probabilities are not additive across factors that do not interact; their predictors are)
+  if (!pm_cat_is(model) || identical(a$mean_type, "link")) pm_note_not_a_term(model, modelterm)
   adj <- pm_match_adj(a$adj, westfall = TRUE)
 
   trans <- if (is.null(a$trans)) I else a$trans
   model <- pm_means_model(model)
+  # multinomial and non-parallel fits: stacked class means through a carrier (R/categorical.R)
+  mean_type <- if (is.null(a$mean_type)) "conditional" else a$mean_type
+  average <- a$average
+  if (pm_cat_is(model)) {
+    ck <- pm_cat_check(model, a)
+    mean_type <- ck$mean_type
+    model <- pm_cat_carrier(model, mean_type, strsplit(modelterm, ":", fixed = TRUE)[[1]], ck$parts)
+    average <- "link"          # (pm_cat_est() averages the probabilities itself; settings say "response")
+  } else if (mean_type %in% c("prob_diff", "link")) {
+    stop("mean_type = \"", mean_type, "\" is for multinomial and non-parallel fits (nnet::multinom, VGAM::vglm).",
+         call. = FALSE)
+  }
 
   # Models with a link function other than the identity: means are
   # back-transformed with its inverse (pm_linkinv(); see ?pm_coef to support
@@ -137,7 +150,6 @@ pm_setup <- function(a) {
   level <- a$level
 
   # zero-inflated glmmTMB fits: the overall means (1 - pi) mu (R/zero-inflation.R)
-  mean_type <- if (is.null(a$mean_type)) "conditional" else a$mean_type
   if (identical(mean_type, "overall")) {
     if (is.null(pm_zi_component(model))) {
       message("mean_type = \"overall\" applies to glmmTMB models with zero inflation; this model has none, so the ",
@@ -159,15 +171,16 @@ pm_setup <- function(a) {
     pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans, bias_adjust = a$bias_adjust,
                  sigma = a$sigma, vcov = a$vcov, permlist = a$permlist)
   }
-  if (mean_type %in% c("prob", "mean_class") && !inherits(model, pm_ord_classes)) {
-    stop("mean_type = \"", mean_type, "\" is for cumulative link models (MASS::polr, ordinal::clm, ordinal::clmm).", call. = FALSE)
+  if (mean_type %in% c("prob", "mean_class") && !inherits(model, c(pm_ord_classes, "pm_catfit"))) {
+    stop("mean_type = \"", mean_type, "\" is for models of a class response (MASS::polr, ordinal::clm, ordinal::clmm, ",
+         "VGAM::vglm, nnet::multinom).", call. = FALSE)
   }
   list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf, mean_type = mean_type,
        pairwise = pairwise, compare = compare, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
        meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letter_ci = a$letter_ci,
        trans = trans, trans_by = trans_by, link_scale = link_scale, count = count,
-       bias_adjust = a$bias_adjust, sigma = a$sigma, average = a$average,
+       bias_adjust = a$bias_adjust, sigma = a$sigma, average = average,
        permlist = permlist, ncore = a$ncore, ndecimal = 4L,
        df_method = a$df_method, vcov = a$vcov, vcov_adjust = a$vcov_adjust,
        vcov_adjust_default = a$vcov_adjust_default, equivalence = a$equivalence)
@@ -178,7 +191,8 @@ pm_estimate <- function(opt) {
   # (the grid of all combinations is only needed to average on the response scale)
   ctr.matrix <- Kmatrix(opt$model, opt$modelterm, opt$covariate, data=opt$data,
                         cov_reduce=opt$cov_reduce, exclude=opt$exclude, weights=opt$weights,
-                        refgrid=identical(opt$average, "response") || identical(opt$mean_type, "overall"))
+                        refgrid=identical(opt$average, "response") || identical(opt$mean_type, "overall") ||
+                          (inherits(opt$model, "pm_catfit") && opt$mean_type != "link"))
   KK <- ctr.matrix$K
   if (anyDuplicated(ctr.matrix$fctnames[seq_along(opt$vars)])) {
     stop("predictmeans() gives one mean for each combination of the levels of '", opt$modelterm, "': give one value ",
@@ -197,6 +211,7 @@ pm_estimate <- function(opt) {
        mean.table = est$mean.table, se.table = est$se.table)
   # the overall means of a zero-inflated model, on the log scale (R/zero-inflation.R)
   if (identical(opt$mean_type, "overall")) out <- pm_zi_overall_est(opt, out)
+  if (inherits(opt$model, "pm_catfit")) out <- pm_cat_est(opt, out)       # R/categorical.R
   out
 }
 
@@ -341,6 +356,13 @@ pm_compare <- function(opt, est) {
   }
   SED.out <- s[["SED.out"]]
   dses.m <- s[["dses.m"]]
+  if (inherits(opt$model, "pm_catfit") && opt$model$var %in% colnames(dses.m)) {
+    # class probabilities: the SEDs of pairs within a class only (R/categorical.R)
+    SED.out[c("Max.SED", "Min.SED", "Aveg.SED")] <- dses.m[c("Max.SED", "Min.SED", "Aveg.SED"), opt$model$var]
+    # the same level of another factor means two classes: those columns are left out (also of the LSDs)
+    dses.m <- dses.m[, opt$model$var, drop = FALSE]
+    attr(SED.out, "For the Same Level of Factor") <- dses.m
+  }
   atvar <- s[["atvar"]]              # NULL when a factor has no pairs within its levels (nested factors)
 
   if (!perm) {

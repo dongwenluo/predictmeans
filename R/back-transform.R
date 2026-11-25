@@ -219,7 +219,9 @@ pm_back_label <- function(means, by, link_scale, model, bias_adjusted, average =
   if (is.null(means$response)) return(NULL)
   random <- inherits(model, c("merMod", "glmmTMB", "lme"))
   user_on_link <- !link_scale && !is.null(pm_link_trans(model))
-  estimate <- if (bias_adjusted) {
+  estimate <- if (inherits(model, "pm_catfit")) {
+    "probability of the class"
+  } else if (bias_adjusted) {
     "mean (bias adjusted)"
   } else if (user_on_link) {
     "the user's 'trans' of the link-scale mean (not the model's inverse link)"
