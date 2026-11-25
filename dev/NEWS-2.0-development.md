@@ -2851,3 +2851,21 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   first, where its sequential hypothesis gives 254.6). Kept: each test with
   the d.d.f. of its own hypothesis; documented in ?anova.lmerMod. The test
   now reads from this output, not the table pasted in chat.
+* Rule no. 1 review of PR #43 (rule1-reviewer agent, 2026-11-25), 10
+  findings, fixed: (1) estimability depended on the covariate's units -
+  `pm_null_space()` on X with unit-length columns and `pm_estimable_rows()`
+  in scaled units, used by Kmatrix(), pm_empty_cells(), the pairs of
+  predictmeans() and pm_slopes() (scale 1e-3..1e6 same answer); (2) Type III
+  of a factor nested in another only in the data: within it, = G/T
+  (`pm_type3_nested_C()` with data nesting), advice `anova_nested_in_data`
+  (Type II of G there is not well defined; said so); (3) ML lmer: anova()
+  uses Satterthwaite with a message (`pm_anova_ddf()`); (4) balance over the
+  combinations that can exist; (5) "agree for the first and last term" ->
+  the last term; (6) article: joint regression lines instead of
+  covariatemeans() for an aliased covariate (covariatemeans() itself: next
+  step); (7) pm_slopes(): no pairs when slopes are equal by the model;
+  (8) pm_lmer_tables() uses pm_lmer_type1() (one Type I table);
+  permmodels() keeps Satterthwaite (decision of 2026-11-14);
+  get_contrasts_type1() left (used by df rules; identical hypotheses);
+  (9) Types II/III through pm_try_vcov_kr(); (10) NEWS and article wording.
+  Snapshots (5 scripts) identical to main at tolerance 0.

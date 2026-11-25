@@ -147,7 +147,8 @@ shows 1.1.1 and 2.0 code side by side.
 
 * `anova()` of `lmer` fits: `type1_basis = "fitted"` builds Type I hypotheses from the fitted model
   (X'V^-1X), as Genstat, instead of X'X (SAS, lmerTest; the default); `ddf = "KR-average"` gives Genstat's
-  d.d.f. with an unadjusted F. Together they reproduce Genstat's REML tables.
+  d.d.f. with an unadjusted F. Together they reproduce Genstat's Wald and F statistics; Genstat prints each
+  term's Type II d.d.f., here each test has the d.d.f. of its own hypothesis.
 * `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"` (Genstat), `"Satterthwaite"`,
   `"containment"`, `"between-within"`, `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.
@@ -210,6 +211,13 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Bug fixes
 
+* Estimability checks (means, their pairs, empty-cell contrasts, slopes) no longer depend on the units of a
+  covariate: with a site mean in large units an aliased slope was reported as 0 with SE 0.
+* `anova()` of `lmer` fits: a factor nested in another only in the data (`y ~ G + T`) is tested within it
+  in Type III, as with `G/T`, with a caution to write `G/T`; balanced nested designs are no longer called
+  unbalanced; ML fits get Satterthwaite df with a message instead of a Kenward-Roger label; a failed
+  Kenward-Roger adjustment in Types II and III falls back to Satterthwaite.
+* `pm_slopes()` gives no pairs when the slopes are equal by the model (no covariate x term interaction).
 * `pm_slopes()` gave a slope of 0 with SE 0 when the covariate is aliased with a factor (a site mean with
   site in the model). Such slopes are now NA, with advice; their differences are kept. The slopes table has
   an `estimable` column, as the means table.

@@ -230,7 +230,8 @@ pm_empty_cells <- function(rg, rule, basis, coef_names, N, labels, modelterm) {
       Lf <- as.matrix(pm_refgrid_average(list(grid = rg$grid, W = Wc, empty = rep(FALSE, nr)), basis))
       if (!is.null(N)) {
         np <- Lf[, rownames(N), drop = FALSE] %*% N
-        estimable <- apply(abs(np), 1, max) <= 1e-6 * pmax(1, apply(abs(Lf), 1, max))
+        attr(np, "scale") <- attr(N, "scale")
+        estimable <- pm_estimable_rows(np, Lf)
       }
       L[ok, ] <- Lf[ok, coef_names, drop = FALSE]
     }

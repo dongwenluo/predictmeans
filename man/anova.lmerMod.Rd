@@ -54,7 +54,7 @@ Type II are those of \code{car::Anova()}; Type I (sequential) are by default tho
 lmerTest, built from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds
 them from \eqn{X'V^{-1}X} (\code{type1_basis = "fitted"}): each term after the earlier ones in the mixed model's
 own fit, with parts that add up to the whole Wald statistic, but hypotheses that move with the estimated
-variances. With unbalanced data the two differ for the terms between the first and the last.
+variances. With unbalanced data the two can differ for every term but the last.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
 own table (sums of squares and F values without df or p-values).

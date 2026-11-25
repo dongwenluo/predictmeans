@@ -91,6 +91,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
   # its slope is not estimable, only the differences between groups' slopes.
   np <- pm_slope_null_proj(kp$K, km$K, h)
   est_ok <- if (is.null(np)) rep(TRUE, nrow(L)) else pm_estimable_rows(np, L)
+  L_full <- L
   L <- pm_K_cols(L, mp)
   rownames(L) <- levs
   V <- as.matrix(mp$vcov)
@@ -110,15 +111,18 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
 
   pairs <- NULL
   n <- length(est)
-  if (n > 1) {
+  # no pairs when the slopes are equal by the model (no covariate x term
+  # interaction): their differences are 0 by assumption, not estimates
+  rL <- if (n > 1) pm_pair_matrix(n) %*% L
+  if (n > 1 && any(abs(rL) > 1e-10 * max(1, abs(L)))) {
     pp <- pm_pair_index(n)
-    rL <- pm_pair_matrix(n) %*% L
     pe <- drop(rL %*% mp$coef)
     pV <- rL %*% V %*% t(rL)
     pse <- sqrt(diag(pV))
     pdf <- df_of(rL)
     if (!is.null(np)) {
-      pok <- pm_estimable_rows(pm_pair_matrix(n) %*% np, rL)
+      pok <- pm_estimable_rows(structure(pm_pair_matrix(n) %*% np, scale = attr(np, "scale")),
+                               pm_pair_matrix(n) %*% L_full)
       pe[!pok] <- pse[!pok] <- NA
     }
     stat <- pe/pse
@@ -178,10 +182,5 @@ pm_slope_null_proj <- function(Kp, Km, h) {
   a <- attr(Kp, "null_proj")
   b <- attr(Km, "null_proj")
   if (is.null(a) || is.null(b)) return(NULL)
-  (a - b)/(2*h)
-}
-
-## Rows of L whose projection on the null space is zero (relative to L).
-pm_estimable_rows <- function(np, L) {
-  apply(abs(as.matrix(np)), 1, max) <= 1e-6 * pmax(1, apply(abs(as.matrix(L)), 1, max))
+  structure((a - b)/(2*h), scale = attr(a, "scale"))
 }

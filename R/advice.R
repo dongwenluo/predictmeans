@@ -67,6 +67,7 @@ pm_advice_get <- function(x) {
 #'   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
+#'   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
 #'   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
 #'   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
 #'   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
@@ -469,8 +470,9 @@ pm_slopes_advice <- function(x, model) {
   if (isTRUE(any(!x$slopes$estimable))) {
     rows$na <- pm_advice("nonestimable_slopes", paste0(
       sum(!x$slopes$estimable), " slope(s) cannot be estimated (NA): ", s$covariate, " is aliased with a factor of ",
-      "the model (e.g. constant within its levels), so only differences between slopes are estimable; they are ",
-      "in the pairs."), "caution")
+      "the model (e.g. constant within its levels)",
+      if (!is.null(x$pairs)) ", so only differences between slopes are estimable; they are in the pairs", "."),
+      "caution")
   }
   if (nrow(x$slopes) > 1 && !any(inter)) {
     rows$same <- pm_advice("slopes_equal_by_model", paste0(

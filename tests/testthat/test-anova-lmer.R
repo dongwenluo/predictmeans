@@ -43,3 +43,33 @@ test_that("with lmerTest loaded too: its fits keep its anova(), comparisons keep
   expect_equal(rt[["LRT"]][rownames(rt) == "(1 | s_pressure)"], a$LRT, tolerance = 1e-6)
   expect_error(update(fit$semer), "new random part")
 })
+
+test_that("a factor nested in another only in the data is tested within it (as G/T), with a note", {
+  skip_on_cran()
+  set.seed(3)
+  d <- expand.grid(blk = factor(1:4), G = factor(1:3), Tw = 1:3)
+  d$T <- factor(paste0(d$G, ".", d$Tw)); d$y <- rnorm(nrow(d)) + as.integer(d$G) + d$Tw/2
+  d <- d[-c(1, 5, 30), ]
+  m <- suppressMessages(lme4::lmer(y ~ G + T + (1 | blk), d))
+  m2 <- suppressMessages(lme4::lmer(y ~ G/T + (1 | blk), d))
+  a <- anova(m, type = "III"); b <- anova(m2, type = "III", advice = FALSE)
+  expect_equal(a$Df, c(2, 6))
+  expect_equal(unname(unlist(a[, c("F", "Df.res")])), unname(unlist(b[, c("F", "Df.res")])), tolerance = 1e-8)
+  expect_true("anova_nested_in_data" %in% advice(a)$id)
+  expect_false("anova_empty_cells" %in% advice(a)$id)
+})
+
+test_that("a balanced nested design is balanced; an ML fit gets Satterthwaite, not a Kenward-Roger label", {
+  skip_on_cran()
+  set.seed(1)
+  b <- expand.grid(blk = factor(1:4), A = factor(1:3), Bw = 1:3)
+  b$B <- factor(paste0(b$A, ".", b$Bw)); b$y <- rnorm(36) + as.integer(b$A)
+  mb <- suppressMessages(lme4::lmer(y ~ A/B + (1 | blk), b))
+  expect_identical(as.vector(pm_design_balance(mb)), "balanced")
+  expect_equal(nrow(advice(anova(mb, type = "I"))), 0)
+  ml <- suppressMessages(lme4::lmer(y ~ A/B + (1 | blk), b, REML = FALSE))
+  expect_message(a1 <- anova(ml, type = "I", advice = FALSE), "fitted by ML")
+  expect_match(attr(a1, "heading"), "Satterthwaite")
+  expect_message(a3 <- anova(ml, type = "III", advice = FALSE), "fitted by ML")
+  expect_match(attr(a3, "heading")[1], "Satterthwaite")
+})

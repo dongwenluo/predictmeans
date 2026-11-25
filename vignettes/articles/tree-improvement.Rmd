@@ -1032,11 +1032,6 @@ Table_5.8$`Pr(>F)`[5] <- pf(Table_5.8$`F value`[5], Table_5.8$Df[5], Table_5.8$D
 kable(Table_5.8, digits = 4)
 ```
 
--   Regression Plot
-```{r}
-autoplot(covariatemeans(mod_5.1, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))
-```
-
 -   Table of seedlot mean and regression coefficients
 
 Site means absorb the main slope on `sitemean` (it is constant within a site), so the model estimates only
@@ -1048,6 +1043,19 @@ predm_seedlot <- predictmeans(mod_5.1, "seedlot", plot=FALSE)$mean_table
 d <- c(0, coef(mod_5.1)[grep("^sitemean:seedlot", names(coef(mod_5.1)))])   # slope differences from the first seedlot
 predm_seedlot$reg_coef <- 1 + d - mean(d)
 gt(predm_seedlot)
+```
+
+-   Joint regression lines: each seedlot's line through its mean at the average site mean, with its slope.
+    (`covariatemeans()` is not used: with `site` in the model, a seedlot mean at any other value of
+    `sitemean` is not estimable.)
+```{r}
+xm <- mean(unique(DataExam5.1[c("site", "sitemean")])$sitemean)
+ggplot(predm_seedlot) +
+  geom_abline(aes(intercept = Mean - reg_coef*xm, slope = reg_coef), alpha = 0.4) +
+  scale_x_continuous(limits = range(DataExam5.1$sitemean)) +
+  scale_y_continuous(limits = range(DataExam5.1$ht, na.rm = TRUE)) +
+  theme_bw() +
+  labs(x = "Site mean", y = "Predicted height")
 ```
 
 -   Plot of regression coefficients versus height means for individual seedlots.
@@ -1180,11 +1188,6 @@ Table_5.10$`Pr(>F)`[5] <- pf(Table_5.10$`F value`[5], Table_5.10$Df[5], Table_5.
 kable(Table_5.10, digits = 4)
 ```
 
--   Regression Plot
-```{r}
-autoplot(covariatemeans(mod_5.2, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))
-```
-
 -   Table of seedlot mean and regression coefficients
 
 Site means absorb the main slope on `sitemean` (it is constant within a site), so the model estimates only
@@ -1196,6 +1199,19 @@ predm_seedlotN <- predictmeans(mod_5.2, "seedlot", plot=FALSE)$mean_table
 d <- c(0, coef(mod_5.2)[grep("^sitemean:seedlot", names(coef(mod_5.2)))])   # slope differences from the first seedlot
 predm_seedlotN$reg_coef <- 1 + d - mean(d)
 gt(predm_seedlotN)
+```
+
+-   Joint regression lines: each seedlot's line through its mean at the average site mean, with its slope.
+    (`covariatemeans()` is not used: with `site` in the model, a seedlot mean at any other value of
+    `sitemean` is not estimable.)
+```{r}
+xm <- mean(unique(DataExam5.2[c("site", "sitemean")])$sitemean)
+ggplot(predm_seedlotN) +
+  geom_abline(aes(intercept = Mean - reg_coef*xm, slope = reg_coef), alpha = 0.4) +
+  scale_x_continuous(limits = range(DataExam5.2$sitemean)) +
+  scale_y_continuous(limits = range(DataExam5.2$ht, na.rm = TRUE)) +
+  theme_bw() +
+  labs(x = "Site mean", y = "Predicted height")
 ```
 
 -   Plot of regression coefficients versus height means for individual seedlots.
@@ -1429,9 +1445,10 @@ residplot(fm8.7)
 
 -   ANOVA
 
-Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). Genstat's "sequentially adding terms" gives the same tests for `repl` and
-`contcompf.standard`, and different ones for `column` and `contcompf`, because it builds the sequential
-hypotheses from the fitted variances (see `?anova.lmerMod`). Genstat's table:
+Sequential (Type I) tests with Kenward-Roger df, = SAS PROC MIXED (`HTYPE=1`, `DDFM=KR`). Genstat's
+"sequentially adding terms" tests the same hypotheses for `repl` and `contcompf.standard` and different ones
+for `column` and `contcompf`, because it builds them from the fitted variances; it also uses an F without
+Kenward-Roger's adjustment (see `?anova.lmerMod`). Genstat's Wald and F statistics:
 
 ```{r}
 kable(anova(fm8.7, type = 1), digits = 4)
