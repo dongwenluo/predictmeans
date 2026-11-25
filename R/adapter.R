@@ -45,6 +45,18 @@
 #' pm_df(model, L, ...)
 #' pm_linkinv(model, ...)
 #' pm_contrasts(model, ...)
+#' @section What a new class gets:
+#' \describe{
+#'   \item{Means, pairs and contrasts}{\code{predictmeans()}, \code{contrastmeans()}, \code{pm_joint()},
+#'   \code{pm_slopes()}, \code{Kmatrix()} need \code{coef()} (or \code{pm_coef()}), \code{vcov()} (or
+#'   \code{pm_vcov()}) and \code{terms()}, plus the data (found from the call, or a \code{pm_data()} method).
+#'   The columns of \code{pm_basis()} are matched to the coefficients by name.}
+#'   \item{Residual plots}{\code{residplot()} and \code{pm_check()} also need \code{fitted()} and
+#'   \code{residuals()} methods (residuals divided by their SD); without them they stop and say so.}
+#'   \item{The rest}{\code{anova()}, \code{CookD()}, \code{R2_model()}, \code{varcomp()}, \code{se_ranef()},
+#'   \code{permmodels()} and \code{bootmodels()} have their own code for the classes they list, and stop with
+#'   that list for any other class.}
+#' }
 #' @param model A fitted model.
 #' @param newdata A data frame of predictor values (the reference grid).
 #' @param L A matrix of linear functions of the coefficients, one row per contrast or mean.
@@ -85,6 +97,13 @@ NULL
 pm_coef <- function(model, ...) UseMethod("pm_coef")
 #' @exportS3Method pm_coef default
 pm_coef.default <- function(model, ...) stats::coef(model)
+#' @exportS3Method pm_coef lm
+pm_coef.lm <- function(model, ...) {
+  # lm, glm, aov: the stored estimates keep the aliased ones as NA (coef() of an
+  # aov fit leaves them out); a multivariate lm has a matrix, left to coef()
+  b <- model$coefficients
+  if (is.numeric(b) && !is.matrix(b)) b else stats::coef(model)
+}
 #' @exportS3Method pm_coef lme
 pm_coef.lme <- function(model, ...) nlme::fixef(model)
 #' @exportS3Method pm_coef merMod
@@ -178,6 +197,15 @@ pm_contrasts.lme <- function(model, ...) model$contrasts
 pm_contrasts.gls <- function(model, ...) model$contrasts
 #' @exportS3Method pm_contrasts lm
 pm_contrasts.lm <- function(model, ...) model$contrasts
+
+## The model as fitted by its engine: a semireg() / semireg_tmb() fit holds its
+## lme4 or glmmTMB model in $semer; any other model is its own fit.
+pm_fit <- function(model) if (inherits(model, "semireg")) model$semer else model
+
+## The model the means functions work on: an aov fit with Error() strata is
+## analysed through its carrier (the fixed part as an lm, holding the strata;
+## R/aovlist.R); any other model as it is.
+pm_means_model <- function(model) if (inherits(model, "aovlist")) pm_aov_carrier(model) else model
 
 ## Names of the columns of the fixed-effects design, in its order: the names
 ## of pm_coef(). (glmmTMB: the columns of its model matrix; with a

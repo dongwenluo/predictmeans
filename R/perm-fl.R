@@ -20,74 +20,94 @@
 ## The linear model for the permutations: X (non-aliased columns), z, the
 ## term each column belongs to (assign), the terms, and 'ord' when the rows
 ## were reordered (nlme models, by group).
-pm_fl_design <- function(model) {
-  if (inherits(model, "lm") && !inherits(model, "glm")) {
-    mf <- stats::model.frame(model)
-    y <- stats::model.response(mf)
-    if (!is.null(dim(y))) stop("method = \"freedman-lane\" needs a single response.", call. = FALSE)
-    X <- stats::model.matrix(model)
-    asgn <- attr(X, "assign")
-    b <- stats::coef(model)
-    ok <- !is.na(b)
-    X <- X[, ok, drop = FALSE]
-    asgn <- asgn[ok]
-    off <- stats::model.offset(mf)
-    z <- if (is.null(off)) y else y - off
-    w <- stats::weights(model)
-    if (!is.null(w)) {
-      keep <- w > 0
-      X <- X[keep, , drop = FALSE] * sqrt(w[keep])
-      z <- z[keep] * sqrt(w[keep])
-    }
-    return(list(X = X, z = as.vector(z), asgn = asgn, Terms = stats::terms(model), ord = NULL, kind = "lm"))
-  }
-  if (inherits(model, c("glm", "glmerMod", "glmmTMB"))) {
-    wk <- pm_working(model)
-    X0 <- if (inherits(model, "glm")) stats::model.matrix(model) else lme4::getME(model, "X")
-    asgn <- attr(X0, "assign")[match(colnames(wk$X), colnames(X0))]
-    # rows with zero prior weight carry no information
-    keep <- is.finite(wk$resvar) & wk$resvar > 0
-    Xk <- wk$X[keep, , drop = FALSE]
-    zk <- wk$z[keep]
-    if (ncol(wk$A)) {
-      W <- pm_whiten(wk$A[keep, , drop = FALSE], wk$resvar[keep])
-      X <- W$solve(Xk)
-      z <- W$solve(zk)
-    } else {
-      X <- Xk / sqrt(wk$resvar[keep])
-      z <- zk / sqrt(wk$resvar[keep])
-    }
-    colnames(X) <- colnames(wk$X)
-    return(list(X = X, z = as.vector(z), asgn = asgn, Terms = stats::terms(model), ord = NULL, kind = "working"))
-  }
-  if (inherits(model, "lmerMod")) {
-    X0 <- lme4::getME(model, "X")
-    resp <- model@resp
-    W <- pm_mer_whiten(model)
-    X <- W$solve(as.matrix(X0))
-    colnames(X) <- colnames(X0)
-    return(list(X = X, z = as.vector(W$solve(resp$y - resp$offset)), asgn = attr(X0, "assign"),
-                Terms = stats::terms(model), ord = NULL, kind = "gls"))
-  }
-  if (inherits(model, c("lme", "gls"))) {
-    d <- as.data.frame(pm_get_data(model))
-    Terms <- stats::terms(model)
-    X0 <- stats::model.matrix(Terms, d)
-    b <- pm_fixef(model)
-    X <- X0[, names(b), drop = FALSE]
-    asgn <- attr(X0, "assign")[match(names(b), colnames(X0))]
-    y <- as.numeric(nlme::getResponse(model))
-    if (nrow(X) != length(y)) stop("Please remove missing values from the data and refit the model.", call. = FALSE)
-    nw <- pm_nlme_whiten(model, cbind(X, y))
-    ord <- nw$ord
-    W <- nw$W
-    Xw <- W$solve(nw$B[, colnames(X), drop = FALSE])
-    colnames(Xw) <- colnames(X)
-    return(list(X = Xw, z = as.vector(W$solve(nw$B[, "y"])), asgn = asgn, Terms = Terms, ord = ord, kind = "gls"))
-  }
+pm_fl_design <- function(model) UseMethod("pm_fl_design")
+
+#' @exportS3Method NULL
+pm_fl_design.default <- function(model) {
   stop("method = \"freedman-lane\" is available for lm, aov, glm, lme, gls, lmer, glmer and glmmTMB models.",
        call. = FALSE)
 }
+
+#' @exportS3Method NULL
+pm_fl_design.lm <- function(model) {
+  mf <- stats::model.frame(model)
+  y <- stats::model.response(mf)
+  if (!is.null(dim(y))) stop("method = \"freedman-lane\" needs a single response.", call. = FALSE)
+  X <- stats::model.matrix(model)
+  asgn <- attr(X, "assign")
+  b <- stats::coef(model)
+  ok <- !is.na(b)
+  X <- X[, ok, drop = FALSE]
+  asgn <- asgn[ok]
+  off <- stats::model.offset(mf)
+  z <- if (is.null(off)) y else y - off
+  w <- stats::weights(model)
+  if (!is.null(w)) {
+    keep <- w > 0
+    X <- X[keep, , drop = FALSE] * sqrt(w[keep])
+    z <- z[keep] * sqrt(w[keep])
+  }
+  return(list(X = X, z = as.vector(z), asgn = asgn, Terms = stats::terms(model), ord = NULL, kind = "lm"))
+}
+
+#' @exportS3Method NULL
+pm_fl_design.glm <- function(model) {
+  wk <- pm_working(model)
+  X0 <- if (inherits(model, "glm")) stats::model.matrix(model) else lme4::getME(model, "X")
+  asgn <- attr(X0, "assign")[match(colnames(wk$X), colnames(X0))]
+  # rows with zero prior weight carry no information
+  keep <- is.finite(wk$resvar) & wk$resvar > 0
+  Xk <- wk$X[keep, , drop = FALSE]
+  zk <- wk$z[keep]
+  if (ncol(wk$A)) {
+    W <- pm_whiten(wk$A[keep, , drop = FALSE], wk$resvar[keep])
+    X <- W$solve(Xk)
+    z <- W$solve(zk)
+  } else {
+    X <- Xk / sqrt(wk$resvar[keep])
+    z <- zk / sqrt(wk$resvar[keep])
+  }
+  colnames(X) <- colnames(wk$X)
+  return(list(X = X, z = as.vector(z), asgn = asgn, Terms = stats::terms(model), ord = NULL, kind = "working"))
+}
+
+#' @exportS3Method NULL
+pm_fl_design.glmerMod <- pm_fl_design.glm
+
+#' @exportS3Method NULL
+pm_fl_design.glmmTMB <- pm_fl_design.glm
+
+#' @exportS3Method NULL
+pm_fl_design.lmerMod <- function(model) {
+  X0 <- lme4::getME(model, "X")
+  resp <- model@resp
+  W <- pm_mer_whiten(model)
+  X <- W$solve(as.matrix(X0))
+  colnames(X) <- colnames(X0)
+  return(list(X = X, z = as.vector(W$solve(resp$y - resp$offset)), asgn = attr(X0, "assign"),
+              Terms = stats::terms(model), ord = NULL, kind = "gls"))
+}
+
+#' @exportS3Method NULL
+pm_fl_design.lme <- function(model) {
+  d <- as.data.frame(pm_get_data(model))
+  Terms <- stats::terms(model)
+  X0 <- stats::model.matrix(Terms, d)
+  b <- pm_fixef(model)
+  X <- X0[, names(b), drop = FALSE]
+  asgn <- attr(X0, "assign")[match(names(b), colnames(X0))]
+  y <- as.numeric(nlme::getResponse(model))
+  if (nrow(X) != length(y)) stop("Please remove missing values from the data and refit the model.", call. = FALSE)
+  nw <- pm_nlme_whiten(model, cbind(X, y))
+  ord <- nw$ord
+  W <- nw$W
+  Xw <- W$solve(nw$B[, colnames(X), drop = FALSE])
+  colnames(Xw) <- colnames(X)
+  return(list(X = Xw, z = as.vector(W$solve(nw$B[, "y"])), asgn = asgn, Terms = Terms, ord = ord, kind = "gls"))
+}
+
+#' @exportS3Method NULL
+pm_fl_design.gls <- pm_fl_design.lme
 
 pm_perm_fl <- function(model, nperm, type, exact, seed, perms = NULL, refit = FALSE, ncore = 1) {
   if (refit && inherits(model, c("lmerMod", "lme", "gls", "glmerMod", "glmmTMB"))) {

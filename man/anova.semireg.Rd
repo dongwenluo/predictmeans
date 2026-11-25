@@ -10,7 +10,7 @@
 \item{object}{A \code{\link{semireg}} or \code{\link{semireg_tmb}} fit.}
 
 \item{type}{\code{"III"} (default), \code{"II"} or \code{"I"} (also \code{3}, \code{2}, \code{1}): the type of
-the tests of the fixed effects. Type I is sequential (Satterthwaite F for gaussian fits, Wald chi-square
+the tests of the fixed effects. Type I is sequential (Kenward-Roger F for gaussian fits, Wald chi-square
 otherwise); see \code{\link{anova.lmerMod}} for which type to use.}
 
 \item{smooth}{Logical: test the smooth terms (refits the model once per smooth block)? The default is TRUE.}

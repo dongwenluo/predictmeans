@@ -66,7 +66,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
   df_method <- match.arg(df_method)
   weights <- match.arg(weights)
   adj <- pm_match_adj(adj)
-  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
+  model <- pm_means_model(model)
   pm_check_modelterm(model, modelterm)
   dat <- pm_get_data(model)
   if (!covariate %in% names(dat) || !is.numeric(dat[[covariate]])) {
@@ -85,6 +85,13 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
   inf <- pm_inference(model, df_method, vcov_adjust, vcov_adjust_default, vcov)     # R/inference.R
   mp <- inf$mp
   L <- (kp$K - km$K)/(2*h)
+  # estimable slopes: orthogonal to the null space of a rank-deficient design,
+  # the test Kmatrix() uses for means. A covariate constant within a factor's
+  # levels (a site mean with site in the model) is aliased with that factor:
+  # its slope is not estimable, only the differences between groups' slopes.
+  np <- pm_slope_null_proj(kp$K, km$K, h)
+  est_ok <- if (is.null(np)) rep(TRUE, nrow(L)) else pm_estimable_rows(np, L)
+  L_full <- L
   L <- pm_K_cols(L, mp)
   rownames(L) <- levs
   V <- as.matrix(mp$vcov)
@@ -95,20 +102,29 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
   est <- drop(L %*% mp$coef)
   se <- sqrt(rowSums((L %*% V) * L))
   dfs <- df_of(L)
+  est[!est_ok] <- se[!est_ok] <- NA
   crit <- stats::qt(1 - level/2, dfs)
   # the layout of predictmeans(): estimate, std.error, df, statistic, p.value, limits
   slopes <- cbind(lab, estimate = est, std.error = se, df = dfs, statistic = est/se,
-                  p.value = 2*stats::pt(-abs(est/se), dfs), conf.low = est - crit*se, conf.high = est + crit*se)
+                  p.value = 2*stats::pt(-abs(est/se), dfs), conf.low = est - crit*se, conf.high = est + crit*se,
+                  estimable = est_ok)
 
   pairs <- NULL
   n <- length(est)
-  if (n > 1) {
+  # no pairs when the slopes are equal by the model (no covariate x term
+  # interaction): their differences are 0 by assumption, not estimates
+  rL <- if (n > 1) pm_pair_matrix(n) %*% L
+  if (n > 1 && any(abs(rL) > 1e-10 * max(1, abs(L)))) {
     pp <- pm_pair_index(n)
-    rL <- pm_pair_matrix(n) %*% L
     pe <- drop(rL %*% mp$coef)
     pV <- rL %*% V %*% t(rL)
     pse <- sqrt(diag(pV))
     pdf <- df_of(rL)
+    if (!is.null(np)) {
+      pok <- pm_estimable_rows(structure(pm_pair_matrix(n) %*% np, scale = attr(np, "scale")),
+                               pm_pair_matrix(n) %*% L_full)
+      pe[!pok] <- pse[!pok] <- NA
+    }
     stat <- pe/pse
     p <- 2*stats::pt(-abs(stat), pdf)
     fams <- pm_families(rep("all", length(stat)), est = !is.na(stat), ij = cbind(pp$j, pp$i), L = rL)
@@ -157,4 +173,14 @@ print.pm_slopes <- function(x, digits = 4, ...) {
   }
   pm_print_advice(x)
   invisible(x)
+}
+
+## Projection of the slope rows (K(at + h) - K(at - h))/2h on the null space
+## of the design (Kmatrix() stores K's projection as attr(K, "null_proj")).
+## NULL for a full-rank design.
+pm_slope_null_proj <- function(Kp, Km, h) {
+  a <- attr(Kp, "null_proj")
+  b <- attr(Km, "null_proj")
+  if (is.null(a) || is.null(b)) return(NULL)
+  structure((a - b)/(2*h), scale = attr(a, "scale"))
 }

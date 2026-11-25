@@ -16,3 +16,4 @@
 ^CLAUDE\.md$
 ^HANDOVER\.md$
 ^vignettes/.*\.Rmd\.orig$
+^\.claude$

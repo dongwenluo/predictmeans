@@ -27,62 +27,83 @@ pm_boot_parts <- function(model) {
     f
   }
 
-  if (inherits(model, "merMod")) {
-    null_fit <- quiet(pm_refit(model, formula = null_f))
-    return(list(null_fit = null_fit, simulate = function(nsim) stats::simulate(null_fit, nsim = nsim),
-                refit = function(y) quiet(pm_mer_refit(model, y)), packages = "lme4"))
-  }
-  if (inherits(model, c("lme", "gls"))) {
-    fa <- if (inherits(model, "lme")) "fixed" else "model"
-    d <- as.data.frame(pm_get_data(model))
-    # (gls names its formula 'model', which pm_refit() takes for the fit: change the call here)
-    refit_f <- function(f, data = NULL) {
-      cl <- stats::getCall(model)
-      cl[[fa]] <- f
-      if (!is.null(data)) cl$data <- data
-      quiet(eval(cl, pm_fit_env(model)))
-    }
-    null_fit <- refit_f(null_f)
-    P <- pm_nlme_reml(null_fit)
-    V <- P$Sig(P$th0)
-    R <- Matrix::chol(V)                                  # R'R = V
-    mu <- as.numeric(P$X %*% pm_fixef(null_fit))
-    n <- length(mu)
-    f_full <- new_lhs(stats::formula(model))
-    return(list(null_fit = null_fit,
-                simulate = function(nsim) {
-                  Z <- matrix(stats::rnorm(n * nsim), n)
-                  Y <- mu + as.matrix(Matrix::crossprod(R, Z))
-                  lapply(seq_len(nsim), function(i) Y[, i])
-                },
-                refit = function(y) {
-                  dd <- d
-                  dd$.pm_y <- y
-                  refit_f(f_full, dd)
-                },
-                packages = "nlme"))
-  }
-  if (inherits(model, c("glmmTMB", "lm"))) {
-    if (inherits(model, "glm")) {
-      fam <- stats::family(model)$family
-      if (grepl("^quasi", fam)) {
-        stop("bootmodels() simulates from the model: a quasi family has no distribution to simulate from. ",
-             "Use permmodels() instead.", call. = FALSE)
-      }
-    }
-    d <- as.data.frame(if (inherits(model, "glmmTMB")) pm_model_rows(model) else pm_get_data(model))
-    null_fit <- quiet(pm_refit(model, formula = null_f))
-    f_full <- new_lhs(stats::formula(model))
-    return(list(null_fit = null_fit, simulate = function(nsim) as.list(stats::simulate(null_fit, nsim = nsim)),
-                refit = function(y) {
-                  dd <- d
-                  dd$.pm_y <- y
-                  quiet(pm_refit(model, data = dd, formula = f_full))
-                },
-                packages = if (inherits(model, "glmmTMB")) "glmmTMB" else "stats"))
-  }
+  pm_boot_fit(model, null_f, new_lhs, quiet)
+}
+
+## The class-specific part of pm_boot_parts(): the null fit, the simulation
+## of responses from it, and the refit of the full model to one response.
+pm_boot_fit <- function(model, null_f, new_lhs, quiet) UseMethod("pm_boot_fit")
+
+#' @exportS3Method NULL
+pm_boot_fit.default <- function(model, null_f, new_lhs, quiet) {
   stop("bootmodels() handles lm, aov, glm, gls, lme, lmer, glmer and glmmTMB models.", call. = FALSE)
 }
+
+#' @exportS3Method NULL
+pm_boot_fit.merMod <- function(model, null_f, new_lhs, quiet) {
+  null_fit <- quiet(pm_refit(model, formula = null_f))
+  return(list(null_fit = null_fit, simulate = function(nsim) stats::simulate(null_fit, nsim = nsim),
+              refit = function(y) quiet(pm_mer_refit(model, y)), packages = "lme4"))
+}
+
+#' @exportS3Method NULL
+pm_boot_fit.lme <- function(model, null_f, new_lhs, quiet) {
+  fa <- if (inherits(model, "lme")) "fixed" else "model"
+  d <- as.data.frame(pm_get_data(model))
+  # (gls names its formula 'model', which pm_refit() takes for the fit: change the call here)
+  refit_f <- function(f, data = NULL) {
+    cl <- stats::getCall(model)
+    cl[[fa]] <- f
+    if (!is.null(data)) cl$data <- data
+    quiet(eval(cl, pm_fit_env(model)))
+  }
+  null_fit <- refit_f(null_f)
+  P <- pm_nlme_reml(null_fit)
+  V <- P$Sig(P$th0)
+  R <- Matrix::chol(V)                                  # R'R = V
+  mu <- as.numeric(P$X %*% pm_fixef(null_fit))
+  n <- length(mu)
+  f_full <- new_lhs(stats::formula(model))
+  return(list(null_fit = null_fit,
+              simulate = function(nsim) {
+                Z <- matrix(stats::rnorm(n * nsim), n)
+                Y <- mu + as.matrix(Matrix::crossprod(R, Z))
+                lapply(seq_len(nsim), function(i) Y[, i])
+              },
+              refit = function(y) {
+                dd <- d
+                dd$.pm_y <- y
+                refit_f(f_full, dd)
+              },
+              packages = "nlme"))
+}
+
+#' @exportS3Method NULL
+pm_boot_fit.gls <- pm_boot_fit.lme
+
+#' @exportS3Method NULL
+pm_boot_fit.lm <- function(model, null_f, new_lhs, quiet) {
+  if (inherits(model, "glm")) {
+    fam <- stats::family(model)$family
+    if (grepl("^quasi", fam)) {
+      stop("bootmodels() simulates from the model: a quasi family has no distribution to simulate from. ",
+           "Use permmodels() instead.", call. = FALSE)
+    }
+  }
+  d <- as.data.frame(if (inherits(model, "glmmTMB")) pm_model_rows(model) else pm_get_data(model))
+  null_fit <- quiet(pm_refit(model, formula = null_f))
+  f_full <- new_lhs(stats::formula(model))
+  return(list(null_fit = null_fit, simulate = function(nsim) as.list(stats::simulate(null_fit, nsim = nsim)),
+              refit = function(y) {
+                dd <- d
+                dd$.pm_y <- y
+                quiet(pm_refit(model, data = dd, formula = f_full))
+              },
+              packages = if (inherits(model, "glmmTMB")) "glmmTMB" else "stats"))
+}
+
+#' @exportS3Method NULL
+pm_boot_fit.glmmTMB <- pm_boot_fit.lm
 
 ## The ANOVA table whose statistic bootmodels() resamples, and that column.
 ##   Type I: sequential tests (F for lm, lme, gls, merMod; for glm the

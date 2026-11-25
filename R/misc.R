@@ -868,7 +868,7 @@ pm_note_singular <- function(model) {
 ## mu, not the overall mean (1 - pi) mu. Returns "conditional" (the settings
 ## field) with the message as attribute, or NULL.
 pm_zi_component <- function(model) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   if (!inherits(model, "glmmTMB")) return(NULL)
   zf <- model$modelInfo$allForm$ziformula
   if (is.null(zf) || identical(paste(deparse(zf), collapse = ""), "~0")) return(NULL)

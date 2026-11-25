@@ -78,6 +78,10 @@ shows 1.1.1 and 2.0 code side by side.
 
 ## Changes that affect results
 
+* `anova(<lmer fit>, type = "I")` now uses Kenward-Roger df and F, like Types II and III, and `ddf =
+  "Satterthwaite"` gives the previous table; both equal SAS PROC MIXED `HTYPE=1`. Type III tests a nested term
+  (`A + A:B`) within each level of the outer factor, as SAS (it had 0 df), and the "empty cells" note no longer
+  appears for nested factors or for factors that only have main effects.
 * REML `lmer` fits use Kenward-Roger adjusted standard errors in `predictmeans()`, `contrastmeans()` and
   `covariatemeans()`, as SAS `DDFM=KR` and emmeans. Unbalanced designs change slightly. 1.x:
   `vcov_adjust = FALSE`.
@@ -141,6 +145,10 @@ shows 1.1.1 and 2.0 code side by side.
 
 ### Tests and degrees of freedom
 
+* `anova()` of `lmer` fits: `type1_basis = "fitted"` builds Type I hypotheses from the fitted model
+  (X'V^-1X), as Genstat, instead of X'X (SAS, lmerTest; the default); `ddf = "KR-average"` gives Genstat's
+  d.d.f. with an unadjusted F. Together they reproduce Genstat's Wald and F statistics; Genstat prints each
+  term's Type II d.d.f., here each test has the d.d.f. of its own hypothesis.
 * `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"` (Genstat), `"Satterthwaite"`,
   `"containment"`, `"between-within"`, `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.
@@ -194,10 +202,29 @@ shows 1.1.1 and 2.0 code side by side.
 * Exported generics `pm_coef()`, `pm_vcov()`, `pm_basis()`, `pm_data()`, `pm_df()`, `pm_linkinv()` for new
   model classes (`?pm_coef`). The columns of the design are matched to the coefficients by name; a name
   without a column stops with a message, never a silent mismatch.
+* `pm_coef()` of an `aov` fit keeps its aliased coefficients as `NA`, as for `lm` and `glm`; every front end
+  now reads a fit's coefficients and covariance only through `pm_coef()` and `pm_vcov()`.
+* `?pm_coef` says what a new model class gets: means and pairs need `coef()`, `vcov()` and `terms()`;
+  `residplot()` and `pm_check()` also `fitted()` and `residuals()` (else they stop and say so); the other
+  functions list the classes they handle.
 * New data sets, including `Caschool`, `DataExam5.2`, `copper` and M. P. Wand's examples.
 
 ## Bug fixes
 
+* Estimability checks (means, their pairs, empty-cell contrasts, slopes) no longer depend on the units of a
+  covariate: with a site mean in large units an aliased slope was reported as 0 with SE 0.
+* `anova()` of `lmer` fits: a factor nested in another only in the data (`y ~ G + T`) is tested within it
+  in Type III, as with `G/T`, with a caution to write `G/T`; balanced nested designs are no longer called
+  unbalanced; ML fits get Satterthwaite df with a message instead of a Kenward-Roger label; a failed
+  Kenward-Roger adjustment in Types II and III falls back to Satterthwaite.
+* `pm_slopes()` gives no pairs when the slopes are equal by the model (no covariate x term interaction).
+* `covariatemeans()` drew curves that the data do not identify (a covariate constant within the levels of a
+  factor in the model, as a site mean with site; or a function of other factors). It now stops with a
+  message pointing to `contr =` and `pm_slopes()`, which estimate the differences between curves; single
+  points that cannot be estimated are NA, with advice.
+* `pm_slopes()` gave a slope of 0 with SE 0 when the covariate is aliased with a factor (a site mean with
+  site in the model). Such slopes are now NA, with advice; their differences are kept. The slopes table has
+  an `estimable` column, as the means table.
 * `autoplot()` of means by group with the data (`data = TRUE`) works with ggplot2 3.4, as `DESCRIPTION`
   promises (it stopped: "position_jitterdodge() requires at least one aesthetic to dodge by").
 * Permutation tests, `bootmodels()` and variance-component tests of `lmer`/`glmer` fits with missing values

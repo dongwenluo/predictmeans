@@ -51,9 +51,7 @@ pm_setup <- function(a) {
   adj <- pm_match_adj(a$adj, westfall = TRUE)
 
   trans <- if (is.null(a$trans)) I else a$trans
-  if (inherits(model, "aovlist")){
-    model <- pm_aov_carrier(model)
-  }
+  model <- pm_means_model(model)
 
   # Models with a link function other than the identity: means are
   # back-transformed with its inverse (pm_linkinv(); see ?pm_coef to support
@@ -459,8 +457,8 @@ pm_compare_sed <- function(K, KK, label, fctnames, vars, coef, vcovm, atvar, cel
   if (!is.null(null_proj) && all(rnK %in% rownames(null_proj))) {
     np <- null_proj[rnK, , drop = FALSE]
     pd <- np[pp$j, , drop = FALSE] - np[pp$i, , drop = FALSE]
-    scale_r <- pmax(1, apply(abs(rK), 1, max))
-    non_est_pair <- apply(abs(pd), 1, max) > 1e-6 * scale_r
+    attr(pd, "scale") <- attr(null_proj, "scale")
+    non_est_pair <- !pm_estimable_rows(pd, rK)
   }
   # pairs with a mean over empty cells: on the cells both means have
   pair_over <- rep(NA_character_, nrow(rK))

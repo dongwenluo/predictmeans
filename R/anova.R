@@ -27,7 +27,7 @@ pm_anova_type <- function(type, allowed = c("I", "II", "III")) {
 
 pm_anova <- function(model, type = c("II", "III", "2", "3"),
                      test_statistic = c("Chisq", "F", "LR", "Wald"), kr_information = "observed",
-                     type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite")) {
+                     type3_map = NULL, ddf = c("Kenward-Roger", "Satterthwaite", "KR-average")) {
   ddf <- match.arg(ddf)
   type <- pm_anova_type(type[1], c("II", "III"))
   test_statistic <- match.arg(test_statistic)
@@ -108,10 +108,17 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   if (nrow(V) == length(b_all) && length(b) < length(b_all)) V <- V[not_aliased, not_aliased, drop = FALSE]
   PhiA <- NULL
   satt <- layout == "mer" && test == "F" && ddf == "Satterthwaite"
+  # "KR-average" (Genstat): Wald/q from the unadjusted covariance, df Kenward-Roger with the average
+  # information; "expected": as car::Anova() (pbkrtest). A failed adjustment: Satterthwaite, with a message.
+  kr_avg <- layout == "mer" && test == "F" && ddf == "KR-average"
   if (layout == "mer" && test == "F" && !satt) {
-    PhiA <- pm_vcov_kr(model, kr_information)   # "expected": as car::Anova() (pbkrtest)
-    V <- as.matrix(PhiA)
-    attributes(V) <- attributes(V)[c("dim", "dimnames")]
+    PhiA <- pm_try_vcov_kr(model, if (kr_avg) "average" else kr_information)
+    if (is.null(PhiA)) {
+      satt <- TRUE; kr_avg <- FALSE; ddf <- "Satterthwaite"
+    } else if (!kr_avg) {
+      V <- as.matrix(PhiA)
+      attributes(V) <- attributes(V)[c("dim", "dimnames")]
+    }
   }
   # Satterthwaite: the unadjusted covariance, df by lmerTest's rule (pm_inference())
   inf_s <- if (satt) pm_inference(model, df_method = "Satterthwaite", vcov_adjust = FALSE)
@@ -121,6 +128,7 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
       return(c(stat = r[[3]], ddf = r[[2]]))
     }
     kr <- pm_kr_ftest(model, H, PhiA)
+    if (kr_avg) return(c(stat = pm_waldF(H, b, V), ddf = kr[["ddf"]]))
     c(stat = kr[["stat"]], ddf = kr[["ddf"]])
   }
   mm <- stats::model.matrix(model)
@@ -178,7 +186,8 @@ pm_anova_wald <- function(model, type, layout = c("default", "lme", "mer"), test
   resp <- paste("Response:", pm_response_name(model))
 
   if (layout == "mer") {
-    kind <- if (test == "F") paste0("Wald F tests with ", ddf, " df") else "Wald chisquare tests"
+    kind <- if (test != "F") "Wald chisquare tests" else if (ddf == "KR-average")
+      "Wald F tests (unadjusted F) with Kenward-Roger df, average information" else paste0("Wald F tests with ", ddf, " df")
     heading <- c(paste0("Analysis of Deviance Table (Type ", type, " ", kind, ")\n"), resp, pm_cells_note(map))
     if (test == "F") {
       return(pm_anova_result(data.frame(stat, df, res_df, pval), names, c("F", "Df", "Df.res", "Pr(>F)"), heading))
@@ -382,16 +391,58 @@ pm_lmer_tables <- function(model) {
   tv <- b/se
   coefT <- cbind(Estimate = b, "Std. Error" = se, df = dfc, "t value" = tv, "Pr(>|t|)" = 2*stats::pt(-abs(tv), dfc))
   rownames(coefT) <- names(b)
-  Ls <- pm_type1_L(lme4::getME(model, "X"), attr(stats::terms(model), "term.labels"))
-  Fv <- pm_type1_F(Ls, b, V)[, 1]
-  q <- vapply(Ls, nrow, 1L)
-  ddf <- vapply(Ls, function(L) pm_satt_Fddf(L, parts), numeric(1))
+  list(coef = coefT, anova = pm_lmer_type1(model, "Satterthwaite", parts = parts))
+}
+
+## Type I (sequential) F tests of an lmer fit. basis = "design" (default):
+## hypotheses built from X'X (pm_type1_L()), as SAS PROC MIXED HTYPE=1 and
+## lmerTest; they depend on the design only. basis = "fitted": from
+## X'V^-1X, the GLS fit (the rows of the Cholesky factor of vcov^-1 that go
+## with each term), as Genstat's "sequentially adding terms": each term
+## after the earlier ones in the mixed model's own fit; the parts add up to
+## the whole Wald statistic, and the hypotheses move with the estimated
+## variances. The two always agree for the last term, and for a term
+## orthogonal to the random effects (replicates in dev/sas/type1-exam8.2.sas). ddf: "Kenward-Roger" (adjusted covariance and
+## scaled F, = SAS DDFM=KR), "Satterthwaite" (= SAS DDFM=SATTERTHWAITE),
+## "KR-average" (Wald/q unadjusted with Kenward-Roger df from the average
+## information, as Genstat). A failed adjustment falls back to Satterthwaite.
+pm_lmer_type1 <- function(model, ddf = "Kenward-Roger", basis = "design", parts = NULL) {
+  X <- lme4::getME(model, "X")
+  labs <- attr(stats::terms(model), "term.labels")
+  b <- lme4::fixef(model)
+  V <- as.matrix(stats::vcov(model))
+  Ls <- if (basis == "fitted") pm_type1_L_fitted(V, attr(X, "assign"), labs) else pm_type1_L(X, labs)
+  PhiA <- switch(ddf, "Kenward-Roger" = pm_try_vcov_kr(model),
+                 "KR-average" = pm_try_vcov_kr(model, "average"), NULL)
+  if (is.null(PhiA)) ddf <- "Satterthwaite"
+  if (ddf == "Satterthwaite" && is.null(parts)) parts <- pm_satt_parts(model)
+  ft <- vapply(Ls, function(L) {
+    if (ddf == "Satterthwaite") return(c(pm_waldF(L, b, V), nrow(L), pm_satt_Fddf(L, parts)))
+    k <- pm_kr_ftest(model, L, PhiA)
+    c(if (ddf == "KR-average") pm_waldF(L, b, V) else k[["stat"]], k[["ndf"]], k[["ddf"]])
+  }, numeric(3))
+  Fv <- ft[1, ]; q <- ft[2, ]; dd <- ft[3, ]
   ms <- Fv * stats::sigma(model)^2
-  aT <- data.frame(ms * q, ms, q, ddf, Fv, stats::pf(Fv, q, ddf, lower.tail = FALSE), row.names = names(Ls))
+  aT <- data.frame(ms * q, ms, q, dd, Fv, stats::pf(Fv, q, dd, lower.tail = FALSE), row.names = names(Ls))
   names(aT) <- c("Sum Sq", "Mean Sq", "NumDF", "DenDF", "F value", "Pr(>F)")
-  attr(aT, "heading") <- "Type I Analysis of Variance Table with Satterthwaite's method"
+  method <- switch(ddf, "Kenward-Roger" = "Kenward-Roger's method",
+                   "KR-average" = "Kenward-Roger df (average information), unadjusted F",
+                   "Satterthwaite's method")
+  attr(aT, "heading") <- paste0("Type I Analysis of Variance Table with ", method,
+                                if (basis == "fitted") "\nSequential hypotheses from the fitted model (X'V^-1 X), as Genstat")
   class(aT) <- c("anova", "data.frame")
-  list(coef = coefT, anova = aT)
+  aT
+}
+
+## Type I hypotheses from the GLS fit: with R the upper Cholesky factor of
+## vcov^-1 (= X'V^-1X / sigma^2), (R b)[term k] are the sequential parts, so
+## the rows of R for term k are its hypothesis. 'assign': term of each
+## coefficient (0 = intercept).
+pm_type1_L_fitted <- function(V, assign, labs) {
+  R <- chol(solve(V))
+  dimnames(R) <- list(colnames(V), colnames(V))
+  k <- sort(unique(assign[assign > 0]))
+  stats::setNames(lapply(k, function(j) R[assign == j, , drop = FALSE]), labs[k])
 }
 
 ## Wald F of each hypothesis L b = 0 (q = rows of L), with covariance V.
@@ -450,9 +501,43 @@ pm_type3_hyp <- function(map, j) {
   H[apply(abs(H), 1, max) > 1e-12, , drop = FALSE]
 }
 
+## Type III contrasts of a nested term, as SAS's B(A): the factors of the
+## term that are nested in other factors of the model are compared within
+## each combination of those (outer) factors, on the estimable cells
+## (combinations absent by design are not empty cells). Nested by the model:
+## a factor of the term without a lower-order term (contcompf:standard without
+## standard, A + A:B). Nested in the data only: a main effect T whose levels
+## each occur with one level of another main effect G (y ~ G + T, 'nested' from
+## pm_nested_pairs()); T is then tested within G, as in G/T, not as the
+## equality of all its levels, which would include the differences of G.
+## NULL for a term that is not nested (the crossed rule).
+pm_type3_nested_C <- function(term, labs, fct, est, nested = list(), dat = NULL) {
+  vars <- unlist(strsplit(term, ":"))
+  if (length(vars) < 2) {
+    outer <- unique(vapply(Filter(function(p) p$b == vars && p$a %in% labs, nested), `[[`, "", "a"))
+    if (!length(outer) || is.null(dat)) return(NULL)
+    lk <- unique(dat[c(vars, outer)])
+    i <- match(as.character(fct[[vars]]), as.character(lk[[vars]]))
+    key <- do.call(paste, c(lapply(lk[i, outer, drop = FALSE], as.character), sep = "\r"))
+  } else {
+    lower <- labs[vapply(strsplit(labs, ":"), function(s) length(s) < length(vars) && all(s %in% vars), logical(1))]
+    outer <- intersect(vars, unlist(strsplit(lower, ":")))
+    if (length(outer) == length(vars)) return(NULL)
+    key <- if (length(outer)) do.call(paste, c(lapply(fct[outer], as.character), sep = "\r")) else rep("", length(est))
+  }
+  rows <- lapply(unique(key[est]), function(g) {
+    i <- which(est & key == g)
+    if (length(i) < 2) return(NULL)
+    m <- matrix(0, length(i) - 1, length(est))
+    for (k in seq_len(length(i) - 1)) m[k, i[c(k, k + 1)]] <- c(1, -1)
+    m
+  })
+  do.call(rbind, c(list(matrix(0, 0, length(est))), rows))
+}
+
 ## The heading line of a Type III table on the cells with data.
 pm_cells_note <- function(map) {
-  if (!isTRUE(map$cells)) return(character(0))
+  if (!isTRUE(map$cells) || isFALSE(map$empty)) return(character(0))
   "\nEmpty cells: each term is tested on the cells with data (see ?anova.lmerMod)"
 }
 
@@ -476,6 +561,10 @@ pm_type3_map_cells <- function(model, coef_names) {
   tt <- if (inherits(model, "merMod")) stats::terms(model, fixed.only = TRUE) else stats::terms(model)
   labs <- labels(tt)
   dat <- tryCatch(pm_get_data(model), error = function(e) stats::model.frame(model))
+  fvars <- unique(unlist(strsplit(labs, ":")))
+  fvars <- fvars[fvars %in% names(dat) & vapply(fvars, function(v) is.factor(dat[[v]]) || is.character(dat[[v]]),
+                                                logical(1))]
+  nested <- pm_nested_pairs(dat, fvars)                        # b nested in a, from the data
   over <- stats::setNames(rep(NA_character_, length(labs)), labs)
   hyp <- lapply(labs, function(term) {
     none <- matrix(0, 0, length(coef_names), dimnames = list(NULL, coef_names))
@@ -492,24 +581,29 @@ pm_type3_map_cells <- function(model, coef_names) {
     est <- est & !apply(K, 1, function(r) any(is.na(r)))
     K[!est, ] <- 0
     fct <- km$fctnames[vars]
-    # the term's contrasts: differences of consecutive levels, multiplied
-    D <- lapply(vars, function(v) {
-      lv <- levels(factor(fct[[v]]))
-      m <- matrix(0, length(lv) - 1, length(lv))
-      if (length(lv) > 1) for (k in seq_len(length(lv) - 1)) m[k, c(k, k + 1)] <- c(1, -1)
-      list(m = m, idx = match(as.character(fct[[v]]), lv))
-    })
-    combos <- expand.grid(lapply(D, function(d) seq_len(nrow(d$m))))
-    if (!nrow(combos)) return(none)
-    C <- t(vapply(seq_len(nrow(combos)), function(r) {
-      Reduce(`*`, lapply(seq_along(D), function(f) D[[f]]$m[combos[r, f], D[[f]]$idx]))
-    }, numeric(nrow(K))))
-    if (nrow(K) == 1) C <- matrix(C, ncol = 1)
-    # only the contrasts that use no empty cell of the term
-    if (any(!est)) {
-      W <- MASS::Null(C[, !est, drop = FALSE])
-      if (!ncol(W)) return(none)
-      C <- t(W) %*% C
+    C <- pm_type3_nested_C(term, labs, fct, est, nested, dat)
+    if (is.null(C)) {
+      # the term's contrasts: differences of consecutive levels, multiplied
+      D <- lapply(vars, function(v) {
+        lv <- levels(factor(fct[[v]]))
+        m <- matrix(0, length(lv) - 1, length(lv))
+        if (length(lv) > 1) for (k in seq_len(length(lv) - 1)) m[k, c(k, k + 1)] <- c(1, -1)
+        list(m = m, idx = match(as.character(fct[[v]]), lv))
+      })
+      combos <- expand.grid(lapply(D, function(d) seq_len(nrow(d$m))))
+      if (!nrow(combos)) return(none)
+      C <- t(vapply(seq_len(nrow(combos)), function(r) {
+        Reduce(`*`, lapply(seq_along(D), function(f) D[[f]]$m[combos[r, f], D[[f]]$idx]))
+      }, numeric(nrow(K))))
+      if (nrow(K) == 1) C <- matrix(C, ncol = 1)
+      # only the contrasts that use no empty cell of the term
+      if (any(!est)) {
+        W <- MASS::Null(C[, !est, drop = FALSE])
+        if (!ncol(W)) return(none)
+        C <- t(W) %*% C
+      }
+    } else if (!nrow(C)) {
+      return(none)
     }
     # means over empty cells of other factors: on the cells all of them have
     cr <- pm_common_rows(km$empty_cells, C, C %*% K, coef_names, together = TRUE)
@@ -522,7 +616,8 @@ pm_type3_map_cells <- function(model, coef_names) {
     q <- qr(t(H))
     H[q$pivot[seq_len(q$rank)], , drop = FALSE]
   })
-  list(cells = TRUE, hyp = hyp, coef = coef_names, over = over)
+  list(cells = TRUE, hyp = hyp, coef = coef_names, over = over,
+       empty = identical(as.vector(pm_design_balance(model)), "empty"))
 }
 
 #' ANOVA Tables for lmer Fits with Kenward-Roger or Satterthwaite df
@@ -538,7 +633,11 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
 #' contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
 #' cells on the cells its means share, as \code{\link{pm_joint}}; the table says so, and the intercept is not tested;
-#' Type II are those of \code{car::Anova()}; Type I (sequential) are lmerTest's, always with Satterthwaite df.
+#' Type II are those of \code{car::Anova()}; Type I (sequential) are by default those of SAS (\code{HTYPE=1}) and
+#' lmerTest, built from \eqn{X'X}, so they depend on the design only. Genstat's "sequentially adding terms" builds
+#' them from \eqn{X'V^{-1}X} (\code{type1_basis = "fitted"}): each term after the earlier ones in the mixed model's
+#' own fit, with parts that add up to the whole Wald statistic, but hypotheses that move with the estimated
+#' variances. With unbalanced data the two can differ for every term but the last.
 #' Kenward-Roger F tests use the adjusted covariance of the fixed effects (\code{pbkrtest}'s, observed information);
 #' a variance component estimated as zero is left out of the adjustment, as in SAS. \code{ddf = "lme4"} gives lme4's
 #' own table (sums of squares and F values without df or p-values).
@@ -549,7 +648,14 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' @param object An \code{lmer} fit (class \code{lmerMod}).
 #' @param ... Other fitted models: then lme4's comparison of the models.
 #' @param type \code{"III"} (default), \code{"II"} or \code{"I"}; also \code{3}, \code{2}, \code{1}.
-#' @param ddf \code{"Kenward-Roger"} (default), \code{"Satterthwaite"} or \code{"lme4"}.
+#' @param ddf \code{"Kenward-Roger"} (default; adjusted covariance and scaled F, as SAS \code{DDFM=KR}),
+#'   \code{"Satterthwaite"}, \code{"KR-average"} (F = Wald/numerator df from the unadjusted covariance, with
+#'   Kenward-Roger df from the average information, as Genstat) or \code{"lme4"}.
+#' @param type1_basis For \code{type = "I"}: \code{"design"} (default) builds the sequential hypotheses from
+#'   \eqn{X'X}, as SAS and lmerTest; \code{"fitted"} from \eqn{X'V^{-1}X}, as Genstat's "sequentially adding
+#'   terms". \code{type = "I", type1_basis = "fitted", ddf = "KR-average"} gives Genstat's Wald and F
+#'   statistics, and \code{type = "II", ddf = "KR-average"} its "dropping individual terms". Genstat prints every
+#'   term's Type II d.d.f. in its sequential table too; here each test has the d.d.f. of its own hypothesis.
 #' @param advice Logical: add a note on the choice of type when the data are unbalanced or have empty cells
 #'   (default \code{TRUE}).
 #' @section Which type of test:
@@ -580,23 +686,36 @@ pm_type3_map_cells <- function(model, coef_names) {
 #' anova(fm, type = "I")
 #' @exportS3Method anova lmerMod
 anova.lmerMod <- function(object, ..., type = c("III", "II", "I"),
-                          ddf = c("Kenward-Roger", "Satterthwaite", "lme4"), advice = TRUE) {
+                          ddf = c("Kenward-Roger", "Satterthwaite", "KR-average", "lme4"),
+                          type1_basis = c("design", "fitted"), advice = TRUE) {
   # several models: lme4's comparison, by NextMethod() so that lme4 sees the
   # original call (model names), also when lmerTest's anova() hands on to here
   if (length(list(...))) return(NextMethod())
   type <- pm_anova_type(type[1])
-  ddf <- match.arg(ddf)
+  ddf <- pm_anova_ddf(object, match.arg(ddf))
+  type1_basis <- match.arg(type1_basis)
   if (ddf == "lme4") return(utils::getS3method("anova", "merMod", envir = asNamespace("lme4"))(object))
-  out <- if (type == "I") pm_lmer_tables(object)$anova else pm_anova(object, type = type, test_statistic = "F", ddf = ddf)
+  out <- if (type == "I") pm_anova_type1(object, ddf, type1_basis) else pm_anova(object, type = type, test_statistic = "F", ddf = ddf)
   if (isTRUE(advice)) out <- pm_anova_add_advice(out, object, type)
   out
 }
 
-## Type I (sequential) table of a mixed model: lmer, lmerTest's Satterthwaite
-## F; other models, sequential Wald chi-square tests on the hypotheses of
+## The df method of anova() for an lmer fit: Kenward-Roger needs a REML fit
+## (as pm_df_rule.lmerMod() decides for means); an ML fit gets Satterthwaite,
+## with a message, never a Kenward-Roger label on an ML table.
+pm_anova_ddf <- function(model, ddf) {
+  if (ddf %in% c("Kenward-Roger", "KR-average") && !lme4::getME(model, "is_REML")) {
+    message("The model was fitted by ML: Kenward-Roger needs REML; using Satterthwaite df.")
+    ddf <- "Satterthwaite"
+  }
+  ddf
+}
+
+## Type I (sequential) table of a mixed model: lmer, pm_lmer_type1();
+## other models, sequential Wald chi-square tests on the hypotheses of
 ## pm_type1_L() (no refits).
-pm_anova_type1 <- function(model) {
-  if (inherits(model, "lmerMod")) return(pm_lmer_tables(model)$anova)
+pm_anova_type1 <- function(model, ddf = "Kenward-Roger", basis = "design") {
+  if (inherits(model, "lmerMod")) return(pm_lmer_type1(model, ddf, basis))
   X <- if (inherits(model, "merMod")) lme4::getME(model, "X") else stats::model.matrix(model)
   tl <- attr(stats::terms(if (inherits(model, "merMod")) stats::formula(model, fixed.only = TRUE) else model),
              "term.labels")
@@ -632,9 +751,26 @@ pm_design_balance <- function(model) {
                                                             logical(1))), logical(1)))
   out <- if (length(facs) < 2) NA_character_ else {
     n <- table(lapply(dat[facs], factor))
-    if (any(n == 0)) "empty" else if (length(unique(as.vector(n))) == 1) "balanced" else "unbalanced"
+    # empty: a cell of an interaction term without data; combinations of
+    # factors that only have main effects together, or of nested factors
+    # (absent by design), are not cells
+    nested <- pm_nested_pairs(dat, facs)
+    empty <- any(vapply(pm_term_sets(tt), function(v) {
+      v <- intersect(v, facs)
+      if (length(v) < 2) return(FALSE)
+      g <- as.data.frame(table(lapply(dat[v], factor)), stringsAsFactors = FALSE)
+      any(g$Freq == 0 & !pm_absent_by_design(g, nested))
+    }, logical(1)))
+    # balance: equal counts over the combinations that can exist
+    nn <- as.vector(n)[!pm_absent_by_design(as.data.frame(n, stringsAsFactors = FALSE), nested)]
+    if (empty) "empty" else if (length(unique(nn)) == 1) "balanced" else "unbalanced"
   }
-  structure(out, covariate = cov_in, counts = if (length(facs) >= 2) n)
+  # factors nested in another in the data but not in the model (y ~ G + T, no G:T term)
+  in_data <- if (length(facs) >= 2) {
+    sets <- pm_term_sets(tt)
+    Filter(function(p) !any(vapply(sets, function(v) all(c(p$a, p$b) %in% v), logical(1))), nested)
+  }
+  structure(out, covariate = cov_in, counts = if (length(facs) >= 2) n, nested_in_data = in_data)
 }
 
 ## Plain-language advice on the type of tests, for the design at hand; one
@@ -664,6 +800,15 @@ pm_anova_advice_rows <- function(model, type) {
         "Type III tests use the cells with data; better, state the comparisons of interest",
         "on the cell means (pm_joint(), predictmeans(pairwise = TRUE))."), "caution")
     }
+  }
+  nd <- attr(bal, "nested_in_data")
+  if (length(nd) && type != "I") {
+    p <- nd[[1]]
+    rows$nested <- pm_advice("anova_nested_in_data", paste0(
+      p$b, " is nested in ", p$a, " in the data, but the model has no ", p$a, ":", p$b, " term: ",
+      if (type == "III") paste0(p$b, " is tested within ", p$a, " (as with ", p$a, "/", p$b, ")") else
+        paste0("the Type II test of ", p$a, " is not well defined (", p$b, " holds all of ", p$a, "'s differences)"),
+      "; write the model as ", p$a, "/", p$b, " to say so."), "caution")
   }
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))

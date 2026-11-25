@@ -79,3 +79,39 @@ test_that("an object without estimates gives a clear message", {
   reg("terms", "nocoef", function(x, ...) x$terms)
   expect_error(Kmatrix(bad, "x"), "pm_coef")
 })
+
+test_that("pm_coef() of an aov fit keeps its aliased coefficients as NA; one reader for every class", {
+  d <- expand.grid(A = factor(1:3), B = factor(1:2), r = 1:3)
+  d <- d[!(d$A == "3" & d$B == "2"), ]
+  d$y <- seq_len(nrow(d)) %% 5
+  fa <- aov(y ~ A * B, data = d)
+  b <- pm_coef(fa)
+  expect_identical(names(b), colnames(model.matrix(fa)))
+  expect_true(anyNA(b))
+  mp <- predictmeans:::pm_model_parm(fa)
+  expect_identical(mp$estimable, !is.na(b))
+  expect_equal(mp$coef, stats::coef(fa))          # coef() of aov leaves the aliased one out
+})
+
+test_that("a class with the required methods only: means work, every other function stops and says why", {
+  skip_on_cran()
+  d <- oats_fac()
+  fit <- structure(list(fit = lm(yield ~ nitro + Variety, d), call = quote(lm(yield ~ nitro + Variety, d))),
+                   class = "toyonly")
+  reg("coef", "toyonly", function(object, ...) coef(object$fit))
+  reg("vcov", "toyonly", function(object, ...) vcov(object$fit))
+  reg("terms", "toyonly", function(x, ...) terms(x$fit))
+  expect_equal(predictmeans(fit, "nitro", data = d, plot = FALSE)$means$estimate,
+               predictmeans(fit$fit, "nitro", plot = FALSE)$means$estimate)
+  q <- function(e) tryCatch({force(e); "ok"}, error = function(err) conditionMessage(err))
+  expect_match(q(residplot(fit, plot = FALSE)), "need fitted\\(\\) and residuals\\(\\)")
+  expect_match(q(pm_check(fit)), "need fitted\\(\\) and residuals\\(\\)")
+  for (f in list(CookD = function(m) CookD(m, plot = FALSE), R2_model = R2_model, varcomp = varcomp,
+                 se_ranef = se_ranef, bootmodels = function(m) bootmodels(m, nsim = 9))) {
+    expect_match(q(f(fit)), "handles|random effects|class")
+  }
+  # with fitted() and residuals() the residual plots work
+  reg("fitted", "toyonly", function(object, ...) fitted(object$fit))
+  reg("residuals", "toyonly", function(object, ...) residuals(object$fit))
+  expect_s3_class(residplot(fit, plot = FALSE), "pm_residplot")
+})

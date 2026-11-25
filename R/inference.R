@@ -39,7 +39,7 @@
 ## (mp$df, for the legacy tables of predictmeans() and covariatemeans()).
 ##
 ## Value, a list of class "pm_inference":
-##   mp           coefficients, the covariance used, the model's df, estimable flags (mymodelparm())
+##   mp           coefficients, the covariance used, the model's df, estimable flags (pm_model_parm())
 ##   df_type      "Kenward-Roger", "Satterthwaite", "containment", "between-within", or NULL (the model's own rule)
 ##   vcov_adj     Kenward-Roger adjusted covariance, or the Satterthwaite ingredients ("pm_satt")
 ##   vcov_adjust  TRUE when the adjusted covariance is used
@@ -74,8 +74,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
     vcov_adj <- pm_try_vcov_kr(model, fallback = "unadjusted SEs")
 
   ## coefficients and covariance
-  mp <- if (aovl) sa$mp else if (lmer && !term_df) mymodelparm(model, df = 0) else
-    mymodelparm(model, df_type = df_type, vcov_adj = vcov_adj)
+  mp <- if (aovl) sa$mp else if (lmer && !term_df) pm_model_parm(model, df = 0) else
+    pm_model_parm(model, df_type = df_type, vcov_adj = vcov_adj)
   adjusted <- FALSE
   if (vcov_adjust) {
     if (is.null(vcov_adj) || inherits(vcov_adj, "pm_satt")) {
@@ -212,65 +212,98 @@ pm_df_method <- function(model, df_method) {
       df_method <- "auto"
     } else return(list(df_type = NULL, vcov_adj = NULL))       # GLMMs as predictmeans 1.x; gls, lm, glm
   }
-  if (inherits(model, "glm") && pm_fixed_dispersion(model)) {
-    # Poisson, binomial, negative binomial: the dispersion is known, so the
-    # Wald tests are z (chi-square) tests, as emmeans and SAS GLIMMIX. In
-    # dev/sim-df-glm/ t with the residual df rejected 0.3-4.5% of true nulls
-    # at 5%, z 3.6-5.7%. "residual" (above) keeps the t tests of 1.x.
-    if (df_method != "auto") {
-      warning("'df_method = \"", df_method, "\"' does not apply to glm models; ignored.", call. = FALSE)
-    }
-    return(list(df_type = "asymptotic", vcov_adj = NULL))
-  }
-  if (glmm && df_method %in% c("containment", "between-within")) {
-    if (inherits(model, "glmerMod")) return(list(df_type = df_method, vcov_adj = NULL))
-    warning("'df_method = \"", df_method, "\"' is not available for glmmTMB; using the residual df.", call. = FALSE)
-    return(list(df_type = NULL, vcov_adj = NULL))
-  }
+  pm_df_rule(model, df_method, kr_info)
+}
+
+## The df rule of each model class, after the rules for every class above
+## ("inner-outer", "residual"). A method passes what it does not handle on
+## with NextMethod(); the default warns that 'df_method' does not apply.
+## Returns list(df_type, vcov_adj).
+pm_df_rule <- function(model, df_method, kr_info) UseMethod("pm_df_rule")
+
+#' @exportS3Method NULL
+pm_df_rule.default <- function(model, df_method, kr_info) {
   if (identical(df_method, "between-within")) {
-    if (inherits(model, c("lmerMod", "lme", "gls"))) return(list(df_type = "between-within", vcov_adj = NULL))
     warning("'df_method = \"between-within\"' applies to lmer, lme and gls models; ignored.")
     return(list(df_type = NULL, vcov_adj = NULL))
   }
-  if (inherits(model, c("lme", "gls"))) {
-    # nlme models (R/satt-nlme.R). "auto": Kenward-Roger for REML fits (in the
-    # simulations of dev/sim-df/ nlme's and the residual df reached 16-27% for
-    # F tests of unstructured repeated measures); "containment": nlme's df
-    # (lme) or the residual df (gls), as predictmeans 1.x
-    if (df_method == "containment") return(list(df_type = NULL, vcov_adj = NULL))
-    ml <- !identical(model$method, "REML")
-    if (ml && df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
-      warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
-      df_method <- "Satterthwaite"
-    }
-    if (df_method == "auto" && ml) {
-      # as for ML lmer fits: Satterthwaite from the ML log-likelihood
-      message("The model was fitted by ML: using Satterthwaite df.")
-      sp <- tryCatch(pm_satt_parts_nlme(model), error = function(e) e)
-      if (!inherits(sp, "error")) return(list(df_type = "Satterthwaite", vcov_adj = sp))
-      message("Satterthwaite df are not available for this model (", conditionMessage(sp), "); using ",
-              if (inherits(model, "lme")) "nlme's df." else "the residual df.")
-      return(list(df_type = NULL, vcov_adj = NULL))
-    }
-    if (df_method == "auto") {
-      kr <- tryCatch(pm_vcov_kr_nlme(model, "observed"), error = function(e) e)
-      if (!inherits(kr, "error")) return(list(df_type = "Kenward-Roger", vcov_adj = kr))
-      message("Kenward-Roger df are not available for this model (", conditionMessage(kr), "); using ",
-              if (inherits(model, "lme")) "nlme's df." else "the residual df.")
-      return(list(df_type = NULL, vcov_adj = NULL))
-    }
-    if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
-    if (df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
-      return(list(df_type = "Kenward-Roger", vcov_adj = pm_vcov_kr_nlme(model, kr_info)))
-    }
+  if (df_method != "auto") {
+    warning("'df_method' applies to lmer models only (\"between-within\" and \"Satterthwaite\" also to lme and ",
+            "gls); ignored.")
   }
-  if (!inherits(model, "lmerMod")) {
-    if (df_method != "auto") {
-      warning("'df_method' applies to lmer models only (\"between-within\" and \"Satterthwaite\" also to lme and ",
-              "gls); ignored.")
-    }
+  list(df_type = NULL, vcov_adj = NULL)
+}
+
+#' @exportS3Method NULL
+pm_df_rule.glm <- function(model, df_method, kr_info) {
+  if (!pm_fixed_dispersion(model)) return(NextMethod())
+  # Poisson, binomial, negative binomial: the dispersion is known, so the
+  # Wald tests are z (chi-square) tests, as emmeans and SAS GLIMMIX. In
+  # dev/sim-df-glm/ t with the residual df rejected 0.3-4.5% of true nulls
+  # at 5%, z 3.6-5.7%. "residual" (above) keeps the t tests of 1.x.
+  if (df_method != "auto") {
+    warning("'df_method = \"", df_method, "\"' does not apply to glm models; ignored.", call. = FALSE)
+  }
+  list(df_type = "asymptotic", vcov_adj = NULL)
+}
+
+#' @exportS3Method NULL
+pm_df_rule.glmerMod <- function(model, df_method, kr_info) {
+  if (df_method %in% c("containment", "between-within")) return(list(df_type = df_method, vcov_adj = NULL))
+  NextMethod()
+}
+
+#' @exportS3Method NULL
+pm_df_rule.glmmTMB <- function(model, df_method, kr_info) {
+  if (df_method %in% c("containment", "between-within")) {
+    warning("'df_method = \"", df_method, "\"' is not available for glmmTMB; using the residual df.", call. = FALSE)
     return(list(df_type = NULL, vcov_adj = NULL))
   }
+  NextMethod()
+}
+
+#' @exportS3Method NULL
+pm_df_rule.lme <- function(model, df_method, kr_info) {
+  if (identical(df_method, "between-within")) return(list(df_type = "between-within", vcov_adj = NULL))
+  # nlme models (R/satt-nlme.R). "auto": Kenward-Roger for REML fits (in the
+  # simulations of dev/sim-df/ nlme's and the residual df reached 16-27% for
+  # F tests of unstructured repeated measures); "containment": nlme's df
+  # (lme) or the residual df (gls), as predictmeans 1.x
+  if (df_method == "containment") return(list(df_type = NULL, vcov_adj = NULL))
+  ml <- !identical(model$method, "REML")
+  if (ml && df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
+    warning("Kenward-Roger df need a REML fit: using Satterthwaite instead")
+    df_method <- "Satterthwaite"
+  }
+  if (df_method == "auto" && ml) {
+    # as for ML lmer fits: Satterthwaite from the ML log-likelihood
+    message("The model was fitted by ML: using Satterthwaite df.")
+    sp <- tryCatch(pm_satt_parts_nlme(model), error = function(e) e)
+    if (!inherits(sp, "error")) return(list(df_type = "Satterthwaite", vcov_adj = sp))
+    message("Satterthwaite df are not available for this model (", conditionMessage(sp), "); using ",
+            if (inherits(model, "lme")) "nlme's df." else "the residual df.")
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
+  if (df_method == "auto") {
+    kr <- tryCatch(pm_vcov_kr_nlme(model, "observed"), error = function(e) e)
+    if (!inherits(kr, "error")) return(list(df_type = "Kenward-Roger", vcov_adj = kr))
+    message("Kenward-Roger df are not available for this model (", conditionMessage(kr), "); using ",
+            if (inherits(model, "lme")) "nlme's df." else "the residual df.")
+    return(list(df_type = NULL, vcov_adj = NULL))
+  }
+  if (df_method == "Satterthwaite") return(list(df_type = "Satterthwaite", vcov_adj = pm_satt_parts_nlme(model)))
+  if (df_method %in% c("Kenward-Roger", "KR-expected", "KR-average")) {
+    return(list(df_type = "Kenward-Roger", vcov_adj = pm_vcov_kr_nlme(model, kr_info)))
+  }
+  NextMethod()
+}
+
+#' @exportS3Method NULL
+pm_df_rule.gls <- pm_df_rule.lme
+
+#' @exportS3Method NULL
+pm_df_rule.lmerMod <- function(model, df_method, kr_info) {
+  if (identical(df_method, "between-within")) return(list(df_type = "between-within", vcov_adj = NULL))
   reml <- lme4::getME(model, "is_REML")
   df_type <- switch(df_method, auto = if (reml) "Kenward-Roger" else "Satterthwaite", "KR-expected" = , "KR-average" = "Kenward-Roger",
                     df_method)
@@ -291,6 +324,8 @@ pm_df_method <- function(model, df_method) {
   }
   list(df_type = df_type, vcov_adj = vcov_adj)
 }
+
+
 
 ## The Kenward-Roger adjusted covariance of an lmer fit (pm_vcov_kr()), or
 ## NULL with a message naming the reason and the fallback when it cannot be

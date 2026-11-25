@@ -98,7 +98,7 @@ se_ranef <- function(object, rand_term = NULL, type = c("prediction", "condition
     type = type, conf_level = conf_level, rand_term = rand_term, predict = predict,
     limits = paste0("normal ", if (type == "prediction") "prediction intervals of u" else
       "intervals from the conditional SE"),
-    model_class = class(if (inherits(object, "semireg")) object$semer else object)[1],
+    model_class = class(pm_fit(object))[1],
     scale = if (!resp) "identity" else paste0("link (", link$link, ")"),
     conditional = rc$cond_label)
   pm_add_advice(out, pm_ranef_advice(object, rc, out, type))
@@ -115,7 +115,7 @@ pm_ranef_predict <- function(object, rc, out, keep, z, resp) {
     if (!length(rows_g)) next
     gf <- rc$rows[[g]]
     vars <- intersect(all.vars(str2lang(paste0("~", gsub("/", ":", g)))), names(rc$data))
-    if (inherits(object, "lme") || (inherits(object, "semireg") && inherits(object$semer, "lme"))) {
+    if (inherits(pm_fit(object), "lme")) {
       vars <- intersect(all.vars(nlme::getGroupsFormula(object)), names(rc$data))
       vars <- vars[seq_len(match(g, vars))]
     }
@@ -130,7 +130,7 @@ pm_ranef_predict <- function(object, rc, out, keep, z, resp) {
     } else {
       K <- if (length(rc$fixed)) colMeans(Kmatrix(object, rc$fixed[1])$K[, names(rc$beta), drop = FALSE]) else {
         X <- if (inherits(object, "lme")) stats::model.matrix(stats::formula(object), rc$data) else
-          lme4::getME(if (inherits(object, "semireg")) object$semer else object, "X")
+          lme4::getME(pm_fit(object), "X")
         colMeans(as.matrix(X))[names(rc$beta)]
       }
       Kr <- matrix(K, length(rows_g), p, byrow = TRUE)

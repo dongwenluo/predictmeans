@@ -61,6 +61,21 @@ corresponding generic only; nothing inside predictmeans needs to change.
 The model also needs a \code{terms()} method for its fixed effects (used to find the variables in the model), and
 its call (\code{getCall()}) or a \code{pm_data()} method so that the data can be found.
 }
+\section{What a new class gets}{
+
+\describe{
+  \item{Means, pairs and contrasts}{\code{predictmeans()}, \code{contrastmeans()}, \code{pm_joint()},
+  \code{pm_slopes()}, \code{Kmatrix()} need \code{coef()} (or \code{pm_coef()}), \code{vcov()} (or
+  \code{pm_vcov()}) and \code{terms()}, plus the data (found from the call, or a \code{pm_data()} method).
+  The columns of \code{pm_basis()} are matched to the coefficients by name.}
+  \item{Residual plots}{\code{residplot()} and \code{pm_check()} also need \code{fitted()} and
+  \code{residuals()} methods (residuals divided by their SD); without them they stop and say so.}
+  \item{The rest}{\code{anova()}, \code{CookD()}, \code{R2_model()}, \code{varcomp()}, \code{se_ranef()},
+  \code{permmodels()} and \code{bootmodels()} have their own code for the classes they list, and stop with
+  that list for any other class.}
+}
+}
+
 \examples{
   library(predictmeans)
   # A made-up model class that wraps lm() and has only four methods. (Methods are

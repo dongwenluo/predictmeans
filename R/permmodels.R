@@ -181,7 +181,7 @@ NULL
 ## calling summary(), which would compute it again. 'map3': the Type III map
 ## of the observed fit (R/anova.R), the same for every refit.
 pm_perm_stats <- function(rfitmodel, type, test_statistic, Ls = NULL, map3 = NULL) {
-  mp <- mymodelparm(rfitmodel, df = 0)[1:2]
+  mp <- pm_model_parm(rfitmodel, df = 0)[1:2]
   if (type %in% c("I", "1")) {
     # lmer: lmerTest's type I F (Wald tests of the hypotheses Ls), as in the observed table
     aT <- if (!is.null(Ls)) pm_type1_F(Ls, mp$coef, mp$vcov) else pm_anova_seq(rfitmodel)
@@ -243,93 +243,19 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
          call. = FALSE)
   }
 
-  # Each branch sets 'idx' (permutation indices, one column per permutation),
-  # 'one' (refit to the k-th permuted data set and return its statistics, or
-  # NULL if the refit failed) and the packages a Windows worker needs.
-  if (any(inherits(model, "lm"), inherits(model, "aov"), inherits(model, "glm"))) {
-    # the response is permuted
-    if (!is.null(data)) mod_df <- data else {
-    if (inherits(model, "glm")) mod_df <- as.data.frame(model$data) else mod_df <- as.data.frame(model.frame(model))
-	}
-    if (inherits(model, "mlm")) stop("permmodels() handles models with one response.", call. = FALSE)
-    # the variables in the response, permuted together (log(y): y;
-    # cbind(R, N - R) or cbind(R, F): both columns)
-    yname <- all.vars(attr(terms(model), "variables")[[2]])
-    if (!all(yname %in% names(mod_df))) {
-      stop("Can't find the response variable(s) ", paste(sQuote(yname), collapse = ", "),
-           " in the data; please give the data used to fit the model in 'data'.", call. = FALSE)
-    }
-    idx <- pm_perm_source(nrow(mod_df), seed, perms)(nperm)
-    one <- function(k) {
-      d <- mod_df
-      d[yname] <- mod_df[idx[, k], yname, drop = FALSE]
-      rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
-    }
-    packages <- character()
-  }
-  
-  if (any(inherits(model, "gls"), inherits(model, "lme"))) { 
-    # fitted values and decorrelated residuals are permuted together
-    model <- pm_refit(model, data=as.data.frame(pm_get_data(model)), na.action=na.omit, check=TRUE)
-    mod_df <- as.data.frame(pm_get_data(model))
-    X <- model.matrix(model)
-    if (inherits(model, "gls")) beta <- coef(model) else beta <- nlme::fixef(model)
-    # check for columns dropped from model
-    col_names <- names(beta)
-    if (ncol(X) != length(col_names)) X <- X[,col_names,drop=FALSE]    
-    Terms <- terms(model)
-    yname <- as.character(attr(Terms, "variables"))[[2]]
-    y <- nlme::getResponse(model)
-    # rows by group, and the order-invariant square root of the block-diagonal V (R/whiten.R)
-    nw <- pm_nlme_whiten(model, cbind(X, y))
-    X_y <- nw$B
-    mod_df <- mod_df[nw$ord, ]
-    xbeta <- as.vector(X_y[, col_names]%*%beta)
-    errors <- X_y[, "y"] - xbeta
-    W <- nw$W
-    wterrors <- W$solve(errors)    
-    idx <- pm_perm_source(length(errors), seed, perms)(nperm)
-    if (!is.null(perms)) {
-      # the data were reordered by group: map the user's permutations
-      ord <- nw$ord
-      idx <- matrix(order(ord)[idx[ord, , drop = FALSE]], nrow = length(ord))
-    }
-    one <- function(k) {
-      r <- idx[, k]
-      d <- mod_df
-      d[, yname] <- xbeta[r] + W$mult(wterrors[r])
-      rfitmodel <- pm_refit(model, data = d)
-      if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
-    }
-    packages <- "nlme"
-  }
-  
-  if (inherits(model, "lmerMod")) { 
-    # fitted values and decorrelated residuals are permuted together. refit()
-    # replaces only the response of the rows used, so prior weights, offsets and
-    # NA handling stay as fitted (2.0 refitted to the formula variables: weights lost)
-    # V = Z Lambda Lambda' Z' + diag(1/w); W its order-invariant square root (R/whiten.R)
-    pp <- pm_mer_perm_parts(model)
-    W <- pp$W
-    xbeta <- pp$xbeta
-    wterrors <- pp$wterrors
-    idx <- pm_perm_source(length(xbeta), seed, perms)(nperm)
-    Ls <- if (type %in% c("I", "1")) pm_type1_L(getME(model, "X"), attr(terms(model), "term.labels")) else NULL
-    one <- function(k) {
-      r <- idx[, k]
-      rfitmodel <- pm_mer_refit(model, xbeta[r] + W$mult(wterrors[r]))
-      if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test_statistic, Ls, map3)
-    }
-    packages <- "lme4"
-  }
+  # each class sets the permutation indices, a function that refits to the
+  # k-th permuted data set and returns its statistics (NULL if the refit
+  # failed), and the packages a Windows worker needs (pm_perm_raw())
+  parts <- pm_perm_raw(model, data, seed, perms, nperm, type, test_statistic)
+  model <- parts$model
 
   # the Type III map depends only on the design, which the refits share
   map3 <- if (type %in% c("III", "3")) tryCatch({
     b0 <- pm_coef(model)
     pm_type3_map(model, names(b0)[!is.na(b0)])
   }, error = function(e) NULL)
-  permmod <- pm_perm_drop(pm_perm_map(seq_len(nperm), one, ncore, packages))
+  one <- function(k) parts$one(k, map3)
+  permmod <- pm_perm_drop(pm_perm_map(seq_len(nperm), one, ncore, parts$packages))
   failures <- permmod$failures
   permmod <- permmod$res
   nperm <- length(permmod)
@@ -382,4 +308,104 @@ pm_formula_is_object <- function(model) {
   # only a formula written out (y ~ x) or stored as a formula object is safe
   # for the workers; anything else (a name, a call) runs on one core
   !(inherits(f, "formula") || (is.call(f) && identical(f[[1]], as.name("~"))))
+}
+
+## The raw permutation scheme of permmodels() for each class: the model (nlme
+## fits are refitted on their complete rows first), the permutation indices
+## 'idx' (one column per permutation), one(k, map3) refitting the model to the
+## k-th permuted data set and returning its statistics (NULL if the refit
+## failed), and the packages a Windows worker needs.
+pm_perm_raw <- function(model, data, seed, perms, nperm, type, test_statistic) UseMethod("pm_perm_raw")
+
+#' @exportS3Method NULL
+pm_perm_raw.default <- function(model, data, seed, perms, nperm, type, test_statistic) {
+  stop("permmodels() handles lm, aov, glm, gls, lme and lmer models with method = \"raw\"; use method = ",
+       "\"freedman-lane\" for glmer and glmmTMB.", call. = FALSE)
+}
+
+#' @exportS3Method NULL
+pm_perm_raw.lm <- function(model, data, seed, perms, nperm, type, test_statistic) {
+  # the response is permuted
+  if (!is.null(data)) mod_df <- data else {
+  if (inherits(model, "glm")) mod_df <- as.data.frame(model$data) else mod_df <- as.data.frame(model.frame(model))
+	}
+  if (inherits(model, "mlm")) stop("permmodels() handles models with one response.", call. = FALSE)
+  # the variables in the response, permuted together (log(y): y;
+  # cbind(R, N - R) or cbind(R, F): both columns)
+  yname <- all.vars(attr(terms(model), "variables")[[2]])
+  if (!all(yname %in% names(mod_df))) {
+    stop("Can't find the response variable(s) ", paste(sQuote(yname), collapse = ", "),
+         " in the data; please give the data used to fit the model in 'data'.", call. = FALSE)
+  }
+  idx <- pm_perm_source(nrow(mod_df), seed, perms)(nperm)
+  one <- function(k, map3) {
+    d <- mod_df
+    d[yname] <- mod_df[idx[, k], yname, drop = FALSE]
+    rfitmodel <- pm_refit(model, data = d)
+    if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
+  }
+  packages <- character()
+  list(model = model, idx = idx, one = one, packages = packages)
+}
+
+#' @exportS3Method NULL
+pm_perm_raw.lme <- function(model, data, seed, perms, nperm, type, test_statistic) {
+  # fitted values and decorrelated residuals are permuted together
+  model <- pm_refit(model, data=as.data.frame(pm_get_data(model)), na.action=na.omit, check=TRUE)
+  mod_df <- as.data.frame(pm_get_data(model))
+  X <- model.matrix(model)
+  if (inherits(model, "gls")) beta <- coef(model) else beta <- nlme::fixef(model)
+  # check for columns dropped from model
+  col_names <- names(beta)
+  if (ncol(X) != length(col_names)) X <- X[,col_names,drop=FALSE]    
+  Terms <- terms(model)
+  yname <- as.character(attr(Terms, "variables"))[[2]]
+  y <- nlme::getResponse(model)
+  # rows by group, and the order-invariant square root of the block-diagonal V (R/whiten.R)
+  nw <- pm_nlme_whiten(model, cbind(X, y))
+  X_y <- nw$B
+  mod_df <- mod_df[nw$ord, ]
+  xbeta <- as.vector(X_y[, col_names]%*%beta)
+  errors <- X_y[, "y"] - xbeta
+  W <- nw$W
+  wterrors <- W$solve(errors)    
+  idx <- pm_perm_source(length(errors), seed, perms)(nperm)
+  if (!is.null(perms)) {
+    # the data were reordered by group: map the user's permutations
+    ord <- nw$ord
+    idx <- matrix(order(ord)[idx[ord, , drop = FALSE]], nrow = length(ord))
+  }
+  one <- function(k, map3) {
+    r <- idx[, k]
+    d <- mod_df
+    d[, yname] <- xbeta[r] + W$mult(wterrors[r])
+    rfitmodel <- pm_refit(model, data = d)
+    if (class(rfitmodel)[1] == class(model)[1]) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
+  }
+  packages <- "nlme"
+  list(model = model, idx = idx, one = one, packages = packages)
+}
+
+#' @exportS3Method NULL
+pm_perm_raw.gls <- pm_perm_raw.lme
+
+#' @exportS3Method NULL
+pm_perm_raw.lmerMod <- function(model, data, seed, perms, nperm, type, test_statistic) {
+  # fitted values and decorrelated residuals are permuted together. refit()
+  # replaces only the response of the rows used, so prior weights, offsets and
+  # NA handling stay as fitted (2.0 refitted to the formula variables: weights lost)
+  # V = Z Lambda Lambda' Z' + diag(1/w); W its order-invariant square root (R/whiten.R)
+  pp <- pm_mer_perm_parts(model)
+  W <- pp$W
+  xbeta <- pp$xbeta
+  wterrors <- pp$wterrors
+  idx <- pm_perm_source(length(xbeta), seed, perms)(nperm)
+  Ls <- if (type %in% c("I", "1")) pm_type1_L(getME(model, "X"), attr(terms(model), "term.labels")) else NULL
+  one <- function(k, map3) {
+    r <- idx[, k]
+    rfitmodel <- pm_mer_refit(model, xbeta[r] + W$mult(wterrors[r]))
+    if (class(rfitmodel)[1] %in% c("lmerMod", "glmerMod")) pm_perm_stats(rfitmodel, type, test_statistic, Ls, map3)
+  }
+  packages <- "lme4"
+  list(model = model, idx = idx, one = one, packages = packages)
 }

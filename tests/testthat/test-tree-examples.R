@@ -215,3 +215,63 @@ test_that("Exam 8.2, clone trial with standards (REML; random rows, columns and 
   js <- pm_joint(m, "contcompf:standard", ctrmatrix = st)
   expect_equal(c(js$F.ratio, js$df2), c(16.86, 207), tolerance = 5e-3)
 })
+
+test_that("Exam 8.2: Type 1 and Type 3 tables = SAS PROC MIXED (HTYPE=1,3; DDFM=KR and SATTERTHWAITE)", {
+  skip_on_cran()
+  # dev/sas/type1-exam8.2.sas, run 2026-11-25 (dev/sas/type1-exam8.2-sas-output.pdf). SAS builds Type 1
+  # hypotheses from X'X; Genstat's sequential Wald from X'V^-1X (column 7.99, contcompf 72.66) differs.
+  d <- tree_data("ex8.2.csv")
+  for (v in c("repl", "row", "column", "standard", "clone")) d[[v]] <- factor(d[[v]])
+  d$contcompv <- d$contcompf
+  d$contcompf <- factor(d$contcompf)
+  m <- suppressMessages(lme4::lmer(dbhmean ~ repl + column + contcompf + contcompf:standard + (1 | repl:row) +
+                                     (1 | repl:column) + (0 + contcompv | clone), data = d))
+  chk <- function(a, F, ddf) {
+    expect_lt(max(abs(unname(a[["F value"]] %||% a[["F"]]) - F)), 0.006)             # SAS prints 2 decimals
+    expect_equal(unname(a[["DenDF"]] %||% a[["Df.res"]]), ddf, tolerance = 5e-3)     # SAS prints 3 digits
+  }
+  a1 <- anova(m, type = "I", advice = FALSE)
+  expect_match(attr(a1, "heading"), "Kenward-Roger")
+  chk(a1, c(2.05, 1.48, 73.36, 16.86), c(26.5, 19.3, 255, 207))
+  chk(anova(m, type = "I", ddf = "Satterthwaite", advice = FALSE), c(2.05, 1.49, 74.49, 17.25),
+      c(26.5, 19.3, 255, 207))
+  # run 3: contcompf first (SAS 68.68/257, 2.05/26.5, 2.01/19.3, 16.86/207)
+  m3 <- suppressMessages(lme4::lmer(dbhmean ~ contcompf + repl + column + contcompf:standard + (1 | repl:row) +
+                                      (1 | repl:column) + (0 + contcompv | clone), data = d))
+  chk(anova(m3, type = "I", advice = FALSE), c(68.68, 2.05, 2.01, 16.86), c(257, 26.5, 19.3, 207))
+  # the nested term (standard within contcompf) is tested on 3 df, with no empty-cell note
+  a3 <- anova(m, type = "III")
+  expect_equal(a3$Df, c(4, 5, 1, 3))
+  chk(a3, c(2.05, 1.55, 72.03, 16.86), c(26.5, 19.6, 255, 207))
+  expect_false(any(grepl("Empty cells", c(attr(a3, "heading"), advice(a3)$message))))
+})
+
+test_that("Exam 8.2: type1_basis = \"fitted\" with ddf = \"KR-average\" gives Genstat's Wald tests", {
+  skip_on_cran()
+  # dev/genstat/type1-exam8.2.gen, run 2026-11-25 (dev/genstat/genstat-results-2026-11-25-type1.txt,
+  # CADJUST=none). Genstat prints for every term the d.d.f. of its Type II (marginal) hypothesis, in both
+  # tables and both orders; predictmeans gives each sequential test the d.d.f. of its own hypothesis, so the
+  # sequential d.d.f. are compared only where the two hypotheses coincide.
+  d <- tree_data("ex8.2.csv")
+  for (v in c("repl", "row", "column", "standard", "clone")) d[[v]] <- factor(d[[v]])
+  d$contcompv <- d$contcompf
+  d$contcompf <- factor(d$contcompf)
+  re <- "+ (1 | repl:row) + (1 | repl:column) + (0 + contcompv | clone)"
+  fit <- function(f) suppressMessages(lme4::lmer(stats::as.formula(paste(f, re)), data = d))
+  m1 <- fit("dbhmean ~ repl + column + contcompf + contcompf:standard")
+  m2 <- fit("dbhmean ~ contcompf + repl + column + contcompf:standard")
+  wald <- function(a) a[["F value"]] * a$NumDF
+  g1 <- anova(m1, type = "I", type1_basis = "fitted", ddf = "KR-average", advice = FALSE)
+  g2 <- anova(m2, type = "I", type1_basis = "fitted", ddf = "KR-average", advice = FALSE)
+  expect_lt(max(abs(wald(g1) - c(8.20, 7.99, 72.66, 51.75))), 0.006)
+  expect_lt(max(abs(wald(g2) - c(70.34, 8.20, 10.32, 51.75))), 0.006)
+  expect_equal(g1$DenDF[c(1, 3, 4)], c(26.6, 254.0, 208.2), tolerance = 2e-3)
+  # "dropping individual terms" = Type II; its d.d.f. are Genstat's d.d.f. of every table
+  t2 <- anova(m1, type = "II", ddf = "KR-average", advice = FALSE)
+  expect_lt(max(abs(t2$F[c(1, 2, 4)] * t2$Df[c(1, 2, 4)] - c(8.20, 7.77, 51.75))), 0.006)
+  expect_equal(t2$Df.res, c(26.6, 19.7, 254.0, 208.2), tolerance = 2e-3)
+  # the fitted basis: sequential parts add up to the whole Wald statistic of the fixed effects
+  b <- lme4::fixef(m1)[-1]; V <- as.matrix(vcov(m1))[-1, -1]
+  expect_equal(sum(wald(g1)), drop(b %*% solve(V, b)), tolerance = 1e-8)
+  expect_equal(anova(m1, type = "I", advice = FALSE)[["F value"]][2], 1.484, tolerance = 1e-3)   # default = SAS
+})

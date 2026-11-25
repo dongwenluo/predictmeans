@@ -342,7 +342,7 @@ pm_perm_family <- function(permlist, L, model, obs, ncore = 1, joint = FALSE) {
     refits <- permlist[[1]]
     Tm <- pm_perm_tstats(refits, L)
     Lr <- pm_indep_rows(L)
-    mp <- mymodelparm(model, df = 0)
+    mp <- pm_model_parm(model, df = 0)
     Fs <- vapply(refits, function(x) pm_waldF(Lr, x$coef, x$vcov), numeric(1))
     return(list(p = pm_perm_p(obs, Tm), obs = obs, T = Tm, Fobs = pm_waldF(Lr, mp$coef, mp$vcov), F = Fs,
                 exact = FALSE))

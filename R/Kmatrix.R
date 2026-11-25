@@ -130,7 +130,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   pm_defunct("Kmatrix", match.call(), strict = TRUE, formals_of = formals(sys.function()))
 
   weights <- match.arg(weights)
-  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)
+  model <- pm_means_model(model)
 
   ## 1. The model and the data of its fixed-effect variables
   info <- pm_model_info(model, data, exclude)
@@ -202,14 +202,7 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   # aliased or dropped coefficients), for the estimability check
   null_space <- NULL
   if (info$builder != "gam" && info$rank_deficient(colnames(basis(model_data[1, , drop = FALSE])))) {
-    Xfit <- basis(model_data)
-    ev <- eigen(crossprod(Xfit), symmetric = TRUE)
-    tol <- max(dim(Xfit)) * max(ev$values) * .Machine$double.eps * 100
-    N <- ev$vectors[, ev$values <= tol, drop = FALSE]
-    if (ncol(N)) {
-      null_space <- N
-      rownames(null_space) <- colnames(Xfit)
-    }
+    null_space <- pm_null_space(basis(model_data))
   }
   # Covariates that are a function of a factor (a site-level value such as
   # the site mean): in a rank-deficient fit they are aliased with that factor,
@@ -269,9 +262,9 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
     estimable <- rep(TRUE, nrow(K))
     null_proj <- NULL
     if (!is.null(null_space)) {
-      Kfull <- K[, rownames(null_space), drop = FALSE]
-      null_proj <- Kfull %*% null_space
-      estimable <- apply(abs(null_proj), 1, max) <= 1e-6 * pmax(1, apply(abs(Kfull), 1, max))
+      null_proj <- K[, rownames(null_space), drop = FALSE] %*% null_space
+      attr(null_proj, "scale") <- attr(null_space, "scale")
+      estimable <- pm_estimable_rows(null_proj, K)
     }
     estimable[is.na(estimable) | empty] <- FALSE
     list(empty_rule = empty_rule, rg = rg, Kc = Kc, K = K, is_cov = is_cov, target = target, empty = empty,
@@ -647,3 +640,36 @@ pm_ref_positions <- function(dims, X) {
     if (is.na(k)) 1L else k
   })
 }
+
+## Null space of a rank-deficient design X, for the estimability checks of
+## Kmatrix(), the empty-cell contrasts, the pairs of predictmeans() and
+## pm_slopes(). Computed on X with its columns scaled to unit length, so that
+## the check does not depend on the units of a covariate (a site mean in
+## metres or in millimetres). Returns D^-1 N (exact null vectors of X; D the
+## column lengths) with attribute "scale" = D, or NULL for a full-rank X.
+pm_null_space <- function(X) {
+  X <- as.matrix(X)
+  d <- sqrt(colSums(X^2))
+  d[!is.finite(d) | d == 0] <- 1
+  ev <- eigen(crossprod(sweep(X, 2, d, "/")), symmetric = TRUE)
+  tol <- max(dim(X)) * max(ev$values) * .Machine$double.eps * 100
+  N <- ev$vectors[, ev$values <= tol, drop = FALSE]
+  if (!ncol(N)) return(NULL)
+  N <- N / d
+  rownames(N) <- colnames(X)
+  structure(N, scale = stats::setNames(d, colnames(X)))
+}
+
+## Rows of L (linear functions of the coefficients) that are estimable: their
+## projection 'np' = L N on the null space (pm_null_space(), with its
+## "scale") is zero relative to L in the scaled columns (L D^-1).
+pm_estimable_rows <- function(np, L) {
+  d <- attr(np, "scale")
+  L <- as.matrix(L)
+  # columns of L that are not in the design (none, or coefficients already
+  # dropped) count as 0
+  cn <- if (is.null(d)) NULL else intersect(names(d), colnames(L))
+  Ls <- if (is.null(d)) L else sweep(L[, cn, drop = FALSE], 2, d[cn], "/")
+  apply(abs(as.matrix(np)), 1, max) <= 1e-6 * apply(abs(Ls), 1, max)
+}
+

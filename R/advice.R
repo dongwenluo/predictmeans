@@ -56,7 +56,7 @@ pm_advice_get <- function(x) {
 #' @section Advice ids:
 #' \tabular{lll}{
 #'   \strong{id} \tab \strong{from} \tab \strong{when} \cr
-#'   \code{nonestimable_means} \tab predictmeans \tab some means cannot be estimated (NA) \cr
+#'   \code{nonestimable_means} \tab predictmeans, covariatemeans \tab some means cannot be estimated (NA) \cr
 #'   \code{empty_cells} \tab predictmeans \tab means average over the observed cells only \cr
 #'   \code{aliased_covariate} \tab predictmeans \tab a covariate is constant within a factor's levels \cr
 #'   \code{large_se} \tab predictmeans \tab a mean's SE is over 3 times the median SE \cr
@@ -67,6 +67,7 @@ pm_advice_get <- function(x) {
 #'   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
+#'   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
 #'   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
 #'   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
 #'   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
@@ -80,6 +81,7 @@ pm_advice_get <- function(x) {
 #'   \code{extrapolation} \tab semipred, covariatemeans, pm_slopes \tab predictions beyond the range of the data \cr
 #'   \code{pointwise_regions} \tab semipred, covariatemeans \tab regions of difference read from pointwise limits \cr
 #'   \code{smooth_other_covariate} \tab semipred \tab a smooth in the prediction does not involve \code{covariate} (adds a constant) \cr
+#'   \code{nonestimable_slopes} \tab pm_slopes \tab the covariate is aliased with a factor: slopes NA, their differences kept \cr
 #'   \code{slopes_equal_by_model} \tab pm_slopes \tab no covariate x term interaction: the slopes are equal by assumption \cr
 #'   \code{slopes_at_value} \tab pm_slopes \tab a curved term or a link: the slopes depend on \code{at} \cr
 #' }
@@ -285,7 +287,7 @@ pm_perm_advice <- function(out, nperm, exact = FALSE) {
 
 ## R2_model(): what the numbers are and are not.
 pm_r2_advice <- function(model, method) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   rows <- list()
   fam <- tryCatch(stats::family(model)$family, error = function(e) "gaussian")
   if (!identical(fam, "gaussian") && !inherits(model, c("lmerMod", "lme", "gls"))) {
@@ -304,7 +306,7 @@ pm_r2_advice <- function(model, method) {
 
 ## varcomp(): estimates at zero (boundary), few levels, tests on the boundary.
 pm_varcomp_advice <- function(model, tab, test = FALSE) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   rows <- list()
   zero <- isTRUE(pm_singular(model))
   if (!zero && is.data.frame(tab) && "vcov" %in% names(tab)) {
@@ -430,6 +432,11 @@ pm_covariatemeans_advice <- function(x, model) {
       "Lines beyond the range of the data for ", paste(out_cv, collapse = ", "), ": the model's straight line (or ",
       "polynomial) is assumed there and nothing checks it; restrict the covariate values to the data."), "caution")
   }
+  if (is.data.frame(x$means) && anyNA(x$means$estimate)) {
+    rows$na <- pm_advice("nonestimable_means", paste0(
+      sum(is.na(x$means$estimate)), " point(s) of the curves cannot be estimated (NA): the data do not identify ",
+      "them under this model."), "caution")
+  }
   sig <- x$significant
   if (!is.null(x$pairs) && !identical(s$band, "simultaneous") && is.data.frame(sig) && nrow(sig) > 0) {
     rows$band <- pm_advice("pointwise_regions", paste(
@@ -465,6 +472,13 @@ pm_slopes_advice <- function(x, model) {
     p <- trimws(p)
     s$covariate %in% all.vars(str2lang(p)) && p != s$covariate
   }, logical(1))), logical(1)))
+  if (isTRUE(any(!x$slopes$estimable))) {
+    rows$na <- pm_advice("nonestimable_slopes", paste0(
+      sum(!x$slopes$estimable), " slope(s) cannot be estimated (NA): ", s$covariate, " is aliased with a factor of ",
+      "the model (e.g. constant within its levels)",
+      if (!is.null(x$pairs)) ", so only differences between slopes are estimable; they are in the pairs", "."),
+      "caution")
+  }
   if (nrow(x$slopes) > 1 && !any(inter)) {
     rows$same <- pm_advice("slopes_equal_by_model", paste0(
       "The model has no ", s$covariate, " x ", s$modelterm, " interaction, so the slopes are equal by assumption; ",

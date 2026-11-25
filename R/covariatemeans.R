@@ -188,7 +188,7 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as_is=FALSE, at=NU
   dfa <- pm_df_arg(df_method, eval(formals(sys.function())$df_method))
   df_method <- dfa$method
   Df <- dfa$Df
-  if (inherits(model, "aovlist")) model <- pm_aov_carrier(model)     # by strata (R/aovlist.R)
+  model <- pm_means_model(model)     # by strata (R/aovlist.R)
   if (identical(mean_type, "overall") && !isFALSE(bias_adjust)) {
     stop("mean_type = \"overall\" cannot be combined with 'bias_adjust'.", call. = FALSE)
   }
@@ -245,6 +245,19 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as_is=FALSE, at=NU
     return(pm_curve_add_plot(out, pargs, draw))
   }
 
+  # points that are not estimable (Kmatrix()): a covariate aliased with a
+  # factor of the model (a site mean with site in the model) has no curve
+  # along it, only differences between curves (above, 'contr')
+  est <- attr(ctr.matrix$K, "estimable")
+  if (is.null(est)) est <- rep(TRUE, nrow(ctr.matrix$K))
+  if (!any(est)) {
+    stop("The curves of ", paste(modelterm, collapse = ":"), " along ", paste(covariate, collapse = ", "),
+         " cannot be estimated: the data do not identify them under this model (e.g. ",
+         paste(covariate, collapse = ", "), " is constant within the levels of a factor, as a site mean with site ",
+         "in the model, or is a function of other factors). Differences between two curves may be: use contr = , ",
+         "or pm_slopes() for the differences between slopes.", call. = FALSE)
+  }
+
   if (!setequal(modelterm, covariate) && as_is) {
     # each line over the range of the covariate in its group: the rows kept by
     # position in the grid (K and the grid have the same rows)
@@ -256,12 +269,14 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as_is=FALSE, at=NU
     keep <- !is.na(k) & pltdf[[covariate]] >= rng$min_value[k] & pltdf[[covariate]] <= rng$max_value[k]
     pltdf <- pltdf[which(keep), , drop = FALSE]
     KK <- KK[which(keep), , drop = FALSE]
+    est <- est[which(keep)]
   }
 
   # We'll work only with the non-NA elements of bhat
   KK <- pm_K_cols(KK, mp)
   pltdf$yhat <- as.numeric(KK%*%bhat)
   pltdf$ses <- sqrt(rowSums((KK %*% mp$vcov) * KK))            # diag(K V K') without the m x m product
+  pltdf$yhat[!est] <- pltdf$ses[!est] <- NA
 
   Df_arg <- Df
   if (is.null(Df) || all(Df%in%c("NULL", ""))) {

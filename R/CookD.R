@@ -44,38 +44,20 @@ CookD <- function (model, group=NULL, plot=TRUE, id=3, ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("CookD", match.call(), strict = TRUE, formals_of = formals(sys.function()))
 
-  if (inherits(model, "aovlist")) {
-    stop("CookD() does not handle aov models with Error(): fit the error strata as random effects (lmer or lme).",
-         call. = FALSE)
-  }
-  if (!inherits(model, c("lm", "gls", "lme", "lmerMod", "glmerMod", "glmmTMB"))) {
-    stop("CookD() handles lm, aov, glm, gls, lme, lmer, glmer, glmmTMB and gam models.", call. = FALSE)
-  }
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
   # mixed models and gls by maximum likelihood (the REML criterion changes
-  # with the fixed effects), each deletion refitted
-  if (inherits(model, "gls") || inherits(model, "lme")) {
-    mdf <- as.data.frame(pm_get_data(model))
-    model <- pm_refit(model, data=mdf, method="ML", check=TRUE)
-  } else if (inherits(model, "lmerMod")) {
-    model <- pm_refit(model, REML=FALSE, check=TRUE)
-    mdf <- model.frame(model)
-  } else if (inherits(model, "glmerMod")) {
-    mdf <- pm_model_rows(model)
-  } else if (inherits(model, "glmmTMB")) {
-    if (isTRUE(model$modelInfo$REML)) model <- quiet(pm_refit(model, REML = FALSE, check = TRUE))
-    mdf <- pm_model_rows(model)
-  } else {
-    mdf <- as.data.frame(pm_get_data(model))
-  }
-  mp <- mymodelparm(model, df = 0)
+  # with the fixed effects), each deletion refitted; the data rows (one method per class)
+  st <- pm_cookd_setup(model, quiet)
+  model <- st$model
+  mdf <- st$mdf
+  mp <- pm_model_parm(model, df = 0)
   beta0  <- mp$coef
   vcovb <- mp$vcov
   vb.inv <- solve(vcovb)
 
   refit_coef <- function(keep) {
     fit <- tryCatch(quiet(pm_refit(model, data = mdf[keep, , drop = FALSE])), error = function(e) NULL)
-    b <- if (is.null(fit)) NULL else tryCatch(mymodelparm(fit, df = 0)$coef, error = function(e) NULL)
+    b <- if (is.null(fit)) NULL else tryCatch(pm_model_parm(fit, df = 0)$coef, error = function(e) NULL)
     # a coefficient that the deletion leaves without data: no distance
     out <- rep(NA_real_, length(beta0))
     if (!is.null(b)) out <- unname(b[names(beta0)])
@@ -129,4 +111,38 @@ pm_cookd_plot <- function(cd, id = 3, group = NULL) {
   # few groups: name them on the axis
   if (grp && nrow(d) <= 30) p <- p + ggplot2::scale_x_continuous(breaks = d$case, labels = d$label)
   p
+}
+
+## What CookD() refits: the model (mixed models and gls by ML) and its data
+## rows, one method per class.
+pm_cookd_setup <- function(model, quiet) UseMethod("pm_cookd_setup")
+#' @exportS3Method NULL
+pm_cookd_setup.default <- function(model, quiet) {
+  stop("CookD() handles lm, aov, glm, gls, lme, lmer, glmer, glmmTMB and gam models.", call. = FALSE)
+}
+#' @exportS3Method NULL
+pm_cookd_setup.aovlist <- function(model, quiet) {
+  stop("CookD() does not handle aov models with Error(): fit the error strata as random effects (lmer or lme).",
+       call. = FALSE)
+}
+#' @exportS3Method NULL
+pm_cookd_setup.lm <- function(model, quiet) list(model = model, mdf = as.data.frame(pm_get_data(model)))
+#' @exportS3Method NULL
+pm_cookd_setup.lme <- function(model, quiet) {
+  mdf <- as.data.frame(pm_get_data(model))
+  list(model = pm_refit(model, data = mdf, method = "ML", check = TRUE), mdf = mdf)
+}
+#' @exportS3Method NULL
+pm_cookd_setup.gls <- pm_cookd_setup.lme
+#' @exportS3Method NULL
+pm_cookd_setup.lmerMod <- function(model, quiet) {
+  model <- pm_refit(model, REML = FALSE, check = TRUE)
+  list(model = model, mdf = stats::model.frame(model))
+}
+#' @exportS3Method NULL
+pm_cookd_setup.glmerMod <- function(model, quiet) list(model = model, mdf = pm_model_rows(model))
+#' @exportS3Method NULL
+pm_cookd_setup.glmmTMB <- function(model, quiet) {
+  if (isTRUE(model$modelInfo$REML)) model <- quiet(pm_refit(model, REML = FALSE, check = TRUE))
+  list(model = model, mdf = pm_model_rows(model))
 }

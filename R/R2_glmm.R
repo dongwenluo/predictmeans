@@ -205,7 +205,7 @@ R2_model <- function(model, method = c("piepho", "nakagawa"), over_disp = FALSE)
 
 ## R2_model() without the advice.
 pm_r2_model <- function(model, method, over_disp) {
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   if (method == "nakagawa" && inherits(model, "lme")) return(pm_r2_nakagawa_lme(model))
   if (!inherits(model, c("lmerMod", "glmerMod", "glmmTMB"))) {
     if (method == "nakagawa") {

@@ -29,7 +29,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
 
 \tabular{lll}{
   \strong{id} \tab \strong{from} \tab \strong{when} \cr
-  \code{nonestimable_means} \tab predictmeans \tab some means cannot be estimated (NA) \cr
+  \code{nonestimable_means} \tab predictmeans, covariatemeans \tab some means cannot be estimated (NA) \cr
   \code{empty_cells} \tab predictmeans \tab means average over the observed cells only \cr
   \code{aliased_covariate} \tab predictmeans \tab a covariate is constant within a factor's levels \cr
   \code{large_se} \tab predictmeans \tab a mean's SE is over 3 times the median SE \cr
@@ -40,6 +40,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
+  \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
@@ -53,6 +54,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{extrapolation} \tab semipred, covariatemeans, pm_slopes \tab predictions beyond the range of the data \cr
   \code{pointwise_regions} \tab semipred, covariatemeans \tab regions of difference read from pointwise limits \cr
   \code{smooth_other_covariate} \tab semipred \tab a smooth in the prediction does not involve \code{covariate} (adds a constant) \cr
+  \code{nonestimable_slopes} \tab pm_slopes \tab the covariate is aliased with a factor: slopes NA, their differences kept \cr
   \code{slopes_equal_by_model} \tab pm_slopes \tab no covariate x term interaction: the slopes are equal by assumption \cr
   \code{slopes_at_value} \tab pm_slopes \tab a curved term or a link: the slopes depend on \code{at} \cr
 }

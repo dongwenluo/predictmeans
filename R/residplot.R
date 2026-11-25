@@ -90,7 +90,7 @@ residplot <- function(model, group = "none", re_level = 1, slope = FALSE, id = 3
                       dense = c("auto", "points", "bins"), ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("residplot", match.call(), strict = TRUE, formals_of = formals(sys.function()))
-  if (inherits(model, "semireg")) model <- model$semer
+  model <- pm_fit(model)
   dense <- match.arg(dense)
   nlab <- if (isTRUE(id)) 3L else if (isFALSE(id) || is.null(id)) 0L else as.integer(id)
   d <- pm_resid_data(model)
@@ -147,6 +147,10 @@ pm_resid_data <- function(model) {
                                                            " stratum)")))
   }
   fitted_r <- as.vector(stats::fitted(model))
+  if (!length(fitted_r) || is.null(stats::residuals(model))) {
+    stop("residplot() and pm_check() need fitted() and residuals() for a ", class(model)[1], " model (methods of ",
+         "those generics; see ?pm_coef).", call. = FALSE)
+  }
   observed <- pm_resid_observed(model, length(fitted_r))
   if (!is.null(qfam)) {
     r <- pm_qresid(model, qfam, fitted_r)
@@ -155,22 +159,7 @@ pm_resid_data <- function(model) {
                                 observed = as.vector(observed)),
                      xlab = "Linear predictor", rlab = "Randomized quantile residuals", olab = attr(observed, "label")))
   }
-  r <- if (inherits(model, "gam")) {                   # mgcv: before glm, which gam objects also are
-    stats::residuals(model, type = "deviance") / sqrt(model$scale)
-  } else if (inherits(model, "glm")) {
-    stats::rstandard(model, type = "deviance")
-  } else if (inherits(model, "lm")) {
-    stats::rstandard(model)
-  } else if (inherits(model, c("lme", "gls"))) {
-    stats::residuals(model, type = "normalized")
-  } else if (inherits(model, "merMod")) {
-    if (lme4::isLMM(model)) stats::residuals(model, scaled = TRUE) else stats::residuals(model, type = "pearson")
-  } else if (inherits(model, "glmmTMB")) {
-    stats::residuals(model, type = "pearson")
-  } else {
-    rr <- stats::residuals(model)
-    rr / stats::sd(rr, na.rm = TRUE)
-  }
+  r <- pm_std_resid(model)                           # R/diag-adapter.R
   glmlike <- inherits(model, c("glm", "glmerMod")) || (inherits(model, "glmmTMB") &&
                                                          !identical(stats::family(model)$family, "gaussian"))
   rlab <- if (inherits(model, "glm")) "Standardized deviance residuals" else
@@ -309,14 +298,7 @@ pm_resid_group <- function(model, group, d) {
 
 ## The random effects of term number 're_level' (column 2 with slope = TRUE), or NULL.
 pm_resid_ranef <- function(model, level, slope) {
-  re <- tryCatch({
-    if (inherits(model, "lme")) {
-      r <- nlme::ranef(model)
-      if (is.data.frame(r)) r <- list(r)
-      r
-    } else if (inherits(model, "merMod")) lme4::ranef(model)
-    else if (inherits(model, "glmmTMB")) lme4::ranef(model)[["cond"]]
-  }, error = function(e) NULL)
+  re <- tryCatch(pm_ranef_list(model), error = function(e) NULL)
   if (is.null(re) || !length(re)) return(NULL)
   if (level > length(re)) stop("'re_level' is larger than the number of random-effect terms (", length(re), ").",
                                call. = FALSE)

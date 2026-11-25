@@ -45,3 +45,34 @@ test_that("pm_slopes() for lme: containment uses nlme's df of the covariate term
   expect_equal(nrow(s$pairs), 3)
   expect_error(pm_slopes(fl, "Variety", "Variety"), "numeric variable")
 })
+
+test_that("a slope that is not estimable is NA with advice; differences of slopes are kept", {
+  data(DataExam5.2, package = "predictmeans")
+  m <- lm(ht ~ site + sitemean*seedlot, DataExam5.2)        # sitemean is constant within site
+  sl <- pm_slopes(m, "sitemean", "seedlot")
+  expect_true(all(is.na(sl$slopes$estimate)) && !any(sl$slopes$estimable))
+  expect_true("nonestimable_slopes" %in% advice(sl)$id)
+  lv <- levels(DataExam5.2$seedlot)
+  b <- coef(m)[paste0("sitemean:seedlot", lv[2])]                  # slope of level 2 minus level 1
+  p <- sl$pairs[sl$pairs$level1 == lv[1] & sl$pairs$level2 == lv[2], ]
+  expect_equal(p$estimate, -unname(b), tolerance = 1e-6)
+  expect_false(anyNA(sl$pairs$estimate))
+  full <- pm_slopes(lm(ht ~ sitemean*seedlot, DataExam5.2), "sitemean", "seedlot")
+  expect_true(all(full$slopes$estimable) && !anyNA(full$slopes$estimate))
+})
+
+test_that("estimability of slopes does not depend on the units of the covariate; no pairs when slopes are equal by the model", {
+  skip_on_cran()
+  data(DataExam5.2, package = "predictmeans")
+  d <- DataExam5.2
+  ref <- NULL
+  for (k in c(1e-3, 1, 1e4, 1e6)) {
+    d$smk <- d$sitemean * k
+    s <- suppressMessages(pm_slopes(lm(ht ~ site + smk*seedlot, d), "smk", "seedlot"))
+    expect_false(any(s$slopes$estimable))
+    if (is.null(ref)) ref <- s$pairs$estimate * k else expect_equal(s$pairs$estimate * k, ref, tolerance = 1e-6)
+  }
+  s0 <- suppressMessages(pm_slopes(lm(ht ~ site + sitemean + seedlot, DataExam5.2), "sitemean", "seedlot"))
+  expect_null(s0$pairs)
+  expect_true("slopes_equal_by_model" %in% advice(s0)$id)
+})

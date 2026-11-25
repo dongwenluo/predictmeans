@@ -234,7 +234,7 @@ test_that("a rank-deficient glmmTMB fit (aliased columns dropped) gives the mean
   expect_equal(a$means$mean, b$means$mean, tolerance = 1e-4)
   expect_equal(a$means$std.error, b$means$std.error, tolerance = 1e-3)
   expect_equal(a$pairs$estimate, b$pairs$estimate, tolerance = 1e-4)
-  mp <- predictmeans:::mymodelparm(mt)
+  mp <- predictmeans:::pm_model_parm(mt)
   X <- stats::model.matrix(mt)
   expect_identical(colnames(predictmeans:::pm_K_cols(X, mp)), names(mp$coef))
 })

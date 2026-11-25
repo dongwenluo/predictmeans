@@ -574,6 +574,67 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * `se_ranef` help: with `\usage` (above), R CMD check warned "Documented
   arguments not in \usage: x, n, digits, ..." (the print method's);
   `print.pm_ranef` now shares the page (`@rdname`), with its usage line.
+* Part A1 of the post-2.0 plan (2026-11-24): the S3 generic `mymodelparm()`
+  and its seven class methods are one function, `pm_model_parm()`
+  (`R/mymodelparm.R`), reading coefficients and covariance only through
+  `pm_coef()`/`pm_vcov()`; the df rules moved unchanged into
+  `pm_model_df()` (a generic in A4). Removed: the `[["cond"]]` indexing that
+  worked for glmmTMB only through a special method, and a dead branch for a
+  class "parm". New `pm_coef.lm()` (lm, glm, aov: `$coefficients`, aliased
+  as NA) replaces the aov special case in `pm_model_info()` (`R/refgrid.R`).
+  Snapshots: all 107 results identical to main at tolerance 0.
+* Part A2 (2026-11-24): two helpers in `R/adapter.R`. `pm_fit(model)` (a
+  semireg fit's lme4/glmmTMB model, else the model) replaces 14 copies of the
+  semireg unwrap (R2, advice, residplot, pm_check, varcomp, se_ranef, ranef
+  covariance, pm_data, zero inflation); `pm_means_model(model)` (the carrier
+  of an aov fit with Error(), else the model) replaces the block in 6 front
+  ends (predictmeans, contrastmeans, covariatemeans, Kmatrix, pm_joint,
+  pm_slopes). Snapshots identical to main; 17 related test files pass.
+* Part A3 (2026-11-24): `pm_ranef_cov()` (`R/ranef-cov.R`; methods merMod,
+  glmmTMB, lme, semireg, aovlist and default refusals) and `pm_r2_parts()`
+  (`R/r2-classes.R`; aovlist, gam, glm, lm, mlm refusal, lme, gls, default)
+  are internal S3 generics instead of class ladders; the workers became the
+  methods. Snapshots identical to main; `R2_model()` and `se_ranef()` on 12
+  fits of every class identical to main, refusals included.
+* Part A4 (2026-11-24): the df rules. `pm_df_method()` (`R/inference.R`)
+  keeps the rules for every class (inner-outer, residual) and hands the rest
+  to the internal generic `pm_df_rule()` (methods glm, glmerMod, glmmTMB,
+  lme, gls, lmerMod, default; NextMethod() where the old code fell through);
+  the model's df (`pm_model_df()`, `R/mymodelparm.R`) is a generic too.
+  Checks: snapshots identical to main; 108 cases (12 classes x 9 df_method
+  values) give the same df, adjustment and the same 58 warnings and
+  messages as main; 18 df-related test files pass (SAS, Genstat, tree
+  examples included). S3 dispatch on lme4's S4 fits follows their S4 classes
+  (semerMod reaches the lmerMod method).
+* Part A5 (2026-11-24): refit ladders as internal S3 generics, one method per
+  class: `pm_perm_raw()` (permmodels(method = "raw"): lm, lme/gls, lmerMod;
+  the default now stops with a clear message instead of "object 'one' not
+  found"), `pm_boot_fit()` (bootmodels: merMod, lme/gls, lm/glmmTMB),
+  `pm_fl_design()` (Freedman-Lane: lm, glm/glmerMod/glmmTMB, lmerMod,
+  lme/gls) and `pm_lmm_parts()` (lmerMod, nlme). The refits themselves go
+  through `pm_mer_refit()` and `pm_refit()` (`R/utils-refit.R`). Checks:
+  snapshots identical; permmodels() raw and Freedman-Lane and bootmodels()
+  on 8 classes (24 cases) identical to main with fixed seeds, refusals
+  included; 15 permutation/bootstrap test files pass.
+* Part A6 (2026-11-24): diagnostics. New `R/diag-adapter.R` with internal
+  generics `pm_std_resid()`, `pm_ranef_list()`, `pm_re_levels()`,
+  `pm_fixed_terms()` and `pm_fit_warnings()`, used by `residplot()` and
+  `pm_check()` (their class branches 27 -> 16 and 27 -> 13; the rest decide
+  what a plot shows, not how to read a fit); `CookD()`'s class set-up is
+  `pm_cookd_setup()`. Checks: snapshots identical; residplot(), pm_check()
+  and CookD() on 11 classes (33 cases) identical to main, refusals included;
+  diagnostic tests pass.
+* Part A7 (2026-11-24): wrap-up. Class branches outside methods: 340 on
+  main -> 252 (90 internal S3 methods; the largest left: residplot 19,
+  permmodels 18, anova 16, pm_check 16, varcomp 15; most decide what to show
+  or test, not how to read a fit). A made-up class with only `coef`, `vcov`,
+  `terms` was run through every front end: means, pairs, `Kmatrix()` work;
+  `residplot()`/`pm_check()` stopped with "attempt to set an attribute on
+  NULL" and now stop with a message naming `fitted()`/`residuals()`
+  (`pm_resid_data()`); with those two methods they work. The other functions
+  stop with the list of classes they handle. Contract written in `?pm_coef`
+  (section "What a new class gets"); test in `test-adapter.R`. The internal
+  generics stay internal until Part B (new classes) has used them.
   - Checked: 52 calls of `dev/snapshot-predictmeans.R` written both ways give
     identical results (tolerance 0), except `trans = exp, transOff = 1`
     (above; `response.std.error` within 4e-10, from a numerical derivative).
@@ -2737,3 +2798,84 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * `HRW::pointsInPoly()` is replaced by an internal copy. It also closes open
   polygons correctly; HRW's version adds a spurious vertex when the last
   vertex does not repeat the first.
+* anova() of lmer fits (2026-11-25), from the maintainer's question on the
+  tree-improvement article (Exam 8.2, `fm8.7`): (1) the article's model
+  `(1 | contcompv:clone)` added one random "clone" for all 20 standard plots
+  (clone "0"), confounded with `contcompf` (F 4.8 on 43 df); now
+  `(0 + dummy(contcompf, "1") | clone)` = Genstat's contcompv.clone. (2)
+  `anova(type = "I")` ignored `ddf` (always Satterthwaite): now
+  `pm_lmer_type1()` with Kenward-Roger by default. SAS run
+  (`dev/sas/type1-exam8.2.sas`, output PDF): SAS builds Type 1 hypotheses from
+  X'X, as lmerTest, and ours equals it with KR (2.05/26.5, 1.48/19.3,
+  73.36/255, 16.86/207) and Satterthwaite (1.49, 74.49, 17.25). Genstat's
+  "sequentially adding terms" uses X'V^-1X (Wald 8.20, 7.99, 72.66, 51.75,
+  reproduced exactly) with KR-average d.d.f.; kept as a documented
+  difference: X'X hypotheses depend on the design only, KR assumes a fixed
+  hypothesis. (3) Type III: a nested term (factors without a lower-order term,
+  `pm_type3_nested_C()`) is tested within the outer levels (3 df, = SAS
+  16.86/207); it had 0 df. (4) `pm_design_balance()`: "empty" only for cells
+  of interaction terms not absent by design (nested pairs). Test in
+  `test-tree-examples.R`.
+* Article tree-improvement (2026-11-25): no lmerTest (anova() is
+  predictmeans' KR table); introduction and the book (Williams, Matheson and
+  Harwood 2002), eda4treeR and Kenward-Roger in the references; p-values of
+  the hand-made tables used the F density `df()`, now `pf(lower.tail =
+  FALSE)` (5 tables); Example 8.1 by strata with `Error(repl)` (= Genstat,
+  the reference test) instead of an lmer refit with a plot term equal to the
+  residual (lme4 checks switched off); the seedlot "regression coefficients"
+  of Examples 5.1/5.2 were slope differences from the first seedlot (NA for
+  it), now slopes scaled to average 1 (= Table 5.7 for the complete table);
+  notes for the saturated site x seedlot models. Rendered here without errors.
+  Found: `pm_slopes()` gives 0 with SE 0 for a slope that is not estimable
+  (sitemean aliased with site) - to fix.
+* `pm_slopes()` (2026-11-25): estimability check, the one Kmatrix() uses
+  (projection of K(at+h) - K(at-h) on the design's null space,
+  `pm_slope_null_proj()`, `pm_estimable_rows()`); non-estimable slopes and
+  pairs NA; advice id `nonestimable_slopes`; column `estimable`. Example 5.1
+  (`ht ~ site + sitemean*seedlot`) gave the first seedlot 0 with SE 0; pairs
+  = coefficient differences. Test in `test-pm-slopes.R`.
+* anova() Type I option (2026-11-25, maintainer's request): `type1_basis =
+  "fitted"` (`pm_type1_L_fitted()`: rows of chol(vcov^-1) per term, the
+  sequential GLS parts) and `ddf = "KR-average"` (Wald/q from the unadjusted
+  covariance, KR df from the average information; also for Types II/III in
+  `pm_anova_wald()`). Exam 8.2: Genstat's sequential Wald 8.20 7.99 72.66
+  51.75 and d.d.f. 26.6 254.0 208.2, and its drop-term table (= Type II,
+  column 7.77 on 19.7), reproduced; Genstat prints the drop-term d.d.f. for
+  column in its sequential table (19.7; the sequential hypothesis gives
+  19.4). Defaults unchanged (= SAS). Test in `test-tree-examples.R`.
+* Genstat run of `dev/genstat/type1-exam8.2.gen` (2026-11-25, CADJUST=none;
+  the first run centred contcompv, a different model): sequential Wald of
+  both orders = `type1_basis = "fitted"` (8.20 7.99 72.66 51.75; 70.34 8.20
+  10.32 51.75); dropping = Type II; Genstat prints each term's Type II
+  KR-average d.d.f. in every table and order (contcompf 254.0 also when
+  first, where its sequential hypothesis gives 254.6). Kept: each test with
+  the d.d.f. of its own hypothesis; documented in ?anova.lmerMod. The test
+  now reads from this output, not the table pasted in chat.
+* Rule no. 1 review of PR #43 (rule1-reviewer agent, 2026-11-25), 10
+  findings, fixed: (1) estimability depended on the covariate's units -
+  `pm_null_space()` on X with unit-length columns and `pm_estimable_rows()`
+  in scaled units, used by Kmatrix(), pm_empty_cells(), the pairs of
+  predictmeans() and pm_slopes() (scale 1e-3..1e6 same answer); (2) Type III
+  of a factor nested in another only in the data: within it, = G/T
+  (`pm_type3_nested_C()` with data nesting), advice `anova_nested_in_data`
+  (Type II of G there is not well defined; said so); (3) ML lmer: anova()
+  uses Satterthwaite with a message (`pm_anova_ddf()`); (4) balance over the
+  combinations that can exist; (5) "agree for the first and last term" ->
+  the last term; (6) article: joint regression lines instead of
+  covariatemeans() for an aliased covariate (covariatemeans() itself: next
+  step); (7) pm_slopes(): no pairs when slopes are equal by the model;
+  (8) pm_lmer_tables() uses pm_lmer_type1() (one Type I table);
+  permmodels() keeps Satterthwaite (decision of 2026-11-14);
+  get_contrasts_type1() left (used by df rules; identical hypotheses);
+  (9) Types II/III through pm_try_vcov_kr(); (10) NEWS and article wording.
+  Snapshots (5 scripts) identical to main at tolerance 0.
+* covariatemeans() estimability (2026-11-25, finding 6 of the review): the
+  rows of Kmatrix() carry `estimable`; covariatemeans() ignored it. Now: no
+  estimable point -> stop naming the cause and contr = / pm_slopes(); some
+  points -> NA (advice `nonestimable_means`, now also for covariatemeans).
+  `contr =` differences stay (= coefficient differences, test). Found two
+  silent cases in our own tests: test-autoplot-curves.R used
+  `site + sitemean*seedlot`, and an Oats model whose factors C, D (by row
+  position) were functions of nitro (curves estimable only at mean nitro);
+  both tests now use models whose curves exist. Snapshots of
+  covariatemeans() and semipred() identical to main.

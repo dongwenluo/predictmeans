@@ -21,7 +21,7 @@
 #' samples \code{\link{permlmer}} or \code{\link{bootmodels}} on \code{fit$semer} give resampling tests.
 #' @param object A \code{\link{semireg}} or \code{\link{semireg_tmb}} fit.
 #' @param type \code{"III"} (default), \code{"II"} or \code{"I"} (also \code{3}, \code{2}, \code{1}): the type of
-#'   the tests of the fixed effects. Type I is sequential (Satterthwaite F for gaussian fits, Wald chi-square
+#'   the tests of the fixed effects. Type I is sequential (Kenward-Roger F for gaussian fits, Wald chi-square
 #'   otherwise); see \code{\link{anova.lmerMod}} for which type to use.
 #' @param smooth Logical: test the smooth terms (refits the model once per smooth block)? The default is TRUE.
 #' @param ... Not used.
