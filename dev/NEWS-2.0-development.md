@@ -2903,3 +2903,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   ncore 1 and 2, percentile limits; 50 draws 4.8 s); vBLUE refit takes the
   response as a column (also transformed responses and bootstrap draws);
   advice ids h2_standard_unbalanced, h2_forms_differ, h2_above_one, h2_no_se.
+* heritability(), references (2026-11-25): Piepho and Möhring (2007, PDF
+  from the maintainer) Example 1, the John and Williams (1995) oats alpha
+  design (tests/testthat/_data/john-alpha.csv, from agridat::john.alpha):
+  Piepho 0.803 and Cullis 0.809 as published, 0.780 without blocks; the paper's
+  Eq. 19 uses REML BLUE variances without KR (= ours; heritable/inti 0.797
+  use emmeans's KR covariance). heritable 0.1.0 (CRAN; Suggests) = ours for
+  standard, Cullis and Oakey (1e-6). Advice h2_standard_unbalanced now also for
+  incomplete blocks (standard 0.840 there). P&M's main proposal, simulated
+  response to selection on BLUPs and r2(g, g-hat) (their Eqs. 15-17), is a
+  possible later method.
+

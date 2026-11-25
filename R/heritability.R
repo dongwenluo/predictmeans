@@ -19,8 +19,9 @@
 #'   \item{\code{"piepho"}}{\eqn{\sigma^2_g / (\sigma^2_g + \bar v_{BLUE}/2)}, \eqn{\bar v_{BLUE}} the mean
 #'   variance of a difference of two genotype means from the same model refitted with genotype as a fixed
 #'   effect (other random terms kept), from their unadjusted covariance as in Piepho and Möhring (2007).
-#'   (\code{inti::H2cal(emmeans = TRUE)} takes emmeans's Kenward-Roger adjusted covariance, a slightly smaller
-#'   value with unbalanced data.)}
+#'   On the oats alpha design of John and Williams (1995), Example 1 of Piepho and Möhring (2007): 0.803 as
+#'   published (Cullis 0.809). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's
+#'   Kenward-Roger adjusted covariance: 0.797 there.)}
 #'   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
 #'   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
 #'   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
@@ -40,7 +41,10 @@
 #' The four line-mean forms agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
 #' spatial errors they differ, and Schmidt et al. (2019) recommend the mixed-model forms. Narrow-sense
 #' heritability from a pedigree or genomic relationship matrix needs a model with that matrix, which lme4
-#' cannot fit.
+#' cannot fit: \pkg{heritable} computes these forms (and the per-genotype \eqn{H^2_\Delta} of Schmidt et
+#' al. 2019) from asreml fits with a relationship matrix. Its standard, Cullis and Oakey values for lmer fits
+#' are those of this function (tested); this function adds standard errors, the family and repeatability
+#' forms, and advice.
 #' @param model An \code{lmer} fit with a random genotype term \code{(1 | genotype)}.
 #' @param genotype Name of the genotype (line, entry, family) factor.
 #' @param method \code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"}, or \code{"all"}.
@@ -192,9 +196,22 @@ pm_h2_components <- function(model, genotype, n_env = NULL, n_rep = NULL) {
   i <- which(rc$tab$group == genotype & rc$tab$term == "(Intercept)")
   p <- length(rc$beta)
   list(s2g = s2g, terms = s2t, s2e = s2e, n_terms = n_terms, n_plots = n_plots, n_env_arg = n_env, n_rep_arg = n_rep,
-       unequal = length(unique(as.vector(kp))) > 1,
+       unequal = length(unique(as.vector(kp))) > 1, incomplete = pm_h2_incomplete(dat, names(vc), genotype),
        C = rc$V[p + i, p + i, drop = FALSE],
        with_g = with_g, genotype = genotype)
+}
+
+## Incomplete blocks: a random term without the genotype whose levels hold
+## fewer genotypes than the trial (an alpha or lattice design). The standard
+## form then ignores the block adjustment of the genotype means.
+pm_h2_incomplete <- function(dat, groups, genotype) {
+  ng <- length(unique(dat[[genotype]]))
+  any(vapply(groups, function(g) {
+    v <- strsplit(g, ":", fixed = TRUE)[[1]]
+    if (genotype %in% v || !all(v %in% names(dat))) return(FALSE)
+    k <- tapply(dat[[genotype]], do.call(paste, c(dat[v], sep = "\r")), function(x) length(unique(x)))
+    any(k < ng)
+  }, logical(1)))
 }
 
 ## Mean variance of a difference between the m entries with covariance C:

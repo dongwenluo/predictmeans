@@ -68,7 +68,7 @@ pm_advice_get <- function(x) {
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
 #'   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
-#'   \code{h2_standard_unbalanced} \tab heritability \tab the standard form on unequal numbers of plots per genotype \cr
+#'   \code{h2_standard_unbalanced} \tab heritability \tab the standard form with unequal plots per genotype or incomplete blocks \cr
 #'   \code{h2_forms_differ} \tab heritability \tab the forms differ by more than 0.1 \cr
 #'   \code{h2_above_one} \tab heritability \tab a family heritability above 1 \cr
 #'   \code{h2_no_se} \tab heritability \tab mixed-model forms without bootstrap SEs \cr
@@ -515,10 +515,11 @@ pm_slopes_advice <- function(x, model) {
 pm_heritability_advice <- function(x, comp, nboot) {
   rows <- list()
   m <- x$method
-  if ("standard" %in% m && isTRUE(comp$unequal)) {
-    rows$unbal <- pm_advice("h2_standard_unbalanced", paste(
-      "The genotypes have unequal numbers of plots: the standard form uses their harmonic mean and is",
-      "approximate; method = \"cullis\" or \"piepho\" use the precision of each comparison."), "caution")
+  if ("standard" %in% m && (isTRUE(comp$unequal) || isTRUE(comp$incomplete))) {
+    rows$unbal <- pm_advice("h2_standard_unbalanced", paste0(
+      if (isTRUE(comp$unequal)) "The genotypes have unequal numbers of plots: the standard form uses their harmonic mean" else
+        "The blocks are incomplete: the standard form ignores the block adjustment of the genotype means",
+      " and is approximate; method = \"cullis\" or \"piepho\" use the precision of each comparison."), "caution")
   }
   lm_forms <- x$estimate[m %in% c("standard", "cullis", "piepho", "oakey")]
   if (length(lm_forms) > 1 && diff(range(lm_forms)) > 0.1) {

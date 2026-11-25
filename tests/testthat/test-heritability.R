@@ -106,3 +106,30 @@ test_that("bootstrap SEs of the mixed-model forms: the same for any ncore; advic
   expect_true(all(c("h2_standard_unbalanced") %in% advice(a)$id))
   expect_true("h2_no_se" %in% advice(heritability(m, "gen"))$id)
 })
+
+test_that("Piepho and Möhring (2007), Example 1 (oats alpha design, John and Williams 1995): published values", {
+  skip_on_cran()
+  d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
+  m <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d)
+  h <- heritability(m, "gen", method = "all")
+  expect_equal(round(h$estimate[h$method == "piepho"], 3), 0.803)     # H-bar^2, their Eq. 19
+  expect_equal(round(h$estimate[h$method == "cullis"], 3), 0.809)     # Cullis, their Eq. 20
+  expect_true("h2_standard_unbalanced" %in% advice(h)$id)               # incomplete blocks
+  m2 <- lme4::lmer(yield ~ rep + (1 | gen), d)                          # blocks dropped: RCB
+  expect_equal(round(heritability(m2, "gen", method = "all")$estimate, 3), rep(0.780, 4))
+})
+
+test_that("the standard, Cullis and Oakey forms equal those of the heritable package", {
+  skip_on_cran()
+  skip_if_not_installed("heritable")
+  d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
+  m <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d)
+  h <- heritability(m, "gen", method = "all")
+  for (k in c("Cullis", "Oakey")) {
+    expect_equal(h$estimate[h$method == tolower(k)], as.numeric(heritable::H2(m, target = "gen", method = k)),
+                 tolerance = 1e-6)
+  }
+  m2 <- lme4::lmer(yield ~ rep + (1 | gen), d)
+  expect_equal(heritability(m2, "gen", method = "standard")$estimate,
+               as.numeric(heritable::H2(m2, target = "gen", method = "Standard")), tolerance = 1e-6)
+})

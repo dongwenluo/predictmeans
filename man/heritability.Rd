@@ -64,8 +64,9 @@ With \eqn{\sigma^2_g} the genotypic variance:
   \item{\code{"piepho"}}{\eqn{\sigma^2_g / (\sigma^2_g + \bar v_{BLUE}/2)}, \eqn{\bar v_{BLUE}} the mean
   variance of a difference of two genotype means from the same model refitted with genotype as a fixed
   effect (other random terms kept), from their unadjusted covariance as in Piepho and Möhring (2007).
-  (\code{inti::H2cal(emmeans = TRUE)} takes emmeans's Kenward-Roger adjusted covariance, a slightly smaller
-  value with unbalanced data.)}
+  On the oats alpha design of John and Williams (1995), Example 1 of Piepho and Möhring (2007): 0.803 as
+  published (Cullis 0.809). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's
+  Kenward-Roger adjusted covariance: 0.797 there.)}
   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
@@ -85,7 +86,10 @@ With \eqn{\sigma^2_g} the genotypic variance:
 The four line-mean forms agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
 spatial errors they differ, and Schmidt et al. (2019) recommend the mixed-model forms. Narrow-sense
 heritability from a pedigree or genomic relationship matrix needs a model with that matrix, which lme4
-cannot fit.
+cannot fit: \pkg{heritable} computes these forms (and the per-genotype \eqn{H^2_\Delta} of Schmidt et
+al. 2019) from asreml fits with a relationship matrix. Its standard, Cullis and Oakey values for lmer fits
+are those of this function (tested); this function adds standard errors, the family and repeatability
+forms, and advice.
 }
 \examples{
 library(predictmeans)
