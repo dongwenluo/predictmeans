@@ -134,6 +134,14 @@ pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"))
     # d P / d theta = d P / d eta  x  d eta / d theta (= H with each column times x[col])
     DP[g, , ] <- pt$deta(eta[g, ]) %*% sweep(pt$H, 2, Xc[g, ], "*")
   }
+  # non-parallel cumulative fits: the cumulative curves can cross, giving negative "probabilities"
+  bad <- which(P < -1e-10, arr.ind = TRUE)
+  if (nrow(bad)) {
+    stop("The fitted cumulative probabilities cross where the means are taken (class '", pt$levels[bad[1, 2]],
+         "' has probability ", format(signif(P[bad[1, ]], 3)), " at row ", bad[1, 1], " of the grid): the ",
+         "non-parallel model is not valid there. Take the means within the range where it is valid (factor levels ",
+         "or covariate values), or make the slopes parallel.", call. = FALSE)
+  }
   if (what == "mean_class") {
     s <- seq_len(J)
     m <- P %*% s

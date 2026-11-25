@@ -163,3 +163,16 @@ test_that("multinomial and non-parallel fits stop clearly where they are not han
   expect_true(all(sub(".*:", "", r$pairs$level1) == sub(".*:", "", r$pairs$level2)))
   expect_setequal(unique(na.omit(r$pairs$by)), c(outer(levels(housing$Sat), levels(housing$Cont), paste, sep = " : ")))
 })
+
+test_that("crossing cumulative curves of a non-parallel fit stop, not negative probabilities", {
+  skip_on_cran()
+  skip_if_not_installed("VGAM")
+  set.seed(1)
+  d <- data.frame(x = runif(300, -1, 1), f = factor(sample(c("a", "b"), 300, TRUE)))
+  u <- runif(300)
+  d$y <- ordered(ifelse(u < plogis(-1 + 3 * d$x), 1, ifelse(u < pmax(plogis(-1 + 3 * d$x), plogis(1 - 3 * d$x)), 2, 3)))
+  v <- suppressWarnings(VGAM::vglm(y ~ x + f, VGAM::cumulative(parallel = FALSE), data = d))
+  expect_error(predictmeans(v, "f", covariate = list(x = 1), mean_type = "prob_diff"), "cross")
+  expect_error(predictmeans(v, "f", covariate = list(x = 1)), "cross")
+  expect_s3_class(predictmeans(v, "f", covariate = list(x = 0)), "predictmeans")
+})
