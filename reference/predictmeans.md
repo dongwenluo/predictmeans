@@ -28,7 +28,8 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
 
   Model object returned by `aov`, `lm`, `glm`,
   [`MASS::polr`](https://rdrr.io/pkg/MASS/man/polr.html),
-  [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html), `gls`,
+  [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html),
+  [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html), `gls`,
   `lme`, `lmer`, `glmer`, `glmmTMB` and `gam` (package mgcv), or a
   [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fit. An `aov` model with `Error()` strata is analysed by strata, as
@@ -430,19 +431,21 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   `component = "response"`. For log-link count families (poisson,
   nbinom1, nbinom2, ...). `"prob"` and `"mean_class"`: for cumulative
   link models ([`MASS::polr`](https://rdrr.io/pkg/MASS/man/polr.html),
-  [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html)), whose
-  means are on the latent scale, \\x'\beta\\ minus the mean cut point
-  (emmeans' `mode = "latent"`); a difference (logit link) is the log
-  odds ratio of a higher class, \\\log\[P(Y \> j)/P(Y \le j)\]\\, the
-  same at every cut point \\j\\; all tests are on this scale (z tests).
-  `trans`, `bias_adjust`, `sigma`, `vcov` and `permlist` are not
-  available for these models. `"prob"` adds `probs`: the probability of
-  each class at each mean, `"mean_class"` the expected class \\\sum_j j
-  P(Y = j)\\ (classes taken as equally spaced), each with delta-method
-  SEs and limits (on the logit scale, so they stay within 0 to 1 and 1
-  to J). Means over other factors are averaged on the latent scale and
-  then transformed; emmeans averages the probabilities instead (the same
-  for the cells of the model).
+  [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html),
+  [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html): random
+  effects at 0, a typical subject), whose means are on the latent scale,
+  \\x'\beta\\ minus the mean cut point (emmeans' `mode = "latent"`); a
+  difference (logit link) is the log odds ratio of a higher class,
+  \\\log\[P(Y \> j)/P(Y \le j)\]\\, the same at every cut point \\j\\;
+  all tests are on this scale (z tests). `trans`, `bias_adjust`,
+  `sigma`, `vcov` and `permlist` are not available for these models.
+  `"prob"` adds `probs`: the probability of each class at each mean,
+  `"mean_class"` the expected class \\\sum_j j P(Y = j)\\ (classes taken
+  as equally spaced), each with delta-method SEs and limits (on the
+  logit scale, so they stay within 0 to 1 and 1 to J). Means over other
+  factors are averaged on the latent scale and then transformed; emmeans
+  averages the probabilities instead (the same for the cells of the
+  model).
 
 ## Value
 
@@ -817,17 +820,17 @@ Dongwen Luo, Siva Ganesh and John Koolaard
   fl <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
   predictmeans(fl, "nitro", adj="BH")$pairs
 #>   level1 level2   estimate std.error       df statistic      p.value
-#> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656854e-05
-#> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852849 5.649186e-10
+#> 1      0    0.2 -19.500000  4.435758 44.99995 -4.396092 6.656859e-05
+#> 2      0    0.4 -34.833333  4.435758 44.99995 -7.852848 5.649197e-10
 #> 3    0.2    0.4 -15.333333  4.435758 44.99995 -3.456756 1.205064e-03
-#> 4      0    0.6 -44.000000  4.435758 44.99995 -9.919388 6.697176e-13
-#> 5    0.2    0.6 -24.500000  4.435758 44.99995 -5.523296 1.583358e-06
-#> 6    0.4    0.6  -9.166667  4.435758 44.99995 -2.066539 4.456098e-02
+#> 4      0    0.6 -44.000000  4.435758 44.99995 -9.919388 6.697195e-13
+#> 5    0.2    0.6 -24.500000  4.435758 44.99995 -5.523295 1.583360e-06
+#> 6    0.4    0.6  -9.166667  4.435758 44.99995 -2.066539 4.456099e-02
 #>          p.adj  conf.low   conf.high      lsd p.method
-#> 1 9.985280e-05 -28.43407 -10.5659255 8.934075        t
-#> 2 1.694756e-09 -43.76741 -25.8992588 8.934075        t
-#> 3 1.446076e-03 -24.26741  -6.3992588 8.934075        t
-#> 4 4.018305e-12 -52.93407 -35.0659255 8.934075        t
-#> 5 3.166715e-06 -33.43407 -15.5659255 8.934075        t
-#> 6 4.456098e-02 -18.10074  -0.2325921 8.934075        t
+#> 1 9.985289e-05 -28.43407 -10.5659250 8.934075        t
+#> 2 1.694759e-09 -43.76741 -25.8992584 8.934075        t
+#> 3 1.446077e-03 -24.26741  -6.3992584 8.934075        t
+#> 4 4.018317e-12 -52.93407 -35.0659250 8.934075        t
+#> 5 3.166719e-06 -33.43407 -15.5659250 8.934075        t
+#> 6 4.456099e-02 -18.10074  -0.2325917 8.934075        t
 ```

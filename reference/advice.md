@@ -78,6 +78,7 @@ A data frame with columns `id` (stable, listed below), `level`
 | `variogram_incomplete` | residvariogram | more than 10% of the grid positions empty |
 | `ordinal_latent_average` | predictmeans | class probabilities at latent means averaged over other variables |
 | `ordinal_mean_class` | predictmeans | the mean class scores the classes as equally spaced |
+| `ordinal_typical_subject` | predictmeans | clmm class probabilities for a typical subject (random effects at 0) |
 | `few_permutations` | permmodels, bootmodels | fewer than 999 resamples and a p-value at the floor or near 0.05 |
 | `r2_latent_scale` | R2_model | a non-gaussian model: R2 on the link scale |
 | `variance_at_zero` | varcomp, se_ranef | a variance estimated as zero |
