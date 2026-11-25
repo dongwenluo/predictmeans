@@ -35,7 +35,8 @@ result (table of lags, semivariances and numbers of pairs) with `autoplot()`.
 - **Coordinates** (`coords = c("x", "y")`, or `c("lat", "long")` converted to km
   by the haversine formula): the isotropic variogram by distance class
   (Matheron's estimator; `robust = TRUE` for Cressie and Hawkins'), up to half
-  the largest distance, 15 classes by default; `directions` (degrees from east)
+  the largest distance, 15 classes by default (class k = [k, k+1) x step, as
+  Genstat); lags with fewer than `min_pairs = 20` pairs are not shown; `directions` (degrees from east)
   and `segment` (the angle each covers) for directional variograms, to see
   anisotropy, as Genstat's `FVARIOGRAM` (DIRECTIONS, SEGMENTS). Genstat's
   guide (8.3.1, Webster and Oliver) advises some 300 data for directions.
@@ -82,10 +83,30 @@ for coordinates; latitude/longitude in km.
 maintainer, 2026-11-25): `FVARIOGRAM` gives Matheron's estimator (Eq. 8.3.12)
 and Cressie-Hawkins (8.3.13; also Dowd, Genton); its Example 8.3.1 prints the
 semivariances and pair counts of log10 potassium at Brooms Barn (434 points,
-4 directions, lags 1-12; Webster and Oliver 1990) - an exact reference for the
-estimator if the data file Broomesb.dat (shipped with Genstat) can be shared.
+4 directions, lags 1-12; Webster and Oliver 1990). Checked 2026-11-25 with the
+data file from the maintainer (`Broomesb.csv`, 435 points, one K missing):
+all 48 entries match, pair counts exactly, semivariances to 5e-6 (print
+rounding), mean lags to 5e-4. Genstat's lag class k holds the distances in
+[k, k+1) x step (not (k - 1/2, k + 1/2]), and a direction covers +-segment/2
+with angles folded modulo 180. `residvariogram()` follows these rules, so this
+table is a test to 1e-5 if the data may go in `tests/testthat/_data/`.
 That chapter is geostatistics (model fitting `MVARIOGRAM`, `KRIGE`), not the
 variogram of REML residuals of a field trial, which is the main use here.
+
+Genstat REML Guide, chapter 3 (extract, pages 67-104): the Slate Hall Farm
+trial (agridat `gilmour.slatehall`; 150 plots, 10 rows x 15 columns, 25
+varieties, 6 replicates) with AR1 x AR1 residuals; printed values for the fit
+(sigma^2 3.876, phi row 0.4586, phi column 0.6838, deviance 249.35 on 122 d.f.;
+with a nugget: sigma^2 4.662, phi 0.6922 and 0.8442, deviance 242.20, average
+s.e.d. 0.6072) - a reference for the spatial fits the advice points to
+(glmmTMB `ar1()`), not for the variogram itself. Section 3.5 defines the sample
+variogram of the residuals as here (half the mean squared difference of plots
+dr rows and dc columns apart) and its options: maximum lag per direction,
+distance per unit step, and a minimum number of pairs per lag (default 20)
+before a lag is shown; the plot (Figure 3.12) is the 3-d surface, with no
+printed values. So: `min_pairs = 20` as Genstat; a Genstat run of
+`FVARIOGRAM` on the Slate Hall residuals by the maintainer would give exact
+numbers for the row x column case.
 Other references: `nlme::Variogram()` for the isotropic estimator on lme/gls
 fits (to 1e-8); Gilmour et al. (1997) wheat trial (agridat
 `gilmour.serpentine`, 330 plots, 22 rows x 15 columns, 107 genotypes, 3
