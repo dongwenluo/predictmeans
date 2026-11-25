@@ -1,0 +1,811 @@
+ 140  " predictmeans: reference for corAR1xAR1() (dev/review-ar1ar1.md, S4), 2026-11-26.
+-141    Slate Hall Farm (Genstat REML Guide, chapter 3): 150 plots, 10 field rows x
+-142    15 field columns, 25 varieties, 6 replicates. The data are read below (from
+-143    tests/testthat/_data/variogram/slatehall.csv: replicates, variety, fieldrow,
+-144    fieldcolumn, yield), so nothing needs to be loaded first.
+-145    Please send the whole output (.txt or .rtf/.pdf).
+-146
+-147    Four models, each with variety fixed and AR1 x AR1 residuals:
+-148     A  AR1 x AR1                               (R: gls)
+-149     B  AR1 x AR1 + nugget (plot error, units)  (R: gls, nugget = TRUE)
+-150     C  replicates random + AR1 x AR1           (R: lme)
+-151     D  replicates random + nugget + AR1 x AR1  (R: lme, nugget = TRUE)
+-152    For each: variance parameters, deviance, Wald tests with d.d.f., the 25
+-153    variety means and all their SEDs (VPREDICT), printed to 8 decimals."
+ 154
+ 155  UNITS [NVALUES=150]
+ 156  FACTOR [LEVELS=6] replicates
+ 157  FACTOR [LEVELS=25] variety
+ 158  FACTOR [LEVELS=10] fieldrow
+ 159  FACTOR [LEVELS=15] fieldcolumn
+ 160  VARIATE yield
+ 161  READ replicates, variety, fieldrow, fieldcolumn, yield
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	yield	 9.170	 14.70	 21.19	 150	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	replicates	 150	 0	 6
+	variety	 150	 0	 25
+	fieldrow	 150	 0	 10
+	fieldcolumn	 150	 0	 15
+ 
+ 192  :
+ 193
+ 194  " plots as a factor for the nugget (independent plot error) "
+ 195  FACTOR [LEVELS=150; VALUES=1...150] units
+ 196
+ 197  " ---- A: AR1 x AR1 ---- "
+ 198  VCOMPONENTS [FIXED=variety] RANDOM=fieldrow.fieldcolumn
+ 199  VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+ 200  REML [PRINT=model,components,deviance,wald] yield
+ 
+REML variance components analysis
+ 
+Response variate:	yield
+Fixed model:	Constant + variety
+Random model:	fieldrow.fieldcolumn
+Number of units:	150
+ 
+fieldrow.fieldcolumn used as residual term with covariance structure as below
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+fieldrow.fieldcolumn	fieldrow	Auto-regressive (+ scalar)	1	10
+	fieldcolumn	Auto-regressive	1	15
+ 
+ 
+Residual variance model
+ 
+Term	Factor	Model(order)	Parameter	Estimate	s.e.
+fieldrow.fieldcolumn
+	 		Sigma2	3.876	 0.775
+	fieldrow	AR(1)	phi_1	 0.4586	 0.0826
+	fieldcolumn	AR(1)	phi_1	 0.6838	 0.0633
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 249.35	 122
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	313.04	24	13.04	80.0	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	313.04	24	13.04	80.0	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 
+ 201  VPREDICT [PRINT=*; PREDICTIONS=mA; SED=sA] CLASSIFY=variety
+ 202  PRINT mA; FIELDWIDTH=16; DECIMALS=8
+ 
+		mA
+	variety	 
+	1	12.57980698
+	2	15.01442240
+	3	14.04987352
+	4	14.12568755
+	5	15.14480492
+	6	15.53461788
+	7	13.79007180
+	8	14.75891441
+	9	12.75473485
+	10	12.12993176
+	11	13.42501822
+	12	14.55240195
+	13	16.58459241
+	14	12.98247616
+	15	14.55523053
+	16	12.96928128
+	17	14.99194518
+	18	15.12117640
+	19	16.53812432
+	20	16.74083282
+	21	15.17595852
+	22	16.05044644
+	23	13.11489920
+	24	15.86785112
+	25	15.92020827
+ 
+ 
+ 203  PRINT sA; FIELDWIDTH=12; DECIMALS=8
+ 
+		sA				
+		 	 	 	 	 
+	variety 1	 *				
+	variety 2	 0.61502113	 *			
+	variety 3	 0.61165665	 0.62222763	 *		
+	variety 4	 0.61702003	 0.59037365	 0.61327685	 *	
+	variety 5	 0.62351116	 0.62857347	 0.60222270	 0.59495284	 *
+	variety 6	 0.61167761	 0.60171030	 0.60932749	 0.60659048	 0.61849623
+	variety 7	 0.62414521	 0.60208584	 0.56506545	 0.56244022	 0.57753008
+	variety 8	 0.58582397	 0.59582449	 0.59860291	 0.63366720	 0.64150217
+	variety 9	 0.56222598	 0.61189823	 0.61200246	 0.59155693	 0.60024038
+	variety 10	 0.55538825	 0.58200131	 0.59055118	 0.58919950	 0.60316413
+	variety 11	 0.62252209	 0.59938618	 0.60543245	 0.61470501	 0.63262096
+	variety 12	 0.61563058	 0.63608325	 0.59642856	 0.61191713	 0.61007525
+	variety 13	 0.56442975	 0.56933152	 0.59399489	 0.58804954	 0.61039526
+	variety 14	 0.61598670	 0.59538984	 0.57520926	 0.63925681	 0.63748782
+	variety 15	 0.57467707	 0.62278948	 0.57998278	 0.59322132	 0.63230374
+	variety 16	 0.59237314	 0.61708453	 0.61718959	 0.62571010	 0.61646795
+	variety 17	 0.59989963	 0.58241378	 0.58579088	 0.56672901	 0.59817497
+	variety 18	 0.59730814	 0.60892908	 0.57787095	 0.61251235	 0.56980071
+	variety 19	 0.59541415	 0.62690774	 0.55947293	 0.57535580	 0.57880186
+	variety 20	 0.58212922	 0.62397603	 0.60750600	 0.60106077	 0.56823827
+	variety 21	 0.62943203	 0.60930002	 0.59403657	 0.62220591	 0.62088943
+	variety 22	 0.59271418	 0.62537383	 0.58739981	 0.59431673	 0.58311092
+	variety 23	 0.61038073	 0.58258566	 0.60691862	 0.59230394	 0.62366510
+	variety 24	 0.57497535	 0.62185748	 0.59302639	 0.63692780	 0.62096963
+	variety 25	 0.57952248	 0.59360881	 0.55572641	 0.52779476	 0.61589514
+		variety 1	 variety 2	 variety 3	 variety 4	 variety 5
+ 
+		 	 	 	 	 
+	variety 6	 *				
+	variety 7	 0.56071559	 *			
+	variety 8	 0.57595201	 0.60745774	 *		
+	variety 9	 0.59249275	 0.57002210	 0.59151457	 *	
+	variety 10	 0.57311421	 0.57761495	 0.55500026	 0.61052825	 *
+	variety 11	 0.57333975	 0.59848170	 0.56822256	 0.59054074	 0.59793172
+	variety 12	 0.56883185	 0.58535067	 0.56904858	 0.61088397	 0.56937220
+	variety 13	 0.55370677	 0.56058064	 0.56240858	 0.55299556	 0.52482391
+	variety 14	 0.61425904	 0.62439457	 0.60436397	 0.61268611	 0.58152558
+	variety 15	 0.56489556	 0.59886897	 0.57546082	 0.58947155	 0.57107371
+	variety 16	 0.58801013	 0.58510496	 0.62076956	 0.57380473	 0.61306204
+	variety 17	 0.56136741	 0.56200435	 0.57027063	 0.58660970	 0.58578026
+	variety 18	 0.60138261	 0.57149085	 0.58247539	 0.59395434	 0.57502601
+	variety 19	 0.60365577	 0.60099221	 0.57003554	 0.58318368	 0.61069091
+	variety 20	 0.59697075	 0.59044161	 0.56845754	 0.59437226	 0.57454789
+	variety 21	 0.57663854	 0.60688002	 0.58391614	 0.60169956	 0.59480497
+	variety 22	 0.59818209	 0.58816280	 0.62126710	 0.61253494	 0.58342675
+	variety 23	 0.58824787	 0.59856864	 0.58902603	 0.58636357	 0.61439572
+	variety 24	 0.57124383	 0.61781762	 0.59022913	 0.57537247	 0.56287836
+	variety 25	 0.57641743	 0.55313604	 0.60579772	 0.57524655	 0.57181297
+		variety 6	 variety 7	 variety 8	 variety 9	 variety 10
+ 
+		 	 	 	 	 
+	variety 11	 *				
+	variety 12	 0.57534386	 *			
+	variety 13	 0.56591568	 0.58611448	 *		
+	variety 14	 0.63530512	 0.56791920	 0.58180785	 *	
+	variety 15	 0.58038741	 0.57429077	 0.56117217	 0.61034320	 *
+	variety 16	 0.60787645	 0.57076994	 0.59984336	 0.60045951	 0.60274673
+	variety 17	 0.57389302	 0.55651253	 0.53844031	 0.56601331	 0.57134167
+	variety 18	 0.58300823	 0.59385134	 0.55599915	 0.57578267	 0.58101467
+	variety 19	 0.60578004	 0.57281832	 0.58364114	 0.59349825	 0.58188827
+	variety 20	 0.57653151	 0.54511458	 0.58483055	 0.59568186	 0.58346790
+	variety 21	 0.56577770	 0.55663095	 0.60864960	 0.63160653	 0.58876244
+	variety 22	 0.57826213	 0.55676915	 0.57682624	 0.61512670	 0.53987013
+	variety 23	 0.56304629	 0.56002366	 0.56273856	 0.59799452	 0.58625243
+	variety 24	 0.61364487	 0.59749520	 0.60613744	 0.57313727	 0.59264939
+	variety 25	 0.58496243	 0.60312454	 0.57377364	 0.62118710	 0.54565735
+		variety 11	 variety 12	 variety 13	 variety 14	 variety 15
+ 
+		 	 	 	 	 
+	variety 16	 *				
+	variety 17	 0.57307553	 *			
+	variety 18	 0.59372952	 0.57960143	 *		
+	variety 19	 0.61197700	 0.55962866	 0.58088327	 *	
+	variety 20	 0.60455137	 0.56984383	 0.56603930	 0.59927105	 *
+	variety 21	 0.62056056	 0.56314649	 0.56336097	 0.59484755	 0.57400576
+	variety 22	 0.58545548	 0.59905988	 0.58155721	 0.60114899	 0.58363415
+	variety 23	 0.56402043	 0.57227191	 0.60670960	 0.59096867	 0.58413460
+	variety 24	 0.55876177	 0.58069602	 0.55705297	 0.61637383	 0.55699047
+	variety 25	 0.59081064	 0.57832959	 0.55809826	 0.58739043	 0.59621226
+		variety 16	 variety 17	 variety 18	 variety 19	 variety 20
+ 
+		 	 	 	 	 
+	variety 21	 *				
+	variety 22	 0.59229819	 *			
+	variety 23	 0.58090522	 0.60137875	 *		
+	variety 24	 0.61271648	 0.57067703	 0.58929095	 *	
+	variety 25	 0.57788948	 0.55709142	 0.57401577	 0.61599650	 *
+		variety 21	 variety 22	 variety 23	 variety 24	 variety 25
+ 
+ 204
+ 205  " ---- B: AR1 x AR1 + nugget ---- "
+ 206  VCOMPONENTS [FIXED=variety] RANDOM=units + fieldrow.fieldcolumn
+ 207  VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+ 208  REML [PRINT=model,components,deviance,wald] yield
+Warning 36, code VC 53, statement 1 on line 208
+ 
+Command: REML [PRINT=model,components,deviance,wald] yield
+More than one residual term specified - first term found will be used as R.
+ 
+ 
+ 
+REML variance components analysis
+ 
+Response variate:	yield
+Fixed model:	Constant + variety
+Random model:	units + fieldrow.fieldcolumn
+Number of units:	150
+ 
+units used as residual term
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+fieldrow.fieldcolumn	fieldrow	Auto-regressive (+ scalar)	1	10
+	fieldcolumn	Auto-regressive	1	15
+ 
+ 
+Estimated parameters for covariance models
+ 
+Random term(s)	Factor	Model(order)	Parameter  	Estimate	s.e.
+fieldrow.fieldcolumn
+	fieldrow	AR(1)	phi_1	 0.6827	 0.1023
+	 	 	Scalar	 9.420	 4.404
+	fieldcolumn	AR(1)	phi_1	 0.8438	 0.0684
+ 
+Note: the covariance matrix for each term is calculated as G or R where 
+ var(y) = Sigma2( ZGZ'+R ), i.e.      relative to the residual variance, Sigma2.
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+units	Identity	Sigma2	0.486	 0.1787
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 242.35	 121
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	245.39	24	10.21	75.7	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	245.39	24	10.21	75.7	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 
+ 209  VPREDICT [PRINT=*; PREDICTIONS=mB; SED=sB] CLASSIFY=variety
+ 210  PRINT mB; FIELDWIDTH=16; DECIMALS=8
+ 
+		mB
+	variety	 
+	1	12.45581700
+	2	15.16233542
+	3	14.03984398
+	4	14.04918311
+	5	14.71612043
+	6	15.21937301
+	7	13.72819762
+	8	14.53016740
+	9	12.62331260
+	10	11.95634758
+	11	13.28914525
+	12	14.41677115
+	13	16.24212854
+	14	12.99312685
+	15	14.69593678
+	16	12.87518981
+	17	14.92884600
+	18	15.27492637
+	19	16.49208624
+	20	16.46048518
+	21	15.14750894
+	22	16.08952725
+	23	13.16873715
+	24	15.57521325
+	25	15.73887676
+ 
+ 
+ 211  PRINT sB; FIELDWIDTH=12; DECIMALS=8
+ 
+		sB				
+		 	 	 	 	 
+	variety 1	 *				
+	variety 2	 0.62157181	 *			
+	variety 3	 0.61834890	 0.63411657	 *		
+	variety 4	 0.62456923	 0.60407869	 0.61612598	 *	
+	variety 5	 0.62670759	 0.63219364	 0.60971107	 0.60665515	 *
+	variety 6	 0.60113674	 0.61938568	 0.61272243	 0.61557067	 0.61728757
+	variety 7	 0.61652348	 0.61064997	 0.59216728	 0.58826533	 0.60036488
+	variety 8	 0.61466760	 0.62551176	 0.61421925	 0.63200460	 0.63823894
+	variety 9	 0.59786559	 0.61985414	 0.61984290	 0.60769278	 0.61465502
+	variety 10	 0.59589416	 0.61099714	 0.61202816	 0.60567647	 0.61434116
+	variety 11	 0.62687247	 0.61504329	 0.60947607	 0.62080550	 0.63262257
+	variety 12	 0.61737920	 0.63217885	 0.61288237	 0.61871311	 0.62087039
+	variety 13	 0.58598027	 0.61024932	 0.61223721	 0.60656922	 0.62393974
+	variety 14	 0.61709669	 0.60957329	 0.60331113	 0.63589312	 0.63368112
+	variety 15	 0.59240002	 0.62450352	 0.60554262	 0.60334772	 0.62609867
+	variety 16	 0.61131475	 0.62834545	 0.61684996	 0.62115220	 0.61168875
+	variety 17	 0.61751650	 0.60623578	 0.59570433	 0.59653563	 0.60786862
+	variety 18	 0.59961655	 0.61487181	 0.59798076	 0.61059853	 0.58707671
+	variety 19	 0.60939991	 0.63461580	 0.58298884	 0.59203207	 0.59595153
+	variety 20	 0.59761964	 0.62532771	 0.61167345	 0.60734773	 0.59258815
+	variety 21	 0.62606217	 0.62378914	 0.59936249	 0.62841021	 0.62169248
+	variety 22	 0.60772068	 0.62909159	 0.59454149	 0.61020290	 0.59990142
+	variety 23	 0.62016338	 0.60533941	 0.61740139	 0.61483006	 0.61636243
+	variety 24	 0.58589277	 0.62708743	 0.60362490	 0.62939393	 0.61393633
+	variety 25	 0.60322450	 0.61066470	 0.58873919	 0.57345941	 0.61556372
+		variety 1	 variety 2	 variety 3	 variety 4	 variety 5
+ 
+		 	 	 	 	 
+	variety 6	 *				
+	variety 7	 0.58358341	 *			
+	variety 8	 0.60372411	 0.62055221	 *		
+	variety 9	 0.60245004	 0.58967444	 0.60685900	 *	
+	variety 10	 0.60023735	 0.60134787	 0.58736271	 0.61118894	 *
+	variety 11	 0.60269063	 0.62170898	 0.60450717	 0.60964590	 0.61138809
+	variety 12	 0.59921525	 0.60341627	 0.60573674	 0.60971413	 0.59320690
+	variety 13	 0.58602986	 0.59088866	 0.59815901	 0.59367560	 0.56993838
+	variety 14	 0.61617249	 0.61606660	 0.61122252	 0.61332581	 0.60712037
+	variety 15	 0.59507816	 0.60755073	 0.60498359	 0.60310322	 0.59529947
+	variety 16	 0.61008130	 0.60551171	 0.62610753	 0.59045373	 0.61263132
+	variety 17	 0.59755474	 0.59509690	 0.59772530	 0.59923699	 0.60016792
+	variety 18	 0.59905220	 0.58693042	 0.60190562	 0.60431088	 0.59623132
+	variety 19	 0.59645131	 0.61110310	 0.60067550	 0.60279091	 0.61018317
+	variety 20	 0.59999421	 0.60025904	 0.60122715	 0.59799533	 0.60550869
+	variety 21	 0.58878421	 0.61102284	 0.60777410	 0.60984075	 0.60939991
+	variety 22	 0.61202792	 0.59877954	 0.62498565	 0.61134654	 0.61137206
+	variety 23	 0.60386714	 0.61076802	 0.60897526	 0.60630651	 0.62083234
+	variety 24	 0.58702988	 0.61215466	 0.59931441	 0.58562779	 0.58459388
+	variety 25	 0.59893063	 0.56916320	 0.61109953	 0.59572778	 0.59205932
+		variety 6	 variety 7	 variety 8	 variety 9	 variety 10
+ 
+		 	 	 	 	 
+	variety 11	 *				
+	variety 12	 0.59366470	 *			
+	variety 13	 0.60142832	 0.61201918	 *		
+	variety 14	 0.62665010	 0.59191574	 0.60420219	 *	
+	variety 15	 0.60765810	 0.60721294	 0.58783440	 0.61817328	 *
+	variety 16	 0.61366535	 0.59019208	 0.61684886	 0.60874258	 0.61815933
+	variety 17	 0.59769238	 0.58703163	 0.58457660	 0.59298539	 0.59585744
+	variety 18	 0.60565874	 0.60907142	 0.58077316	 0.59446383	 0.58526117
+	variety 19	 0.61925297	 0.59529385	 0.59632036	 0.61063240	 0.59850487
+	variety 20	 0.60674898	 0.58699355	 0.60187187	 0.61085382	 0.60388067
+	variety 21	 0.59319581	 0.58434108	 0.60984259	 0.62515157	 0.60556339
+	variety 22	 0.59961137	 0.58877409	 0.59335130	 0.61108769	 0.57378842
+	variety 23	 0.58304455	 0.58889220	 0.59325815	 0.60692569	 0.60416510
+	variety 24	 0.61191783	 0.59824734	 0.60360202	 0.58702427	 0.60706466
+	variety 25	 0.59867610	 0.60492481	 0.59663403	 0.62196498	 0.57903323
+		variety 11	 variety 12	 variety 13	 variety 14	 variety 15
+ 
+		 	 	 	 	 
+	variety 16	 *				
+	variety 17	 0.59084608	 *			
+	variety 18	 0.60948579	 0.58626869	 *		
+	variety 19	 0.61707953	 0.58324971	 0.59584693	 *	
+	variety 20	 0.61249566	 0.59170970	 0.59011366	 0.60661707	 *
+	variety 21	 0.61898909	 0.58302846	 0.59216538	 0.59521635	 0.58827373
+	variety 22	 0.60257033	 0.60537407	 0.60124889	 0.60978095	 0.59465937
+	variety 23	 0.59348604	 0.60194816	 0.60696122	 0.60815360	 0.59579380
+	variety 24	 0.58752498	 0.60041073	 0.58021069	 0.61273256	 0.58206088
+	variety 25	 0.60837979	 0.60047841	 0.58251337	 0.60950472	 0.60207547
+		variety 16	 variety 17	 variety 18	 variety 19	 variety 20
+ 
+		 	 	 	 	 
+	variety 21	 *				
+	variety 22	 0.60111140	 *			
+	variety 23	 0.58777372	 0.61106569	 *		
+	variety 24	 0.61136185	 0.58718037	 0.59576181	 *	
+	variety 25	 0.60091112	 0.58412621	 0.59960570	 0.60612645	 *
+		variety 21	 variety 22	 variety 23	 variety 24	 variety 25
+ 
+ 212
+ 213  " ---- C: replicates random + AR1 x AR1 ---- "
+ 214  VCOMPONENTS [FIXED=variety] RANDOM=replicates + fieldrow.fieldcolumn
+ 215  VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+ 216  REML [PRINT=model,components,deviance,wald] yield
+ 
+REML variance components analysis
+ 
+Response variate:	yield
+Fixed model:	Constant + variety
+Random model:	replicates + fieldrow.fieldcolumn
+Number of units:	150
+ 
+fieldrow.fieldcolumn used as residual term with covariance structure as below
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+fieldrow.fieldcolumn	fieldrow	Auto-regressive (+ scalar)	1	10
+	fieldcolumn	Auto-regressive	1	15
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+replicates	 -0.024	 0.220
+ 
+ 
+Residual variance model
+ 
+Term	Factor	Model(order)	Parameter	Estimate	s.e.
+fieldrow.fieldcolumn
+	 		Sigma2	3.880	 0.780
+	fieldrow	AR(1)	phi_1	 0.4602	 0.0835
+	fieldcolumn	AR(1)	phi_1	 0.6827	 0.0631
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 249.34	 121
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	312.41	24	13.01	79.3	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	312.41	24	13.01	79.3	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 
+ 217  VPREDICT [PRINT=*; PREDICTIONS=mC; SED=sC] CLASSIFY=variety
+ 218  PRINT mC; FIELDWIDTH=16; DECIMALS=8
+ 
+		mC
+	variety	 
+	1	12.57847629
+	2	15.00845071
+	3	14.05396757
+	4	14.12617259
+	5	15.14631738
+	6	15.53474282
+	7	13.79008871
+	8	14.75908536
+	9	12.75502356
+	10	12.13169286
+	11	13.42664859
+	12	14.54867226
+	13	16.58433884
+	14	12.98171196
+	15	14.55611702
+	16	12.96249994
+	17	14.99298195
+	18	15.11996544
+	19	16.54304182
+	20	16.73487138
+	21	15.18363508
+	22	16.05142267
+	23	13.11914504
+	24	15.86700589
+	25	15.91986109
+ 
+ 
+ 219  PRINT sC; FIELDWIDTH=12; DECIMALS=8
+ 
+		sC				
+		 	 	 	 	 
+	variety 1	 *				
+	variety 2	 0.61553065	 *			
+	variety 3	 0.61209377	 0.62239988	 *		
+	variety 4	 0.61761047	 0.59073701	 0.61386479	 *	
+	variety 5	 0.62397166	 0.62884820	 0.60291343	 0.59540291	 *
+	variety 6	 0.61221065	 0.60232551	 0.60971214	 0.60711716	 0.61894341
+	variety 7	 0.62471933	 0.60238244	 0.56551871	 0.56297739	 0.57793838
+	variety 8	 0.58622959	 0.59634662	 0.59886773	 0.63430891	 0.64192755
+	variety 9	 0.56279770	 0.61243432	 0.61264901	 0.59219795	 0.60084327
+	variety 10	 0.55581811	 0.58210100	 0.59113084	 0.58968054	 0.60359719
+	variety 11	 0.62311757	 0.59986078	 0.60594453	 0.61537404	 0.63319456
+	variety 12	 0.61613008	 0.63673291	 0.59670162	 0.61234459	 0.61046988
+	variety 13	 0.56495722	 0.56977753	 0.59450465	 0.58862847	 0.61089190
+	variety 14	 0.61654774	 0.59588865	 0.57561171	 0.63985517	 0.63804077
+	variety 15	 0.57523658	 0.62327194	 0.58033782	 0.59388358	 0.63282077
+	variety 16	 0.59273029	 0.61741946	 0.61714190	 0.62603904	 0.61643691
+	variety 17	 0.60046141	 0.58286626	 0.58622712	 0.56728267	 0.59861707
+	variety 18	 0.59786205	 0.60934653	 0.57845278	 0.61309371	 0.57033293
+	variety 19	 0.59581480	 0.62741762	 0.55992739	 0.57596897	 0.57934669
+	variety 20	 0.58256708	 0.62440529	 0.60771448	 0.60145415	 0.56848115
+	variety 21	 0.62974282	 0.60906017	 0.59448701	 0.62256818	 0.62130700
+	variety 22	 0.59331535	 0.62581901	 0.58807870	 0.59495762	 0.58371103
+	variety 23	 0.61085233	 0.58288456	 0.60745881	 0.59278064	 0.62420221
+	variety 24	 0.57545945	 0.62232843	 0.59359393	 0.63744986	 0.62158125
+	variety 25	 0.58012788	 0.59395368	 0.55617718	 0.52829596	 0.61646130
+		variety 1	 variety 2	 variety 3	 variety 4	 variety 5
+ 
+		 	 	 	 	 
+	variety 6	 *				
+	variety 7	 0.56123038	 *			
+	variety 8	 0.57640091	 0.60798636	 *		
+	variety 9	 0.59313021	 0.57064444	 0.59215394	 *	
+	variety 10	 0.57341186	 0.57803979	 0.55530544	 0.61116127	 *
+	variety 11	 0.57387039	 0.59907364	 0.56876372	 0.59127541	 0.59841582
+	variety 12	 0.56937785	 0.58578579	 0.56950088	 0.61153830	 0.56959448
+	variety 13	 0.55421241	 0.56104160	 0.56293844	 0.55363420	 0.52515321
+	variety 14	 0.61486492	 0.62494028	 0.60487648	 0.61342221	 0.58198077
+	variety 15	 0.56537798	 0.59948776	 0.57589838	 0.59021826	 0.57154150
+	variety 16	 0.58842065	 0.58536493	 0.62115799	 0.57414598	 0.61324901
+	variety 17	 0.56192047	 0.56255330	 0.57079897	 0.58729414	 0.58626111
+	variety 18	 0.60196479	 0.57199808	 0.58296173	 0.59463704	 0.57552447
+	variety 19	 0.60415304	 0.60158710	 0.57048756	 0.58386637	 0.61108092
+	variety 20	 0.59742372	 0.59077890	 0.56873502	 0.59485469	 0.57489514
+	variety 21	 0.57671671	 0.60724530	 0.58392793	 0.60208724	 0.59529365
+	variety 22	 0.59873117	 0.58873211	 0.62182790	 0.61331396	 0.58395730
+	variety 23	 0.58865417	 0.59906033	 0.58937095	 0.58699794	 0.61483318
+	variety 24	 0.57171497	 0.61834669	 0.59059582	 0.57588220	 0.56336164
+	variety 25	 0.57691046	 0.55366287	 0.60628311	 0.57596786	 0.57231349
+		variety 6	 variety 7	 variety 8	 variety 9	 variety 10
+ 
+		 	 	 	 	 
+	variety 11	 *				
+	variety 12	 0.57579790	 *			
+	variety 13	 0.56646017	 0.58659601	 *		
+	variety 14	 0.63594045	 0.56839863	 0.58240484	 *	
+	variety 15	 0.58094039	 0.57458337	 0.56176786	 0.61085119	 *
+	variety 16	 0.60809883	 0.57117073	 0.60014276	 0.60074469	 0.60304562
+	variety 17	 0.57450685	 0.55691673	 0.53897435	 0.56650578	 0.57193412
+	variety 18	 0.58352597	 0.59440975	 0.55646133	 0.57636028	 0.58157096
+	variety 19	 0.60645425	 0.57315269	 0.58426707	 0.59394212	 0.58245301
+	variety 20	 0.57683080	 0.54550708	 0.58518154	 0.59608603	 0.58378219
+	variety 21	 0.56607962	 0.55655033	 0.60898215	 0.63187223	 0.58910366
+	variety 22	 0.57889433	 0.55710086	 0.57745886	 0.61570278	 0.54039540
+	variety 23	 0.56354297	 0.56021545	 0.56324422	 0.59848680	 0.58670023
+	variety 24	 0.61416899	 0.59798971	 0.60671143	 0.57367930	 0.59307107
+	variety 25	 0.58556192	 0.60361963	 0.57433568	 0.62180316	 0.54619833
+		variety 11	 variety 12	 variety 13	 variety 14	 variety 15
+ 
+		 	 	 	 	 
+	variety 16	 *				
+	variety 17	 0.57337210	 *			
+	variety 18	 0.59396677	 0.58014544	 *		
+	variety 19	 0.61208797	 0.56012027	 0.58141083	 *	
+	variety 20	 0.60501306	 0.57017408	 0.56647956	 0.59945336	 *
+	variety 21	 0.62025255	 0.56337832	 0.56363389	 0.59510378	 0.57388622
+	variety 22	 0.58549499	 0.59968624	 0.58217531	 0.60180965	 0.58392288
+	variety 23	 0.56390710	 0.57270324	 0.60723493	 0.59158048	 0.58415264
+	variety 24	 0.55885320	 0.58115227	 0.55768907	 0.61678910	 0.55735485
+	variety 25	 0.59117100	 0.57891710	 0.55866073	 0.58791250	 0.59668096
+		variety 16	 variety 17	 variety 18	 variety 19	 variety 20
+ 
+		 	 	 	 	 
+	variety 21	 *				
+	variety 22	 0.59282847	 *			
+	variety 23	 0.58115910	 0.60200938	 *		
+	variety 24	 0.61302860	 0.57120618	 0.58976102	 *	
+	variety 25	 0.57817383	 0.55768666	 0.57450102	 0.61664120	 *
+		variety 21	 variety 22	 variety 23	 variety 24	 variety 25
+ 
+ 220
+ 221  " ---- D: replicates random + nugget + AR1 x AR1 ---- "
+ 222  VCOMPONENTS [FIXED=variety] RANDOM=replicates + units + fieldrow.fieldcolumn
+ 223  VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+ 224  REML [PRINT=model,components,deviance,wald] yield
+Warning 37, code VC 53, statement 1 on line 224
+ 
+Command: REML [PRINT=model,components,deviance,wald] yield
+More than one residual term specified - first term found will be used as R.
+ 
+ 
+ 
+REML variance components analysis
+ 
+Response variate:	yield
+Fixed model:	Constant + variety
+Random model:	replicates + units + fieldrow.fieldcolumn
+Number of units:	150
+ 
+units used as residual term
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Covariance structures defined for random model
+ 
+Covariance structures defined within terms:
+ 
+Term	Factor	Model	Order	No. rows
+fieldrow.fieldcolumn	fieldrow	Auto-regressive (+ scalar)	1	10
+	fieldcolumn	Auto-regressive	1	15
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+replicates	 -0.0777	 0.1617
+ 
+ 
+Estimated parameters for covariance models
+ 
+Random term(s)	Factor	Model(order)	Parameter  	Estimate	s.e.
+fieldrow.fieldcolumn
+	fieldrow	AR(1)	phi_1	 0.6922	 0.1022
+	 	 	Scalar	 9.240	 4.283
+	fieldcolumn	AR(1)	phi_1	 0.8442	 0.0685
+ 
+Note: the covariance matrix for each term is calculated as G or R where 
+ var(y) = Sigma2( ZGZ'+R ), i.e.      relative to the residual variance, Sigma2.
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+units	Identity	Sigma2	0.500	 0.1810
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 242.20	 120
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	241.61	24	10.05	74.7	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+variety	241.61	24	10.05	74.7	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 
+ 225  VPREDICT [PRINT=*; PREDICTIONS=mD; SED=sD] CLASSIFY=variety
+ 226  PRINT mD; FIELDWIDTH=16; DECIMALS=8
+ 
+		mD
+	variety	 
+	1	12.44822456
+	2	15.14300715
+	3	14.05148607
+	4	14.05862479
+	5	14.70894255
+	6	15.20951458
+	7	13.73631800
+	8	14.52943444
+	9	12.62845757
+	10	11.95459794
+	11	13.29413290
+	12	14.40135286
+	13	16.23573598
+	14	12.99716555
+	15	14.69412598
+	16	12.86103415
+	17	14.94470304
+	18	15.27967670
+	19	16.49655055
+	20	16.44067066
+	21	15.18224476
+	22	16.09893937
+	23	13.18123205
+	24	15.55348176
+	25	15.73022001
+ 
+ 
+ 227  PRINT sD; FIELDWIDTH=12; DECIMALS=8
+ 
+		sD				
+		 	 	 	 	 
+	variety 1	 *				
+	variety 2	 0.62408341	 *			
+	variety 3	 0.62061097	 0.63564692	 *		
+	variety 4	 0.62680364	 0.60539451	 0.61833957	 *	
+	variety 5	 0.62914783	 0.63403462	 0.61258557	 0.60864759	 *
+	variety 6	 0.60343753	 0.62233028	 0.61461645	 0.61753105	 0.61938944
+	variety 7	 0.61882553	 0.61236056	 0.59516598	 0.59127569	 0.60302858
+	variety 8	 0.61736769	 0.62812666	 0.61626407	 0.63422197	 0.64012871
+	variety 9	 0.60112292	 0.62187907	 0.62276023	 0.61045464	 0.61765465
+	variety 10	 0.59893681	 0.61293114	 0.61485479	 0.60826795	 0.61667043
+	variety 11	 0.62917625	 0.61690360	 0.61193221	 0.62333464	 0.63494374
+	variety 12	 0.61999566	 0.63462921	 0.61495738	 0.62049928	 0.62296837
+	variety 13	 0.58885631	 0.61288627	 0.61503640	 0.60906640	 0.62679872
+	variety 14	 0.61973966	 0.61196882	 0.60633646	 0.63791953	 0.63611683
+	variety 15	 0.59516511	 0.62679247	 0.60792401	 0.60614625	 0.62802676
+	variety 16	 0.61345478	 0.63031766	 0.61729501	 0.62242361	 0.61221195
+	variety 17	 0.62016082	 0.60784966	 0.59825547	 0.59977986	 0.61009655
+	variety 18	 0.60233965	 0.61707339	 0.60094443	 0.61293833	 0.58994886
+	variety 19	 0.61227889	 0.63712123	 0.58561549	 0.59457878	 0.59864783
+	variety 20	 0.60004515	 0.62741480	 0.61320711	 0.60916216	 0.59470917
+	variety 21	 0.62638406	 0.62249336	 0.60108734	 0.62973827	 0.62281893
+	variety 22	 0.61011565	 0.63032123	 0.59747959	 0.61261307	 0.60278452
+	variety 23	 0.62239741	 0.60687428	 0.61983080	 0.61669814	 0.61849830
+	variety 24	 0.58845752	 0.62954162	 0.60570105	 0.63040152	 0.61619957
+	variety 25	 0.60639244	 0.61307323	 0.59171041	 0.57657785	 0.61794425
+		variety 1	 variety 2	 variety 3	 variety 4	 variety 5
+ 
+		 	 	 	 	 
+	variety 6	 *				
+	variety 7	 0.58624815	 *			
+	variety 8	 0.60641165	 0.62314524	 *		
+	variety 9	 0.60508855	 0.59274932	 0.60971188	 *	
+	variety 10	 0.60278020	 0.60424586	 0.58980167	 0.61371217	 *
+	variety 11	 0.60521084	 0.62471470	 0.60765542	 0.61293808	 0.61370586
+	variety 12	 0.60215644	 0.60570060	 0.60836638	 0.61191131	 0.59578785
+	variety 13	 0.58899888	 0.59393200	 0.60118908	 0.59736817	 0.57285207
+	variety 14	 0.61873233	 0.61834627	 0.61355912	 0.61606852	 0.61003490
+	variety 15	 0.59796823	 0.61022483	 0.60771253	 0.60589910	 0.59812839
+	variety 16	 0.61235203	 0.60707049	 0.62742276	 0.59183914	 0.61442130
+	variety 17	 0.60014159	 0.59849537	 0.60053270	 0.60221763	 0.60298338
+	variety 18	 0.60155878	 0.58976891	 0.60457371	 0.60729665	 0.59922628
+	variety 19	 0.59879450	 0.61382083	 0.60377285	 0.60585085	 0.61224242
+	variety 20	 0.60215746	 0.60214767	 0.60327484	 0.59989074	 0.60831445
+	variety 21	 0.58859414	 0.61252580	 0.60872223	 0.61168793	 0.61061720
+	variety 22	 0.61396547	 0.60139524	 0.62707951	 0.61420921	 0.61389238
+	variety 23	 0.60587681	 0.61311338	 0.61125379	 0.60935216	 0.62235815
+	variety 24	 0.58972745	 0.61387634	 0.60097217	 0.58792753	 0.58692968
+	variety 25	 0.60172681	 0.57191971	 0.61341901	 0.59890156	 0.59511082
+		variety 6	 variety 7	 variety 8	 variety 9	 variety 10
+ 
+		 	 	 	 	 
+	variety 11	 *				
+	variety 12	 0.59573332	 *			
+	variety 13	 0.60458736	 0.61446884	 *		
+	variety 14	 0.62901410	 0.59464727	 0.60711523	 *	
+	variety 15	 0.61034733	 0.60988089	 0.59072066	 0.62073398	 *
+	variety 16	 0.61451632	 0.59286218	 0.61806675	 0.61038338	 0.62031234
+	variety 17	 0.60077077	 0.58919170	 0.58773849	 0.59582982	 0.59876326
+	variety 18	 0.60829690	 0.61182351	 0.58351935	 0.59750492	 0.58776243
+	variety 19	 0.62202726	 0.59777032	 0.59926832	 0.61344789	 0.60135293
+	variety 20	 0.60851279	 0.59010760	 0.60353997	 0.61303974	 0.60632966
+	variety 21	 0.59532458	 0.58370921	 0.61135718	 0.62586505	 0.60611348
+	variety 22	 0.60252623	 0.59056855	 0.59639727	 0.61318528	 0.57622063
+	variety 23	 0.58580501	 0.59040442	 0.59619740	 0.60935051	 0.60605456
+	variety 24	 0.61348299	 0.60082162	 0.60570623	 0.58971527	 0.60919590
+	variety 25	 0.60133548	 0.60765298	 0.59950418	 0.62465429	 0.58218484
+		variety 11	 variety 12	 variety 13	 variety 14	 variety 15
+ 
+		 	 	 	 	 
+	variety 16	 *				
+	variety 17	 0.59222116	 *			
+	variety 18	 0.61149281	 0.58876959	 *		
+	variety 19	 0.61844411	 0.58577014	 0.59861309	 *	
+	variety 20	 0.61509244	 0.59350960	 0.59297028	 0.60840834	 *
+	variety 21	 0.61676564	 0.58517026	 0.59347053	 0.59579144	 0.58712457
+	variety 22	 0.60261287	 0.60792432	 0.60379825	 0.61231841	 0.59551020
+	variety 23	 0.59369261	 0.60445074	 0.60874857	 0.61072515	 0.59616295
+	variety 24	 0.58976114	 0.60225725	 0.58313214	 0.61463454	 0.58469994
+	variety 25	 0.61078144	 0.60335802	 0.58571198	 0.61238745	 0.60464137
+		variety 16	 variety 17	 variety 18	 variety 19	 variety 20
+ 
+		 	 	 	 	 
+	variety 21	 *				
+	variety 22	 0.60350968	 *			
+	variety 23	 0.58918023	 0.61384117	 *		
+	variety 24	 0.61084238	 0.58878989	 0.59731296	 *	
+	variety 25	 0.60174025	 0.58672568	 0.60179709	 0.60846078	 *
+		variety 21	 variety 22	 variety 23	 variety 24	 variety 25
+ 

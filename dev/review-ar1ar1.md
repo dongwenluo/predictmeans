@@ -57,7 +57,7 @@ get a message pointing to the smooth surface `t2(row, col)` in `semireg()`.
 Slate Hall trial (the data are in `tests/testthat/_data/variogram/slatehall.csv`):
 - variety fixed, AR1 x AR1: sigma^2 3.876, phi 0.4586 (rows) and 0.6838 (columns),
   deviance 249.35 on 122 d.f.; variety Wald 313.04 on 24, F 13.04 on 80.0 d.d.f.;
-- with a nugget (units 0.500), replicates: sigma^2 4.662, phi 0.6922 and 0.8442,
+- with a nugget (units 0.500), replicates: AR part 0.500 x 9.240 = 4.620, phi 0.6922 and 0.8442,
   deviance 242.20, average SED of variety means 0.6072, Wald 241.61, d.d.f. 74.7;
 - the variogram of the fitted model's residuals (`residvariogram()`, Genstat's
   `FVARIOGRAM` of the AR1 x AR1 residuals already in `test-variogram.R`).
@@ -76,6 +76,32 @@ one column): equal to 1e-8; a simulated field with known phi recovered; KR df
 and SEDs against Genstat (S4); the variogram of normalized residuals flat in
 simulations with the right model (the envelope of `residvariogram()` at its
 nominal size).
+
+## Genstat run (2026-11-26)
+
+Output: `dev/genstat/genstat-results-2026-11-26-ar1ar1-slatehall.txt` (script
+`ar1ar1-slatehall.gen`); 25 means and 300 SEDs of each model to 8 decimals.
+
+| model | variance parameters | phi row, col | deviance (d.f.) | variety Wald, F, d.d.f. |
+|---|---|---|---|---|
+| A AR1 x AR1 | sigma^2 3.876 | 0.4586, 0.6838 | 249.35 (122) | 313.04, 13.04, 80.0 |
+| B + nugget | units 0.486, AR part 0.486 x 9.420 = 4.578 | 0.6827, 0.8438 | 242.35 (121) | 245.39, 10.21, 75.7 |
+| C replicates + A | replicates **-0.024**, sigma^2 3.880 | 0.4602, 0.6827 | 249.34 (121) | 312.41, 13.01, 79.3 |
+| D replicates + B | replicates **-0.0777**, units 0.500, AR 0.500 x 9.240 | 0.6922, 0.8442 | 242.20 (120) | 241.61, 10.05, 74.7 |
+
+- A and B are the references for `gls`. Checked here at Genstat's rounded
+  estimates: GLS means to 2e-5, sigma^2 and the REML deviance (without the
+  2 pi constant) to the printed digits, so the data file and the
+  parametrisation match.
+- With a nugget Genstat makes `units` the residual and scales the AR1 x AR1 term
+  by a ratio (its warning "More than one residual term" is about this); the
+  same model as nlme's nugget form, nugget share 1 / (1 + 9.420) = 0.096.
+- C and D have **negative** replicate components (Genstat leaves them
+  unconstrained). `lme()` keeps variances positive, so it reaches the boundary
+  (replicates about 0), where C is A and D is B. C and D are therefore not
+  references for `lme()`; the lme tests check C = gls A and D = gls B at the
+  boundary, and the lme code path against A/B values with replicates fixed
+  near 0. (S4 first said 4.662 for D's AR part; the run gives 4.620.)
 
 ## Effort
 
