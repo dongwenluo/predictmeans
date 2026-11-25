@@ -2879,3 +2879,78 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   position) were functions of nitro (curves estimable only at mean nitro);
   both tests now use models whose curves exist. Snapshots of
   covariatemeans() and semipred() identical to main.
+* heritability(), step 1 (2026-11-25; maintainer's decisions H1-H6 in
+  dev/review-heritability.md): `R/heritability.R` for lmer. Pieces from one
+  place each: components (VarCorr; SE of the standard form by the delta
+  method on pm_lmer_varpar(), as varcomp()), the prediction error covariance
+  of the genotype BLUPs (pm_ranef_cov()), vBLUE from the fixed-genotype refit
+  (Kmatrix() means, unadjusted covariance). Checks: balanced - standard =
+  Cullis = Piepho = Oakey (1e-6; inti::H2cal 0.837 for standard and Piepho);
+  unbalanced - Cullis = Henderson's equations by hand (1e-8), Piepho =
+  emmeans unadjusted (inti 0.797 uses emmeans's KR covariance, ours 0.7982 =
+  Piepho and Möhring's unadjusted), Oakey = mean of the non-zero eigenvalues
+  of I - C/s2g (one exactly zero, the genotype mean with the intercept) =
+  Cullis for independent genotypes; several environments - the standard form
+  by hand. inti's Cullis (0.823 balanced) is an approximation (2 x mean
+  conditional variance, covariances ignored). Next: bootstrap SE for the
+  mixed-model forms, family and repeatability forms, advice, more classes.
+* heritability(), step 2 (2026-11-25): `"family"` ((s2f/rho) / (s2f + terms
+  with the family + residual); design terms such as blocks left out of the
+  single-plant variance; = by hand 1e-10) and `"repeatability"`; SEs of the
+  component forms by the delta method on pm_lmer_varpar() (family SE = 4 x
+  repeatability SE for rho = 1/4, checked), logit limits; parametric
+  bootstrap for Cullis/Piepho/Oakey (`nboot`, seeds per draw, identical for
+  ncore 1 and 2, percentile limits; 50 draws 4.8 s); vBLUE refit takes the
+  response as a column (also transformed responses and bootstrap draws);
+  advice ids h2_standard_unbalanced, h2_forms_differ, h2_above_one, h2_no_se.
+* heritability(), references (2026-11-25): Piepho and Möhring (2007, PDF
+  from the maintainer) Example 1, the John and Williams (1995) oats alpha
+  design (tests/testthat/_data/john-alpha.csv, from agridat::john.alpha):
+  Piepho 0.803 and Cullis 0.809 as published, 0.780 without blocks; the paper's
+  Eq. 19 uses REML BLUE variances without KR (= ours; heritable/inti 0.797
+  use emmeans's KR covariance). heritable 0.1.0 (CRAN; Suggests) = ours for
+  standard, Cullis and Oakey (1e-6). Advice h2_standard_unbalanced now also for
+  incomplete blocks (standard 0.840 there). P&M's main proposal, simulated
+  response to selection on BLUPs and r2(g, g-hat) (their Eqs. 15-17), is a
+  possible later method.
+* heritability(), Schmidt et al. (2019, Genetics 212: 991-1008, PDF from the
+  maintainer): Piepho form now with the variance components fixed at those of
+  the random-genotype fit by default (`pm_h2_vblue_fixed()`: Woodbury form,
+  sparse, no refit; 0.808 as Schmidt et al. Example 2), `piepho = "refit"` the
+  2007 way (0.803, P&M Example 1); new `"reliability"` (mean r2, Eq. 44) and
+  `"simulated"` (P&M Eqs. 15-17 / Schmidt Eq. 41; eigen decomposition of the
+  singular Omega, batches of 2000 draws). Every value of Schmidt et al.
+  Figure 1 for Examples 1 and 2 reproduced (0.58/0.556/0.578; 0.84, 0.809,
+  0.808, 0.809, 0.775, 0.804). Bootstrap draws seeded per draw (also inside,
+  for the simulated form): identical for ncore 1 and 2. Two AI summaries of
+  the papers sent by the maintainer were checked against the PDFs; errors
+  listed in the conversation (Oakey under kinship is low, not high; no
+  synthetic simulation studies; P&M Example 3 used a pedigree).
+* heritability() and the article (2026-11-25): `within_variance`, `within_n`
+  for plot means (single-plant variance s2f + terms + (s2e - s2w/n) + s2w);
+  Example 6.2 of the book (tests/testthat/_data/tree/ex6.2.csv): single-tree
+  h2 0.1933 (PNG, page 104) and 0.2638 (all provenances, page 107) = the book's
+  calculation (eda4treeR's code), s2f 0.2584 and 0.3514; new article section
+  "6.2 Example 6.2" (single tree, family means, all provenances). Genstat run
+  1 of dev/genstat/heritability.gen: components and the BLUE variance (2.212,
+  refit) agree; A1 to rerun (METHOD=Fisher for SEDs of BLUPs; VHERITABILITY
+  without PRINT=*).
+* Genstat run 2 of heritability.gen (2026-11-25): average variance of
+  differences of the BLUPs 1.760 (ours 1.75987) and VHERITABILITY's
+  generalized heritability 0.7988 (= our Cullis and Oakey, 0.79879). With run
+  1 every number of the script agrees; tests added.
+* Rule no. 1 review of heritability() (rule1-reviewer, 2026-11-25), 13
+  findings fixed: refit keeps weights and offset and evaluates covariates in
+  the call's data (= weighted emmeans 1e-6); n_env/n_rep stop with several
+  G x E terms, n_rep alone used; family limits on the logit of h2 x rho, so
+  within (0, 1/rho); h2_above_one a caution only when the lower limit is above
+  1, else a note; incomplete rule also for fixed block terms and only on the
+  user's variables (no semireg smooth groups); zero genotypic variance gives 0
+  with advice (bootstrap draws count as 0, not dropped); genotypes nested in a
+  fixed factor: Piepho NA, advice h2_genotype_nested, help corrected (Oakey =
+  Cullis only when the intercept is the one confounded effect); aliased vs
+  coded genotype columns told apart (no-intercept models); genotype as an
+  interaction and with a slope term found; C (PEV) only for the forms that use
+  it; Monte Carlo SE of the simulated form printed; generic h2_no_se removed;
+  subsets print as tables; plan row O16 complete.
+

@@ -156,6 +156,15 @@ shows 1.1.1 and 2.0 code side by side.
 
 ### Mixed models and variance components
 
+* New `heritability()`: line-mean (entry-mean) heritability from an `lmer` fit with random genotypes, in the
+  standard form and the mixed-model forms of Cullis et al. (2006), Piepho and Möhring (2007) and Oakey et
+  al. (2006), for unbalanced trials; `method = "all"` shows them side by side. `method = "family"` gives the
+  narrow-sense heritability of a single plant from half-sib or full-sib families (`relationship`), and
+  `"repeatability"` that of single records; `"reliability"` (mean reliability) and `"simulated"` (Piepho and
+  Möhring's simulated r2). Plot means: `within_variance`, `within_n` give the single-plant variance. SEs:
+  delta method, or a parametric bootstrap (`nboot`). Works with weights, several genotype x environment terms, genotypes
+  nested in a fixed factor (with a note) and boundary fits (genotypic variance 0). Reproduces every value of
+  Schmidt et al. (2019, Figure 1) for the oats alpha design.
 * `varcomp()` for every model class, with observed-information SEs and Satterthwaite intervals;
   `test = TRUE` tests each component (likelihood ratio, boundary mixture or parametric bootstrap).
 * `se_ranef()` for `lmer`, `glmer`, `glmmTMB`, `lme` and `semireg` fits, with any covariance structure; checked

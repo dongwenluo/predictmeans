@@ -1,0 +1,187 @@
+ 1095  \ Heritability reference for predictmeans::heritability() (R/heritability.R).
+ 1096  \ Please save the whole Output window (File > Save) and send that file; the
+ 1097  \ first run may need small syntax fixes (VHERITABILITY may not exist in older
+ 1098  \ versions: then delete those lines; the average variances of differences of
+ 1099  \ the REML means are enough).
+ 1100  \
+ 1101  \ Data A: 20 genotypes (gen) in 4 blocks (blk), 15 of the 80 plots deleted
+ 1102  \ (65 left), simulated. Data B: 30 half-sib families (fam) in 6 blocks, plots
+ 1103  \ of 4 trees (720 trees), simulated.
+ 1104  \
+ 1105  \ R values (lme4 REML), to compare:
+ 1106  \  A: variance components gen 4.37320, blk 0.364362, residual 3.40056
+ 1107  \     average variance of differences of genotype BLUPs (gen random) 1.75987
+ 1108  \       -> Cullis H2 = 1 - 1.75987/(2 x 4.37320) = 0.79879
+ 1109  \     average variance of differences of genotype BLUEs (gen fixed)  2.21170
+ 1110  \       -> Piepho H2 = 4.37320/(4.37320 + 2.21170/2) = 0.79817
+ 1111  \     standard H2 (harmonic mean of plots per genotype) 0.79827
+ 1112  \  B: components fam 0.527737, fam.blk 0.647563, blk 0.233131, residual 3.89882
+ 1113  \     single-tree narrow-sense h2 = 4 x 0.527737/(0.527737 + 0.647563 + 3.89882) = 0.41602
+ 1114
+ 1115  \ ---- A1: genotypes random; their predictions (BLUPs) and SEDs (Cullis) ----
+ 1116  UNITS [NVALUES=65]
+ 1117  FACTOR [LEVELS=20] gen
+ 1118  FACTOR [LEVELS=4] blk
+ 1119  VARIATE y
+ 1120  READ gen, blk, y
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	y	 2.577	 9.262	 16.44	 65	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	gen	 65	 0	 20
+	blk	 65	 0	 4
+ 
+ 1186  :
+ 1187  VCOMPONENTS RANDOM=blk + gen
+ 1188  REML [PRINT=model, components, means; PTERMS=gen] y
+ 
+REML variance components analysis
+ 
+Response variate:	y
+Fixed model:	Constant
+Random model:	blk + gen
+Number of units:	65
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+blk	 0.364	 0.486
+gen	 4.373	 1.808
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	3.401	 0.745
+ 
+ 
+Table of predicted means for gen
+ 
+ 
+	gen	1	2	3	4	5	6	7	8
+		10.475	10.044	5.156	7.212	11.430	7.843	12.462	9.869
+ 
+ 
+	gen	9	10	11	12	13	14	15	16
+		9.622	7.397	8.683	9.282	6.741	9.799	9.093	9.693
+ 
+ 
+	gen	17	18	19	20
+		8.536	12.393	8.760	6.974
+ 
+ 
+Standard errors of differences of means cannot be formed using random terms when METHOD=sparse.
+ 
+ 1189  VHERITABILITY [PRINT=*] TERM=gen
+ 1190
+ 1191  \ ---- A2: genotypes fixed; their means (BLUEs) and SEDs (Piepho) ----
+ 1192  VCOMPONENTS [FIXED=gen] RANDOM=blk
+ 1193  REML [PRINT=model, components, means; PTERMS=gen] y
+ 
+REML variance components analysis
+ 
+Response variate:	y
+Fixed model:	Constant + gen
+Random model:	blk
+Number of units:	65
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+blk	 0.369	 0.491
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	3.370	 0.736
+ 
+ 
+Table of predicted means for gen
+ 
+ 
+	gen	1	2	3	4	5	6	7	8
+		10.853	10.233	3.601	6.850	12.026	7.516	13.121	10.068
+ 
+ 
+	gen	9	10	11	12	13	14	15	16
+		9.729	6.745	8.607	9.344	5.823	9.940	9.112	9.840
+ 
+ 
+	gen	17	18	19	20
+		8.390	13.038	8.665	6.566
+ 
+ 
+Standard errors of differences
+ 
+Average:	 1.481
+Maximum:	 1.855
+Minimum:	 1.298
+ 
+Average variance of differences: 2.212 
+ 
+ 1194
+ 1195  \ ---- B: half-sib families, plots (fam.blk) ----
+ 1196  UNITS [NVALUES=720]
+ 1197  FACTOR [LEVELS=30] fam
+ 1198  FACTOR [LEVELS=6] blk
+ 1199  VARIATE y
+ 1200  READ fam, blk, y
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	y	 -6.351	 0.3853	 8.378	 720	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	fam	 720	 0	 30
+	blk	 720	 0	 6
+ 
+ 1921  :
+ 1922  VCOMPONENTS RANDOM=blk + fam + fam.blk
+ 1923  REML [PRINT=model, components, deviance] y
+ 
+REML variance components analysis
+ 
+Response variate:	y
+Fixed model:	Constant
+Random model:	blk + fam + blk.fam
+Number of units:	720
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+blk	 0.233	 0.182
+fam	 0.528	 0.212
+blk.fam	 0.648	 0.200
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	3.899	 0.237
+ 
+ 
+Deviance: -2*Log-Likelihood
+ 
+	Deviance	d.f.
+	 1834.83	 715
+	 
+Note: deviance omits constants which depend on fixed model fitted.
+ 

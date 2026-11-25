@@ -68,6 +68,11 @@ pm_advice_get <- function(x) {
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
 #'   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
+#'   \code{h2_standard_unbalanced} \tab heritability \tab the standard form with unequal plots per genotype or incomplete blocks \cr
+#'   \code{h2_forms_differ} \tab heritability \tab the forms differ by more than 0.1 \cr
+#'   \code{h2_above_one} \tab heritability \tab a family heritability above 1 (beyond or within its sampling error) \cr
+#'   \code{h2_genotype_zero} \tab heritability \tab the genotypic variance estimated as 0 \cr
+#'   \code{h2_genotype_nested} \tab heritability \tab genotypes nested in a fixed factor \cr
 #'   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
 #'   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
 #'   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
@@ -505,3 +510,51 @@ pm_slopes_advice <- function(x, model) {
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }
+
+## heritability(): the standard form on unbalanced data, forms that disagree,
+## a family heritability above 1, mixed-model forms without SEs.
+pm_heritability_advice <- function(x, comp, nboot) {
+  rows <- list()
+  m <- x$method
+  if (comp$s2g <= 0) {
+    rows$zero <- pm_advice("h2_genotype_zero", paste(
+      "The genotypic variance is estimated as 0 (a boundary fit): every form is 0. The data show no genetic",
+      "differences beyond the error; varcomp(test = TRUE) tests it."), "caution")
+    return(do.call(rbind, unname(rows)))
+  }
+  if ("standard" %in% m && (isTRUE(comp$unequal) || isTRUE(comp$incomplete))) {
+    rows$unbal <- pm_advice("h2_standard_unbalanced", paste0(
+      if (isTRUE(comp$unequal)) "The genotypes have unequal numbers of plots: the standard form uses their harmonic mean" else
+        "The blocks are incomplete: the standard form ignores the block adjustment of the genotype means",
+      " and is approximate; method = \"cullis\" or \"piepho\" use the precision of each comparison."), "caution")
+  }
+  if (!is.null(comp$nested_in) && any(m %in% c("cullis", "piepho", "oakey", "reliability", "simulated"))) {
+    rows$nested <- pm_advice("h2_genotype_nested", paste0(
+      "The genotypes are nested in the fixed factor ", comp$nested_in, ": comparisons across its levels are ",
+      "confounded with it. Cullis averages all pairs, Oakey only the comparisons within ", comp$nested_in,
+      ", and Piepho is not defined (NA); for selection within ", comp$nested_in, ", fit each level alone."), "caution")
+  }
+  lm_forms <- x$estimate[m %in% c("standard", "cullis", "piepho", "oakey", "simulated")]
+  lm_forms <- lm_forms[is.finite(lm_forms)]
+  if (length(lm_forms) > 1 && diff(range(lm_forms)) > 0.1) {
+    rows$differ <- pm_advice("h2_forms_differ", paste(
+      "The line-mean forms differ by more than 0.1: the trial is far from balanced; report the Cullis or",
+      "Piepho form (Schmidt et al. 2019) and say which."), "caution")
+  }
+  fam <- x[m == "family", , drop = FALSE]
+  if (nrow(fam) && isTRUE(fam$estimate > 1)) {
+    rows$above <- if (isTRUE(fam$conf.low > 1)) {
+      pm_advice("h2_above_one", paste(
+        "The family heritability is above 1 beyond its sampling error: the family variance divided by",
+        "'relationship' exceeds the phenotypic variance; check 'relationship' for this material (e.g. 1/3 rather",
+        "than 1/4 for open-pollinated progeny) and the model."), "caution")
+    } else {
+      pm_advice("h2_above_one", paste(
+        "The family heritability is above 1, within its sampling error (see the limits): report it with its",
+        "limits rather than as 1."), "note")
+    }
+  }
+  if (!length(rows)) return(NULL)
+  do.call(rbind, unname(rows))
+}
+
