@@ -496,7 +496,8 @@ print.summary.predictmeans <- function(x, ...) {
     cat("Scale: latent mean of ", s$response$name, " (", s$response$link, "); differences are ",
         if (s$response$link == "logit") "log odds ratios of a higher class, the same at every cut point" else
           paste0("on the ", s$response$link, " scale (a positive difference: higher classes more likely)"),
-        "; class probabilities: mean_type = \"prob\"\n", sep = "")
+        "; class probabilities: mean_type = \"prob\"",
+        if (identical(s$model_class, "clmm")) "; random effects at 0 (a typical subject)", "\n", sep = "")
   }
   cat("\n")
   print(x$table, row.names = FALSE, digits = x$digits)

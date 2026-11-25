@@ -82,6 +82,7 @@ pm_advice_get <- function(x) {
 #'   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
 #'   \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
 #'   \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
+#'   \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0) \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
 #'   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
 #'   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
@@ -624,7 +625,8 @@ pm_variogram_advice <- function(x) {
 ## so the class probabilities are at the averaged latent mean (D2), not
 ## averages of probabilities; and the mean class scores the classes 1, 2, ...
 pm_ordinal_advice <- function(model, modelterm, what) {
-  others <- setdiff(all.vars(stats::delete.response(stats::terms(model))), strsplit(modelterm, ":")[[1]])
+  f <- pm_nobars(stats::formula(model))                       # (clmm: the fixed part only)
+  others <- setdiff(all.vars(stats::delete.response(stats::terms(f))), strsplit(modelterm, ":")[[1]])
   rows <- list()
   if (length(others)) {
     rows$avg <- pm_advice("ordinal_latent_average", paste0(
@@ -632,6 +634,11 @@ pm_ordinal_advice <- function(model, modelterm, what) {
       "average over (or fix) ", paste(others, collapse = ", "), ": not averages of the probabilities in each cell ",
       "(as emmeans gives). Include ", paste(others, collapse = ", "), " in 'modelterm' for the probabilities of ",
       "each cell."), "note")
+  }
+  if (inherits(model, "clmm")) {
+    rows$re <- pm_advice("ordinal_typical_subject", paste(
+      "The class probabilities are for a typical subject (random effects at 0); averaged over subjects they are",
+      "flatter (less extreme). Population-average probabilities are not yet available."), "note")
   }
   if (what == "mean_class") {
     rows$mc <- pm_advice("ordinal_mean_class", paste(

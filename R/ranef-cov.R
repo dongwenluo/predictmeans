@@ -28,8 +28,8 @@ pm_ranef_cov.aovlist <- function(model) {
 }
 #' @exportS3Method NULL
 pm_ranef_cov.default <- function(model) {
-  stop("se_ranef() needs a model with random effects (lmer, glmer, glmmTMB, lme or semireg); a ", class(model)[1],
-       " model has none.", call. = FALSE)
+  stop("se_ranef() handles models with random effects fitted by lmer, glmer, glmmTMB, lme or semireg; a ",
+       class(model)[1], " model is not covered.", call. = FALSE)
 }
 
 ## Rows of the table of random effects for lme4 and glmmTMB fits: Z columns run

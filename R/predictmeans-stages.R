@@ -155,7 +155,7 @@ pm_setup <- function(a) {
     }
   }
 
-  if (inherits(model, c("polr", "clm"))) {
+  if (inherits(model, pm_ord_classes)) {
     pm_ord_parts(model)                            # stops for what it cannot handle (R/ordinal.R)
     # latent means have no back-transformation and no residual variance: the class scale is mean_type's
     bad <- c(trans = !isTRUE(a$trans_default) && !is.null(a$trans) && !identical(a$trans, I),
@@ -167,8 +167,8 @@ pm_setup <- function(a) {
            "\"mean_class\".", call. = FALSE)
     }
   }
-  if (mean_type %in% c("prob", "mean_class") && !inherits(model, c("polr", "clm"))) {
-    stop("mean_type = \"", mean_type, "\" is for cumulative link models (MASS::polr, ordinal::clm).", call. = FALSE)
+  if (mean_type %in% c("prob", "mean_class") && !inherits(model, pm_ord_classes)) {
+    stop("mean_type = \"", mean_type, "\" is for cumulative link models (MASS::polr, ordinal::clm, ordinal::clmm).", call. = FALSE)
   }
   list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf, mean_type = mean_type,
        pairwise = pairwise, compare = compare, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,

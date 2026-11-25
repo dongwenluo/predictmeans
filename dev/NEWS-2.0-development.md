@@ -3016,3 +3016,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   latent means; advice ordinal_latent_average, ordinal_mean_class; critical
   value from pm_ci_crit(); tests: atvar, aliased, sign, Hess, loglog vs
   predict.polr (emmeans differs there), slow ones skip_on_cran().
+* B2, clmm (2026-11-25): one class list `pm_ord_classes` (R/ordinal.R) for
+  every check; clmm uses the clm adapter (beta, alpha, tJac; vcov block
+  without ST), random effects at 0 (D4), z (D3); summary says "random effects
+  at 0 (a typical subject)", advice ordinal_typical_subject; the latent-average
+  advice ignores random terms (pm_nobars). se_ranef() message for classes
+  not covered no longer says the model has no random effects. emmeans to
+  1e-6 (latent means, SEs, pairs, probabilities). Open: population-average
+  probabilities (bias_adjust, D4) and a df simulation (D3).

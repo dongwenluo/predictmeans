@@ -118,3 +118,28 @@ test_that("advice: probabilities at averaged latent means; mean class spacing; p
   expect_true("ordinal_mean_class" %in% advice(predictmeans(m, "temp:contact", mean_type = "mean_class"))$id)
   expect_message(ggplot2::autoplot(predictmeans(m, "temp"), data = TRUE), "not shown with latent means")
 })
+
+test_that("clmm: latent means, pairs and class probabilities for a typical subject equal emmeans", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  data(wine, package = "ordinal", envir = environment())
+  m <- ordinal::clmm(rating ~ temp * contact + (1 | judge), data = wine)
+  r <- predictmeans(m, "temp:contact", pairwise = TRUE)
+  e <- as.data.frame(emmeans::emmeans(m, ~ temp * contact))
+  e <- e[order(e$temp, e$contact), ]
+  expect_equal(r$means$estimate, e$emmean, tolerance = 1e-6)
+  expect_equal(r$means$std.error, e$SE, tolerance = 1e-6)
+  ep <- as.data.frame(pairs(emmeans::emmeans(m, ~ temp * contact), adjust = "none"))
+  expect_equal(sort(abs(r$pairs$estimate)), sort(abs(ep$estimate)), tolerance = 1e-6)
+  expect_equal(sort(r$pairs$p.value), sort(ep$p.value), tolerance = 1e-6)
+  p <- predictmeans(m, "temp:contact", mean_type = "prob")
+  eq <- as.data.frame(emmeans::emmeans(m, ~ rating | temp * contact, mode = "prob"))
+  eq <- eq[order(eq$temp, eq$contact, eq$rating), ]
+  expect_equal(p$probs$estimate, eq$prob, tolerance = 1e-6)
+  expect_equal(p$probs$std.error, eq$SE, tolerance = 1e-6)
+  expect_true("ordinal_typical_subject" %in% advice(p)$id)
+  expect_false("ordinal_latent_average" %in% advice(p)$id)              # judge is a random term, not averaged over
+  expect_output(print(summary(p)), "random effects at 0 \\(a typical subject\\)")
+  expect_error(predictmeans(m, "temp", bias_adjust = TRUE), "'bias_adjust' cannot be used")
+  expect_error(se_ranef(m), "not covered")
+})

@@ -2,7 +2,8 @@
 
 **Decided 2026-11-25:** the maintainer agreed D1-D6 as proposed. B1 (`polr`, `clm`) done: `R/ordinal.R`,
 `test-ordinal.R`; `mean_type = "prob"` / `"mean_class"` instead of a new `type` argument (one argument for
-what the means are).
+what the means are). B2 (`clmm`) done the same day: fixed part, random effects at 0 (D4), z (D3);
+population-average probabilities (D4, `bias_adjust`) and the inner-outer df (D3) still open.
 
 For the maintainer's decisions before any code. Packages here: MASS 7.3 (`polr`),
 ordinal 2025 (`clm`, `clmm`), VGAM, nnet, emmeans 1.11 (reference).

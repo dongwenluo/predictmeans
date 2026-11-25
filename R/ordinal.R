@@ -1,5 +1,10 @@
-## Cumulative link models: MASS::polr() and ordinal::clm() (decisions D1-D6 of
-## dev/review-classes.md, 2026-11-25).
+## Cumulative link models: MASS::polr(), ordinal::clm() and ordinal::clmm()
+## (decisions D1-D6 of dev/review-classes.md, 2026-11-25). clmm: the fixed part,
+## random effects at 0 (a typical subject, as emmeans; D4); its covariance of
+## (b, alpha) is the block of vcov() without the random-effect parameters.
+
+## The classes handled here (one list for every check in the package).
+pm_ord_classes <- c("polr", "clm", "clmm")
 ##
 ## Both fit P(Y <= j) = F(theta_j - eta), eta = x'b without an intercept, cut
 ## points theta = J alpha (J = I for polr and for clm's flexible thresholds;
@@ -27,7 +32,8 @@ pm_ord_parts <- function(model) {
     link <- model$method
     lev <- model$lev
   } else {
-    if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta)) {
+    if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta) ||
+        (inherits(model, "clmm") && !is.null(model$call$nominal))) {
       stop("predictmeans handles clm fits with location effects only; nominal and scale effects ",
            "(nominal = , scale = ) are not supported.", call. = FALSE)
     }
@@ -70,11 +76,17 @@ pm_coef.clm <- function(model, ...) pm_ord_latent(model)$coef
 pm_vcov.polr <- function(model, ...) pm_ord_latent(model)$vcov
 #' @exportS3Method pm_vcov clm
 pm_vcov.clm <- function(model, ...) pm_ord_latent(model)$vcov
+#' @exportS3Method pm_coef clmm
+pm_coef.clmm <- pm_coef.clm
+#' @exportS3Method pm_vcov clmm
+pm_vcov.clmm <- pm_vcov.clm
 ## no back-transformation of the latent means (class probabilities: mean_type = "prob")
 #' @exportS3Method pm_linkinv polr
 pm_linkinv.polr <- function(model, ...) NULL
 #' @exportS3Method pm_linkinv clm
 pm_linkinv.clm <- function(model, ...) NULL
+#' @exportS3Method pm_linkinv clmm
+pm_linkinv.clmm <- function(model, ...) NULL
 
 ## z tests: the latent scale has no dispersion to estimate (D3; as emmeans and
 ## the fixed-dispersion GLM rule, dev/sim-df-glm/).
@@ -87,6 +99,9 @@ pm_df_rule.polr <- function(model, df_method, kr_info) {
 }
 #' @exportS3Method NULL
 pm_df_rule.clm <- pm_df_rule.polr
+## clmm: z as well (D3: the inner-outer df only if a simulation shows z too liberal)
+#' @exportS3Method NULL
+pm_df_rule.clmm <- pm_df_rule.polr
 
 ## Class probabilities P(Y = j) (mean_type = "prob") or the mean class
 ## sum_j j P(Y = j) (mean_type = "mean_class") at each mean: rows of K (the
