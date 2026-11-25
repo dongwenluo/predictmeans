@@ -16,8 +16,8 @@
 #'     "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'   vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-#'   mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
-#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{VGAM::vglm} (ordinal families, parallel), \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+#'   mean_type=c("conditional", "overall", "prob", "mean_class", "prob_diff", "link"), ...)
+#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{VGAM::vglm} (ordinal and multinomial families), \code{nnet::multinom}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 #'   strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
@@ -245,6 +245,20 @@
 #'   class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
 #'   (on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then
 #'   transformed; emmeans averages the probabilities instead (the same for the cells of the model).
+#'
+#'   Fits without a single latent scale, \code{nnet::multinom}, \code{VGAM::vglm} with \code{multinomial} and
+#'   ordinal vglm families whose slopes are not parallel (\code{parallel = FALSE}, or partly), have one linear
+#'   predictor per class, so each mean is a vector: the class (or predictor) becomes a factor of the means,
+#'   named after the response (\code{"predictor"} for \code{"link"}), and the pairs are within each class (an
+#'   \code{atvar}; pairs of two classes are left out). \code{"prob"} (their default): the probability of each
+#'   class on the logit scale, back-transformed in \code{response} with limits inside 0 to 1; pairs are log odds
+#'   ratios of that class against the others (as a binomial glm: with two classes the results are the same).
+#'   \code{"prob_diff"}: probabilities and their differences on the probability scale (as emmeans'
+#'   \code{mode = "prob"}). \code{"link"}: the model's linear predictors (for multinomial fits, log odds against
+#'   the reference class). \code{"mean_class"} (ordinal families only): \eqn{\sum_j j P(Y = j)}. Probabilities
+#'   are averaged over the other factors of the model on the probability scale (as emmeans), SEs by the delta
+#'   method, z tests. Other functions (\code{contrastmeans()}, \code{covariatemeans()}, \code{Kmatrix()}, ...)
+#'   stop for these fits.
 #' @section Covariates aliased with a factor:
 #' A covariate that takes one value within each level of a factor (a site mean, a block-level measurement) is
 #' aliased with that factor: in \code{lm(ht ~ site + sitemean * seedlot)} the coefficient of \code{sitemean} is
@@ -383,11 +397,12 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-                          mean_type=c("conditional", "overall", "prob", "mean_class"), ...) {
+                          mean_type=c("conditional", "overall", "prob", "mean_class", "prob_diff", "link"), ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("predictmeans", match.call(), strict = TRUE, formals_of = formals(sys.function()))
   level <- pm_conf_alpha(conf_level)
   average <- match.arg(average)
+  mean_type_default <- missing(mean_type)
   mean_type <- match.arg(mean_type)
   pm_equiv_margins(equivalence)                  # check early
   pm_note_singular(model)
@@ -416,13 +431,16 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
                        permlist = permlist, ncore = ncore, cov_reduce = cov_reduce,
                        exclude = exclude, vcov_adjust = vcov_adjust, vcov_adjust_default = missing(vcov_adjust),
                        weights = weights, df_method = dfa$method, vcov = vcov, equivalence = equivalence,
-                       bias_adjust = bias_adjust, sigma = sigma, average = average, mean_type = mean_type))
+                       bias_adjust = bias_adjust, sigma = sigma, average = average, mean_type = mean_type,
+                       mean_type_default = mean_type_default))
   est <- pm_estimate(opt)                        # K matrix, means, SEs
+  if (inherits(opt$model, "pm_catfit")) opt <- pm_cat_opt(opt)    # the classes: a factor of the means (R/categorical.R)
   cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals
   tab <- pm_tables(opt, est, cmp)                # mean table, response scale, letters
   v <- pm_flat(opt, est, cmp, tab)
   res <- pm_assemble(v)
   # ordinal models: class probabilities or the mean class at each mean (R/ordinal.R)
+  if (inherits(opt$model, "pm_catfit")) return(pm_cat_attach(res, opt, est))     # (R/categorical.R)
   if (opt$mean_type %in% c("prob", "mean_class")) res <- pm_ord_attach(res, opt$model, est$K, opt$mean_type, conf_level)
   res
 }

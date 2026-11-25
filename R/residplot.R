@@ -134,7 +134,7 @@ pm_print_grid <- function(plots) {
 pm_resid_data <- function(model) {
   if (inherits(model, pm_ord_classes)) {
     if (inherits(model, "vglm")) pm_ord_vglm_info(model)                # (a vglm of another family: its own message)
-    stop("residplot() and pm_check() do not yet handle ordinal models (", class(model)[1],
+    stop("residplot() and pm_check() do not yet handle models of a class response (", class(model)[1],
          "): their residuals need their own definition (surrogate or randomized quantile residuals).", call. = FALSE)
   }
   qfam <- pm_qresid_family(model)

@@ -19,7 +19,7 @@ Description: Predicted means, standard errors, contrasts, multiple comparisons,
     and give the same resampling results for any number of cores.
 Depends: R (>= 3.6.0), lme4, nlme
 Imports: glmmTMB, ggplot2 (>= 3.4.0), graphics, grDevices, grid, Matrix, MASS, methods, mgcv, numDeriv, parallel, stats, utils
-Suggests: ordinal, car, reformulas, TMB, lmerTest, emmeans, generics, marginaleffects, mvtnorm, HRW, pbkrtest, plotly, heritable, VGAM, testthat (>= 3.0.0), knitr, rmarkdown
+Suggests: ordinal, nnet, car, reformulas, TMB, lmerTest, emmeans, generics, marginaleffects, mvtnorm, HRW, pbkrtest, plotly, heritable, VGAM, testthat (>= 3.0.0), knitr, rmarkdown
 Config/testthat/edition: 3
 License: GPL (>= 2)
 URL: https://dongwenluo.github.io/predictmeans/, https://github.com/dongwenluo/predictmeans, https://CRAN.R-project.org/package=predictmeans

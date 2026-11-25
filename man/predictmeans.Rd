@@ -13,10 +13,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
     "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-  mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
+  mean_type=c("conditional", "overall", "prob", "mean_class", "prob_diff", "link"), ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{VGAM::vglm} (ordinal families, parallel), \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{VGAM::vglm} (ordinal and multinomial families), \code{nnet::multinom}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
@@ -248,26 +248,40 @@ count). Both change only the \code{response} columns of \code{means}; the printe
 stay on the link scale.}
 
 \item{mean_type}{\code{"conditional"} and \code{"overall"}: for \code{glmmTMB} fits with zero inflation
-(\code{ziformula}); for other models the two are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
-\eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
-with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
-averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
-pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
-\code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
-\code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm},
-\code{ordinal::clmm}: random effects at 0, a typical subject; \code{VGAM::vglm} with \code{cumulative},
-\code{propodds}, \code{acat}, \code{cratio} or \code{sratio} and \code{parallel = TRUE}: for acat the
-differences are adjacent-category log odds ratios, for cratio and sratio continuation-ratio ones, always
-oriented so that a positive difference means higher classes; vglm SEs use VGAM's expected information, clm's
-the observed one, so they differ slightly for the same model), whose
-means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
-a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
-every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{bias_adjust}, \code{sigma},
-\code{vcov} and \code{permlist} are not available for these models.
-\code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
-class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
-(on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then
-transformed; emmeans averages the probabilities instead (the same for the cells of the model).}
+  (\code{ziformula}); for other models the two are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
+  \eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
+  with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
+  averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
+  pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
+  \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
+  \code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm},
+  \code{ordinal::clmm}: random effects at 0, a typical subject; \code{VGAM::vglm} with \code{cumulative},
+  \code{propodds}, \code{acat}, \code{cratio} or \code{sratio} and \code{parallel = TRUE}: for acat the
+  differences are adjacent-category log odds ratios, for cratio and sratio continuation-ratio ones, always
+  oriented so that a positive difference means higher classes; vglm SEs use VGAM's expected information, clm's
+  the observed one, so they differ slightly for the same model), whose
+  means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
+  a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
+  every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{bias_adjust}, \code{sigma},
+  \code{vcov} and \code{permlist} are not available for these models.
+  \code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
+  class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
+  (on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then
+  transformed; emmeans averages the probabilities instead (the same for the cells of the model).
+
+  Fits without a single latent scale, \code{nnet::multinom}, \code{VGAM::vglm} with \code{multinomial} and
+  ordinal vglm families whose slopes are not parallel (\code{parallel = FALSE}, or partly), have one linear
+  predictor per class, so each mean is a vector: the class (or predictor) becomes a factor of the means,
+  named after the response (\code{"predictor"} for \code{"link"}), and the pairs are within each class (an
+  \code{atvar}; pairs of two classes are left out). \code{"prob"} (their default): the probability of each
+  class on the logit scale, back-transformed in \code{response} with limits inside 0 to 1; pairs are log odds
+  ratios of that class against the others (as a binomial glm: with two classes the results are the same).
+  \code{"prob_diff"}: probabilities and their differences on the probability scale (as emmeans'
+  \code{mode = "prob"}). \code{"link"}: the model's linear predictors (for multinomial fits, log odds against
+  the reference class). \code{"mean_class"} (ordinal families only): \eqn{\sum_j j P(Y = j)}. Probabilities
+  are averaged over the other factors of the model on the probability scale (as emmeans), SEs by the delta
+  method, z tests. Other functions (\code{contrastmeans()}, \code{covariatemeans()}, \code{Kmatrix()}, ...)
+  stop for these fits.}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}

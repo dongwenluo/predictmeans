@@ -65,7 +65,7 @@ test_that("the scale is labelled; mean_type checks; nominal effects stop", {
   r <- predictmeans(m, "temp")
   expect_output(print(summary(r)), "latent mean of rating \\(logit\\); differences are log odds ratios of a higher class")
   expect_output(print(summary(predictmeans(m, "temp", mean_type = "prob"))), "Class probabilities")
-  expect_error(predictmeans(lm(breaks ~ tension, warpbreaks), "tension", mean_type = "prob"), "cumulative link")
+  expect_error(predictmeans(lm(breaks ~ tension, warpbreaks), "tension", mean_type = "prob"), "models of a class response")
   data(wine, package = "ordinal", envir = environment())
   mn <- ordinal::clm(rating ~ temp, nominal = ~ contact, data = wine)
   expect_error(predictmeans(mn, "temp"), "location effects only")
@@ -260,13 +260,12 @@ test_that("vglm: probability SEs for a covariate with large values (analytic del
   Gc <- cbind(diag(f), 0, f * 5040)                          # d P(Y <= j) / d (alpha, tempwarm, x)
   G <- rbind(Gc, 0) - rbind(0, Gc)
   expect_equal(p$std.error[1:5], unname(sqrt(diag(G %*% V %*% t(G)))), tolerance = 1e-6)
-  expect_error(predictmeans(suppressWarnings(VGAM::vglm(rating ~ temp, VGAM::multinomial, data = wine)), "temp"),
-               "multinomial")
-  expect_error(predictmeans(suppressWarnings(VGAM::vglm(rating ~ temp, VGAM::cumulative(parallel = FALSE),
-                                                        data = wine)), "temp"), "parallel = TRUE")
+  # multinomial and non-parallel fits: predictmeans() only (test-categorical.R)
+  expect_error(Kmatrix(suppressWarnings(VGAM::vglm(rating ~ temp, VGAM::cumulative(parallel = FALSE),
+                                                   data = wine)), "temp"), "vector of means")
   ms <- VGAM::vglm(rating ~ temp + VGAM::sm.scale(x), VGAM::cumulative(parallel = TRUE), data = wine)
   expect_error(predictmeans(ms, "temp"), "smart terms")
-  expect_error(residplot(m), "do not yet handle ordinal models")
+  expect_error(residplot(m), "do not yet handle models of a class response")
   mpo <- VGAM::vglm(as.numeric(rating) ~ temp, VGAM::poissonff, data = wine)
   expect_error(predictmeans(mpo, "temp"), "not poissonff")
   expect_error(residplot(mpo), "not poissonff")

@@ -1,6 +1,10 @@
 # Part B3: VGAM::vglm (and nnet::multinom) (review note, 2026-11-25)
 
-**Decided 2026-11-25:** E1-E6 agreed as proposed. B3a done (`R/ordinal.R`, `test-ordinal.R`); B3b open.
+**Decided 2026-11-25:** E1-E6 agreed as proposed. B3a done (`R/ordinal.R`, `test-ordinal.R`). B3b done
+2026-11-26 (`R/categorical.R`, `test-categorical.R`), with one change to E2 chosen by the maintainer: the
+default `mean_type = "prob"` compares each class probability on the logit scale (log odds ratios of the class
+against the others, limits inside 0-1, as a binomial glm); `"prob_diff"` gives E2's differences of
+probabilities; `"link"` E2's option (a).
 
 For the maintainer's decisions before any code. Packages here: VGAM 1.1-14, nnet,
 ordinal, emmeans 2.0.4 (which has no vglm method; it supports nnet::multinom).

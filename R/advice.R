@@ -83,6 +83,10 @@ pm_advice_get <- function(x) {
 #'   \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
 #'   \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
 #'   \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0) \cr
+#'   \code{class_separation} \tab predictmeans \tab a class with no observations at some levels (probability at 0, SEs not usable) \cr
+#'   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
+#'   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr
+#'   \code{class_reference} \tab predictmeans \tab multinomial linear predictors depend on the reference class \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
 #'   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
 #'   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
@@ -649,6 +653,40 @@ pm_ordinal_advice <- function(model, modelterm, what) {
     rows$mc <- pm_advice("ordinal_mean_class", paste(
       "The mean class scores the classes 1, 2, 3, ... as equally spaced; use mean_type = \"prob\" when they are not."),
       "note")
+  }
+  if (!length(rows)) return(NULL)
+  do.call(rbind, unname(rows))
+}
+
+## Advice of predictmeans() for multinomial and non-parallel fits
+## (R/categorical.R): separation (classes absent at some levels: 'sep', the
+## means and classes), the averaging over 'others' on the probability scale,
+## probability differences near 0 or 1 ('p': the probabilities compared, for
+## "prob" and "prob_diff"), and the reference class of multinomial predictors.
+pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL) {
+  rows <- list()
+  if (length(sep)) {
+    rows$sep <- pm_advice("class_separation", paste0(
+      "No or almost no observations of some classes at some levels (", paste(utils::head(sep, 6), collapse = ", "),
+      if (length(sep) > 6) ", ...", "): their probabilities are estimated at about 0 (separation), where the ",
+      "standard errors and tests are not usable. Merge rare classes or levels, or leave the factor out."), "caution")
+  }
+  if (length(others) && what != "link") {
+    rows$avg <- pm_advice("class_prob_average", paste0(
+      "The ", if (what == "mean_class") "mean classes" else "class probabilities", " average those of each cell ",
+      "over ", paste(others, collapse = ", "), " on the probability scale (as emmeans' mode = \"prob\"), with ",
+      "equal weights for factors and covariates at their means."), "note")
+  }
+  if (what == "prob_diff" && length(p) && any(p < 0.05 | p > 0.95, na.rm = TRUE)) {
+    rows$bound <- pm_advice("class_prob_near_bound", paste(
+      "Some probabilities are below 0.05 or above 0.95: differences of probabilities are Wald tests on the",
+      "probability scale, less exact there (and their limits can leave 0-1); mean_type = \"prob\" compares on",
+      "the logit scale (odds ratios)."), "note")
+  }
+  if (what == "link" && identical(parts$family, "multinomial")) {
+    rows$ref <- pm_advice("class_reference", paste0(
+      "Each predictor is the log odds of a class against the reference class '", parts$reference, "': its means ",
+      "and pairs depend on that choice; the class probabilities (mean_type = \"prob\") do not."), "note")
   }
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))

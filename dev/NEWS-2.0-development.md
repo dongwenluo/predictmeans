@@ -3072,3 +3072,31 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the residual stratum now subtracts the J - 2 extra cut points (57 for wine,
   = GLIMMIX; was 60); between-cluster terms keep the inner-outer df (GLIMMIX
   containment 53 vs predictmeans 4, chosen by the simulation).
+* B3b, multinomial and non-parallel fits (2026-11-26; E2 of
+  dev/review-vglm.md, with the maintainer's choice of scale: logit by
+  default, probability differences on request). R/categorical.R:
+  nnet::multinom, vglm multinomial() and ordinal vglm families with
+  non-parallel slopes (pm_cat_is()). pm_cat_parts(): eta(x) = H (theta *
+  x[col]) for any constraint matrices; probabilities by softmax (multinom)
+  or the family's linkinv, Jacobian analytic or by pm_fd_jac(). predictmeans()
+  works on a carrier (class pm_catfit: the design columns for Kmatrix()'s
+  grid and weights) and pm_cat_est() replaces the estimates by the stacked
+  means (mean x class, as the zero-inflation overall means): K = I, the
+  means as coefficients, covariance D V D'; the class is a factor of the
+  means and an atvar (pm_cat_opt()), pairs across classes are dropped (tidy)
+  and the SEDs are those within a class. mean_type: "prob" (logit,
+  back-transformed as a binomial glm: family.pm_catfit), "prob_diff",
+  "link", "mean_class" (ordinal only). Probabilities averaged over the grid
+  on the probability scale (as emmeans). z df whatever df_method. Stops:
+  Kmatrix(), contrastmeans(), covariatemeans(), residplot() (pm_cat_stop(),
+  pm_coef.multinom), mean_type conditional/overall, mean_class for
+  multinomial, trans/bias_adjust/sigma/vcov/permlist, decay > 0, empty
+  cells. Advice: class_separation (logit SE > 5 at a mean),
+  class_prob_average, class_prob_near_bound, class_reference. Summary scale
+  line (pm_cat_scale_text()); autoplot(data = TRUE) says the data are classes.
+  Checks (test-categorical.R): multinom = emmeans to 1e-8 (probabilities,
+  SEs, logit pairs via regrid, probability pairs); link means = K B by hand;
+  vglm multinomial = multinom to 1e-5; two classes = binomial glm to 1e-5;
+  non-parallel cumulative: probabilities and predictors = predict(), SEs =
+  numerical delta method (1e-6) and predict(se.fit = TRUE) (1e-8); count-matrix
+  response = factor response. nnet added to Suggests.

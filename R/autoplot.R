@@ -280,6 +280,10 @@ pm_plot_bars <- function(object, means, lay, interval) {
 pm_plot_data <- function(object, data, vars, scale) {
   if (isFALSE(data) || is.null(data)) return(NULL)
   r <- object$settings$response
+  if (!is.null(r$classes)) {           # class means of multinomial and non-parallel fits (R/categorical.R)
+    message("The data are not shown with class means: the observations are classes, not values.")
+    return(NULL)
+  }
   if (is.data.frame(data)) {
     d <- data
     if (is.null(d$.y)) {
@@ -498,6 +502,7 @@ print.summary.predictmeans <- function(x, ...) {
         if (identical(s$model_class, "clmm")) ", within a subject (random effects at 0)",
         "; class probabilities: mean_type = \"prob\"\n", sep = "")
   }
+  if (!is.null(s$response$classes)) cat("Scale: ", pm_cat_scale_text(s$response$classes, s$response$name), "\n", sep = "")
   cat("\n")
   print(x$table, row.names = FALSE, digits = x$digits)
   cat("\n")
