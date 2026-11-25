@@ -166,3 +166,8 @@ and `anova(type = "II", ddf = "KR-average")`; two orders of the fixed terms. R v
 genotypes random with the average variance of differences of BLUPs (Cullis) and VHERITABILITY if available,
 genotypes fixed (Piepho), half-sib families with plots (single-tree h2). R values in the header.
 
+
+- `variogram-slatehall.gen` -> `genstat-results-2026-11-25-variogram-slatehall.txt` (run by the maintainer
+  2026-11-25): Slate Hall residuals (regression on replicates + variety; AR1 x AR1 REML, components as the REML
+  Guide) and FVARIOGRAM in grid and directional forms. Reference for `residvariogram()` on a row x column grid
+  (`test-variogram.R`; data in `tests/testthat/_data/variogram/`): 47 lags, counts exact, gamma to 6e-9.

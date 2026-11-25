@@ -193,3 +193,34 @@ test_that("an incomplete grid gets a note; directions with no pairs are dropped;
                       segment = 20, step = 50, min_pairs = 1, nsim = 0, plot = FALSE)
   expect_equal(v$direction, 135)
 })
+
+test_that("the grid variogram reproduces Genstat FVARIOGRAM on the Slate Hall residuals", {
+  # dev/genstat/variogram-slatehall.gen, run 2026-11-25: Genstat keeps the two diagonals apart (signed row
+  # lag); the grid lag (dr, dc) pools them, so the reference is their pair-weighted mean
+  p <- function(f) test_path("_data", "variogram", f)
+  sh <- read.csv(p("slatehall.csv"))
+  sh <- sh[order(sh$fieldrow, sh$fieldcolumn), ]
+  r <- read.csv(p("slatehall-genstat-residuals.csv"))
+  g <- read.csv(p("slatehall-genstat-grid.csv"))
+  fm <- lm(yield ~ factor(replicates) + factor(variety), data = sh)
+  expect_lt(max(abs(residuals(fm) - r$res1)), 1e-8)                     # Genstat prints 8 decimals
+  g$lag_row <- abs(g$i - 6)
+  g$lag_col <- g$j - 1
+  ref <- do.call(rbind, lapply(split(g, list(g$model, g$lag_row, g$lag_col), drop = TRUE), function(z)
+    data.frame(model = z$model[1], lag_row = z$lag_row[1], lag_col = z$lag_col[1],
+               gamma = if (nrow(z) == 1 || z$lag_col[1] == 0) z$gamma[1] else sum(z$gamma * z$n) / sum(z$n),
+               n = if (nrow(z) == 1 || z$lag_col[1] == 0) z$n[1] else sum(z$n))))
+  for (m in c("res1", "res2")) {                                          # regression; AR1 x AR1 REML
+    v <- residvariogram(r[[m]], row = "fieldrow", col = "fieldcolumn", data = r, max_lag = c(5, 7), min_pairs = 1,
+                        nsim = 0, plot = FALSE)
+    x <- merge(v, ref[ref$model == m, ], by = c("lag_row", "lag_col"))
+    expect_equal(nrow(x), 47L)
+    expect_equal(x$n_pairs, x$n)
+    expect_lt(max(abs(x$gamma.x - x$gamma.y)), 1e-7)
+  }
+  # from the fit: residuals scaled by their SD (equal leverages here), so gamma / var(residuals)
+  v <- residvariogram(fm, row = "fieldrow", col = "fieldcolumn", data = sh, max_lag = c(5, 7), min_pairs = 1,
+                      nsim = 0, plot = FALSE)
+  x <- merge(v, ref[ref$model == "res1", ], by = c("lag_row", "lag_col"))
+  expect_equal(x$gamma.x, x$gamma.y / var(r$res1), tolerance = 1e-6)
+})

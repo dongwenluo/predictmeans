@@ -110,7 +110,8 @@ distance per unit step, and a minimum number of pairs per lag (default 20)
 before a lag is shown; the plot (Figure 3.12) is the 3-d surface, with no
 printed values. So: `min_pairs = 20` as Genstat; a Genstat run of
 `FVARIOGRAM` on the Slate Hall residuals by the maintainer would give exact
-numbers for the row x column case.
+numbers for the row x column case. Done 2026-11-25
+(`dev/genstat/variogram-slatehall.gen`): 47 lags of both residual sets equal to 6e-9.
 Other references: `nlme::Variogram()` for the isotropic estimator on lme/gls
 fits (to 1e-8); Gilmour et al. (1997) wheat trial (agridat
 `gilmour.serpentine`, 330 plots, 22 rows x 15 columns, 107 genotypes, 3

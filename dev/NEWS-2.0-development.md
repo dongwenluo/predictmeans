@@ -2986,3 +2986,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   line on the Genstat reference file. Not changed: plot = TRUE default (as
   residplot()). Open: a Genstat run of the row x column variogram (Slate
   Hall) as an outside reference for the grid case.
+* residvariogram(), outside reference for the grid (2026-11-25): Genstat run of
+  dev/genstat/variogram-slatehall.gen on Slate Hall (data from the maintainer):
+  AR1 x AR1 components as the REML Guide (3.876, 0.4586, 0.6838; deviance
+  249.35); FVARIOGRAM grid form (signed row lag, so the two diagonals apart)
+  pooled by pairs equals the grid variogram for both residual sets: 47 lags,
+  counts exact, gamma to 6e-9; lm residuals = Genstat's to 3e-9. The RCB fit
+  gets variogram_spatial, as the guide's conclusion (fit AR1 x AR1).
