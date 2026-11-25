@@ -3005,3 +3005,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   scale line and the class table; pm_response_info() scale "latent".
   test-ordinal.R: emmeans to 1e-6 (latent means, SEs, pairs, probabilities,
   mean class; polr logit, clm logit, clm probit equidistant), D2 by hand.
+* B1 Rule no. 1 review (2026-11-25, 13 findings, all fixed): probs matched
+  to the means by label (atvar re-sorted them: values on the wrong rows);
+  aliased clm coefficients NA in pm_coef, left out of vcov (empty cells
+  crashed); wording: a latent difference is the log odds ratio of a higher
+  class (P(Y > j)), checked against predict.polr; trans, bias_adjust, sigma,
+  vcov, permlist stop for polr/clm; polr without Hess stops (no silent
+  refits); Aranda-Ordaz / log-gamma links stop (estimated lambda); mean-class
+  limits on the logit of (m - 1)/(J - 1); autoplot(data = TRUE) message for
+  latent means; advice ordinal_latent_average, ordinal_mean_class; critical
+  value from pm_ci_crit(); tests: atvar, aliased, sign, Hess, loglog vs
+  predict.polr (emmeans differs there), slow ones skip_on_cran().

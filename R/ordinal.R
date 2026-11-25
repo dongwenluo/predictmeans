@@ -7,50 +7,59 @@
 ## (as emmeans' mode = "latent"): the coefficients are given as
 ## ((Intercept) = -mean(theta), b), so the model's own design (with its
 ## intercept column) gives the means, and the covariance is that of this
-## linear map of (b, alpha). Differences of latent means are log cumulative
-## odds ratios (logit link), the same for every cut point. Wald tests are z
-## tests (pm_df_rule(), as fixed-dispersion GLMs).
+## linear map of (b, alpha). A difference of latent means (logit link) is the
+## log odds ratio of a higher class, log[P(Y > j) / P(Y <= j)], the same for
+## every cut point j. Wald tests are z tests (pm_df_rule(), as fixed-dispersion
+## GLMs). Aliased coefficients are NA in pm_coef() and left out of pm_vcov()
+## (the adapter contract, ?pm_coef).
 
-## b, alpha, J, their joint covariance (order b, alpha), the link and the
-## class labels of a polr or clm fit.
+## b (aliased coefficients NA), alpha, J, the joint covariance of the
+## estimable b and alpha (in that order), the link and the class labels of a
+## polr or clm fit; stops for what is not handled.
 pm_ord_parts <- function(model) {
   if (inherits(model, "polr")) {
+    if (is.null(model$Hessian)) {
+      stop("The polr fit has no Hessian: refit with polr(..., Hess = TRUE).", call. = FALSE)
+    }
     b <- stats::coef(model)
     alpha <- model$zeta
     J <- diag(length(alpha))
     link <- model$method
     lev <- model$lev
-    V <- stats::vcov(model)
   } else {
     if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta)) {
       stop("predictmeans handles clm fits with location effects only; nominal and scale effects ",
            "(nominal = , scale = ) are not supported.", call. = FALSE)
+    }
+    if (!is.null(model$lambda) || model$link %in% c("Aranda-Ordaz", "log-gamma")) {
+      stop("The ", model$link, " link has an estimated parameter (lambda), which the standard errors would treat as ",
+           "known; use a logit, probit, cloglog, loglog or cauchit link.", call. = FALSE)
     }
     b <- model$beta
     alpha <- model$alpha
     J <- model$tJac
     link <- model$link
     lev <- model$y.levels
-    V <- stats::vcov(model)
   }
-  if (is.null(V) || anyNA(V)) {
-    stop("The ", class(model)[1], " fit has no covariance matrix", if (inherits(model, "polr"))
-      ": refit with polr(..., Hess = TRUE)." else ".", call. = FALSE)
+  V <- stats::vcov(model)
+  nm <- c(names(b)[!is.na(b)], names(alpha))
+  if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V))) {
+    stop("The ", class(model)[1], " fit has no usable covariance matrix of its coefficients.", call. = FALSE)
   }
-  nm <- c(names(b), names(alpha))
   list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev)
 }
 
 ## The coefficients on the latent scale and their covariance: ((Intercept) =
-## -mean(theta), b), A (b, alpha) with A the linear map.
+## -mean(theta), b), A (b, alpha) with A the linear map (estimable b only).
 pm_ord_latent <- function(model) {
   p <- pm_ord_parts(model)
-  nb <- length(p$b)
+  be <- p$b[!is.na(p$b)]
+  nb <- length(be)
   A <- rbind(c(rep(0, nb), -colMeans(p$J)), cbind(diag(nb), matrix(0, nb, length(p$alpha))))
-  coefs <- c("(Intercept)" = sum(A[1, ] * c(p$b, p$alpha)), p$b)
+  icpt <- sum(A[1, ] * c(be, p$alpha))
   V <- A %*% p$V %*% t(A)
-  dimnames(V) <- list(names(coefs), names(coefs))
-  list(coef = coefs, vcov = V)
+  dimnames(V) <- list(c("(Intercept)", names(be)), c("(Intercept)", names(be)))
+  list(coef = c("(Intercept)" = icpt, p$b), vcov = V)
 }
 
 #' @exportS3Method pm_coef polr
@@ -95,14 +104,15 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
                loglog = list(function(x) exp(-exp(-x)), function(x) exp(-x - exp(-x))),
                cauchit = list(stats::pcauchy, stats::dcauchy),
                stop("link '", p$link, "' is not supported.", call. = FALSE))
-  X <- as.matrix(K)[, names(p$b), drop = FALSE]
+  be <- p$b[!is.na(p$b)]
+  X <- as.matrix(K)[, names(be), drop = FALSE]
   th <- as.vector(p$J %*% p$alpha)
   nj <- length(th)
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  z <- pm_ci_crit(1 - conf_level, Inf)                          # z: the df of these models (pm_df_rule)
   rows <- lapply(seq_len(nrow(X)), function(k) {
     x <- X[k, ]
     if (anyNA(x)) return(NULL)
-    zz <- th - sum(x * p$b)
+    zz <- th - sum(x * be)
     f <- Fd[[2]](zz)
     cum <- c(0, Fd[[1]](zz), 1)
     # gradients of P(Y <= j) with respect to (b, alpha), j = 0, ..., J
@@ -113,7 +123,12 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
       g <- colSums(seq_along(P) * GP)
       m <- sum(seq_along(P) * P)
       se <- sqrt(sum((g %*% p$V) * g))
-      return(data.frame(row = k, estimate = m, std.error = se, conf.low = m - z * se, conf.high = m + z * se))
+      # limits on the logit of (m - 1) / (J - 1), so they stay within the classes 1 to J
+      u <- (m - 1) / nj
+      lu <- stats::qlogis(u)
+      su <- se / nj / (u * (1 - u))
+      return(data.frame(row = k, estimate = m, std.error = se, conf.low = 1 + nj * stats::plogis(lu - z * su),
+                        conf.high = 1 + nj * stats::plogis(lu + z * su)))
     }
     se <- sqrt(rowSums((GP %*% p$V) * GP))
     lg <- stats::qlogis(P)
@@ -124,17 +139,19 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
   do.call(rbind, rows)
 }
 
-## Add the class table to a predictmeans() result: $probs, with the factor
-## columns of the means in front.
+## Add the class table to a predictmeans() result: $probs, rows in the order
+## of the means (matched by their labels, not position: atvar re-sorts them),
+## with the factor columns of modelterm in front.
 pm_ord_attach <- function(res, model, K, what, conf_level) {
-  tab <- pm_ord_class(model, K, what, conf_level)
   means <- res$means
-  fac <- setdiff(names(means), c("estimate", "std.error", "df", "conf.low", "conf.high", "comparison.low",
-                                 "comparison.high", "response", "response.conf.low", "response.conf.high", "group",
-                                 "n", "estimable"))
-  out <- cbind(means[tab$row, fac, drop = FALSE], tab[setdiff(names(tab), "row")])
+  vars <- intersect(strsplit(res$settings$modelterm, ":")[[1]], names(means))
+  key <- do.call(paste, c(lapply(means[vars], as.character), sep = ":"))
+  rows <- match(key, rownames(K))
+  if (anyNA(rows)) stop("internal: the means do not match the rows of K.", call. = FALSE)
+  tab <- pm_ord_class(model, K[rows, , drop = FALSE], what, conf_level)
+  out <- cbind(means[tab$row, vars, drop = FALSE], tab[setdiff(names(tab), "row")])
   rownames(out) <- NULL
   attr(out, "what") <- what
   res$probs <- out
-  res
+  pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what))
 }

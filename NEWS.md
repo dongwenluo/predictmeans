@@ -155,7 +155,7 @@ shows 1.1.1 and 2.0 code side by side.
 * Kenward-Roger and Satterthwaite computed without n x n matrices; much faster.
 
 * Ordinal models: `MASS::polr()` and `ordinal::clm()` fits (location effects). Means on the latent scale (as
-  emmeans' `mode = "latent"`), pairs as log cumulative odds ratios, z tests; `mean_type = "prob"` adds the class
+  emmeans' `mode = "latent"`), pairs as log odds ratios of a higher class, z tests; `mean_type = "prob"` adds the class
   probabilities at each mean and `mean_type = "mean_class"` the expected class, with delta-method SEs. Checked
   against emmeans.
 

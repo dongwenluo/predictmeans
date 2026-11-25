@@ -16,7 +16,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
@@ -256,10 +256,12 @@ pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and
 \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
 \code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm}), whose
 means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
-differences are log cumulative odds ratios (logit link) and all tests are on this scale (z tests).
+a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
+every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{bias_adjust}, \code{sigma},
+\code{vcov} and \code{permlist} are not available for these models.
 \code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
 class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
-(probabilities on the logit scale). Means over other factors are averaged on the latent scale and then
+(on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then
 transformed; emmeans averages the probabilities instead (the same for the cells of the model).}
 }
 \value{

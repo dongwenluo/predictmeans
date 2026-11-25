@@ -295,6 +295,11 @@ pm_plot_data <- function(object, data, vars, scale) {
   if (is.null(d$.y_orig)) d$.y_orig <- d$.y
   miss <- setdiff(vars, names(d))
   if (length(miss)) stop("The data have no column '", paste(miss, collapse = "', '"), "'.", call. = FALSE)
+  if (scale == "model" && identical(r$scale, "latent")) {
+    message("The data are not shown with latent means (classes of an ordinal response); mean_type = \"prob\" gives ",
+            "the class probabilities.")
+    return(NULL)
+  }
   link <- identical(r$scale, "link")
   if (scale == "model" && link) {
     out <- NULL
@@ -489,7 +494,8 @@ print.summary.predictmeans <- function(x, ...) {
     " (the model's t limits of each mean; the permutation tests are of the comparisons)", "\n", sep = "")
   if (identical(s$response$scale, "latent")) {
     cat("Scale: latent mean of ", s$response$name, " (", s$response$link, "); differences are ",
-        if (s$response$link == "logit") "log cumulative odds ratios" else paste0("on the ", s$response$link, " scale"),
+        if (s$response$link == "logit") "log odds ratios of a higher class, the same at every cut point" else
+          paste0("on the ", s$response$link, " scale (a positive difference: higher classes more likely)"),
         "; class probabilities: mean_type = \"prob\"\n", sep = "")
   }
   cat("\n")

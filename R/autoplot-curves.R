@@ -238,7 +238,7 @@ pm_curve_obs <- function(x, scale, cols, lay) {
   d <- attr(x, "plot_data")
   if (!is.data.frame(d) || !all(cols %in% names(d))) return(NULL)
   r <- x$settings$response
-  link <- !is.null(r) && identical(r$scale, "link")
+  link <- !is.null(r) && r$scale %in% c("link", "latent")         # (latent: classes of an ordinal response)
   if (scale == "model" && link) return(NULL)
   y <- if (scale == "response") d$.y_orig else d$.y
   if (is.factor(y) || is.logical(y)) y <- as.numeric(as.factor(y)) - 1
