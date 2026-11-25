@@ -161,3 +161,8 @@ omits constants, so only differences compare with lme4's.
 = `type1_basis = "fitted"`; every d.d.f. Genstat prints is the term's Type II (KR, average information) d.d.f.): Genstat REML Wald tests of the Exam 8.2 clone trial (data inline),
 parallel to `dev/sas/type1-exam8.2.sas`, for `anova(type = "I", type1_basis = "fitted", ddf = "KR-average")`
 and `anova(type = "II", ddf = "KR-average")`; two orders of the fixed terms. R values in the header.
+
+`heritability.gen` (to run, 2026-11-25): REML of two simulated data sets (data inline) for `heritability()`:
+genotypes random with the average variance of differences of BLUPs (Cullis) and VHERITABILITY if available,
+genotypes fixed (Piepho), half-sib families with plots (single-tree h2). R values in the header.
+
