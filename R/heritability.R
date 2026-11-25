@@ -27,7 +27,9 @@
 #'   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
 #'   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
 #'   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
-#'   \code{"cullis"}; it differs with a relationship matrix.}
+#'   \code{"cullis"} when the intercept is the only fixed effect the genotypes are confounded with; with genotypes
+#'   nested in a fixed factor (families in provenances) the two differ (a note says so), and with a relationship
+#'   matrix.}
 #'   \item{\code{"reliability"}}{the mean reliability of the genotype BLUPs,
 #'   \eqn{\bar r^2 = m^{-1}\sum_i (1 - C_{ii}/\sigma^2_g)} (Schmidt et al. 2019, Eq. 44); it ignores the
 #'   covariances of the prediction errors, so it is a little below the others for small \eqn{m}.}
@@ -53,15 +55,17 @@
 #' al. 2019) from asreml fits with a relationship matrix. Its standard, Cullis and Oakey values for lmer fits
 #' are those of this function (tested); this function adds standard errors, the family and repeatability
 #' forms, and advice.
-#' @param model An \code{lmer} fit with a random genotype term \code{(1 | genotype)}.
+#' @param model An \code{lmer} fit, or a gaussian \code{semireg} fit, with a random genotype term
+#'   \code{(1 | genotype)}. A genotypic variance estimated as 0 gives 0 for every form, with a note.
 #' @param genotype Name of the genotype (line, entry, family) factor.
 #' @param method \code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"},
 #'   \code{"reliability"}, \code{"simulated"}, \code{"family"}, \code{"repeatability"}, or \code{"all"} (the
 #'   line-mean forms: standard to simulated).
 #' @param piepho For \code{"piepho"}: \code{"fixed"} (default) or \code{"refit"}, see Details.
 #' @param nsim For \code{"simulated"}: the number of simulated draws.
-#' @param n_env,n_rep For \code{"standard"}: the number of environments (levels of the genotype x environment
-#'   terms) and of replicates per environment; by default from the data.
+#' @param n_env,n_rep For \code{"standard"}, a model with one genotype x environment term: the number of
+#'   environments and of replicates per environment (\code{n_rep} alone: replicates, with the environments from
+#'   the data); by default both from the data (harmonic means), the only way with several such terms.
 #' @param relationship For \code{"family"}: the coefficient of relationship among members of a family.
 #' @param within_variance,within_n For \code{"family"} and \code{"repeatability"} from plot means: the variance
 #'   among plants within plots and the number of plants per plot (numbers, or names of columns of the data:
@@ -117,16 +121,25 @@ heritability <- function(model, genotype,
          "(1/4 half-sibs, 1/2 full-sibs; often 1/3 for open-pollinated progeny).", call. = FALSE)
   }
   alpha <- pm_conf_alpha(conf_level)
+  user_vars <- tryCatch(names(pm_get_data(model)), error = function(e) NULL)   # (not semireg's smooth groups)
+  within <- pm_h2_within(model, within_variance, within_n)
   model <- pm_fit(model)
   if (!inherits(model, "lmerMod")) {
-    stop("heritability() handles lmer fits (gaussian, random genotype effects); a ", class(model)[1],
+    stop("heritability() handles lmer and gaussian semireg fits (random genotype effects); a ", class(model)[1],
          " model is not yet covered.", call. = FALSE)
   }
-  comp <- pm_h2_components(model, genotype, n_env, n_rep)
+  need_C <- any(methods %in% c("cullis", "oakey", "reliability", "simulated"))
+  comp <- pm_h2_components(model, genotype, n_env, n_rep, need_C = need_C, user_vars = user_vars)
   comp$piepho <- piepho
   comp$nsim <- nsim
-  comp$within <- pm_h2_within(model, within_variance, within_n)
-  est <- pm_h2_point(model, comp, methods, relationship)
+  comp$within <- within
+  est <- pm_h2_point(model, comp, setdiff(methods, "simulated"), relationship)
+  mc_se <- NULL
+  if ("simulated" %in% methods) {
+    sim <- if (comp$s2g > 0) pm_h2_sim(comp$C, comp$s2g, nsim) else structure(0, mc_se = 0)
+    est <- c(est, simulated = as.numeric(sim))[methods]
+    mc_se <- attr(sim, "mc_se")
+  }
   # SE and limits: the delta method on the variance parameters for the forms
   # that are functions of the components; a parametric bootstrap for the
   # forms that also depend on the prediction errors (nboot > 0)
@@ -135,8 +148,9 @@ heritability <- function(model, genotype,
   bt <- if (length(boot_m) && nboot > 0) pm_h2_boot(model, comp, boot_m, nboot, ncore, seed)
   rows <- lapply(methods, function(m) {
     if (m %in% names(vfun)) {
-      se <- pm_h2_delta(model, vfun[[m]])
-      lim <- pm_h2_limits(est[[m]], se, alpha)
+      se <- if (comp$s2g > 0) pm_h2_delta(model, vfun[[m]]) else NA_real_
+      # the family form ranges over (0, 1/relationship): limits on that range
+      lim <- pm_h2_limits(est[[m]], se, alpha, scale = if (m == "family") relationship else 1)
     } else if (!is.null(bt)) {
       draws <- bt[, m]
       se <- stats::sd(draws, na.rm = TRUE)
@@ -151,13 +165,15 @@ heritability <- function(model, genotype,
   rownames(out) <- NULL
   out <- structure(out, class = c("pm_heritability", "data.frame"), conf_level = conf_level,
                    components = comp[c("s2g", "terms", "s2e", "n_terms", "n_plots", "within")], relationship = relationship,
-                   genotype = genotype,
+                   genotype = genotype, mc_se = mc_se, nsim = nsim,
                    nboot = if (!is.null(bt)) sum(stats::complete.cases(bt)) else 0)
   pm_add_advice(out, tryCatch(pm_heritability_advice(out, comp, nboot), error = function(e) NULL))
 }
 
 ## The estimates of the requested forms from one fit (also each bootstrap refit).
 pm_h2_point <- function(model, comp, methods, relationship = NULL, y = NULL) {
+  # a genotypic variance estimated as 0 (a boundary fit): every form is 0
+  if (comp$s2g <= 0) return(stats::setNames(rep(0, length(methods)), methods))
   vf <- pm_h2_vfun(comp, relationship)
   v <- pm_h2_vc(comp)
   vapply(methods, function(m) switch(m,
@@ -165,7 +181,7 @@ pm_h2_point <- function(model, comp, methods, relationship = NULL, y = NULL) {
     piepho = comp$s2g / (comp$s2g + (if (identical(comp$piepho, "refit")) pm_h2_vblue(model, comp$genotype, y) else
       pm_h2_vblue_fixed(model, comp$genotype))/2),
     reliability = mean(1 - diag(comp$C)/comp$s2g),
-    simulated = pm_h2_sim(comp$C, comp$s2g, comp$nsim),
+    simulated = as.numeric(pm_h2_sim(comp$C, comp$s2g, comp$nsim)),
     oakey = pm_h2_oakey(comp$C, comp$s2g),
     vf[[m]](v)), numeric(1))
 }
@@ -199,49 +215,94 @@ pm_h2_vfun <- function(comp, relationship = NULL) {
 ## random terms that contain the genotype with their numbers of levels per
 ## genotype, the residual, the plots per genotype, and the prediction error
 ## covariance of the genotype BLUPs (pm_ranef_cov(), R/ranef-cov.R).
-pm_h2_components <- function(model, genotype, n_env = NULL, n_rep = NULL) {
+pm_h2_components <- function(model, genotype, n_env = NULL, n_rep = NULL, need_C = TRUE, user_vars = NULL) {
+  if (stats::family(model)$family != "gaussian") stop("heritability() needs a gaussian lmer fit.", call. = FALSE)
   vc <- lme4::VarCorr(model)
-  if (!genotype %in% names(vc) || !identical(colnames(vc[[genotype]]), "(Intercept)")) {
+  # the genotype's random intercept (lme4 names a second term of the same
+  # factor, e.g. a random slope, "gen.1")
+  gi <- which(sub("\\.[0-9]+$", "", names(vc)) == genotype &
+                vapply(vc, function(x) identical(colnames(x), "(Intercept)"), logical(1)))
+  if (!length(gi)) {
     stop("heritability() needs a random intercept for '", genotype, "', (1 | ", genotype, "), in the model.",
          call. = FALSE)
   }
-  s2g <- vc[[genotype]][1, 1]
-  if (s2g <= 0) stop("The genotypic variance is estimated as 0: the heritability is 0.", call. = FALSE)
-  if (stats::family(model)$family != "gaussian") stop("heritability() needs a gaussian lmer fit.", call. = FALSE)
+  s2g <- max(vc[[gi[1]]][1, 1], 0)
   grp <- strsplit(names(vc), ":", fixed = TRUE)
-  with_g <- names(vc)[vapply(grp, function(g) genotype %in% g && length(g) > 1, logical(1))]
+  with_g <- names(vc)[vapply(grp, function(g) all(strsplit(genotype, ":", fixed = TRUE)[[1]] %in% g) &&
+                               length(g) > length(strsplit(genotype, ":", fixed = TRUE)[[1]]), logical(1))]
   dat <- stats::model.frame(model)
+  gcol <- pm_h2_gcol(dat, genotype)
   per_g <- function(vars) {             # levels of 'vars' per genotype (harmonic mean)
-    k <- tapply(do.call(paste, c(dat[vars], sep = "\r")), dat[[genotype]], function(x) length(unique(x)))
+    k <- tapply(do.call(paste, c(dat[vars], sep = "\r")), gcol, function(x) length(unique(x)))
     k <- k[!is.na(k)]
     length(k) / sum(1/k)
   }
+  if ((!is.null(n_env) || !is.null(n_rep)) && length(with_g) > 1) {
+    stop("'n_env' and 'n_rep' are for a model with one genotype x environment term; this one has ",
+         paste(with_g, collapse = ", "), ": leave them out to take the numbers from the data.", call. = FALSE)
+  }
+  if (!is.null(n_env) && !length(with_g)) {
+    stop("'n_env' needs a genotype x environment term in the model.", call. = FALSE)
+  }
   n_terms <- vapply(with_g, function(t) {
-    other <- setdiff(strsplit(t, ":", fixed = TRUE)[[1]], genotype)
+    other <- setdiff(strsplit(t, ":", fixed = TRUE)[[1]], strsplit(genotype, ":", fixed = TRUE)[[1]])
     if (!is.null(n_env)) n_env else per_g(other)
   }, numeric(1))
-  kp <- table(dat[[genotype]]); kp <- kp[kp > 0]
-  n_plots <- if (!is.null(n_env) && !is.null(n_rep)) n_env * n_rep else length(kp) / sum(1/kp)
+  kp <- table(gcol); kp <- kp[kp > 0]
+  n_plots <- if (!is.null(n_rep)) n_rep * (if (length(n_terms)) n_terms[[1]] else 1) else length(kp) / sum(1/kp)
   s2t <- vapply(with_g, function(t) vc[[t]][1, 1], numeric(1))
   s2e <- stats::sigma(model)^2
-  rc <- pm_ranef_cov(model)
-  i <- which(rc$tab$group == genotype & rc$tab$term == "(Intercept)")
-  p <- length(rc$beta)
+  C <- if (need_C) {
+    rc <- pm_ranef_cov(model)
+    i <- which(rc$tab$group == genotype & rc$tab$term == "(Intercept)")
+    rc$V[length(rc$beta) + i, length(rc$beta) + i, drop = FALSE]
+  }
+  usable <- if (is.null(user_vars)) names(dat) else intersect(names(dat), user_vars)
   list(s2g = s2g, terms = s2t, s2e = s2e, n_terms = n_terms, n_plots = n_plots, n_env_arg = n_env, n_rep_arg = n_rep,
-       unequal = length(unique(as.vector(kp))) > 1, incomplete = pm_h2_incomplete(dat, names(vc), genotype),
-       C = rc$V[p + i, p + i, drop = FALSE],
-       with_g = with_g, genotype = genotype)
+       unequal = length(unique(as.vector(kp))) > 1, need_C = need_C, user_vars = user_vars,
+       incomplete = pm_h2_incomplete(dat, c(names(vc), pm_h2_fixed_groups(model, dat)), genotype, usable),
+       nested_in = pm_h2_nested_fixed(model, dat, gcol), C = C, with_g = with_g, genotype = genotype)
+}
+
+## The genotype factor of the model frame; a genotype written as an
+## interaction (Family:Province, from (1 | Province/Family)) is made from its parts.
+pm_h2_gcol <- function(dat, genotype) {
+  if (genotype %in% names(dat)) return(factor(dat[[genotype]]))
+  v <- strsplit(genotype, ":", fixed = TRUE)[[1]]
+  if (!all(v %in% names(dat))) stop("'", genotype, "' is not a factor of the model.", call. = FALSE)
+  interaction(dat[v], drop = TRUE, sep = ":")
+}
+
+## Fixed factor terms of the model (blocks fitted as fixed effects).
+pm_h2_fixed_groups <- function(model, dat) {
+  tl <- attr(stats::terms(pm_nobars(stats::formula(model))), "term.labels")
+  tl[vapply(strsplit(tl, ":", fixed = TRUE), function(v) all(v %in% names(dat)) &&
+              all(vapply(dat[v], function(x) is.factor(x) || is.character(x), logical(1))), logical(1))]
+}
+
+## A fixed factor that the genotypes are nested in (provenances, each family
+## in one provenance): its name, or NULL.
+pm_h2_nested_fixed <- function(model, dat, gcol) {
+  fx <- pm_h2_fixed_groups(model, dat)
+  fx <- fx[!grepl(":", fx, fixed = TRUE)]
+  for (f in fx) {
+    lv <- dat[[f]]
+    if (length(unique(lv)) > 1 && all(tapply(lv, gcol, function(x) length(unique(x))) <= 1, na.rm = TRUE)) return(f)
+  }
+  NULL
 }
 
 ## Incomplete blocks: a random term without the genotype whose levels hold
 ## fewer genotypes than the trial (an alpha or lattice design). The standard
 ## form then ignores the block adjustment of the genotype means.
-pm_h2_incomplete <- function(dat, groups, genotype) {
-  ng <- length(unique(dat[[genotype]]))
-  any(vapply(groups, function(g) {
+pm_h2_incomplete <- function(dat, groups, genotype, usable = names(dat)) {
+  gcol <- pm_h2_gcol(dat, genotype)
+  ng <- length(unique(gcol))
+  gv <- strsplit(genotype, ":", fixed = TRUE)[[1]]
+  any(vapply(unique(groups), function(g) {
     v <- strsplit(g, ":", fixed = TRUE)[[1]]
-    if (genotype %in% v || !all(v %in% names(dat))) return(FALSE)
-    k <- tapply(dat[[genotype]], do.call(paste, c(dat[v], sep = "\r")), function(x) length(unique(x)))
+    if (any(gv %in% v) || !all(v %in% usable)) return(FALSE)
+    k <- tapply(gcol, do.call(paste, c(dat[v], sep = "\r")), function(x) length(unique(x)))
     any(k < ng)
   }, logical(1)))
 }
@@ -262,13 +323,13 @@ pm_h2_vdiff <- function(C) {
 ## with variance 0.
 pm_h2_vblue_fixed <- function(model, genotype) {
   mf <- stats::model.frame(model)
-  mf[[genotype]] <- factor(mf[[genotype]])
+  mf$.pm_g <- pm_h2_gcol(mf, genotype)
   fixed_terms <- attr(stats::terms(pm_nobars(stats::formula(model))), "term.labels")
   intercept <- attr(stats::terms(pm_nobars(stats::formula(model))), "intercept") == 1
-  ff <- stats::reformulate(c(fixed_terms, genotype), intercept = intercept)
-  X <- stats::model.matrix(ff, mf, contrasts.arg = stats::setNames(list("contr.treatment"), genotype))
-  q <- qr(X)
-  X <- X[, q$pivot[seq_len(q$rank)], drop = FALSE]
+  ff <- stats::reformulate(c(fixed_terms, ".pm_g"), intercept = intercept)
+  X0 <- stats::model.matrix(ff, mf, contrasts.arg = list(.pm_g = "contr.treatment"))
+  q <- qr(X0)
+  X <- X0[, q$pivot[seq_len(q$rank)], drop = FALSE]
   w <- model@resp$weights
   ztl <- lme4::getME(model, "Ztlist")
   rows <- rep(seq_along(ztl), vapply(ztl, nrow, 1L))
@@ -284,13 +345,12 @@ pm_h2_vblue_fixed <- function(model, genotype) {
     info <- crossprod(X, X * w) / s2
   }
   V <- solve(info)
-  levs <- levels(mf[[genotype]])
-  cols <- paste0(genotype, levs)
+  levs <- levels(mf$.pm_g)
+  cols <- paste0(".pm_g", levs)
+  # a genotype column left out by the coding (the first level) has effect 0;
+  # one dropped as aliased (genotypes nested in a fixed factor) has no BLUE
+  if (any(cols %in% colnames(X0) & !cols %in% colnames(X))) return(NA_real_)
   have <- cols %in% colnames(V)
-  if (sum(!have) > as.integer(intercept)) {
-    stop("Genotype effects are aliased with other fixed effects; method = \"cullis\" works on this model.",
-         call. = FALSE)
-  }
   C <- matrix(0, length(levs), length(levs))
   C[have, have] <- V[cols[have], cols[have]]
   pm_h2_vdiff(C)
@@ -305,18 +365,26 @@ pm_h2_vblue <- function(model, genotype, y = NULL) {
   bars <- pm_findbars(f)
   keep <- bars[vapply(bars, function(b) !identical(deparse(b), paste("1 |", genotype)), logical(1))]
   fixed_terms <- attr(stats::terms(pm_nobars(f)), "term.labels")
-  rhs <- c(fixed_terms, genotype, vapply(keep, function(b) paste0("(", deparse(b), ")"), ""))
-  # the response as a column (also a transformed one, log(y), or a bootstrap draw)
+  rhs <- c(fixed_terms, ".pm_g", vapply(keep, function(b) paste0("(", deparse(b), ")"), ""))
+  # the response as a column (also a transformed one, log(y), or a bootstrap
+  # draw); the data of the call (covariates such as log(x) are evaluated
+  # there), on the rows the model used; its weights and offset kept
   newf <- stats::as.formula(paste(".pm_y ~", paste(rhs, collapse = " + ")), env = environment(f))
-  dat <- stats::model.frame(model)
-  dat$.pm_y <- if (is.null(y)) stats::model.response(dat) else y
-  dat[[genotype]] <- factor(dat[[genotype]])
+  mf <- stats::model.frame(model)
+  dat <- tryCatch(pm_get_data(model), error = function(e) NULL)
+  dat <- if (!is.null(dat) && all(rownames(mf) %in% rownames(dat))) dat[rownames(mf), , drop = FALSE] else mf
+  dat$.pm_y <- if (is.null(y)) stats::model.response(mf) else y
+  dat$.pm_g <- pm_h2_gcol(mf, genotype)
+  # (do.call() passes the values: lmer() and lm() evaluate weights and offset
+  # among the data's columns)
+  args <- list(formula = newf, data = dat, weights = stats::model.weights(mf), offset = stats::model.offset(mf))
   fit <- if (length(keep)) {
-    suppressMessages(lme4::lmer(newf, data = dat, REML = lme4::getME(model, "is_REML")))
+    suppressMessages(do.call(lme4::lmer, c(args, REML = lme4::getME(model, "is_REML"))))
   } else {
-    stats::lm(newf, data = dat)
+    do.call(stats::lm, args)
   }
-  km <- suppressMessages(suppressWarnings(Kmatrix(fit, genotype)))
+  if (any(is.na(pm_coef(fit)[grep("^\\.pm_g", names(pm_coef(fit)))]))) return(NA_real_)
+  km <- suppressMessages(suppressWarnings(Kmatrix(fit, ".pm_g")))
   mp <- pm_model_parm(fit)
   K <- pm_K_cols(km$K, mp)
   pm_h2_vdiff(K %*% mp$vcov %*% t(K))
@@ -341,7 +409,7 @@ pm_h2_sim <- function(C, s2g, nsim = 10000) {
     gc <- sweep(g, 2, colMeans(g)); hc <- sweep(gh, 2, colMeans(gh))
     r2 <- c(r2, colSums(gc * hc)^2 / (colSums(gc^2) * colSums(hc^2)))
   }
-  mean(r2)
+  structure(mean(r2), mc_se = stats::sd(r2) / sqrt(nsim))
 }
 
 ## Oakey et al. (2006): the mean of the non-zero eigenvalues of I - G^-1 C
@@ -397,7 +465,8 @@ pm_h2_boot <- function(model, comp, methods, nboot, ncore = 1, seed = NULL) {
   ys <- lapply(seeds, function(s) { set.seed(s); stats::simulate(model, nsim = 1)[[1]] })
   one <- function(b) {
     fit <- suppressMessages(suppressWarnings(pm_mer_refit(model, ys[[b]])))
-    cb <- tryCatch(pm_h2_components(fit, comp$genotype, comp$n_env_arg, comp$n_rep_arg), error = function(e) NULL)
+    cb <- tryCatch(pm_h2_components(fit, comp$genotype, comp$n_env_arg, comp$n_rep_arg, need_C = comp$need_C,
+                                    user_vars = comp$user_vars), error = function(e) NULL)
     if (!is.null(cb)) { cb$piepho <- comp$piepho; cb$nsim <- comp$nsim }
     if (is.null(cb)) return(stats::setNames(rep(NA_real_, length(methods)), methods))
     set.seed(seeds[b])                                  # the simulated form draws too
@@ -408,17 +477,23 @@ pm_h2_boot <- function(model, comp, methods, nboot, ncore = 1, seed = NULL) {
   do.call(rbind, out)
 }
 
-## Limits on the logit scale, so they stay in (0, 1).
-pm_h2_limits <- function(est, se, alpha) {
-  if (is.na(se) || est <= 0 || est >= 1) return(c(NA_real_, NA_real_))
+## Limits on the logit scale of est x scale, so they stay in (0, 1/scale)
+## (scale = relationship for the family form, which ranges up to 1/relationship).
+pm_h2_limits <- function(est, se, alpha, scale = 1) {
+  e <- est * scale
+  if (is.na(se) || is.na(e) || e <= 0 || e >= 1) return(c(NA_real_, NA_real_))
   z <- stats::qnorm(1 - alpha/2)
-  l <- stats::qlogis(est) + c(-1, 1) * z * se / (est * (1 - est))
-  stats::plogis(l)
+  l <- stats::qlogis(e) + c(-1, 1) * z * se * scale / (e * (1 - e))
+  stats::plogis(l) / scale
 }
 
 #' @exportS3Method print pm_heritability
 print.pm_heritability <- function(x, digits = 4, ...) {
   cmp <- attr(x, "components")
+  if (is.null(cmp)) {                        # a subset ([ drops the attributes): a plain table
+    print(structure(x, class = "data.frame"), digits = digits, row.names = FALSE)
+    return(invisible(x))
+  }
   m <- x$method
   kind <- c(if (any(m %in% c("standard", "cullis", "piepho", "oakey", "reliability", "simulated"))) "heritability on a line-mean basis",
             if ("family" %in% m) paste0("narrow-sense heritability of a single plant (relationship ",
@@ -437,6 +512,10 @@ print.pm_heritability <- function(x, digits = 4, ...) {
   class(y) <- "data.frame"
   attr(y, "components") <- attr(y, "conf_level") <- NULL
   print(y, digits = digits, row.names = FALSE)
+  if (!is.null(attr(x, "mc_se"))) {
+    cat("\nSimulated form: Monte Carlo SE ", format(attr(x, "mc_se"), digits = 2), " (", attr(x, "nsim"),
+        " draws; nsim for more).\n", sep = "")
+  }
   nb <- attr(x, "nboot")
   if (isTRUE(nb > 0)) cat("\nSE and limits of the mixed-model forms from", nb, "parametric bootstrap draws (percentile).\n")
   pm_print_advice(x)

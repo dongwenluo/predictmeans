@@ -2939,4 +2939,18 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   differences of the BLUPs 1.760 (ours 1.75987) and VHERITABILITY's
   generalized heritability 0.7988 (= our Cullis and Oakey, 0.79879). With run
   1 every number of the script agrees; tests added.
+* Rule no. 1 review of heritability() (rule1-reviewer, 2026-11-25), 13
+  findings fixed: refit keeps weights and offset and evaluates covariates in
+  the call's data (= weighted emmeans 1e-6); n_env/n_rep stop with several
+  G x E terms, n_rep alone used; family limits on the logit of h2 x rho, so
+  within (0, 1/rho); h2_above_one a caution only when the lower limit is above
+  1, else a note; incomplete rule also for fixed block terms and only on the
+  user's variables (no semireg smooth groups); zero genotypic variance gives 0
+  with advice (bootstrap draws count as 0, not dropped); genotypes nested in a
+  fixed factor: Piepho NA, advice h2_genotype_nested, help corrected (Oakey =
+  Cullis only when the intercept is the one confounded effect); aliased vs
+  coded genotype columns told apart (no-intercept models); genotype as an
+  interaction and with a slope term found; C (PEV) only for the forms that use
+  it; Monte Carlo SE of the simulated form printed; generic h2_no_se removed;
+  subsets print as tables; plan row O16 complete.
 

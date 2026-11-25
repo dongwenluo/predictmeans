@@ -1288,8 +1288,9 @@ heritability(fm6.3.1, "Family", method = "family", relationship = 0.3,
 #### Family means
 
 The heritability of family means (the precision of the family ranking in this trial). The data are balanced,
-so all line-mean forms agree (the mean reliability and the simulated form are slightly lower with 48
-families; see `?heritability`).
+so the standard, Cullis, Piepho and Oakey forms agree; the mean reliability is a little lower (it leaves out the
+covariances of the prediction errors), and the simulated form differs by its Monte Carlo error (printed below
+the table).
 
 ```{r}
 heritability(fm6.3.1, "Family", method = "all", seed = 1)

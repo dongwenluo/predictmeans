@@ -23,7 +23,8 @@ heritability(
 )
 }
 \arguments{
-\item{model}{An \code{lmer} fit with a random genotype term \code{(1 | genotype)}.}
+\item{model}{An \code{lmer} fit, or a gaussian \code{semireg} fit, with a random genotype term
+\code{(1 | genotype)}. A genotypic variance estimated as 0 gives 0 for every form, with a note.}
 
 \item{genotype}{Name of the genotype (line, entry, family) factor.}
 
@@ -40,8 +41,9 @@ the mean of the variances, the harmonic mean of the numbers). The single-plant v
 Example 6.2), with \eqn{\sigma^2_e - \sigma^2_w/n} the plot variance; \eqn{\sigma^2_w} is taken as known in
 the standard error.}
 
-\item{n_env, n_rep}{For \code{"standard"}: the number of environments (levels of the genotype x environment
-terms) and of replicates per environment; by default from the data.}
+\item{n_env, n_rep}{For \code{"standard"}, a model with one genotype x environment term: the number of
+environments and of replicates per environment (\code{n_rep} alone: replicates, with the environments from
+the data); by default both from the data (harmonic means), the only way with several such terms.}
 
 \item{piepho}{For \code{"piepho"}: \code{"fixed"} (default) or \code{"refit"}, see Details.}
 
@@ -90,7 +92,9 @@ With \eqn{\sigma^2_g} the genotypic variance:
   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
-  \code{"cullis"}; it differs with a relationship matrix.}
+  \code{"cullis"} when the intercept is the only fixed effect the genotypes are confounded with; with genotypes
+  nested in a fixed factor (families in provenances) the two differ (a note says so), and with a relationship
+  matrix.}
   \item{\code{"reliability"}}{the mean reliability of the genotype BLUPs,
   \eqn{\bar r^2 = m^{-1}\sum_i (1 - C_{ii}/\sigma^2_g)} (Schmidt et al. 2019, Eq. 44); it ignores the
   covariances of the prediction errors, so it is a little below the others for small \eqn{m}.}

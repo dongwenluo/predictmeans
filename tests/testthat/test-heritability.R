@@ -71,7 +71,7 @@ test_that("clear stops: no random genotype, other classes", {
   d <- h2_data()
   m <- suppressMessages(lme4::lmer(y ~ gen + (1 | blk), d))
   expect_error(heritability(m, "gen"), "random intercept")
-  expect_error(heritability(lm(y ~ gen, d), "gen"), "lmer fits")
+  expect_error(heritability(lm(y ~ gen, d), "gen"), "lmer and gaussian semireg fits")
 })
 
 test_that("family (narrow sense, single plant) and repeatability: the formulas, delta-method SEs, advice", {
@@ -106,7 +106,7 @@ test_that("bootstrap SEs of the mixed-model forms: the same for any ncore; advic
   expect_true(all(a$conf.low < a$estimate & a$conf.high > a$estimate))
   expect_equal(attr(a, "nboot"), 20)
   expect_true(all(c("h2_standard_unbalanced") %in% advice(a)$id))
-  expect_true("h2_no_se" %in% advice(heritability(m, "gen"))$id)
+  expect_false("h2_no_se" %in% advice(heritability(m, "gen"))$id)   # removed: it was generic
 })
 
 test_that("Piepho and Möhring (2007), Example 1 (oats alpha design, John and Williams 1995): published values", {
@@ -204,3 +204,63 @@ test_that("Genstat REML (dev/genstat/heritability.gen, run 2026-11-25): componen
   expect_equal(h$estimate, 4 * 0.528 / (0.528 + 0.648 + 3.899), tolerance = 2e-3)   # Genstat components
 })
 
+
+test_that("review fixes: weights, n_env, family limits, advice, nesting, coding, genotype names, zero variance", {
+  skip_on_cran()
+  d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
+  # 1. piepho = "refit" keeps prior weights (= emmeans on the weighted fixed-genotype fit)
+  skip_if_not_installed("emmeans")
+  set.seed(1); d$w <- runif(72, .5, 2)
+  mw <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d, weights = w)
+  mf <- lme4::lmer(yield ~ rep + gen + (1 | rep:block), d, weights = w)
+  se2 <- summary(graphics::pairs(emmeans::emmeans(mf, "gen", lmer.df = "satterthwaite")))$SE^2
+  sg <- as.data.frame(lme4::VarCorr(mw))$vcov[1]
+  expect_equal(heritability(mw, "gen", "piepho", piepho = "refit")$estimate, sg / (sg + mean(se2) / 2),
+               tolerance = 1e-6)
+  # 2. n_env / n_rep with several genotype x environment terms: a clear stop
+  set.seed(2)
+  g <- expand.grid(gen = factor(1:12), loc = factor(1:3), yr = factor(1:2), rep = factor(1:2))
+  g$y <- rnorm(12)[g$gen] + rnorm(nrow(g))
+  m2 <- suppressMessages(lme4::lmer(y ~ loc * yr + (1 | loc:yr:rep) + (1 | gen) + (1 | gen:loc) + (1 | gen:yr) +
+                                      (1 | gen:loc:yr), g))
+  expect_error(heritability(m2, "gen", "standard", n_env = 6, n_rep = 2), "one genotype x environment term")
+  # 5a. fixed incomplete blocks: the standard form is flagged
+  mfx <- lme4::lmer(yield ~ rep + rep:block + (1 | gen), d)
+  expect_true("h2_standard_unbalanced" %in% advice(heritability(mfx, "gen", "standard"))$id)
+  # 8. no intercept: the same model as with one
+  m0 <- lme4::lmer(yield ~ 0 + rep + (1 | rep:block) + (1 | gen), d)
+  m1 <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d)
+  expect_equal(heritability(m0, "gen", "piepho")$estimate, heritability(m1, "gen", "piepho")$estimate, tolerance = 1e-6)
+  # 12. a slope term of the genotype, a log(x) covariate with the refit
+  set.seed(3); d$z <- rnorm(72); d$x <- exp(rnorm(72))
+  expect_true(is.finite(heritability(suppressMessages(lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen) +
+                                                                   (0 + z | gen), d)), "gen")$estimate))
+  expect_true(is.finite(heritability(lme4::lmer(yield ~ rep + log(x) + (1 | rep:block) + (1 | gen), d), "gen",
+                                     "piepho", piepho = "refit")$estimate))
+  # 7. families nested in a fixed factor: Piepho NA with a caution; a genotype written as an interaction
+  e <- read.csv(test_path("_data", "tree", "ex6.2.csv"))
+  for (v in c("Replication", "Family", "Province")) e[[v]] <- factor(e[[v]])
+  h7 <- heritability(lme4::lmer(Dbh.mean ~ Replication + Province + (1 | Family), e), "Family", "all", nsim = 500,
+                     seed = 1)
+  expect_true(is.na(h7$estimate[h7$method == "piepho"]))
+  expect_true("h2_genotype_nested" %in% advice(h7)$id)
+  expect_true(is.finite(heritability(lme4::lmer(Dbh.mean ~ Replication + (1 | Province/Family), e),
+                                     "Family:Province")$estimate))
+  expect_output(print(h7[, 1:2]), "piepho")                 # a subset prints as a table
+  # 6. a genotypic variance estimated as 0: every form 0, with a caution
+  set.seed(1)
+  z <- expand.grid(gen = factor(1:15), blk = factor(1:3)); z$y <- rnorm(45)
+  mz <- suppressMessages(lme4::lmer(y ~ (1 | blk) + (1 | gen), z))
+  hz <- heritability(mz, "gen", "all", nsim = 200, seed = 1)
+  expect_equal(hz$estimate, rep(0, 6))
+  expect_true("h2_genotype_zero" %in% advice(hz)$id)
+  # 3, 4. family limits on (0, 1/relationship); above 1 within its sampling error: a note, not a caution
+  set.seed(7)
+  f <- expand.grid(tree = 1:4, fam = factor(1:30), blk = factor(1:5))
+  f$y <- rnorm(30, 0, 0.95)[f$fam] + rnorm(150, 0, 0.5)[interaction(f$fam, f$blk)] + rnorm(nrow(f), 0, 1.4)
+  hf <- heritability(lme4::lmer(y ~ (1 | blk) + (1 | fam) + (1 | fam:blk), f), "fam", "family", relationship = 1/4)
+  expect_true(hf$conf.low < hf$estimate && hf$estimate < hf$conf.high && hf$conf.high <= 4)
+  if (hf$estimate > 1) expect_equal(advice(hf)$level[advice(hf)$id == "h2_above_one"], ifelse(hf$conf.low > 1, "caution", "note"))
+  # 11. the simulated form reports its Monte Carlo error
+  expect_output(print(heritability(m1, "gen", "simulated", nsim = 1000, seed = 1)), "Monte Carlo SE")
+})
