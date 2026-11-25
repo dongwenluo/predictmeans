@@ -218,6 +218,10 @@ shows 1.1.1 and 2.0 code side by side.
   unbalanced; ML fits get Satterthwaite df with a message instead of a Kenward-Roger label; a failed
   Kenward-Roger adjustment in Types II and III falls back to Satterthwaite.
 * `pm_slopes()` gives no pairs when the slopes are equal by the model (no covariate x term interaction).
+* `covariatemeans()` drew curves that the data do not identify (a covariate constant within the levels of a
+  factor in the model, as a site mean with site; or a function of other factors). It now stops with a
+  message pointing to `contr =` and `pm_slopes()`, which estimate the differences between curves; single
+  points that cannot be estimated are NA, with advice.
 * `pm_slopes()` gave a slope of 0 with SE 0 when the covariate is aliased with a factor (a site mean with
   site in the model). Such slopes are now NA, with advice; their differences are kept. The slopes table has
   an `estimable` column, as the means table.

@@ -56,7 +56,7 @@ pm_advice_get <- function(x) {
 #' @section Advice ids:
 #' \tabular{lll}{
 #'   \strong{id} \tab \strong{from} \tab \strong{when} \cr
-#'   \code{nonestimable_means} \tab predictmeans \tab some means cannot be estimated (NA) \cr
+#'   \code{nonestimable_means} \tab predictmeans, covariatemeans \tab some means cannot be estimated (NA) \cr
 #'   \code{empty_cells} \tab predictmeans \tab means average over the observed cells only \cr
 #'   \code{aliased_covariate} \tab predictmeans \tab a covariate is constant within a factor's levels \cr
 #'   \code{large_se} \tab predictmeans \tab a mean's SE is over 3 times the median SE \cr
@@ -431,6 +431,11 @@ pm_covariatemeans_advice <- function(x, model) {
     rows$extra <- pm_advice("extrapolation", paste0(
       "Lines beyond the range of the data for ", paste(out_cv, collapse = ", "), ": the model's straight line (or ",
       "polynomial) is assumed there and nothing checks it; restrict the covariate values to the data."), "caution")
+  }
+  if (is.data.frame(x$means) && anyNA(x$means$estimate)) {
+    rows$na <- pm_advice("nonestimable_means", paste0(
+      sum(is.na(x$means$estimate)), " point(s) of the curves cannot be estimated (NA): the data do not identify ",
+      "them under this model."), "caution")
   }
   sig <- x$significant
   if (!is.null(x$pairs) && !identical(s$band, "simultaneous") && is.data.frame(sig) && nrow(sig) > 0) {

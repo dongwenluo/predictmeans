@@ -7,9 +7,12 @@ test_that("covariatemeans(): one to four factors, default and chosen layouts", {
   skip_on_cran()
   O <- as.data.frame(nlme::Oats)
   O$B <- factor(O$Block %in% c("I", "II", "III"), labels = c("late", "early"))
-  O$C <- factor(rep(1:2, length.out = nrow(O)))
-  O$D <- factor(rep(1:2, each = 2, length.out = nrow(O)))
-  fm <- lm(yield ~ nitro * Variety * B * C * D, O)
+  # C and D independent of nitro (by row position they would be functions of
+  # nitro, and the curves not estimable)
+  set.seed(1)
+  O$C <- factor(sample(1:2, nrow(O), TRUE))
+  O$D <- factor(sample(1:2, nrow(O), TRUE))
+  fm <- lm(yield ~ nitro * Variety + B + C + D, O)
   terms <- c("Variety", "Variety:B", "Variety:B:C", "Variety:B:C:D")
   for (t in terms) {
     r <- q(covariatemeans(fm, t, covariate = "nitro", at = c(0, 0.3, 0.6)))
@@ -152,7 +155,7 @@ test_that("marks where the band leaves out the reference are drawn, also on the 
 test_that("autoplot() takes the plot settings of the call; one legend for many groups", {
   skip_on_cran()
   d <- get(utils::data(DataExam5.2, package = "predictmeans", envir = environment()))
-  m <- lm(ht ~ site + sitemean * seedlot, data = d)
+  m <- lm(ht ~ sitemean * seedlot, data = d)       # (with site in the model the curves are not estimable)
   cm <- suppressWarnings(covariatemeans(m, "seedlot", "sitemean", plot_args = list(trellis = FALSE, ci = FALSE)))
   p <- ggplot2::autoplot(cm)
   geoms <- vapply(p$layers, function(l) class(l$geom)[1], "")

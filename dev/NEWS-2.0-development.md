@@ -2869,3 +2869,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   get_contrasts_type1() left (used by df rules; identical hypotheses);
   (9) Types II/III through pm_try_vcov_kr(); (10) NEWS and article wording.
   Snapshots (5 scripts) identical to main at tolerance 0.
+* covariatemeans() estimability (2026-11-25, finding 6 of the review): the
+  rows of Kmatrix() carry `estimable`; covariatemeans() ignored it. Now: no
+  estimable point -> stop naming the cause and contr = / pm_slopes(); some
+  points -> NA (advice `nonestimable_means`, now also for covariatemeans).
+  `contr =` differences stay (= coefficient differences, test). Found two
+  silent cases in our own tests: test-autoplot-curves.R used
+  `site + sitemean*seedlot`, and an Oats model whose factors C, D (by row
+  position) were functions of nitro (curves estimable only at mean nitro);
+  both tests now use models whose curves exist. Snapshots of
+  covariatemeans() and semipred() identical to main.

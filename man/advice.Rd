@@ -29,7 +29,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
 
 \tabular{lll}{
   \strong{id} \tab \strong{from} \tab \strong{when} \cr
-  \code{nonestimable_means} \tab predictmeans \tab some means cannot be estimated (NA) \cr
+  \code{nonestimable_means} \tab predictmeans, covariatemeans \tab some means cannot be estimated (NA) \cr
   \code{empty_cells} \tab predictmeans \tab means average over the observed cells only \cr
   \code{aliased_covariate} \tab predictmeans \tab a covariate is constant within a factor's levels \cr
   \code{large_se} \tab predictmeans \tab a mean's SE is over 3 times the median SE \cr
