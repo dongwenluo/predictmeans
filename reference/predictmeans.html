@@ -91,7 +91,7 @@
 
 
 <dl><dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>Model object returned by <code>aov</code>, <code>lm</code>, <code>glm</code>, <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr</a></code>, <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm</a></code>, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm</a></code>, <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>,
+<dd><p>Model object returned by <code>aov</code>, <code>lm</code>, <code>glm</code>, <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr</a></code>, <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm</a></code>, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm</a></code>, <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm</a></code> (ordinal families, parallel), <code>gls</code>, <code>lme</code>, <code>lmer</code>, <code>glmer</code>,
 <code>glmmTMB</code> and <code>gam</code> (package <span class="pkg">mgcv</span>), or a <code><a href="semireg.html">semireg</a></code> fit. An <code>aov</code> model with
 <code>Error()</code> strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (<code>settings$df_method</code> <code>"multistratum"</code>);
@@ -378,7 +378,11 @@ averaged over the cells of the grid as <code>average = "response"</code> does; <
 pairs are their ratios. Equal to glmmTMB's <code>predict(type = "response")</code> and to emmeans with
 <code>component = "response"</code>. For log-link count families (poisson, nbinom1, nbinom2, ...).
 <code>"prob"</code> and <code>"mean_class"</code>: for cumulative link models (<code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr</a></code>, <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm</a></code>,
-<code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm</a></code>: random effects at 0, a typical subject), whose
+<code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm</a></code>: random effects at 0, a typical subject; <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm</a></code> with <code>cumulative</code>,
+<code>propodds</code>, <code>acat</code>, <code>cratio</code> or <code>sratio</code> and <code>parallel = TRUE</code>: for acat the
+differences are adjacent-category log odds ratios, for cratio and sratio continuation-ratio ones, always
+oriented so that a positive difference means higher classes; vglm SEs use VGAM's expected information, clm's
+the observed one, so they differ slightly for the same model), whose
 means are on the latent scale, \(x'\beta\) minus the mean cut point (emmeans' <code>mode = "latent"</code>);
 a difference (logit link) is the log odds ratio of a higher class, \(\log[P(Y &gt; j)/P(Y \le j)]\), the same at
 every cut point \(j\); all tests are on this scale (z tests). <code>trans</code>, <code>bias_adjust</code>, <code>sigma</code>,

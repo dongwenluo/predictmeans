@@ -29,8 +29,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   Model object returned by `aov`, `lm`, `glm`,
   [`MASS::polr`](https://rdrr.io/pkg/MASS/man/polr.html),
   [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html),
-  [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html), `gls`,
-  `lme`, `lmer`, `glmer`, `glmmTMB` and `gam` (package mgcv), or a
+  [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html),
+  [`VGAM::vglm`](https://rdrr.io/pkg/VGAM/man/vglm.html) (ordinal
+  families, parallel), `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and
+  `gam` (package mgcv), or a
   [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fit. An `aov` model with `Error()` strata is analysed by strata, as
   Genstat's ANOVA: each comparison uses the mean squares of the strata
@@ -433,19 +435,26 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   link models ([`MASS::polr`](https://rdrr.io/pkg/MASS/man/polr.html),
   [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html),
   [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html): random
-  effects at 0, a typical subject), whose means are on the latent scale,
-  \\x'\beta\\ minus the mean cut point (emmeans' `mode = "latent"`); a
-  difference (logit link) is the log odds ratio of a higher class,
-  \\\log\[P(Y \> j)/P(Y \le j)\]\\, the same at every cut point \\j\\;
-  all tests are on this scale (z tests). `trans`, `bias_adjust`,
-  `sigma`, `vcov` and `permlist` are not available for these models.
-  `"prob"` adds `probs`: the probability of each class at each mean,
-  `"mean_class"` the expected class \\\sum_j j P(Y = j)\\ (classes taken
-  as equally spaced), each with delta-method SEs and limits (on the
-  logit scale, so they stay within 0 to 1 and 1 to J). Means over other
-  factors are averaged on the latent scale and then transformed; emmeans
-  averages the probabilities instead (the same for the cells of the
-  model).
+  effects at 0, a typical subject;
+  [`VGAM::vglm`](https://rdrr.io/pkg/VGAM/man/vglm.html) with
+  `cumulative`, `propodds`, `acat`, `cratio` or `sratio` and
+  `parallel = TRUE`: for acat the differences are adjacent-category log
+  odds ratios, for cratio and sratio continuation-ratio ones, always
+  oriented so that a positive difference means higher classes; vglm SEs
+  use VGAM's expected information, clm's the observed one, so they
+  differ slightly for the same model), whose means are on the latent
+  scale, \\x'\beta\\ minus the mean cut point (emmeans'
+  `mode = "latent"`); a difference (logit link) is the log odds ratio of
+  a higher class, \\\log\[P(Y \> j)/P(Y \le j)\]\\, the same at every
+  cut point \\j\\; all tests are on this scale (z tests). `trans`,
+  `bias_adjust`, `sigma`, `vcov` and `permlist` are not available for
+  these models. `"prob"` adds `probs`: the probability of each class at
+  each mean, `"mean_class"` the expected class \\\sum_j j P(Y = j)\\
+  (classes taken as equally spaced), each with delta-method SEs and
+  limits (on the logit scale, so they stay within 0 to 1 and 1 to J).
+  Means over other factors are averaged on the latent scale and then
+  transformed; emmeans averages the probabilities instead (the same for
+  the cells of the model).
 
 ## Value
 
