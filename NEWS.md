@@ -203,6 +203,11 @@ shows 1.1.1 and 2.0 code side by side.
 
 * `pm_check()`: a table of checks of a fitted model (outliers, influence, normality, equal variances,
   dispersion, separation, collinearity, ...).
+* New `residvariogram()`: the sample variogram of a model's residuals over a row x column field layout or
+  coordinates (also latitude/longitude, by direction), one per trial with `by`, with a global envelope from data
+  simulated from the fitted model and a test of spatial pattern; advice suggests a spatial model when neighbouring
+  plots are more alike than the model allows. The estimator reproduces Genstat's `FVARIOGRAM` (Brooms Barn
+  example). `pm_check(row = , col = )` adds the check. Rows or columns numbered within blocks stop with a message.
 * Advice printed with results when the fit or data call for it; `advice()` returns it,
   `options(predictmeans.advice = FALSE)` hides it.
 

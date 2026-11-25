@@ -4,12 +4,15 @@
 \alias{pm_check}
 \title{Checks of a Fitted Model}
 \usage{
-pm_check(model, plot = FALSE)
+pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{residplot}}.}
 
 \item{plot}{\code{TRUE}: also draw the diagnostic plots of \code{\link{residplot}}.}
+
+\item{row, col, coords, by, data}{The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
+for spatial pattern in the residuals (the global test of the residual variogram, 99 simulations).}
 }
 \value{
 A data frame of class \code{"pm_check"}: \code{section}, \code{check}, \code{result}, \code{p.value},
@@ -84,7 +87,7 @@ Fox, J. and Monette, G. (1992). Generalized collinearity diagnostics. \emph{Jour
 Association}, 87, 178-183.
 }
 \seealso{
-\code{\link{residplot}}, \code{\link{CookD}}, \code{\link{advice}}, \code{\link{pm_boxcox}}
+\code{\link{residplot}}, \code{\link{CookD}}, \code{\link{advice}}, \code{\link{pm_boxcox}}, \code{\link{residvariogram}}
 }
 \author{
 Dongwen Luo, Siva Ganesh and John Koolaard
