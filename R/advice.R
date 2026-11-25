@@ -68,6 +68,10 @@ pm_advice_get <- function(x) {
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
 #'   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
+#'   \code{h2_standard_unbalanced} \tab heritability \tab the standard form on unequal numbers of plots per genotype \cr
+#'   \code{h2_forms_differ} \tab heritability \tab the forms differ by more than 0.1 \cr
+#'   \code{h2_above_one} \tab heritability \tab a family heritability above 1 \cr
+#'   \code{h2_no_se} \tab heritability \tab mixed-model forms without bootstrap SEs \cr
 #'   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
 #'   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
 #'   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
@@ -505,3 +509,34 @@ pm_slopes_advice <- function(x, model) {
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }
+
+## heritability(): the standard form on unbalanced data, forms that disagree,
+## a family heritability above 1, mixed-model forms without SEs.
+pm_heritability_advice <- function(x, comp, nboot) {
+  rows <- list()
+  m <- x$method
+  if ("standard" %in% m && isTRUE(comp$unequal)) {
+    rows$unbal <- pm_advice("h2_standard_unbalanced", paste(
+      "The genotypes have unequal numbers of plots: the standard form uses their harmonic mean and is",
+      "approximate; method = \"cullis\" or \"piepho\" use the precision of each comparison."), "caution")
+  }
+  lm_forms <- x$estimate[m %in% c("standard", "cullis", "piepho", "oakey")]
+  if (length(lm_forms) > 1 && diff(range(lm_forms)) > 0.1) {
+    rows$differ <- pm_advice("h2_forms_differ", paste(
+      "The line-mean forms differ by more than 0.1: the trial is far from balanced; report the Cullis or",
+      "Piepho form (Schmidt et al. 2019) and say which."), "caution")
+  }
+  if ("family" %in% m && isTRUE(x$estimate[m == "family"] > 1)) {
+    rows$above <- pm_advice("h2_above_one", paste(
+      "The family heritability is above 1: the family variance divided by 'relationship' exceeds the",
+      "phenotypic variance; check 'relationship' for this material (e.g. 1/3 rather than 1/4 for",
+      "open-pollinated progeny) and the model."), "caution")
+  }
+  if (any(m %in% c("cullis", "piepho", "oakey")) && nboot == 0) {
+    rows$se <- pm_advice("h2_no_se", "No SE for the Cullis, Piepho and Oakey forms: give nboot (e.g. 199).",
+                         "note")
+  }
+  if (!length(rows)) return(NULL)
+  do.call(rbind, unname(rows))
+}
+

@@ -2894,3 +2894,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   by hand. inti's Cullis (0.823 balanced) is an approximation (2 x mean
   conditional variance, covariances ignored). Next: bootstrap SE for the
   mixed-model forms, family and repeatability forms, advice, more classes.
+* heritability(), step 2 (2026-11-25): `"family"` ((s2f/rho) / (s2f + terms
+  with the family + residual); design terms such as blocks left out of the
+  single-plant variance; = by hand 1e-10) and `"repeatability"`; SEs of the
+  component forms by the delta method on pm_lmer_varpar() (family SE = 4 x
+  repeatability SE for rho = 1/4, checked), logit limits; parametric
+  bootstrap for Cullis/Piepho/Oakey (`nboot`, seeds per draw, identical for
+  ncore 1 and 2, percentile limits; 50 draws 4.8 s); vBLUE refit takes the
+  response as a column (also transformed responses and bootstrap draws);
+  advice ids h2_standard_unbalanced, h2_forms_differ, h2_above_one, h2_no_se.

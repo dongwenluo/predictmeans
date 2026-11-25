@@ -41,6 +41,10 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
   \code{anova_nested_in_data} \tab anova \tab a factor nested in another in the data, without the nesting in the model \cr
+  \code{h2_standard_unbalanced} \tab heritability \tab the standard form on unequal numbers of plots per genotype \cr
+  \code{h2_forms_differ} \tab heritability \tab the forms differ by more than 0.1 \cr
+  \code{h2_above_one} \tab heritability \tab a family heritability above 1 \cr
+  \code{h2_no_se} \tab heritability \tab mixed-model forms without bootstrap SEs \cr
   \code{anova_empty_cells} \tab anova \tab empty cells: no type tests a main effect over all cells \cr
   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr

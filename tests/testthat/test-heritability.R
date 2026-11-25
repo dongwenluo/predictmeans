@@ -71,3 +71,38 @@ test_that("clear stops: no random genotype, other classes", {
   expect_error(heritability(m, "gen"), "random intercept")
   expect_error(heritability(lm(y ~ gen, d), "gen"), "lmer fits")
 })
+
+test_that("family (narrow sense, single plant) and repeatability: the formulas, delta-method SEs, advice", {
+  skip_on_cran()
+  set.seed(3)
+  f <- expand.grid(tree = 1:4, fam = factor(1:30), blk = factor(1:6))
+  f$y <- rnorm(30, 0, 1)[f$fam] + rnorm(6, 0, 1)[f$blk] + rnorm(180, 0, 0.7)[interaction(f$fam, f$blk)] +
+    rnorm(nrow(f), 0, 2)
+  m <- lme4::lmer(y ~ (1 | blk) + (1 | fam) + (1 | fam:blk), f)
+  vc <- as.data.frame(lme4::VarCorr(m)); v <- function(g) vc$vcov[vc$grp == g]
+  p <- v("fam") + v("fam:blk") + sigma(m)^2                 # blocks are not in the single-plant variance
+  hf <- heritability(m, "fam", method = "family", relationship = 1/4)
+  expect_equal(hf$estimate, 4 * v("fam") / p, tolerance = 1e-10)
+  expect_true(hf$std.error > 0 && hf$conf.low < hf$estimate && hf$conf.high > hf$estimate)
+  expect_equal(heritability(m, "fam", method = "repeatability")$estimate, v("fam") / p, tolerance = 1e-10)
+  expect_error(heritability(m, "fam", method = "family"), "relationship")
+  # delta-method SE of the family form = 4 x that of the repeatability (a linear change of the same ratio)
+  expect_equal(hf$std.error, 4 * heritability(m, "fam", method = "repeatability")$std.error, tolerance = 1e-6)
+  expect_true("h2_above_one" %in% advice(heritability(m, "fam", method = "family", relationship = 0.02))$id)
+})
+
+test_that("bootstrap SEs of the mixed-model forms: the same for any ncore; advice without them", {
+  skip_on_cran()
+  d <- h2_data()
+  set.seed(2)
+  du <- d[-sample(nrow(d), 15), ]
+  m <- lme4::lmer(y ~ (1 | blk) + (1 | gen), du)
+  a <- heritability(m, "gen", method = "all", nboot = 20, seed = 1)
+  b <- heritability(m, "gen", method = "all", nboot = 20, seed = 1, ncore = 2)
+  expect_identical(a$std.error, b$std.error)
+  expect_true(all(a$std.error > 0))
+  expect_true(all(a$conf.low < a$estimate & a$conf.high > a$estimate))
+  expect_equal(attr(a, "nboot"), 20)
+  expect_true(all(c("h2_standard_unbalanced") %in% advice(a)$id))
+  expect_true("h2_no_se" %in% advice(heritability(m, "gen"))$id)
+})

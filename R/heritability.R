@@ -25,8 +25,19 @@
 #'   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
 #'   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
 #'   \code{"cullis"}; it differs with a relationship matrix.}
+#'   \item{\code{"family"}}{narrow-sense heritability of a single tree (plant, animal) from families:
+#'   \eqn{(\sigma^2_f/\rho) / (\sigma^2_f + \sum_t \sigma^2_t + \sigma^2_e)}, \eqn{\sigma^2_f} the family variance
+#'   (\code{genotype} is the family factor), \eqn{\rho} the \code{relationship} among members of a family (1/4
+#'   for half-sibs, 1/2 for full-sibs; often taken as 1/3 for open-pollinated progeny, which are partly full-sibs
+#'   or selfs), and \eqn{\sigma^2_t} the random terms with the family in them (family x block, i.e. plot; family x
+#'   site). The other design terms (blocks, rows, columns) are left out of the phenotypic variance. Can exceed
+#'   1 when \eqn{\rho} is too small for the material. Family-mean heritability is the line-mean forms above
+#'   with the family factor as \code{genotype}.}
+#'   \item{\code{"repeatability"}}{\eqn{\sigma^2_s / (\sigma^2_s + \sum_t \sigma^2_t + \sigma^2_e)} with
+#'   \code{genotype} the subject that has repeated records: the share of the variance of a single record due to
+#'   the subject.}
 #' }
-#' The four agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
+#' The four line-mean forms agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
 #' spatial errors they differ, and Schmidt et al. (2019) recommend the mixed-model forms. Narrow-sense
 #' heritability from a pedigree or genomic relationship matrix needs a model with that matrix, which lme4
 #' cannot fit.
@@ -35,7 +46,13 @@
 #' @param method \code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"}, or \code{"all"}.
 #' @param n_env,n_rep For \code{"standard"}: the number of environments (levels of the genotype x environment
 #'   terms) and of replicates per environment; by default from the data.
-#' @param conf_level Confidence level of the limits.
+#' @param relationship For \code{"family"}: the coefficient of relationship among members of a family.
+#' @param nboot For \code{"cullis"}, \code{"piepho"} and \code{"oakey"}: parametric bootstrap draws for their
+#'   standard error and percentile limits (each draw refits the model; 0, the default, gives none). The other
+#'   forms get theirs by the delta method from the covariance of the variance parameters, as \code{varcomp()}.
+#' @param ncore Cores for the bootstrap; results are the same for any number.
+#' @param seed Seed for the bootstrap draws.
+#' @param conf_level Confidence level of the limits (logit-normal for the delta method, so they stay in (0, 1)).
 #' @return A data frame of class \code{"pm_heritability"}: \code{method}, \code{estimate}, \code{std.error},
 #'   \code{conf.low}, \code{conf.high}; \code{attr(, "components")} holds the variance components and the mean
 #'   variances of differences used.
@@ -58,11 +75,21 @@
 #' Oats$nitro <- factor(Oats$nitro)
 #' fm <- lmer(yield ~ nitro + (1 | Block) + (1 | Variety), data = Oats)
 #' heritability(fm, "Variety", method = "all")
+#' \donttest{
+#' heritability(fm, "Variety", nboot = 199, seed = 1)   # SE of the Cullis form by bootstrap
+#' }
 #' @export
-heritability <- function(model, genotype, method = c("cullis", "piepho", "standard", "oakey", "all"),
-                         n_env = NULL, n_rep = NULL, conf_level = 0.95) {
+heritability <- function(model, genotype,
+                         method = c("cullis", "piepho", "standard", "oakey", "family", "repeatability", "all"),
+                         relationship = NULL, n_env = NULL, n_rep = NULL, nboot = 0, ncore = 1, seed = NULL,
+                         conf_level = 0.95) {
   method <- match.arg(method)
   methods <- if (method == "all") c("standard", "cullis", "piepho", "oakey") else method
+  if (method == "family" && !(is.numeric(relationship) && length(relationship) == 1 && relationship > 0 &&
+                              relationship <= 1)) {
+    stop("method = \"family\" needs 'relationship', the coefficient of relationship among members of a family ",
+         "(1/4 half-sibs, 1/2 full-sibs; often 1/3 for open-pollinated progeny).", call. = FALSE)
+  }
   alpha <- pm_conf_alpha(conf_level)
   model <- pm_fit(model)
   if (!inherits(model, "lmerMod")) {
@@ -70,20 +97,66 @@ heritability <- function(model, genotype, method = c("cullis", "piepho", "standa
          " model is not yet covered.", call. = FALSE)
   }
   comp <- pm_h2_components(model, genotype, n_env, n_rep)
+  est <- pm_h2_point(model, comp, methods, relationship)
+  # SE and limits: the delta method on the variance parameters for the forms
+  # that are functions of the components; a parametric bootstrap for the
+  # forms that also depend on the prediction errors (nboot > 0)
+  vfun <- pm_h2_vfun(comp, relationship)
+  boot_m <- intersect(methods, c("cullis", "piepho", "oakey"))
+  bt <- if (length(boot_m) && nboot > 0) pm_h2_boot(model, comp, boot_m, nboot, ncore, seed)
   rows <- lapply(methods, function(m) {
-    est <- switch(m,
-      standard = comp$s2g / (comp$s2g + comp$denom_standard),
-      cullis = 1 - pm_h2_vdiff(comp$C)/(2*comp$s2g),
-      piepho = comp$s2g / (comp$s2g + pm_h2_vblue(model, genotype)/2),
-      oakey = pm_h2_oakey(comp$C, comp$s2g))
-    se <- if (m == "standard") pm_h2_se_standard(model, comp) else NA_real_
-    lim <- pm_h2_limits(est, se, alpha)
-    data.frame(method = m, estimate = est, std.error = se, conf.low = lim[1], conf.high = lim[2])
+    if (m %in% names(vfun)) {
+      se <- pm_h2_delta(model, vfun[[m]])
+      lim <- pm_h2_limits(est[[m]], se, alpha)
+    } else if (!is.null(bt)) {
+      draws <- bt[, m]
+      se <- stats::sd(draws, na.rm = TRUE)
+      lim <- unname(stats::quantile(draws, c(alpha/2, 1 - alpha/2), na.rm = TRUE))
+    } else {
+      se <- NA_real_
+      lim <- c(NA_real_, NA_real_)
+    }
+    data.frame(method = m, estimate = est[[m]], std.error = se, conf.low = lim[1], conf.high = lim[2])
   })
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
-  structure(out, class = c("pm_heritability", "data.frame"), conf_level = conf_level,
-            components = comp[c("s2g", "terms", "s2e", "n_terms", "n_plots")])
+  out <- structure(out, class = c("pm_heritability", "data.frame"), conf_level = conf_level,
+                   components = comp[c("s2g", "terms", "s2e", "n_terms", "n_plots")], relationship = relationship,
+                   genotype = genotype,
+                   nboot = if (!is.null(bt)) sum(stats::complete.cases(bt)) else 0)
+  pm_add_advice(out, tryCatch(pm_heritability_advice(out, comp, nboot), error = function(e) NULL))
+}
+
+## The estimates of the requested forms from one fit (also each bootstrap refit).
+pm_h2_point <- function(model, comp, methods, relationship = NULL, y = NULL) {
+  vf <- pm_h2_vfun(comp, relationship)
+  v <- pm_h2_vc(comp)
+  vapply(methods, function(m) switch(m,
+    cullis = 1 - pm_h2_vdiff(comp$C)/(2*comp$s2g),
+    piepho = comp$s2g / (comp$s2g + pm_h2_vblue(model, comp$genotype, y)/2),
+    oakey = pm_h2_oakey(comp$C, comp$s2g),
+    vf[[m]](v)), numeric(1))
+}
+
+## The variance components of the fit, named as pm_vc_mer_fun() names them.
+pm_h2_vc <- function(comp) {
+  stats::setNames(c(comp$s2g, comp$terms, comp$s2e),
+                  c(paste0(comp$genotype, ".(Intercept)"), pm_h2_tnames(comp$with_g), "residual"))
+}
+
+## The forms that are functions of the variance components alone (v, named as
+## pm_vc_mer_fun()): standard (line mean), family (single tree, narrow sense:
+## the family variance is relationship x additive variance) and repeatability
+## (single record). The terms with the genotype in them (genotype x
+## environment, family x block = plot) are in the variance of a single record;
+## the other design terms (blocks, rows, columns) are not.
+pm_h2_vfun <- function(comp, relationship = NULL) {
+  g <- paste0(comp$genotype, ".(Intercept)")
+  tt <- pm_h2_tnames(comp$with_g)
+  single <- function(v) v[[g]] + sum(v[tt]) + v[["residual"]]
+  list(standard = function(v) v[[g]] / (v[[g]] + sum(v[tt] / comp$n_terms) + v[["residual"]] / comp$n_plots),
+       family = function(v) (v[[g]] / relationship) / single(v),
+       repeatability = function(v) v[[g]] / single(v))
 }
 
 ## The pieces of every form, from one fit: the genotypic variance, the other
@@ -98,6 +171,7 @@ pm_h2_components <- function(model, genotype, n_env = NULL, n_rep = NULL) {
   }
   s2g <- vc[[genotype]][1, 1]
   if (s2g <= 0) stop("The genotypic variance is estimated as 0: the heritability is 0.", call. = FALSE)
+  if (stats::family(model)$family != "gaussian") stop("heritability() needs a gaussian lmer fit.", call. = FALSE)
   grp <- strsplit(names(vc), ":", fixed = TRUE)
   with_g <- names(vc)[vapply(grp, function(g) genotype %in% g && length(g) > 1, logical(1))]
   dat <- stats::model.frame(model)
@@ -110,16 +184,16 @@ pm_h2_components <- function(model, genotype, n_env = NULL, n_rep = NULL) {
     other <- setdiff(strsplit(t, ":", fixed = TRUE)[[1]], genotype)
     if (!is.null(n_env)) n_env else per_g(other)
   }, numeric(1))
-  n_plots <- if (!is.null(n_env) && !is.null(n_rep)) n_env * n_rep else {
-    k <- table(dat[[genotype]]); k <- k[k > 0]; length(k) / sum(1/k)
-  }
+  kp <- table(dat[[genotype]]); kp <- kp[kp > 0]
+  n_plots <- if (!is.null(n_env) && !is.null(n_rep)) n_env * n_rep else length(kp) / sum(1/kp)
   s2t <- vapply(with_g, function(t) vc[[t]][1, 1], numeric(1))
   s2e <- stats::sigma(model)^2
   rc <- pm_ranef_cov(model)
   i <- which(rc$tab$group == genotype & rc$tab$term == "(Intercept)")
   p <- length(rc$beta)
-  list(s2g = s2g, terms = s2t, s2e = s2e, n_terms = n_terms, n_plots = n_plots,
-       denom_standard = sum(s2t / n_terms) + s2e / n_plots, C = rc$V[p + i, p + i, drop = FALSE],
+  list(s2g = s2g, terms = s2t, s2e = s2e, n_terms = n_terms, n_plots = n_plots, n_env_arg = n_env, n_rep_arg = n_rep,
+       unequal = length(unique(as.vector(kp))) > 1,
+       C = rc$V[p + i, p + i, drop = FALSE],
        with_g = with_g, genotype = genotype)
 }
 
@@ -133,17 +207,19 @@ pm_h2_vdiff <- function(C) {
 ## vBLUE: the same model with genotype fixed (its other random terms kept), the
 ## genotype means (Kmatrix()) and their unadjusted covariance; lm() when no
 ## random term is left.
-pm_h2_vblue <- function(model, genotype) {
+pm_h2_vblue <- function(model, genotype, y = NULL) {
   f <- stats::formula(model)
   bars <- pm_findbars(f)
   keep <- bars[vapply(bars, function(b) !identical(deparse(b), paste("1 |", genotype)), logical(1))]
   fixed_terms <- attr(stats::terms(pm_nobars(f)), "term.labels")
   rhs <- c(fixed_terms, genotype, vapply(keep, function(b) paste0("(", deparse(b), ")"), ""))
-  newf <- stats::as.formula(paste(deparse(f[[2]]), "~", paste(rhs, collapse = " + ")), env = environment(f))
+  # the response as a column (also a transformed one, log(y), or a bootstrap draw)
+  newf <- stats::as.formula(paste(".pm_y ~", paste(rhs, collapse = " + ")), env = environment(f))
   dat <- stats::model.frame(model)
+  dat$.pm_y <- if (is.null(y)) stats::model.response(dat) else y
   dat[[genotype]] <- factor(dat[[genotype]])
   fit <- if (length(keep)) {
-    lme4::lmer(newf, data = dat, REML = lme4::getME(model, "is_REML"))
+    suppressMessages(lme4::lmer(newf, data = dat, REML = lme4::getME(model, "is_REML")))
   } else {
     stats::lm(newf, data = dat)
   }
@@ -161,20 +237,37 @@ pm_h2_oakey <- function(C, s2g) {
   mean(ev[ev > 1e-8])
 }
 
-## SE of the standard form by the delta method on the variance parameters
-## (theta, sigma) and their covariance from the observed information
-## (pm_lmer_varpar(), as varcomp()).
-pm_h2_se_standard <- function(model, comp) {
+## Names of random intercept terms as pm_vc_mer_fun() gives them (none for none:
+## paste0() would return ".(Intercept)" for an empty vector).
+pm_h2_tnames <- function(t) if (length(t)) paste0(t, ".(Intercept)") else character(0)
+
+## SE of a form that is a function of the variance components, by the delta
+## method on the variance parameters (theta, sigma) with their covariance from
+## the observed information (pm_lmer_varpar(), as varcomp()).
+pm_h2_delta <- function(model, f) {
   fun <- pm_vc_mer_fun(model, residual = TRUE)
   vp <- pm_lmer_varpar(model)
-  g <- paste0(comp$genotype, ".(Intercept)")
-  tt <- paste0(comp$with_g, ".(Intercept)")
-  h2 <- function(x) {
-    v <- fun(x)
-    v[g] / (v[g] + sum(v[tt] / comp$n_terms) + v["residual"] / comp$n_plots)
-  }
-  J <- numDeriv::jacobian(h2, vp$varpar)
+  J <- numDeriv::jacobian(function(x) f(fun(x)), vp$varpar)
   sqrt(drop(J %*% vp$vcov_varpar %*% t(J)))
+}
+
+## Parametric bootstrap of the forms that depend on prediction errors: draws
+## from the fitted model, each refitted (pm_mer_refit()) and its forms
+## recomputed. Seeds per draw are made here, so the result is the same for any
+## ncore (pm_perm_map(), R/perm-engine.R). Returns a matrix nboot x methods.
+pm_h2_boot <- function(model, comp, methods, nboot, ncore = 1, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  seeds <- sample.int(.Machine$integer.max, nboot)
+  ys <- lapply(seeds, function(s) { set.seed(s); stats::simulate(model, nsim = 1)[[1]] })
+  one <- function(b) {
+    fit <- suppressMessages(suppressWarnings(pm_mer_refit(model, ys[[b]])))
+    cb <- tryCatch(pm_h2_components(fit, comp$genotype, comp$n_env_arg, comp$n_rep_arg), error = function(e) NULL)
+    if (is.null(cb)) return(stats::setNames(rep(NA_real_, length(methods)), methods))
+    pm_h2_point(fit, cb, methods, y = ys[[b]])
+  }
+  out <- pm_perm_map(seq_len(nboot), one, ncore, packages = "predictmeans")
+  out <- lapply(out, function(r) if (is.null(r)) stats::setNames(rep(NA_real_, length(methods)), methods) else r)
+  do.call(rbind, out)
 }
 
 ## Limits on the logit scale, so they stay in (0, 1).
@@ -188,13 +281,23 @@ pm_h2_limits <- function(est, se, alpha) {
 #' @exportS3Method print pm_heritability
 print.pm_heritability <- function(x, digits = 4, ...) {
   cmp <- attr(x, "components")
-  cat("Heritability on a line-mean basis (", format(100 * attr(x, "conf_level")), "% limits)\n", sep = "")
-  cat("Genotypic variance ", format(cmp$s2g, digits = digits), "; residual ", format(cmp$s2e, digits = digits),
+  m <- x$method
+  kind <- c(if (any(m %in% c("standard", "cullis", "piepho", "oakey"))) "heritability on a line-mean basis",
+            if ("family" %in% m) paste0("narrow-sense heritability of a single plant (relationship ",
+                                        format(attr(x, "relationship"), digits = 3), ")"),
+            if ("repeatability" %in% m) "repeatability of a single record")
+  cat(toupper(substring(kind[1], 1, 1)), substring(paste(kind, collapse = "; "), 2), " (",
+      format(100 * attr(x, "conf_level")), "% limits)\n", sep = "")
+  cat("Variance of ", attr(x, "genotype"), " ", format(cmp$s2g, digits = digits), "; residual ",
+      format(cmp$s2e, digits = digits),
       if (length(cmp$terms)) paste0("; ", paste(names(cmp$terms), format(cmp$terms, digits = digits), sep = " ",
                                                  collapse = ", ")), "\n\n", sep = "")
   y <- x
   class(y) <- "data.frame"
   attr(y, "components") <- attr(y, "conf_level") <- NULL
   print(y, digits = digits, row.names = FALSE)
+  nb <- attr(x, "nboot")
+  if (isTRUE(nb > 0)) cat("\nSE and limits of the mixed-model forms from", nb, "parametric bootstrap draws (percentile).\n")
+  pm_print_advice(x)
   invisible(x)
 }

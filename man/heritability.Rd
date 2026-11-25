@@ -7,9 +7,13 @@
 heritability(
   model,
   genotype,
-  method = c("cullis", "piepho", "standard", "oakey", "all"),
+  method = c("cullis", "piepho", "standard", "oakey", "family", "repeatability", "all"),
+  relationship = NULL,
   n_env = NULL,
   n_rep = NULL,
+  nboot = 0,
+  ncore = 1,
+  seed = NULL,
   conf_level = 0.95
 )
 }
@@ -20,10 +24,20 @@ heritability(
 
 \item{method}{\code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"}, or \code{"all"}.}
 
+\item{relationship}{For \code{"family"}: the coefficient of relationship among members of a family.}
+
 \item{n_env, n_rep}{For \code{"standard"}: the number of environments (levels of the genotype x environment
 terms) and of replicates per environment; by default from the data.}
 
-\item{conf_level}{Confidence level of the limits.}
+\item{nboot}{For \code{"cullis"}, \code{"piepho"} and \code{"oakey"}: parametric bootstrap draws for their
+standard error and percentile limits (each draw refits the model; 0, the default, gives none). The other
+forms get theirs by the delta method from the covariance of the variance parameters, as \code{varcomp()}.}
+
+\item{ncore}{Cores for the bootstrap; results are the same for any number.}
+
+\item{seed}{Seed for the bootstrap draws.}
+
+\item{conf_level}{Confidence level of the limits (logit-normal for the delta method, so they stay in (0, 1)).}
 }
 \value{
 A data frame of class \code{"pm_heritability"}: \code{method}, \code{estimate}, \code{std.error},
@@ -56,8 +70,19 @@ With \eqn{\sigma^2_g} the genotypic variance:
   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
   \code{"cullis"}; it differs with a relationship matrix.}
+  \item{\code{"family"}}{narrow-sense heritability of a single tree (plant, animal) from families:
+  \eqn{(\sigma^2_f/\rho) / (\sigma^2_f + \sum_t \sigma^2_t + \sigma^2_e)}, \eqn{\sigma^2_f} the family variance
+  (\code{genotype} is the family factor), \eqn{\rho} the \code{relationship} among members of a family (1/4
+  for half-sibs, 1/2 for full-sibs; often taken as 1/3 for open-pollinated progeny, which are partly full-sibs
+  or selfs), and \eqn{\sigma^2_t} the random terms with the family in them (family x block, i.e. plot; family x
+  site). The other design terms (blocks, rows, columns) are left out of the phenotypic variance. Can exceed
+  1 when \eqn{\rho} is too small for the material. Family-mean heritability is the line-mean forms above
+  with the family factor as \code{genotype}.}
+  \item{\code{"repeatability"}}{\eqn{\sigma^2_s / (\sigma^2_s + \sum_t \sigma^2_t + \sigma^2_e)} with
+  \code{genotype} the subject that has repeated records: the share of the variance of a single record due to
+  the subject.}
 }
-The four agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
+The four line-mean forms agree for balanced data with independent genotypes; with imbalance, incomplete blocks or
 spatial errors they differ, and Schmidt et al. (2019) recommend the mixed-model forms. Narrow-sense
 heritability from a pedigree or genomic relationship matrix needs a model with that matrix, which lme4
 cannot fit.
@@ -67,6 +92,9 @@ library(predictmeans)
 Oats$nitro <- factor(Oats$nitro)
 fm <- lmer(yield ~ nitro + (1 | Block) + (1 | Variety), data = Oats)
 heritability(fm, "Variety", method = "all")
+\donttest{
+heritability(fm, "Variety", nboot = 199, seed = 1)   # SE of the Cullis form by bootstrap
+}
 }
 \references{
 Cullis, B. R., Smith, A. B. and Coombes, N. E. (2006). On the design of early generation variety trials
