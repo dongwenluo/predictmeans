@@ -10,8 +10,9 @@
 ##                  (random effects, correlation and variance structures;
 ##                  pm_nlme_reml(), checked against its vcov())
 ## Returns list(null_fit, simulate = function(nsim) -> list of responses,
-## refit = function(y) -> fitted model, packages).
-pm_boot_parts <- function(model) {
+## refit = function(y) -> fitted model, packages). null = FALSE: simulate
+## from the model itself (residvariogram()); null_fit is then the model.
+pm_boot_parts <- function(model, null = TRUE) {
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
   ff <- stats::formula(model)
   lhs <- paste(deparse(ff[[2]]), collapse = "")
@@ -21,7 +22,7 @@ pm_boot_parts <- function(model) {
   tt <- stats::terms(stats::delete.response(stats::terms(pm_nobars(ff))))
   offs <- if (is.null(attr(tt, "offset"))) character(0) else
     vapply(attr(tt, "variables")[-1][attr(tt, "offset")], function(e) paste(deparse(e), collapse = ""), "")
-  null_f <- stats::as.formula(paste(lhs, "~", paste(c("1", offs, bars), collapse = " + ")), env = environment(ff))
+  null_f <- if (null) stats::as.formula(paste(lhs, "~", paste(c("1", offs, bars), collapse = " + ")), env = environment(ff))
   new_lhs <- function(f) {
     f[[2]] <- quote(.pm_y)
     f
@@ -36,12 +37,12 @@ pm_boot_fit <- function(model, null_f, new_lhs, quiet) UseMethod("pm_boot_fit")
 
 #' @exportS3Method NULL
 pm_boot_fit.default <- function(model, null_f, new_lhs, quiet) {
-  stop("bootmodels() handles lm, aov, glm, gls, lme, lmer, glmer and glmmTMB models.", call. = FALSE)
+  stop("simulation from the model handles lm, aov, glm, gls, lme, lmer, glmer and glmmTMB fits.", call. = FALSE)
 }
 
 #' @exportS3Method NULL
 pm_boot_fit.merMod <- function(model, null_f, new_lhs, quiet) {
-  null_fit <- quiet(pm_refit(model, formula = null_f))
+  null_fit <- if (is.null(null_f)) model else quiet(pm_refit(model, formula = null_f))
   return(list(null_fit = null_fit, simulate = function(nsim) stats::simulate(null_fit, nsim = nsim),
               refit = function(y) quiet(pm_mer_refit(model, y)), packages = "lme4"))
 }
@@ -57,7 +58,7 @@ pm_boot_fit.lme <- function(model, null_f, new_lhs, quiet) {
     if (!is.null(data)) cl$data <- data
     quiet(eval(cl, pm_fit_env(model)))
   }
-  null_fit <- refit_f(null_f)
+  null_fit <- if (is.null(null_f)) model else refit_f(null_f)
   P <- pm_nlme_reml(null_fit)
   V <- P$Sig(P$th0)
   R <- Matrix::chol(V)                                  # R'R = V
@@ -86,12 +87,11 @@ pm_boot_fit.lm <- function(model, null_f, new_lhs, quiet) {
   if (inherits(model, "glm")) {
     fam <- stats::family(model)$family
     if (grepl("^quasi", fam)) {
-      stop("bootmodels() simulates from the model: a quasi family has no distribution to simulate from. ",
-           "Use permmodels() instead.", call. = FALSE)
+      stop("a quasi family has no distribution to simulate from (for tests use permmodels()).", call. = FALSE)
     }
   }
   d <- as.data.frame(if (inherits(model, "glmmTMB")) pm_model_rows(model) else pm_get_data(model))
-  null_fit <- quiet(pm_refit(model, formula = null_f))
+  null_fit <- if (is.null(null_f)) model else quiet(pm_refit(model, formula = null_f))
   f_full <- new_lhs(stats::formula(model))
   return(list(null_fit = null_fit, simulate = function(nsim) as.list(stats::simulate(null_fit, nsim = nsim)),
               refit = function(y) {

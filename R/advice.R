@@ -77,6 +77,7 @@ pm_advice_get <- function(x) {
 #'   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
 #'   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
 #'   \code{variogram_spatial} \tab residvariogram \tab neighbouring plots more alike than the model allows \cr
+#'   \code{variogram_neighbours} \tab residvariogram \tab neighbouring plots less alike than the model allows (competition) \cr
 #'   \code{variogram_trend} \tab residvariogram \tab the variogram leaves the envelope at longer lags only \cr
 #'   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
@@ -572,27 +573,39 @@ pm_variogram_advice <- function(x) {
   d <- structure(x, class = "data.frame")
   if (is.null(d$trial)) d$trial <- test$trial[1]
   grid <- attr(x, "layout") == "grid"
-  sig <- test$trial[is.finite(test$p.value) & test$p.value <= 1 - attr(x, "conf_level")]
+  p <- if (is.null(test$p.adj)) test$p.value else test$p.adj        # several trials: adjusted (Holm)
+  sig <- test$trial[is.finite(p) & p <= 1 - attr(x, "conf_level")]
   where <- function(tr) if (isTRUE(attr(x, "by"))) paste0(" (", paste(tr, collapse = ", "), ")") else ""
-  if (length(sig)) {
-    first <- if (grid) d$lag_row + d$lag_col == 1 else
-      d$lag == stats::ave(d$lag, d$trial, if (is.null(d$direction)) 0 else d$direction, FUN = min)
-    short <- d[d$trial %in% sig & first & d$gamma < d$lower, , drop = FALSE]
-    if (nrow(short)) {
-      dirs <- if (grid) unique(ifelse(short$lag_col == 0, "the same column", "the same row")) else NULL
-      rows$sp <- pm_advice("variogram_spatial", paste0(
-        "Plots next to each other", if (grid) { if (length(dirs) == 2) " in rows and columns" else paste0(" in ", dirs) },
-        " are more alike than the model allows (the variogram is below the envelope at the shortest lag",
-        where(unique(short$trial)), "): the standard errors of the means ignore it. Fit a spatial covariance (",
-        if (grid) "AR1 x AR1 in ASReml or Genstat; in R, " else "", "gls() or lme() with corExp(form = ~ ",
-        if (grid) "row + col" else "x + y", ")) or a smooth surface s(", if (grid) "row, col" else "x, y",
-        ") in semireg(), and check its variogram."), "caution")
-    } else {
-      rows$tr <- pm_advice("variogram_trend", paste0(
-        "The variogram leaves the envelope at longer lags only", where(sig), ": a trend or pattern across the field ",
-        "(e.g. row or column effects). Add the rows and columns, or a smooth surface in semireg(), to the model."),
-        "caution")
-    }
+  out <- d[d$trial %in% sig & d$outside %in% TRUE, , drop = FALSE]
+  # the shortest lag: the grid neighbours, or the first distance class of each direction
+  first <- if (grid) out$lag_row + out$lag_col == 1 else
+    out$lag == stats::ave(d$lag, d$trial, if (is.null(d$direction)) 0 else d$direction, FUN = min)[
+      match(rownames(out), rownames(d))]
+  low <- out[first & out$gamma < out$lower, , drop = FALSE]
+  high <- out[first & out$gamma > out$upper, , drop = FALSE]
+  near <- if (grid) "row, col" else "x, y"
+  if (nrow(low)) {
+    dirs <- if (grid) unique(ifelse(low$lag_col == 0, "the same column", "the same row")) else NULL
+    rows$sp <- pm_advice("variogram_spatial", paste0(
+      "Plots next to each other", if (grid) { if (length(dirs) == 2) " in rows and columns" else paste0(" in ", dirs) },
+      " are more alike than the model allows (the variogram is below the envelope at the shortest lag",
+      where(unique(low$trial)), "): the standard errors of the means ignore it. Fit a spatial covariance (",
+      if (grid) "AR1 x AR1 in ASReml or Genstat; in R, " else "", "gls() or lme() with corExp(form = ~ ",
+      if (grid) "row + col" else "x + y", ")) or a smooth surface s(", near,
+      ") in semireg(), and check its variogram."), "caution")
+  }
+  if (nrow(high)) {
+    rows$nb <- pm_advice("variogram_neighbours", paste0(
+      "Plots next to each other differ more than the model allows (the variogram is above the envelope at the ",
+      "shortest lag", where(unique(high$trial)), "): competition between neighbours, or effects that alternate ",
+      "between rows or columns. Add the rows and columns to the model, or a covariate for the neighbouring plots."),
+      "caution")
+  }
+  if (nrow(out) && !nrow(low) && !nrow(high)) {
+    rows$tr <- pm_advice("variogram_trend", paste0(
+      "The variogram leaves the envelope at longer lags only", where(unique(out$trial)), ": a trend or pattern ",
+      "across the field. Add the rows and columns, or a smooth surface s(", near, ") in semireg(), to the model."),
+      "caution")
   }
   gaps <- test$trial[test$missing > 0.1]
   if (grid && length(gaps)) {

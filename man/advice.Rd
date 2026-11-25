@@ -50,6 +50,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{anova_covariate_zero} \tab anova \tab Type III with a covariate in an interaction (tests at covariate = 0) \cr
   \code{check_<name>} \tab pm_check \tab a check worth a look (the note of its row) \cr
   \code{variogram_spatial} \tab residvariogram \tab neighbouring plots more alike than the model allows \cr
+  \code{variogram_neighbours} \tab residvariogram \tab neighbouring plots less alike than the model allows (competition) \cr
   \code{variogram_trend} \tab residvariogram \tab the variogram leaves the envelope at longer lags only \cr
   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr

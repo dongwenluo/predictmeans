@@ -4,14 +4,14 @@
 \alias{pm_check}
 \title{Checks of a Fitted Model}
 \usage{
-pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL)
+pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL)
 }
 \arguments{
 \item{model}{A fitted model, as for \code{\link{residplot}}.}
 
 \item{plot}{\code{TRUE}: also draw the diagnostic plots of \code{\link{residplot}}.}
 
-\item{row, col, coords, by}{The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
+\item{row, col, coords, by, data}{The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
 for spatial pattern in the residuals (the global test of the residual variogram, 99 simulations).}
 }
 \value{

@@ -7,10 +7,10 @@
 #' (over- and underdispersion, excess zeros, separation); the design (balance and empty cells, aliasing,
 #' collinearity, few levels of a random effect); and the terms (interactions, straight lines). For any model that
 #' \code{\link{predictmeans}} handles.
-#' @usage pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL)
+#' @usage pm_check(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL)
 #' @param model A fitted model, as for \code{\link{residplot}}.
 #' @param plot \code{TRUE}: also draw the diagnostic plots of \code{\link{residplot}}.
-#' @param row,col,coords,by The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
+#' @param row,col,coords,by,data The layout of the plots, as in \code{\link{residvariogram}}: when given, a row checks
 #'   for spatial pattern in the residuals (the global test of the residual variogram, 99 simulations).
 #' @details
 #' The checks inform; they do not decide. Rows marked \code{!} are worth a look at the plots of
@@ -80,10 +80,10 @@ NULL
 pm_check_sections <- c("Fit", "Residuals", "Variance", "Distribution", "Design", "Terms")
 
 #' @export
-pm_check <- function(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL) {
+pm_check <- function(model, plot = FALSE, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL) {
   # the spatial check needs the data of the call's model (a semireg fit keeps them)
   vario <- if (!is.null(row) || !is.null(col) || !is.null(coords)) {
-    residvariogram(model, row = row, col = col, coords = coords, by = by, plot = FALSE)
+    residvariogram(model, row = row, col = col, coords = coords, by = by, data = data, plot = FALSE)
   }
   model <- pm_fit(model)
   out <- list()
@@ -124,12 +124,13 @@ pm_check <- function(model, plot = FALSE, row = NULL, col = NULL, coords = NULL,
   ## spatial pattern (only with a layout): the residual variogram's global test
   if (!is.null(vario)) {
     tst <- attr(vario, "test")
-    p_sp <- if (attr(vario, "nsim") > 0) min(1, min(tst$p.value) * nrow(tst)) else NA_real_  # Bonferroni over trials
+    # several trials: the smallest Holm-adjusted p, the one the advice uses
+    p_sp <- if (attr(vario, "nsim") > 0) min(if (is.null(tst$p.adj)) tst$p.value else tst$p.adj) else NA_real_
     a <- pm_advice_get(vario)
-    a <- a[a$id %in% c("variogram_spatial", "variogram_trend"), , drop = FALSE]
+    a <- a[a$id %in% c("variogram_spatial", "variogram_neighbours", "variogram_trend"), , drop = FALSE]
     add("Residuals", "Spatial pattern (residual variogram)",
         if (is.na(p_sp)) "no envelope for this class" else paste0("global envelope, ", attr(vario, "nsim"), " simulations"),
-        p_sp, note = if (nrow(a)) paste(a$text, collapse = " ") else "", look = nrow(a) > 0)
+        p_sp, note = if (nrow(a)) paste(a$text, collapse = " ") else "", look = nrow(a) > 0, info = is.na(p_sp))
   }
 
   ## influence (models with closed-form Cook's distances)

@@ -129,3 +129,67 @@ test_that("pm_check() adds the spatial row only when given a layout", {
   expect_true(any(k))
   expect_true(pc$look[k])
 })
+
+test_that("neighbours less alike (competition) get their own advice, not 'longer lags only'", {
+  d <- vario_field(seed = 4)
+  set.seed(4)
+  z <- matrix(rnorm(130), 13, 10)
+  d$y <- 10 + as.numeric(d$variety) / 5 + as.vector(z[-1, ] - 0.8 * z[-13, ])     # MA(1) down the columns, negative
+  v <- residvariogram(lm(y ~ block + variety, data = d), row = "row", col = "col", nsim = 39, plot = FALSE)
+  expect_lt(attr(v, "test")$p.value, 0.05)
+  expect_true("variogram_neighbours" %in% advice(v)$id)
+  expect_false("variogram_trend" %in% advice(v)$id)
+})
+
+test_that("several trials: p adjusted (Holm), advice and pm_check use it", {
+  skip_on_cran()
+  d <- rbind(transform(vario_field(c(0.8, 0.8), seed = 2), trial = "A"), transform(vario_field(seed = 3), trial = "B"))
+  fm <- lm(y ~ trial * (block + variety), data = d)
+  v <- residvariogram(fm, row = "row", col = "col", by = "trial", plot = FALSE)        # nsim 99, as pm_check()
+  tst <- attr(v, "test")
+  expect_equal(tst$p.adj, p.adjust(tst$p.value, "holm"))
+  expect_output(print(v), "adjusted")
+  pc <- pm_check(fm, row = "row", col = "col", by = "trial")
+  k <- pc$check == "Spatial pattern (residual variogram)"
+  expect_equal(pc$p.value[k], min(tst$p.adj))
+  expect_equal(pc$look[k], any(grepl("^variogram_", advice(v)$id) & advice(v)$level == "caution"))
+})
+
+test_that("clear stops and notes: too few pairs, small nsim, zero weights, no envelope; na.exclude works", {
+  d <- vario_field()
+  d4 <- d[d$row <= 4 & d$col <= 4, ]
+  expect_error(residvariogram(lm(y ~ 1, data = d4), row = "row", col = "col", nsim = 0, plot = FALSE),
+               "No lag has at least 20 pairs")
+  fm <- lm(y ~ block + variety, data = d)
+  expect_error(residvariogram(fm, row = "row", col = "col", nsim = 9, plot = FALSE), "at least 19")
+  expect_error(residvariogram(fm, row = "row", col = "col", max_lag = 0, plot = FALSE), "at least 1")
+  dw <- transform(d, w = c(0, rep(1, 119)))
+  expect_error(residvariogram(lm(y ~ block + variety, data = dw, weights = w), row = "row", col = "col",
+                              nsim = 0, plot = FALSE), "weight 0")
+  dn <- d
+  dn$y[c(5, 40)] <- NA
+  fe <- lm(y ~ block + variety, data = dn, na.action = na.exclude)
+  fo <- lm(y ~ block + variety, data = dn)
+  expect_equal(residvariogram(fe, row = "row", col = "col", nsim = 19, plot = FALSE),
+               residvariogram(fo, row = "row", col = "col", nsim = 19, plot = FALSE))
+  dq <- transform(d, n = rpois(120, 5))
+  expect_message(v <- residvariogram(glm(n ~ variety, quasipoisson, data = dq), row = "row", col = "col",
+                                     nsim = 19, plot = FALSE), "quasi family")
+  expect_equal(attr(v, "nsim"), 0)
+  pc <- suppressMessages(pm_check(glm(n ~ variety, quasipoisson, data = dq), row = "row", col = "col"))
+  expect_equal(pc$status[pc$check == "Spatial pattern (residual variogram)"], "i")
+})
+
+test_that("an incomplete grid gets a note; directions with no pairs are dropped; antimeridian", {
+  d <- vario_field()[-seq(3, 120, by = 7), ]                     # 18 of 120 plots missing
+  v <- residvariogram(lm(y ~ block + variety, data = d), row = "row", col = "col", nsim = 0, plot = FALSE)
+  expect_true("variogram_incomplete" %in% advice(v)$id)
+  p <- data.frame(x = 1:30, y = 0, z = rnorm(30))
+  v <- residvariogram(p$z, coords = c("x", "y"), data = p, directions = c(0, 90), segment = 10, step = 1,
+                      min_pairs = 1, nsim = 0, plot = FALSE)
+  expect_equal(unique(v$direction), 0)
+  a <- data.frame(lon = c(-179.9, 179.9, 0), lat = c(0, 0.2, 60), z = c(0, 1, 2))
+  v <- residvariogram(a$z, coords = c("lon", "lat"), data = a, lonlat = TRUE, directions = c(0, 135),
+                      segment = 20, step = 50, min_pairs = 1, nsim = 0, plot = FALSE)
+  expect_equal(v$direction, 135)
+})

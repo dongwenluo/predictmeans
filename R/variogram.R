@@ -4,7 +4,7 @@
 #' The sample variogram of a model's residuals over the field: half the mean squared difference of the residuals of
 #' two plots, by how far apart they are. Plots that are close together and more alike than the model allows (spatial
 #' correlation, a trend across the field) show as a variogram that rises with the lag instead of staying flat. A
-#' global envelope from permutations of the residuals shows the range expected without any spatial pattern.
+#' global envelope from data simulated from the fitted model shows the range expected without any spatial pattern.
 #'
 #' Two layouts:
 #' \itemize{
@@ -24,7 +24,7 @@
 #'   two-column matrix); with \code{lonlat = TRUE} longitude and latitude in degrees.
 #' @param by Name of a variable (or a vector) that splits the plots into trials: one variogram per trial, never pooled.
 #' @param data The data: by default those the model was fitted to (the rows used); needed for a numeric
-#'   \code{model}.
+#'   \code{model}, and when the layout variables are not in the model's data (give the rows used in the fit).
 #' @param max_lag Grid: the largest row and column lags (one number or two); default half the number of rows and of
 #'   columns (longer lags have few pairs and add noise to the test). Coordinates: the largest distance; default half the largest distance between two points.
 #' @param step Coordinates: the width of the distance classes; default \code{max_lag / 15}.
@@ -37,8 +37,8 @@
 #' @param nsim Number of data sets simulated from the fitted model for the envelope (permutations within each trial
 #'   for a numeric \code{model}); 0 for none.
 #' @param conf_level Coverage of the global envelope.
-#' @param seed Seed of the permutations (the user's random number stream is left as it was).
-#' @param ncore Number of cores for the permutations.
+#' @param seed Seed of the simulations (the user's random number stream is left as it was).
+#' @param ncore Number of cores for the simulations (refits).
 #' @param plot \code{TRUE}: draw the variogram (\code{autoplot()}).
 #' @details
 #' Residuals are those of \code{\link{residplot}} (one place): conditional residuals scaled by the residual
@@ -57,7 +57,8 @@
 #' at the 5\% level); the simulated residuals carry the same correlation. The envelope is the global scaled maximum
 #' absolute difference envelope of Myllymäki et al. (2017): the observed variogram lies wholly inside it with
 #' probability \code{conf_level} when the model is right, however many lags are shown; \code{p.value} is the
-#' matching global test. Classes without \code{simulate()} and a refit (\code{gam}, \code{semireg}, \code{aov} with
+#' matching global test (it needs \code{nsim} of at least 19 at 95\%). With several trials the p-values are
+#' adjusted over the trials (Holm; \code{p.adj}), and the advice uses the adjusted ones. Classes without \code{simulate()} and a refit (\code{gam}, \code{semireg}, \code{aov} with
 #' \code{Error()}) get the variogram without an envelope. The test informs; the remedy is a model choice.
 #'
 #' A row x column position may hold one plot per trial: positions that repeat stop with a message (rows or columns
@@ -101,6 +102,13 @@ residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NU
   if (grid == !is.null(coords)) stop("Give either 'row' and 'col' (a row x column grid) or 'coords'.", call. = FALSE)
   if (grid && (is.null(row) || is.null(col))) stop("Give both 'row' and 'col'.", call. = FALSE)
   if (!is.numeric(nsim) || length(nsim) != 1 || nsim < 0) stop("'nsim' must be 0 or a positive number.", call. = FALSE)
+  if (!is.numeric(conf_level) || length(conf_level) != 1 || conf_level <= 0 || conf_level >= 1) {
+    stop("'conf_level' must be a number between 0 and 1.", call. = FALSE)
+  }
+  if (nsim > 0 && floor((1 - conf_level) * (nsim + 1)) < 1) {
+    stop("'nsim' must be at least ", ceiling(1 / (1 - conf_level)) - 1, " for a ", format(100 * conf_level),
+         "% envelope.", call. = FALSE)
+  }
   raw <- is.numeric(model) && is.null(dim(model))
   if (raw) {
     e <- as.numeric(model)
@@ -110,8 +118,12 @@ residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NU
     d <- if (is.null(data)) pm_fit_rows(model) else as.data.frame(data)
     model <- pm_fit(model)
     if (inherits(model, "lmerModLmerTest")) model <- methods::as(model, "lmerMod")
+    w <- tryCatch(stats::weights(model), error = function(err) NULL)
+    if (is.numeric(w) && any(w == 0, na.rm = TRUE)) {
+      stop("Some plots have weight 0: refit without them (they have no residual in the fit).", call. = FALSE)
+    }
     rd <- suppressWarnings(suppressMessages(pm_resid_data(model)))
-    e <- rd$resid
+    e <- pm_vario_used(rd$resid, model)
     rlab <- attr(rd, "rlab")
     if (is.data.frame(d) && nrow(d) != length(e)) {
       stop("The data have ", nrow(d), " rows but the model has ", length(e), " residuals; give the rows used in the ",
@@ -148,8 +160,9 @@ residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NU
   stat <- function(p, ek) if (grid) pm_vario_grid_gamma(p$setup, ek, robust) else pm_vario_dist_gamma(p$setup, ek, robust)
   # the reference: residuals of data simulated from the fitted model (values: permutations)
   sims <- if (nsim > 0) pm_vario_sims(if (raw) NULL else model, e, trial, ok, nsim, seed, ncore) else NULL
-  if (nsim > 0 && is.null(sims)) {
-    message("No envelope: residvariogram() simulates from lm, aov, glm, lmer, glmer, glmmTMB, lme and gls fits.")
+  if (nsim > 0 && !is.matrix(sims)) {
+    message("No envelope: ", if (is.character(sims)) sims else "no simulation from the model succeeded", ".")
+    sims <- NULL
     nsim <- 0
   }
 
@@ -157,6 +170,10 @@ residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NU
     p <- parts[[i]]
     g <- stat(p, p$e)
     tab <- p$setup$table
+    if (!nrow(tab)) {
+      stop("No lag has at least ", min_pairs, " pairs", if (!is.null(by)) paste0(" in trial ", p$trial),
+           ": lower 'min_pairs'", if (grid) "" else " or widen 'step', 'segment' or 'max_lag'", ".", call. = FALSE)
+    }
     tab$gamma <- g
     env <- if (nsim > 0) pm_vario_envelope(p, g, stat, sims[, which(ok & trial == p$trial), drop = FALSE], raw,
                                            conf_level) else NULL
@@ -170,7 +187,9 @@ residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NU
   rownames(res) <- NULL
   test <- data.frame(trial = levs, n = vapply(parts, function(p) length(p$e), integer(1)),
                      p.value = vapply(out, `[[`, numeric(1), "p"),
+                     p.adj = pm_adjust_trials(vapply(out, `[[`, numeric(1), "p")),
                      missing = vapply(out, `[[`, numeric(1), "missing"), stringsAsFactors = FALSE)
+  if (is.null(by)) test$p.adj <- NULL
   res <- structure(res, class = c("pm_variogram", "data.frame"), layout = if (grid) "grid" else "distance",
                    test = test, nsim = if (is.null(sims)) 0L else nrow(sims), conf_level = conf_level, robust = robust, rlab = rlab, raw = raw,
                    lonlat = lonlat, by = !is.null(by))
@@ -227,6 +246,7 @@ pm_vario_grid_setup <- function(pos, max_lag, min_pairs, trial = NULL) {
   }
   nr <- max(r); nc <- max(c)
   ml <- if (is.null(max_lag)) pmax(1, c(nr, nc) %/% 2) else rep_len(as.integer(max_lag), 2)
+  if (anyNA(ml) || any(ml < 1)) stop("'max_lag' must be at least 1.", call. = FALSE)
   ml <- pmin(ml, c(nr - 1, nc - 1))
   idx <- cbind(r, c)
   occ <- matrix(0, nr, nc)
@@ -281,7 +301,8 @@ pm_vario_dist_setup <- function(pos, max_lag, step, directions, segment, lonlat,
     a <- sin((lat[j] - lat[i]) / 2)^2 + cos(lat[i]) * cos(lat[j]) * sin((lon[j] - lon[i]) / 2)^2
     h <- 2 * 6371.0088 * asin(pmin(1, sqrt(a)))
     # direction on the local plane: east and north displacements
-    dx <- (lon[j] - lon[i]) * cos((lat[i] + lat[j]) / 2); dy <- lat[j] - lat[i]
+    dlon <- ((lon[j] - lon[i] + pi) %% (2 * pi)) - pi             # across the antimeridian too
+    dx <- dlon * cos((lat[i] + lat[j]) / 2); dy <- lat[j] - lat[i]
   } else {
     dx <- pos[j, 1] - pos[i, 1]; dy <- pos[j, 2] - pos[i, 2]
     h <- sqrt(dx^2 + dy^2)
@@ -300,7 +321,7 @@ pm_vario_dist_setup <- function(pos, max_lag, step, directions, segment, lonlat,
     if (!is.na(dir)) sel <- sel & abs(((ang - dir + 90) %% 180) - 90) <= segment / 2
     cls <- k[sel]
     g <- factor(cls, levels = sort(unique(cls)))
-    tab <- data.frame(direction = dir, class = as.integer(levels(g)),
+    tab <- data.frame(direction = rep(dir, nlevels(g)), class = as.integer(levels(g)),
                       lag = as.vector(tapply(h[sel], g, mean)), n_pairs = as.vector(table(g)))
     keep <- tab$n_pairs >= min_pairs
     list(tab = tab[keep, , drop = FALSE], i = i[sel], j = j[sel], g = g, keep = keep)
@@ -328,8 +349,9 @@ pm_vario_dist_gamma <- function(setup, e, robust = FALSE) {
 ## so that the correlation the fit itself gives the residuals (e.g. within
 ## blocks) is in the reference too. lm/aov: exactly, D (I - H) z with D the
 ## scaling of rstandard() (the scale is removed per trial later). Other
-## classes: simulate() and refit (R/boot-parts.R), residuals as residplot().
-## Values (model NULL): permutations within each trial. NULL: no reference.
+## classes: simulate() and refit (pm_boot_parts(null = FALSE), R/boot-parts.R),
+## residuals as residplot(). Values (model NULL): permutations within each
+## trial. Without a reference: the reason (a string).
 pm_vario_sims <- function(model, e, trial, ok, nsim, seed, ncore) {
   n <- length(e)
   nsim <- as.integer(nsim)
@@ -343,30 +365,31 @@ pm_vario_sims <- function(model, e, trial, ok, nsim, seed, ncore) {
       out
     }, numeric(n)))))
   }
-  if (inherits(model, "lm") && !inherits(model, c("glm", "gam", "mlm")) && !is.null(model$qr)) {
-    h <- stats::hatvalues(model)
+  if (inherits(model, c("gam", "aovlist"))) return(paste0("no simulation from ", class(model)[1], " fits"))
+  if (inherits(model, "lm") && !inherits(model, c("glm", "mlm")) && !is.null(model$qr)) {
+    Q <- qr.Q(model$qr)
+    h <- rowSums(Q[, seq_len(model$qr$rank), drop = FALSE]^2)        # leverages of the rows used in the fit
     Z <- pm_with_seed(seed, matrix(stats::rnorm(length(h) * nsim), length(h)))
     R <- base::qr.resid(model$qr, Z) / sqrt(pmax(1 - h, 0))
     R[h > 1 - 1e-10, ] <- NA
-    return(if (nrow(R) == n) t(R) else NULL)
+    return(if (nrow(R) == n) t(R) else "the residuals do not match the rows of the fit")
   }
-  if (!inherits(model, c("merMod", "lme", "gls", "glmmTMB", "glm")) || inherits(model, "gam")) return(NULL)
-  quiet <- function(expr) suppressWarnings(suppressMessages(expr))
-  f <- stats::formula(model)
-  new_lhs <- function(f) {
-    f[[2]] <- quote(.pm_y)
-    f
-  }
-  bp <- tryCatch(pm_boot_fit(model, f, new_lhs, quiet), error = function(err) NULL)  # (its "null" fit: the model)
-  if (is.null(bp)) return(NULL)
+  bp <- tryCatch(pm_boot_parts(model, null = FALSE), error = function(err) conditionMessage(err))
+  if (is.character(bp)) return(sub("\\.$", "", bp))
   ysim <- pm_with_seed(seed, bp$simulate(nsim))
   res <- pm_perm_map(ysim, function(y) {
-    r <- quiet(pm_resid_data(bp$refit(y)))$resid
+    r <- pm_vario_used(suppressWarnings(suppressMessages(pm_resid_data(bp$refit(y))))$resid, model)
     if (length(r) == n) r else NULL
   }, ncore = ncore, packages = unique(c("predictmeans", bp$packages)))
   res <- pm_perm_drop(res)$res
   if (!length(res)) return(NULL)
   do.call(rbind, res)
+}
+
+## Residuals of the rows used in the fit (na.exclude pads them with NA).
+pm_vario_used <- function(r, model) {
+  na <- tryCatch(stats::na.action(model), error = function(err) NULL)
+  if (inherits(na, "exclude") && length(r) > length(na) && all(is.na(r[na]))) r[-na] else r
 }
 
 ## Global envelope (scaled maximum absolute difference, Myllymäki et al.
@@ -413,7 +436,9 @@ print.pm_variogram <- function(x, digits = 3, ...) {
     pv <- format.pval(test$p.value, digits = 2, eps = 1e-4)
     cat("Global envelope test (", format(100 * attr(x, "conf_level")), "%, ", attr(x, "nsim"),
         if (isTRUE(attr(x, "raw"))) " permutations" else " simulations from the model", "): ",
-        if (isTRUE(attr(x, "by"))) paste0(test$trial, " p = ", pv, collapse = "; ") else paste0("p = ", pv),
+        if (isTRUE(attr(x, "by"))) paste0(test$trial, " p = ", pv, " (adjusted ",
+                                          format.pval(test$p.adj, digits = 2, eps = 1e-4), ")", collapse = "; ")
+        else paste0("p = ", pv),
         "\n", sep = "")
   }
   y <- structure(x, class = "data.frame")

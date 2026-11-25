@@ -233,3 +233,7 @@ pm_sim_crit <- function(D, C, level, nsim = 10000, df = Inf, draws = FALSE) {
   cr <- if (!tdist) as.numeric(stats::quantile(M, 1 - level)) else stats::qt(as.numeric(stats::quantile(M, 1 - level)), df)
   if (draws) list(crit = cr, M = M, tdist = tdist) else cr
 }
+
+## Several independent tests of one question, one per trial (residvariogram(by =)):
+## Holm's adjustment, so that a caution on any trial keeps the familywise level.
+pm_adjust_trials <- function(p) stats::p.adjust(p, method = "holm")

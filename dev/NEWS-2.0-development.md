@@ -2972,3 +2972,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the row. Checks: Genstat Example 8.3.1 (Brooms Barn, 48 entries; data from
   the maintainer in tests/testthat/_data/variogram), brute force over all
   pairs (grid, robust), haversine, lm simulation = refits; test-variogram.R.
+* residvariogram(), Rule no. 1 review (2026-11-25, 13 findings): advice by
+  where the outside lags are (new variogram_neighbours when lag 1 is above
+  the envelope; trend only when every outside lag is longer); several trials:
+  Holm over trials (`pm_adjust_trials()`, R/p-adjust.R) for the advice and
+  pm_check(), which shows status i when no envelope; clear stops for no lag
+  with min_pairs pairs, max_lag < 1, nsim too small for conf_level, zero
+  weights; na.exclude fits work (`pm_vario_used()`, leverages from the QR);
+  directions with no pairs dropped; antimeridian in lonlat directions;
+  "no envelope" message gives the reason (pm_boot_parts(null = FALSE) simulates
+  from the model itself: no extra refit, helpers not copied; its messages no
+  longer name bootmodels()); pm_check(data =); help says simulations; source
+  line on the Genstat reference file. Not changed: plot = TRUE default (as
+  residplot()). Open: a Genstat run of the row x column variogram (Slate
+  Hall) as an outside reference for the grid case.

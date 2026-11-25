@@ -38,7 +38,7 @@ two-column matrix); with \code{lonlat = TRUE} longitude and latitude in degrees.
 \item{by}{Name of a variable (or a vector) that splits the plots into trials: one variogram per trial, never pooled.}
 
 \item{data}{The data: by default those the model was fitted to (the rows used); needed for a numeric
-\code{model}.}
+\code{model}, and when the layout variables are not in the model's data (give the rows used in the fit).}
 
 \item{max_lag}{Grid: the largest row and column lags (one number or two); default half the number of rows and of
 columns (longer lags have few pairs and add noise to the test). Coordinates: the largest distance; default half the largest distance between two points.}
@@ -61,9 +61,9 @@ for a numeric \code{model}); 0 for none.}
 
 \item{conf_level}{Coverage of the global envelope.}
 
-\item{seed}{Seed of the permutations (the user's random number stream is left as it was).}
+\item{seed}{Seed of the simulations (the user's random number stream is left as it was).}
 
-\item{ncore}{Number of cores for the permutations.}
+\item{ncore}{Number of cores for the simulations (refits).}
 
 \item{plot}{\code{TRUE}: draw the variogram (\code{autoplot()}).}
 }
@@ -77,7 +77,7 @@ A data frame of class \code{"pm_variogram"}: \code{trial} (with \code{by}), \cod
 The sample variogram of a model's residuals over the field: half the mean squared difference of the residuals of
 two plots, by how far apart they are. Plots that are close together and more alike than the model allows (spatial
 correlation, a trend across the field) show as a variogram that rises with the lag instead of staying flat. A
-global envelope from permutations of the residuals shows the range expected without any spatial pattern.
+global envelope from data simulated from the fitted model shows the range expected without any spatial pattern.
 
 Two layouts:
 \itemize{
@@ -107,7 +107,8 @@ sum to zero), so permuting them would give a wrong reference (in a simulated tri
 at the 5\% level); the simulated residuals carry the same correlation. The envelope is the global scaled maximum
 absolute difference envelope of Myllymäki et al. (2017): the observed variogram lies wholly inside it with
 probability \code{conf_level} when the model is right, however many lags are shown; \code{p.value} is the
-matching global test. Classes without \code{simulate()} and a refit (\code{gam}, \code{semireg}, \code{aov} with
+matching global test (it needs \code{nsim} of at least 19 at 95\%). With several trials the p-values are
+adjusted over the trials (Holm; \code{p.adj}), and the advice uses the adjusted ones. Classes without \code{simulate()} and a refit (\code{gam}, \code{semireg}, \code{aov} with
 \code{Error()}) get the variogram without an envelope. The test informs; the remedy is a model choice.
 
 A row x column position may hold one plot per trial: positions that repeat stop with a message (rows or columns
