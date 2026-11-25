@@ -1,0 +1,50 @@
+" predictmeans: reference for corAR1xAR1() (dev/review-ar1ar1.md, S4), 2026-11-26.
+  Slate Hall Farm (Genstat REML Guide, chapter 3): 150 plots, 10 field rows x
+  15 field columns, 25 varieties, 6 replicates. The data are already loaded
+  (yield, replicates, variety, fieldrow, fieldcolumn, plotnumber), as for
+  variogram-slatehall.gen. Please send the whole output (.txt or .rtf/.pdf).
+
+  Four models, each with variety fixed and AR1 x AR1 residuals:
+   A  AR1 x AR1                               (R: gls)
+   B  AR1 x AR1 + nugget (plot error, units)  (R: gls, nugget = TRUE)
+   C  replicates random + AR1 x AR1           (R: lme)
+   D  replicates random + nugget + AR1 x AR1  (R: lme, nugget = TRUE)
+  For each: variance parameters, deviance, Wald tests with d.d.f., the 25
+  variety means and all their SEDs (VPREDICT), printed to 8 decimals."
+
+" plots as a factor for the nugget (independent plot error) "
+VARIATE pn
+CALCULATE pn = plotnumber
+GROUPS [REDEFINE=yes] VECTOR=pn; FACTOR=units
+
+" ---- A: AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mA; SED=sA] CLASSIFY=variety
+PRINT mA; FIELDWIDTH=16; DECIMALS=8
+PRINT sA; FIELDWIDTH=12; DECIMALS=8
+
+" ---- B: AR1 x AR1 + nugget ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=units + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mB; SED=sB] CLASSIFY=variety
+PRINT mB; FIELDWIDTH=16; DECIMALS=8
+PRINT sB; FIELDWIDTH=12; DECIMALS=8
+
+" ---- C: replicates random + AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=replicates + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mC; SED=sC] CLASSIFY=variety
+PRINT mC; FIELDWIDTH=16; DECIMALS=8
+PRINT sC; FIELDWIDTH=12; DECIMALS=8
+
+" ---- D: replicates random + nugget + AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=replicates + units + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mD; SED=sD] CLASSIFY=variety
+PRINT mD; FIELDWIDTH=16; DECIMALS=8
+PRINT sD; FIELDWIDTH=12; DECIMALS=8
