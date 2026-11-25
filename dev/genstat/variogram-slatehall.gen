@@ -1,0 +1,57 @@
+" predictmeans: reference for residvariogram() on a row x column grid (2026-11-25).
+  Slate Hall Farm (Genstat REML Guide, chapter 3): 150 plots in 10 field rows x
+  15 field columns, 25 varieties, 6 replicates. The data are already loaded
+  (yield, replicates, variety, fieldrow, fieldcolumn).
+  Please send the whole output file (.txt or .rtf); it goes to dev/genstat/.
+
+  Two residual sets, each printed with its plot positions to 8 decimals, and
+  their sample variograms from FVARIOGRAM:
+   1. replicates + variety as fixed effects (ordinary regression; R reproduces
+      these residuals exactly with lm());
+   2. the AR1 x AR1 spatial REML fit of the guide (section 1.2; its variance
+      parameters check the fit: Sigma2 3.876, phi 0.4586 and 0.6838).
+  FVARIOGRAM twice: (a) the regular-grid form (residuals as a 10 x 15 matrix,
+  lags in rows and columns); (b) the irregular form with directions 0, 45,
+  90, 135 and segments of 1 degree, so each direction holds only plots exactly
+  along it (lag classes as in Example 8.3.1)."
+
+" plot positions as numbers "
+CALCULATE xpos = fieldcolumn
+CALCULATE ypos = fieldrow
+
+" ---- 1. replicates + variety (regression) ---- "
+MODEL yield
+FIT [PRINT=accumulated] replicates + variety
+RKEEP FITTEDVALUES=fit1
+CALCULATE res1 = yield - fit1
+
+" ---- 2. AR1 x AR1 spatial model (REML Guide, section 1.2) ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield; RESIDUALS=res2; FITTEDVALUES=fit2
+
+" the residuals with their positions (for the R test) "
+PRINT [SERIAL=no] ypos,xpos,yield,res1,res2; FIELDWIDTH=6,6,12,16,16; DECIMALS=0,0,4,8,8
+
+" ---- (a) FVARIOGRAM, regular grid: residuals in a 10 x 15 matrix ---- "
+VARIATE [VALUES=1...10] rowlab
+VARIATE [VALUES=1...15] collab
+MATRIX [ROWS=rowlab; COLUMNS=collab] M1, M2
+TABULATE [CLASSIFICATION=fieldrow,fieldcolumn; PRINT=*] res1; TOTALS=T1
+TABULATE [CLASSIFICATION=fieldrow,fieldcolumn; PRINT=*] res2; TOTALS=T2
+EQUATE OLDSTRUCTURE=T1; NEWSTRUCTURE=M1
+EQUATE OLDSTRUCTURE=T2; NEWSTRUCTURE=M2
+FVARIOGRAM [PRINT=statistics; YMAX=5; XMAX=7] M1; VARIOGRAMS=G1g; COUNTS=N1g; DISTANCES=D1g
+PRINT G1g, N1g, D1g; FIELDWIDTH=14; DECIMALS=8
+FVARIOGRAM [PRINT=statistics; YMAX=5; XMAX=7] M2; VARIOGRAMS=G2g; COUNTS=N2g; DISTANCES=D2g
+PRINT G2g, N2g, D2g; FIELDWIDTH=14; DECIMALS=8
+
+" ---- (b) FVARIOGRAM, irregular form, four directions, 1-degree segments ---- "
+VARIATE [VALUES=0,45,90,135] Angles
+VARIATE [VALUES=1,1,1,1] Segments
+FVARIOGRAM [PRINT=statistics; Y=ypos; X=xpos; STEPLENGTH=1; XMAX=8; \
+            DIRECTIONS=Angles; SEGMENTS=Segments] res1; VARIOGRAMS=G1d; COUNTS=N1d; DISTANCES=D1d
+PRINT G1d, N1d, D1d; FIELDWIDTH=14; DECIMALS=8
+FVARIOGRAM [PRINT=statistics; Y=ypos; X=xpos; STEPLENGTH=1; XMAX=8; \
+            DIRECTIONS=Angles; SEGMENTS=Segments] res2; VARIOGRAMS=G2d; COUNTS=N2d; DISTANCES=D2d
+PRINT G2d, N2d, D2d; FIELDWIDTH=14; DECIMALS=8
