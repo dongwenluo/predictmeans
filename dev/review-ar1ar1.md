@@ -77,6 +77,18 @@ and SEDs against Genstat (S4); the variogram of normalized residuals flat in
 simulations with the right model (the envelope of `residvariogram()` at its
 nominal size).
 
+**Documentation (maintainer, 2026-11-26).** Wherever `corAR1xAR1()` is documented (its help page, the
+Slate Hall article section, the `residvariogram()` advice), also show the smooth field trend, with its comment:
+
+| model | call | comment |
+|---|---|---|
+| Smooth field trend | `semireg(y ~ variety + t2(row, col) + (1 \| rowf) + (1 \| colf), data = d)` | a smooth surface over the field, as SpATS fits; often as good as AR1 x AR1 in practice. |
+
+(`row`, `col` numeric positions; `rowf`, `colf` the same as factors.) Slate Hall, first look
+(2026-11-26): it fits in under a second; the average SED of the 25 variety means is 0.668 against
+Genstat's 0.590 (AR1 x AR1) and 0.605 (with the nugget). So on this trial the AR1 x AR1 fit is the more
+precise; the article shows both with their variograms and states this, rather than "as good" alone.
+
 ## Genstat run (2026-11-26)
 
 Output: `dev/genstat/genstat-results-2026-11-26-ar1ar1-slatehall.txt` (script
