@@ -148,6 +148,27 @@ corresponding generic only; nothing inside predictmeans needs to change.</p>
 its call (<code><a href="https://rdrr.io/r/stats/update.html" class="external-link">getCall()</a></code>) or a <code><a href="pm_data.html">pm_data()</a></code> method so that the data can be found.</p>
     </div>
     <div class="section level2">
+    <h2 id="what-a-new-class-gets">What a new class gets<a class="anchor" aria-label="anchor" href="#what-a-new-class-gets"></a></h2>
+
+
+<dl><dt>Means, pairs and contrasts</dt>
+<dd><p><code><a href="predictmeans.html">predictmeans()</a></code>, <code><a href="contrastmeans.html">contrastmeans()</a></code>, <code><a href="pm_joint.html">pm_joint()</a></code>,
+  <code><a href="pm_slopes.html">pm_slopes()</a></code>, <code><a href="Kmatrix.html">Kmatrix()</a></code> need <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> (or <code>pm_coef()</code>), <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> (or
+  <code>pm_vcov()</code>) and <code><a href="https://rdrr.io/r/stats/terms.html" class="external-link">terms()</a></code>, plus the data (found from the call, or a <code><a href="pm_data.html">pm_data()</a></code> method).
+  The columns of <code>pm_basis()</code> are matched to the coefficients by name.</p></dd>
+
+  <dt>Residual plots</dt>
+<dd><p><code><a href="residplot.html">residplot()</a></code> and <code><a href="pm_check.html">pm_check()</a></code> also need <code><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted()</a></code> and
+  <code><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals()</a></code> methods (residuals divided by their SD); without them they stop and say so.</p></dd>
+
+  <dt>The rest</dt>
+<dd><p><code><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova()</a></code>, <code><a href="CookD.html">CookD()</a></code>, <code><a href="R2_model.html">R2_model()</a></code>, <code><a href="varcomp.html">varcomp()</a></code>, <code><a href="se_ranef.html">se_ranef()</a></code>,
+  <code><a href="permmodels.html">permmodels()</a></code> and <code><a href="bootmodels.html">bootmodels()</a></code> have their own code for the classes they list, and stop with
+  that list for any other class.</p></dd>
+
+
+</dl></div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="Kmatrix.html">Kmatrix</a></code>, <code><a href="pm_data.html">pm_data</a></code></p></div>
     </div>

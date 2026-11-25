@@ -26,7 +26,7 @@ anova(object, type = c("III", "II", "I"), smooth = TRUE, ...)
 - type:
 
   `"III"` (default), `"II"` or `"I"` (also `3`, `2`, `1`): the type of
-  the tests of the fixed effects. Type I is sequential (Satterthwaite F
+  the tests of the fixed effects. Type I is sequential (Kenward-Roger F
   for gaussian fits, Wald chi-square otherwise); see
   [`anova.lmerMod`](https://dongwenluo.github.io/predictmeans/reference/anova.lmerMod.md)
   for which type to use.

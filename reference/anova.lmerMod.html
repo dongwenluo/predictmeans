@@ -79,7 +79,8 @@ unchanged.</p>
 <span>  <span class="va">object</span>,</span>
 <span>  <span class="va">...</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"III"</span>, <span class="st">"II"</span>, <span class="st">"I"</span><span class="op">)</span>,</span>
-<span>  ddf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"lme4"</span><span class="op">)</span>,</span>
+<span>  ddf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kenward-Roger"</span>, <span class="st">"Satterthwaite"</span>, <span class="st">"KR-average"</span>, <span class="st">"lme4"</span><span class="op">)</span>,</span>
+<span>  type1_basis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"design"</span>, <span class="st">"fitted"</span><span class="op">)</span>,</span>
 <span>  advice <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -101,7 +102,17 @@ unchanged.</p>
 
 
 <dt id="arg-ddf">ddf<a class="anchor" aria-label="anchor" href="#arg-ddf"></a></dt>
-<dd><p><code>"Kenward-Roger"</code> (default), <code>"Satterthwaite"</code> or <code>"lme4"</code>.</p></dd>
+<dd><p><code>"Kenward-Roger"</code> (default; adjusted covariance and scaled F, as SAS <code>DDFM=KR</code>),
+<code>"Satterthwaite"</code>, <code>"KR-average"</code> (F = Wald/numerator df from the unadjusted covariance, with
+Kenward-Roger df from the average information, as Genstat) or <code>"lme4"</code>.</p></dd>
+
+
+<dt id="arg-type-basis">type1_basis<a class="anchor" aria-label="anchor" href="#arg-type-basis"></a></dt>
+<dd><p>For <code>type = "I"</code>: <code>"design"</code> (default) builds the sequential hypotheses from
+\(X'X\), as SAS and lmerTest; <code>"fitted"</code> from \(X'V^{-1}X\), as Genstat's "sequentially adding
+terms". <code>type = "I", type1_basis = "fitted", ddf = "KR-average"</code> gives Genstat's Wald and F
+statistics, and <code>type = "II", ddf = "KR-average"</code> its "dropping individual terms". Genstat prints every
+term's Type II d.d.f. in its sequential table too; here each test has the d.d.f. of its own hypothesis.</p></dd>
 
 
 <dt id="arg-advice">advice<a class="anchor" aria-label="anchor" href="#arg-advice"></a></dt>
@@ -121,7 +132,11 @@ unchanged.</p>
 With empty cells (aliased coefficients) each term is tested on the cells with data: an interaction by its
 contrasts that use no empty cell (one df fewer per empty cell), a main effect whose means average over empty
 cells on the cells its means share, as <code><a href="pm_joint.html">pm_joint</a></code>; the table says so, and the intercept is not tested;
-Type II are those of <code><a href="https://rdrr.io/pkg/car/man/Anova.html" class="external-link">car::Anova()</a></code>; Type I (sequential) are lmerTest's, always with Satterthwaite df.
+Type II are those of <code><a href="https://rdrr.io/pkg/car/man/Anova.html" class="external-link">car::Anova()</a></code>; Type I (sequential) are by default those of SAS (<code>HTYPE=1</code>) and
+lmerTest, built from \(X'X\), so they depend on the design only. Genstat's "sequentially adding terms" builds
+them from \(X'V^{-1}X\) (<code>type1_basis = "fitted"</code>): each term after the earlier ones in the mixed model's
+own fit, with parts that add up to the whole Wald statistic, but hypotheses that move with the estimated
+variances. With unbalanced data the two can differ for every term but the last.
 Kenward-Roger F tests use the adjusted covariance of the fixed effects (<code>pbkrtest</code>'s, observed information);
 a variance component estimated as zero is left out of the adjustment, as in SAS. <code>ddf = "lme4"</code> gives lme4's
 own table (sums of squares and F values without df or p-values).</p>
@@ -185,7 +200,7 @@ data (and says so). State the comparisons of interest on the cell means instead,
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fm</span>, type <span class="op">=</span> <span class="st">"I"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Type I Analysis of Variance Table with Satterthwaite's method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Type I Analysis of Variance Table with Kenward-Roger's method</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                Sum Sq Mean Sq NumDF DenDF F value    Pr(&gt;F)    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> nitro         20020.5  6673.5     3    45 37.6857 2.458e-12 ***</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variety         526.1   263.0     2    10  1.4853    0.2724    </span>

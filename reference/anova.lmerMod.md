@@ -17,7 +17,8 @@ anova(
   object,
   ...,
   type = c("III", "II", "I"),
-  ddf = c("Kenward-Roger", "Satterthwaite", "lme4"),
+  ddf = c("Kenward-Roger", "Satterthwaite", "KR-average", "lme4"),
+  type1_basis = c("design", "fitted"),
   advice = TRUE
 )
 ```
@@ -38,7 +39,21 @@ anova(
 
 - ddf:
 
-  `"Kenward-Roger"` (default), `"Satterthwaite"` or `"lme4"`.
+  `"Kenward-Roger"` (default; adjusted covariance and scaled F, as SAS
+  `DDFM=KR`), `"Satterthwaite"`, `"KR-average"` (F = Wald/numerator df
+  from the unadjusted covariance, with Kenward-Roger df from the average
+  information, as Genstat) or `"lme4"`.
+
+- type1_basis:
+
+  For `type = "I"`: `"design"` (default) builds the sequential
+  hypotheses from \\X'X\\, as SAS and lmerTest; `"fitted"` from
+  \\X'V^{-1}X\\, as Genstat's "sequentially adding terms".
+  `type = "I", type1_basis = "fitted", ddf = "KR-average"` gives
+  Genstat's Wald and F statistics, and `type = "II", ddf = "KR-average"`
+  its "dropping individual terms". Genstat prints every term's Type II
+  d.d.f. in its sequential table too; here each test has the d.d.f. of
+  its own hypothesis.
 
 - advice:
 
@@ -64,11 +79,17 @@ share, as
 [`pm_joint`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md);
 the table says so, and the intercept is not tested; Type II are those of
 [`car::Anova()`](https://rdrr.io/pkg/car/man/Anova.html); Type I
-(sequential) are lmerTest's, always with Satterthwaite df. Kenward-Roger
-F tests use the adjusted covariance of the fixed effects (`pbkrtest`'s,
-observed information); a variance component estimated as zero is left
-out of the adjustment, as in SAS. `ddf = "lme4"` gives lme4's own table
-(sums of squares and F values without df or p-values).
+(sequential) are by default those of SAS (`HTYPE=1`) and lmerTest, built
+from \\X'X\\, so they depend on the design only. Genstat's "sequentially
+adding terms" builds them from \\X'V^{-1}X\\ (`type1_basis = "fitted"`):
+each term after the earlier ones in the mixed model's own fit, with
+parts that add up to the whole Wald statistic, but hypotheses that move
+with the estimated variances. With unbalanced data the two can differ
+for every term but the last. Kenward-Roger F tests use the adjusted
+covariance of the fixed effects (`pbkrtest`'s, observed information); a
+variance component estimated as zero is left out of the adjustment, as
+in SAS. `ddf = "lme4"` gives lme4's own table (sums of squares and F
+values without df or p-values).
 
 With lmerTest attached,
 [`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) is lmerTest's and its
@@ -147,7 +168,7 @@ anova(fm, ddf = "Satterthwaite")
 #> ---
 #> Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 anova(fm, type = "I")
-#> Type I Analysis of Variance Table with Satterthwaite's method
+#> Type I Analysis of Variance Table with Kenward-Roger's method
 #>                Sum Sq Mean Sq NumDF DenDF F value    Pr(>F)    
 #> nitro         20020.5  6673.5     3    45 37.6857 2.458e-12 ***
 #> Variety         526.1   263.0     2    10  1.4853    0.2724    

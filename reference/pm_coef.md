@@ -112,6 +112,45 @@ and its call ([`getCall()`](https://rdrr.io/r/stats/update.html)) or a
 [`pm_data()`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md)
 method so that the data can be found.
 
+## What a new class gets
+
+- Means, pairs and contrasts:
+
+  [`predictmeans()`](https://dongwenluo.github.io/predictmeans/reference/predictmeans.md),
+  [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`pm_joint()`](https://dongwenluo.github.io/predictmeans/reference/pm_joint.md),
+  [`pm_slopes()`](https://dongwenluo.github.io/predictmeans/reference/pm_slopes.md),
+  [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
+  need [`coef()`](https://rdrr.io/r/stats/coef.html) (or `pm_coef()`),
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) (or `pm_vcov()`) and
+  [`terms()`](https://rdrr.io/r/stats/terms.html), plus the data (found
+  from the call, or a
+  [`pm_data()`](https://dongwenluo.github.io/predictmeans/reference/pm_data.md)
+  method). The columns of `pm_basis()` are matched to the coefficients
+  by name.
+
+- Residual plots:
+
+  [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
+  and
+  [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  also need [`fitted()`](https://rdrr.io/r/stats/fitted.values.html) and
+  [`residuals()`](https://rdrr.io/r/stats/residuals.html) methods
+  (residuals divided by their SD); without them they stop and say so.
+
+- The rest:
+
+  [`anova()`](https://rdrr.io/r/stats/anova.html),
+  [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md),
+  [`R2_model()`](https://dongwenluo.github.io/predictmeans/reference/R2_model.md),
+  [`varcomp()`](https://dongwenluo.github.io/predictmeans/reference/varcomp.md),
+  [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md),
+  [`permmodels()`](https://dongwenluo.github.io/predictmeans/reference/permmodels.md)
+  and
+  [`bootmodels()`](https://dongwenluo.github.io/predictmeans/reference/bootmodels.md)
+  have their own code for the classes they list, and stop with that list
+  for any other class.
+
 ## See also
 
 [`Kmatrix`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),

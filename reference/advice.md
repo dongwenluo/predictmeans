@@ -50,7 +50,7 @@ A data frame with columns `id` (stable, listed below), `level`
 |  |  |  |
 |----|----|----|
 | **id** | **from** | **when** |
-| `nonestimable_means` | predictmeans | some means cannot be estimated (NA) |
+| `nonestimable_means` | predictmeans, covariatemeans | some means cannot be estimated (NA) |
 | `empty_cells` | predictmeans | means average over the observed cells only |
 | `aliased_covariate` | predictmeans | a covariate is constant within a factor's levels |
 | `large_se` | predictmeans | a mean's SE is over 3 times the median SE |
@@ -61,6 +61,7 @@ A data frame with columns `id` (stable, listed below), `level`
 | `many_tests_unadjusted` | predictmeans, contrastmeans | 6 or more requested tests with `adj = "none"` |
 | `singular_fit` | predictmeans, contrastmeans, R2_model, semireg | a variance at zero or a correlation at +-1 |
 | `anova_unbalanced_typeI`, `_typeII`, `_typeIII` | anova | unbalanced data: what the type tests |
+| `anova_nested_in_data` | anova | a factor nested in another in the data, without the nesting in the model |
 | `anova_empty_cells` | anova | empty cells: no type tests a main effect over all cells |
 | `anova_covariate_zero` | anova | Type III with a covariate in an interaction (tests at covariate = 0) |
 | `check_<name>` | pm_check | a check worth a look (the note of its row) |
@@ -74,6 +75,7 @@ A data frame with columns `id` (stable, listed below), `level`
 | `extrapolation` | semipred, covariatemeans, pm_slopes | predictions beyond the range of the data |
 | `pointwise_regions` | semipred, covariatemeans | regions of difference read from pointwise limits |
 | `smooth_other_covariate` | semipred | a smooth in the prediction does not involve `covariate` (adds a constant) |
+| `nonestimable_slopes` | pm_slopes | the covariate is aliased with a factor: slopes NA, their differences kept |
 | `slopes_equal_by_model` | pm_slopes | no covariate x term interaction: the slopes are equal by assumption |
 | `slopes_at_value` | pm_slopes | a curved term or a link: the slopes depend on `at` |
 

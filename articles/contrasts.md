@@ -234,6 +234,10 @@ pm_slopes(fm2, "nitro", "Variety", adj = "tukey")
 #>  Golden Rain    75.33     11.86 51     6.353 5.726e-08    51.53     99.14
 #>   Marvellous    64.58     11.86 51     5.446 1.490e-06    40.78     88.39
 #>      Victory    81.08     11.86 51     6.838 9.828e-09    57.28    104.89
+#>  estimable
+#>       TRUE
+#>       TRUE
+#>       TRUE
 #> 
 #> Pairwise differences of slopes (p.adj: tukey)
 #> 
