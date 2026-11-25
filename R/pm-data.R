@@ -117,6 +117,12 @@ pm_response_info <- function(model, trans = NULL, link_scale = NULL) {
   scale <- if (linked) "link" else if (!is.null(rt)) "transformed" else "identity"
   back <- if (link_scale) "link" else if (user) "trans" else if (!is.null(rt)) "formula" else NA_character_
   inverse <- if (user) trans else if (!is.null(rt)) rt$fun else NULL
+  if (inherits(m, c("polr", "clm"))) {
+    # cumulative link models (R/ordinal.R): means on the latent scale, not back-transformed
+    lk <- if (inherits(m, "polr")) m$method else m$link
+    return(list(expr = expr, name = name, scale = "latent", link = if (lk == "logistic") "logit" else lk,
+                family = "cumulative", back = if (user) "trans" else NA_character_, inverse = if (user) trans))
+  }
   list(expr = expr, name = name, scale = scale, link = if (linked) link else NULL, family = family, back = back,
        inverse = inverse)
 }
@@ -135,9 +141,10 @@ pm_scale_label <- function(settings, scale = c("model", "response"), what = c("a
   prob <- isTRUE(r$family %in% c("binomial", "quasibinomial", "betabinomial", "beta", "beta_family")) ||
     isTRUE(r$link %in% c("logit", "probit", "cloglog", "cauchit"))
   if (scale == "model" || is.na(r$back)) {
-    axis <- if (r$scale == "link") paste0(r$link, "(", if (prob) "probability" else "mean", " of ", r$name, ")") else
+    axis <- if (r$scale == "latent") paste0("Latent mean of ", r$name, " (", r$link, ")") else if (r$scale == "link") paste0(r$link, "(", if (prob) "probability" else "mean", " of ", r$name, ")") else
       r$expr
     if (what == "axis") return(axis)
+    if (r$scale == "latent") return(paste0("Latent means of ", r$name, " for '", term, "' (", r$link, ")"))
     return(paste0("Means of ", axis, " for '", term, "'"))
   }
   bt <- settings$back_transform

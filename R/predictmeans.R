@@ -16,7 +16,7 @@
 #'     "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
 #'   vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-#'   mean_type=c("conditional", "overall"), ...)
+#'   mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
@@ -224,13 +224,20 @@
 #'   grid, then average with the same weights, as emmeans' \code{regrid()}: the mean of the response, e.g. a mean
 #'   count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
 #'   stay on the link scale.
-#' @param mean_type Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}); for other models the two
-#'   are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
+#' @param mean_type \code{"conditional"} and \code{"overall"}: for \code{glmmTMB} fits with zero inflation
+#'   (\code{ziformula}); for other models the two are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
 #'   \eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
 #'   with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
 #'   averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
 #'   pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
 #'   \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
+#'   \code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm}), whose
+#'   means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
+#'   differences are log cumulative odds ratios (logit link) and all tests are on this scale (z tests).
+#'   \code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
+#'   class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
+#'   (probabilities on the logit scale). Means over other factors are averaged on the latent scale and then
+#'   transformed; emmeans averages the probabilities instead (the same for the cells of the model).
 #' @section Covariates aliased with a factor:
 #' A covariate that takes one value within each level of a factor (a site mean, a block-level measurement) is
 #' aliased with that factor: in \code{lm(ht ~ site + sitemean * seedlot)} the coefficient of \code{sitemean} is
@@ -369,7 +376,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
                           weights=c("equal", "proportional", "outer", "cells", "flat"),
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), vcov=NULL,
                           equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-                          mean_type=c("conditional", "overall"), ...) {
+                          mean_type=c("conditional", "overall", "prob", "mean_class"), ...) {
   # arguments removed in 2.0 stop with their 2.0 spelling (R/defunct.R)
   pm_defunct("predictmeans", match.call(), strict = TRUE, formals_of = formals(sys.function()))
   level <- pm_conf_alpha(conf_level)
@@ -407,5 +414,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
   cmp <- pm_compare(opt, est)                    # SEDs, df, LSDs, pairs, comparison intervals
   tab <- pm_tables(opt, est, cmp)                # mean table, response scale, letters
   v <- pm_flat(opt, est, cmp, tab)
-  pm_assemble(v)
+  res <- pm_assemble(v)
+  # ordinal models: class probabilities or the mean class at each mean (R/ordinal.R)
+  if (opt$mean_type %in% c("prob", "mean_class")) res <- pm_ord_attach(res, opt$model, est$K, opt$mean_type, conf_level)
+  res
 }

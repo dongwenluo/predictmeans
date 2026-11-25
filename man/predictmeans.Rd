@@ -13,7 +13,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
     "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-  mean_type=c("conditional", "overall"), ...)
+  mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
@@ -247,13 +247,20 @@ grid, then average with the same weights, as emmeans' \code{regrid()}: the mean 
 count). Both change only the \code{response} columns of \code{means}; the printed tables and the \code{pairs}
 stay on the link scale.}
 
-\item{mean_type}{Only for \code{glmmTMB} fits with zero inflation (\code{ziformula}); for other models the two
-are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
+\item{mean_type}{\code{"conditional"} and \code{"overall"}: for \code{glmmTMB} fits with zero inflation
+(\code{ziformula}); for other models the two are the same and the argument is ignored. \code{"conditional"} (default): the means of the count part,
 \eqn{\mu}. \code{"overall"}: the overall means \eqn{(1 - \pi)\mu} (\eqn{\pi} the probability of an extra zero),
 with SEs from the joint covariance of the conditional and zero-inflation coefficients (delta method),
 averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
 pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
-\code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).}
+\code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
+\code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm}), whose
+means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
+differences are log cumulative odds ratios (logit link) and all tests are on this scale (z tests).
+\code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
+class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
+(probabilities on the logit scale). Means over other factors are averaged on the latent scale and then
+transformed; emmeans averages the probabilities instead (the same for the cells of the model).}
 }
 \value{
 \item{Predicted Means}{A table of predicted means.}

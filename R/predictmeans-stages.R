@@ -155,6 +155,10 @@ pm_setup <- function(a) {
     }
   }
 
+  if (inherits(model, c("polr", "clm"))) pm_ord_parts(model)        # stops for what it cannot handle (R/ordinal.R)
+  if (mean_type %in% c("prob", "mean_class") && !inherits(model, c("polr", "clm"))) {
+    stop("mean_type = \"", mean_type, "\" is for cumulative link models (MASS::polr, ordinal::clm).", call. = FALSE)
+  }
   list(model = model, modelterm = modelterm, data = a$data, vars = vars, mdf = mdf, mean_type = mean_type,
        pairwise = pairwise, compare = compare, atvar = atvar, adj = adj, Df = a$Df, level = level, slevel = level,
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,

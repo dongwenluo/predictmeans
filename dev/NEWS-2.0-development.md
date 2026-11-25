@@ -2993,3 +2993,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   pooled by pairs equals the grid variogram for both residual sets: 47 lags,
   counts exact, gamma to 6e-9; lm residuals = Genstat's to 3e-9. The RCB fit
   gets variogram_spatial, as the guide's conclusion (fit AR1 x AR1).
+* B1, ordinal models (2026-11-25; D1-D6 of dev/review-classes.md agreed):
+  `R/ordinal.R`. polr and clm (location effects; nominal/scale stop in
+  pm_setup()): coefficients ((Intercept) = -mean(theta), b) and their
+  covariance by the linear map of (b, alpha) (clm thresholds through tJac),
+  so the model's design gives the latent means of emmeans' mode "latent";
+  pm_linkinv NULL; pm_df_rule z (as fixed-dispersion GLMs). mean_type =
+  "prob" / "mean_class": `pm_ord_class()` with delta SEs (probability limits
+  on the logit scale), averaged over other factors on the latent scale (D2;
+  emmeans averages probabilities: same for the cells). Summary prints the
+  scale line and the class table; pm_response_info() scale "latent".
+  test-ordinal.R: emmeans to 1e-6 (latent means, SEs, pairs, probabilities,
+  mean class; polr logit, clm logit, clm probit equidistant), D2 by hand.
