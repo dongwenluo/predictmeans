@@ -157,6 +157,7 @@ and SAS do not allow: not comparable. Random intercept + AR(1): 252.19 −
 omits constants, so only differences compare with lme4's.
 
 `type1-exam8.2.gen` (first run 2026-11-25 with covariates centred, Genstat's default:
-`genstat-results-2026-11-25-type1-centred.txt`, a different model, not a reference; rerun with CADJUST=none): Genstat REML Wald tests of the Exam 8.2 clone trial (data inline),
+`genstat-results-2026-11-25-type1-centred.txt`, a different model, not a reference; rerun with CADJUST=none: `genstat-results-2026-11-25-type1.txt`, the reference; all Wald statistics of both orders
+= `type1_basis = "fitted"`; every d.d.f. Genstat prints is the term's Type II (KR, average information) d.d.f.): Genstat REML Wald tests of the Exam 8.2 clone trial (data inline),
 parallel to `dev/sas/type1-exam8.2.sas`, for `anova(type = "I", type1_basis = "fitted", ddf = "KR-average")`
 and `anova(type = "II", ddf = "KR-average")`; two orders of the fixed terms. R values in the header.

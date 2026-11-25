@@ -2843,3 +2843,11 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   column 7.77 on 19.7), reproduced; Genstat prints the drop-term d.d.f. for
   column in its sequential table (19.7; the sequential hypothesis gives
   19.4). Defaults unchanged (= SAS). Test in `test-tree-examples.R`.
+* Genstat run of `dev/genstat/type1-exam8.2.gen` (2026-11-25, CADJUST=none;
+  the first run centred contcompv, a different model): sequential Wald of
+  both orders = `type1_basis = "fitted"` (8.20 7.99 72.66 51.75; 70.34 8.20
+  10.32 51.75); dropping = Type II; Genstat prints each term's Type II
+  KR-average d.d.f. in every table and order (contcompf 254.0 also when
+  first, where its sequential hypothesis gives 254.6). Kept: each test with
+  the d.d.f. of its own hypothesis; documented in ?anova.lmerMod. The test
+  now reads from this output, not the table pasted in chat.

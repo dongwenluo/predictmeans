@@ -644,8 +644,9 @@ pm_type3_map_cells <- function(model, coef_names) {
 #'   Kenward-Roger df from the average information, as Genstat) or \code{"lme4"}.
 #' @param type1_basis For \code{type = "I"}: \code{"design"} (default) builds the sequential hypotheses from
 #'   \eqn{X'X}, as SAS and lmerTest; \code{"fitted"} from \eqn{X'V^{-1}X}, as Genstat's "sequentially adding
-#'   terms". \code{type = "I", type1_basis = "fitted", ddf = "KR-average"} gives Genstat's table, and
-#'   \code{type = "II", ddf = "KR-average"} its "dropping individual terms".
+#'   terms". \code{type = "I", type1_basis = "fitted", ddf = "KR-average"} gives Genstat's Wald and F
+#'   statistics, and \code{type = "II", ddf = "KR-average"} its "dropping individual terms". Genstat prints every
+#'   term's Type II d.d.f. in its sequential table too; here each test has the d.d.f. of its own hypothesis.
 #' @param advice Logical: add a note on the choice of type when the data are unbalanced or have empty cells
 #'   (default \code{TRUE}).
 #' @section Which type of test:
