@@ -185,7 +185,7 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
 ## (Genstat). Returns list(df_type, vcov_adj).
 pm_df_method <- function(model, df_method) {
   kr_info <- switch(df_method, "KR-expected" = "expected", "KR-average" = "average", "observed")
-  glmm <- inherits(model, c("glmerMod", "glmmTMB"))
+  glmm <- inherits(model, c("glmerMod", "glmmTMB", "clmm"))
   if (identical(df_method, "inner-outer") || (glmm && df_method %in% c("auto", "Kenward-Roger", "KR-expected",
                                                                          "KR-average", "Satterthwaite"))) {
     # df by grouping level (R/df-innerouter.R): the default for GLMMs, which have
@@ -193,17 +193,22 @@ pm_df_method <- function(model, df_method) {
     if (glmm && !df_method %in% c("auto", "inner-outer")) {
       warning("'df_method = \"", df_method, "\"' is not available for GLMMs; using \"inner-outer\".", call. = FALSE)
     }
-    if (inherits(model, c("merMod", "glmmTMB", "lme"))) {
+    if (inherits(model, c("merMod", "glmmTMB", "clmm", "lme"))) {
       io <- tryCatch(pm_inner_outer_df(model), error = function(e) e)
       if (!inherits(io, "error")) return(list(df_type = "inner-outer", vcov_adj = NULL, io = io))
       if (df_method == "inner-outer") warning("inner-outer df not available (", conditionMessage(io), "); ignored.",
                                               call. = FALSE)
       else message("inner-outer df not available (", conditionMessage(io), "); using the residual df.")
-      if (glmm) return(list(df_type = NULL, vcov_adj = NULL))
+      if (glmm) return(if (inherits(model, pm_ord_classes)) pm_df_rule(model, "auto", kr_info) else list(df_type = NULL, vcov_adj = NULL))
     } else {
-      warning("'df_method = \"inner-outer\"' needs random effects (lmer, glmer, glmmTMB, lme); ignored.", call. = FALSE)
+      warning("'df_method = \"inner-outer\"' needs random effects (lmer, glmer, glmmTMB, clmm, lme); ignored.", call. = FALSE)
       return(list(df_type = NULL, vcov_adj = NULL))
     }
+  }
+  if (identical(df_method, "residual") && inherits(model, pm_ord_classes)) {
+    # ordinal models have no residual variance: their own rule (z, or inner-outer for clmm above)
+    warning("'df_method = \"residual\"' does not apply to ", class(model)[1], " models; using z.", call. = FALSE)
+    return(pm_df_rule(model, "auto", kr_info))
   }
   if (identical(df_method, "residual")) {
     if (inherits(model, c("lmerMod", "lme"))) {

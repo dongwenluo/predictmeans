@@ -3024,3 +3024,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   not covered no longer says the model has no random effects. emmeans to
   1e-6 (latent means, SEs, pairs, probabilities). Open: population-average
   probabilities (bias_adjust, D4) and a df simulation (D3).
+* B2 Rule no. 1 review (2026-11-25, 9 findings, all fixed): clmm df: the
+  inner-outer df of GLMMs (pm_io_parts() clmm branch: fixed design with its
+  contrasts, gfList); simulation through predictmeans (3 classes, cluster SD
+  1, between-cluster treatment): 3.7% (6 clusters, df 4), 7.3% (10, df 8),
+  7.75% (20, df 18) vs z 11.4% / 9.8% (reviewer's run); fallback and
+  df_method = "residual" give z with a warning; pm_contrasts.clmm (sum
+  contrasts failed); pm_ord_check() shared by pm_setup() and pm_cov_back()
+  (covariatemeans() let trans/bias_adjust through); summary: "within a
+  subject (random effects at 0)" in the differences clause, "z tests" when
+  every df is infinite (also glm, polr, clm); clmm nominal = message; advice
+  ordinal_typical_subject gives the random-effect SD, silent below 0.1;
+  tests: random slope, crossed, symmetric thresholds, sum contrasts, a
+  between-cluster treatment (df 4), stops.

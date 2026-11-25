@@ -156,16 +156,8 @@ pm_setup <- function(a) {
   }
 
   if (inherits(model, pm_ord_classes)) {
-    pm_ord_parts(model)                            # stops for what it cannot handle (R/ordinal.R)
-    # latent means have no back-transformation and no residual variance: the class scale is mean_type's
-    bad <- c(trans = !isTRUE(a$trans_default) && !is.null(a$trans) && !identical(a$trans, I),
-             bias_adjust = !isFALSE(a$bias_adjust), sigma = !is.null(a$sigma), vcov = !is.null(a$vcov),
-             permlist = !is.null(a$permlist))
-    if (any(bad)) {
-      stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1],
-           " models: the means are on the latent scale; for the class scale use mean_type = \"prob\" or ",
-           "\"mean_class\".", call. = FALSE)
-    }
+    pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans, bias_adjust = a$bias_adjust,
+                 sigma = a$sigma, vcov = a$vcov, permlist = a$permlist)
   }
   if (mean_type %in% c("prob", "mean_class") && !inherits(model, pm_ord_classes)) {
     stop("mean_type = \"", mean_type, "\" is for cumulative link models (MASS::polr, ordinal::clm, ordinal::clmm).", call. = FALSE)

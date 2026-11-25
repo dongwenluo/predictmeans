@@ -476,6 +476,7 @@ pm_cov_df_label <- function(inf, Df) {
 ## Returns list(h, d (NULL: no back-transformation), kind ("ratio",
 ## "odds.ratio" or "none": what exp of a difference is), link_scale, adjusted).
 pm_cov_back <- function(model, trans, bias_adjust = FALSE, sigma = NULL, exclude = NULL) {
+  if (inherits(model, pm_ord_classes)) pm_ord_check(model, trans = trans, bias_adjust = bias_adjust, sigma = sigma)
   link <- pm_link_trans(model)
   if (is.null(trans)) trans <- link
   if (is.null(trans)) trans <- pm_response_trans(model)$fun

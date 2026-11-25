@@ -35,7 +35,13 @@ pm_io_parts <- function(model, drop = character(0)) {
     fl <- as.list(model$modelInfo$reTrms$cond$flist)
     return(list(X = X, flist = fl[!names(fl) %in% drop]))
   }
-  stop("df_method = \"inner-outer\" needs a model with random effects (lmer, glmer, glmmTMB, lme).", call. = FALSE)
+  if (inherits(model, "clmm")) {                    # ordinal::clmm: the fixed design with its intercept (R/ordinal.R)
+    tt <- stats::delete.response(stats::terms(pm_nobars(stats::formula(model))))
+    X <- stats::model.matrix(tt, model$model, contrasts.arg = model$contrasts)
+    fl <- as.list(model$gfList)
+    return(list(X = X, flist = fl[!names(fl) %in% drop]))
+  }
+  stop("df_method = \"inner-outer\" needs a model with random effects (lmer, glmer, glmmTMB, clmm, lme).", call. = FALSE)
 }
 
 ## The inner-outer df of the rows of L (columns: the coefficients named in

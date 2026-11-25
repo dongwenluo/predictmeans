@@ -32,8 +32,10 @@ pm_ord_parts <- function(model) {
     link <- model$method
     lev <- model$lev
   } else {
-    if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta) ||
-        (inherits(model, "clmm") && !is.null(model$call$nominal))) {
+    if (inherits(model, "clmm") && !is.null(model$call$nominal)) {
+      stop("clmm() does not fit nominal effects: it ignored 'nominal ='; refit without it.", call. = FALSE)
+    }
+    if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta)) {
       stop("predictmeans handles clm fits with location effects only; nominal and scale effects ",
            "(nominal = , scale = ) are not supported.", call. = FALSE)
     }
@@ -53,6 +55,23 @@ pm_ord_parts <- function(model) {
     stop("The ", class(model)[1], " fit has no usable covariance matrix of its coefficients.", call. = FALSE)
   }
   list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev)
+}
+
+## The checks of an ordinal fit and of the options of a call, for every front
+## end (predictmeans(), covariatemeans()): pm_ord_parts() stops for fits not
+## handled; latent means have no back-transformation and no residual
+## variance, so 'trans', 'bias_adjust', 'sigma' (and 'vcov', 'permlist', not
+## built for the latent parametrisation) stop: the class scale is mean_type's.
+pm_ord_check <- function(model, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
+  pm_ord_parts(model)
+  bad <- c(trans = !is.null(trans) && !identical(trans, I), bias_adjust = !isFALSE(bias_adjust),
+           sigma = !is.null(sigma), vcov = !is.null(vcov), permlist = !is.null(permlist))
+  if (any(bad)) {
+    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1],
+         " models: the means are on the latent scale; for the class scale use mean_type = \"prob\" or ",
+         "\"mean_class\" in predictmeans().", call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 ## The coefficients on the latent scale and their covariance: ((Intercept) =
@@ -81,6 +100,10 @@ pm_coef.clmm <- pm_coef.clm
 #' @exportS3Method pm_vcov clmm
 pm_vcov.clmm <- pm_vcov.clm
 ## no back-transformation of the latent means (class probabilities: mean_type = "prob")
+## the contrasts the fit used (clmm has no model.matrix() method: the default
+## would rebuild the design with the current options)
+#' @exportS3Method pm_contrasts clmm
+pm_contrasts.clmm <- function(model, ...) model$contrasts
 #' @exportS3Method pm_linkinv polr
 pm_linkinv.polr <- function(model, ...) NULL
 #' @exportS3Method pm_linkinv clm
@@ -99,7 +122,9 @@ pm_df_rule.polr <- function(model, df_method, kr_info) {
 }
 #' @exportS3Method NULL
 pm_df_rule.clm <- pm_df_rule.polr
-## clmm: z as well (D3: the inner-outer df only if a simulation shows z too liberal)
+## clmm: inner-outer df by default (pm_df_method(), as GLMMs: z rejected 11% of
+## true nulls at 5% with 6 clusters for a between-cluster term); this rule
+## (z) is the fallback when they cannot be found.
 #' @exportS3Method NULL
 pm_df_rule.clmm <- pm_df_rule.polr
 

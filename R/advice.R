@@ -635,10 +635,15 @@ pm_ordinal_advice <- function(model, modelterm, what) {
       "(as emmeans gives). Include ", paste(others, collapse = ", "), " in 'modelterm' for the probabilities of ",
       "each cell."), "note")
   }
-  if (inherits(model, "clmm")) {
-    rows$re <- pm_advice("ordinal_typical_subject", paste(
-      "The class probabilities are for a typical subject (random effects at 0); averaged over subjects they are",
-      "flatter (less extreme). Population-average probabilities are not yet available."), "note")
+  sds <- if (inherits(model, "clmm")) {
+    tryCatch(unlist(lapply(ordinal::VarCorr(model), function(v) sqrt(diag(as.matrix(v))))), error = function(e) NULL)
+  }
+  if (length(sds) && max(sds) >= 0.1) {        # (a random-effect SD near 0: typical = average)
+    rows$re <- pm_advice("ordinal_typical_subject", paste0(
+      "The class probabilities are for a typical subject (random effects at 0; random-effect SD ",
+      format(signif(max(sds), 2)), " on the latent scale): averaged over subjects they are less extreme. ",
+      "Population-average probabilities are not yet available; the comparisons on the latent scale (the pairs) ",
+      "hold for every subject."), "note")
   }
   if (what == "mean_class") {
     rows$mc <- pm_advice("ordinal_mean_class", paste(
