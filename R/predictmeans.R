@@ -17,7 +17,7 @@
 #'   vcov=NULL,
 #'   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
 #'   mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
-#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+#' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{VGAM::vglm} (ordinal families, parallel), \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 #'   \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 #'   \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 #'   strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
@@ -232,7 +232,11 @@
 #'   pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
 #'   \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
 #'   \code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm},
-#'   \code{ordinal::clmm}: random effects at 0, a typical subject), whose
+#'   \code{ordinal::clmm}: random effects at 0, a typical subject; \code{VGAM::vglm} with \code{cumulative},
+#'   \code{propodds}, \code{acat}, \code{cratio} or \code{sratio} and \code{parallel = TRUE}: for acat the
+#'   differences are adjacent-category log odds ratios, for cratio and sratio continuation-ratio ones, always
+#'   oriented so that a positive difference means higher classes; vglm SEs use VGAM's expected information, clm's
+#'   the observed one, so they differ slightly for the same model), whose
 #'   means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
 #'   a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
 #'   every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{bias_adjust}, \code{sigma},

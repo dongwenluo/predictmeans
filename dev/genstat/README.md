@@ -171,3 +171,7 @@ genotypes fixed (Piepho), half-sib families with plots (single-tree h2). R value
   2026-11-25): Slate Hall residuals (regression on replicates + variety; AR1 x AR1 REML, components as the REML
   Guide) and FVARIOGRAM in grid and directional forms. Reference for `residvariogram()` on a row x column grid
   (`test-variogram.R`; data in `tests/testthat/_data/variogram/`): 47 lags, counts exact, gamma to 6e-9.
+
+- `ar1ar1-slatehall.gen` (2026-11-26, to run; data inline): reference for `corAR1xAR1()` (dev/review-ar1ar1.md, S4): Slate
+  Hall, variety fixed, AR1 x AR1 residuals alone, with a nugget, with random replicates, and both; variance
+  parameters, deviance, Wald d.d.f., variety means and all SEDs to 8 decimals (VPREDICT).

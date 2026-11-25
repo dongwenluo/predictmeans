@@ -3037,3 +3037,38 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   ordinal_typical_subject gives the random-effect SD, silent below 0.1;
   tests: random slope, crossed, symmetric thresholds, sum contrasts, a
   between-cluster treatment (df 4), stops.
+* B3a, vglm (2026-11-25; E1-E6 of dev/review-vglm.md agreed): ordinal
+  families cumulative, propodds, acat, cratio, sratio with parallel = TRUE
+  (all slope constraints a column of 1s; else a stop naming B3b).
+  pm_ord_parts_vglm(): coefficients (Intercept):j as alpha, slopes b, sign s
+  found from the fit (a larger eta raises the mean class), latent mean
+  s (x'b + mean(alpha)) = clm's for cumulative; probabilities by the family's
+  linkinv, gradients by pm_fd_jac(); pm_contrasts.vglm (S4 slot); summary
+  names the family's scale (pm_ord_scale_text()); residplot()/pm_check()
+  stop for every ordinal class (S4 `$` error before). Checks: = clm (same
+  model) to 1e-4 for means, pairs, probabilities; SEs within 2% (vglm uses
+  the expected information, clm the observed); acat/cratio/sratio cell
+  probabilities = predict() to 1e-8, SEs = numDeriv delta method on vglm's
+  vcov to 1e-5; sign for every family. VGAM added to Suggests.
+* B3a Rule no. 1 review (2026-11-25, 10 findings, all fixed): intercept
+  constraints used (J = the intercept constraint matrix; equidistant cut
+  points gave wrong means; now = clm(threshold = "equidistant")); VGAM smart
+  terms (sm.*) stop (NaN or wrong means: not rebuilt on the grid);
+  probability gradients by finite differences in eta (step scaled to eta)
+  and the chain rule [x 1', J] (the coefficient step gave SEs wrong by up to
+  360% for covariates near 5e5; now = analytic to 1e-6 at x ~ 5000) and 10x
+  fewer linkinv calls; acat(reverse = TRUE) linkinv with two rows; the sign
+  found at the average linear predictor of the data (the cut points alone can
+  be far from the data); link unnamed and given in clm's convention (a
+  cumulative cloglog with reverse = TRUE is clm's loglog); labels from
+  pm_ord_vglm_info() without the covariance; help text for acat/cratio/sratio
+  and the expected information; NEWS: other vglm families now stop; tests at
+  1e-6 with vglm.control(epsilon = 1e-12), exact SEs K V K', reverse for all
+  families, probit, loglog, equidistant, large covariate, sm.* and poissonff.
+* Ordinal models against SAS (dev/sas/ordinal.sas, run 2026-11-26):
+  test-ordinal-sas.R. clm = PROC LOGISTIC Newton, vglm = Fisher scoring (the
+  vglm/clm SE difference is expected vs observed information), probabilities
+  to 4e-7, probit/cloglog/adjacent-category, clmm = GLIMMIX Laplace. clmm df:
+  the residual stratum now subtracts the J - 2 extra cut points (57 for wine,
+  = GLIMMIX; was 60); between-cluster terms keep the inner-outer df (GLIMMIX
+  containment 53 vs predictmeans 4, chosen by the simulation).

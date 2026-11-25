@@ -4,7 +4,7 @@
 ## (b, alpha) is the block of vcov() without the random-effect parameters.
 
 ## The classes handled here (one list for every check in the package).
-pm_ord_classes <- c("polr", "clm", "clmm")
+pm_ord_classes <- c("polr", "clm", "clmm", "vglm")
 ##
 ## Both fit P(Y <= j) = F(theta_j - eta), eta = x'b without an intercept, cut
 ## points theta = J alpha (J = I for polr and for clm's flexible thresholds;
@@ -17,11 +17,20 @@ pm_ord_classes <- c("polr", "clm", "clmm")
 ## every cut point j. Wald tests are z tests (pm_df_rule(), as fixed-dispersion
 ## GLMs). Aliased coefficients are NA in pm_coef() and left out of pm_vcov()
 ## (the adapter contract, ?pm_coef).
+##
+## VGAM::vglm (B3a, dev/review-vglm.md): ordinal families with parallel = TRUE
+## (cumulative, propodds, acat, cratio, sratio). Their predictors are
+## eta_j = alpha_j + x'b; the sign of b differs between families and with
+## 'reverse', so it is found from the fit (s: +1 when a larger eta makes higher
+## classes more likely), and the latent mean is s (x'b + mean(alpha)), equal to
+## clm's x'b - mean(theta) for the same cumulative model. Class probabilities
+## come from the family's own linkinv, their gradients by finite differences.
 
 ## b (aliased coefficients NA), alpha, J, the joint covariance of the
 ## estimable b and alpha (in that order), the link and the class labels of a
 ## polr or clm fit; stops for what is not handled.
 pm_ord_parts <- function(model) {
+  if (inherits(model, "vglm")) return(pm_ord_parts_vglm(model))
   if (inherits(model, "polr")) {
     if (is.null(model$Hessian)) {
       stop("The polr fit has no Hessian: refit with polr(..., Hess = TRUE).", call. = FALSE)
@@ -54,7 +63,77 @@ pm_ord_parts <- function(model) {
   if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V))) {
     stop("The ", class(model)[1], " fit has no usable covariance matrix of its coefficients.", call. = FALSE)
   }
-  list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev)
+  list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev, sb = 1, st = -1,
+       family = "cumulative", probs = NULL)
+}
+
+## The parts of a vglm fit (B3a): ordinal families with parallel = TRUE only.
+## eta = J alpha + x'b (J: the constraint matrix of the intercepts, I for free
+## cut points, e.g. cbind(1, 0:3) for equidistant ones). probs(b, alpha, x):
+## the family's linkinv; deta(eta): its Jacobian in eta (finite differences
+## on eta, with steps scaled to eta, then the chain rule in pm_ord_class()).
+pm_ord_parts_vglm <- function(model) {
+  fi <- pm_ord_vglm_info(model)
+  cm <- VGAM::constraints(model)
+  slope <- cm[names(cm) != "(Intercept)"]
+  if (!all(vapply(slope, function(C) ncol(C) == 1 && all(C == 1), logical(1)))) {
+    stop("predictmeans handles vglm fits with parallel = TRUE (one coefficient per term for all cut points); ",
+         "non-parallel fits have no single latent scale (planned, dev/review-vglm.md B3b).", call. = FALSE)
+  }
+  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
+    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
+         "with bs(), ns(), poly() or scale().", call. = FALSE)
+  }
+  J <- cm[["(Intercept)"]]
+  cf <- VGAM::coef(model)
+  ic <- grep("^\\(Intercept\\)", names(cf))
+  alpha <- cf[ic]
+  b <- cf[-ic]
+  V <- VGAM::vcov(model)
+  nm <- c(names(b), names(alpha))
+  if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V)) || nrow(J) < 1 || ncol(J) != length(alpha)) {
+    stop("The vglm fit has no usable covariance matrix of its coefficients.", call. = FALSE)
+  }
+  # (two rows: VGAM's acat(reverse = TRUE) linkinv drops a one-row matrix)
+  linkinv <- function(eta) as.vector(model@family@linkinv(rbind(eta, eta), extra = model@extra)[1, ])
+  lev <- fi$levels
+  # the sign: does a larger eta (all predictors) raise the mean class? At the
+  # average linear predictor of the data (the cut points alone, x = 0, can be
+  # far from the data, where the probabilities are flat)
+  mc <- function(e) sum(seq_along(lev) * linkinv(e))
+  e0 <- colMeans(model@predictors)
+  s <- sign(mc(e0 + 0.01) - mc(e0 - 0.01))
+  if (s == 0) stop("Could not find the direction of the vglm family's predictors.", call. = FALSE)
+  list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = pm_ord_vglm_link(fi), levels = lev,
+       sb = s, st = s, family = fi$family,
+       probs = function(b, alpha, x) linkinv(as.vector(J %*% alpha) + sum(x * b)),
+       deta = function(eta) pm_fd_jac(linkinv, eta))
+}
+
+## Family, link and class labels of a vglm fit, without the covariance (for
+## labels); stops for families that are not ordinal.
+pm_ord_vglm_info <- function(model) {
+  fam <- model@family@vfamily[1]
+  if (fam == "multinomial") {
+    stop("vglm multinomial fits are not yet handled (they have no single latent scale; planned: class ",
+         "probabilities, dev/review-vglm.md B3b).", call. = FALSE)
+  }
+  if (!fam %in% c("cumulative", "acat", "cratio", "sratio")) {
+    stop("predictmeans handles vglm fits of the ordinal families cumulative, propodds, acat, cratio and sratio; ",
+         "not ", fam, " (vglm fits of other families are not supported).", call. = FALSE)
+  }
+  list(family = fam, link = unname(sub("link$", "", model@misc$link[1])), reverse = isTRUE(model@misc$reverse),
+       levels = colnames(model@y))
+}
+
+## The link in clm's convention (P(Y <= j) = F(theta_j - eta)): a cumulative
+## fit with reverse = TRUE models P(Y > j), so its cloglog is clm's loglog and
+## the other way round (symmetric links are the same).
+pm_ord_vglm_link <- function(fi) {
+  if (fi$family == "cumulative" && fi$reverse) {
+    return(switch(fi$link, cloglog = "loglog", loglog = "cloglog", fi$link))
+  }
+  fi$link
 }
 
 ## The checks of an ordinal fit and of the options of a call, for every front
@@ -75,16 +154,17 @@ pm_ord_check <- function(model, trans = NULL, bias_adjust = FALSE, sigma = NULL,
 }
 
 ## The coefficients on the latent scale and their covariance: ((Intercept) =
-## -mean(theta), b), A (b, alpha) with A the linear map (estimable b only).
+## st mean(theta), sb b) (polr, clm: -mean(theta), b; vglm: s (mean(alpha), b)),
+## A (b, alpha) with A the linear map (estimable b only).
 pm_ord_latent <- function(model) {
   p <- pm_ord_parts(model)
   be <- p$b[!is.na(p$b)]
   nb <- length(be)
-  A <- rbind(c(rep(0, nb), -colMeans(p$J)), cbind(diag(nb), matrix(0, nb, length(p$alpha))))
+  A <- rbind(c(rep(0, nb), p$st * colMeans(p$J)), cbind(p$sb * diag(nb), matrix(0, nb, length(p$alpha))))
   icpt <- sum(A[1, ] * c(be, p$alpha))
   V <- A %*% p$V %*% t(A)
   dimnames(V) <- list(c("(Intercept)", names(be)), c("(Intercept)", names(be)))
-  list(coef = c("(Intercept)" = icpt, p$b), vcov = V)
+  list(coef = c("(Intercept)" = icpt, p$sb * p$b), vcov = V)
 }
 
 #' @exportS3Method pm_coef polr
@@ -110,6 +190,14 @@ pm_linkinv.polr <- function(model, ...) NULL
 pm_linkinv.clm <- function(model, ...) NULL
 #' @exportS3Method pm_linkinv clmm
 pm_linkinv.clmm <- function(model, ...) NULL
+#' @exportS3Method pm_coef vglm
+pm_coef.vglm <- function(model, ...) pm_ord_latent(model)$coef
+#' @exportS3Method pm_vcov vglm
+pm_vcov.vglm <- function(model, ...) pm_ord_latent(model)$vcov
+#' @exportS3Method pm_linkinv vglm
+pm_linkinv.vglm <- function(model, ...) NULL
+#' @exportS3Method pm_contrasts vglm
+pm_contrasts.vglm <- function(model, ...) model@contrasts
 
 ## z tests: the latent scale has no dispersion to estimate (D3; as emmeans and
 ## the fixed-dispersion GLM rule, dev/sim-df-glm/).
@@ -127,6 +215,8 @@ pm_df_rule.clm <- pm_df_rule.polr
 ## (z) is the fallback when they cannot be found.
 #' @exportS3Method NULL
 pm_df_rule.clmm <- pm_df_rule.polr
+#' @exportS3Method NULL
+pm_df_rule.vglm <- pm_df_rule.polr
 
 ## Class probabilities P(Y = j) (mean_type = "prob") or the mean class
 ## sum_j j P(Y = j) (mean_type = "mean_class") at each mean: rows of K (the
@@ -138,7 +228,7 @@ pm_df_rule.clmm <- pm_df_rule.polr
 pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 0.95) {
   what <- match.arg(what)
   p <- pm_ord_parts(model)
-  Fd <- switch(p$link, logistic = , logit = list(stats::plogis, stats::dlogis),
+  Fd <- if (is.null(p$probs)) switch(p$link, logistic = , logit = list(stats::plogis, stats::dlogis),
                probit = list(stats::pnorm, stats::dnorm),
                cloglog = list(function(x) 1 - exp(-exp(x)), function(x) exp(x - exp(x))),
                loglog = list(function(x) exp(-exp(-x)), function(x) exp(-x - exp(-x))),
@@ -147,18 +237,25 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
   be <- p$b[!is.na(p$b)]
   X <- as.matrix(K)[, names(be), drop = FALSE]
   th <- as.vector(p$J %*% p$alpha)
-  nj <- length(th)
+  nj <- length(p$levels) - 1
   z <- pm_ci_crit(1 - conf_level, Inf)                          # z: the df of these models (pm_df_rule)
   rows <- lapply(seq_len(nrow(X)), function(k) {
     x <- X[k, ]
     if (anyNA(x)) return(NULL)
-    zz <- th - sum(x * be)
-    f <- Fd[[2]](zz)
-    cum <- c(0, Fd[[1]](zz), 1)
-    # gradients of P(Y <= j) with respect to (b, alpha), j = 0, ..., J
-    G <- rbind(0, cbind(-outer(f, x), f * p$J), 0)
-    P <- diff(cum)
-    GP <- G[-1, , drop = FALSE] - G[-(nj + 2), , drop = FALSE]
+    if (is.null(p$probs)) {
+      zz <- th - sum(x * be)
+      f <- Fd[[2]](zz)
+      cum <- c(0, Fd[[1]](zz), 1)
+      # gradients of P(Y <= j) with respect to (b, alpha), j = 0, ..., J
+      G <- rbind(0, cbind(-outer(f, x), f * p$J), 0)
+      P <- diff(cum)
+      GP <- G[-1, , drop = FALSE] - G[-(nj + 2), , drop = FALSE]
+    } else {                                     # vglm: the family's linkinv; d eta / d(b, alpha) = [x 1', J]
+      eta <- as.vector(p$J %*% p$alpha) + sum(x * be)
+      P <- p$probs(be, p$alpha, x)
+      De <- p$deta(eta)
+      GP <- De %*% cbind(matrix(x, length(eta), length(x), byrow = TRUE), p$J)
+    }
     if (what == "mean_class") {
       g <- colSums(seq_along(P) * GP)
       m <- sum(seq_along(P) * P)
@@ -194,4 +291,14 @@ pm_ord_attach <- function(res, model, K, what, conf_level) {
   attr(out, "what") <- what
   res$probs <- out
   pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what))
+}
+
+## What a difference of latent means is, for the summary line: the scale of
+## the family and link (a positive difference: higher classes more likely).
+pm_ord_scale_text <- function(family, link) {
+  fam <- if (is.null(family)) "cumulative" else family
+  if (identical(link, "logit") && fam == "cumulative") return("log odds ratios of a higher class, the same at every cut point")
+  what <- switch(fam, acat = "adjacent-category", cratio = , sratio = "continuation-ratio", "cumulative")
+  paste0(what, " ", if (link %in% c("logit", "log")) "log odds ratios" else paste0("differences on the ", link, " scale"),
+         ", the same at every cut point (a positive difference: higher classes more likely)")
 }

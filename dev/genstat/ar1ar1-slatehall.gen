@@ -1,0 +1,88 @@
+" predictmeans: reference for corAR1xAR1() (dev/review-ar1ar1.md, S4), 2026-11-26.
+  Slate Hall Farm (Genstat REML Guide, chapter 3): 150 plots, 10 field rows x
+  15 field columns, 25 varieties, 6 replicates. The data are read below (from
+  tests/testthat/_data/variogram/slatehall.csv: replicates, variety, fieldrow,
+  fieldcolumn, yield), so nothing needs to be loaded first.
+  Please send the whole output (.txt or .rtf/.pdf).
+
+  Four models, each with variety fixed and AR1 x AR1 residuals:
+   A  AR1 x AR1                               (R: gls)
+   B  AR1 x AR1 + nugget (plot error, units)  (R: gls, nugget = TRUE)
+   C  replicates random + AR1 x AR1           (R: lme)
+   D  replicates random + nugget + AR1 x AR1  (R: lme, nugget = TRUE)
+  For each: variance parameters, deviance, Wald tests with d.d.f., the 25
+  variety means and all their SEDs (VPREDICT), printed to 8 decimals."
+
+UNITS [NVALUES=150]
+FACTOR [LEVELS=6] replicates
+FACTOR [LEVELS=25] variety
+FACTOR [LEVELS=10] fieldrow
+FACTOR [LEVELS=15] fieldcolumn
+VARIATE yield
+READ replicates, variety, fieldrow, fieldcolumn, yield
+1 1 1 1 10.03  1 2 1 2 13.56  1 4 1 3 14.12  1 3 1 4 12.39  1 5 1 5 15.08
+2 19 1 6 19.67  2 23 1 7 15.72  2 2 1 8 19.69  2 6 1 9 17.47  2 15 1 10 15.98
+3 18 1 11 16.3  3 25 1 12 16.33  3 9 1 13 12.55  3 11 1 14 12.77  3 2 1 15 15.72
+1 6 2 1 15.31  1 7 2 2 15.4  1 9 2 3 12.5  1 8 2 4 16.58  1 10 2 5 11.85
+2 8 2 6 16.05  2 12 2 7 15.5  2 16 2 8 15  2 25 2 9 16.42  2 4 2 10 15.04
+3 5 2 11 16.8  3 7 2 12 15.26  3 16 2 13 14.52  3 23 2 14 14.8  3 14 2 15 14.82
+1 21 3 1 11.26  1 22 3 2 14  1 24 3 3 13.29  1 23 3 4 12.87  1 25 3 5 15.55
+2 11 3 6 13.95  2 20 3 7 16.96  2 24 3 8 15.7  2 3 3 9 14.04  2 7 3 10 12.85
+3 6 3 11 14.73  3 13 3 12 17.61  3 22 3 13 16.95  3 4 3 14 13.64  3 20 3 15 17.9
+1 11 4 1 12.61  1 12 4 2 14.23  1 14 4 3 11.1  1 13 4 4 17.35  1 15 4 5 16.17
+2 22 4 6 18.2  2 1 4 7 13.51  2 10 4 8 12.97  2 14 4 9 14.12  2 18 4 10 15.06
+3 24 4 11 15.12  3 1 4 12 13.55  3 15 4 13 15.24  3 17 4 14 14.78  3 8 4 15 13.71
+1 16 5 1 14.58  1 17 5 2 20.36  1 19 5 3 21.19  1 18 5 4 19.12  1 20 5 5 18.93
+2 5 5 6 17.48  2 9 5 7 14.5  2 13 5 8 17.4  2 17 5 9 14.5  2 21 5 10 15.23
+3 12 5 11 13.64  3 19 5 12 16.9  3 3 5 13 13.34  3 10 5 14 12.39  3 21 5 15 15.57
+4 3 6 1 16.23  4 18 6 2 18.62  4 8 6 3 16.45  4 13 6 4 18.88  4 23 6 5 15.27
+5 16 6 6 16.06  5 24 6 7 18.42  5 10 6 8 11.86  5 13 6 9 14.62  5 2 6 10 12.42
+6 10 6 11 10.82  6 4 6 12 13.04  6 17 6 13 12.67  6 11 6 14 12.66  6 23 6 15 12
+4 1 7 1 13.31  4 16 7 2 14.17  4 6 7 3 16.11  4 11 7 4 14.54  4 21 7 5 17.9
+5 12 7 6 17.67  5 20 7 7 19.17  5 1 7 8 12.64  5 9 7 9 10.6  5 23 7 10 9.51
+6 12 7 11 11.3  6 6 7 12 12.66  6 24 7 13 12.89  6 18 7 14 12.6  6 5 7 15 11.74
+4 5 8 1 12.11  4 20 8 2 14.11  4 10 8 3 11.83  4 15 8 4 15.5  4 25 8 5 16.6
+5 4 8 6 15.26  5 7 8 7 16.81  5 18 8 8 15.45  5 21 8 9 12.9  5 15 8 10 9.76
+6 19 8 11 12.4  6 13 8 12 11.81  6 1 8 13 9.17  6 25 8 14 12.87  6 7 8 15 9.75
+4 2 9 1 13.88  4 17 9 2 14.53  4 7 9 3 13.84  4 12 9 4 16.69  4 22 9 5 17.38
+5 25 9 6 18.45  5 3 9 7 17  5 14 9 8 15.28  5 17 9 9 13.73  5 6 9 10 12.4
+6 21 9 11 12.52  6 20 9 12 15.91  6 8 9 13 14.28  6 2 9 14 15.09  6 14 9 15 12.73
+4 4 10 1 14.43  4 19 10 2 16.67  4 9 10 3 15.49  4 14 10 4 14.59  4 24 10 5 17.22
+5 8 10 6 15.83  5 11 10 7 14.9  5 22 10 8 16.07  5 5 10 9 13.15  5 19 10 10 11.74
+6 3 10 11 14.43  6 22 10 12 16.49  6 15 10 13 14.07  6 9 10 14 13.15  6 16 10 15 13.18
+:
+
+" plots as a factor for the nugget (independent plot error) "
+FACTOR [LEVELS=150; VALUES=1...150] units
+
+" ---- A: AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mA; SED=sA] CLASSIFY=variety
+PRINT mA; FIELDWIDTH=16; DECIMALS=8
+PRINT sA; FIELDWIDTH=12; DECIMALS=8
+
+" ---- B: AR1 x AR1 + nugget ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=units + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mB; SED=sB] CLASSIFY=variety
+PRINT mB; FIELDWIDTH=16; DECIMALS=8
+PRINT sB; FIELDWIDTH=12; DECIMALS=8
+
+" ---- C: replicates random + AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=replicates + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mC; SED=sC] CLASSIFY=variety
+PRINT mC; FIELDWIDTH=16; DECIMALS=8
+PRINT sC; FIELDWIDTH=12; DECIMALS=8
+
+" ---- D: replicates random + nugget + AR1 x AR1 ---- "
+VCOMPONENTS [FIXED=variety] RANDOM=replicates + units + fieldrow.fieldcolumn
+VSTRUCTURE [fieldrow.fieldcolumn] AR,AR; FACTOR=fieldrow,fieldcolumn; ORDER=1,1
+REML [PRINT=model,components,deviance,wald] yield
+VPREDICT [PRINT=*; PREDICTIONS=mD; SED=sD] CLASSIFY=variety
+PRINT mD; FIELDWIDTH=16; DECIMALS=8
+PRINT sD; FIELDWIDTH=12; DECIMALS=8
