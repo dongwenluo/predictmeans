@@ -494,8 +494,7 @@ print.summary.predictmeans <- function(x, ...) {
     " (the model's t limits of each mean; the permutation tests are of the comparisons)", "\n", sep = "")
   if (identical(s$response$scale, "latent")) {
     cat("Scale: latent mean of ", s$response$name, " (", s$response$link, "); differences are ",
-        if (s$response$link == "logit") "log odds ratios of a higher class, the same at every cut point" else
-          paste0("on the ", s$response$link, " scale (a positive difference: higher classes more likely)"),
+        pm_ord_scale_text(s$response$family, s$response$link),
         if (identical(s$model_class, "clmm")) ", within a subject (random effects at 0)",
         "; class probabilities: mean_type = \"prob\"\n", sep = "")
   }

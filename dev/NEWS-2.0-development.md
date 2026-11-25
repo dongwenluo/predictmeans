@@ -3037,3 +3037,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   ordinal_typical_subject gives the random-effect SD, silent below 0.1;
   tests: random slope, crossed, symmetric thresholds, sum contrasts, a
   between-cluster treatment (df 4), stops.
+* B3a, vglm (2026-11-25; E1-E6 of dev/review-vglm.md agreed): ordinal
+  families cumulative, propodds, acat, cratio, sratio with parallel = TRUE
+  (all slope constraints a column of 1s; else a stop naming B3b).
+  pm_ord_parts_vglm(): coefficients (Intercept):j as alpha, slopes b, sign s
+  found from the fit (a larger eta raises the mean class), latent mean
+  s (x'b + mean(alpha)) = clm's for cumulative; probabilities by the family's
+  linkinv, gradients by pm_fd_jac(); pm_contrasts.vglm (S4 slot); summary
+  names the family's scale (pm_ord_scale_text()); residplot()/pm_check()
+  stop for every ordinal class (S4 `$` error before). Checks: = clm (same
+  model) to 1e-4 for means, pairs, probabilities; SEs within 2% (vglm uses
+  the expected information, clm the observed); acat/cratio/sratio cell
+  probabilities = predict() to 1e-8, SEs = numDeriv delta method on vglm's
+  vcov to 1e-5; sign for every family. VGAM added to Suggests.

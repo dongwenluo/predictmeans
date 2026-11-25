@@ -185,3 +185,50 @@ test_that("clmm: random slopes, crossed effects, symmetric thresholds, sum contr
   expect_warning(r <- predictmeans(m, "temp", df_method = "residual"), "using z")
   expect_true(all(is.infinite(r$means$df)))
 })
+
+test_that("vglm (parallel): the same means as clm; probabilities by the family's linkinv; the sign", {
+  skip_on_cran()
+  skip_if_not_installed("VGAM")
+  data(wine, package = "ordinal", envir = environment())
+  rc <- predictmeans(ordinal::clm(rating ~ temp * contact, data = wine), "temp:contact", pairwise = TRUE)
+  pc <- predictmeans(ordinal::clm(rating ~ temp * contact, data = wine), "temp:contact", mean_type = "prob")$probs
+  for (fam in list(VGAM::cumulative(parallel = TRUE), VGAM::cumulative(parallel = TRUE, reverse = TRUE),
+                   VGAM::propodds())) {
+    m <- VGAM::vglm(rating ~ temp * contact, fam, data = wine)
+    r <- predictmeans(m, "temp:contact", pairwise = TRUE)
+    expect_equal(r$means$estimate, rc$means$estimate, tolerance = 1e-4)   # the same MLE, two optimisers
+    # vglm's covariance is the expected information, clm's the observed one: SEs within 2%
+    expect_equal(r$means$std.error, rc$means$std.error, tolerance = 0.02)
+    expect_equal(r$pairs$estimate, rc$pairs$estimate, tolerance = 1e-4)
+    p <- predictmeans(m, "temp:contact", mean_type = "prob")$probs
+    expect_equal(p$estimate, pc$estimate, tolerance = 1e-4)
+  }
+  # acat, cratio, sratio: cell probabilities = predict(); SEs = delta method on vglm's own covariance
+  for (fam in list(VGAM::acat(parallel = TRUE), VGAM::cratio(parallel = TRUE), VGAM::sratio(parallel = TRUE))) {
+    m <- VGAM::vglm(rating ~ temp * contact, fam, data = wine)
+    p <- predictmeans(m, "temp:contact", mean_type = "prob")$probs
+    nd <- unique(p[c("temp", "contact")])
+    P <- VGAM::predict(m, newdata = nd, type = "response")
+    expect_equal(p$estimate, as.vector(t(P)), tolerance = 1e-8)
+    cf <- VGAM::coef(m)
+    X <- model.matrix(~ temp * contact, nd)[, -1, drop = FALSE]
+    pr <- function(b) {                                 # probabilities of the first cell at coefficients b
+      cfn <- replace(cf, names(cf), b)
+      eta <- cfn[grep("Intercept", names(cfn))] + sum(X[1, ] * cfn[colnames(X)])
+      as.vector(m@family@linkinv(matrix(eta, 1), extra = m@extra))
+    }
+    G <- numDeriv::jacobian(pr, cf)
+    expect_equal(p$std.error[1:5], sqrt(diag(G %*% VGAM::vcov(m) %*% t(G))), tolerance = 1e-5)
+    # the sign: warm has the higher latent mean and the higher mean class
+    r <- predictmeans(m, "temp")
+    mc <- predictmeans(m, "temp", mean_type = "mean_class")$probs
+    expect_true(diff(r$means$estimate) > 0 && diff(mc$estimate) > 0)
+  }
+  m <- VGAM::vglm(rating ~ temp + contact, VGAM::acat(parallel = TRUE), data = wine)
+  expect_output(print(summary(predictmeans(m, "temp"))), "adjacent-category log odds ratios")
+  expect_error(predictmeans(suppressWarnings(VGAM::vglm(rating ~ temp, VGAM::multinomial, data = wine)), "temp"),
+               "multinomial")
+  expect_error(predictmeans(suppressWarnings(VGAM::vglm(rating ~ temp, VGAM::cumulative(parallel = FALSE),
+                                                        data = wine)), "temp"), "parallel = TRUE")
+  expect_error(residplot(m), "do not yet handle ordinal models")
+})

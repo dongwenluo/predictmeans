@@ -1,5 +1,7 @@
 # Part B3: VGAM::vglm (and nnet::multinom) (review note, 2026-11-25)
 
+**Decided 2026-11-25:** E1-E6 agreed as proposed. B3a done (`R/ordinal.R`, `test-ordinal.R`); B3b open.
+
 For the maintainer's decisions before any code. Packages here: VGAM 1.1-14, nnet,
 ordinal, emmeans 2.0.4 (which has no vglm method; it supports nnet::multinom).
 

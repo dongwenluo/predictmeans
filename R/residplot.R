@@ -132,6 +132,10 @@ pm_print_grid <- function(plots) {
 ## residuals (standardized, normalized or randomized quantile), fitted and
 ## observed values on the response scale, with attributes saying which.
 pm_resid_data <- function(model) {
+  if (inherits(model, pm_ord_classes)) {
+    stop("residplot() and pm_check() do not yet handle ordinal models (", paste(pm_ord_classes, collapse = ", "),
+         "): their residuals need their own definition (surrogate or randomized quantile residuals).", call. = FALSE)
+  }
   qfam <- pm_qresid_family(model)
   if (inherits(model, "aovlist")) {
     pr <- stats::proj(model)
