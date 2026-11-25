@@ -117,7 +117,7 @@ pm_response_info <- function(model, trans = NULL, link_scale = NULL) {
   scale <- if (linked) "link" else if (!is.null(rt)) "transformed" else "identity"
   back <- if (link_scale) "link" else if (user) "trans" else if (!is.null(rt)) "formula" else NA_character_
   inverse <- if (user) trans else if (!is.null(rt)) rt$fun else NULL
-  if (inherits(m, c("polr", "clm"))) {
+  if (inherits(m, pm_ord_classes)) {
     # cumulative link models (R/ordinal.R): means on the latent scale, not back-transformed
     lk <- if (inherits(m, "polr")) m$method else m$link
     return(list(expr = expr, name = name, scale = "latent", link = if (lk == "logistic") "logit" else lk,

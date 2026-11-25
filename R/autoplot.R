@@ -496,6 +496,7 @@ print.summary.predictmeans <- function(x, ...) {
     cat("Scale: latent mean of ", s$response$name, " (", s$response$link, "); differences are ",
         if (s$response$link == "logit") "log odds ratios of a higher class, the same at every cut point" else
           paste0("on the ", s$response$link, " scale (a positive difference: higher classes more likely)"),
+        if (identical(s$model_class, "clmm")) ", within a subject (random effects at 0)",
         "; class probabilities: mean_type = \"prob\"\n", sep = "")
   }
   cat("\n")
@@ -535,7 +536,7 @@ print.summary.predictmeans <- function(x, ...) {
       cat(lab, ": min ", fmt(r[1]), ", mean ", fmt(mean(lsd, na.rm = TRUE)), ", max ", fmt(r[2]),
           " (they differ: use each pair's p-value or LSD)\n", sep = "")
 
-    method <- if (identical(s$df_method, "permutation")) paste0("permutation (", s$nperm, " permutations)") else "t tests"
+    method <- if (identical(s$df_method, "permutation")) paste0("permutation (", s$nperm, " permutations)") else if (all(is.infinite(x$table$df))) "z tests" else "t tests"
     cat("p-values: ", method, ", adjusted by '", s$adjust, "'.\n", sep = "")
     if ("group" %in% names(x$table)) {
       cat("Means sharing a letter are not significantly different at the ", s$level * 100, "% level",

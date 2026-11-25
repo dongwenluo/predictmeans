@@ -80,6 +80,7 @@ test_that("a positive difference of latent means: higher classes more likely (lo
   d <- r$means$estimate[r$means$temp == "warm"] - r$means$estimate[r$means$temp == "cold"]
   expect_equal(unname(lo(P[2, ]) - lo(P[1, ])), rep(d, 4), tolerance = 1e-8)
   expect_output(print(summary(r)), "log odds ratios of a higher class")
+  expect_output(print(summary(r)), "p-values: z tests")
 })
 
 test_that("atvar keeps each class row with its mean; aliased clm coefficients; links; stops", {
@@ -117,4 +118,70 @@ test_that("advice: probabilities at averaged latent means; mean class spacing; p
   expect_false("ordinal_latent_average" %in% advice(predictmeans(m, "temp:contact", mean_type = "prob"))$id)
   expect_true("ordinal_mean_class" %in% advice(predictmeans(m, "temp:contact", mean_type = "mean_class"))$id)
   expect_message(ggplot2::autoplot(predictmeans(m, "temp"), data = TRUE), "not shown with latent means")
+})
+
+test_that("clmm: latent means and class probabilities equal emmeans; inner-outer df for the pairs", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  data(wine, package = "ordinal", envir = environment())
+  m <- ordinal::clmm(rating ~ temp * contact + (1 | judge), data = wine)
+  r <- predictmeans(m, "temp:contact", pairwise = TRUE)
+  e <- as.data.frame(emmeans::emmeans(m, ~ temp * contact))
+  e <- e[order(e$temp, e$contact), ]
+  expect_equal(r$means$estimate, e$emmean, tolerance = 1e-6)
+  expect_equal(r$means$std.error, e$SE, tolerance = 1e-6)
+  # temp and contact vary within judges: the df of the within-judge stratum, N - rank(X, Z)
+  expect_equal(r$settings$df_method, "inner-outer")
+  expect_equal(unique(r$pairs$df), 72 - (4 + 9 - 1))
+  expect_equal(r$pairs$p.value, 2 * pt(-abs(r$pairs$estimate / r$pairs$std.error), 60), tolerance = 1e-10)
+  ep <- as.data.frame(pairs(emmeans::emmeans(m, ~ temp * contact), adjust = "none"))
+  expect_equal(sort(abs(r$pairs$estimate)), sort(abs(ep$estimate)), tolerance = 1e-6)
+  p <- predictmeans(m, "temp:contact", mean_type = "prob")
+  eq <- as.data.frame(emmeans::emmeans(m, ~ rating | temp * contact, mode = "prob"))
+  eq <- eq[order(eq$temp, eq$contact, eq$rating), ]
+  expect_equal(p$probs$estimate, eq$prob, tolerance = 1e-6)
+  expect_equal(p$probs$std.error, eq$SE, tolerance = 1e-6)
+  expect_true("ordinal_typical_subject" %in% advice(p)$id)
+  expect_match(advice(p)$text[advice(p)$id == "ordinal_typical_subject"], "random-effect SD 1.1")
+  expect_false("ordinal_latent_average" %in% advice(p)$id)              # judge is a random term, not averaged over
+  expect_output(print(summary(p)), "within a subject \\(random effects at 0\\)")
+})
+
+test_that("clmm: a treatment between clusters gets the df of the clusters", {
+  skip_on_cran()
+  set.seed(3)
+  d <- data.frame(g = factor(rep(1:6, each = 10)), trt = factor(rep(c("A", "B"), each = 30)))
+  d$y <- cut(rnorm(6)[d$g] + rlogis(60), c(-Inf, -1, 0.5, Inf), ordered_result = TRUE)
+  m <- suppressWarnings(ordinal::clmm(y ~ trt + (1 | g), data = d))
+  r <- predictmeans(m, "trt", pairwise = TRUE)
+  expect_equal(r$pairs$df, 4)                                               # 6 clusters - 2
+  expect_output(print(summary(r)), "t tests")
+})
+
+test_that("clmm: random slopes, crossed effects, symmetric thresholds, sum contrasts; stops", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  data(wine, package = "ordinal", envir = environment())
+  fits <- list(ordinal::clmm(rating ~ temp + contact + (1 + contact | judge), data = wine),
+               ordinal::clmm(rating ~ temp + contact + (1 | judge) + (1 | bottle), data = wine),
+               ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine, threshold = "symmetric"),
+               ordinal::clmm(rating ~ temp * contact + (1 | judge), data = wine,
+                             contrasts = list(temp = "contr.sum", contact = "contr.sum")))
+  for (m in fits) {
+    r <- predictmeans(m, "temp:contact")
+    e <- as.data.frame(emmeans::emmeans(m, ~ temp * contact))
+    e <- e[order(e$temp, e$contact), ]
+    expect_equal(r$means$estimate, e$emmean, tolerance = 1e-6)
+    expect_equal(r$means$std.error, e$SE, tolerance = 1e-6)
+  }
+  m <- fits[[3]]
+  expect_error(predictmeans(m, "temp", bias_adjust = TRUE), "'bias_adjust' cannot be used")
+  expect_error(se_ranef(m), "not covered")
+  wine$x <- seq_len(nrow(wine)) / 10
+  mx <- ordinal::clmm(rating ~ temp + x + (1 | judge), data = wine)
+  expect_error(covariatemeans(mx, "temp", covariate = "x", trans = plogis, plot = FALSE), "'trans' cannot be used")
+  mn <- suppressWarnings(ordinal::clmm(rating ~ temp + (1 | judge), nominal = ~ contact, data = wine))
+  expect_error(predictmeans(mn, "temp"), "does not fit nominal effects")
+  expect_warning(r <- predictmeans(m, "temp", df_method = "residual"), "using z")
+  expect_true(all(is.infinite(r$means$df)))
 })

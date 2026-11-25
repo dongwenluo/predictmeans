@@ -16,7 +16,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
 }
 \arguments{
-\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
+\item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{MASS::polr}, \code{ordinal::clm}, \code{ordinal::clmm}, \code{gls}, \code{lme}, \code{lmer}, \code{glmer},
 \code{glmmTMB} and \code{gam} (package \pkg{mgcv}), or a \code{\link{semireg}} fit. An \code{aov} model with
 \code{Error()} strata is analysed by strata, as Genstat's ANOVA: each comparison uses the mean squares of the
 strata it draws on, with Satterthwaite's df across strata (\code{settings$df_method} \code{"multistratum"});
@@ -254,7 +254,8 @@ with SEs from the joint covariance of the conditional and zero-inflation coeffic
 averaged over the cells of the grid as \code{average = "response"} does; \code{estimate} is their log and the
 pairs are their ratios. Equal to glmmTMB's \code{predict(type = "response")} and to emmeans with
 \code{component = "response"}. For log-link count families (poisson, nbinom1, nbinom2, ...).
-\code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm}), whose
+\code{"prob"} and \code{"mean_class"}: for cumulative link models (\code{MASS::polr}, \code{ordinal::clm},
+\code{ordinal::clmm}: random effects at 0, a typical subject), whose
 means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
 a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
 every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{bias_adjust}, \code{sigma},
