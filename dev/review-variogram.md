@@ -35,7 +35,10 @@ result (table of lags, semivariances and numbers of pairs) with `autoplot()`.
 - **Coordinates** (`coords = c("x", "y")`, or `c("lat", "long")` converted to km
   by the haversine formula): the isotropic variogram by distance class
   (Matheron's estimator; `robust = TRUE` for Cressie and Hawkins'), up to half
-  the largest distance, 15 classes by default.
+  the largest distance, 15 classes by default; `directions` (degrees from east)
+  and `segment` (the angle each covers) for directional variograms, to see
+  anisotropy, as Genstat's `FVARIOGRAM` (DIRECTIONS, SEGMENTS). Genstat's
+  guide (8.3.1, Webster and Oliver) advises some 300 data for directions.
 - **Several trials** (`by = "trial"`): one variogram per trial, never pooled
   (lags across trials have no meaning); facets in the plot.
 - **Reference band**: the variogram expected without spatial correlation, from
@@ -75,7 +78,15 @@ option.
 **V4. Coordinates.** Proposal: grid lags for row/column data, distance classes
 for coordinates; latitude/longitude in km.
 
-**V5. References.** `nlme::Variogram()` for the isotropic estimator on lme/gls
+**V5. References.** Genstat Guide, section 8.3.1 (extract from the
+maintainer, 2026-11-25): `FVARIOGRAM` gives Matheron's estimator (Eq. 8.3.12)
+and Cressie-Hawkins (8.3.13; also Dowd, Genton); its Example 8.3.1 prints the
+semivariances and pair counts of log10 potassium at Brooms Barn (434 points,
+4 directions, lags 1-12; Webster and Oliver 1990) - an exact reference for the
+estimator if the data file Broomesb.dat (shipped with Genstat) can be shared.
+That chapter is geostatistics (model fitting `MVARIOGRAM`, `KRIGE`), not the
+variogram of REML residuals of a field trial, which is the main use here.
+Other references: `nlme::Variogram()` for the isotropic estimator on lme/gls
 fits (to 1e-8); Gilmour et al. (1997) wheat trial (agridat
 `gilmour.serpentine`, 330 plots, 22 rows x 15 columns, 107 genotypes, 3
 replicates) for the row x column variogram and its AR1 x AR1 interpretation; a
