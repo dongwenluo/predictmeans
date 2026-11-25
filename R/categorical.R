@@ -329,9 +329,10 @@ pm_cat_attach <- function(res, opt, est) {
 pm_cat_scale_text <- function(cl, name) {
   switch(cl$what,
     prob = paste0("logit of the probability of each class of ", name, " (column '", cl$var, "'), back-transformed ",
-                  "in 'response'; pairs within a class: log odds ratios of that class against the others"),
+                  "in 'response'; pairs within a class: log odds ratios of that class against all the others (not the ",
+                  "model's coefficients, which compare classes with the reference class)"),
     prob_diff = paste0("probability of each class of ", name, " (column '", cl$var, "'); pairs within a class: ",
-                       "differences of probabilities"),
+                       "differences of probabilities (for two means they sum to 0 over the classes)"),
     link = paste0("the linear predictors of the model (column '", cl$var, "'); pairs within a predictor"),
     mean_class = paste0("mean class of ", name, " (the classes scored 1, 2, 3, ...)"))
 }

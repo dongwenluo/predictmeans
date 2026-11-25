@@ -275,9 +275,10 @@ stay on the link scale.}
   named after the response (\code{"predictor"} for \code{"link"}), and the pairs are within each class (an
   \code{atvar}; pairs of two classes are left out). \code{"prob"} (their default): the probability of each
   class on the logit scale, back-transformed in \code{response} with limits inside 0 to 1; pairs are log odds
-  ratios of that class against the others (as a binomial glm: with two classes the results are the same).
+  ratios of that class against all the others (as a binomial glm: with two classes the results are the same;
+  not the baseline-category odds ratios of the model's coefficients).
   \code{"prob_diff"}: probabilities and their differences on the probability scale (as emmeans'
-  \code{mode = "prob"}). \code{"link"}: the model's linear predictors (for multinomial fits, log odds against
+  \code{mode = "prob"}; for two means the differences sum to 0 over the classes). \code{"link"}: the model's linear predictors (for multinomial fits, log odds against
   the reference class). \code{"mean_class"} (ordinal families only): \eqn{\sum_j j P(Y = j)}. Probabilities
   are averaged over the other factors of the model on the probability scale (as emmeans), SEs by the delta
   method, z tests. Other functions (\code{contrastmeans()}, \code{covariatemeans()}, \code{Kmatrix()}, ...)
