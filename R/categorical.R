@@ -42,8 +42,8 @@ pm_ord_vglm_parallel <- function(model) {
 ## The parts of a fit: theta (the coefficients, named as vcov()), V their
 ## covariance, the design columns 'xnames', and the map to the predictors:
 ## eta(x) = H (theta * x[col]) (H: M x q; col: the design column of each
-## coefficient). probs(eta): the class probabilities; deta(eta): their
-## Jacobian in eta (J x M). levels: the classes; predictors: the names of
+## coefficient). pd(eta), eta a matrix (rows x M): list(P, the class
+## probabilities (rows x J), dP their derivatives in eta (rows x J x M)). levels: the classes; predictors: the names of
 ## the linear predictors; reference: the reference class of a multinomial
 ## fit; ordinal: TRUE for the ordinal families.
 pm_cat_parts <- function(model) {
@@ -56,6 +56,16 @@ pm_cat_parts <- function(model) {
       stop("The multinom fit is penalised (decay = ", model$decay, "): its Hessian is not the information of the ",
            "estimates, so SEs and tests would be wrong; refit with decay = 0.", call. = FALSE)
     }
+    # nnet keeps arbitrary values for aliased columns (and vcov() a g-inverse): the means would not be unique
+    X <- tryCatch(stats::model.matrix(stats::terms(model), stats::model.frame(model), contrasts.arg = model$contrasts),
+                  error = function(e) NULL)
+    qx <- if (!is.null(X)) qr(X)
+    if (!is.null(qx) && qx$rank < ncol(X)) {
+      stop("The design of the multinom fit is rank deficient (aliased: ",
+           paste(colnames(X)[qx$pivot[-seq_len(qx$rank)]], collapse = ", "), "): nnet keeps arbitrary values for ",
+           "these coefficients, so the means would not be unique. Refit with a design of full rank (leave out the ",
+           "aliased term, or code nested factors as one factor).", call. = FALSE)
+    }
     lev <- if (!is.null(model$lev)) model$lev else model$lab
     B <- stats::coef(model)
     if (!is.matrix(B)) B <- matrix(B, 1, dimnames = list(lev[2], names(B)))
@@ -67,8 +77,15 @@ pm_cat_parts <- function(model) {
     H <- kronecker(diag(M), matrix(1, 1, p))
     col <- rep(seq_len(p), M)
     xnames <- colnames(B)
-    probs <- function(eta) { e <- exp(c(0, eta) - max(0, eta)); e / sum(e) }
-    deta <- function(eta) { P <- probs(eta); (diag(P, length(P)) - tcrossprod(P))[, -1, drop = FALSE] }
+    # softmax, reference class first; d P_i / d eta_m = P_i (delta(i, m + 1) - P_(m + 1))
+    pd <- function(eta) {
+      E <- cbind(0, eta)
+      E <- exp(E - apply(E, 1, max))
+      P <- E / rowSums(E)
+      dP <- array(0, c(nrow(P), ncol(P), M))
+      for (m in seq_len(M)) dP[, , m] <- P * (matrix(seq_len(ncol(P)) == m + 1, nrow(P), ncol(P), byrow = TRUE) - P[, m + 1])
+      list(P = P, dP = dP)
+    }
     ref <- lev[1]
     predictors <- paste0("log(P[", lev[-1], "]/P[", ref, "])")
     family <- "multinomial"
@@ -77,10 +94,7 @@ pm_cat_parts <- function(model) {
     if (!is.null(model@control$xij)) {
       stop("vglm fits with 'xij' (covariates that differ between predictors) are not supported.", call. = FALSE)
     }
-    if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
-      stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
-           "with bs(), ns(), poly() or scale().", call. = FALSE)
-    }
+    pm_vglm_smart_stop(model)
     cm <- VGAM::constraints(model)
     theta <- VGAM::coef(model)
     V <- tryCatch(VGAM::vcov(model), error = function(e) NULL)
@@ -88,9 +102,24 @@ pm_cat_parts <- function(model) {
     col <- rep(seq_along(cm), vapply(cm, ncol, integer(1)))
     xnames <- names(cm)
     if (ncol(H) != length(theta)) stop("internal: the vglm constraints do not match its coefficients.", call. = FALSE)
-    # (two rows: some families' linkinv drop a one-row matrix)
-    probs <- function(eta) as.vector(model@family@linkinv(rbind(eta, eta), extra = model@extra)[1, ])
-    deta <- function(eta) pm_fd_jac(probs, eta)
+    # the family's linkinv on all rows at once (two rows at least: some drop a one-row matrix); its
+    # derivatives by central differences, one predictor at a time (2M calls)
+    li <- function(eta) {
+      e <- if (nrow(eta) == 1) rbind(eta, eta) else eta
+      as.matrix(model@family@linkinv(e, extra = model@extra))[seq_len(nrow(eta)), , drop = FALSE]
+    }
+    pd <- function(eta) {
+      P <- li(eta)
+      dP <- array(0, c(nrow(P), ncol(P), ncol(eta)))
+      for (m in seq_len(ncol(eta))) {
+        h <- pm_fd_h(eta[, m])
+        ep <- em <- eta
+        ep[, m] <- eta[, m] + h
+        em[, m] <- eta[, m] - h
+        dP[, , m] <- (li(ep) - li(em)) / (2 * h)
+      }
+      list(P = P, dP = dP)
+    }
     lev <- colnames(model@y)
     predictors <- model@misc$predictors.names
     ref <- NULL
@@ -105,7 +134,7 @@ pm_cat_parts <- function(model) {
          "or classes that never occur in some cells?).", call. = FALSE)
   }
   V <- as.matrix(V)[names(theta), names(theta), drop = FALSE]
-  list(theta = theta, V = V, H = H, col = col, xnames = xnames, probs = probs, deta = deta, levels = lev,
+  list(theta = theta, V = V, H = H, col = col, xnames = xnames, pd = pd, levels = lev,
        predictors = predictors, reference = ref, family = family, ordinal = family != "multinomial")
 }
 
@@ -115,40 +144,32 @@ pm_cat_parts <- function(model) {
 ## weights W (rows: the means). Returns list(est, D): est a matrix (means x
 ## classes, predictors, or one column), D the gradient of as.vector(est)
 ## (stacked by column: all means of the first class, then the second, ...).
-pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class")) {
+pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"), labels = NULL) {
   what <- match.arg(what)
   X <- as.matrix(X)[, pt$xnames, drop = FALSE]
   Xc <- X[, pt$col, drop = FALSE]                          # x[col] for each coefficient
-  M <- nrow(pt$H)
+  eta <- Xc %*% (pt$theta * t(pt$H))                        # rows x M
   if (what == "link") {
-    est <- Xc %*% (pt$theta * t(pt$H))
-    D <- do.call(rbind, lapply(seq_len(M), function(j) sweep(Xc, 2, pt$H[j, ], "*")))
-    return(list(est = est, D = D))
+    D <- do.call(rbind, lapply(seq_len(nrow(pt$H)), function(j) sweep(Xc, 2, pt$H[j, ], "*")))
+    return(list(est = eta, D = D))
   }
-  eta <- Xc %*% (pt$theta * t(pt$H))                        # grid rows x M
-  J <- length(pt$levels)
-  P <- matrix(0, nrow(X), J)
-  DP <- array(0, c(nrow(X), J, length(pt$theta)))
-  for (g in seq_len(nrow(X))) {
-    P[g, ] <- pt$probs(eta[g, ])
-    # d P / d theta = d P / d eta  x  d eta / d theta (= H with each column times x[col])
-    DP[g, , ] <- pt$deta(eta[g, ]) %*% sweep(pt$H, 2, Xc[g, ], "*")
-  }
+  pd <- pt$pd(eta)
+  P <- pd$P
   # non-parallel cumulative fits: the cumulative curves can cross, giving negative "probabilities"
-  bad <- which(P < -1e-10, arr.ind = TRUE)
-  if (nrow(bad)) {
-    stop("The fitted cumulative probabilities cross where the means are taken (class '", pt$levels[bad[1, 2]],
-         "' has probability ", format(signif(P[bad[1, ]], 3)), " at row ", bad[1, 1], " of the grid): the ",
-         "non-parallel model is not valid there. Take the means within the range where it is valid (factor levels ",
-         "or covariate values), or make the slopes parallel.", call. = FALSE)
+  bad <- if (!is.null(labels)) which(P < -1e-10, arr.ind = TRUE)
+  if (length(bad)) {
+    stop("The fitted cumulative probabilities cross where the means are taken: class '", pt$levels[bad[1, 2]],
+         "' has probability ", format(signif(P[bad[1, , drop = FALSE]], 3)), " at ", labels[bad[1, 1]], ". The ",
+         "non-parallel model is not valid there; take the means where it is (other covariate values or levels), or ",
+         "make the slopes parallel.", call. = FALSE)
   }
+  # d P_j / d theta = (d P_j / d eta) H, each column times x[col]: rows x q, for each class j
+  DP <- lapply(seq_len(ncol(P)), function(j) (matrix(pd$dP[, j, ], nrow(P)) %*% pt$H) * Xc)
   if (what == "mean_class") {
-    s <- seq_len(J)
-    m <- P %*% s
-    Dm <- apply(DP, 3, function(d) d %*% s)
-    return(list(est = W %*% m, D = W %*% matrix(Dm, nrow(X))))
+    s <- seq_len(ncol(P))
+    return(list(est = W %*% (P %*% s), D = W %*% Reduce(`+`, Map(`*`, DP, s))))
   }
-  list(est = W %*% P, D = do.call(rbind, lapply(seq_len(J), function(j) W %*% matrix(DP[, j, ], nrow(X)))))
+  list(est = W %*% P, D = do.call(rbind, lapply(DP, function(d) W %*% d)))
 }
 
 ## ---- predictmeans() ----------------------------------------------------
@@ -156,6 +177,8 @@ pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"))
 ## The mean type of a call and the checks of its options (one place): the
 ## default is "prob"; "conditional", "overall" and the options built for one
 ## scale stop; "mean_class" needs ordered classes (an ordinal family).
+## Returns list(mean_type, parts (pm_cat_parts(), computed once: vcov() of
+## a multinom fit rebuilds its Hessian from the data)).
 pm_cat_check <- function(model, a) {
   pt <- pm_cat_parts(model)
   mt <- if (isTRUE(a$mean_type_default)) "prob" else a$mean_type
@@ -167,22 +190,17 @@ pm_cat_check <- function(model, a) {
     stop("mean_type = \"mean_class\" needs ordered classes; a multinomial model treats them as unordered. Use ",
          "mean_type = \"prob\", or fit an ordinal model (vglm(cumulative()), clm(), polr()).", call. = FALSE)
   }
-  bad <- c(trans = !isTRUE(a$trans_default) && !is.null(a$trans) && !identical(a$trans, I),
-           bias_adjust = !isFALSE(a$bias_adjust), sigma = !is.null(a$sigma), vcov = !is.null(a$vcov),
-           permlist = !is.null(a$permlist))
-  if (any(bad)) {
-    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1], " fits: the ",
-         "class probabilities have their own scale (mean_type).", call. = FALSE)
-  }
-  mt
+  pm_class_opt_stop(model, "the class probabilities have their own scale (mean_type)",
+                    trans = if (isTRUE(a$trans_default)) NULL else a$trans, bias_adjust = a$bias_adjust,
+                    sigma = a$sigma, vcov = a$vcov, permlist = a$permlist)
+  list(mean_type = mt, parts = pt)
 }
 
 ## The carrier the stages of predictmeans() work on: the design of the fit
 ## (one coefficient per design column, for Kmatrix()'s grid and weights; the
 ## estimates themselves come from pm_cat_est()), the mean type and the name
 ## of the factor of classes (the response's name; "predictor" for "link").
-pm_cat_carrier <- function(model, what, vars) {
-  pt <- pm_cat_parts(model)
+pm_cat_carrier <- function(model, what, vars, pt = pm_cat_parts(model)) {
   tt <- stats::terms(model)
   if (!is.null(attr(tt, "offset"))) stop("predictmeans does not handle offsets in ", class(model)[1], " fits.", call. = FALSE)
   y <- as.character(attr(tt, "variables"))[attr(tt, "response") + 1]
@@ -244,8 +262,11 @@ pm_cat_est <- function(opt, est) {
     lab <- pt$predictors
   } else {
     rg <- est$ctr.matrix$refgrid
+    g <- as.data.frame(rg$grid)
+    at <- do.call(paste, c(Map(function(nm, v) paste0(nm, " = ", if (is.numeric(v)) format(signif(v, 4)) else v),
+                               names(g), g), sep = ", "))
     ev <- pm_cat_eval(pt, rg$basis(rg$grid), as.matrix(rg$W[rows, , drop = FALSE]),
-                      if (what == "mean_class") "mean_class" else "prob")
+                      if (what == "mean_class") "mean_class" else "prob", labels = at)
     lab <- pt$levels
   }
   e <- as.vector(ev$est)
@@ -254,8 +275,9 @@ pm_cat_est <- function(opt, est) {
   # infinity); seen as an SE of logit(P) above 5 (that of a class observed about 0.04 times)
   n <- nrow(K0)
   pk <- pm_cat_eval(pt, K0, diag(n), "prob")
+  inside <- pk$est > 0 & pk$est < 1             # (a crossing at an average design row is not separation)
   sl <- sqrt(rowSums((pk$D %*% pt$V) * pk$D)) / (pk$est * (1 - pk$est))
-  sep <- which(!is.finite(sl) | sl > 5)
+  sep <- which(inside & sl > 5)
   sep <- if (length(sep)) paste(rep(rownames(K0), length(pt$levels))[sep], rep(pt$levels, each = n)[sep], sep = ":")
   if (what == "prob") {                       # logit scale: d logit(P) = dP / (P (1 - P))
     if (any(e <= 0 | e >= 1)) stop("A class probability is 0 or 1: its logit is not finite; use mean_type = ",
@@ -318,11 +340,15 @@ pm_cat_opt <- function(opt) {
 ## predictmeans() result.
 pm_cat_attach <- function(res, opt, est) {
   cf <- opt$model
+  # the factors averaged over (covariates are held at their values, settings$covariates)
   tt <- stats::delete.response(stats::terms(cf$fit))
-  others <- setdiff(all.vars(tt), strsplit(opt$modelterm, ":", fixed = TRUE)[[1]])
+  mf <- est$mdf                                  # (the data of the means; model.frame() of a vglm can fail here)
+  fac <- names(mf)[vapply(mf, function(z) is.factor(z) || is.character(z) || is.logical(z), logical(1))]
+  others <- setdiff(intersect(all.vars(tt), fac), strsplit(opt$modelterm, ":", fixed = TRUE)[[1]])
   p <- if (cf$what == "prob") res$means$response else if (cf$what == "prob_diff") res$means$estimate
+  out <- if (cf$what == "mean_class") any(res$means$conf.low < 1 | res$means$conf.high > length(cf$parts$levels))
   attr(res, "plot_data") <- NULL           # (the observations are classes: autoplot(data = TRUE) says so)
-  pm_add_advice(res, pm_cat_advice_rows(cf$what, cf$parts, others, est$cat_sep, p))
+  pm_add_advice(res, pm_cat_advice_rows(cf$what, cf$parts, others, est$cat_sep, p, opt$weights, isTRUE(out)))
 }
 
 ## The scale line of the summary of class means ('cl': settings$response$classes).

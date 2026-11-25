@@ -3100,3 +3100,25 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   non-parallel cumulative: probabilities and predictors = predict(), SEs =
   numerical delta method (1e-6) and predict(se.fit = TRUE) (1e-8); count-matrix
   response = factor response. nnet added to Suggests.
+* B3b Rule no. 1 review (2026-11-26, 14 findings, all fixed or answered):
+  aliased multinom designs (nnet keeps arbitrary coefficients, vcov() a
+  g-inverse: two fits with the same logLik gave P = 0.39 and 0.53) now stop
+  naming the aliased columns; autoplot(type = "pvalue") on class means
+  (labels with the class); settings$average "response" and the fit's family,
+  average = "response" no longer crashes; no "not a term: differences the
+  same" message for probabilities (true for "link" only); multinom vcov()
+  (its Hessian rebuilt from the data) computed once; SED/LSD "same level"
+  tables keep only the class column (others were across classes);
+  class_prob_average names the factors averaged and the weights, silent when
+  only covariates are held; the crossing stop gives the right value and the
+  grid point by name, and the separation check on averaged design rows no
+  longer stops "link"; slow stop tests skip_on_cran(); one option check
+  (pm_class_opt_stop()) and one smart-term stop (pm_vglm_smart_stop()) for
+  ordinal and categorical fits; probabilities and their derivatives on the
+  whole grid at once (2M linkinv calls instead of 2M per row; multinom
+  analytic); new advice class_mean_outside for mean-class limits outside
+  1..J; tests added: aliasing, settings, p-value plot, advice, a covariate
+  and proportional weights = emmeans, user atvar with Tukey, multinomial
+  refLevel 2 partly parallel, cratio, sratio (= predict(), numerical delta
+  method). Open: with frequency weights (weights = Freq) "proportional"
+  counts rows (as every predictmeans model), emmeans the weights.

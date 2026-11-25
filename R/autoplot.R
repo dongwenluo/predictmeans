@@ -435,6 +435,8 @@ pm_pvalue_plot <- function(object, values = FALSE) {
   }
   s <- object$settings
   vars <- unlist(strsplit(s$modelterm, ":"))
+  cl <- s$response$classes                  # class means: the class is a factor of the means (R/categorical.R)
+  if (!is.null(cl) && cl$what != "mean_class") vars <- c(vars, cl$var)
   all_levs <- do.call(paste, c(lapply(object$means[vars], as.character), sep = ":"))
   by <- if (is.null(pairs$by)) rep("all", nrow(pairs)) else pairs$by
   keep <- !is.na(by)

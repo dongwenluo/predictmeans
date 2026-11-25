@@ -87,6 +87,7 @@ pm_advice_get <- function(x) {
 #'   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
 #'   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr
 #'   \code{class_reference} \tab predictmeans \tab multinomial linear predictors depend on the reference class \cr
+#'   \code{class_mean_outside} \tab predictmeans \tab limits of a mean class outside 1 to J (Wald limits on the class scale) \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
 #'   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
 #'   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
@@ -663,7 +664,7 @@ pm_ordinal_advice <- function(model, modelterm, what) {
 ## means and classes), the averaging over 'others' on the probability scale,
 ## probability differences near 0 or 1 ('p': the probabilities compared, for
 ## "prob" and "prob_diff"), and the reference class of multinomial predictors.
-pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL) {
+pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL, weights = "equal", outside = FALSE) {
   rows <- list()
   if (length(sep)) {
     rows$sep <- pm_advice("class_separation", paste0(
@@ -674,8 +675,15 @@ pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL) {
   if (length(others) && what != "link") {
     rows$avg <- pm_advice("class_prob_average", paste0(
       "The ", if (what == "mean_class") "mean classes" else "class probabilities", " average those of each cell ",
-      "over ", paste(others, collapse = ", "), " on the probability scale (as emmeans' mode = \"prob\"), with ",
-      "equal weights for factors and covariates at their means."), "note")
+      "over ", paste(others, collapse = ", "), " on the probability scale (as emmeans' mode = \"prob\"; ",
+      if (identical(weights, "equal")) "equal weights" else paste0("weights = \"", weights, "\""), "), not ",
+      "the probabilities at an average linear predictor."), "note")
+  }
+  if (outside) {
+    rows$out <- pm_advice("class_mean_outside", paste0(
+      "Some limits of the mean class fall outside 1 to ", length(parts$levels), ": they are Wald limits on the ",
+      "class scale (as its pairs); mean_type = \"prob\" gives the class probabilities with limits inside 0-1."),
+      "note")
   }
   if (what == "prob_diff" && length(p) && any(p < 0.05 | p > 0.95, na.rm = TRUE)) {
     rows$bound <- pm_advice("class_prob_near_bound", paste(

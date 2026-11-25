@@ -202,6 +202,8 @@ pm_tidy_parts <- function(e) {
   }
 
   ## Settings
+  # class probabilities (R/categorical.R) are averaged on the probability (response) scale
+  if (inherits(model, "pm_catfit") && model$what != "link") avg <- "response"
   df_method <- if (perm) {
     "permutation"
   } else if (length(g("Df")) && isTRUE(g("df_user"))) {

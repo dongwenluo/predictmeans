@@ -47,16 +47,20 @@ pm_setup <- function(a) {
   model <- a$model
   modelterm <- a$modelterm
   pm_check_modelterm(model, modelterm)
-  pm_note_not_a_term(model, modelterm)
+  # (class probabilities are not additive across factors that do not interact; their predictors are)
+  if (!pm_cat_is(model) || identical(a$mean_type, "link")) pm_note_not_a_term(model, modelterm)
   adj <- pm_match_adj(a$adj, westfall = TRUE)
 
   trans <- if (is.null(a$trans)) I else a$trans
   model <- pm_means_model(model)
   # multinomial and non-parallel fits: stacked class means through a carrier (R/categorical.R)
   mean_type <- if (is.null(a$mean_type)) "conditional" else a$mean_type
+  average <- a$average
   if (pm_cat_is(model)) {
-    mean_type <- pm_cat_check(model, a)
-    model <- pm_cat_carrier(model, mean_type, strsplit(modelterm, ":", fixed = TRUE)[[1]])
+    ck <- pm_cat_check(model, a)
+    mean_type <- ck$mean_type
+    model <- pm_cat_carrier(model, mean_type, strsplit(modelterm, ":", fixed = TRUE)[[1]], ck$parts)
+    average <- "link"          # (pm_cat_est() averages the probabilities itself; settings say "response")
   } else if (mean_type %in% c("prob_diff", "link")) {
     stop("mean_type = \"", mean_type, "\" is for multinomial and non-parallel fits (nnet::multinom, VGAM::vglm).",
          call. = FALSE)
@@ -176,7 +180,7 @@ pm_setup <- function(a) {
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
        meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letter_ci = a$letter_ci,
        trans = trans, trans_by = trans_by, link_scale = link_scale, count = count,
-       bias_adjust = a$bias_adjust, sigma = a$sigma, average = a$average,
+       bias_adjust = a$bias_adjust, sigma = a$sigma, average = average,
        permlist = permlist, ncore = a$ncore, ndecimal = 4L,
        df_method = a$df_method, vcov = a$vcov, vcov_adjust = a$vcov_adjust,
        vcov_adjust_default = a$vcov_adjust_default, equivalence = a$equivalence)
@@ -355,6 +359,9 @@ pm_compare <- function(opt, est) {
   if (inherits(opt$model, "pm_catfit") && opt$model$var %in% colnames(dses.m)) {
     # class probabilities: the SEDs of pairs within a class only (R/categorical.R)
     SED.out[c("Max.SED", "Min.SED", "Aveg.SED")] <- dses.m[c("Max.SED", "Min.SED", "Aveg.SED"), opt$model$var]
+    # the same level of another factor means two classes: those columns are left out (also of the LSDs)
+    dses.m <- dses.m[, opt$model$var, drop = FALSE]
+    attr(SED.out, "For the Same Level of Factor") <- dses.m
   }
   atvar <- s[["atvar"]]              # NULL when a factor has no pairs within its levels (nested factors)
 

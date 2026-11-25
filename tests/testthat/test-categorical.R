@@ -143,6 +143,7 @@ test_that("separation and probabilities near 0 or 1 are flagged", {
 })
 
 test_that("multinomial and non-parallel fits stop clearly where they are not handled", {
+  skip_on_cran()
   skip_if_not_installed("nnet")
   data(housing, package = "MASS", envir = environment())
   m <- nnet::multinom(Sat ~ Infl + Cont, weights = Freq, data = housing, trace = FALSE)
@@ -172,7 +173,76 @@ test_that("crossing cumulative curves of a non-parallel fit stop, not negative p
   u <- runif(300)
   d$y <- ordered(ifelse(u < plogis(-1 + 3 * d$x), 1, ifelse(u < pmax(plogis(-1 + 3 * d$x), plogis(1 - 3 * d$x)), 2, 3)))
   v <- suppressWarnings(VGAM::vglm(y ~ x + f, VGAM::cumulative(parallel = FALSE), data = d))
-  expect_error(predictmeans(v, "f", covariate = list(x = 1), mean_type = "prob_diff"), "cross")
+  expect_error(predictmeans(v, "f", covariate = list(x = 1), mean_type = "prob_diff"),
+               "class '2' has probability -0.3.* at .*x = 1")
   expect_error(predictmeans(v, "f", covariate = list(x = 1)), "cross")
   expect_s3_class(predictmeans(v, "f", covariate = list(x = 0)), "predictmeans")
+})
+
+test_that("review of B3b: aliasing stops, settings, plots, advice and other families", {
+  skip_on_cran()
+  skip_if_not_installed("nnet")
+  skip_if_not_installed("VGAM")
+  skip_if_not_installed("emmeans")
+  # an aliased design (T nested in G): nnet keeps arbitrary coefficients -> a stop, not arbitrary means
+  set.seed(2)
+  d <- data.frame(G = factor(rep(1:3, each = 40)), B = factor(rep(1:2, 60)))
+  d$T <- factor(as.integer(d$G) * 2 - rep(0:1, 60))
+  d$y <- factor(sample(c("a", "b", "c"), 120, TRUE))
+  ma <- nnet::multinom(y ~ G + T + B, data = d, trace = FALSE)
+  expect_error(predictmeans(ma, "G"), "rank deficient \\(aliased")
+  data(housing, package = "MASS", envir = environment())
+  m <- nnet::multinom(Sat ~ Infl + Type + Cont, weights = Freq, data = housing, trace = FALSE)
+  # settings: the probabilities are averaged on the response scale; the fit's family
+  r <- predictmeans(m, "Infl")
+  expect_equal(r$settings$average, "response")
+  expect_equal(r$settings$response$family, "multinomial")
+  expect_equal(predictmeans(m, "Infl", average = "response")$means, r$means)
+  # SEDs and LSDs only within a class
+  expect_equal(colnames(attr(r[["Standard Error of Differences"]], "For the Same Level of Factor")), "Sat")
+  # no "not a term: the differences are the same" message for probabilities
+  expect_silent(suppressWarnings(predictmeans(m, "Infl:Cont")))
+  expect_message(predictmeans(m, "Infl:Cont", mean_type = "link"), "not a term")
+  # p-value plot
+  expect_s3_class(ggplot2::autoplot(predictmeans(m, "Infl", pairwise = TRUE), type = "pvalue"), "ggplot")
+  # advice: factors averaged and the weights; a covariate held at a value is not averaged over
+  a <- advice(predictmeans(m, "Infl", weights = "proportional"))
+  expect_match(a$text[a$id == "class_prob_average"], "over Type, Cont .*weights = \"proportional\"")
+  housing$x <- as.numeric(housing$Type)
+  mx <- nnet::multinom(Sat ~ Infl + x, weights = Freq, data = housing, trace = FALSE)
+  expect_false("class_prob_average" %in% advice(predictmeans(mx, "Infl", covariate = list(x = 2)))$id)
+  # a covariate and proportional weights: = emmeans
+  rx <- predictmeans(mx, "Infl", covariate = list(x = 2), mean_type = "prob_diff")
+  ex <- as.data.frame(summary(emmeans::emmeans(mx, ~ Infl | Sat, at = list(x = 2), mode = "prob")))
+  k <- match(paste(rx$means$Infl, rx$means$Sat), paste(ex$Infl, ex$Sat))
+  expect_equal(rx$means$estimate, ex$prob[k], tolerance = 1e-8)
+  expect_equal(rx$means$std.error, ex$SE[k], tolerance = 1e-8)
+  # proportional weights on individual rows (with frequency weights emmeans weights by them, predictmeans by rows)
+  hi <- housing[rep(seq_len(nrow(housing)), housing$Freq), ]
+  hi <- hi[-(1:200), ]                                         # unequal margins
+  mi <- nnet::multinom(Sat ~ Infl + Type + Cont, data = hi, trace = FALSE)
+  rp <- predictmeans(mi, "Infl", mean_type = "prob_diff", weights = "proportional")
+  ep <- as.data.frame(summary(emmeans::emmeans(mi, ~ Infl | Sat, mode = "prob", weights = "proportional")))
+  k <- match(paste(rp$means$Infl, rp$means$Sat), paste(ep$Infl, ep$Sat))
+  expect_equal(rp$means$estimate, ep$prob[k], tolerance = 1e-8)
+  # a user atvar with Tukey: families of the levels within each (class, level)
+  rt <- predictmeans(m, "Infl:Cont", atvar = "Cont", adj = "tukey")
+  expect_equal(as.vector(table(rt$pairs$by[!is.na(rt$pairs$by)])), rep(3L, 6))
+  # vglm multinomial with refLevel = 2, partly parallel; cratio and sratio non-parallel: = predict()
+  nd <- expand.grid(Infl = levels(housing$Infl), Cont = levels(housing$Cont))
+  key <- paste(nd$Infl, nd$Cont)
+  fams <- list(suppressWarnings(VGAM::vglm(Sat ~ Infl + Cont, VGAM::multinomial(refLevel = 2, parallel = TRUE ~ Cont),
+                                            weights = Freq, data = housing)),
+               VGAM::vglm(Sat ~ Infl + Cont, VGAM::cratio(parallel = FALSE ~ Infl), weights = Freq, data = housing),
+               VGAM::vglm(Sat ~ Infl + Cont, VGAM::sratio(parallel = FALSE ~ Cont), weights = Freq, data = housing))
+  for (v in fams) {
+    P <- VGAM::predict(v, nd, type = "response")
+    rv <- predictmeans(v, "Infl:Cont", mean_type = "prob_diff")
+    kv <- match(paste(rv$means$Infl, rv$means$Cont), key) + (as.integer(rv$means$Sat) - 1) * nrow(nd)
+    expect_equal(rv$means$estimate, c(P)[kv], tolerance = 1e-8)
+    th <- VGAM::coef(v)
+    G <- numDeriv::jacobian(function(t) { v2 <- v; v2@coefficients <- setNames(t, names(th))
+                                          c(VGAM::predict(v2, nd, type = "response")) }, th)
+    expect_equal(rv$means$std.error, sqrt(diag(G %*% VGAM::vcov(v) %*% t(G)))[kv], tolerance = 1e-6)
+  }
 })

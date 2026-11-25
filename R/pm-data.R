@@ -182,6 +182,9 @@ pm_response_label_info <- function(model, trans, link_scale, back_transformed, f
   if (!back_transformed) r$back <- NA_character_
   r$inverse <- NULL
   # class means of multinomial and non-parallel fits (R/categorical.R)
-  if (inherits(model, "pm_catfit")) r$classes <- list(what = model$what, var = model$var, family = model$parts$family)
+  if (inherits(model, "pm_catfit")) {
+    r$classes <- list(what = model$what, var = model$var, family = model$parts$family)
+    r$family <- model$parts$family           # the fit's family, not the carrier's binomial
+  }
   r
 }

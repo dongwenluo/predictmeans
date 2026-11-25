@@ -77,10 +77,7 @@ pm_ord_parts <- function(model) {
 pm_ord_parts_vglm <- function(model) {
   fi <- pm_ord_vglm_info(model)
   cm <- VGAM::constraints(model)
-  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
-    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
-         "with bs(), ns(), poly() or scale().", call. = FALSE)
-  }
+  pm_vglm_smart_stop(model)
   J <- cm[["(Intercept)"]]
   cf <- VGAM::coef(model)
   ic <- grep("^\\(Intercept\\)", names(cf))
@@ -137,14 +134,29 @@ pm_ord_vglm_link <- function(fi) {
 ## built for the latent parametrisation) stop: the class scale is mean_type's.
 pm_ord_check <- function(model, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
   pm_ord_parts(model)
+  pm_class_opt_stop(model, paste0("the means are on the latent scale; for the class scale use mean_type = \"prob\" ",
+                                  "or \"mean_class\" in predictmeans()"), trans, bias_adjust, sigma, vcov, permlist)
+  invisible(TRUE)
+}
+
+## The options built for one scale with a residual variance, which models of
+## a class response do not take: a stop naming those given ('why': the scale
+## of the means). One place for pm_ord_check() and pm_cat_check().
+pm_class_opt_stop <- function(model, why, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
   bad <- c(trans = !is.null(trans) && !identical(trans, I), bias_adjust = !isFALSE(bias_adjust),
            sigma = !is.null(sigma), vcov = !is.null(vcov), permlist = !is.null(permlist))
   if (any(bad)) {
-    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1],
-         " models: the means are on the latent scale; for the class scale use mean_type = \"prob\" or ",
-         "\"mean_class\" in predictmeans().", call. = FALSE)
+    stop("'", paste(names(bad)[bad], collapse = "', '"), "' cannot be used with ", class(model)[1], " models: ",
+         why, ".", call. = FALSE)
   }
-  invisible(TRUE)
+}
+
+## VGAM's smart terms are not rebuilt on the grid of the means: a stop.
+pm_vglm_smart_stop <- function(model) {
+  if (any(grepl("^sm\\.", all.names(stats::formula(model))))) {
+    stop("VGAM's smart terms (sm.bs, sm.ns, sm.poly, sm.scale) cannot be rebuilt on the grid of the means; refit ",
+         "with bs(), ns(), poly() or scale().", call. = FALSE)
+  }
 }
 
 ## The coefficients on the latent scale and their covariance: ((Intercept) =

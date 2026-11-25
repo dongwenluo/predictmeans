@@ -60,6 +60,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr
   \code{class_reference} \tab predictmeans \tab multinomial linear predictors depend on the reference class \cr
+  \code{class_mean_outside} \tab predictmeans \tab limits of a mean class outside 1 to J (Wald limits on the class scale) \cr
   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
   \code{variance_at_zero} \tab varcomp, se_ranef \tab a variance estimated as zero \cr
