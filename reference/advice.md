@@ -79,6 +79,11 @@ A data frame with columns `id` (stable, listed below), `level`
 | `ordinal_latent_average` | predictmeans | class probabilities at latent means averaged over other variables |
 | `ordinal_mean_class` | predictmeans | the mean class scores the classes as equally spaced |
 | `ordinal_typical_subject` | predictmeans | clmm class probabilities for a typical subject (random effects at 0) |
+| `class_separation` | predictmeans | a class with no observations at some levels (probability at 0, SEs not usable) |
+| `class_prob_average` | predictmeans | class probabilities averaged over other variables on the probability scale |
+| `class_prob_near_bound` | predictmeans | differences of probabilities near 0 or 1 (`mean_type = "prob_diff"`) |
+| `class_reference` | predictmeans | multinomial linear predictors depend on the reference class |
+| `class_mean_outside` | predictmeans | limits of a mean class outside 1 to J (Wald limits on the class scale) |
 | `few_permutations` | permmodels, bootmodels | fewer than 999 resamples and a p-value at the floor or near 0.05 |
 | `r2_latent_scale` | R2_model | a non-gaussian model: R2 on the link scale |
 | `variance_at_zero` | varcomp, se_ranef | a variance estimated as zero |

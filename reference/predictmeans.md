@@ -19,7 +19,7 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
     "between-within", "KR-expected", "KR-average", "inner-outer", "residual"),
   vcov=NULL,
   equivalence=NULL, bias_adjust=FALSE, sigma=NULL, average=c("link", "response"),
-  mean_type=c("conditional", "overall", "prob", "mean_class"), ...)
+  mean_type=c("conditional", "overall", "prob", "mean_class", "prob_diff", "link"), ...)
 ```
 
 ## Arguments
@@ -30,9 +30,10 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   [`MASS::polr`](https://rdrr.io/pkg/MASS/man/polr.html),
   [`ordinal::clm`](https://rdrr.io/pkg/ordinal/man/clm.html),
   [`ordinal::clmm`](https://rdrr.io/pkg/ordinal/man/clmm.html),
-  [`VGAM::vglm`](https://rdrr.io/pkg/VGAM/man/vglm.html) (ordinal
-  families, parallel), `gls`, `lme`, `lmer`, `glmer`, `glmmTMB` and
-  `gam` (package mgcv), or a
+  [`VGAM::vglm`](https://rdrr.io/pkg/VGAM/man/vglm.html) (ordinal and
+  multinomial families),
+  [`nnet::multinom`](https://rdrr.io/pkg/nnet/man/multinom.html), `gls`,
+  `lme`, `lmer`, `glmer`, `glmmTMB` and `gam` (package mgcv), or a
   [`semireg`](https://dongwenluo.github.io/predictmeans/reference/semireg.md)
   fit. An `aov` model with `Error()` strata is analysed by strata, as
   Genstat's ANOVA: each comparison uses the mean squares of the strata
@@ -455,6 +456,32 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   Means over other factors are averaged on the latent scale and then
   transformed; emmeans averages the probabilities instead (the same for
   the cells of the model).
+
+  Fits without a single latent scale,
+  [`nnet::multinom`](https://rdrr.io/pkg/nnet/man/multinom.html),
+  [`VGAM::vglm`](https://rdrr.io/pkg/VGAM/man/vglm.html) with
+  `multinomial` and ordinal vglm families whose slopes are not parallel
+  (`parallel = FALSE`, or partly), have one linear predictor per class,
+  so each mean is a vector: the class (or predictor) becomes a factor of
+  the means, named after the response (`"predictor"` for `"link"`), and
+  the pairs are within each class (an `atvar`; pairs of two classes are
+  left out). `"prob"` (their default): the probability of each class on
+  the logit scale, back-transformed in `response` with limits inside 0
+  to 1; pairs are log odds ratios of that class against all the others
+  (as a binomial glm: with two classes the results are the same; not the
+  baseline-category odds ratios of the model's coefficients).
+  `"prob_diff"`: probabilities and their differences on the probability
+  scale (as emmeans' `mode = "prob"`; for two means the differences sum
+  to 0 over the classes). `"link"`: the model's linear predictors (for
+  multinomial fits, log odds against the reference class).
+  `"mean_class"` (ordinal families only): \\\sum_j j P(Y = j)\\.
+  Probabilities are averaged over the other factors of the model on the
+  probability scale (as emmeans), SEs by the delta method, z tests.
+  Other functions
+  ([`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md),
+  [`covariatemeans()`](https://dongwenluo.github.io/predictmeans/reference/covariatemeans.md),
+  [`Kmatrix()`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md),
+  ...) stop for these fits.
 
 ## Value
 

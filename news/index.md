@@ -304,6 +304,19 @@ shows 1.1.1 and 2.0 code side by side.
   the family and `reverse` (SEs from VGAM’s expected information). vglm
   fits of other families (e.g. `poissonff`), which gave link-scale means
   with t tests before, now stop with a message.
+  [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html),
+  [`VGAM::vglm()`](https://rdrr.io/pkg/VGAM/man/vglm.html) with
+  `multinomial()` and ordinal vglm fits with non-parallel slopes: the
+  class is a factor of the means, pairs within each class.
+  `mean_type = "prob"` (default): class probabilities on the logit
+  scale, back-transformed with limits inside 0-1, pairs as log odds
+  ratios (with two classes the same as a binomial glm); `"prob_diff"`:
+  differences of probabilities (as emmeans’ `mode = "prob"`); `"link"`:
+  the model’s linear predictors; `"mean_class"` for ordinal families.
+  Probabilities averaged over other factors on the probability scale;
+  delta-method SEs, z tests; advice on separation (a class absent at
+  some levels). Checked against emmeans; other functions stop for these
+  fits.
 
 #### Mixed models and variance components
 
