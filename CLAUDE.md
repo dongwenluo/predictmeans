@@ -223,6 +223,8 @@ effective**. Check every change against all four before it is done:
   the script after any change that can change their output, and commit the
   `.Rmd` and `vignettes/<name>-*.png`. Tests run on CRAN only when under
   0.5 s; slower ones start with `skip_on_cran()` (CRAN-mode suite about 60 s).
+- At the end of a block, before R CMD check and the pull request, run the `rule1-reviewer` agent
+  (`.claude/agents/rule1-reviewer.md`, read-only, high effort) on the block's commits; fix or answer each finding.
 - Run `R CMD check` once, at the end of a block (with `cran = TRUE` before a
   release); during the work run only the related tests.
 - Add a short user-facing entry to the 2.0.0 note in `NEWS.md` (in its right
