@@ -66,6 +66,8 @@ checks.
 - [`se_ranef()`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
   [`print(`*`<pm_ranef>`*`)`](https://dongwenluo.github.io/predictmeans/reference/se_ranef.md)
   : Standard Errors of the Predicted Random Effects
+- [`heritability()`](https://dongwenluo.github.io/predictmeans/reference/heritability.md)
+  : Heritability on a Line-Mean (Entry-Mean) Basis
 - [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md)
   : Diagnostic Plots for a Fitted Model
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)

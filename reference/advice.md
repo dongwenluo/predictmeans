@@ -62,6 +62,11 @@ A data frame with columns `id` (stable, listed below), `level`
 | `singular_fit` | predictmeans, contrastmeans, R2_model, semireg | a variance at zero or a correlation at +-1 |
 | `anova_unbalanced_typeI`, `_typeII`, `_typeIII` | anova | unbalanced data: what the type tests |
 | `anova_nested_in_data` | anova | a factor nested in another in the data, without the nesting in the model |
+| `h2_standard_unbalanced` | heritability | the standard form with unequal plots per genotype or incomplete blocks |
+| `h2_forms_differ` | heritability | the forms differ by more than 0.1 |
+| `h2_above_one` | heritability | a family heritability above 1 (beyond or within its sampling error) |
+| `h2_genotype_zero` | heritability | the genotypic variance estimated as 0 |
+| `h2_genotype_nested` | heritability | genotypes nested in a fixed factor |
 | `anova_empty_cells` | anova | empty cells: no type tests a main effect over all cells |
 | `anova_covariate_zero` | anova | Type III with a covariate in an interaction (tests at covariate = 0) |
 | `check_<name>` | pm_check | a check worth a look (the note of its row) |

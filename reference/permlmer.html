@@ -197,14 +197,13 @@ default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, g
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    4 1794.5 1807.2 -893.23    1786.5                            </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01</span>
 <span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm2</span>, <span class="va">fm1</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> 1 of 99 permuted refits had an lme4 convergence warning (usually a gradient just above lme4's tolerance; the statistic is kept).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: sleepstudy</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: Reaction ~ Days + (Days | Subject)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    5 1753.7 1769.6 -871.83    1743.7                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.86</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.88</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Test fixed effects</span></span></span>
@@ -213,13 +212,14 @@ default dispersion model; families poisson, binomial, nbinom1, nbinom2, Gamma, g
 <span class="r-in"><span><span class="va">fm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span><span class="op">+</span><span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="fu">permlmer</span><span class="op">(</span><span class="va">fm0</span>, <span class="va">fm</span>, nperm<span class="op">=</span><span class="fl">99</span>, ncore<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 1 of 99 permuted refits had an lme4 convergence warning (usually a gradient just above lme4's tolerance; the statistic is kept).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Data: Oats</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Models:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0: yield ~ nitro + Variety + (1 | Block/Variety)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(&gt;Chisq) Perm-p</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> lmer0    9 616.04 636.53 -299.02    598.04                            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.97</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.95</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## A GLMM: do tick counts vary between locations, beyond broods?</span></span></span>
 <span class="r-in"><span><span class="va">gm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">glmer</a></span><span class="op">(</span><span class="va">TICKS</span> <span class="op">~</span> <span class="va">YEAR</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">HEIGHT</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">BROOD</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">poisson</span>, data <span class="op">=</span> <span class="fu">lme4</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lme4/man/grouseticks.html" class="external-link">grouseticks</a></span><span class="op">)</span></span></span>

@@ -214,7 +214,8 @@
 </ul></div>
 <div class="section level4">
 <h4 id="mixed-models-and-variance-components-2-0-0">Mixed models and variance components<a class="anchor" aria-label="anchor" href="#mixed-models-and-variance-components-2-0-0"></a></h4>
-<ul><li>
+<ul><li>New <code><a href="../reference/heritability.html">heritability()</a></code>: line-mean (entry-mean) heritability from an <code>lmer</code> fit with random genotypes, in the standard form and the mixed-model forms of Cullis et al. (2006), Piepho and Möhring (2007) and Oakey et al. (2006), for unbalanced trials; <code>method = "all"</code> shows them side by side. <code>method = "family"</code> gives the narrow-sense heritability of a single plant from half-sib or full-sib families (<code>relationship</code>), and <code>"repeatability"</code> that of single records; <code>"reliability"</code> (mean reliability) and <code>"simulated"</code> (Piepho and Möhring’s simulated r2). Plot means: <code>within_variance</code>, <code>within_n</code> give the single-plant variance. SEs: delta method, or a parametric bootstrap (<code>nboot</code>). Works with weights, several genotype x environment terms, genotypes nested in a fixed factor (with a note) and boundary fits (genotypic variance 0). Reproduces every value of Schmidt et al. (2019, Figure 1) for the oats alpha design.</li>
+<li>
 <code><a href="../reference/varcomp.html">varcomp()</a></code> for every model class, with observed-information SEs and Satterthwaite intervals; <code>test = TRUE</code> tests each component (likelihood ratio, boundary mixture or parametric bootstrap).</li>
 <li>
 <code><a href="../reference/se_ranef.html">se_ranef()</a></code> for <code>lmer</code>, <code>glmer</code>, <code>glmmTMB</code>, <code>lme</code> and <code>semireg</code> fits, with any covariance structure; checked against SAS PROC MIXED; <code>predict = TRUE</code> adds the fixed part to each BLUP.</li>

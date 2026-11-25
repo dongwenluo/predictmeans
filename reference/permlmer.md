@@ -168,14 +168,13 @@ permlmer(fm3, fm2, nperm=99, ncore=1)
 #> lmer0    4 1794.5 1807.2 -893.23    1786.5                            
 #> lmer1    5 1753.7 1769.6 -871.83    1743.7 42.796  1 6.0763e-11   0.01
 permlmer(fm2, fm1, nperm=99, ncore=1)
-#> 1 of 99 permuted refits had an lme4 convergence warning (usually a gradient just above lme4's tolerance; the statistic is kept).
 #> Data: sleepstudy
 #> Models:
 #> lmer0: Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject))
 #> lmer1: Reaction ~ Days + (Days | Subject)
 #>       npar    AIC    BIC  logLik -2*log(L) Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    5 1753.7 1769.6 -871.83    1743.7                           
-#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.86
+#> lmer1    6 1755.6 1774.8 -871.81    1743.6 0.041  1     0.8395   0.88
 # }
 
 ## Test fixed effects
@@ -184,13 +183,14 @@ fm0 <- lmer(yield ~ nitro+Variety+(1|Block/Variety), data=Oats)
 fm <- lmer(yield ~ nitro*Variety+(1|Block/Variety), data=Oats)
 # \donttest{
 permlmer(fm0, fm, nperm=99, ncore=1)
+#> 1 of 99 permuted refits had an lme4 convergence warning (usually a gradient just above lme4's tolerance; the statistic is kept).
 #> Data: Oats
 #> Models:
 #> lmer0: yield ~ nitro + Variety + (1 | Block/Variety)
 #> lmer1: yield ~ nitro * Variety + (1 | Block/Variety)
 #>       npar    AIC    BIC  logLik -2*log(L)  Chisq Df Pr(>Chisq) Perm-p
 #> lmer0    9 616.04 636.53 -299.02    598.04                            
-#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.97
+#> lmer1   15 625.91 660.06 -297.95    595.91 2.1375  6    0.90663   0.95
 
 ## A GLMM: do tick counts vary between locations, beyond broods?
 gm1 <- glmer(TICKS ~ YEAR + scale(HEIGHT) + (1 | BROOD), family = poisson, data = lme4::grouseticks)

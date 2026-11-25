@@ -321,34 +321,34 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #>     0     0.2   0.4  0.6 Group
 #> 0   1                    A    
 #> 0.2 0.015 1               B   
-#> 0.4 0.015 0.048 1          C  
-#> 0.6 0.015 0.015 0.13 1     C  
+#> 0.4 0.015 0.06  1         BC  
+#> 0.6 0.015 0.015 0.27 1     C  
 #> 
 #> $Marvellous
 #>     0    0.2  0.4  0.6 Group
 #> 0   1                  A    
-#> 0.2 0.06 1             AB   
-#> 0.4 0.03 0.23 1         B   
-#> 0.6 0.03 0.06 0.23 1    B   
+#> 0.2 0.03 1              B   
+#> 0.4 0.03 0.31 1         BC  
+#> 0.6 0.03 0.03 0.31 1     C  
 #> 
 #> $Victory
 #>     0     0.2   0.4  0.6 Group
 #> 0   1                    A    
-#> 0.2 0.015 1               B   
-#> 0.4 0.015 0.024 1          C  
-#> 0.6 0.015 0.015 0.33 1     C  
+#> 0.2 0.048 1               B   
+#> 0.4 0.02  0.045 1          C  
+#> 0.6 0.02  0.02  0.38 1     C  
 #> 
 #> $mean_table
 #> $mean_table$Table
 #>        Variety nitro     Mean      SE Df  LL(95%)  UL(95%) LetterGrp
 #> 1  Golden Rain     0  80.0000 9.10696 NA  60.7021  99.2979       A  
 #> 4  Golden Rain   0.2  98.5000 9.10696 NA  79.2021 117.7979        B 
-#> 7  Golden Rain   0.4 114.6667 9.10696 NA  95.3688 133.9645         C
+#> 7  Golden Rain   0.4 114.6667 9.10696 NA  95.3688 133.9645        BC
 #> 10 Golden Rain   0.6 124.8333 9.10696 NA 105.5355 144.1312         C
-#> 2   Marvellous     0  86.6667 9.10696 NA  67.3688 105.9645        A 
-#> 5   Marvellous   0.2 108.5000 9.10696 NA  89.2021 127.7979        AB
-#> 8   Marvellous   0.4 117.1667 9.10696 NA  97.8688 136.4645         B
-#> 11  Marvellous   0.6 126.8333 9.10696 NA 107.5355 146.1312         B
+#> 2   Marvellous     0  86.6667 9.10696 NA  67.3688 105.9645       A  
+#> 5   Marvellous   0.2 108.5000 9.10696 NA  89.2021 127.7979        B 
+#> 8   Marvellous   0.4 117.1667 9.10696 NA  97.8688 136.4645        BC
+#> 11  Marvellous   0.6 126.8333 9.10696 NA 107.5355 146.1312         C
 #> 3      Victory     0  71.5000 9.10696 NA  52.2021  90.7979       A  
 #> 6      Victory   0.2  89.6667 9.10696 NA  70.3688 108.9645        B 
 #> 9      Victory   0.4 110.8333 9.10696 NA  91.5355 130.1312         C
@@ -365,8 +365,8 @@ cm <- rbind(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 contrastmeans(model=fm, modelterm="nitro:Variety", ctrmatrix=cm, permlist=permlme)
 #> Contrasts of 'nitro:Variety' (95% limits; p.adj: none; 99 permutations)
 #>    contrast estimate std.error df statistic p.value p.adj conf.low conf.high
-#>  contrast 1    -8.50     9.715 NA   -0.8749    0.38  0.38   -28.04     11.04
-#>  contrast 2   -45.67     9.715 NA   -4.7006    0.01  0.01   -65.22    -26.12
+#>  contrast 1    -8.50     9.715 NA   -0.8749    0.38  0.38   -27.68     10.68
+#>  contrast 2   -45.67     9.715 NA   -4.7006    0.01  0.01   -68.24    -23.09
 
 ## The same by lmer, type II tests; refit = FALSE is much faster (no refits)
 fm3 <- lmer(yield ~ nitro*Variety + (1|Block/Variety), data = Oats)
