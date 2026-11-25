@@ -1,0 +1,202 @@
+   2  \ Type I (sequential) Wald tests in a mixed model: Genstat's hypotheses.
+   3  \ Genstat counterpart of dev/sas/type1-exam8.2.sas, for predictmeans
+   4  \ anova(type = "I", type1_basis = "fitted", ddf = "KR-average") (R/anova.R).
+   5  \ Please save the whole Output window (File > Save) and send that file; the
+   6  \ first run may need small syntax fixes.
+   7  \
+   8  \ Data: Example 8.2 of Williams, Harwood and Matheson (2023), Eucalyptus
+   9  \ clone trial (eda4treeR::DataExam8.2): 5 replicates x 10 rows x 6 columns,
+  10  \ 56 test clones and 4 standards. Columns: repl row column contcompf
+  11  \ (1 = test clone, 0 = standard) standard (1 = none/test clone, 2 = PN14,
+  12  \ 3 = SSOseed, 4 = U6, 5 = UG323) clone (code 1 = "0" for the standards,
+  13  \ 2-57 the UP clones in alphabetical order) contcompv (variate, = contcompf)
+  14  \ dbh.
+  15  \
+  16  \ Model (as the SAS program): fixed repl + column + contcompf +
+  17  \ contcompf.standard; random repl.row, repl.column and contcompv.clone (clone
+  18  \ effects for test clones only), REML.
+  19  \
+  20  \ R values (lme4 REML) to compare:
+  21  \   variance components: repl.row 0.08023, repl.column 0.05284,
+  22  \   contcompv.clone 0.4950, residual 0.3992
+  23  \   Run 1, fixed repl + column + contcompf + contcompf.standard
+  24  \                       sequential             dropping
+  25  \     term              Wald    d.d.f.          Wald   d.d.f.
+  26  \     repl               8.20    26.64           8.20   26.64
+  27  \     column             7.99    19.43           7.77   19.72
+  28  \     contcompf         72.66   254.01            -       -
+  29  \     contcompf.std     51.75   208.20          51.75  208.20
+  30  \   Run 2, fixed contcompf + repl + column + contcompf.standard
+  31  \     contcompf 70.34 (254.64), repl 8.20 (26.64), column 10.32 (19.46),
+  32  \     contcompf.standard 51.75 (208.20)
+  33  \   (SAS HTYPE=1 builds the sequential hypotheses from X'X instead: run 2
+  34  \   column F 2.00 = Wald 10.0 with KR, contcompf 68.68.)
+  35  \   Means of contcompf.standard: standards PN14 7.703 (s.e. 0.3146),
+  36  \   SSOseed 6.084 (0.3125), U6 6.554 (0.3134), UG323 8.971 (0.3137); test
+  37  \   clones 8.908 (0.1168).
+  38  \ Questions: (1) does Genstat print the drop-term d.d.f. (19.7) for column
+  39  \ in the sequential table of run 1, where the sequential hypothesis gives
+  40  \ 19.4? (2) run 2 checks the sequential definition with a different order.
+  41
+  42  UNITS [NVALUES=300]
+  43  FACTOR [LEVELS=5] repl
+  44  FACTOR [LEVELS=10] row
+  45  FACTOR [LEVELS=6] column
+  46  FACTOR [LEVELS=!(0, 1)] contcompf
+  47  FACTOR [LEVELS=5; LABELS=!t('0', PN14, SSOseed, U6, UG323)] standard
+  48  FACTOR [LEVELS=57] clone
+  49  VARIATE contcompv, dbh
+  50  READ repl, row, column, contcompf, standard, clone, contcompv, dbh
+Message: You have input sufficient data, READ terminated.
+ 
+	 Identifier	 Minimum	 Mean	 Maximum	 Values	 Missing	 
+	contcompv	 0.0000	 0.9333	 1.000	 300	 0	    Skew
+	dbh	 5.700	 8.802	 11.73	 300	 0	 
+ 
+	 Identifier	 Values	 Missing	 Levels
+	repl	 300	 0	 5
+	row	 300	 0	 10
+	column	 300	 0	 6
+	contcompf	 300	 0	 2
+	standard	 300	 0	 5
+	clone	 300	 0	 57
+ 
+ 351  :
+ 352
+ 353  \ ---- Run 1: as SAS, repl + column + contcompf + contcompf.standard ----
+ 354  VCOMPONENTS [FIXED=repl + column + contcompf + contcompf.standard] \
+ 355    RANDOM=repl.row + repl.column + contcompv.clone
+ 356  REML [PRINT=model, components, waldtests, means; PTERMS=contcompf.standard; \
+ 357    METHOD=AI] dbh
+ 
+REML variance components analysis
+ 
+Response variate:	dbh
+Fixed model:	Constant + repl + column + contcompf + contcompf.standard
+Random model:	repl.row + repl.column + contcompv.clone
+Number of units:	300
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+repl.row	 0.0802	 0.0349
+repl.column	 0.0529	 0.0327
+contcompv.clone	 111.3754	 25.3255
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	0.399	 0.0437
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+repl	8.20	4	2.05	26.6	 0.116
+column	10.32	5	2.06	19.7	 0.114
+contcompf	0.03	1	0.03	38.7	 0.874
+contcompf.standard	51.75	3	17.25	208.2	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+repl	8.20	4	2.05	26.6	 0.116
+column	7.77	5	1.55	19.7	 0.219
+contcompf.standard	51.75	3	17.25	208.2	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 
+ 
+Table of predicted means for contcompf.standard
+ 
+ 
+	standard	0	PN14	SSOseed	U6	UG323
+	contcompf	 
+	0	*	7.703	6.084	6.554	8.971
+	1	8.908	*	*	*	*
+ 
+ 
+Standard errors of differences
+ 
+Average:	 4.201
+Maximum:	 9.855
+Minimum:	 0.4251
+ 
+Average variance of differences: 38.96 
+ 
+Standard error of differences for same level of factor:
+ 
+	contcompf	standard
+	 
+Average:	 0.4316	 *    
+	 
+Maximum:	 0.4362	 *    
+	 
+Minimum:	 0.4251	 *    
+	 
+Average variance of differences:
+		
+ 0.1863	 0.	 
+
+ 
+ 358
+ 359  \ ---- Run 2: another order, contcompf + repl + column + contcompf.standard ----
+ 360  VCOMPONENTS [FIXED=contcompf + repl + column + contcompf.standard] \
+ 361    RANDOM=repl.row + repl.column + contcompv.clone
+ 362  REML [PRINT=model, components, waldtests; METHOD=AI] dbh
+ 
+REML variance components analysis
+ 
+Response variate:	dbh
+Fixed model:	Constant + contcompf + repl + column + contcompf.standard
+Random model:	repl.row + repl.column + contcompv.clone
+Number of units:	300
+ 
+Residual term has been added to model
+ 
+Sparse algorithm with AI optimisation
+All covariates centred
+ 
+ 
+Estimated variance components
+ 
+Random term	component	s.e.
+repl.row	 0.0802	 0.0349
+repl.column	 0.0529	 0.0327
+contcompv.clone	 111.3754	 25.3255
+ 
+ 
+Residual variance model
+ 
+Term	Model(order)	Parameter	Estimate	s.e.
+Residual	Identity	Sigma2	0.399	 0.0437
+ 
+ 
+Tests for fixed effects
+ 
+Sequentially adding terms to fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+contcompf	0.02	1	0.02	38.7	 0.876
+repl	8.20	4	2.05	26.6	 0.116
+column	10.32	5	2.06	19.7	 0.114
+contcompf.standard	51.75	3	17.25	208.2	 <0.001
+ 
+Dropping individual terms from full fixed model
+ 
+Fixed term	Wald statistic	n.d.f.	F statistic	d.d.f.	F pr
+repl	8.20	4	2.05	26.6	 0.116
+column	7.77	5	1.55	19.7	 0.219
+contcompf.standard	51.75	3	17.25	208.2	 <0.001
+ 
+Message: denominator degrees of freedom for approximate F-tests are calculated using algebraic derivatives ignoring fixed/boundary/singular variance parameters.
+ 

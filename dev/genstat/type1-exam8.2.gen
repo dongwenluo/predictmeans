@@ -34,6 +34,11 @@
 \   Means of contcompf.standard: standards PN14 7.703 (s.e. 0.3146),
 \   SSOseed 6.084 (0.3125), U6 6.554 (0.3134), UG323 8.971 (0.3137); test
 \   clones 8.908 (0.1168).
+\ CADJUST=none: contcompv must not be centred. Centred (Genstat's default,
+\ run of 2026-11-25, genstat-results-2026-11-25-type1-centred.txt) it is
+\ -0.933 for the standards, which then share one random clone effect,
+\ confounded with contcompf: a different model (contcompv.clone 111.4,
+\ contcompf Wald 0.03 on 38.7 d.d.f.).
 \ Questions: (1) does Genstat print the drop-term d.d.f. (19.7) for column
 \ in the sequential table of run 1, where the sequential hypothesis gives
 \ 19.4? (2) run 2 checks the sequential definition with a different order.
@@ -350,12 +355,12 @@ READ repl, row, column, contcompf, standard, clone, contcompv, dbh
 :
 
 \ ---- Run 1: as SAS, repl + column + contcompf + contcompf.standard ----
-VCOMPONENTS [FIXED=repl + column + contcompf + contcompf.standard] \
+VCOMPONENTS [FIXED=repl + column + contcompf + contcompf.standard; CADJUST=none] \
   RANDOM=repl.row + repl.column + contcompv.clone
 REML [PRINT=model, components, waldtests, means; PTERMS=contcompf.standard; \
   METHOD=AI] dbh
 
 \ ---- Run 2: another order, contcompf + repl + column + contcompf.standard ----
-VCOMPONENTS [FIXED=contcompf + repl + column + contcompf.standard] \
+VCOMPONENTS [FIXED=contcompf + repl + column + contcompf.standard; CADJUST=none] \
   RANDOM=repl.row + repl.column + contcompv.clone
 REML [PRINT=model, components, waldtests; METHOD=AI] dbh

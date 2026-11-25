@@ -235,6 +235,10 @@ test_that("Exam 8.2: Type 1 and Type 3 tables = SAS PROC MIXED (HTYPE=1,3; DDFM=
   chk(a1, c(2.05, 1.48, 73.36, 16.86), c(26.5, 19.3, 255, 207))
   chk(anova(m, type = "I", ddf = "Satterthwaite", advice = FALSE), c(2.05, 1.49, 74.49, 17.25),
       c(26.5, 19.3, 255, 207))
+  # run 3: contcompf first (SAS 68.68/257, 2.05/26.5, 2.01/19.3, 16.86/207)
+  m3 <- suppressMessages(lme4::lmer(dbhmean ~ contcompf + repl + column + contcompf:standard + (1 | repl:row) +
+                                      (1 | repl:column) + (0 + contcompv | clone), data = d))
+  chk(anova(m3, type = "I", advice = FALSE), c(68.68, 2.05, 2.01, 16.86), c(257, 26.5, 19.3, 207))
   # the nested term (standard within contcompf) is tested on 3 df, with no empty-cell note
   a3 <- anova(m, type = "III")
   expect_equal(a3$Df, c(4, 5, 1, 3))
