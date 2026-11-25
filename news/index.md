@@ -273,14 +273,26 @@ shows 1.1.1 and 2.0 code side by side.
   unadjusted F. Together they reproduce Genstat’s Wald and F statistics;
   Genstat prints each term’s Type II d.d.f., here each test has the
   d.d.f. of its own hypothesis.
+
 - `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"`
   (Genstat), `"Satterthwaite"`, `"containment"`, `"between-within"`,
   `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
+
 - [`anova()`](https://rdrr.io/r/stats/anova.html) of `lmer` fits with
   Kenward-Roger or Satterthwaite F tests, Types I, II, III, without
   lmerTest.
+
 - Kenward-Roger and Satterthwaite computed without n x n matrices; much
   faster.
+
+- Ordinal models:
+  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) and
+  [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) fits
+  (location effects). Means on the latent scale (as emmeans’
+  `mode = "latent"`), pairs as log odds ratios of a higher class, z
+  tests; `mean_type = "prob"` adds the class probabilities at each mean
+  and `mean_type = "mean_class"` the expected class, with delta-method
+  SEs. Checked against emmeans.
 
 #### Mixed models and variance components
 

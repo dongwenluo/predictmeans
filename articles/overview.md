@@ -2251,9 +2251,9 @@ kable(anova(mod2$semer))
 
 |                            |        F |  Df |   Df.res |   Pr(\>F) |
 |:---------------------------|---------:|----:|---------:|----------:|
-| (Intercept)                | 3.387350 |   1 | 15.38446 | 0.0850689 |
-| district                   | 1.548545 |   3 | 19.12489 | 0.2344030 |
-| district:construction.date | 1.219377 |   4 | 26.47155 | 0.3262278 |
+| (Intercept)                | 3.387549 |   1 | 15.38809 | 0.0850560 |
+| district                   | 1.548635 |   3 | 19.12871 | 0.2343749 |
+| district:construction.date | 1.219447 |   4 | 26.47655 | 0.3261956 |
 
 - **Tests of the smooth terms**
 
@@ -2266,10 +2266,10 @@ kable(anova(mod2)$smooth)
 
 | term | variance | logLik | logLik.without | LRT | p.value | test |
 |:---|---:|---:|---:|---:|---:|:---|
-| s_construction_date_districtMokotow | 893.505120 | -1751.525 | -1800.940 | 98.829582 | 0.0000000 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtSrodmiescie | 1612.708831 | -1751.525 | -1761.894 | 20.737475 | 0.0000026 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtWola | 8.241983 | -1751.525 | -1752.495 | 1.939841 | 0.0818429 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_construction_date_districtZoliborz | 51.292604 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtMokotow | 893.678898 | -1751.525 | -1800.940 | 98.829583 | 0.0000000 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtSrodmiescie | 1612.747676 | -1751.525 | -1761.894 | 20.737475 | 0.0000026 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtWola | 8.240899 | -1751.525 | -1752.495 | 1.939841 | 0.0818429 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_construction_date_districtZoliborz | 51.291075 | -1751.525 | -1760.028 | 17.004627 | 0.0000186 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 
@@ -2286,7 +2286,7 @@ R2_model(mod2$semer)
     ##                                  Random     s_construction_date_districtMokotow 
     ##                                  89.29%                                  31.79% 
     ## s_construction_date_districtSrodmiescie        s_construction_date_districtWola 
-    ##                                  55.42%                                   0.27% 
+    ##                                  55.41%                                   0.27% 
     ##    s_construction_date_districtZoliborz 
     ##                                   1.81%
 
@@ -2900,11 +2900,11 @@ kable(car::Anova(mod$semer))
 
 |                     |    Chisq |  Df | Pr(\>Chisq) |
 |:--------------------|---------:|----:|------------:|
-| rain                | 29.05127 |   1 |     1.0e-07 |
+| rain                | 29.05128 |   1 |     1.0e-07 |
 | year                | 25.70815 |   3 |     1.1e-05 |
 | temperatureResidual | 72.10172 |   1 |     0.0e+00 |
-| windSpeed           | 76.13481 |   1 |     0.0e+00 |
-| year:dayInSeason    | 45.61102 |   4 |     0.0e+00 |
+| windSpeed           | 76.13483 |   1 |     0.0e+00 |
+| year:dayInSeason    | 45.61101 |   4 |     0.0e+00 |
 
 - **$`R^2`$**
 
@@ -3038,10 +3038,10 @@ kable(anova(mod$semer))
 
 |               |          F |  Df |    Df.res |   Pr(\>F) |
 |:--------------|-----------:|----:|----------:|----------:|
-| (Intercept)   |  0.8534313 |   1 |  14.25096 | 0.3709616 |
-| zcoord        | 26.5094687 |   1 | 417.28577 | 0.0000004 |
+| (Intercept)   |  0.8534314 |   1 |  14.25096 | 0.3709616 |
+| zcoord        | 26.5094686 |   1 | 417.28577 | 0.0000004 |
 | xcoord        |  0.0247375 |   1 |  13.95960 | 0.8772752 |
-| ycoord        |  1.4111369 |   1 |  14.17006 | 0.2543982 |
+| ycoord        |  1.4111370 |   1 |  14.17006 | 0.2543982 |
 | xcoord:ycoord |  0.2820408 |   1 |  15.46128 | 0.6029130 |
 | xcoord:zcoord |  3.9173411 |   1 | 416.02554 | 0.0484493 |
 | ycoord:zcoord | 25.9679209 |   1 | 413.16877 | 0.0000005 |
@@ -3058,7 +3058,7 @@ kable(anova(mod)$smooth)
 | term | variance | logLik | logLik.without | LRT | p.value | test |
 |:---|---:|---:|---:|---:|---:|:---|
 | s_zcoord | 0.0789849 | -159.2031 | -199.6525 | 80.89885 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
-| s_xcoord_ycoord | 1.7857081 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
+| s_xcoord_ycoord | 1.7857080 | -159.2031 | -207.6783 | 96.95054 | 0 | 0.5 chi2(0) + 0.5 chi2(1) |
 
 - **$`R^2`$**
 
