@@ -521,7 +521,7 @@ pm_heritability_advice <- function(x, comp, nboot) {
         "The blocks are incomplete: the standard form ignores the block adjustment of the genotype means",
       " and is approximate; method = \"cullis\" or \"piepho\" use the precision of each comparison."), "caution")
   }
-  lm_forms <- x$estimate[m %in% c("standard", "cullis", "piepho", "oakey")]
+  lm_forms <- x$estimate[m %in% c("standard", "cullis", "piepho", "oakey", "simulated")]
   if (length(lm_forms) > 1 && diff(range(lm_forms)) > 0.1) {
     rows$differ <- pm_advice("h2_forms_differ", paste(
       "The line-mean forms differ by more than 0.1: the trial is far from balanced; report the Cullis or",
@@ -533,8 +533,8 @@ pm_heritability_advice <- function(x, comp, nboot) {
       "phenotypic variance; check 'relationship' for this material (e.g. 1/3 rather than 1/4 for",
       "open-pollinated progeny) and the model."), "caution")
   }
-  if (any(m %in% c("cullis", "piepho", "oakey")) && nboot == 0) {
-    rows$se <- pm_advice("h2_no_se", "No SE for the Cullis, Piepho and Oakey forms: give nboot (e.g. 199).",
+  if (any(m %in% c("cullis", "piepho", "oakey", "reliability", "simulated")) && nboot == 0) {
+    rows$se <- pm_advice("h2_no_se", "No SE for the mixed-model forms: give nboot (e.g. 199).",
                          "note")
   }
   if (!length(rows)) return(NULL)

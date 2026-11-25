@@ -2913,4 +2913,17 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   incomplete blocks (standard 0.840 there). P&M's main proposal, simulated
   response to selection on BLUPs and r2(g, g-hat) (their Eqs. 15-17), is a
   possible later method.
+* heritability(), Schmidt et al. (2019, Genetics 212: 991-1008, PDF from the
+  maintainer): Piepho form now with the variance components fixed at those of
+  the random-genotype fit by default (`pm_h2_vblue_fixed()`: Woodbury form,
+  sparse, no refit; 0.808 as Schmidt et al. Example 2), `piepho = "refit"` the
+  2007 way (0.803, P&M Example 1); new `"reliability"` (mean r2, Eq. 44) and
+  `"simulated"` (P&M Eqs. 15-17 / Schmidt Eq. 41; eigen decomposition of the
+  singular Omega, batches of 2000 draws). Every value of Schmidt et al.
+  Figure 1 for Examples 1 and 2 reproduced (0.58/0.556/0.578; 0.84, 0.809,
+  0.808, 0.809, 0.775, 0.804). Bootstrap draws seeded per draw (also inside,
+  for the simulated form): identical for ncore 1 and 2. Two AI summaries of
+  the papers sent by the maintainer were checked against the PDFs; errors
+  listed in the conversation (Oakey under kinship is low, not high; no
+  synthetic simulation studies; P&M Example 3 used a pedigree).
 

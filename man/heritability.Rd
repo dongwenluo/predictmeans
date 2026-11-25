@@ -7,10 +7,13 @@
 heritability(
   model,
   genotype,
-  method = c("cullis", "piepho", "standard", "oakey", "family", "repeatability", "all"),
+  method = c("cullis", "piepho", "standard", "oakey", "reliability", "simulated",
+    "family", "repeatability", "all"),
   relationship = NULL,
   n_env = NULL,
   n_rep = NULL,
+  piepho = c("fixed", "refit"),
+  nsim = 10000,
   nboot = 0,
   ncore = 1,
   seed = NULL,
@@ -22,20 +25,26 @@ heritability(
 
 \item{genotype}{Name of the genotype (line, entry, family) factor.}
 
-\item{method}{\code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"}, or \code{"all"}.}
+\item{method}{\code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"},
+\code{"reliability"}, \code{"simulated"}, \code{"family"}, \code{"repeatability"}, or \code{"all"} (the
+line-mean forms: standard to simulated).}
 
 \item{relationship}{For \code{"family"}: the coefficient of relationship among members of a family.}
 
 \item{n_env, n_rep}{For \code{"standard"}: the number of environments (levels of the genotype x environment
 terms) and of replicates per environment; by default from the data.}
 
-\item{nboot}{For \code{"cullis"}, \code{"piepho"} and \code{"oakey"}: parametric bootstrap draws for their
+\item{piepho}{For \code{"piepho"}: \code{"fixed"} (default) or \code{"refit"}, see Details.}
+
+\item{nsim}{For \code{"simulated"}: the number of simulated draws.}
+
+\item{nboot}{For the mixed-model forms (Cullis to simulated): parametric bootstrap draws for their
 standard error and percentile limits (each draw refits the model; 0, the default, gives none). The other
 forms get theirs by the delta method from the covariance of the variance parameters, as \code{varcomp()}.}
 
 \item{ncore}{Cores for the bootstrap; results are the same for any number.}
 
-\item{seed}{Seed for the bootstrap draws.}
+\item{seed}{Seed for the simulated and bootstrap draws.}
 
 \item{conf_level}{Confidence level of the limits (logit-normal for the delta method, so they stay in (0, 1)).}
 }
@@ -62,15 +71,23 @@ With \eqn{\sigma^2_g} the genotypic variance:
   difference of two genotype BLUPs (prediction error variance, from the inverse of the mixed model
   equations, as \code{se_ranef(type = "prediction")}).}
   \item{\code{"piepho"}}{\eqn{\sigma^2_g / (\sigma^2_g + \bar v_{BLUE}/2)}, \eqn{\bar v_{BLUE}} the mean
-  variance of a difference of two genotype means from the same model refitted with genotype as a fixed
-  effect (other random terms kept), from their unadjusted covariance as in Piepho and Möhring (2007).
-  On the oats alpha design of John and Williams (1995), Example 1 of Piepho and Möhring (2007): 0.803 as
-  published (Cullis 0.809). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's
-  Kenward-Roger adjusted covariance: 0.797 there.)}
+  variance of a difference of two genotype BLUEs from the same model with genotype as a fixed effect (other
+  random terms kept). By default (\code{piepho = "fixed"}) its variance components are those of the
+  random-genotype fit, as Schmidt et al. (2019) do, so both terms of the ratio rest on the same estimates (no
+  refit); \code{piepho = "refit"} estimates them again, as Piepho and Möhring (2007). On the oats alpha
+  design of John and Williams (1995): 0.808 (Schmidt et al. 2019, Example 2) and 0.803 (Piepho and Möhring
+  2007, Example 1). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's Kenward-Roger
+  adjusted covariance: 0.797 there.)}
   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
   \code{"cullis"}; it differs with a relationship matrix.}
+  \item{\code{"reliability"}}{the mean reliability of the genotype BLUPs,
+  \eqn{\bar r^2 = m^{-1}\sum_i (1 - C_{ii}/\sigma^2_g)} (Schmidt et al. 2019, Eq. 44); it ignores the
+  covariances of the prediction errors, so it is a little below the others for small \eqn{m}.}
+  \item{\code{"simulated"}}{the expected squared correlation between true genotypic values and their BLUPs,
+  simulated from their joint covariance (Piepho and Möhring 2007; Schmidt et al. 2019, Eq. 41), with
+  \code{nsim} draws.}
   \item{\code{"family"}}{narrow-sense heritability of a single tree (plant, animal) from families:
   \eqn{(\sigma^2_f/\rho) / (\sigma^2_f + \sum_t \sigma^2_t + \sigma^2_e)}, \eqn{\sigma^2_f} the family variance
   (\code{genotype} is the family factor), \eqn{\rho} the \code{relationship} among members of a family (1/4

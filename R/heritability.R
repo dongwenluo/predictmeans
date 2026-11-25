@@ -17,15 +17,23 @@
 #'   difference of two genotype BLUPs (prediction error variance, from the inverse of the mixed model
 #'   equations, as \code{se_ranef(type = "prediction")}).}
 #'   \item{\code{"piepho"}}{\eqn{\sigma^2_g / (\sigma^2_g + \bar v_{BLUE}/2)}, \eqn{\bar v_{BLUE}} the mean
-#'   variance of a difference of two genotype means from the same model refitted with genotype as a fixed
-#'   effect (other random terms kept), from their unadjusted covariance as in Piepho and Möhring (2007).
-#'   On the oats alpha design of John and Williams (1995), Example 1 of Piepho and Möhring (2007): 0.803 as
-#'   published (Cullis 0.809). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's
-#'   Kenward-Roger adjusted covariance: 0.797 there.)}
+#'   variance of a difference of two genotype BLUEs from the same model with genotype as a fixed effect (other
+#'   random terms kept). By default (\code{piepho = "fixed"}) its variance components are those of the
+#'   random-genotype fit, as Schmidt et al. (2019) do, so both terms of the ratio rest on the same estimates (no
+#'   refit); \code{piepho = "refit"} estimates them again, as Piepho and Möhring (2007). On the oats alpha
+#'   design of John and Williams (1995): 0.808 (Schmidt et al. 2019, Example 2) and 0.803 (Piepho and Möhring
+#'   2007, Example 1). (\code{inti::H2cal(emmeans = TRUE)} and \pkg{heritable} take emmeans's Kenward-Roger
+#'   adjusted covariance: 0.797 there.)}
 #'   \item{\code{"oakey"}}{the mean of the non-zero eigenvalues of \eqn{I - C_{gg}/\sigma^2_g}, \eqn{C_{gg}}
 #'   the prediction error covariance of the genotype BLUPs (the zero ones are directions confounded with fixed
 #'   effects, as the mean of all genotypes with the intercept). With independent genotypes it equals
 #'   \code{"cullis"}; it differs with a relationship matrix.}
+#'   \item{\code{"reliability"}}{the mean reliability of the genotype BLUPs,
+#'   \eqn{\bar r^2 = m^{-1}\sum_i (1 - C_{ii}/\sigma^2_g)} (Schmidt et al. 2019, Eq. 44); it ignores the
+#'   covariances of the prediction errors, so it is a little below the others for small \eqn{m}.}
+#'   \item{\code{"simulated"}}{the expected squared correlation between true genotypic values and their BLUPs,
+#'   simulated from their joint covariance (Piepho and Möhring 2007; Schmidt et al. 2019, Eq. 41), with
+#'   \code{nsim} draws.}
 #'   \item{\code{"family"}}{narrow-sense heritability of a single tree (plant, animal) from families:
 #'   \eqn{(\sigma^2_f/\rho) / (\sigma^2_f + \sum_t \sigma^2_t + \sigma^2_e)}, \eqn{\sigma^2_f} the family variance
 #'   (\code{genotype} is the family factor), \eqn{\rho} the \code{relationship} among members of a family (1/4
@@ -47,15 +55,19 @@
 #' forms, and advice.
 #' @param model An \code{lmer} fit with a random genotype term \code{(1 | genotype)}.
 #' @param genotype Name of the genotype (line, entry, family) factor.
-#' @param method \code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"}, or \code{"all"}.
+#' @param method \code{"cullis"} (default), \code{"piepho"}, \code{"standard"}, \code{"oakey"},
+#'   \code{"reliability"}, \code{"simulated"}, \code{"family"}, \code{"repeatability"}, or \code{"all"} (the
+#'   line-mean forms: standard to simulated).
+#' @param piepho For \code{"piepho"}: \code{"fixed"} (default) or \code{"refit"}, see Details.
+#' @param nsim For \code{"simulated"}: the number of simulated draws.
 #' @param n_env,n_rep For \code{"standard"}: the number of environments (levels of the genotype x environment
 #'   terms) and of replicates per environment; by default from the data.
 #' @param relationship For \code{"family"}: the coefficient of relationship among members of a family.
-#' @param nboot For \code{"cullis"}, \code{"piepho"} and \code{"oakey"}: parametric bootstrap draws for their
+#' @param nboot For the mixed-model forms (Cullis to simulated): parametric bootstrap draws for their
 #'   standard error and percentile limits (each draw refits the model; 0, the default, gives none). The other
 #'   forms get theirs by the delta method from the covariance of the variance parameters, as \code{varcomp()}.
 #' @param ncore Cores for the bootstrap; results are the same for any number.
-#' @param seed Seed for the bootstrap draws.
+#' @param seed Seed for the simulated and bootstrap draws.
 #' @param conf_level Confidence level of the limits (logit-normal for the delta method, so they stay in (0, 1)).
 #' @return A data frame of class \code{"pm_heritability"}: \code{method}, \code{estimate}, \code{std.error},
 #'   \code{conf.low}, \code{conf.high}; \code{attr(, "components")} holds the variance components and the mean
@@ -84,11 +96,14 @@
 #' }
 #' @export
 heritability <- function(model, genotype,
-                         method = c("cullis", "piepho", "standard", "oakey", "family", "repeatability", "all"),
-                         relationship = NULL, n_env = NULL, n_rep = NULL, nboot = 0, ncore = 1, seed = NULL,
-                         conf_level = 0.95) {
+                         method = c("cullis", "piepho", "standard", "oakey", "reliability", "simulated", "family",
+                                    "repeatability", "all"),
+                         relationship = NULL, n_env = NULL, n_rep = NULL, piepho = c("fixed", "refit"),
+                         nsim = 10000, nboot = 0, ncore = 1, seed = NULL, conf_level = 0.95) {
   method <- match.arg(method)
-  methods <- if (method == "all") c("standard", "cullis", "piepho", "oakey") else method
+  piepho <- match.arg(piepho)
+  methods <- if (method == "all") c("standard", "cullis", "piepho", "oakey", "reliability", "simulated") else method
+  if (!is.null(seed)) set.seed(seed)
   if (method == "family" && !(is.numeric(relationship) && length(relationship) == 1 && relationship > 0 &&
                               relationship <= 1)) {
     stop("method = \"family\" needs 'relationship', the coefficient of relationship among members of a family ",
@@ -101,12 +116,14 @@ heritability <- function(model, genotype,
          " model is not yet covered.", call. = FALSE)
   }
   comp <- pm_h2_components(model, genotype, n_env, n_rep)
+  comp$piepho <- piepho
+  comp$nsim <- nsim
   est <- pm_h2_point(model, comp, methods, relationship)
   # SE and limits: the delta method on the variance parameters for the forms
   # that are functions of the components; a parametric bootstrap for the
   # forms that also depend on the prediction errors (nboot > 0)
   vfun <- pm_h2_vfun(comp, relationship)
-  boot_m <- intersect(methods, c("cullis", "piepho", "oakey"))
+  boot_m <- intersect(methods, c("cullis", "piepho", "oakey", "reliability", "simulated"))
   bt <- if (length(boot_m) && nboot > 0) pm_h2_boot(model, comp, boot_m, nboot, ncore, seed)
   rows <- lapply(methods, function(m) {
     if (m %in% names(vfun)) {
@@ -137,7 +154,10 @@ pm_h2_point <- function(model, comp, methods, relationship = NULL, y = NULL) {
   v <- pm_h2_vc(comp)
   vapply(methods, function(m) switch(m,
     cullis = 1 - pm_h2_vdiff(comp$C)/(2*comp$s2g),
-    piepho = comp$s2g / (comp$s2g + pm_h2_vblue(model, comp$genotype, y)/2),
+    piepho = comp$s2g / (comp$s2g + (if (identical(comp$piepho, "refit")) pm_h2_vblue(model, comp$genotype, y) else
+      pm_h2_vblue_fixed(model, comp$genotype))/2),
+    reliability = mean(1 - diag(comp$C)/comp$s2g),
+    simulated = pm_h2_sim(comp$C, comp$s2g, comp$nsim),
     oakey = pm_h2_oakey(comp$C, comp$s2g),
     vf[[m]](v)), numeric(1))
 }
@@ -221,9 +241,53 @@ pm_h2_vdiff <- function(C) {
   2 * (m * sum(diag(C)) - sum(C)) / (m * (m - 1))
 }
 
-## vBLUE: the same model with genotype fixed (its other random terms kept), the
-## genotype means (Kmatrix()) and their unadjusted covariance; lm() when no
-## random term is left.
+## vBLUE with the variance components fixed at those of the random-genotype
+## fit (Schmidt et al. 2019): genotype as a fixed effect, the other random
+## terms with their estimated variances, var(beta) = (X'V^-1X)^-1 by the
+## Woodbury form V^-1 = W/s2 - W A (I + A'WA)^-1 A'W/s2, A = Z_o Lambda_o
+## (sparse; no refit, no n x n matrix). The genotype coefficients are
+## differences from the first genotype (treatment coding), which is added
+## with variance 0.
+pm_h2_vblue_fixed <- function(model, genotype) {
+  mf <- stats::model.frame(model)
+  mf[[genotype]] <- factor(mf[[genotype]])
+  fixed_terms <- attr(stats::terms(pm_nobars(stats::formula(model))), "term.labels")
+  intercept <- attr(stats::terms(pm_nobars(stats::formula(model))), "intercept") == 1
+  ff <- stats::reformulate(c(fixed_terms, genotype), intercept = intercept)
+  X <- stats::model.matrix(ff, mf, contrasts.arg = stats::setNames(list("contr.treatment"), genotype))
+  q <- qr(X)
+  X <- X[, q$pivot[seq_len(q$rank)], drop = FALSE]
+  w <- model@resp$weights
+  ztl <- lme4::getME(model, "Ztlist")
+  rows <- rep(seq_along(ztl), vapply(ztl, nrow, 1L))
+  keep <- which(rows != which(names(ztl) == paste0(genotype, ".(Intercept)")))
+  s2 <- stats::sigma(model)^2
+  if (length(keep)) {
+    A <- Matrix::t(lme4::getME(model, "Lambdat")[keep, keep, drop = FALSE] %*% lme4::getME(model, "Zt")[keep, , drop = FALSE])
+    WA <- A * w
+    M <- Matrix::forceSymmetric(Matrix::crossprod(A, WA) + Matrix::Diagonal(length(keep)))
+    XWA <- as.matrix(Matrix::crossprod(X, WA))
+    info <- (crossprod(X, X * w) - XWA %*% as.matrix(Matrix::solve(M, Matrix::t(Matrix::Matrix(XWA))))) / s2
+  } else {
+    info <- crossprod(X, X * w) / s2
+  }
+  V <- solve(info)
+  levs <- levels(mf[[genotype]])
+  cols <- paste0(genotype, levs)
+  have <- cols %in% colnames(V)
+  if (sum(!have) > as.integer(intercept)) {
+    stop("Genotype effects are aliased with other fixed effects; method = \"cullis\" works on this model.",
+         call. = FALSE)
+  }
+  C <- matrix(0, length(levs), length(levs))
+  C[have, have] <- V[cols[have], cols[have]]
+  pm_h2_vdiff(C)
+}
+
+## vBLUE as in Piepho and Möhring (2007): the same model with genotype fixed
+## refitted, its variance components estimated again (its other random terms
+## kept), the genotype means (Kmatrix()) and their unadjusted covariance; lm()
+## when no random term is left.
 pm_h2_vblue <- function(model, genotype, y = NULL) {
   f <- stats::formula(model)
   bars <- pm_findbars(f)
@@ -244,6 +308,28 @@ pm_h2_vblue <- function(model, genotype, y = NULL) {
   mp <- pm_model_parm(fit)
   K <- pm_K_cols(km$K, mp)
   pm_h2_vdiff(K %*% mp$vcov %*% t(K))
+}
+
+## Simulated heritability of Piepho and Möhring (2007, Eqs. 15-17; Schmidt et
+## al. 2019, Eq. 41): the mean over draws of the squared correlation between
+## the true genotypic values g and their BLUPs, from their joint covariance
+## Omega = (s2g I, M; M, M), M = var(g-hat) = s2g I - C (independent genotypes).
+## Drawn in batches of columns, from Omega's eigen decomposition (it is
+## singular: the genotype mean is confounded with the intercept).
+pm_h2_sim <- function(C, s2g, nsim = 10000) {
+  m <- nrow(C)
+  M <- s2g * diag(m) - as.matrix(C)
+  Om <- rbind(cbind(s2g * diag(m), M), cbind(M, M))
+  e <- eigen((Om + t(Om))/2, symmetric = TRUE)
+  G <- e$vectors %*% diag(sqrt(pmax(e$values, 0)), 2*m)
+  r2 <- numeric(0)
+  for (k in split(seq_len(nsim), ceiling(seq_len(nsim) / 2000))) {
+    W <- G %*% matrix(stats::rnorm(2*m*length(k)), 2*m)
+    g <- W[seq_len(m), , drop = FALSE]; gh <- W[m + seq_len(m), , drop = FALSE]
+    gc <- sweep(g, 2, colMeans(g)); hc <- sweep(gh, 2, colMeans(gh))
+    r2 <- c(r2, colSums(gc * hc)^2 / (colSums(gc^2) * colSums(hc^2)))
+  }
+  mean(r2)
 }
 
 ## Oakey et al. (2006): the mean of the non-zero eigenvalues of I - G^-1 C
@@ -279,7 +365,9 @@ pm_h2_boot <- function(model, comp, methods, nboot, ncore = 1, seed = NULL) {
   one <- function(b) {
     fit <- suppressMessages(suppressWarnings(pm_mer_refit(model, ys[[b]])))
     cb <- tryCatch(pm_h2_components(fit, comp$genotype, comp$n_env_arg, comp$n_rep_arg), error = function(e) NULL)
+    if (!is.null(cb)) { cb$piepho <- comp$piepho; cb$nsim <- comp$nsim }
     if (is.null(cb)) return(stats::setNames(rep(NA_real_, length(methods)), methods))
+    set.seed(seeds[b])                                  # the simulated form draws too
     pm_h2_point(fit, cb, methods, y = ys[[b]])
   }
   out <- pm_perm_map(seq_len(nboot), one, ncore, packages = "predictmeans")
@@ -299,7 +387,7 @@ pm_h2_limits <- function(est, se, alpha) {
 print.pm_heritability <- function(x, digits = 4, ...) {
   cmp <- attr(x, "components")
   m <- x$method
-  kind <- c(if (any(m %in% c("standard", "cullis", "piepho", "oakey"))) "heritability on a line-mean basis",
+  kind <- c(if (any(m %in% c("standard", "cullis", "piepho", "oakey", "reliability", "simulated"))) "heritability on a line-mean basis",
             if ("family" %in% m) paste0("narrow-sense heritability of a single plant (relationship ",
                                         format(attr(x, "relationship"), digits = 3), ")"),
             if ("repeatability" %in% m) "repeatability of a single record")

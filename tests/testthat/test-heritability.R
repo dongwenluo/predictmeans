@@ -17,8 +17,9 @@ test_that("balanced data: the four forms are equal; the standard form from the c
   skip_on_cran()
   d <- h2_data()
   m <- lme4::lmer(y ~ (1 | blk) + (1 | gen), d)
-  h <- heritability(m, "gen", method = "all")
-  expect_equal(h$estimate, rep(h$estimate[1], 4), tolerance = 1e-6)
+  h <- heritability(m, "gen", method = "all", nsim = 2000, seed = 1)
+  expect_equal(h$estimate[1:4], rep(h$estimate[1], 4), tolerance = 1e-6)          # standard to Oakey
+  expect_equal(heritability(m, "gen", method = "piepho", piepho = "refit")$estimate, h$estimate[1], tolerance = 1e-6)
   vc <- as.data.frame(lme4::VarCorr(m))
   s2g <- vc$vcov[vc$grp == "gen"]
   expect_equal(h$estimate[1], s2g / (s2g + sigma(m)^2 / 4), tolerance = 1e-10)
@@ -48,7 +49,8 @@ test_that("unbalanced data: Cullis = Henderson's equations by hand; Piepho = emm
   skip_if_not_installed("emmeans")
   mf <- lme4::lmer(y ~ 0 + gen + (1 | blk), du)
   se2 <- summary(graphics::pairs(emmeans::emmeans(mf, "gen", lmer.df = "satterthwaite")))$SE^2
-  expect_equal(h$estimate[h$method == "piepho"], s2g / (s2g + mean(se2) / 2), tolerance = 1e-6)
+  pr <- heritability(m, "gen", method = "piepho", piepho = "refit")$estimate      # re-estimated components
+  expect_equal(pr, s2g / (s2g + mean(se2) / 2), tolerance = 1e-6)
 })
 
 test_that("several environments: the standard form divides by environments and plots per genotype", {
@@ -97,8 +99,8 @@ test_that("bootstrap SEs of the mixed-model forms: the same for any ncore; advic
   set.seed(2)
   du <- d[-sample(nrow(d), 15), ]
   m <- lme4::lmer(y ~ (1 | blk) + (1 | gen), du)
-  a <- heritability(m, "gen", method = "all", nboot = 20, seed = 1)
-  b <- heritability(m, "gen", method = "all", nboot = 20, seed = 1, ncore = 2)
+  a <- heritability(m, "gen", method = "all", nboot = 20, nsim = 500, seed = 1)
+  b <- heritability(m, "gen", method = "all", nboot = 20, nsim = 500, seed = 1, ncore = 2)
   expect_identical(a$std.error, b$std.error)
   expect_true(all(a$std.error > 0))
   expect_true(all(a$conf.low < a$estimate & a$conf.high > a$estimate))
@@ -111,12 +113,12 @@ test_that("Piepho and Möhring (2007), Example 1 (oats alpha design, John and Wi
   skip_on_cran()
   d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
   m <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d)
-  h <- heritability(m, "gen", method = "all")
-  expect_equal(round(h$estimate[h$method == "piepho"], 3), 0.803)     # H-bar^2, their Eq. 19
+  h <- heritability(m, "gen", method = "all", nsim = 2000, seed = 1)
+  expect_equal(round(heritability(m, "gen", method = "piepho", piepho = "refit")$estimate, 3), 0.803)  # their Eq. 19
   expect_equal(round(h$estimate[h$method == "cullis"], 3), 0.809)     # Cullis, their Eq. 20
   expect_true("h2_standard_unbalanced" %in% advice(h)$id)               # incomplete blocks
   m2 <- lme4::lmer(yield ~ rep + (1 | gen), d)                          # blocks dropped: RCB
-  expect_equal(round(heritability(m2, "gen", method = "all")$estimate, 3), rep(0.780, 4))
+  expect_equal(round(heritability(m2, "gen", method = "all", nsim = 2000, seed = 1)$estimate[1:4], 3), rep(0.780, 4))
 })
 
 test_that("the standard, Cullis and Oakey forms equal those of the heritable package", {
@@ -124,7 +126,7 @@ test_that("the standard, Cullis and Oakey forms equal those of the heritable pac
   skip_if_not_installed("heritable")
   d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
   m <- lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d)
-  h <- heritability(m, "gen", method = "all")
+  h <- heritability(m, "gen", method = c("all"), nsim = 2000, seed = 1)
   for (k in c("Cullis", "Oakey")) {
     expect_equal(h$estimate[h$method == tolower(k)], as.numeric(heritable::H2(m, target = "gen", method = k)),
                  tolerance = 1e-6)
@@ -133,3 +135,19 @@ test_that("the standard, Cullis and Oakey forms equal those of the heritable pac
   expect_equal(heritability(m2, "gen", method = "standard")$estimate,
                as.numeric(heritable::H2(m2, target = "gen", method = "Standard")), tolerance = 1e-6)
 })
+
+test_that("Schmidt et al. (2019), Examples 1 and 2 (oats, john.alpha): every published value of their Figure 1", {
+  skip_on_cran()
+  d <- read.csv(test_path("_data", "john-alpha.csv"), stringsAsFactors = TRUE)
+  ex1 <- heritability(lme4::lmer(yield ~ (1 | gen), d), "gen", method = "all", nsim = 1e5, seed = 1)
+  expect_equal(round(ex1$estimate[1:4], 2), rep(0.58, 4))                     # standard, Cullis, Piepho, Oakey
+  expect_equal(round(ex1$estimate[ex1$method == "reliability"], 3), 0.556)
+  expect_equal(round(ex1$estimate[ex1$method == "simulated"], 3), 0.578)
+  ex2 <- heritability(lme4::lmer(yield ~ rep + (1 | rep:block) + (1 | gen), d), "gen", method = "all",
+                      nsim = 1e5, seed = 1)
+  e <- setNames(round(ex2$estimate, 3), ex2$method)
+  expect_equal(unname(e[c("cullis", "piepho", "oakey", "reliability", "simulated")]),
+               c(0.809, 0.808, 0.809, 0.775, 0.804))
+  expect_equal(round(ex2$estimate[ex2$method == "standard"], 2), 0.84)
+})
+
