@@ -92,7 +92,7 @@
 #' fm <- lm(yield ~ block + variety, data = d)
 #' v <- residvariogram(fm, row = "row", col = "col", nsim = 19, plot = FALSE)
 #' v
-#' autoplot(v)
+#' ggplot2::autoplot(v)
 #' @export
 residvariogram <- function(model, row = NULL, col = NULL, coords = NULL, by = NULL, data = NULL, max_lag = NULL,
                            step = NULL, directions = NULL, segment = 45, lonlat = FALSE, robust = FALSE,

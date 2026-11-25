@@ -124,7 +124,7 @@ d$yield <- 10 + as.numeric(d$variety) + sin(d$row / 2) + cos(d$col / 2) + rnorm(
 fm <- lm(yield ~ block + variety, data = d)
 v <- residvariogram(fm, row = "row", col = "col", nsim = 19, plot = FALSE)
 v
-autoplot(v)
+ggplot2::autoplot(v)
 }
 \references{
 Cressie, N. and Hawkins, D. M. (1980). Robust estimation of the variogram. \emph{Mathematical Geology}, 12,
