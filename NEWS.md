@@ -161,7 +161,8 @@ shows 1.1.1 and 2.0 code side by side.
   al. (2006), for unbalanced trials; `method = "all"` shows them side by side. `method = "family"` gives the
   narrow-sense heritability of a single plant from half-sib or full-sib families (`relationship`), and
   `"repeatability"` that of single records; `"reliability"` (mean reliability) and `"simulated"` (Piepho and
-  Möhring's simulated r2). SEs: delta method, or a parametric bootstrap (`nboot`). Reproduces every value of
+  Möhring's simulated r2). Plot means: `within_variance`, `within_n` give the single-plant variance. SEs:
+  delta method, or a parametric bootstrap (`nboot`). Reproduces every value of
   Schmidt et al. (2019, Figure 1) for the oats alpha design.
 * `varcomp()` for every model class, with observed-information SEs and Satterthwaite intervals;
   `test = TRUE` tests each component (likelihood ratio, boundary mixture or parametric bootstrap).

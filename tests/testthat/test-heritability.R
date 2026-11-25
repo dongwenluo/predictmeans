@@ -151,3 +151,51 @@ test_that("Schmidt et al. (2019), Examples 1 and 2 (oats, john.alpha): every pub
   expect_equal(round(ex2$estimate[ex2$method == "standard"], 2), 0.84)
 })
 
+
+test_that("single-tree h2 from plot means: Williams, Harwood and Matheson (2023), Example 6.2, pages 104 and 107", {
+  skip_on_cran()
+  d <- read.csv(test_path("_data", "tree", "ex6.2.csv"))
+  for (v in c("Replication", "Family", "Province")) d[[v]] <- factor(d[[v]])
+  # the book's calculation (eda4treeR's code): s2m = residual mean square - s2w / harmonic mean of trees
+  book <- function(dd, m) {
+    w <- length(dd$Dbh.count) / sum(1/dd$Dbh.count); s2w <- mean(dd$Dbh.variance)
+    s2m <- sigma(m)^2 - s2w / w                        # = the residual mean square of the plot means (balanced)
+    sf <- as.data.frame(lme4::VarCorr(m))$vcov[1]
+    (sf / 0.3) / (s2w + s2m + sf)
+  }
+  d1 <- droplevels(subset(d, Province == "PNG"))
+  m1 <- lme4::lmer(Dbh.mean ~ Replication + (1 | Family), d1)
+  h1 <- heritability(m1, "Family", method = "family", relationship = 0.3,
+                     within_variance = "Dbh.variance", within_n = "Dbh.count")
+  expect_equal(h1$estimate, book(d1, m1), tolerance = 1e-10)
+  expect_equal(round(as.data.frame(lme4::VarCorr(m1))$vcov[1], 4), 0.2584)        # book, page 104
+  expect_equal(round(h1$estimate, 4), 0.1933)
+  m2 <- lme4::lmer(Dbh.mean ~ Replication + Province + (1 | Family), d)
+  h2 <- heritability(m2, "Family", method = "family", relationship = 0.3,
+                     within_variance = "Dbh.variance", within_n = "Dbh.count")
+  expect_equal(round(as.data.frame(lme4::VarCorr(m2))$vcov[1], 4), 0.3514)        # book, page 107
+  expect_equal(round(h2$estimate, 4), 0.2638)
+  expect_error(heritability(m1, "Family", method = "family", relationship = 0.3, within_n = 5), "both")
+  expect_output(print(h1), "within plots")
+})
+
+test_that("Genstat REML (dev/genstat/heritability.gen, run 2026-11-25): components, BLUE variance, family h2", {
+  skip_on_cran()
+  d <- h2_data()
+  set.seed(2)
+  du <- d[-sample(nrow(d), 15), ]
+  m <- lme4::lmer(y ~ (1 | blk) + (1 | gen), du)
+  vc <- as.data.frame(lme4::VarCorr(m))
+  expect_equal(c(vc$vcov[vc$grp == "gen"], vc$vcov[vc$grp == "blk"], sigma(m)^2), c(4.373, 0.364, 3.401),
+               tolerance = 2e-3)
+  # Genstat, genotypes fixed (block variance re-estimated): average variance of differences 2.212
+  expect_equal(predictmeans:::pm_h2_vblue(m, "gen"), 2.212, tolerance = 5e-4)
+  set.seed(3)
+  f <- expand.grid(tree = 1:4, fam = factor(1:30), blk = factor(1:6))
+  f$y <- rnorm(30, 0, 1)[f$fam] + rnorm(6, 0, 1)[f$blk] + rnorm(180, 0, 0.7)[interaction(f$fam, f$blk)] +
+    rnorm(nrow(f), 0, 2)
+  mf <- lme4::lmer(y ~ (1 | blk) + (1 | fam) + (1 | fam:blk), f)
+  h <- heritability(mf, "fam", method = "family", relationship = 1/4)
+  expect_equal(h$estimate, 4 * 0.528 / (0.528 + 0.648 + 3.899), tolerance = 2e-3)   # Genstat components
+})
+

@@ -162,7 +162,7 @@ omits constants, so only differences compare with lme4's.
 parallel to `dev/sas/type1-exam8.2.sas`, for `anova(type = "I", type1_basis = "fitted", ddf = "KR-average")`
 and `anova(type = "II", ddf = "KR-average")`; two orders of the fixed terms. R values in the header.
 
-`heritability.gen` (to run, 2026-11-25): REML of two simulated data sets (data inline) for `heritability()`:
+`heritability.gen` (run 1 2026-11-25, `genstat-results-2026-11-25-heritability.txt`: components and BLUE variance agree; A1 to rerun with METHOD=Fisher): REML of two simulated data sets (data inline) for `heritability()`:
 genotypes random with the average variance of differences of BLUPs (Cullis) and VHERITABILITY if available,
 genotypes fixed (Piepho), half-sib families with plots (single-tree h2). R values in the header.
 

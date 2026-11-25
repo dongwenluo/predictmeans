@@ -1226,6 +1226,87 @@ predm_seedlotN %>%
 
 
 
+## **6.2 Example 6.2 (Pg. 94)**
+
+### Data Info {.tabset .tabset-pills}
+
+Open-pollinated families from three provenance regions (PNG, Sabah, Queensland), 48 families in four
+replicates, one plot per family and replicate. The data are plot means of diameter (`Dbh.mean`) with the
+variance among the trees of each plot (`Dbh.variance`) and their number (`Dbh.count`).
+
+#### Structure
+
+```{r}
+data(DataExam6.2, package = "eda4treeR")
+DataExam6.2.1 <- droplevels(subset(DataExam6.2, Province == "PNG"))
+str(DataExam6.2)
+```
+
+#### Summary
+
+```{r}
+print(dfSummary(DataExam6.2,
+                varnumbers   = FALSE,
+                valid.col    = FALSE,
+                graph.magnif = 0.76),
+      method = 'render')
+```
+
+### Modelling {.tabset .tabset-pills}
+
+#### Model (PNG families)
+
+Families are random; replicates fixed.
+
+```{r}
+fm6.3.1 <- lmer(Dbh.mean ~ Replication + (1 | Family), data = DataExam6.2.1)
+gt(varcomp(fm6.3.1), rownames_to_stub = TRUE)
+```
+
+#### Residual Plot
+
+```{r}
+residplot(fm6.3.1)
+```
+
+### Heritability {.tabset .tabset-pills}
+
+#### Single tree (Pg. 104)
+
+Narrow-sense heritability of a single tree: the additive variance is the family variance divided by the
+coefficient of relationship among members of an open-pollinated family, taken as 0.3 in the book (between
+half-sibs, 0.25, and full-sibs, 0.5). Plot means hold only 1/n of the variance among trees within a plot, so the
+single-tree variance needs that variance (`within_variance`) and the number of trees per plot (`within_n`,
+harmonic mean): \(\sigma^2_P = \sigma^2_f + \sigma^2_m + \sigma^2_w\), with plot variance
+\(\sigma^2_m = \sigma^2_e - \sigma^2_w/n\).
+
+```{r}
+heritability(fm6.3.1, "Family", method = "family", relationship = 0.3,
+             within_variance = "Dbh.variance", within_n = "Dbh.count")
+```
+
+#### Family means
+
+The heritability of family means (the precision of the family ranking in this trial). The data are balanced,
+so all line-mean forms agree (the mean reliability and the simulated form are slightly lower with 48
+families; see `?heritability`).
+
+```{r}
+heritability(fm6.3.1, "Family", method = "all", seed = 1)
+```
+
+#### All provenances (Pg. 107)
+
+With all three provenances, provenance is a fixed effect, so the family variance is that within provenances.
+
+```{r}
+fm6.4.1 <- lmer(Dbh.mean ~ Replication + Province + (1 | Family), data = DataExam6.2)
+gt(varcomp(fm6.4.1), rownames_to_stub = TRUE)
+heritability(fm6.4.1, "Family", method = "family", relationship = 0.3,
+             within_variance = "Dbh.variance", within_n = "Dbh.count")
+```
+
+
 ## **8.1 Example 8.1 (Pg. 139)**
 
 ### Data Info {.tabset .tabset-pills}
@@ -1508,6 +1589,15 @@ Improvement*. CSIRO Publishing. <https://www.publish.csiro.au/book/3145/>.
 
 -   Yaseen, M., Ullah, S., Eskridge, K. M. and Williams, E. (2023). eda4treeR: Experimental Design and
 Analysis for Tree Improvement. R package. <https://CRAN.R-project.org/package=eda4treeR>.
+
+-   Cullis, B. R., Smith, A. B. and Coombes, N. E. (2006). On the design of early generation variety trials
+with correlated data. *Journal of Agricultural, Biological, and Environmental Statistics*, 11, 381--393.
+
+-   Piepho, H.-P. and Möhring, J. (2007). Computing heritability and selection response from unbalanced plant
+breeding trials. *Genetics*, 177, 1881--1888.
+
+-   Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019). Heritability in plant breeding on a
+genotype-difference basis. *Genetics*, 212, 991--1008.
 
 -   Kenward, M. G. and Roger, J. H. (1997). Small sample inference for fixed effects from restricted maximum
 likelihood. *Biometrics*, 53, 983--997. <https://doi.org/10.2307/2533558>.

@@ -63,6 +63,12 @@
 #' @param n_env,n_rep For \code{"standard"}: the number of environments (levels of the genotype x environment
 #'   terms) and of replicates per environment; by default from the data.
 #' @param relationship For \code{"family"}: the coefficient of relationship among members of a family.
+#' @param within_variance,within_n For \code{"family"} and \code{"repeatability"} from plot means: the variance
+#'   among plants within plots and the number of plants per plot (numbers, or names of columns of the data:
+#'   the mean of the variances, the harmonic mean of the numbers). The single-plant variance is then
+#'   \eqn{\sigma^2_f + \sum_t \sigma^2_t + (\sigma^2_e - \sigma^2_w/n) + \sigma^2_w}, as Williams et al. (2023,
+#'   Example 6.2), with \eqn{\sigma^2_e - \sigma^2_w/n} the plot variance; \eqn{\sigma^2_w} is taken as known in
+#'   the standard error.
 #' @param nboot For the mixed-model forms (Cullis to simulated): parametric bootstrap draws for their
 #'   standard error and percentile limits (each draw refits the model; 0, the default, gives none). The other
 #'   forms get theirs by the delta method from the covariance of the variance parameters, as \code{varcomp()}.
@@ -98,7 +104,8 @@
 heritability <- function(model, genotype,
                          method = c("cullis", "piepho", "standard", "oakey", "reliability", "simulated", "family",
                                     "repeatability", "all"),
-                         relationship = NULL, n_env = NULL, n_rep = NULL, piepho = c("fixed", "refit"),
+                         relationship = NULL, within_variance = NULL, within_n = NULL,
+                         n_env = NULL, n_rep = NULL, piepho = c("fixed", "refit"),
                          nsim = 10000, nboot = 0, ncore = 1, seed = NULL, conf_level = 0.95) {
   method <- match.arg(method)
   piepho <- match.arg(piepho)
@@ -118,6 +125,7 @@ heritability <- function(model, genotype,
   comp <- pm_h2_components(model, genotype, n_env, n_rep)
   comp$piepho <- piepho
   comp$nsim <- nsim
+  comp$within <- pm_h2_within(model, within_variance, within_n)
   est <- pm_h2_point(model, comp, methods, relationship)
   # SE and limits: the delta method on the variance parameters for the forms
   # that are functions of the components; a parametric bootstrap for the
@@ -142,7 +150,7 @@ heritability <- function(model, genotype,
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
   out <- structure(out, class = c("pm_heritability", "data.frame"), conf_level = conf_level,
-                   components = comp[c("s2g", "terms", "s2e", "n_terms", "n_plots")], relationship = relationship,
+                   components = comp[c("s2g", "terms", "s2e", "n_terms", "n_plots", "within")], relationship = relationship,
                    genotype = genotype,
                    nboot = if (!is.null(bt)) sum(stats::complete.cases(bt)) else 0)
   pm_add_advice(out, tryCatch(pm_heritability_advice(out, comp, nboot), error = function(e) NULL))
@@ -177,7 +185,11 @@ pm_h2_vc <- function(comp) {
 pm_h2_vfun <- function(comp, relationship = NULL) {
   g <- paste0(comp$genotype, ".(Intercept)")
   tt <- pm_h2_tnames(comp$with_g)
-  single <- function(v) v[[g]] + sum(v[tt]) + v[["residual"]]
+  # plot means: the residual holds s2w / n of the plants within plots; a
+  # single plant has all of s2w (s2w: the within-plot variance, n: plants per plot)
+  w <- comp$within
+  extra <- if (is.null(w)) 0 else w$s2w * (1 - 1/w$n)
+  single <- function(v) v[[g]] + sum(v[tt]) + v[["residual"]] + extra
   list(standard = function(v) v[[g]] / (v[[g]] + sum(v[tt] / comp$n_terms) + v[["residual"]] / comp$n_plots),
        family = function(v) (v[[g]] / relationship) / single(v),
        repeatability = function(v) v[[g]] / single(v))
@@ -340,6 +352,27 @@ pm_h2_oakey <- function(C, s2g) {
   mean(ev[ev > 1e-8])
 }
 
+## The variance among plants within plots and the number of plants per plot,
+## for plot-mean data: numbers, or names of columns of the model's data (the
+## mean of the variances, the harmonic mean of the numbers). NULL without them.
+pm_h2_within <- function(model, within_variance, within_n) {
+  if (is.null(within_variance) && is.null(within_n)) return(NULL)
+  if (is.null(within_variance) || is.null(within_n)) {
+    stop("Give both 'within_variance' and 'within_n' (plot means: the variance among plants within plots and ",
+         "the number of plants per plot).", call. = FALSE)
+  }
+  get <- function(x) {
+    if (is.character(x)) {
+      dat <- pm_get_data(model)
+      if (!x %in% names(dat)) stop("'", x, "' is not a column of the model's data.", call. = FALSE)
+      dat[[x]]
+    } else x
+  }
+  v <- get(within_variance); n <- get(within_n)
+  v <- v[is.finite(v)]; n <- n[is.finite(n) & n > 0]
+  list(s2w = mean(v), n = length(n) / sum(1/n))
+}
+
 ## Names of random intercept terms as pm_vc_mer_fun() gives them (none for none:
 ## paste0() would return ".(Intercept)" for an empty vector).
 pm_h2_tnames <- function(t) if (length(t)) paste0(t, ".(Intercept)") else character(0)
@@ -395,6 +428,9 @@ print.pm_heritability <- function(x, digits = 4, ...) {
       format(100 * attr(x, "conf_level")), "% limits)\n", sep = "")
   cat("Variance of ", attr(x, "genotype"), " ", format(cmp$s2g, digits = digits), "; residual ",
       format(cmp$s2e, digits = digits),
+      if (!is.null(cmp$within) && any(m %in% c("family", "repeatability")))
+        paste0("; within plots ", format(cmp$within$s2w, digits = digits), " (", format(cmp$within$n, digits = 3),
+               " plants per plot)"),
       if (length(cmp$terms)) paste0("; ", paste(names(cmp$terms), format(cmp$terms, digits = digits), sep = " ",
                                                  collapse = ", ")), "\n\n", sep = "")
   y <- x

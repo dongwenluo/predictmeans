@@ -1,4 +1,7 @@
 \ Heritability reference for predictmeans::heritability() (R/heritability.R).
+\ Run 1 (2026-11-25, genstat-results-2026-11-25-heritability.txt): components of A and B and
+\ the BLUE variance (2.212) agree; A1 needed METHOD=Fisher for SEDs of BLUPs and
+\ VHERITABILITY printed nothing with PRINT=* (fixed below): please run part A1 again.
 \ Please save the whole Output window (File > Save) and send that file; the
 \ first run may need small syntax fixes (VHERITABILITY may not exist in older
 \ versions: then delete those lines; the average variances of differences of
@@ -91,8 +94,9 @@ READ gen, blk, y
 20 4 8.801040
 :
 VCOMPONENTS RANDOM=blk + gen
-REML [PRINT=model, components, means; PTERMS=gen] y
-VHERITABILITY [PRINT=*] TERM=gen
+\ METHOD=Fisher: the sparse method cannot form SEDs of predictions of a random term
+REML [PRINT=model, components, means; PTERMS=gen; METHOD=Fisher] y
+VHERITABILITY TERM=gen
 
 \ ---- A2: genotypes fixed; their means (BLUEs) and SEDs (Piepho) ----
 VCOMPONENTS [FIXED=gen] RANDOM=blk

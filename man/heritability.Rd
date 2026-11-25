@@ -10,6 +10,8 @@ heritability(
   method = c("cullis", "piepho", "standard", "oakey", "reliability", "simulated",
     "family", "repeatability", "all"),
   relationship = NULL,
+  within_variance = NULL,
+  within_n = NULL,
   n_env = NULL,
   n_rep = NULL,
   piepho = c("fixed", "refit"),
@@ -30,6 +32,13 @@ heritability(
 line-mean forms: standard to simulated).}
 
 \item{relationship}{For \code{"family"}: the coefficient of relationship among members of a family.}
+
+\item{within_variance, within_n}{For \code{"family"} and \code{"repeatability"} from plot means: the variance
+among plants within plots and the number of plants per plot (numbers, or names of columns of the data:
+the mean of the variances, the harmonic mean of the numbers). The single-plant variance is then
+\eqn{\sigma^2_f + \sum_t \sigma^2_t + (\sigma^2_e - \sigma^2_w/n) + \sigma^2_w}, as Williams et al. (2023,
+Example 6.2), with \eqn{\sigma^2_e - \sigma^2_w/n} the plot variance; \eqn{\sigma^2_w} is taken as known in
+the standard error.}
 
 \item{n_env, n_rep}{For \code{"standard"}: the number of environments (levels of the genotype x environment
 terms) and of replicates per environment; by default from the data.}

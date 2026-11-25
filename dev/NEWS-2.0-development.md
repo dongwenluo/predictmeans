@@ -2926,4 +2926,13 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   the papers sent by the maintainer were checked against the PDFs; errors
   listed in the conversation (Oakey under kinship is low, not high; no
   synthetic simulation studies; P&M Example 3 used a pedigree).
+* heritability() and the article (2026-11-25): `within_variance`, `within_n`
+  for plot means (single-plant variance s2f + terms + (s2e - s2w/n) + s2w);
+  Example 6.2 of the book (tests/testthat/_data/tree/ex6.2.csv): single-tree
+  h2 0.1933 (PNG, page 104) and 0.2638 (all provenances, page 107) = the book's
+  calculation (eda4treeR's code), s2f 0.2584 and 0.3514; new article section
+  "6.2 Example 6.2" (single tree, family means, all provenances). Genstat run
+  1 of dev/genstat/heritability.gen: components and the BLUE variance (2.212,
+  refit) agree; A1 to rerun (METHOD=Fisher for SEDs of BLUPs; VHERITABILITY
+  without PRINT=*).
 
