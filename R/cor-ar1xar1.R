@@ -162,7 +162,7 @@ corMatrix.corAR1xAR1 <- function(object, covariate = nlme::getCovariate(object),
 #' @exportS3Method nlme::corFactor
 corFactor.corAR1xAR1 <- function(object, ...) {
   if (!is.null(aux <- attr(object, "factor"))) return(aux)    # (coef<- computed it for these parameters)
-  val <- corMatrix(object, corr = FALSE)
+  val <- nlme::corMatrix(object, corr = FALSE)
   lD <- attr(val, "logDet")
   if (is.list(val)) val <- unlist(lapply(val, as.vector))
   else val <- as.vector(val)
