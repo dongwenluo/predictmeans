@@ -40,6 +40,20 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
 
 ## Open: next steps, in order
 
+0. **Finish the B4 block (state 2026-11-26, branch `claude/wizardly-gauss-gpqwr4`, not yet a PR).**
+   Done: trial count (trials default, advice on rows), B4 G1-G4, semireg KR pairs, all reviews
+   but the last; full suite passed before the last fixes (4,454 expectations, 1 failure fixed).
+   The last review's fixes are in (per-pair KR in `pm_sr_kr()`, `R/semireg-engine.R`; clmm
+   permutation factor strata from the model frame; note at Pearson p < 0.2; docs). Still to do:
+   - a bug found by the last test: `semireg(y ~ g * h + s(x, by = g) + (1 | blk))` then
+     `predictmeans(fit, "g:h", atvar = "g")` stops in the Satterthwaite df
+     (`grad %*% parts$vcov_varpar: non-conformable`, `pm_sr_satt_ddf()`); probably older than
+     this block; fix and add the per-pair KR check of that design to `test-advice-semireg.R`;
+   - `dev/sim-clmm-few/README.md`: say the t column is the Type II chi-square of trt with the
+     inner-outer df (not predictmeans' pair contrast), sets 296-298, drop "useful from 10-12";
+   - `contrastmeans()` of semireg fits labels its df "residual" with df Inf (older);
+   - full suite, `pkgdown::check_pkgdown()`, R CMD check, one PR, watch CI, merge when green.
+
 1. **CRAN.** The 2.0.0 resubmission fixes are on `main` (fewer slow tests,
    `\usage` for three pages, `cran-comments.md`). Since then `main` has grown
    (ordinal and categorical models, `residvariogram()`, `heritability()`,
@@ -85,7 +99,7 @@ Details and file names in O16/O17; user-facing summary in NEWS.md.
   `pm_freq_w()`); `settings$weights_by`.
 - **Inner-outer df of aggregated binomial GLMMs** count trials (cases), not
   rows (the maintainer's decision; `dev/sim-df-io-trials.R`: rows 0-2.6%,
-  trials 3.7-4.3% at 5%; overdispersed 9-12% vs rows 3.5%);
+  trials 3.7-4.3% at 5%; overdispersed 9.25% vs rows 3.5%);
   `options(predictmeans.inner_outer_count = "rows")`; advice
   `overdispersion_trials` says when to count rows. SAS check pending:
   `dev/sas/glimmix-trials.sas`.

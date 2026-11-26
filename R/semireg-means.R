@@ -45,8 +45,12 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   # lmer fit (decision of 2026-11-26); means, which use the smooth's random coefficients, keep Satterthwaite
   kr <- if (isTRUE(vcov_adjust) && n > 1 && !is.null(des$cov_idx)) pm_sr_kr(semireg, CM %*% D, des$cov_idx)
   if (!is.null(kr)) {
-    dfs[-seq_len(n)] <- kr$df
-    df_label <- paste0("Kenward-Roger (pairs, fixed effects; adjusted SEs); ", df_label, " (means)")
+    pd <- dfs[-seq_len(n)]
+    pd[kr$rows] <- kr$df
+    dfs[-seq_len(n)] <- pd
+    df_label <- paste0("Kenward-Roger (", if (all(kr$rows)) "pairs" else paste0(sum(kr$rows), " of ", length(kr$rows),
+                       " pairs, those of fixed effects only"), "; adjusted SEs); ", df_label,
+                       if (all(kr$rows)) " (means)" else " (means, other pairs)")
   }
   df_m <- dfs[seq_len(n)]
   tq <- stats::qt(1 - level/2, df_m)
@@ -68,7 +72,8 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     pp <- pm_pair_index(n)
     df_p <- dfs[-seq_len(n)]
     pe <- drop(CM %*% est)
-    pV <- if (is.null(kr)) CM %*% V %*% t(CM) else kr$V
+    pV <- CM %*% V %*% t(CM)
+    if (!is.null(kr)) pV[kr$rows, kr$rows] <- kr$V          # (the KR-adjusted block of the fixed-effect pairs)
     pse <- sqrt(diag(pV))
     stat <- pe/pse
     p <- 2*stats::pt(-abs(stat), df_p)
@@ -120,6 +125,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   zi <- pm_zi_component(semireg)
   if (!is.null(zi)) message(attr(zi, "note"))
   settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
+                   vcov = "model",
                    df_cases = if (is.null(df_cases)) NA_character_ else df_cases,
                    vcov_adjust = !is.null(kr), nperm = NA_integer_, covariates = covariate, weights_by = NA_character_,
                    component = if (is.null(pm_zi_component(semireg))) NA_character_ else "conditional", model_class = "semireg",
@@ -146,25 +152,4 @@ print.pm_semimeans <- function(x, digits = 4, ...) {
   }
   pm_print_advice(x)
   invisible(x)
-}
-
-## Kenward-Roger for the pairs of semireg means (gaussian lme4 engine): when
-## every row of L (columns: the coefficients 'idx' of the fit, fixed effects
-## first) uses fixed effects only, list(V: their KR-adjusted covariance, df:
-## KR df), from the REML mixed model of the fit (pm_vcov_kr(), R/kr.R); NULL
-## otherwise (a row with smooth random coefficients, a glmmTMB or ML fit, or
-## a failed adjustment: then Satterthwaite, with a message for the failure).
-pm_sr_kr <- function(semireg, L, idx) {
-  semer <- semireg$semer
-  if (!inherits(semer, "lmerMod") || !isTRUE(lme4::getME(semer, "is_REML"))) return(NULL)
-  p <- length(lme4::fixef(semer))
-  L <- as.matrix(L)
-  fx <- idx <= p
-  if (any(abs(L[, !fx, drop = FALSE]) > 1e-10)) return(NULL)
-  Lf <- matrix(0, nrow(L), p)
-  Lf[, idx[fx]] <- L[, fx, drop = FALSE]
-  Vadj <- pm_try_vcov_kr(semer)
-  if (is.null(Vadj)) return(NULL)
-  V0 <- as.matrix(stats::vcov(semer))
-  list(V = Lf %*% as.matrix(Vadj) %*% t(Lf), df = as.numeric(pm_kr_ddf(Lf, V0, Vadj)))
 }

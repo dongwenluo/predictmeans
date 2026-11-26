@@ -40,6 +40,10 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
   const <- function(x, g) all(tapply(as.character(x), g, function(v) length(unique(v)) == 1L))
   nested_in <- function(g, f) nlevels(f) < nlevels(g) && const(f, g)
   is_fac <- function(x) is.factor(x) || is.character(x) || is.logical(x)
+  # the variables the model uses as factors (from its frame: factor(block) of a numeric column is a factor)
+  mf <- stats::model.frame(stats::delete.response(stats::terms(ff)), d, na.action = stats::na.pass)
+  fac_vars <- unique(unlist(lapply(names(mf)[vapply(mf, is_fac, logical(1))],
+                                   function(nm) all.vars(str2lang(nm)))))
   aT <- pm_anova(model, type = type, test_statistic = "Chisq")
   tests <- list()
   for (v in intersect(tl, fvars)) {                      # main-effect terms of one variable
@@ -48,7 +52,7 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
     k <- ks[which.min(vapply(gf[ks], nlevels, integer(1)))]       # the coarsest grouping that holds v
     g <- gf[[k]]
     first <- !duplicated(g)
-    others <- setdiff(fvars[vapply(fvars, function(u) is_fac(d[[u]]) && const(d[[u]], g), logical(1))], v)
+    others <- setdiff(fvars[vapply(fvars, function(u) u %in% fac_vars && const(d[[u]], g), logical(1))], v)
     coarse <- gf[vapply(gf, function(f) nested_in(g, f), logical(1))]
     strata_df <- c(lapply(d[others], function(x) x[first]), lapply(coarse, function(f) f[first]))
     strat <- if (length(strata_df)) do.call(paste, c(lapply(strata_df, as.character), sep = "\r")) else
@@ -66,7 +70,7 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
   ANOVA[names(p), "Perm_p_value"] <- round(p, 4)
   ctab <- pm_coef_table(model)
   COEF <- round(cbind(ctab, Perm_p_value = NA_real_), 4)
-  X1 <- pm_basis(model, d[1, , drop = FALSE])
+  X1 <- pm_basis(model, d)                               # (all rows: factor() terms need their levels)
   inter <- tl[grepl(":", tl, fixed = TRUE)]
   for (v in names(p)) {
     # one coefficient whose z^2 is the term's statistic (v in no interaction): the same test
@@ -81,8 +85,13 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
                               paste(c("Note: Perm_p_value from randomisation of whole clusters:", notes),
                                     collapse = " "))
   # (the advice on few resamples for the variables tested by random allocations)
-  B <- unlist(lapply(res, function(r) if (!r$exact) r$B))
-  if (length(B)) out <- pm_add_advice(out, pm_perm_advice(out, min(B), FALSE))
+  rnd <- names(res)[!vapply(res, `[[`, TRUE, "exact")]
+  if (length(rnd)) {
+    tmp <- out                                          # (only the p-values of random allocations are judged)
+    tmp$ANOVA[setdiff(rownames(tmp$ANOVA), rnd), "Perm_p_value"] <- NA
+    tmp$COEFFICENTS <- NULL
+    out <- pm_add_advice(out, pm_perm_advice(tmp, min(vapply(res[rnd], `[[`, 0, "B")), FALSE))
+  }
   attr(out, "resampling") <- "cluster randomisation"
   out
 }
@@ -107,7 +116,8 @@ pm_perm_clmm_one <- function(model, d, tt, aT, nperm, type, seed, ncore) {
     }, logical(1)))
   wt <- if (sym) factorial(length(lv)) else 1
   ncls <- round(count / wt)
-  enumerate <- ncls <= nperm
+  # (all allocations are generated before the canonical filter: at most 2e5 of them)
+  enumerate <- ncls <= nperm && count <= 2e5
   obs_a <- match(lev, lv)                                 # the observed allocation (canonical: levels by first use)
   alloc <- if (enumerate) {
     per <- lapply(by_s, function(i) pm_multiset_perms(match(lev[i], lv)))

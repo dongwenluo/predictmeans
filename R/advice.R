@@ -64,7 +64,7 @@ pm_advice_get <- function(x) {
 #'   \code{bias_adjust} \tab predictmeans, covariatemeans \tab back-transformed means are a typical cluster's or a median, not the mean \cr
 #'   \code{contrast_common_cells} \tab contrastmeans \tab contrasts are estimated on the cells their means share \cr
 #'   \code{small_df} \tab predictmeans, contrastmeans \tab degrees of freedom below 5 \cr
-#'   \code{overdispersion_trials} \tab predictmeans, contrastmeans \tab inner-outer df count binomial trials and the Pearson ratio is above 1 (caution when its test rejects): add an observation-level random effect or count rows \cr
+#'   \code{overdispersion_trials} \tab predictmeans, contrastmeans \tab inner-outer df count binomial trials and the Pearson test of the fit gives p < 0.2 (caution below 0.05): add an observation-level random effect or count rows \cr
 #'   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
@@ -142,17 +142,18 @@ pm_advice_limits <- list(se_ratio = 3, min_df = 5, many_tests = 6)
 ## Inner-outer df that count trials (pm_df_cases(); the default, the
 ## maintainer's decision of 2026-11-26) assume binomial variation within
 ## clusters: overdispersion the fit leaves out makes their tests too liberal
-## (9-12% at 5%, rows 3.5%: dev/sim-df/README.md), and the fit's Pearson test
-## finds it in few data sets (about 15% at row SD 0.3). When a df of this
-## result ('df') is the trials' stratum: a caution when the Pearson test
-## (pm_check_dispersion()) rejects, a note when its ratio is above 1 without
-## rejecting (possible overdispersion); NULL otherwise. Both say when to count
-## rows instead.
+## (9.25% at 5% for row SD 0.3, rows 3.5%: dev/sim-df/README.md), and the
+## fit's Pearson test has little power. When a df of this result ('df') is
+## the trials' stratum: a caution when the Pearson test (pm_check_dispersion())
+## gives p < 0.05, a note when p < 0.2 (4 x 6 binomial design, 400 fits each:
+## no overdispersion 0.75% / 6%, row SD 0.3 14% / 35%, SD 0.5 55% / 78%; a
+## ratio above 1 fired on 21% of correct fits); NULL otherwise. Both say when
+## to count rows instead.
 pm_advice_overdisp <- function(model, df, df_cases) {
   tdf <- attr(df_cases, "df")
   if (!length(tdf) || !any(abs(df - tdf) < 1e-8, na.rm = TRUE)) return(NULL)
   dp <- tryCatch(pm_check_dispersion(model), error = function(e) NULL)
-  if (!identical(dp$kind, "tested") || !isTRUE(dp$ratio > 1)) return(NULL)
+  if (!identical(dp$kind, "tested") || !isTRUE(dp$p_over < 0.2)) return(NULL)
   fix <- paste0("add an observation-level random effect, (1 | obs) with obs = factor(1:nrow(data)) (its df then ",
                 "count rows), or count rows: options(predictmeans.inner_outer_count = \"rows\") (conservative).")
   if (isTRUE(dp$p_over < 0.05)) {
@@ -163,8 +164,8 @@ pm_advice_overdisp <- function(model, df, df_cases) {
   }
   pm_advice("overdispersion_trials", paste0(
     "The df count trials, which assumes binomial variation within clusters; the Pearson chi-square / df is ",
-    format(signif(dp$ratio, 3)), " (above 1, not significant, but the test has little power). If the trials of a ",
-    "row are not independent (plants in a pot, animals in a pen), ", fix), "note")
+    format(signif(dp$ratio, 3)), " (p ", format.pval(dp$p_over, digits = 2), ": not significant, but the test has ",
+    "little power). If the trials of a row are not independent (plants in a pot, animals in a pen), ", fix), "note")
 }
 
 pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL, singular = TRUE) {

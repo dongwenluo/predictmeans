@@ -3375,3 +3375,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * semireg KR evidence (dev/sim-semireg-kr/): coverage of 95% pair limits,
   KR 94.9% / 94.9%, unadjusted 94.5% / 94.2% (Slate Hall with t2() trend, 200
   sets; 4 groups x 6 blocks with s(x), 500 sets): the KR default stays.
+* Seventh review (13 findings): factor(block) strata from the model frame and
+  the basis on all rows (pm_perm_clmm()); KR per pair (pm_sr_kr() moved to
+  R/semireg-engine.R; rows with NA or smooth coefficients keep Satterthwaite;
+  a KR df failure falls back with a message); summary() header "(pairs of
+  fixed effects)" and settings$vcov for semireg means; trials note at
+  Pearson p < 0.2 (null 6%, ratio > 1 had 21%); "9.25%" instead of "9-12%";
+  AR1 SEDs 0.598 / 0.617 with nugget; few-resamples advice only for random
+  allocations; enumeration capped at 2e5 allocations; KR test with a fitted
+  curve and pbkrtest::vcovAdj() as outside reference; CLAUDE.md effort note.
+  Open (HANDOVER step 0): by= smooth Satterthwaite bug, sim README wording,
+  contrastmeans df label for semireg.

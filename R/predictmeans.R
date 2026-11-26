@@ -34,7 +34,9 @@
 #'   random effects; SAS gives such df to estimates that involve random effects), from the design's variance
 #'   components and the residual with the smoothing parameters held at their estimates (as \code{\link{semipred}});
 #'   pairs that are contrasts of the fixed effects only (the smooths cancel) get the Kenward-Roger adjusted SEs and
-#'   df of the REML mixed model, as an \code{lmer} fit (\code{vcov_adjust = FALSE}: unadjusted, Satterthwaite);
+#'   df of the REML mixed model, as an \code{lmer} fit, each such pair whatever the others (\code{vcov_adjust =
+#'   FALSE}: unadjusted, Satterthwaite; \code{vcov()} of the result is the means' unadjusted covariance;
+#'   \code{semipred()} differences of curves, which use the smooths, keep Satterthwaite);
 #'   for generalized fits the inner-outer df of the design's strata (the GLMM default; normal-based without random
 #'   terms besides the smooths).
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
@@ -195,11 +197,11 @@
 #'   the check with few clusters. Within clusters the cases count: the trials of aggregated binomial data and the
 #'   case weights of \code{clmm} (\code{settings$df_cases}), so aggregated data and one row per case get the same
 #'   df (counting rows rejected 0-2.6\% in simulations, counting trials 3.7-4.3\%). Trials assume binomial
-#'   variation within clusters: with overdispersion the model leaves out they were too liberal (9-12\%, rows
+#'   variation within clusters: with overdispersion the model leaves out they were too liberal (9.25\%, rows
 #'   3.5\%). Count rows (\code{options(predictmeans.inner_outer_count = "rows")}, conservative) or add an
 #'   observation-level random effect (\code{(1 | obs)}, whose df count rows) when the trials of a row are not
-#'   independent (plants in a pot, animals in a pen) or the Pearson chi-square / df is above 1; the advice
-#'   \code{overdispersion_trials} says so for the fit. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
+#'   independent (plants in a pot, animals in a pen) or the fit's Pearson test suggests overdispersion; the advice
+#'   \code{overdispersion_trials} says so for the fit (p < 0.2). \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
 #'   and \code{"inner-outer"} for \code{lmer} and \code{lme}.
 #'   \code{glm} models with a known dispersion (Poisson, binomial, negative binomial) get z tests
 #'   (\code{"asymptotic (z)"}), as \pkg{emmeans} and SAS GLIMMIX; \code{"residual"} gives the t tests with the

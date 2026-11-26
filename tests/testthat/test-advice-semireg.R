@@ -54,12 +54,18 @@ test_that("summary() of semireg means works (the means carry 'estimable')", {
 
 test_that("semireg means: pairs get the Kenward-Roger SEs and df of the mixed model; vcov_adjust = FALSE does not", {
   skip_on_cran()
-  set.seed(2)
-  d <- expand.grid(g = factor(1:4), rep = 1:6)
+  skip_if_not_installed("pbkrtest")
+  set.seed(3)
+  d <- expand.grid(g = factor(1:4), rep = 1:10)
   d$blk <- factor(d$rep)
   d$x <- runif(nrow(d))
-  d$y <- as.numeric(d$g) / 3 + sin(3 * d$x) + rnorm(6)[d$blk] + rnorm(nrow(d), 0, 0.4)
+  d$y <- as.numeric(d$g) / 3 + 2 * sin(6 * d$x) + rnorm(10)[d$blk] + rnorm(nrow(d), 0, 0.4)
   f <- suppressMessages(semireg(y ~ g + s(x) + (1 | blk), data = d))
+  vc <- as.data.frame(lme4::VarCorr(f$semer))
+  expect_gt(max(vc$sdcor[grepl("^s", vc$grp)]), 0.01)               # a fitted curve, not a straight line
+  # outside reference: pbkrtest's adjusted covariance of the mixed model (expected information)
+  expect_equal(as.matrix(pm_vcov_kr(f$semer, "expected")), as.matrix(pbkrtest::vcovAdj(methods::as(f$semer, "lmerMod"))),
+               tolerance = 1e-6, ignore_attr = TRUE)
   p <- predictmeans(f, "g")
   pn <- predictmeans(f$semer, "g")                         # the mixed model: KR by default
   k <- match(paste(p$pairs$level1, p$pairs$level2), paste(pn$pairs$level1, pn$pairs$level2))
@@ -67,8 +73,11 @@ test_that("semireg means: pairs get the Kenward-Roger SEs and df of the mixed mo
   expect_equal(p$pairs$df, pn$pairs$df[k], tolerance = 1e-8)
   expect_true(p$settings$vcov_adjust)
   expect_match(p$settings$df_method, "^Kenward-Roger \\(pairs")
+  expect_output(print(summary(p)), "Kenward-Roger adjusted SEs \\(pairs of fixed effects\\)\\)")
   p0 <- predictmeans(f, "g", vcov_adjust = FALSE)
   expect_false(p0$settings$vcov_adjust)
   expect_true(all(p0$pairs$std.error < p$pairs$std.error))
   expect_equal(p0$means$std.error, p$means$std.error)        # the means keep Satterthwaite
+  # (open: a smooth for each level of g, semireg(y ~ g * h + s(x, by = g) + (1 | blk)), stops in the
+  # Satterthwaite df, "grad %*% parts$vcov_varpar: non-conformable"; see HANDOVER.md)
 })

@@ -315,6 +315,39 @@ pm_sr_uncond <- function(semireg) {
 ##                tests, as glm with a known dispersion) when there is no
 ##                grouping factor besides the smooths
 ## Returns the df with attribute "method" (the label for settings).
+## Kenward-Roger for contrasts of semireg means (gaussian lme4 engine, REML;
+## the maintainer's decision of 2026-11-26): the rows of L (columns: the
+## coefficients 'idx' of the fit, fixed effects first) that use fixed effects
+## only (the smooth parts cancel, as for pairs of levels of a factor added to
+## the smooth) get the KR-adjusted covariance and df of the mixed model
+## (pm_vcov_kr(), R/kr.R; equal to predictmeans() of fit$semer); rows with
+## smooth random coefficients, where KR is not defined, keep pm_sr_ddf().
+## Returns list(rows (logical), V (their adjusted covariance), df) or NULL (no
+## such row, a glmmTMB or ML fit, or a failed adjustment, with a message).
+## Coverage of 95% pair limits: KR 94.9%, unadjusted 94.2-94.5%
+## (dev/sim-semireg-kr/). Used by predictmeans() of semireg fits; semipred()
+## differences of curves use the smooths and keep pm_sr_ddf().
+pm_sr_kr <- function(semireg, L, idx) {
+  semer <- semireg$semer
+  if (!inherits(semer, "lmerMod") || !isTRUE(lme4::getME(semer, "is_REML"))) return(NULL)
+  p <- length(lme4::fixef(semer))
+  L <- as.matrix(L)
+  fx <- idx <= p
+  # (a row with NA: a pair that is not estimable, no KR)
+  rows <- !apply(is.na(L), 1, any) & rowSums(abs(L[, !fx, drop = FALSE]) > 1e-10, na.rm = TRUE) == 0
+  if (!any(rows)) return(NULL)
+  Lf <- matrix(0, sum(rows), p)
+  Lf[, idx[fx]] <- L[rows, fx, drop = FALSE]
+  Vadj <- pm_try_vcov_kr(semer)
+  if (is.null(Vadj)) return(NULL)
+  df <- tryCatch(as.numeric(pm_kr_ddf(Lf, as.matrix(stats::vcov(semer)), Vadj)), error = function(e) {
+    message("Kenward-Roger df failed (", conditionMessage(e), "); using Satterthwaite df and unadjusted SEs.")
+    NULL
+  })
+  if (is.null(df)) return(NULL)
+  list(rows = rows, V = Lf %*% as.matrix(Vadj) %*% t(Lf), df = df)
+}
+
 pm_sr_ddf <- function(semireg, L, idx, terms = NULL) {
   semer <- semireg$semer
   L <- as.matrix(L)

@@ -225,8 +225,8 @@ effective**. Check every change against all four before it is done:
   0.5 s; slower ones start with `skip_on_cran()` (CRAN-mode suite about 60 s).
 - At the end of a block, before R CMD check and the pull request, run the `rule1-reviewer` agent
   (`.claude/agents/rule1-reviewer.md`, read-only) on the block's commits; fix or answer each finding. Effort
-  (2026-11-26): high for statistical changes, medium for docs-only changes and refactors shown unchanged by the
-  snapshot comparison.
+  (2026-11-26): high for statistical changes (the agent's default), medium for docs-only changes and refactors
+  shown unchanged by the snapshot comparison (pass effort = "medium" when calling it).
 - Before and after every pull request check the pkgdown reference index: every help topic must be listed in
   `_pkgdown.yml` (`Rscript -e 'pkgdown::check_pkgdown()'`); a missing topic fails the site build in CI
   (maintainer, 2026-11-26).
