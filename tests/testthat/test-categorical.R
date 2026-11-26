@@ -176,6 +176,19 @@ test_that("crossing cumulative curves of a non-parallel fit stop, not negative p
   expect_error(predictmeans(v, "f", covariate = list(x = 1), mean_type = "prob_diff"),
                "class '2' has probability -0.3.* at .*x = 1")
   expect_error(predictmeans(v, "f", covariate = list(x = 1)), "cross")
+  # only some means cross (an additive 2 x 2 fit extrapolated to the cell without data): those are NA
+  pr <- list(c(0.269, 0.354, 0.377), c(0.5, 0.122, 0.378), c(0.5, 0.122, 0.378))
+  cells <- data.frame(A = factor(c(0, 1, 0)), B = factor(c(0, 0, 1)))
+  d2 <- do.call(rbind, lapply(1:3, function(i) data.frame(cells[rep(i, 3), ], y = factor(1:3), n = round(1000 * pr[[i]]))))
+  d2$y <- ordered(d2$y)
+  v2 <- VGAM::vglm(y ~ A + B, VGAM::cumulative(parallel = FALSE), weights = n, data = d2)
+  r2 <- predictmeans(v2, "A", pairwise = TRUE)
+  expect_equal(r2$means$estimable, rep(c(TRUE, FALSE), 3))
+  expect_true(all(is.na(r2$means$response[!r2$means$estimable])))
+  expect_true(all(is.na(r2$pairs$estimate)))
+  a <- advice(r2)
+  expect_true("class_crossing" %in% a$id)
+  expect_false("nonestimable_means" %in% a$id)
   expect_s3_class(predictmeans(v, "f", covariate = list(x = 0)), "predictmeans")
 })
 
@@ -245,4 +258,86 @@ test_that("review of B3b: aliasing stops, settings, plots, advice and other fami
                                           c(VGAM::predict(v2, nd, type = "response")) }, th)
     expect_equal(rv$means$std.error, sqrt(diag(G %*% VGAM::vcov(v) %*% t(G)))[kv], tolerance = 1e-6)
   }
+})
+
+test_that("proportional weights sum frequency weights: aggregated data = one row per case = emmeans", {
+  skip_on_cran()
+  skip_if_not_installed("nnet")
+  skip_if_not_installed("emmeans")
+  data(housing, package = "MASS", envir = environment())
+  h <- housing[!(housing$Type == "Tower" & housing$Cont == "Low"), ]          # unequal margins
+  hi <- h[rep(seq_len(nrow(h)), h$Freq), ]
+  m <- nnet::multinom(Sat ~ Infl + Type + Cont, weights = Freq, data = h, trace = FALSE, reltol = 1e-12)
+  mi <- nnet::multinom(Sat ~ Infl + Type + Cont, data = hi, trace = FALSE, reltol = 1e-12)
+  r <- predictmeans(m, "Infl", mean_type = "prob_diff", weights = "proportional")
+  ri <- predictmeans(mi, "Infl", mean_type = "prob_diff", weights = "proportional")
+  expect_equal(r$means$estimate, ri$means$estimate, tolerance = 1e-6)
+  expect_equal(r$settings$weights_by, "frequency weights")
+  expect_equal(ri$settings$weights_by, "rows")
+  e <- as.data.frame(emmeans::emmeans(m, ~ Infl | Sat, mode = "prob", weights = "proportional"))
+  k <- match(paste(r$means$Infl, r$means$Sat), paste(e$Infl, e$Sat))
+  expect_equal(r$means$estimate, e$prob[k], tolerance = 1e-8)
+  h$hi <- as.numeric(h$Sat == "High")
+  hi$hi <- as.numeric(hi$Sat == "High")
+  g <- glm(hi ~ Infl + Type + Cont, weights = Freq, data = h, family = binomial)
+  gi <- glm(hi ~ Infl + Type + Cont, data = hi, family = binomial)
+  expect_equal(predictmeans(g, "Infl", weights = "proportional")$means$estimate,
+               predictmeans(gi, "Infl", weights = "proportional")$means$estimate, tolerance = 1e-6)
+  # an lm's prior weights are precisions: rows are counted
+  expect_null(predictmeans:::pm_freq_weights(lm(Freq ~ Infl, weights = rep(1:2, length.out = nrow(h)), data = h),
+                                             nrow(h)))
+})
+
+test_that("case counts follow the response, not the class (review of the weights rule)", {
+  skip_on_cran()
+  skip_if_not_installed("emmeans")
+  skip_if_not_installed("glmmTMB")
+  set.seed(5)
+  d <- expand.grid(A = factor(1:3), B = factor(1:4), rep = 1:2)
+  d$n <- sample(2:40, nrow(d), TRUE)
+  d$s <- rbinom(nrow(d), d$n, 0.4)
+  d$id <- factor(seq_len(nrow(d)) %% 6)
+  pr <- function(m) predictmeans(m, "A", weights = "proportional")$means$estimate
+  gb <- glm(cbind(s, n - s) ~ A + B, data = d, family = binomial)
+  gq <- glm(cbind(s, n - s) ~ A + B, data = d, family = quasibinomial)
+  expect_equal(pr(gq), pr(gb), tolerance = 1e-10)
+  e <- as.data.frame(emmeans::emmeans(gb, ~ A, weights = "proportional"))
+  expect_equal(pr(gb), e$emmean, tolerance = 1e-8)
+  mr <- lme4::glmer(cbind(s, n - s) ~ A + B + (1 | id), data = d, family = binomial)
+  mt <- glmmTMB::glmmTMB(cbind(s, n - s) ~ A + B + (1 | id), data = d, family = binomial)
+  kr <- Kmatrix(mr, "A", weights = "proportional")$K
+  kt <- Kmatrix(mt, "A", weights = "proportional")$K
+  expect_equal(c(kr), c(kt[, colnames(kr)]), tolerance = 1e-12)
+  expect_equal(c(Kmatrix(gb, "A", weights = "proportional")$K), c(kr), tolerance = 1e-12)
+  # glmer with na.exclude: unpadded weights; polr without its model frame
+  d2 <- d
+  d2$s[3] <- NA
+  mx <- lme4::glmer(cbind(s, n - s) ~ A + B + (1 | id), data = d2, family = binomial, na.action = na.exclude)
+  expect_silent(kx <- Kmatrix(mx, "A", weights = "proportional")$K)
+  g2 <- glm(cbind(s, n - s) ~ A + B, data = d2, family = binomial)
+  expect_equal(c(kx), c(Kmatrix(g2, "A", weights = "proportional")$K), tolerance = 1e-12)
+  data(housing, package = "MASS", envir = environment())
+  h <- housing[!(housing$Type == "Tower" & housing$Cont == "Low"), ]
+  p0 <- MASS::polr(Sat ~ Infl + Type + Cont, weights = Freq, data = h, Hess = TRUE, model = FALSE)
+  p1 <- MASS::polr(Sat ~ Infl + Type + Cont, weights = Freq, data = h, Hess = TRUE)
+  expect_equal(predictmeans(p0, "Infl", weights = "proportional")$means$estimate,
+               predictmeans(p1, "Infl", weights = "proportional")$means$estimate, tolerance = 1e-10)
+  expect_equal(predictmeans(p0, "Infl", weights = "proportional")$settings$weights_by, "frequency weights")
+})
+
+test_that("class means: a response named y, summary with NA means, semireg weights", {
+  skip_on_cran()
+  skip_if_not_installed("VGAM")
+  pr <- list(c(0.269, 0.354, 0.377), c(0.5, 0.122, 0.378), c(0.5, 0.122, 0.378))
+  cells <- data.frame(A = factor(c(0, 1, 0)), B = factor(c(0, 0, 1)))
+  d2 <- do.call(rbind, lapply(1:3, function(i) data.frame(cells[rep(i, 3), ], y = factor(1:3), n = round(1000 * pr[[i]]))))
+  d2$y <- ordered(d2$y)
+  v2 <- VGAM::vglm(y ~ A + B, VGAM::cumulative(parallel = FALSE), weights = n, data = d2)
+  r <- predictmeans(v2, "A", pairwise = TRUE)
+  expect_true("y_class" %in% names(r$means))                       # not the plot's column y
+  p <- ggplot2::autoplot(r)
+  expect_equal(length(unique(ggplot2::ggplot_build(p)$layout$layout$PANEL)), 3L)
+  out <- capture.output(print(summary(r)))
+  expect_true(any(grepl("3 pairwise comparisons within each level of y_class \\(3 not estimable\\)", out)))
+  expect_false(any(grepl("SED: min NA", out)))
 })

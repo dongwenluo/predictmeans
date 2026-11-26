@@ -132,7 +132,9 @@
 #'   \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
-#'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
+#'   frequencies are cases (trials, or the case weights of class responses) where a row holds several, else rows;
+#'   see \code{\link{Kmatrix}} and \code{settings$weights_by}.
 #'   Empty cells (combinations of interacting factors without data, not those absent by design, as for nested
 #'   factors): with \code{"equal"}, a mean that averages over them is the average of its observed cells (as
 #'   predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means
@@ -418,6 +420,10 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
 
   # semireg() fits: means with the smooth terms included (see semireg-means.R)
   if (inherits(model, "semireg")) {
+    if (!identical(match.arg(weights), "equal")) {
+      stop("weights = \"", match.arg(weights), "\" is not yet available for semireg() fits: their means use ",
+           "equal weights.", call. = FALSE)
+    }
     return(pm_semireg_means(model, modelterm, covariate = covariate, level = level, adj = adj, atvar = atvar))
   }
 

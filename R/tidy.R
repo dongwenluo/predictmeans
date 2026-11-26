@@ -228,6 +228,7 @@ pm_tidy_parts <- function(e) {
     bias_adjust = ba_sigma,
     singular = pm_singular(model),
     average = avg,
+    weights_by = g("ctr.matrix")$weights_by,     # what "proportional" etc. count: rows or frequency weights
     nperm = if (perm) pm_perm_n(permlist) else NA_integer_,
     covariates = if (length(cov_cols)) unique(label[cov_cols]) else NULL,
     component = if (is.null(pm_zi_component(model))) NA_character_ else g("mean_type"),

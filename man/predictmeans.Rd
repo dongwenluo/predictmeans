@@ -148,7 +148,9 @@ predictmeans 1.x. It has no effect for other models.}
 \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
-\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
+frequencies are cases (trials, or the case weights of class responses) where a row holds several, else rows;
+see \code{\link{Kmatrix}} and \code{settings$weights_by}.
 Empty cells (combinations of interacting factors without data, not those absent by design, as for nested
 factors): with \code{"equal"}, a mean that averages over them is the average of its observed cells (as
 predictmeans 1.x, and ASReml and Genstat with \code{PRESENT}), with a warning naming those means. Two such means

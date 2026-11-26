@@ -87,6 +87,7 @@ pm_advice_get <- function(x) {
 #'   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
 #'   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr
 #'   \code{class_reference} \tab predictmeans \tab multinomial linear predictors depend on the reference class \cr
+#'   \code{class_crossing} \tab predictmeans \tab cumulative curves of a non-parallel fit cross: the means that use those points are NA \cr
 #'   \code{class_mean_outside} \tab predictmeans \tab limits of a mean class outside 1 to J (Wald limits on the class scale) \cr
 #'   \code{few_permutations} \tab permmodels, bootmodels \tab fewer than 999 resamples and a p-value at the floor or near 0.05 \cr
 #'   \code{r2_latent_scale} \tab R2_model \tab a non-gaussian model: R2 on the link scale \cr
@@ -664,8 +665,15 @@ pm_ordinal_advice <- function(model, modelterm, what) {
 ## means and classes), the averaging over 'others' on the probability scale,
 ## probability differences near 0 or 1 ('p': the probabilities compared, for
 ## "prob" and "prob_diff"), and the reference class of multinomial predictors.
-pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL, weights = "equal", outside = FALSE) {
+pm_cat_advice_rows <- function(what, parts, others, sep, p = NULL, weights = "equal", outside = FALSE, cross = NULL) {
   rows <- list()
+  if (length(cross)) {
+    rows$cross <- pm_advice("class_crossing", paste0(
+      "The fitted cumulative probabilities cross (", cross$where, "): the non-parallel model is not valid there, so ",
+      "the means that use it are NA, or left out if they have no data (", paste(utils::head(cross$means, 6), collapse = ", "),
+      if (length(cross$means) > 6) ", ...", "). Take the means elsewhere (other covariate values or levels), or make ",
+      "the slopes parallel."), "caution")
+  }
   if (length(sep)) {
     rows$sep <- pm_advice("class_separation", paste0(
       "No or almost no observations of some classes at some levels (", paste(utils::head(sep, 6), collapse = ", "),
