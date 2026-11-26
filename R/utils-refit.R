@@ -96,7 +96,7 @@ pm_get_data <- function(model) {
     d <- d[keep, , drop = FALSE]
   }
   na_act <- if (isS4(model)) attr(stats::model.frame(model), "na.action") else model$na.action
-  if (!is.null(na_act) && inherits(na_act, "omit")) d <- d[-na_act, , drop = FALSE]
+  if (!is.null(na_act) && inherits(na_act, c("omit", "exclude"))) d <- d[-na_act, , drop = FALSE]   # (na.exclude too)
   d
 }
 

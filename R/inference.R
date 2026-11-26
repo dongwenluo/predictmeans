@@ -294,7 +294,14 @@ pm_df_rule.lme <- function(model, df_method, kr_info) {
   if (df_method == "auto") {
     kr <- tryCatch(pm_vcov_kr_nlme(model, "observed"), error = function(e) e)
     if (!inherits(kr, "error")) return(list(df_type = "Kenward-Roger", vcov_adj = kr))
-    message("Kenward-Roger df are not available for this model (", conditionMessage(kr), "); using ",
+    # as pm_try_vcov_kr() for lmer: Satterthwaite df and unadjusted SEs, then the model's own df
+    sp <- tryCatch(pm_satt_parts_nlme(model), error = function(e) e)
+    if (!inherits(sp, "error")) {
+      message("Kenward-Roger df are not available for this model (", conditionMessage(kr), "); using ",
+              "Satterthwaite df and unadjusted SEs.")
+      return(list(df_type = "Satterthwaite", vcov_adj = sp))
+    }
+    message("Kenward-Roger and Satterthwaite df are not available for this model (", conditionMessage(kr), "); using ",
             if (inherits(model, "lme")) "nlme's df." else "the residual df.")
     return(list(df_type = NULL, vcov_adj = NULL))
   }

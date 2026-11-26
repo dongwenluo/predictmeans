@@ -295,14 +295,27 @@ pm_nlme_info <- function(R, pt, type = c("observed", "expected", "average"), rem
 }
 
 ## The covariance of the variance parameters from the observed information
-## (directions with a non-positive curvature left out).
-pm_nlme_W_observed <- function(R, pt = pm_nlme_parts(R)) {
+## (directions with a non-positive curvature left out), over the parameters
+## 'keep' (pm_nlme_keep(): those at a boundary get 0).
+pm_nlme_W_observed <- function(R, pt = pm_nlme_parts(R), keep = pm_nlme_keep(pt)) {
   I <- pm_nlme_info(R, pt, "observed", reml = !R$ml)
-  I <- (I + t(I)) / 2
+  I <- ((I + t(I)) / 2)[keep, keep, drop = FALSE]
   eg <- eigen(I, symmetric = TRUE)
   pos <- eg$values > 5e-9
   Ev <- eg$vectors[, pos, drop = FALSE]
-  tcrossprod(Ev * rep(1 / sqrt(eg$values[pos]), each = nrow(Ev)))   # generalized inverse
+  W <- matrix(0, R$k, R$k)
+  W[keep, keep] <- tcrossprod(Ev * rep(1 / sqrt(eg$values[pos]), each = nrow(Ev)))   # generalized inverse
+  W
+}
+
+## The variance parameters that are not at a boundary: a variance component
+## or a nugget estimated at 0 (e.g. replicates whose variance would be
+## negative) has a covariance derivative of about 0, and is left out of the
+## Kenward-Roger and Satterthwaite corrections, as for lmer and SAS (its
+## information is about 0, so keeping it makes the inverse explode).
+pm_nlme_keep <- function(pt) {
+  gn <- vapply(pt$G, function(g) sqrt(sum(g^2)), numeric(1))
+  gn > 1e-4 * gn[length(gn)]                    # relative to d Sigma / d log sigma = 2 Sigma (lme cannot reach 0 exactly)
 }
 
 ## Satterthwaite: d vcov(beta) / d theta_i = Phi A_i Phi (exact, given G_i).
@@ -335,6 +348,7 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "aver
   Phi <- pt$Phi
   Q <- pt$Q
   PP <- lapply(pt$A, function(a) -a)
+  keep <- pm_nlme_keep(pt)                     # parameters at a boundary left out (pm_nlme_keep())
   # observed or average information not positive definite: the expected one,
   # with a message (pm_kr_info_check(), R/kr.R), as for lmer. (Before 2.0.0
   # the observed one dropped such directions silently; the average one was
@@ -342,10 +356,15 @@ pm_vcov_kr_nlme <- function(model, information = c("observed", "expected", "aver
   information_used <- information
   if (information != "expected") {
     I <- pm_nlme_info(R, pt, information, reml = !R$ml)
-    if (!pm_kr_info_check(I, information)) information_used <- "expected"
+    if (!pm_kr_info_check(I[keep, keep, drop = FALSE], information)) information_used <- "expected"
   }
-  W <- if (information_used == "expected") solve(pm_nlme_info(R, pt, "expected")) else
-    if (information_used == "observed") pm_nlme_W_observed(R, pt) else solve(I)
+  inv_keep <- function(M) {
+    W <- matrix(0, k, k)
+    W[keep, keep] <- solve(M[keep, keep, drop = FALSE])
+    W
+  }
+  W <- if (information_used == "expected") inv_keep(pm_nlme_info(R, pt, "expected")) else
+    if (information_used == "observed") pm_nlme_W_observed(R, pt, keep) else inv_keep(I)
   U <- matrix(0, ncol(X), ncol(X))
   for (i in seq_len(k)) for (j in seq_len(k)) {
     U <- U + W[i, j] * (Q[[i]][[j]] - PP[[i]] %*% Phi %*% PP[[j]])

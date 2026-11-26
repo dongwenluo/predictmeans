@@ -65,6 +65,8 @@ navbar:
         href: articles/R2-GLMM.html
       - text: Ordinal and categorical responses
         href: articles/ordinal.html
+      - text: Spatial analysis of a field trial
+        href: articles/spatial.html
     news:
       text: News
       href: news/index.html
@@ -96,6 +98,7 @@ articles:
   - articles/tree-improvement
   - articles/R2-GLMM
   - articles/ordinal
+  - articles/spatial
 
 reference:
 - title: Predicted means and comparisons
@@ -129,6 +132,7 @@ reference:
   - heritability
   - residplot
   - residvariogram
+  - corAR1xAR1
   - autoplot.pm_variogram
   - CookD
   - pm_check

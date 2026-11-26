@@ -3148,3 +3148,31 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * Article vignettes/articles/ordinal.Rmd (2026-11-26): clm and clmm on wine,
   multinom and non-parallel vglm on housing (prob, prob_diff, mean class),
   cautions and references; in the pkgdown "Worked examples" menu.
+* corAR1xAR1() (2026-11-26; R/cor-ar1xar1.R, dev/review-ar1ar1.md D1-D7):
+  nlme corStruct (Initialize, corMatrix with both branches, corFactor, coef,
+  coef<-), atanh/logit parameters, nugget share, groups, missing plots by
+  coordinates. Checks (test-cor-ar1xar1.R, Genstat run
+  genstat-results-2026-11-26-ar1ar1-slatehall.txt; reference data in
+  _data/ar1xar1/): one row = corAR1 (1e-10); model A phi 0.4586/0.6838,
+  sigma^2 3.876; model B phi 0.6827/0.8438, units 0.486, ratio 9.420;
+  deviance A - B 7.00; 25 means and 300 SEDs of A and B (vcov_adjust = FALSE)
+  to 1e-6; KR-average d.d.f. 79.99/75.67 (Genstat 80.0/75.7); lme with
+  replicates in one group reaches the boundary = gls A; variogram of the fit
+  within its envelope. residvariogram() advice names corAR1xAR1 and t2().
+  inst/extdata/slatehall.csv for the example.
+* corAR1xAR1 Rule no. 1 review (10 findings, fixed): two plots at one
+  position stop (several trials without '| trial': with a nugget it fitted a
+  wrong model silently) and the variogram advice adds '| trial' when split by
+  trial; coef<- registered (rawNamespace S3method(nlme::"coef<-")); the factor
+  cached (was computed twice per likelihood); transformations in form stop;
+  help: agreement stated as measured (means and SEDs within 5e-6, phi to the
+  printed digits), times (1 s for 150 plots, 10 s for 600; message above 1000),
+  row order of normalized residuals. Existing nlme df code: Kenward-Roger and
+  Satterthwaite leave out parameters at a boundary (pm_nlme_keep(): covariance
+  derivative below 1e-4 of the residual one; lme with replicates at 0 had KR
+  mean df 17.8 against 79.9, a nugget at 0 failed), a failed KR falls back to
+  Satterthwaite (was the residual df), pm_get_data() drops na.exclude rows
+  (KR failed). Tests: tier (i) fixed at Genstat's phi, two trials, boundary
+  df lme = gls, nugget at 0, na.exclude, registration, simulated field.
+  variogram_trend wording t2(row, col). KR/Satterthwaite/SAS/Genstat
+  reference tests unchanged.

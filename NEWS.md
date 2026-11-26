@@ -179,6 +179,15 @@ shows 1.1.1 and 2.0 code side by side.
 * New article "Ordinal and categorical responses": latent means of cumulative link models, class probabilities
   of multinomial and non-parallel fits, the scales and the checks.
 
+* New `corAR1xAR1()`: the separable AR1 x AR1 correlation of row x column field trials (as Genstat's
+  `VSTRUCTURE AR,AR` and ASReml's `ar1(row):ar1(col)`), with an optional nugget, for `nlme::gls()` and `lme()`;
+  every predictmeans tool works with it (Kenward-Roger df, means, SEDs, `residvariogram()`). On Genstat's Slate
+  Hall trial phi and the variances agree to Genstat's printed digits, the 25 means and all 300 SEDs within 5e-6,
+  and the variety test's d.d.f. with `df_method = "KR-average"`. Kenward-Roger and Satterthwaite df for gls and
+  lme now leave out variance components (and a nugget) estimated at 0, and a failed Kenward-Roger falls back to
+  Satterthwaite; `na.exclude` fits no longer break them. `residvariogram()` advice now points to it (or to a smooth `t2(row, col)` trend). New article "Spatial analysis of a field trial"
+  (Slate Hall: variogram, AR1 x AR1 with and without a nugget, the `t2()` trend).
+
 ### Mixed models and variance components
 
 * New `heritability()`: line-mean (entry-mean) heritability from an `lmer` fit with random genotypes, in the
