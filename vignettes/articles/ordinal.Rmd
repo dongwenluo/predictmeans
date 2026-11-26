@@ -136,8 +136,9 @@ predictmeans(ch, "Infl")$means[, c("Infl", "Sat", "response", "response.conf.low
   the other means are kept.
 - **Aggregated counts.** With `weights = "proportional"` the factor combinations are weighted by their
   number of cases (the sums of `Freq` here), so aggregated data and one row per case agree.
-- **Not available.** `trans`, `vcov` and `permlist` stop for these models, and `bias_adjust` except for
-  the class probabilities of `clmm` (population averages, random intercepts), and
+- **Not available.** `trans` and `vcov` stop for these models; `bias_adjust` works only for the class
+  probabilities of `clmm` (population averages, random intercepts) and `permlist` only for `clmm`, from
+  `bootmodels()` (bootstrap p-values of the latent pairs); and
   `contrastmeans()`, `covariatemeans()`, `residplot()` and others stop for multinomial and non-parallel fits
   and for `clm` with nominal or scale effects.
 

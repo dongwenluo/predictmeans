@@ -305,11 +305,14 @@ pm_ord_intercepts_only <- function(model) {
 ## each z (Fd: the link's distribution function and density).
 pm_ord_pop_int <- function(z, s, Fd) {
   if (s <= 0) return(list(F = Fd[[1]](z), f = Fd[[2]](z), ds = rep(0, length(z))))
+  # over |u| <= 12 (the normal tail beyond is below 1e-32), split where z - s u = 0 when that is inside (the
+  # step of F and the peak of f; with a small s it is outside and the integrand is smooth)
   one <- function(g, z0) {
-    u0 <- z0 / s                                  # where z - s u = 0: the step of F, the peak of f
-    I <- function(a, b) stats::integrate(function(u) g(u) * stats::dnorm(u), a, b, rel.tol = 1e-11,
-                                         abs.tol = 1e-14, subdivisions = 500L)$value
-    I(-Inf, u0) + I(u0, Inf)
+    u0 <- z0 / s
+    br <- c(-12, if (abs(u0) < 12) u0, 12)
+    sum(vapply(seq_len(length(br) - 1), function(i) stats::integrate(function(u) g(u) * stats::dnorm(u), br[i], br[i + 1],
+                                                                     rel.tol = 1e-11, abs.tol = 1e-15,
+                                                                     subdivisions = 500L)$value, 0))
   }
   out <- lapply(z, function(z0) c(one(function(u) Fd[[1]](z0 - s * u), z0), one(function(u) Fd[[2]](z0 - s * u), z0),
                                    -one(function(u) u * Fd[[2]](z0 - s * u), z0)))
@@ -373,7 +376,7 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
     data.frame(row = k, class = factor(p$levels, levels = p$levels), estimate = P, std.error = se,
                conf.low = stats::plogis(lg - z * sl), conf.high = stats::plogis(lg + z * sl))
   })
-  do.call(rbind, rows)
+  structure(do.call(rbind, rows), s = if (pop) pp$s)
 }
 
 ## Add the class table to a predictmeans() result: $probs, rows in the order
@@ -391,7 +394,7 @@ pm_ord_attach <- function(res, model, K, what, conf_level, pop = FALSE) {
   attr(out, "what") <- what
   attr(out, "population_average") <- pop
   res$probs <- out
-  if (pop) res$settings$bias_adjust <- pm_ord_pop(model)$s     # (the SD averaged over, as for other models)
+  if (pop) res$settings$bias_adjust <- attr(tab, "s")           # (the SD averaged over, as for other models)
   pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what, pop))
 }
 

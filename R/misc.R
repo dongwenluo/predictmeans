@@ -851,6 +851,8 @@ pm_random_terms <- function(f) {
 ## glmer fits, NA for other classes. SAS notes such fits as "Estimated G
 ## matrix is not positive definite".
 pm_singular <- function(model) {
+  # clmm: a random-effect SD at 0 (below 1e-3, ordinal's own boundary), treated as known (pm_ord_vcov())
+  if (inherits(model, "clmm")) return(any(vapply(model$ST, function(m) any(diag(as.matrix(m)) <= 1e-3), logical(1))))
   if (!inherits(model, "merMod")) return(NA)
   isTRUE(tryCatch(lme4::isSingular(model), error = function(e) FALSE))
 }

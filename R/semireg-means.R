@@ -118,9 +118,10 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
                    version = as.character(utils::packageVersion("predictmeans")))
   out <- structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
                    class = c("pm_semimeans", "predictmeans"))
-  # (only the trials advice: a smooth at a straight line is a variance at 0, not a singular fit to simplify)
-  od <- pm_advice_overdisp(semireg$semer, c(means$df, if (is.data.frame(pairs)) pairs$df), settings$df_cases)
-  if (!is.null(od)) out <- pm_add_advice(out, od)
+  # (no singular-fit line: a smooth at a straight line is a variance at 0, not random effects to simplify)
+  rows <- pm_advice_common(semireg$semer, c(means$df, if (is.data.frame(pairs)) pairs$df), 0, adj, "pairs",
+                           settings$df_cases, singular = FALSE)
+  if (length(rows)) out <- pm_add_advice(out, do.call(rbind, unname(rows)))
   out
 }
 

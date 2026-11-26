@@ -174,10 +174,16 @@ pm_setup <- function(a) {
          "random-effect variances of the fit.", call. = FALSE)
   }
   if (inherits(model, pm_ord_classes)) {
-    # (clmm: bootstrap p-values of the latent pairs from bootmodels(), B4 G3)
+    # (clmm: bootstrap p-values of the latent pairs from bootmodels(), B4 G3; the whole-cluster
+    # permutations of permmodels() test only cluster-level terms, in its own table)
+    boot_clmm <- inherits(model, "clmm") && identical(attr(a$permlist, "resampling"), "parametric bootstrap")
+    if (inherits(model, "clmm") && !is.null(a$permlist) && !boot_clmm) {
+      stop("For a clmm, 'permlist' must come from bootmodels(): the permutations of permmodels() test only the ",
+           "terms constant within clusters, in its own table.", call. = FALSE)
+    }
     pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans,
                  bias_adjust = if (ord_pop) FALSE else a$bias_adjust, sigma = a$sigma, vcov = a$vcov,
-                 permlist = if (!inherits(model, "clmm")) a$permlist)
+                 permlist = if (!boot_clmm) a$permlist)
   }
   if (mean_type %in% c("prob", "mean_class") && !inherits(model, c(pm_ord_classes, "pm_catfit"))) {
     stop("mean_type = \"", mean_type, "\" is for models of a class response (MASS::polr, ordinal::clm, ordinal::clmm, ",

@@ -122,15 +122,14 @@ pm_boot_fit.clmm <- function(model, null_f, new_lhs, quiet) {
   }
   if (!is.null(model$offset) && any(model$offset != 0)) stop("bootmodels() does not handle offsets in clmm fits.",
                                                              call. = FALSE)
-  d <- as.data.frame(pm_get_data(model))
-  null_fit <- if (is.null(null_f)) model else quiet(pm_refit(model, formula = null_f))
+  d <- pm_clmm_rows(model)
+  null_fit <- if (is.null(null_f)) model else quiet(pm_refit(model, formula = null_f, data = d))
   gf <- lapply(null_fit$gfList, factor)
   sd <- vapply(null_fit$ST, function(m) as.matrix(m)[1, 1], numeric(1))
   Fd <- pm_ord_link_fd(null_fit$link)
   th <- as.vector(null_fit$Theta)
   lev <- null_fit$y.levels
   n <- length(gf[[1]])
-  if (n != nrow(d)) stop("internal: the clmm data and its fit have different rows.", call. = FALSE)
   f_full <- new_lhs(stats::formula(model))
   list(null_fit = null_fit,
        simulate = function(nsim) lapply(seq_len(nsim), function(i) {
@@ -141,7 +140,9 @@ pm_boot_fit.clmm <- function(model, null_f, new_lhs, quiet) {
        refit = function(y) {
          dd <- d
          dd$.pm_y <- y
-         quiet(pm_refit(model, data = dd, formula = f_full))
+         f <- quiet(pm_refit(model, data = dd, formula = f_full))
+         if (!pm_clmm_ok(f)) stop("the refit did not converge", call. = FALSE)       # (a failure, left out)
+         f
        },
        packages = "ordinal")
 }

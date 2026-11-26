@@ -3292,3 +3292,24 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   log-SD route has a zero Hessian row and vcov() fails (13% of null
   bootstrap refits on wine); the covariance of the other parameters is then
   the inverse of their Hessian block (the SD known).
+* Fourth review (G3 and the G2 fixes, 15 findings): (1) population-average
+  integral over |u| <= 12, split at z/s only when inside (a small SD lost
+  the mass: 0/1 with SE 0); tested against the probit closed form at SD
+  0.002-5; (2) clmm refits that did not converge (optRes$convergence, a
+  gradient above 1e-2) are failures, left out (pm_clmm_ok()); (3, 8, 4, 5)
+  the whole-cluster permutation redesigned: the cluster-level variables
+  of the tested terms are relabelled among the clusters of the coarsest
+  random effect that holds them (perms not used; case weights stop) -
+  exact for those terms whatever the within-cluster effects and cluster
+  sizes; when the distinct allocations (multinomial count over the
+  clusters' patterns) are at most nperm all are enumerated (exact
+  p-values; = 70 hand refits in the test); the note gives the count and
+  the floor (2/n with two equal groups); (6) predictmeans() takes only a
+  bootstrap permlist for clmm; (7) a clmm SD at 0 is a singular fit
+  (pm_singular()), so the advice says it is treated as known; (9) docs
+  say the bootstrap is under the global null; (10) docs and NEWS; (11)
+  message when test_statistic is replaced, "z" in the coefficient note;
+  (12) clmm rows without NA (pm_clmm_rows()); (13) references in tests:
+  clm() for the SD-0 fallback, the exact enumeration by hand, the probit
+  closed form; (14) s from pm_ord_class() (not recomputed); (15) semireg
+  means keep small_df and the other common advice, without singular_fit.

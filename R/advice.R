@@ -155,11 +155,11 @@ pm_advice_overdisp <- function(model, df, df_cases) {
     "(1 | obs) with obs = factor(1:nrow(data)); its df then count rows."), "caution")
 }
 
-pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL) {
+pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL, singular = TRUE) {
   lim <- pm_advice_limits
   rows <- list()
   rows$od <- pm_advice_overdisp(model, df, df_cases)
-  if (isTRUE(pm_singular(model))) {
+  if (singular && isTRUE(pm_singular(model))) {
     rows$sing <- pm_advice("singular_fit", paste(
       "The fit is singular (a variance estimated as zero or a correlation as +-1): SEs and df treat it as known.",
       "Consider simplifying the random effects."), "caution")

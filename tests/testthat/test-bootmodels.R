@@ -91,14 +91,26 @@ test_that("clmm: parametric bootstrap and whole-cluster permutation of a between
   # the bootstrap p-values reach the latent pairs
   p <- predictmeans(m, "trt", permlist = b, pairwise = TRUE)
   expect_identical(p$pairs$p.method, "bootstrap")
-  # whole clusters: only trt is tested; the note gives the distinct allocations
-  pr <- suppressMessages(permmodels(m, perms = permindex(d, group = "clus", nsim = 19, seed = 1)))
+  # treatments of whole clusters relabelled: only trt is tested; 70 allocations, all used (exact)
+  pr <- suppressMessages(permmodels(m, nperm = 99))
   pp <- suppressWarnings(as.numeric(pr$ANOVA$Perm_p_value))
   expect_true(is.finite(pp[1]))
   expect_true(all(is.na(pp[2:3])))
-  expect_match(pr$notes$anova, "distinct allocations")
-  expect_error(suppressMessages(permmodels(m)), "whole clusters")
-  expect_error(suppressMessages(permmodels(m, perms = permindex(d, nsim = 19, seed = 1))), "move whole clusters")
+  expect_match(pr$notes$anova, "70 distinct allocations, all used")
+  # reference: the exact p-value by hand, refitting all 70 allocations of the 8 clusters (4 + 4)
+  st <- function(dd) suppressWarnings(pm_anova(ordinal::clmm(y ~ trt * W + (1 | clus), data = dd), type = "II",
+                                               test_statistic = "Chisq")["trt", "Chisq"])
+  obs <- st(d)
+  al <- utils::combn(8, 4)
+  sims <- apply(al, 2, function(a) {
+    dd <- d
+    dd$trt <- factor(ifelse(as.integer(dd$clus) %in% a, "a", "b"))
+    st(dd)
+  })
+  expect_equal(pp[1], round(mean(round(sims, 6) >= round(obs, 6)), 4))
+  expect_error(suppressMessages(permmodels(m, perms = permindex(d, nsim = 19, seed = 1))), "leave 'perms' out")
+  # a permlist of permmodels() does not reach the pairs (only cluster-level terms are tested)
+  expect_error(predictmeans(m, "W", permlist = pr), "must come from bootmodels")
 })
 
 test_that("clmm with its random-effect SD at 0: covariance of the other parameters, the SD known", {
@@ -119,7 +131,11 @@ test_that("clmm with its random-effect SD at 0: covariance of the other paramete
   skip_if(is.null(r), "no refit with a failing vcov()")
   V <- pm_ord_vcov(r)
   expect_true(isTRUE(attr(V, "sd_fixed")))
-  nm <- setdiff(rownames(r$Hessian), "ST1")
-  expect_equal(V, solve(r$Hessian[nm, nm]), ignore_attr = TRUE)
-  expect_s3_class(predictmeans(r, "temp"), "predictmeans")
+  # reference: with the SD at 0 the model is clm()'s, with the same covariance
+  dd <- wine
+  dd$.pm_y <- y
+  ce <- ordinal::clm(.pm_y ~ temp * contact, data = dd)
+  expect_equal(unname(V[names(stats::coef(ce)), names(stats::coef(ce))]), unname(stats::vcov(ce)), tolerance = 1e-4)
+  p <- predictmeans(r, "temp")
+  expect_true("singular_fit" %in% advice(p)$id)             # the SD at 0, treated as known, is said
 })

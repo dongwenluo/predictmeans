@@ -182,13 +182,14 @@ shows 1.1.1 and 2.0 code side by side.
   probabilities as for non-parallel vglm fits (`"link"` only without scale effects); equal to `predict.clm()`
   with its SEs (logit, probit, cloglog, loglog links).
 * `ordinal::clmm()`: `bias_adjust = TRUE` with `mean_type = "prob"` or `"mean_class"` gives population-average
-  class probabilities (integrated over the random intercepts by Gauss-Hermite quadrature), with delta-method SEs
+  class probabilities (integrated over the random intercepts by adaptive numerical integration), with delta-method SEs
   that include the random-effect variances; checked against numerical integration and the probit closed form.
   Random slopes stop.
 * `bootmodels()` and `permmodels()` take `ordinal::clmm()` fits (tests with few clusters): a parametric bootstrap
-  of the Type II Wald tests (random intercepts), whose `permlist` gives bootstrap p-values of the latent pairs in
-  `predictmeans()`; and whole-cluster permutations (`perms = permindex(data, group = )`) for terms constant within
-  clusters, with a note on the number of distinct allocations (6 clusters split 3/3 cannot give p < 0.1).
+  of the Type II Wald tests under the global null (random intercepts), whose `permlist` gives bootstrap p-values of
+  the latent pairs in `predictmeans()`; and permutation of the treatments of whole clusters for terms constant
+  within clusters, exact (all allocations enumerated) when there are at most `nperm` of them, with a note on the
+  smallest attainable p-value (6 clusters split 3/3: 20 allocations, two-sided p at least 0.1).
 * `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count cases instead of rows where a row holds
   several: binomial and quasibinomial responses of any class (trials) and class responses (multinom, polr, clm, clmm,
   vglm with case weights). Aggregated data and one row per case then weight the factor combinations alike (as

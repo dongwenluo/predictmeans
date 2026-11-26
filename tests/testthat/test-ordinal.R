@@ -327,7 +327,12 @@ test_that("population-average integral: any SD and link; scalar random slopes st
                                                    rel.tol = 1e-13, subdivisions = 2000L)$value, 0)
     expect_equal(r$F, ref, tolerance = 1e-10)
   }
-  expect_equal(pm_ord_pop_int(c(-2, 1), 5, pm_ord_link_fd("probit"))$F, stats::pnorm(c(-2, 1) / sqrt(26)), tolerance = 1e-12)
+  # the probit closed form at small and large SDs (a small SD used to lose the mass: 0/1)
+  for (s in c(0.002, 0.05, 0.1, 1, 5)) {
+    z <- c(-5, -1, 0, 2, 5, 40)
+    expect_equal(pm_ord_pop_int(z, s, pm_ord_link_fd("probit"))$F, stats::pnorm(z / sqrt(1 + s^2)), tolerance = 1e-10,
+                 info = paste("s =", s))
+  }
   skip_on_cran()
   data(wine, package = "ordinal", envir = environment())
   set.seed(2)

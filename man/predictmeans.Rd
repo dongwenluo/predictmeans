@@ -272,9 +272,10 @@ stay on the link scale.}
   the observed one, so they differ slightly for the same model), whose
   means are on the latent scale, \eqn{x'\beta} minus the mean cut point (emmeans' \code{mode = "latent"});
   a difference (logit link) is the log odds ratio of a higher class, \eqn{\log[P(Y > j)/P(Y \le j)]}, the same at
-  every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{sigma}, \code{vcov} and
-  \code{permlist} are not available for these models, nor \code{bias_adjust}, except for \code{clmm} class
-  probabilities (population averages; see \code{bias_adjust}).
+  every cut point \eqn{j}; all tests are on this scale (z tests). \code{trans}, \code{sigma} and \code{vcov} are not
+  available for these models; \code{bias_adjust} only for \code{clmm} class probabilities (population
+  averages; see \code{bias_adjust}) and \code{permlist} only for \code{clmm}, from \code{\link{bootmodels}}
+  (bootstrap p-values of the latent pairs).
   \code{"prob"} adds \code{probs}: the probability of each class at each mean, \code{"mean_class"} the expected
   class \eqn{\sum_j j P(Y = j)} (classes taken as equally spaced), each with delta-method SEs and limits
   (on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then

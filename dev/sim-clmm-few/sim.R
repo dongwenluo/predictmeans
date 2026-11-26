@@ -4,7 +4,8 @@
 ## cluster (W within clusters, 2 levels x 3), 4 classes, cluster SD 1.
 ## Rejection at 5% of the trt test: inner-outer t (predictmeans' df, nclus - 2),
 ## z (Wald chi-square), parametric bootstrap (bootmodels(), 99 samples) and
-## whole-cluster permutation (permmodels(perms = permindex(group =)), 99).
+## permutation of the clusters' treatments (permmodels(), all allocations when
+## at most 99: exact with 6 and 8 clusters; 99 random ones with 12).
 ## Run from the package root: Rscript dev/sim-clmm-few/sim.R  (about 40 min, 4 cores)
 suppressMessages({library(ordinal); pkgload::load_all(".", quiet = TRUE)})
 one_set <- function(nclus, effect, seed) {
@@ -22,8 +23,7 @@ one_set <- function(nclus, effect, seed) {
   p_t <- 2 * stats::pt(-sqrt(chi), nclus - 2)                     # inner-outer df of trt
   b <- tryCatch(suppressMessages(bootmodels(m, nsim = 99, seed = seed)), error = function(e) NULL)
   p_b <- if (is.null(b)) NA else as.numeric(b$ANOVA["trt", "Boot_p_value"])
-  pr <- tryCatch(suppressMessages(permmodels(m, perms = permindex(d, group = "clus", nsim = 99, seed = seed))),
-                 error = function(e) NULL)
+  pr <- tryCatch(suppressMessages(permmodels(m, nperm = 99, seed = seed)), error = function(e) NULL)
   p_p <- if (is.null(pr)) NA else as.numeric(pr$ANOVA["trt", "Perm_p_value"])
   c(t = p_t, z = p_z, boot = p_b, perm = p_p)
 }
