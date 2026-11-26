@@ -285,5 +285,7 @@ probit, cloglog, adjacent-category (= minus vglm acat) to 1e-4; clmm = GLIMMIX L
 6e-5 (variance 2.6e-6). df: GLIMMIX containment gives 57 within judges (predictmeans had
 60: the 3 extra cut points were not subtracted; fixed) and 53 for a treatment between 6
 clusters, where predictmeans keeps the inner-outer 4 (z-like df rejected 11% at 5% in the
-simulation). The `%show` macro's 16-digit tables did not print (ODS dataset names); the
-procedures' own tables were enough at 1e-4. Fix the macro before a next run.
+simulation). The `%show` macro's 16-digit tables did not print; the
+procedures' own tables were enough at 1e-4. Cause (2026-11-26): the titles contain
+commas, so SAS read several arguments and stopped the macro; the calls now quote
+their titles with `%str()`.

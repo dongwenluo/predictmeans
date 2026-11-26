@@ -3176,3 +3176,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   df lme = gls, nugget at 0, na.exclude, registration, simulated field.
   variogram_trend wording t2(row, col). KR/Satterthwaite/SAS/Genstat
   reference tests unchanged.
+* Normalized residuals of nlme fits (2026-11-26): nlme's
+  residuals(type = "normalized") are misplaced for gls and lme with a grouped
+  correlation when the data are not sorted by the groups (gls corAR1(~ t | rep)
+  on field-sorted Slate Hall: up to 2.2 from the hand computation; lme: 1.7).
+  pm_nlme_normalized() (R/diag-adapter.R) whitens group by group with
+  corMatrix(), mapped by group name; corAR1xAR1 in row-column order (residuals
+  independent of row order to 1e-8). Used by residplot(), pm_check(),
+  residvariogram(). Checked against nlme on group-sorted data (gls corAR1,
+  corExp, lme corAR1) to 2e-15; test-cor-ar1xar1.R.
