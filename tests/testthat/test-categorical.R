@@ -176,6 +176,19 @@ test_that("crossing cumulative curves of a non-parallel fit stop, not negative p
   expect_error(predictmeans(v, "f", covariate = list(x = 1), mean_type = "prob_diff"),
                "class '2' has probability -0.3.* at .*x = 1")
   expect_error(predictmeans(v, "f", covariate = list(x = 1)), "cross")
+  # only some means cross (an additive 2 x 2 fit extrapolated to the cell without data): those are NA
+  pr <- list(c(0.269, 0.354, 0.377), c(0.5, 0.122, 0.378), c(0.5, 0.122, 0.378))
+  cells <- data.frame(A = factor(c(0, 1, 0)), B = factor(c(0, 0, 1)))
+  d2 <- do.call(rbind, lapply(1:3, function(i) data.frame(cells[rep(i, 3), ], y = factor(1:3), n = round(1000 * pr[[i]]))))
+  d2$y <- ordered(d2$y)
+  v2 <- VGAM::vglm(y ~ A + B, VGAM::cumulative(parallel = FALSE), weights = n, data = d2)
+  r2 <- predictmeans(v2, "A", pairwise = TRUE)
+  expect_equal(r2$means$estimable, rep(c(TRUE, FALSE), 3))
+  expect_true(all(is.na(r2$means$response[!r2$means$estimable])))
+  expect_true(all(is.na(r2$pairs$estimate)))
+  a <- advice(r2)
+  expect_true("class_crossing" %in% a$id)
+  expect_false("nonestimable_means" %in% a$id)
   expect_s3_class(predictmeans(v, "f", covariate = list(x = 0)), "predictmeans")
 })
 

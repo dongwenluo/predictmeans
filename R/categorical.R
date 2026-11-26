@@ -143,7 +143,9 @@ pm_cat_parts <- function(model) {
 ## the K rows); "prob" / "mean_class": at the grid rows X, averaged with the
 ## weights W (rows: the means). Returns list(est, D): est a matrix (means x
 ## classes, predictors, or one column), D the gradient of as.vector(est)
-## (stacked by column: all means of the first class, then the second, ...).
+## (stacked by column: all means of the first class, then the second, ...),
+## and, with 'labels' (names of the grid rows), the means that use a grid row
+## where the cumulative curves cross ('affected') and where ('crossing').
 pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"), labels = NULL) {
   what <- match.arg(what)
   X <- as.matrix(X)[, pt$xnames, drop = FALSE]
@@ -155,21 +157,23 @@ pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"),
   }
   pd <- pt$pd(eta)
   P <- pd$P
-  # non-parallel cumulative fits: the cumulative curves can cross, giving negative "probabilities"
-  bad <- if (!is.null(labels)) which(P < -1e-10, arr.ind = TRUE)
-  if (length(bad)) {
-    stop("The fitted cumulative probabilities cross where the means are taken: class '", pt$levels[bad[1, 2]],
-         "' has probability ", format(signif(P[bad[1, , drop = FALSE]], 3)), " at ", labels[bad[1, 1]], ". The ",
-         "non-parallel model is not valid there; take the means where it is (other covariate values or levels), or ",
-         "make the slopes parallel.", call. = FALSE)
+  # non-parallel cumulative fits: the cumulative curves can cross, giving negative "probabilities" at
+  # some grid rows; the means that use such a row are not valid (pm_cat_est() makes them NA)
+  badg <- if (!is.null(labels)) which(apply(P < -1e-10, 1, any)) else integer(0)
+  affected <- if (length(badg)) rowSums(abs(W[, badg, drop = FALSE])) > 0 else rep(FALSE, NROW(W))
+  crossing <- if (length(badg)) {
+    b <- which(P[badg[1], ] < -1e-10)[1]
+    paste0("class '", pt$levels[b], "' has probability ", format(signif(P[badg[1], b], 3)), " at ", labels[badg[1]],
+           if (length(badg) > 1) paste0(" (and ", length(badg) - 1, " more grid point", if (length(badg) > 2) "s", ")"))
   }
   # d P_j / d theta = (d P_j / d eta) H, each column times x[col]: rows x q, for each class j
   DP <- lapply(seq_len(ncol(P)), function(j) (matrix(pd$dP[, j, ], nrow(P)) %*% pt$H) * Xc)
   if (what == "mean_class") {
     s <- seq_len(ncol(P))
-    return(list(est = W %*% (P %*% s), D = W %*% Reduce(`+`, Map(`*`, DP, s))))
+    return(list(est = W %*% (P %*% s), D = W %*% Reduce(`+`, Map(`*`, DP, s)), affected = affected,
+                crossing = crossing))
   }
-  list(est = W %*% P, D = do.call(rbind, lapply(DP, function(d) W %*% d)))
+  list(est = W %*% P, D = do.call(rbind, lapply(DP, function(d) W %*% d)), affected = affected, crossing = crossing)
 }
 
 ## ---- predictmeans() ----------------------------------------------------
@@ -271,6 +275,16 @@ pm_cat_est <- function(opt, est) {
   }
   e <- as.vector(ev$est)
   D <- ev$D
+  # means over a grid row where the cumulative curves cross: NA (as non-estimable means), with a caution
+  aff <- if (is.null(ev$affected)) rep(FALSE, nrow(K0)) else ev$affected
+  if (all(aff)) {
+    stop("The fitted cumulative probabilities cross where every mean is taken: ", ev$crossing, ". The non-parallel ",
+         "model is not valid there; take the means where it is (other covariate values or levels), or make the ",
+         "slopes parallel.", call. = FALSE)
+  }
+  naff <- rep(aff, length.out = length(e))      # (stacked by class: the same means in every class)
+  e[naff] <- if (what == "prob") 0.5 else 0      # (placeholders: NA in the tables, through 'estimable')
+  D[naff, ] <- 0
   # separation: a class with no observations at some levels has its probability at 0 there (the MLE at
   # infinity); seen as an SE of logit(P) above 5 (that of a class observed about 0.04 times)
   n <- nrow(K0)
@@ -302,7 +316,13 @@ pm_cat_est <- function(opt, est) {
   dimnames(C) <- list(nm, nm)
   Kn <- diag(length(nm))
   dimnames(Kn) <- list(nm, nm)
-  attr(Kn, "estimable") <- stats::setNames(rep(TRUE, length(nm)), nm)
+  attr(Kn, "estimable") <- stats::setNames(!naff, nm)
+  if (any(naff)) {
+    # pairs with such a mean are not estimable either (pm_compare_sed(), as for aliased designs)
+    np <- matrix(0, length(nm), sum(naff), dimnames = list(nm, NULL))
+    np[cbind(which(naff), seq_len(sum(naff)))] <- 1
+    attr(Kn, "null_proj") <- np
+  }
   mdf <- est$mdf
   if (what != "mean_class") {
     mdf <- mdf[rep(seq_len(nrow(mdf)), k), setdiff(names(mdf), cf$var), drop = FALSE]
@@ -315,13 +335,15 @@ pm_cat_est <- function(opt, est) {
   inf <- est$inf
   inf$df <- function(L, terms) rep(Inf, nrow(rbind(L)))
   inf$mp <- mp
-  m <- pm_estimate_means(Kn, fct, mdf, vars, mp, opt$ndecimal)
+  # (its message on non-estimable means does not fit here: the advice class_crossing says why)
+  m <- suppressMessages(pm_estimate_means(Kn, fct, mdf, vars, mp, opt$ndecimal))
   est$ctr.matrix$K <- Kn
   est$ctr.matrix$fctnames <- fct
   # (replaced, not merged: modifyList() would merge the data frames column by column)
   new <- list(ctr.matrix = est$ctr.matrix, KK = Kn, mdf = mdf, inf = inf, mp = mp, vcovm = C, K = m$K,
               label = m$label, pm = m$pm, ses = m$ses, ndf = m$ndf, mt = m$mt, bkmt = m$mt,
-              mean.table = m$mean.table, se.table = m$se.table, cat_sep = sep)
+              mean.table = m$mean.table, se.table = m$se.table, cat_sep = sep,
+              cat_cross = if (any(aff)) list(where = ev$crossing, means = rownames(K0)[aff]))
   est[names(new)] <- new
   est
 }
@@ -348,7 +370,11 @@ pm_cat_attach <- function(res, opt, est) {
   p <- if (cf$what == "prob") res$means$response else if (cf$what == "prob_diff") res$means$estimate
   out <- if (cf$what == "mean_class") any(res$means$conf.low < 1 | res$means$conf.high > length(cf$parts$levels))
   attr(res, "plot_data") <- NULL           # (the observations are classes: autoplot(data = TRUE) says so)
-  pm_add_advice(res, pm_cat_advice_rows(cf$what, cf$parts, others, est$cat_sep, p, opt$weights, isTRUE(out)))
+  # NA means from crossing curves: class_crossing says why, not the generic non-estimable line
+  a <- attr(res, "advice")
+  if (!is.null(est$cat_cross) && !is.null(a)) attr(res, "advice") <- a[a$id != "nonestimable_means", , drop = FALSE]
+  pm_add_advice(res, pm_cat_advice_rows(cf$what, cf$parts, others, est$cat_sep, p, opt$weights, isTRUE(out),
+                                        est$cat_cross))
 }
 
 ## The scale line of the summary of class means ('cl': settings$response$classes).
