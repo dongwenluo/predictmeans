@@ -1586,7 +1586,7 @@ gt(data.frame(predm_out$`Pairwise p-value`, check.names=FALSE),
 ## **References**
 
 -   Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). *Experimental Design and Analysis for Tree
-Improvement* (3rd ed.). CSIRO Publishing. <https://www.publish.csiro.au/book/3145/>.
+Improvement* (3rd ed.). CSIRO Publishing. <https://www.publishing.csiro.au/book/8100>.
 
 -   Yaseen, M., Ullah, S., Eskridge, K. M. and Williams, E. (2023). eda4treeR: Experimental Design and
 Analysis for Tree Improvement. R package. <https://CRAN.R-project.org/package=eda4treeR>.

@@ -207,7 +207,7 @@ NULL
 #' (\code{tests/testthat/test-level-covariate.R}).
 #' @source
 #' Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). \emph{Experimental Design and Analysis for Tree
-#' Improvement} (3rd ed.). CSIRO Publishing, Table 5.2.
+#' Improvement} (3rd ed.). CSIRO Publishing, Table 5.2. \url{https://www.publishing.csiro.au/book/8100}
 #' @examples
 #' data(DataExam5.2)
 #' fit <- lm(ht ~ site + sitemean * seedlot, data = DataExam5.2)
