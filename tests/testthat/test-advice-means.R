@@ -17,7 +17,9 @@ test_that("a covariate aliased with a factor, and means with large SEs, get advi
 test_that("unadjusted pairs, back-transformed GLMM means and bias_adjust", {
   gm <- lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial, data = lme4::cbpp)
   r <- suppressMessages(predictmeans(gm, "period", pairwise = TRUE))
-  expect_setequal(ids_of(r), c("bias_adjust", "many_tests_unadjusted"))   # unequal LSDs, but no pair judged differently
+  # unequal LSDs, but no pair judged differently; cbpp is overdispersed (fitted with (1 | obs) in lme4's examples):
+  # the df count trials, so the advice says when to count rows
+  expect_setequal(ids_of(r), c("bias_adjust", "many_tests_unadjusted", "overdispersion_trials"))
   # bias_adjust done: no bias advice; an adjustment: no many-tests advice
   r2 <- suppressMessages(predictmeans(gm, "period", bias_adjust = TRUE, adj = "holm"))
   expect_false(any(c("bias_adjust", "many_tests_unadjusted") %in% ids_of(r2)))
