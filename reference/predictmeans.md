@@ -263,20 +263,23 @@ predictmeans(model, modelterm, data=NULL, pairwise=NULL, atvar=NULL, adj="none",
   `"outer"` (products of each factor's own frequencies), `"cells"` (each
   mean weights the cells by their own frequencies) or `"flat"` (equal
   weights over the non-empty cells). The definitions are those of
-  emmeans. Empty cells (combinations of interacting factors without
-  data, not those absent by design, as for nested factors): with
-  `"equal"`, a mean that averages over them is the average of its
-  observed cells (as predictmeans 1.x, and ASReml and Genstat with
-  `PRESENT`), with a warning naming those means. Two such means average
-  over different cells, so their difference would also carry the effects
-  of the other factors; a pair with such a mean is therefore compared on
-  the cells both means have (column `over` of `pairs`; NA,
-  `over = "none"`, when they have none). Only factors whose effects the
-  two means share are matched: with `Sample_date/Farm` in the model, two
-  dates are not matched on farms (each date has its own farm effects),
-  but two treatments at one date are. In simulations comparing the
-  averages rejected 8-78% of true null hypotheses at the 5% level when
-  the other factor had an effect, the common cells 4-6%
+  emmeans. The frequencies are cases (trials, or the case weights of
+  class responses) where a row holds several, else rows; see
+  [`Kmatrix`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
+  and `settings$weights_by`. Empty cells (combinations of interacting
+  factors without data, not those absent by design, as for nested
+  factors): with `"equal"`, a mean that averages over them is the
+  average of its observed cells (as predictmeans 1.x, and ASReml and
+  Genstat with `PRESENT`), with a warning naming those means. Two such
+  means average over different cells, so their difference would also
+  carry the effects of the other factors; a pair with such a mean is
+  therefore compared on the cells both means have (column `over` of
+  `pairs`; NA, `over = "none"`, when they have none). Only factors whose
+  effects the two means share are matched: with `Sample_date/Farm` in
+  the model, two dates are not matched on farms (each date has its own
+  farm effects), but two treatments at one date are. In simulations
+  comparing the averages rejected 8-78% of true null hypotheses at the
+  5% level when the other factor had an effect, the common cells 4-6%
   (`dev/review-defaults.md` in the package sources).
   [`contrastmeans()`](https://dongwenluo.github.io/predictmeans/reference/contrastmeans.md)
   and
@@ -801,6 +804,9 @@ Dongwen Luo, Siva Ganesh and John Koolaard
 #> 
 #> $average
 #> [1] "link"
+#> 
+#> $weights_by
+#> [1] NA
 #> 
 #> $nperm
 #> [1] NA

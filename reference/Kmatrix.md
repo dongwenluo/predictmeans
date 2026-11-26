@@ -128,7 +128,15 @@ Kmatrix(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_reduce=mean,
   `"outer"` (products of each factor's own frequencies), `"cells"` (each
   mean weights the cells by their own frequencies) or `"flat"` (equal
   weights over the non-empty cells). The definitions are those of
-  emmeans.
+  emmeans. The frequencies count rows, except when a row stands for
+  several cases or trials: binomial and quasibinomial responses of any
+  model class (trials) and class responses (`multinom`, `polr`, `clm`,
+  `clmm`, `vglm` with case weights). There they are the sums of the
+  cases, so aggregated data and one row per case weight the factor
+  combinations alike (as emmeans); `settings$weights_by` says which.
+  Covariates are still set from the rows (their mean, or the profiles of
+  `cov_reduce = "average"`), and the `n` column of the means counts
+  rows.
 
 - refgrid:
 

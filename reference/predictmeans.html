@@ -257,7 +257,9 @@ predictmeans 1.x. It has no effect for other models.</p></dd>
 <code>"equal"</code> (the default; equal weights), <code>"proportional"</code> (weights proportional to the frequencies of
 those cells in the data, the same for every mean, as SAS <code>LSMEANS / OM</code>), <code>"outer"</code> (products of each
 factor's own frequencies), <code>"cells"</code> (each mean weights the cells by their own frequencies) or
-<code>"flat"</code> (equal weights over the non-empty cells). The definitions are those of <span class="pkg">emmeans</span>.
+<code>"flat"</code> (equal weights over the non-empty cells). The definitions are those of <span class="pkg">emmeans</span>. The
+frequencies are cases (trials, or the case weights of class responses) where a row holds several, else rows;
+see <code><a href="Kmatrix.html">Kmatrix</a></code> and <code>settings$weights_by</code>.
 Empty cells (combinations of interacting factors without data, not those absent by design, as for nested
 factors): with <code>"equal"</code>, a mean that averages over them is the average of its observed cells (as
 predictmeans 1.x, and ASReml and Genstat with <code>PRESENT</code>), with a warning naming those means. Two such means
@@ -671,6 +673,9 @@ ratios of overall means only when \(\pi\) is the same. A message says so and <co
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $average</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "link"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $weights_by</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $nperm</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>

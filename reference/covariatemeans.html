@@ -159,7 +159,9 @@ smooths. See <code><a href="Kmatrix.html">Kmatrix</a></code>.</p></dd>
 <code>"equal"</code> (the default; equal weights), <code>"proportional"</code> (weights proportional to the frequencies of
 those cells in the data, the same for every mean, as SAS <code>LSMEANS / OM</code>), <code>"outer"</code> (products of each
 factor's own frequencies), <code>"cells"</code> (each mean weights the cells by their own frequencies) or
-<code>"flat"</code> (equal weights over the non-empty cells). The definitions are those of <span class="pkg">emmeans</span>.</p></dd>
+<code>"flat"</code> (equal weights over the non-empty cells). The definitions are those of <span class="pkg">emmeans</span>. The
+frequencies are cases (trials, or the case weights of class responses) where a row holds several, else rows;
+see <code><a href="Kmatrix.html">Kmatrix</a></code> and <code>settings$weights_by</code>.</p></dd>
 
 
 <dt id="arg-df-method-vcov-adjust">df_method, vcov_adjust<a class="anchor" aria-label="anchor" href="#arg-df-method-vcov-adjust"></a></dt>

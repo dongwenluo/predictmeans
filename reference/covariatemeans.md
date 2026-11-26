@@ -128,7 +128,10 @@ covariatemeans(model, modelterm=NULL, covariate, as_is=FALSE, at=NULL, data=NULL
   `"outer"` (products of each factor's own frequencies), `"cells"` (each
   mean weights the cells by their own frequencies) or `"flat"` (equal
   weights over the non-empty cells). The definitions are those of
-  emmeans.
+  emmeans. The frequencies are cases (trials, or the case weights of
+  class responses) where a row holds several, else rows; see
+  [`Kmatrix`](https://dongwenluo.github.io/predictmeans/reference/Kmatrix.md)
+  and `settings$weights_by`.
 
 - df_method, vcov_adjust:
 
