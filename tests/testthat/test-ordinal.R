@@ -327,6 +327,14 @@ test_that("population-average integral: any SD and link; scalar random slopes st
                                                    rel.tol = 1e-13, subdivisions = 2000L)$value, 0)
     expect_equal(r$F, ref, tolerance = 1e-10)
   }
+  # tiny SDs (integrate() stopped with "roundoff error"): the series F(z) + s^2 f'(z) / 2, d/ds = s f'(z)
+  Fl <- pm_ord_link_fd("logit")
+  for (s in c(1e-7, 1e-4, 1e-3)) {
+    r <- pm_ord_pop_int(c(-0.2, 0.7), s, Fl)
+    fp <- stats::dlogis(c(-0.2, 0.7)) * (1 - 2 * stats::plogis(c(-0.2, 0.7)))
+    expect_equal(r$F, stats::plogis(c(-0.2, 0.7)) + s^2 * fp / 2, tolerance = 1e-12)
+    expect_equal(r$ds, s * fp, tolerance = 1e-6)
+  }
   # the probit closed form at small and large SDs (a small SD used to lose the mass: 0/1)
   for (s in c(0.002, 0.05, 0.1, 1, 5)) {
     z <- c(-5, -1, 0, 2, 5, 40)

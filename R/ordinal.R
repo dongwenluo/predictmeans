@@ -301,10 +301,27 @@ pm_ord_intercepts_only <- function(model) {
   all(vapply(bars, function(b) identical(deparse(b[[2]]), "1"), logical(1)))
 }
 
+## Gauss-Hermite rule for a standard normal (Golub-Welsch): E g(U) = sum w g(x).
+pm_gh_rule <- function(n = 60) {
+  k <- seq_len(n - 1)
+  J <- matrix(0, n, n)
+  J[cbind(k, k + 1)] <- J[cbind(k + 1, k)] <- sqrt(k)
+  e <- eigen(J, symmetric = TRUE)
+  list(x = e$values, w = e$vectors[1, ]^2)
+}
+
 ## E F(z - s U), E f(z - s U) and d/ds E F(z - s U) = -E[U f(z - s U)] for
 ## each z (Fd: the link's distribution function and density).
 pm_ord_pop_int <- function(z, s, Fd) {
   if (s <= 0) return(list(F = Fd[[1]](z), f = Fd[[2]](z), ds = rep(0, length(z))))
+  if (s <= 0.5) {
+    # a small SD: the integrand is smooth, and a 60-node Gauss-Hermite rule is accurate to 2e-13 for every link
+    # (integrate() can stop with "roundoff error" there)
+    gh <- pm_gh_rule(60)
+    A <- outer(z, s * gh$x, "-")
+    return(list(F = drop(Fd[[1]](A) %*% gh$w), f = drop(Fd[[2]](A) %*% gh$w),
+                ds = -drop(Fd[[2]](A) %*% (gh$w * gh$x))))
+  }
   # over |u| <= 12 (the normal tail beyond is below 1e-32), split where z - s u = 0 when that is inside (the
   # step of F and the peak of f; with a small s it is outside and the integrand is smooth)
   one <- function(g, z0) {

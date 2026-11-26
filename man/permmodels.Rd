@@ -10,12 +10,16 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
-\code{glmer}, \code{glmmTMB} or \code{ordinal::clmm}. For a \code{clmm} the treatments of whole clusters
-are permuted (the cluster-level variables relabelled among the clusters of the coarsest random effect that
-holds them; \code{perms} is not used): exact for the terms constant within clusters, whatever the
-within-cluster effects and cluster sizes, and only those get permutation p-values (Type II Wald chi-square).
-When the distinct allocations are at most \code{nperm} all are used (exact p-values); a note gives their
-number and the smallest attainable p-value (6 clusters split 3/3: 20 allocations, two-sided p at least 0.1).
+\code{glmer}, \code{glmmTMB} or \code{ordinal::clmm}. For a \code{clmm}, each main-effect term of a variable
+applied to whole clusters (constant within the clusters of a random effect) is tested by re-randomising it:
+its values are relabelled among the clusters within strata (the other cluster-level variables, such as fixed
+blocks, and coarser random effects the clusters are nested in), the model refitted and its Wald chi-square
+compared. This is exact for the null hypothesis that the variable has no effect at all (main effect and
+interactions), whatever the within-cluster effects and cluster sizes; \code{perms} and \code{exact} are not
+used. When the allocations are at most \code{nperm} all are used (exact p-values; for equal group sizes one
+per relabelling of the levels, which give the same statistic); refits that do not converge count as at least
+as extreme. A note gives, for each variable, the strata, the number of allocations and the smallest
+attainable p-value (6 clusters split 3/3: 20 allocations, p at least 0.1); other terms get none.
 \code{\link{bootmodels}} tests every term, by a parametric bootstrap under the global null.}
 
 \item{nperm}{The number of permutations. The default is 4999.}

@@ -10,12 +10,16 @@
 #'   test_statistic=c("Chisq", "F", "LR", "Wald"), exact=FALSE, data=NULL, ncore=1, seed,
 #'   method=c("auto", "raw", "freedman-lane"), perms=NULL, refit=TRUE, robust=FALSE, ...)
 #' @param model Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
-#'   \code{glmer}, \code{glmmTMB} or \code{ordinal::clmm}. For a \code{clmm} the treatments of whole clusters
-#'   are permuted (the cluster-level variables relabelled among the clusters of the coarsest random effect that
-#'   holds them; \code{perms} is not used): exact for the terms constant within clusters, whatever the
-#'   within-cluster effects and cluster sizes, and only those get permutation p-values (Type II Wald chi-square).
-#'   When the distinct allocations are at most \code{nperm} all are used (exact p-values); a note gives their
-#'   number and the smallest attainable p-value (6 clusters split 3/3: 20 allocations, two-sided p at least 0.1).
+#'   \code{glmer}, \code{glmmTMB} or \code{ordinal::clmm}. For a \code{clmm}, each main-effect term of a variable
+#'   applied to whole clusters (constant within the clusters of a random effect) is tested by re-randomising it:
+#'   its values are relabelled among the clusters within strata (the other cluster-level variables, such as fixed
+#'   blocks, and coarser random effects the clusters are nested in), the model refitted and its Wald chi-square
+#'   compared. This is exact for the null hypothesis that the variable has no effect at all (main effect and
+#'   interactions), whatever the within-cluster effects and cluster sizes; \code{perms} and \code{exact} are not
+#'   used. When the allocations are at most \code{nperm} all are used (exact p-values; for equal group sizes one
+#'   per relabelling of the levels, which give the same statistic); refits that do not converge count as at least
+#'   as extreme. A note gives, for each variable, the strata, the number of allocations and the smallest
+#'   attainable p-value (6 clusters split 3/3: 20 allocations, p at least 0.1); other terms get none.
 #'   \code{\link{bootmodels}} tests every term, by a parametric bootstrap under the global null.
 #' @param nperm The number of permutations. The default is 4999.
 #' @param type The type of the tests: "I", "II" or "III" (or 1, 2, 3).
@@ -218,13 +222,9 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   method <- match.arg(method)
   if (method == "auto") method <- pm_perm_auto_method(model)
   seed <- if (missing(seed)) NULL else seed
-  if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
-  exact <- pm_perm_exact(exact, perms)
-  if (isTRUE(robust)) {
-    if (method != "freedman-lane") stop("robust = TRUE needs method = \"freedman-lane\".", call. = FALSE)
-    return(pm_perm_fl_robust(model, nperm, type, exact, seed, perms))
-  }
-  if (inherits(model, "clmm")) {
+  if (inherits(model, "clmm")) {                # randomisation of whole clusters (R/perm-clmm.R)
+    if (!is.null(perms)) stop("permmodels() of a clmm permutes the treatments of whole clusters itself; leave ",
+                              "'perms' out.", call. = FALSE)
     if (method != "raw") stop("clmm models are permuted as whole clusters (method = \"raw\").", call. = FALSE)
     if (type %in% c("I", "1")) {
       message("clmm models have no sequential (Type I) tests; Type II Wald tests are used.")
@@ -232,7 +232,15 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
     }
     if (ts_given && test_statistic != "Chisq") message("clmm tests are Wald chi-square; test_statistic = \"",
                                                         test_statistic, "\" is not used.")
-    test_statistic <- "Chisq"
+    if (!missing(exact)) message("For clmm the allocations are enumerated (exact) whenever there are at most ",
+                                 "'nperm'; 'exact' is not used.")
+    return(pm_perm_clmm(model, nperm, type, data, seed, ncore))
+  }
+  if (!is.null(perms)) nperm <- ncol(as.matrix(perms))
+  exact <- pm_perm_exact(exact, perms)
+  if (isTRUE(robust)) {
+    if (method != "freedman-lane") stop("robust = TRUE needs method = \"freedman-lane\".", call. = FALSE)
+    return(pm_perm_fl_robust(model, nperm, type, exact, seed, perms))
   }
   if (method == "freedman-lane") {
     if (ts_given && test_statistic != "F")
@@ -264,8 +272,6 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   # failed), and the packages a Windows worker needs (pm_perm_raw())
   parts <- pm_perm_raw(model, data, seed, perms, nperm, type, test_statistic)
   model <- parts$model
-  if (!is.null(parts$n)) nperm <- parts$n                  # (clmm: the allocations used)
-  if (isTRUE(parts$exact)) exact <- TRUE                   # (clmm: all allocations enumerated)
 
   # the Type III map depends only on the design, which the refits share
   map3 <- if (type %in% c("III", "3")) tryCatch({
@@ -305,20 +311,14 @@ permmodels <- function(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
   ANOVA <- round(cbind(key_anova, "Perm_p_value"=stats.p),4)
   if (!(type %in% c("I", "1"))) attr(ANOVA, "heading") <- attr(key_anova, "heading")
   
-  # clmm: whole clusters are permuted, which tests only what is constant within them (pm_perm_raw.clmm())
-  if (!is.null(parts$valid)) {
-    ANOVA[!rownames(ANOVA) %in% parts$valid$terms, "Perm_p_value"] <- NA
-    if (!is.null(COEFFICENTS)) COEFFICENTS[!rownames(COEFFICENTS) %in% parts$valid$coefs, "Perm_p_value"] <- NA
-  }
   ANOVA[is.na(ANOVA)] <-""
   permlist <- lapply(permmod, `[[`, 1)
   out <- pm_permmodels_result(
     list("permlist"=permlist, "COEFFICENTS"=COEFFICENTS, "ANOVA"=ANOVA),
-    if (!is.null(COEFFICENTS)) paste0("Note: Perm_p_value of ", if (inherits(model, "clmm")) "z" else "t",
-                                      " test is obtained using ", sQuote(nperm), " permutations",
+    if (!is.null(COEFFICENTS)) paste0("Note: Perm_p_value of t test is obtained using ", sQuote(nperm), " permutations",
                                       failnote, "."),
     paste0("Note: Perm_p_value of ", test_statistic, " test is obtained using ", sQuote(nperm), " permutations",
-           failnote, ".", if (!is.null(parts$note)) paste0(" ", parts$note)), nperm = nperm - failures, exact = exact)
+           failnote, "."), nperm = nperm, exact = exact)
   if (failures > 0) attr(out, "failures") <- failures
   out
 }
@@ -413,81 +413,6 @@ pm_perm_raw.lme <- function(model, data, seed, perms, nperm, type, test_statisti
 #' @exportS3Method NULL
 pm_perm_raw.gls <- pm_perm_raw.lme
 
-## clmm (B4 G3): the cluster-level variables (constant within each cluster of
-## the coarsest random-effect factor that holds any) are permuted among the
-## clusters, as relabelling which cluster got which treatment; the rows and
-## the response stay. Exact for the null of no effect of those terms, whatever
-## the within-cluster effects and cluster sizes. When the distinct allocations
-## (a multinomial count over the clusters' patterns) are at most nperm, all are
-## enumerated and the p-values are exact (the observed one among them); else
-## nperm random relabellings. 'valid' names the terms tested; 'note' says the
-## number of allocations and the smallest p-value it allows.
-#' @exportS3Method NULL
-pm_perm_raw.clmm <- function(model, data, seed, perms, nperm, type, test_statistic) {
-  if (!is.null(perms)) {
-    stop("permmodels() of a clmm permutes the treatments of whole clusters itself; leave 'perms' out.",
-         call. = FALSE)
-  }
-  w <- pm_freq_w(model)
-  if (!is.null(w) && any(w != 1)) {
-    stop("permmodels() needs a clmm fit with one row per observation (no case weights).", call. = FALSE)
-  }
-  mod_df <- if (!is.null(data)) as.data.frame(data) else pm_clmm_rows(model)
-  X <- pm_basis(model, mod_df)
-  tl <- attr(stats::terms(pm_nobars(stats::formula(model))), "term.labels")
-  asg <- attr(X, "assign")
-  gf <- lapply(model$gfList, factor)
-  cst <- function(g) apply(X, 2, function(x) all(abs(x - stats::ave(x, g)) <= 1e-8 * max(1, abs(x))))
-  # the coarsest grouping factor within whose clusters some term is constant
-  tested <- lapply(gf, function(g) {
-    k <- cst(g)
-    tl[vapply(seq_along(tl), function(a) all(k[asg == a]), logical(1))]
-  })
-  cand <- which(lengths(tested) > 0)
-  if (!length(cand)) {
-    stop("No term of this clmm is constant within the clusters of a random effect: permutations of whole ",
-         "clusters test nothing here (use bootmodels()).", call. = FALSE)
-  }
-  k <- cand[which.min(vapply(gf[cand], nlevels, integer(1)))]
-  g <- gf[[k]]
-  valid <- list(terms = tested[[k]], coefs = setdiff(colnames(X)[cst(g)], "(Intercept)"))
-  # the cluster-level variables of the tested terms, one row per cluster
-  vars <- unique(unlist(lapply(valid$terms, function(t) all.vars(stats::as.formula(paste("~", t))))))
-  cl <- mod_df[!duplicated(g), vars, drop = FALSE]
-  cg <- g[!duplicated(g)]
-  pat <- do.call(paste, c(lapply(cl, as.character), sep = "\r"))
-  counts <- table(pat)
-  nall <- exp(lfactorial(length(pat)) - sum(lfactorial(counts)))
-  enumerate <- nall <= nperm
-  perm_cl <- if (enumerate) {
-    pm_multiset_perms(match(pat, names(counts)))                # every distinct allocation, as indices of clusters
-  } else {
-    pm_with_seed(seed, replicate(nperm, sample(length(pat))))
-  }
-  if (enumerate) perm_cl <- apply(perm_cl, 2, function(v) {
-    # (an allocation of patterns -> a relabelling: the clusters holding each pattern, in order)
-    src <- split(seq_along(pat), match(pat, names(counts)))
-    out <- integer(length(v))
-    for (j in seq_along(src)) out[v == j] <- src[[j]]
-    out
-  })
-  mirror <- length(counts) == 2 && counts[[1]] == counts[[2]]
-  note <- paste0("The cluster-level variables of ", paste(valid$terms, collapse = ", "), " were permuted among the ",
-                 length(pat), " levels of ", names(gf)[k], " (", format(round(nall), big.mark = ","),
-                 " distinct allocations", if (enumerate) ", all used: exact p-values" else "", "); no p-value can be ",
-                 "below ", if (mirror) paste0("2/", round(nall), " (two-sided: each allocation has a mirror)")
-                 else paste0("1/", round(nall)), ". Other terms are not tested this way.")
-  pos <- match(g, cg)
-  one <- function(kk, map3) {
-    d <- mod_df
-    d[vars] <- cl[perm_cl[, kk][pos], vars, drop = FALSE]
-    rfitmodel <- suppressWarnings(tryCatch(pm_refit(model, data = d), error = function(e) NULL))
-    if (pm_clmm_ok(rfitmodel)) pm_perm_stats(rfitmodel, type, test_statistic, map3 = map3)
-  }
-  list(model = model, one = one, packages = "ordinal", valid = valid, note = note, n = ncol(perm_cl),
-       exact = enumerate)
-}
-
 ## The distinct orderings of a multiset (integers 1..k with repeats), one per
 ## column.
 pm_multiset_perms <- function(v) {
@@ -506,8 +431,8 @@ pm_multiset_perms <- function(v) {
 ## A clmm refit that converged (a gradient near 0): refits that did not are
 ## failures (left out), not statistics.
 pm_clmm_ok <- function(fit) {
-  inherits(fit, "clmm") && (is.null(fit$optRes$convergence) || fit$optRes$convergence == 0) &&
-    max(abs(fit$gradient)) < 1e-2
+  # (the gradient only: optimisers code success differently, e.g. nlminb 0, ucminf 1 or 2)
+  inherits(fit, "clmm") && all(is.finite(fit$gradient)) && max(abs(fit$gradient)) < 1e-2
 }
 
 ## The rows a clmm was fitted to (its data without the rows it dropped for NA).

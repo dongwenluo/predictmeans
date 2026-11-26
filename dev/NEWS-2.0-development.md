@@ -3313,3 +3313,27 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   clm() for the SD-0 fallback, the exact enumeration by hand, the probit
   closed form; (14) s from pm_ord_class() (not recomputed); (15) semireg
   means keep small_df and the other common advice, without singular_fit.
+* Fifth review (G3 redesign, 12 findings): (1) relabelling all cluster-level
+  variables at once also permuted fixed blocks (an RCBD was given 720
+  allocations instead of 8): redesigned as pm_perm_clmm() (R/perm-clmm.R),
+  one variable at a time (main-effect terms of a variable constant within
+  the clusters of the finest random effect that holds it), relabelled
+  within strata = the other variables constant within those clusters and
+  the coarser random effects they are nested in; null hypothesis: no effect
+  of the variable at all (said in the note); (2) refits that do not
+  converge count as at least as extreme (conservative), with a note,
+  instead of being dropped from an "exact" enumeration; the floor note of
+  permmodels() no longer subtracts failures twice (all classes); (3) the
+  population-average integral uses a 60-node Gauss-Hermite rule for SD <=
+  0.5 (integrate() stopped with "roundoff error" at tiny SDs; the rule is
+  within 2e-13 of integrate() and of the series at SD 1e-7), integrate()
+  above; (4) equal group sizes: one allocation per relabelling of the
+  levels (weight k!), so mirror ties are not broken by optimiser noise and
+  the work is divided by k!; near-ties (relative 1e-6) count as at least as
+  large for random allocations; (5) one floor statement per note; (6)
+  pm_clmm_ok() uses the gradient only (ucminf codes success 1 or 2); the
+  observed fit is checked too; (7) without 'seed' the user's stream is
+  used; (8) 'data' must hold the fit's rows; (9) 'exact' and 'perms' are
+  not used for clmm, with a message; (10) a bootstrap permlist given as
+  b$permlist is accepted; (11) semireg means count their pairs for the
+  many-tests advice; (12) plan O16.

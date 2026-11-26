@@ -281,7 +281,7 @@ pm_perm_vcov_adjust <- function(model, permlist, vcov_adjust, vcov_adjust_defaul
 ## 1b; raw permutation of a GLM response tests only the global null, and is
 ## not available for GLMMs).
 pm_perm_auto_method <- function(model) {
-  if (inherits(model, "clmm")) "raw" else "freedman-lane"      # (clmm: whole clusters, pm_perm_raw.clmm())
+  if (inherits(model, "clmm")) "raw" else "freedman-lane"      # (clmm: whole clusters, R/perm-clmm.R)
 }
 
 ## ---- Multiplicity: Westfall-Young max-|t| -------------------------------------

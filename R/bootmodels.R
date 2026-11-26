@@ -114,6 +114,7 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
                                      " parametric bootstrap samples under the global null model",
                                      pm_perm_failnote(failures), "."), nperm = B)
   attr(out, "resampling") <- "parametric bootstrap"
+  attr(out$permlist, "resampling") <- "parametric bootstrap"      # (also when the list alone is given)
   if (failures > 0) attr(out, "failures") <- failures
   out
 }
