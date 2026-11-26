@@ -37,7 +37,7 @@ line-mean forms: standard to simulated).}
 \item{within_variance, within_n}{For \code{"family"} and \code{"repeatability"} from plot means: the variance
 among plants within plots and the number of plants per plot (numbers, or names of columns of the data:
 the mean of the variances, the harmonic mean of the numbers). The single-plant variance is then
-\eqn{\sigma^2_f + \sum_t \sigma^2_t + (\sigma^2_e - \sigma^2_w/n) + \sigma^2_w}, as Williams et al. (2023,
+\eqn{\sigma^2_f + \sum_t \sigma^2_t + (\sigma^2_e - \sigma^2_w/n) + \sigma^2_w}, as Williams et al. (2024,
 Example 6.2), with \eqn{\sigma^2_e - \sigma^2_w/n} the plot variance; \eqn{\sigma^2_w} is taken as known in
 the standard error.}
 
@@ -143,6 +143,9 @@ breeding trials. \emph{Genetics}, 177, 1881-1888.
 
 Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019). Heritability in plant breeding on a
 genotype-difference basis. \emph{Genetics}, 212(4), 991-1008. \doi{10.1534/genetics.119.302134}
+
+Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). \emph{Experimental Design and Analysis for Tree
+Improvement} (3rd ed.). CSIRO Publishing.
 }
 \seealso{
 \code{\link{varcomp}}, \code{\link{se_ranef}}

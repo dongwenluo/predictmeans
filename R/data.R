@@ -187,7 +187,7 @@ NULL
 #'
 #' @description
 #' Mean heights of 37 seedlots (26 Acacia, Allocasuarina and Casuarina species) grown at six sites in Thailand,
-#' the data of Table 5.2 of Williams, Matheson and Harwood, used there for a regression of each seedlot on
+#' the data of Table 5.2 of Williams, Harwood and Matheson (2024), used there for a regression of each seedlot on
 #' the site mean (Finlay-Wilkinson regression). 30 site-seedlot combinations have no height.
 #' @usage
 #' data(DataExam5.2)
@@ -206,8 +206,8 @@ NULL
 #' recomputed for them) \code{predictmeans()} reproduces the means and slopes of the book's Table 5.7
 #' (\code{tests/testthat/test-level-covariate.R}).
 #' @source
-#' Williams, E. R., Matheson, A. C. and Harwood, C. E. \emph{Experimental Design and Analysis for Tree
-#' Improvement}, 3rd edition. CSIRO Publishing, Table 5.2.
+#' Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). \emph{Experimental Design and Analysis for Tree
+#' Improvement} (3rd ed.). CSIRO Publishing, Table 5.2.
 #' @examples
 #' data(DataExam5.2)
 #' fit <- lm(ht ~ site + sitemean * seedlot, data = DataExam5.2)

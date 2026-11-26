@@ -1,5 +1,5 @@
 ## Examples from "Experimental Design and Analysis for Tree Improvement"
-## (Williams, Matheson and Harwood; data also in package eda4treeR), with the
+## (Williams, Harwood and Matheson 2024; data also in package eda4treeR), with the
 ## Genstat and SAS runs the maintainer supplied (2026-11-13; the output files
 ## are named in each test). Edge cases: nested treatments, a split plot with
 ## comparisons across strata, an incomplete site-by-seedlot table, families
