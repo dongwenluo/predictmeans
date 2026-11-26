@@ -10,7 +10,9 @@ bootmodels(model, nsim = 999, type = c("I", "II", "III", "1", "2", "3"), seed = 
 \arguments{
 \item{model}{A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
 distribution: gaussian, binomial, Poisson, Gamma; also \code{MASS::glm.nb}), \code{gls}, \code{lme},
-\code{lmer}, \code{glmer} or \code{glmmTMB}. Responses of \code{lme} and \code{gls} models are simulated from
+\code{lmer}, \code{glmer}, \code{glmmTMB} or \code{ordinal::clmm} (random intercepts, one row per
+observation; Type II Wald chi-square; its \code{permlist} gives bootstrap p-values of the latent pairs in
+\code{predictmeans()}). Responses of \code{lme} and \code{gls} models are simulated from
 the null model's covariance of the data (random effects, correlation and variance structures).}
 
 \item{nsim}{Number of simulated data sets, the default is 999.}

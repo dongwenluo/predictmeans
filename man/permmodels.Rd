@@ -10,7 +10,12 @@ permmodels(model, nperm=4999, type=c("I", "II", "III", 1, 2, 3),
 }
 \arguments{
 \item{model}{Model object returned by \code{aov}, \code{lm}, \code{glm}, \code{gls}, \code{lme}, \code{lmer},
-\code{glmer} or \code{glmmTMB}.}
+\code{glmer}, \code{glmmTMB} or \code{ordinal::clmm}. A \code{clmm} is permuted as whole clusters: give
+\code{perms = permindex(data, group = "cluster")} (clusters of equal size); only terms constant within the
+clusters (a treatment applied to whole clusters) get permutation p-values (Type II Wald chi-square), and a
+note gives the number of distinct allocations of the clusters, below whose inverse no p-value can fall
+(6 clusters split 3/3: 20 allocations, two-sided p at least 0.1). For few clusters
+\code{\link{bootmodels}} is the test of any term.}
 
 \item{nperm}{The number of permutations. The default is 4999.}
 

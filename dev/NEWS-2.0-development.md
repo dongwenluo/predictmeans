@@ -3265,3 +3265,30 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   a noisier copy as two trials, unsorted, trial / variety + varIdent: phi of
   the separate fits (to 1e-5), logLik = sum of theirs, SEDs and KR df of the
   trial-1 pairs = the separate fit's (1e-6 seen).
+* Third review (G2 and fixes, 13 findings): (1) random terms other than an
+  intercept stop for population averages (pm_ord_intercepts_only(): a
+  scalar (0 + x | g) has a 1 x 1 ST too and was taken as an intercept); (3)
+  the population-average integral by integrate() split at z/s
+  (pm_ord_pop_int(); the 40-node Gauss-Hermite rule was off by up to 5e-3
+  at SD 5, cloglog; now 1e-14 against integrate(rel.tol = 1e-13) for all
+  links at SD 0.5-5, derivatives too); (2, 4) semireg means keep df_cases
+  and give only the trials advice (pm_advice_overdisp(); no singular-fit
+  line for smooths at a straight line), print their advice and df label;
+  (5) covariatemeans() checks it; (6) df_cases NA for a user's df or
+  permutation df; (7) pm_counts(): one whole-number rule for the df and
+  pm_check_dispersion(); (8) settings$bias_adjust is the SD averaged over;
+  (9) help and article; (10) the advice suggests bias_adjust only for
+  random intercepts; (11) 'sigma' with population averages stops with its
+  own message; (12) intercept df with rows when no coefficient counts
+  cases; (13) vcov() read once less (pm_ord_pop() returns it).
+* clmm tests with few clusters (2026-11-26, B4 G3): bootmodels()
+  (pm_boot_fit.clmm(): the null fit's cut points and random intercepts, u
+  per level, the class from F(theta_j - u); refit with the response
+  replaced; Type II Wald; pm_coef_table() latent coefficients) and
+  permmodels() (pm_perm_raw.clmm(): method "raw", perms required and moving
+  whole clusters; p-values only for terms constant within clusters; note
+  with the distinct allocations). predictmeans() takes the bootstrap
+  permlist for clmm latent pairs. pm_ord_vcov(): a clmm whose SD is 0 on the
+  log-SD route has a zero Hessian row and vcov() fails (13% of null
+  bootstrap refits on wine); the covariance of the other parameters is then
+  the inverse of their Hessian block (the SD known).
