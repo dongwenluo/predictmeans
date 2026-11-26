@@ -3372,3 +3372,6 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   which. summary() of semireg means: the means table carries 'estimable'.
   corAR1xAR1 help: SEDs 0.617 vs 0.679 (both KR). CLAUDE.md: review effort
   by kind of change; check the pkgdown index before and after each PR.
+* semireg KR evidence (dev/sim-semireg-kr/): coverage of 95% pair limits,
+  KR 94.9% / 94.9%, unadjusted 94.5% / 94.2% (Slate Hall with t2() trend, 200
+  sets; 4 groups x 6 blocks with s(x), 500 sets): the KR default stays.

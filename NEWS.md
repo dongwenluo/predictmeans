@@ -209,8 +209,8 @@ shows 1.1.1 and 2.0 code side by side.
   Satterthwaite; `na.exclude` fits no longer break them. `residvariogram()` advice now points to it (or to a smooth `t2(row, col)` trend). New article "Spatial analysis of a field trial"
   (Slate Hall: variogram, AR1 x AR1 with and without a nugget, the `t2()` trend).
 * `predictmeans()` of gaussian `semireg()` fits: pairs (fixed-effect contrasts) get Kenward-Roger adjusted SEs and
-  df, the same as the fit's mixed model (`$semer`) gives; the means keep Satterthwaite df; `vcov_adjust = FALSE`
-  for the unadjusted results. `summary()` of these results works (it failed: no `estimable` column).
+  df, the same as the fit's mixed model (`$semer`) gives (coverage of 95% limits in simulations 94.9%, unadjusted
+  94.2-94.5%); the means keep Satterthwaite df; `vcov_adjust = FALSE` for the unadjusted results. `summary()` of these results works (it failed: no `estimable` column).
 * `corAR1xAR1(by_group = TRUE)` with `form = ~ row + col | trial`: a phi pair (and nugget) for each trial; with
   `trial / variety` and `varIdent(~ 1 | trial)` each trial gets the estimates, SEDs and Kenward-Roger df of
   its own fit (checked against separate fits).
