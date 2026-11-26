@@ -183,7 +183,8 @@ shows 1.1.1 and 2.0 code side by side.
   `VSTRUCTURE AR,AR` and ASReml's `ar1(row):ar1(col)`), with an optional nugget, for `nlme::gls()` and `lme()`;
   every predictmeans tool works with it (Kenward-Roger df, means, SEDs, `residvariogram()`). On Genstat's Slate
   Hall trial phi, variances, the 25 means and all 300 SEDs agree to 1e-6, and the variety test's d.d.f. with
-  `df_method = "KR-average"`. `residvariogram()` advice now points to it (or to a smooth `t2(row, col)` trend).
+  `df_method = "KR-average"`. `residvariogram()` advice now points to it (or to a smooth `t2(row, col)` trend). New article "Spatial analysis of a field trial"
+  (Slate Hall: variogram, AR1 x AR1 with and without a nugget, the `t2()` trend).
 
 ### Mixed models and variance components
 
