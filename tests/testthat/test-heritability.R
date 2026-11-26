@@ -152,7 +152,7 @@ test_that("Schmidt et al. (2019), Examples 1 and 2 (oats, john.alpha): every pub
 })
 
 
-test_that("single-tree h2 from plot means: Williams, Harwood and Matheson (2023), Example 6.2, pages 104 and 107", {
+test_that("single-tree h2 from plot means: Williams, Harwood and Matheson (2024), Example 6.2, pages 104 and 107", {
   skip_on_cran()
   d <- read.csv(test_path("_data", "tree", "ex6.2.csv"))
   for (v in c("Replication", "Family", "Province")) d[[v]] <- factor(d[[v]])

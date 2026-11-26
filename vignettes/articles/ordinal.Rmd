@@ -1,0 +1,133 @@
+---
+title: "Ordinal and categorical responses"
+author: "Dongwen Luo"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 7,
+                      fig.height = 3.5)
+```
+
+```{r setup}
+library(predictmeans)
+library(ggplot2)
+```
+
+A response that is a class (a rating 1 to 5, low/medium/high satisfaction, a colour) has no single mean.
+`predictmeans()` gives means on the scale each model has, and the class probabilities on request.
+
+| model | fitted by | means (default) | other `mean_type` |
+|---|---|---|---|
+| cumulative link, parallel slopes | `MASS::polr`, `ordinal::clm`, `ordinal::clmm`, `VGAM::vglm(cumulative / propodds / acat / cratio / sratio, parallel = TRUE)` | the latent scale: one mean per level | `"prob"` and `"mean_class"` add a table of class probabilities or the mean class |
+| multinomial, or slopes that are not parallel | `nnet::multinom`, `VGAM::vglm(multinomial)`, `vglm(..., parallel = FALSE)` | `"prob"`: each class probability, compared within its class | `"prob_diff"`, `"link"`, `"mean_class"` (ordinal families) |
+
+All tests are z tests (these models have no dispersion to estimate), except `clmm`, which uses the
+inner-outer df of other mixed models.
+
+## Parallel slopes: one latent scale
+
+The wine data (`ordinal`): bitterness rated 1 to 5 by 9 judges, at two temperatures and with or without
+contact.
+
+```{r}
+data(wine, package = "ordinal")
+m <- ordinal::clm(rating ~ temp + contact, data = wine)
+pm <- predictmeans(m, "temp:contact", pairwise = TRUE)
+summary(pm)
+```
+
+The means are on the latent scale, x'b minus the mean cut point (emmeans' `mode = "latent"`). A difference
+of 2.5 between warm and cold is a log odds ratio: at every cut point the odds of a higher rating are
+exp(2.5) = 12 times larger when warm. The same model by `polr()` or `vglm(propodds)` gives the same means.
+
+The class probabilities of each mean:
+
+```{r}
+pp <- predictmeans(m, "temp:contact", mean_type = "prob")
+head(pp$probs, 5)
+predictmeans(m, "temp:contact", mean_type = "mean_class")$probs
+```
+
+The mean class scores the classes 1, 2, 3, ... as equally spaced; the advice says so.
+
+### Judges as random effects
+
+```{r}
+mm <- ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine)
+pmm <- predictmeans(mm, "temp", mean_type = "prob")
+pmm$means[, c("temp", "estimate", "std.error", "df")]
+advice(pmm)$text
+```
+
+The means are for a typical judge (random effects at 0), and so are the class probabilities: averaged over
+judges they are less extreme. The df are inner-outer: with few judges, z tests reject a true null too often
+(11% at the 5% level with 6 clusters in a simulation).
+
+## Multinomial and non-parallel fits: class probabilities
+
+Satisfaction with housing (`MASS::housing`, counts in `Freq`):
+
+```{r}
+data(housing, package = "MASS")
+mh <- nnet::multinom(Sat ~ Infl + Type + Cont, weights = Freq, data = housing, trace = FALSE)
+ph <- predictmeans(mh, "Infl", pairwise = TRUE)
+summary(ph)
+```
+
+Each class probability is a mean; the class (`Sat`) is a factor of the means, and the pairs are within each
+class. By default the probabilities are compared on the logit scale, as a binomial glm: the limits stay
+inside 0 to 1, and a pair is the odds ratio of that class against all the others (not the model's
+coefficients, which compare classes with the reference class). With two classes the results are those of
+the binomial glm.
+
+```{r, fig.height = 3}
+autoplot(ph, scale = "response")
+```
+
+Differences of probabilities, as emmeans' `mode = "prob"`:
+
+```{r}
+pd <- predictmeans(mh, "Infl", mean_type = "prob_diff")
+head(pd$pairs[, c("level1", "level2", "by", "estimate", "std.error", "p.value")], 3)
+```
+
+For two means these differences sum to zero over the classes. Near 0 or 1 they are less exact than the
+logit-scale tests; the advice says so when it applies.
+
+The model's own linear predictors (`mean_type = "link"`) give exact Wald tests on the model scale, but for a
+multinomial model each depends on the reference class.
+
+A non-parallel cumulative fit (the effect of influence differs between cut points) gives the same tables, and
+also the mean class:
+
+```{r}
+vh <- VGAM::vglm(Sat ~ Infl + Type + Cont, VGAM::cumulative(parallel = FALSE ~ Infl), weights = Freq,
+                 data = housing)
+predictmeans(vh, "Infl", mean_type = "mean_class")$means
+```
+
+## Things predictmeans checks
+
+- **Averaging over other factors.** Class probabilities are averaged over the other factors on the
+  probability scale (the share of each class over their levels), as emmeans. For parallel models the
+  latent means are averaged instead and then turned into probabilities.
+- **Separation.** A class with no observations at some level puts its probability at 0, where the
+  standard errors are not usable; a caution names the classes and levels.
+- **Crossing curves.** In non-parallel cumulative fits the cumulative curves can cross, giving negative
+  probabilities at some levels or covariate values. Means that use such a point are NA, with a caution;
+  the other means are kept.
+- **Aggregated counts.** With `weights = "proportional"` the factor combinations are weighted by their
+  number of cases (the sums of `Freq` here), so aggregated data and one row per case agree.
+- **Not available.** `trans`, `bias_adjust`, `vcov` and `permlist` stop for these models, and
+  `contrastmeans()`, `covariatemeans()`, `residplot()` and others stop for multinomial and non-parallel fits.
+
+## Checks
+
+- Latent means, pairs and class probabilities equal emmeans to 1e-6 (`polr`, `clm`, `clmm`).
+- `clm` and `vglm` against SAS PROC LOGISTIC and GLIMMIX (logit, probit, cloglog, adjacent-category; class
+  probabilities to 4e-7).
+- `multinom` class probabilities, SEs and both kinds of pairs equal emmeans to 1e-8; `vglm(multinomial)`
+  equals `multinom`; non-parallel `cumulative`, `cratio` and `sratio` equal `predict()` with SEs by a
+  numerical delta method.
+
+The tests are in `tests/testthat/test-ordinal.R`, `test-ordinal-sas.R` and `test-categorical.R`.

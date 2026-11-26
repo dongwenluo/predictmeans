@@ -60,7 +60,7 @@ test_that("site means use each site's own covariate value", {
   expect_equal(mt$Mean, unname(c(ref)), tolerance = 1e-6)
 })
 
-# Williams, Matheson & Harwood, Experimental Design and Analysis for Tree
+# Williams, Harwood & Matheson (2024), Experimental Design and Analysis for Tree
 # Improvement, Table 5.7 (4 sites, 27 complete seedlots of Table 5.2).
 test_that("tree data (DataExam5.2) agrees with the book's Table 5.7", {
   data("DataExam5.2", package = "predictmeans", envir = environment())

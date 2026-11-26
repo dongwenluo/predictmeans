@@ -1,6 +1,6 @@
 # DataExam5.2: Finlay-Wilkinson regression (tree height, 6 sites x 37 seedlots)
 
-Source: Williams, Matheson & Harwood, *Experimental Design and Analysis for
+Source: Williams, Harwood & Matheson (2024), *Experimental Design and Analysis for
 Tree Improvement*, Table 5.2 (data), Tables 5.7 and 5.9 (results).
 Model: `lm(ht ~ site + sitemean * seedlot)`; `sitemean` is one value per site,
 so it is aliased with `site` (its main effect is NA).

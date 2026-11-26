@@ -3145,3 +3145,6 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   (aggregated binomial rows) are unavailable (message, fallback) instead of
   NaN limits. Open: inner-outer df for aggregated binomial GLMMs count rows,
   not trials.
+* Article vignettes/articles/ordinal.Rmd (2026-11-26): clm and clmm on wine,
+  multinom and non-parallel vglm on housing (prob, prob_diff, mean class),
+  cautions and references; in the pkgdown "Worked examples" menu.
