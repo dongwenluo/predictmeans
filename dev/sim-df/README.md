@@ -93,3 +93,22 @@ Decisions 1 and 2 were also made (2026-11-13): Kenward–Roger with the
 observed information is the default for REML `lmer`, `lme` and `gls`.
 4. Satterthwaite F tests of several df are liberal with unstructured
    covariances; say so in the help and prefer Kenward–Roger for F tests.
+
+## Inner-outer df of aggregated binomial GLMMs: rows or trials (2026-11-26)
+
+`dev/sim-df-io-trials.R`: t test of a within-block treatment contrast, true
+null, `glmer(cbind(y, m - y) ~ trt + (1 | blk))`, block SD 1, p = 0.5, 1000
+data sets each. Size at 5%:
+
+| design | df rows | df trials | rows | trials | z |
+|---|---|---|---|---|---|
+| 4 trt x 3 blocks, 25 trials/row | 6 | 294 | 1.1% | 4.3% | 4.4% |
+| 4 trt x 3 blocks, 5 trials/row | 6 | 54 | 1.0% | 3.7% | 3.8% |
+| 4 trt x 6 blocks, 2 trials/row | 15 | 39 | 2.6% | 3.9% | 5.3% |
+| 2 trt x 3 blocks, 10 trials/row | 2 | 56 | 0.0% | 4.0% | 4.3% |
+
+Counting rows (SAS GLIMMIX with events/trials) is far too conservative;
+counting trials (= the same data as one row per trial) holds 5%. A larger
+outside simulation (the maintainer's, 56,000 data sets) found the same
+(e.g. 0.85% rows, 4.0% trials at 12 rows). Default since 2026-11-26:
+trials; `options(predictmeans.inner_outer_count = "rows")` for SAS's df.

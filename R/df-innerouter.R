@@ -64,6 +64,25 @@ pm_io_row_df <- function(io, coef_names, L, terms) {
   })
 }
 
+## The number of cases in the residual stratum: the sum of the frequency
+## weights when each row holds several cases (binomial trials, case weights of
+## clmm; pm_freq_w()), so aggregated counts and one row per case get the same
+## df; else the rows. Counting rows (SAS GLIMMIX with events/trials) made
+## within-cluster tests far too conservative: with 12 rows of 25 trials, 1.1%
+## of true null hypotheses rejected at 5% against 4.3% counting trials
+## (dev/sim-df/io-trials.R). options(predictmeans.inner_outer_count = "rows")
+## gives SAS's df. Weights that are not whole numbers are not counts: rows.
+pm_io_cases <- function(model, N) {
+  how <- getOption("predictmeans.inner_outer_count", "cases")
+  if (!how %in% c("cases", "rows")) {
+    stop("options(predictmeans.inner_outer_count = ) must be \"cases\" or \"rows\".", call. = FALSE)
+  }
+  if (how == "rows") return(N)
+  w <- tryCatch(pm_freq_w(model), error = function(e) NULL)
+  ok <- is.numeric(w) && length(w) == N && all(is.finite(w)) && all(w >= 0) && all(abs(w - round(w)) < 1e-8)
+  if (ok) sum(w) else N
+}
+
 ## df of each coefficient (named vector).
 ## Value: df of each coefficient (named), with attributes "intercept" (which
 ## coefficient is the intercept) and "terms" (df of each term).
@@ -97,7 +116,7 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     nlev[k] - rk(M)
   }
   Zall <- do.call(cbind, lapply(fl, function(g) stats::model.matrix(~ g - 1)))
-  res_df <- N - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
+  res_df <- pm_io_cases(model, N) - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
   sdf <- vapply(seq_along(fl), stratum_df, numeric(1))
   # stratum of each column: the coarsest factor within which it is constant
   # (its number of groups), or the residual stratum (Inf)
@@ -121,10 +140,9 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     }, numeric(1))
   }
   if (!is.null(tdf)) names(tdf) <- tl
-  # a df below 1 (rows that each hold many cases, e.g. aggregated binomial counts: the strata count rows)
-  # would give NaN limits: not available, so pm_df_method() says so and uses its fallback
+  # a df below 1 would give NaN limits: not available, so pm_df_method() says so and uses its fallback
   if (any(df < 1, na.rm = TRUE) || any(tdf < 1, na.rm = TRUE)) {
-    stop("some are below 1 (few rows per stratum, e.g. aggregated counts)", call. = FALSE)
+    stop("some are below 1 (few rows or cases per stratum)", call. = FALSE)
   }
   structure(df, intercept = int, terms = tdf)
 }

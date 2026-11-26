@@ -48,9 +48,6 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
    2.1.0. Then win-builder R-devel (`devtools::check_win_devel()`), fill
    `cran-comments.md`, submit from the maintainer's computer.
 2. **Small open items** (each one step with a test):
-   - inner-outer df of aggregated binomial GLMMs count rows (as SAS), not
-     trials: the maintainer decides (rows: 38, trials: 470 in test-inner-outer.R)
-     (df below 1 now report "not available" and fall back);
 3. **Next statistical block** (the maintainer chooses): `clm(nominal = ,
    scale = )` (B3c; refused now); population-average probabilities for
    `clmm`; LR/bootstrap tests for `clmm` with few clusters; AR1 x AR1 with a
@@ -87,6 +84,9 @@ Details and file names in O16/O17; user-facing summary in NEWS.md.
 - **Weights**: `"proportional"` and the other schemes count cases where a row
   holds several (binomial trials, class-response case weights;
   `pm_freq_w()`); `settings$weights_by`.
+- **Inner-outer df of aggregated binomial GLMMs** count trials (cases), not
+  rows; `options(predictmeans.inner_outer_count = "rows")` for SAS
+  (`dev/sim-df-io-trials.R`: rows 0-2.6%, trials 3.7-4.3% at 5%).
 - **corAR1xAR1()** (`R/cor-ar1xar1.R`): separable AR1 x AR1 field correlation
   for gls/lme with nugget and groups; Genstat's Slate Hall run reproduced
   (means and SEDs within 5e-6, KR-average d.d.f.). Kenward-Roger and

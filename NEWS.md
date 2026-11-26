@@ -151,6 +151,10 @@ shows 1.1.1 and 2.0 code side by side.
   term's Type II d.d.f., here each test has the d.d.f. of its own hypothesis.
 * `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"` (Genstat), `"Satterthwaite"`,
   `"containment"`, `"between-within"`, `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
+* Inner-outer df of aggregated binomial GLMMs (`cbind(y, m - y)`, `weights` = trials) and of `clmm` with case
+  weights count the cases in the residual stratum, so aggregated data and one row per case get the same df.
+  Counting rows (SAS GLIMMIX) rejected 0-2.6% of true null hypotheses at 5% in simulations, counting trials
+  3.7-4.3%. `options(predictmeans.inner_outer_count = "rows")` gives SAS's df.
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.
 * Kenward-Roger and Satterthwaite computed without n x n matrices; much faster.
 

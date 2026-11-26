@@ -3185,3 +3185,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   independent of row order to 1e-8). Used by residplot(), pm_check(),
   residvariogram(). Checked against nlme on group-sorted data (gls corAR1,
   corExp, lme corAR1) to 2e-15; test-cor-ar1xar1.R.
+* Inner-outer df of aggregated binomial GLMMs (2026-11-26, the maintainer's
+  decision after simulations): the residual stratum counts cases, not rows
+  (pm_io_cases(), R/df-innerouter.R: the sum of pm_freq_w() when it is whole
+  numbers; binomial trials of glmer/glmmTMB, case weights of clmm), so
+  cbind(r, m - r), r/m with weights = m and one row per trial give the same
+  df (test). Evidence: dev/sim-df-io-trials.R, t test of a within-block
+  contrast, 1000 data sets per design: rows (SAS GLIMMIX events/trials)
+  rejected 0-2.6% at 5%, trials 3.7-4.3% (z 3.8-5.3%); the maintainer's
+  outside simulation (56,000 data sets) agrees (0.85% vs 4.0% at 12 rows).
+  options(predictmeans.inner_outer_count = "rows") gives SAS's df. An
+  observation-level random effect makes the rows a stratum, so effects
+  within clusters then get the row df (38 in test-inner-outer.R) by the
+  same rule. test-inner-outer.R: within-cluster df 38 -> 470.

@@ -35,6 +35,12 @@ test_that("pm_inner_outer_df() equals nlme's fixDF (coefficients and terms) for 
   }
 })
 
+io_with_options <- function(opts, code) {
+  op <- options(opts)
+  on.exit(options(op))
+  code
+}
+
 io_clusters <- function() {
   set.seed(4)
   d <- expand.grid(unit = 1:3, W = factor(1:2), clus = factor(1:8))
@@ -48,11 +54,15 @@ test_that("GLMMs: inner-outer by default; a treatment on whole clusters gets the
   g <- lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
   p <- predictmeans(g, "Trt:W", plot = FALSE)
   expect_identical(p$settings$df_method, "inner-outer")
-  # 8 clusters, 2 treatments: 6 df between clusters; within clusters 48 - 8 - 2 = 38
+  # 8 clusters, 2 treatments: 6 df between clusters; within clusters the trials count,
+  # 480 - 8 - 2 = 470 (rows, 48 - 8 - 2 = 38, held 0-2.6% at 5%: dev/sim-df-io-trials.R)
   between <- p$pairs$level1 == "a:1" & p$pairs$level2 == "b:1"
   within <- p$pairs$level1 == "a:1" & p$pairs$level2 == "a:2"
   expect_equal(p$pairs$df[between], 6)
-  expect_equal(p$pairs$df[within], 38)
+  expect_equal(p$pairs$df[within], 470)
+  io_with_options(list(predictmeans.inner_outer_count = "rows"), {   # SAS GLIMMIX events/trials
+    expect_equal(unname(pm_inner_outer_df(g)[c("(Intercept)", "Trtb", "W2")]), c(38, 6, 38))
+  })
   expect_length(unique(p$means$df), 1)                    # the means of a term share one df
   expect_equal(pm_joint(g, "Trt")$df2, 6)
   expect_equal(unname(contrastmeans(g, "Trt", ctrmatrix = rbind(c(1, -1)))[[1]][, "df"]), 6)
@@ -88,4 +98,22 @@ test_that("crossed random effects: a treatment on columns gets columns minus tre
   expect_equal(unname(io[c("T2", "T3")]), c(9, 9))                      # 12 columns - 3 treatments
   # W varies within every row and column: N - rank([X, rows, columns]) = 96 - (6 + 4 + 12 - 1 - 2) = 77
   expect_equal(unname(io["W2"]), 96 - qr(cbind(lme4::getME(g, "X"), model.matrix(~ Row - 1, d), model.matrix(~ Col - 1, d)))$rank)
+})
+
+test_that("inner-outer df: aggregated binomial counts get the df of one row per trial", {
+  skip_on_cran()
+  d <- io_clusters()
+  g <- lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
+  gp <- lme4::glmer(r / 10 ~ Trt * W + (1 | clus), weights = rep(10, nrow(d)), family = binomial, data = d)
+  b <- d[rep(seq_len(nrow(d)), each = 10), ]
+  b$y <- unlist(lapply(d$r, function(r) rep(1:0, c(r, 10 - r))))
+  gb <- lme4::glmer(y ~ Trt * W + (1 | clus), family = binomial, data = b)
+  expect_equal(pm_inner_outer_df(g), pm_inner_outer_df(gb))
+  expect_equal(pm_inner_outer_df(gp), pm_inner_outer_df(gb))
+  # an observation-level random effect (overdispersion) makes the rows a stratum: effects within clusters get 38
+  d$obs <- factor(seq_len(nrow(d)))
+  go <- suppressMessages(lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus) + (1 | obs), family = binomial, data = d))
+  expect_equal(attr(pm_inner_outer_df(go), "terms"), c(Trt = 6, W = 38, "Trt:W" = 38))
+  expect_error(io_with_options(list(predictmeans.inner_outer_count = "trials"), pm_inner_outer_df(g)),
+               "\"cases\" or \"rows\"")
 })
