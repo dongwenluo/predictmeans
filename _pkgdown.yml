@@ -63,6 +63,8 @@ navbar:
         href: articles/tree-improvement.html
       - text: "Adjusted R² for GLMMs: Piepho (2023) examples"
         href: articles/R2-GLMM.html
+      - text: Ordinal and categorical responses
+        href: articles/ordinal.html
     news:
       text: News
       href: news/index.html
@@ -93,6 +95,7 @@ articles:
   - articles/overview
   - articles/tree-improvement
   - articles/R2-GLMM
+  - articles/ordinal
 
 reference:
 - title: Predicted means and comparisons
