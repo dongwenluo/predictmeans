@@ -43,7 +43,8 @@ scale; checked against 1e6 Monte Carlo draws in the tests).
 mean over the clusters instead of the typical cluster" (`pm_back_label()`). The pairs
 stay on the latent scale (subject-specific comparisons, valid for every subject); the
 class table gives population-average probabilities with delta-method SEs that include
-the uncertainty of the random-effect variance (`vcov(clmm)` has `ST1`). The advice
+the uncertainty of the random-effect variance (`vcov(clmm)` has `ST1`; its scale depends on
+clmm's route, see the outside check, Q5: one function decides it, tested on both routes). The advice
 `ordinal_typical_subject` then says the other way round (how to get the typical subject).
 
 **References.** Monte Carlo integration (1e6 draws) for the probabilities; numerical
@@ -62,7 +63,9 @@ exact or resampling test is the robust answer.
 - (a) **Cluster permutation** for between-cluster terms: permute the treatment labels
   among clusters (restricted permutations, `permindex()`), refit, compare the Wald or LR
   statistic. Exact under exchangeability of clusters; with 6 clusters split 3/3 only 20
-  permutations (smallest p 0.05), so it is useful from about 8 clusters.
+  allocations, and a two-sided statistic ties each with its mirror: smallest p 2/20 = 0.10,
+  so it can never reject at 5%. 8 clusters (4/4): 2/70 = 0.029; 10 (5/5): 2/252 = 0.008.
+  Useful from about 10 clusters; below that the notes say the smallest attainable p.
 - (b) **Parametric bootstrap LRT**: simulate from the null fit, refit both models. Any
   term; about the nominal size when the model is right; costs 2 x B clmm fits.
 - **Proposal:** (b) in `bootmodels()` for clmm (any term), and (a) in `permmodels()` for
@@ -107,3 +110,19 @@ GLMMs, rows or trials; a simulation of their size can settle it (half an hour).
    permutation test of a between-cluster treatment limited to a smallest p of 1/20?
 5. Check: does `ordinal::clmm`'s `vcov()` give the random-effect parameters on the
    log standard deviation scale?
+
+### Answers (2026-11-26; Gemini and OpenAI, tested here)
+
+1. Yes: same log-likelihood (-86.20855 on wine) and class probabilities (to 8e-7); the
+   location coefficients have opposite signs (`clm` theta - x'b, `vglm` + x'b), as B3b's
+   `pm_coef()` already handles. Both answers agree.
+2. Yes for `clmm` (one linear predictor). The exception named (multinomial GLMMs with
+   class-specific random effects) is not in scope.
+3. Yes, exact: quadrature and Phi(eta / sqrt(1 + s^2)) agree to 1e-10 (eta 0.7, s 1.8).
+   For classes: Phi((theta_j - x'b) / sqrt(1 + z' Sigma z)), differenced.
+4. Corrected: 1/20 only one-sided. A two-sided (|t|, F, LR) statistic gives 2/20 = 0.10
+   with a 3/3 split (checked by enumeration). G3(a) changed above.
+5. Depends on clmm's route (OpenAI right, Gemini wrong): default single random intercept,
+   `vcov()["ST1", "ST1"]` is for log SD (wine: 0.1243; times SD^2 = 0.1590); with
+   `useMatrix = TRUE` or random slopes it is for the SD itself (0.1591). `fit$ST` is the SD
+   in both. G2 decides the scale in one function and tests both routes give the same SEs.
