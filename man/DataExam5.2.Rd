@@ -15,7 +15,7 @@ A data frame with 222 rows and 4 columns:
 }
 \source{
 Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). \emph{Experimental Design and Analysis for Tree
-Improvement} (3rd ed.). CSIRO Publishing, Table 5.2. \url{https://www.publishing.csiro.au/book/8100}
+Improvement} (3rd ed.). CSIRO Publishing, Table 5.2. \doi{10.1071/9781486317110}
 }
 \usage{
 data(DataExam5.2)

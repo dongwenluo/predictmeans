@@ -145,7 +145,7 @@ Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019). Heritability i
 genotype-difference basis. \emph{Genetics}, 212(4), 991-1008. \doi{10.1534/genetics.119.302134}
 
 Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024). \emph{Experimental Design and Analysis for Tree
-Improvement} (3rd ed.). CSIRO Publishing. \url{https://www.publishing.csiro.au/book/8100}
+Improvement} (3rd ed.). CSIRO Publishing. \doi{10.1071/9781486317110}
 }
 \seealso{
 \code{\link{varcomp}}, \code{\link{se_ranef}}
