@@ -99,3 +99,68 @@ test_that("residvariogram(): the AR1 x AR1 fit leaves no spatial pattern; a mode
   v0 <- residvariogram(lm(yield ~ variety, data = d), row = "fieldrow", col = "fieldcolumn", data = d, plot = FALSE)
   expect_match(advice(v0)$text[advice(v0)$id == "variogram_spatial"], "corAR1xAR1\\(form = ~ row \\+ col\\).*t2\\(row, col\\)")
 })
+
+test_that("Genstat tier (i): phi and the variance ratio fixed at Genstat's estimates give its means", {
+  d <- slatehall()
+  f <- nlme::gls(yield ~ variety, data = d,
+                 correlation = corAR1xAR1(c(0.4586, 0.6838), form = ~ fieldrow + fieldcolumn, fixed = TRUE))
+  m <- genstat("means", "A")
+  b <- coef(f)
+  est <- c(b[1], b[1] + b[-1])
+  expect_equal(unname(est[m$variety]), m$mean, tolerance = 5e-5)     # (Genstat's phi printed to 4 decimals)
+})
+
+test_that("review: positions, transformations, boundary df, na.exclude, registration", {
+  skip_on_cran()
+  d <- slatehall()
+  # two trials stacked without '| trial': a clear stop, not a wrong model
+  d2 <- rbind(transform(d, trial = "a"), transform(d, trial = "b", yield = yield + rnorm(150)))
+  expect_error(nlme::gls(yield ~ variety, data = d2,
+                         correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn, nugget = TRUE)), "\\| trial")
+  f2 <- nlme::gls(yield ~ variety, data = d2, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn | trial))
+  expect_s3_class(f2, "gls")
+  expect_error(nlme::gls(yield ~ variety, data = d, correlation = corAR1xAR1(form = ~ I(3 * fieldrow) + fieldcolumn)),
+               "no transformations")
+  # lme with replicates at the boundary: Kenward-Roger leaves that variance out, so the df are the gls ones
+  fA <- nlme::gls(yield ~ variety, data = d, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn | rep))
+  fL <- nlme::lme(yield ~ variety, random = ~ 1 | rep, data = d,
+                  correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn))
+  rA <- predictmeans(fA, "variety")
+  rL <- suppressMessages(predictmeans(fL, "variety"))
+  expect_equal(rL$settings$df_method, "Kenward-Roger")
+  expect_equal(rL$pairs$df, rA$pairs$df, tolerance = 0.02)
+  expect_equal(rL$means$df, rA$means$df, tolerance = 0.02)
+  # a nugget at the boundary (data without one): Kenward-Roger still works
+  set.seed(3)
+  sim <- expand.grid(fieldrow = 1:10, fieldcolumn = 1:15)
+  sim$variety <- d$variety[order(d$fieldrow, d$fieldcolumn)]
+  Rr <- 0.5^abs(outer(1:10, 1:10, "-")); Rc <- 0.7^abs(outer(1:15, 1:15, "-"))
+  sim$yield <- as.vector(t(chol(kronecker(Rc, Rr))) %*% rnorm(150))
+  fn <- nlme::gls(yield ~ variety, data = sim, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn, nugget = TRUE))
+  rn <- predictmeans(fn, "variety")
+  expect_equal(rn$settings$df_method, "Kenward-Roger")
+  expect_true(all(rn$pairs$df < 150))
+  # na.exclude: as the fit without the row
+  dn <- d
+  dn$yield[5] <- NA
+  fe <- nlme::gls(yield ~ variety, data = dn, na.action = na.exclude,
+                  correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn))
+  fo <- nlme::gls(yield ~ variety, data = d[-5, ], correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn))
+  expect_equal(predictmeans(fe, "variety")$means$df, predictmeans(fo, "variety")$means$df, tolerance = 1e-6)
+  # the coef<- method is registered (the installed package uses it, not nlme's default)
+  expect_false(is.null(utils::getS3method("coef<-", "corAR1xAR1", optional = TRUE, envir = asNamespace("nlme"))))
+})
+
+test_that("a simulated field with known phi is recovered", {
+  skip_on_cran()
+  set.seed(11)
+  g <- expand.grid(row = 1:20, col = 1:20)
+  Rr <- 0.6^abs(outer(1:20, 1:20, "-")); Rc <- 0.4^abs(outer(1:20, 1:20, "-"))
+  L <- t(chol(kronecker(Rc, Rr)))
+  est <- t(replicate(4, {
+    g$y <- as.vector(L %*% rnorm(400))
+    f <- nlme::gls(y ~ 1, data = g, correlation = corAR1xAR1(form = ~ row + col))
+    coef(f$modelStruct$corStruct, unconstrained = FALSE)
+  }))
+  expect_equal(unname(colMeans(est)), c(0.6, 0.4), tolerance = 0.1)
+})

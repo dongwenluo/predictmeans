@@ -37,7 +37,8 @@
 #' with the AR1 x AR1 term scaled by a ratio \eqn{g} is the same model with
 #' \eqn{n = 1/(1 + g)} (with AR1 x AR1 as the residual and units as a random term,
 #' \eqn{n = g/(1 + g)}). Each likelihood uses a dense matrix of the plots of a
-#' group: fine to about 2000 plots.
+#' group: a fit takes about a second for 150 plots, 10 s for 600 and minutes for
+#' 2000 (above 1000 plots in a group a message points to the smooth trend).
 #'
 #' A smooth field trend is the other common spatial model:
 #' \code{semireg(y ~ variety + t2(row, col) + (1 | rowf) + (1 | colf), data = d)}, a
@@ -46,9 +47,15 @@
 #' 0.590 against 0.668). \code{\link{residvariogram}()} shows whether a fit leaves
 #' spatial correlation.
 #'
-#' Checked against Genstat (REML Guide's Slate Hall trial): \eqn{\phi}, variances,
-#' the 25 variety means and all 300 SEDs to 1e-6, the Wald statistic, and the
-#' d.d.f. of the variety test with \code{df_method = "KR-average"}.
+#' Checked against Genstat (REML Guide's Slate Hall trial): \eqn{\phi} and the
+#' variances to Genstat's printed digits; the 25 variety means and all 300 SEDs of
+#' each model within 5e-6 (tested to 1e-5); the Wald statistic; the d.d.f. of the
+#' variety test with \code{df_method = "KR-average"}. Kenward-Roger and
+#' Satterthwaite leave out variance components (and a nugget) estimated at 0.
+#'
+#' Normalized residuals, and so the \code{residvariogram()} check of such a fit,
+#' depend a little on the order of the plots in the data: sort the data by trial,
+#' row and column before fitting so the check can be repeated.
 #' @return An object of class \code{c("corAR1xAR1", "corStruct")} for the
 #'   \code{correlation} argument; \code{coef(fit$modelStruct$corStruct,
 #'   unconstrained = FALSE)} gives \eqn{\phi_r}, \eqn{\phi_c} (and the nugget share).
@@ -103,7 +110,12 @@ pm_ar1x_mat <- function(rc, p) {
 Initialize.corAR1xAR1 <- function(object, data, ...) {
   form <- nlme::getCovariateFormula(object)
   vars <- all.vars(form)
-  if (length(vars) != 2) stop("corAR1xAR1(): 'form' must name two variables, the row and the column.", call. = FALSE)
+  labs <- attr(stats::terms(form), "term.labels")
+  if (length(vars) != 2 || !identical(labs, vars)) {
+    # (all.vars() would silently take the variables out of I(3 * row) or log(col))
+    stop("corAR1xAR1(): 'form' must name two variables, the row and the column, as ~ row + col (no ",
+         "transformations: make a new variable).", call. = FALSE)
+  }
   rc <- as.matrix(data[, vars])
   if (!is.numeric(rc) || any(abs(rc - round(rc)) > 1e-8, na.rm = TRUE)) {
     stop("corAR1xAR1(): the row and column must be integer positions (numbers, not factors).", call. = FALSE)
@@ -112,8 +124,16 @@ Initialize.corAR1xAR1 <- function(object, data, ...) {
   grp <- attr(object, "groups")
   # (one matrix without groups, a list by group otherwise, as nlme's classes)
   cov <- if (is.null(grp)) rc else lapply(split(seq_len(nrow(rc)), grp), function(i) rc[i, , drop = FALSE])
-  if (max(if (is.list(cov)) vapply(cov, nrow, integer(1)) else nrow(cov)) > 2000) {
-    message("corAR1xAR1(): over 2000 plots in a group: each likelihood uses a dense matrix of that size (slow); ",
+  # two plots at one position: several trials (or blocks numbered from 1) without '| trial'
+  dup <- vapply(if (is.list(cov)) cov else list(cov), function(m) anyDuplicated(m) > 0, logical(1))
+  if (any(dup)) {
+    stop("corAR1xAR1(): two plots have the same row and column", if (is.null(grp)) "" else " within a group",
+         ". With several trials (or positions numbered within blocks) give the group: form = ~ ", vars[1], " + ",
+         vars[2], " | trial; else number the rows and columns over the whole field.", call. = FALSE)
+  }
+  if (max(if (is.list(cov)) vapply(cov, nrow, integer(1)) else nrow(cov)) > 1000) {
+    message("corAR1xAR1(): over 1000 plots in a group: each likelihood uses a dense matrix of that size (a fit takes ",
+            "minutes); ",
             "a smooth field trend, semireg(y ~ ... + t2(row, col)), is faster.")
   }
   attr(object, "covariate") <- cov
@@ -141,6 +161,7 @@ corMatrix.corAR1xAR1 <- function(object, covariate = nlme::getCovariate(object),
 
 #' @exportS3Method nlme::corFactor
 corFactor.corAR1xAR1 <- function(object, ...) {
+  if (!is.null(aux <- attr(object, "factor"))) return(aux)    # (coef<- computed it for these parameters)
   val <- corMatrix(object, corr = FALSE)
   lD <- attr(val, "logDet")
   if (is.list(val)) val <- unlist(lapply(val, as.vector))
@@ -161,7 +182,7 @@ coef.corAR1xAR1 <- function(object, unconstrained = TRUE, ...) {
   c(phi_row = p$phi[1], phi_col = p$phi[2], if (isTRUE(attr(object, "nugget"))) c(nugget = p$nugget))
 }
 
-#' @exportS3Method nlme::`coef<-`
+#' @rawNamespace S3method(nlme::"coef<-", corAR1xAR1)
 `coef<-.corAR1xAR1` <- function(object, ..., value) {
   if (length(value) != length(object)) stop("cannot change the length of the parameter of a corAR1xAR1 object.", call. = FALSE)
   object[] <- value

@@ -3160,3 +3160,19 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   replicates in one group reaches the boundary = gls A; variogram of the fit
   within its envelope. residvariogram() advice names corAR1xAR1 and t2().
   inst/extdata/slatehall.csv for the example.
+* corAR1xAR1 Rule no. 1 review (10 findings, fixed): two plots at one
+  position stop (several trials without '| trial': with a nugget it fitted a
+  wrong model silently) and the variogram advice adds '| trial' when split by
+  trial; coef<- registered (rawNamespace S3method(nlme::"coef<-")); the factor
+  cached (was computed twice per likelihood); transformations in form stop;
+  help: agreement stated as measured (means and SEDs within 5e-6, phi to the
+  printed digits), times (1 s for 150 plots, 10 s for 600; message above 1000),
+  row order of normalized residuals. Existing nlme df code: Kenward-Roger and
+  Satterthwaite leave out parameters at a boundary (pm_nlme_keep(): covariance
+  derivative below 1e-4 of the residual one; lme with replicates at 0 had KR
+  mean df 17.8 against 79.9, a nugget at 0 failed), a failed KR falls back to
+  Satterthwaite (was the residual df), pm_get_data() drops na.exclude rows
+  (KR failed). Tests: tier (i) fixed at Genstat's phi, two trials, boundary
+  df lme = gls, nugget at 0, na.exclude, registration, simulated field.
+  variogram_trend wording t2(row, col). KR/Satterthwaite/SAS/Genstat
+  reference tests unchanged.

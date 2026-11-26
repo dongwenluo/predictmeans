@@ -599,7 +599,8 @@ pm_variogram_advice <- function(x) {
       "Plots next to each other", if (grid) { if (length(dirs) == 2) " in rows and columns" else paste0(" in ", dirs) },
       " are more alike than the model allows (the variogram is below the envelope at the shortest lag",
       where(unique(low$trial)), "): the standard errors of the means ignore it. Fit a spatial covariance (",
-      if (grid) "gls() or lme() with corAR1xAR1(form = ~ row + col)" else "gls() or lme() with corExp(form = ~ x + y)",
+      if (grid) paste0("gls() or lme() with corAR1xAR1(form = ~ row + col", if (isTRUE(attr(x, "by"))) " | trial", ")")
+      else paste0("gls() or lme() with corExp(form = ~ x + y", if (isTRUE(attr(x, "by"))) " | trial", ")"),
       ") or a smooth surface ", if (grid) "t2(row, col)" else paste0("s(", near, ")"),
       " in semireg(), and check its variogram."), "caution")
   }
@@ -613,7 +614,8 @@ pm_variogram_advice <- function(x) {
   if (nrow(out) && !nrow(low) && !nrow(high)) {
     rows$tr <- pm_advice("variogram_trend", paste0(
       "The variogram leaves the envelope at longer lags only", where(unique(out$trial)), ": a trend or pattern ",
-      "across the field. Add the rows and columns, or a smooth surface s(", near, ") in semireg(), to the model."),
+      "across the field. Add the rows and columns, or a smooth surface ", if (grid) "t2(row, col)" else
+        paste0("s(", near, ")"), " in semireg(), to the model."),
       "caution")
   }
   gaps <- test$trial[test$missing > 0.1]

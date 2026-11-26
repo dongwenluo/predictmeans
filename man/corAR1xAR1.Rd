@@ -52,7 +52,8 @@ an independent part, the nugget share \eqn{n}; Genstat's \code{units} term
 with the AR1 x AR1 term scaled by a ratio \eqn{g} is the same model with
 \eqn{n = 1/(1 + g)} (with AR1 x AR1 as the residual and units as a random term,
 \eqn{n = g/(1 + g)}). Each likelihood uses a dense matrix of the plots of a
-group: fine to about 2000 plots.
+group: a fit takes about a second for 150 plots, 10 s for 600 and minutes for
+2000 (above 1000 plots in a group a message points to the smooth trend).
 
 A smooth field trend is the other common spatial model:
 \code{semireg(y ~ variety + t2(row, col) + (1 | rowf) + (1 | colf), data = d)}, a
@@ -61,9 +62,15 @@ practice (on Slate Hall the AR1 x AR1 means are the more precise: average SED
 0.590 against 0.668). \code{\link{residvariogram}()} shows whether a fit leaves
 spatial correlation.
 
-Checked against Genstat (REML Guide's Slate Hall trial): \eqn{\phi}, variances,
-the 25 variety means and all 300 SEDs to 1e-6, the Wald statistic, and the
-d.d.f. of the variety test with \code{df_method = "KR-average"}.
+Checked against Genstat (REML Guide's Slate Hall trial): \eqn{\phi} and the
+variances to Genstat's printed digits; the 25 variety means and all 300 SEDs of
+each model within 5e-6 (tested to 1e-5); the Wald statistic; the d.d.f. of the
+variety test with \code{df_method = "KR-average"}. Kenward-Roger and
+Satterthwaite leave out variance components (and a nugget) estimated at 0.
+
+Normalized residuals, and so the \code{residvariogram()} check of such a fit,
+depend a little on the order of the plots in the data: sort the data by trial,
+row and column before fitting so the check can be repeated.
 }
 \examples{
 \donttest{
