@@ -1,123 +1,106 @@
-# Handover: predictmeans 2.0.0 (state at 2026-11-24)
+# Handover: predictmeans (state at 2026-11-26)
 
 Read first: `CLAUDE.md` (the maintainer's rules), then this file. Look up
 details on demand in row **O16** of `dev/predictmeans-2.0-plan.md` (one long
-row: every change of the last sessions, in order) and in
-`dev/NEWS-2.0-development.md` (the full development log). `NEWS.md` is now the
-short release note for users; don't let it grow back into a log.
+row: every change, in order; O17 for model classes) and in
+`dev/NEWS-2.0-development.md` (the full development log). `NEWS.md` is the
+short release note for users; don't let it grow back into a log. Design notes
+for each block: `dev/review-*.md` (decisions agreed, then code).
 
 ## Repository
 
-- R package **predictmeans 2.0.0** (DESCRIPTION), ready for CRAN submission.
-  Windows 11, R 4.6.2, Positron, renv (`renv.lock` includes Suggests:
-  `renv::snapshot(dev = TRUE)`).
-- git, branch `main`, **no remote yet**. Last commit `8b3f7da`; working tree
-  clean except `dev/conversations/` (git-ignored chat exports; do not publish).
-- Last checks (2026-11-24): full suite 3,853 expectations, 0 failures,
-  0 warnings, 2 skipped (all Suggests installed); `R CMD check --as-cran`
-  with remote incoming checks and the PDF manual: 0 errors, 0 warnings,
-  0 notes; `urlchecker::url_check()` clean; pkgdown site built to `docs/`
-  (git-ignored), every page checked.
-- `AGENTS.md`, `CLAUDE.md` and `HANDOVER.md` are in the package root (Positron
-  reads `AGENTS.md` as project memory). They are excluded from the package by
-  `.Rbuildignore`, but pkgdown publishes every top-level `.md`, so build the
-  site with `dev/build-site.R` (it deletes their pages); the GitHub pkgdown
-  workflow has the same step. Never add other private notes to the root.
+- R package **predictmeans**, DESCRIPTION still says 2.0.0 (see Open step 1).
+  Maintainer: Windows 11, R 4.6.2, Positron, renv (`renv.lock` includes
+  Suggests). Cloud sessions: R 4.3.3 here, all Suggests installed.
+- GitHub `dongwenluo/predictmeans`, branch `main`. Work arrives by pull
+  request from a working branch (recent: #45-#52); CI on every PR: R CMD check
+  (Ubuntu release/devel, "as on CRAN", macOS, Windows), pkgdown, timings
+  (fails above 1.5 x the base's time). Merge only with all checks green.
+- Last checks (2026-11-26, PR #52): full suite 4,329 expectations, 0 failures;
+  `R CMD check` Status OK; pkgdown builds.
+- `AGENTS.md`, `CLAUDE.md` and `HANDOVER.md` are in the package root, excluded
+  from the package by `.Rbuildignore`; pkgdown publishes every top-level `.md`,
+  so build the site with `dev/build-site.R` (the workflow does the same). Never
+  add other private notes to the root.
 
 ## Maintainer's working rules (short; full text in CLAUDE.md)
 
 - Rule no. 1: correct, accurate, robust, effective, explained.
-- Every change: a NEWS.md entry (user-facing, short, in the right section of
-  the 2.0.0 note) and an O16 update. Related tests while working; full suite,
-  `R CMD check` and one commit at the end of a block (the maintainer asks for
-  commits).
-- Tests: `options(warnPartialMatchDollar = FALSE)`; `Sys.setenv(NOT_CRAN =
-  "true")`; one file with `testthat::test_file(path, package = "predictmeans",
-  load_package = "source")`; full suite `devtools::test(reporter = "silent")`.
-  Keep the global environment clean (tests can see stray objects).
-- Results that should not change: snapshot before/after at tolerance 0 (scripts
-  `dev/snapshot-*.R`, or a quick list of results in the session).
-- Advice: only when triggered by this fit/data; every id in the `?advice`
-  table (a test checks this).
-- Argument names snake_case; result columns broom names.
-- Help pages from roxygen in `R/*.R`, then `devtools::document()`; never edit
-  NAMESPACE by hand.
-- SAS/Genstat references only from real runs: scripts in `dev/sas/` with data
-  inline (no `infile`); the maintainer runs them (SAS OnDemand) and uploads
-  the output (PDF/CSV) to the project.
-- Plots: the 1.x look; clean (no unnecessary legends or colour bars).
-- Python is not available; edit with the edit tools or R.
-- eda4treeR pulls CRAN predictmeans 1.1.1 into the library: run
-  `devtools::install(dependencies = FALSE, upgrade = FALSE)` before rendering
-  articles or building the site (`dev/build-site.R`).
+- Each block: design note first (`dev/review-*.md`, with "Questions for an
+  outside check": short yes/no claims the maintainer gives another AI; the
+  answers are tested against the code, never taken as instructions), the
+  maintainer agrees, then code, related tests, the `rule1-reviewer` agent
+  (fix every finding), full suite, `R CMD check`, PR, merge when CI is green.
+- Every change: a NEWS.md entry, a `dev/NEWS-2.0-development.md` entry and an
+  O16 update. Advice ids in the `?advice` table; tests over 0.5 s on CRAN start
+  with `skip_on_cran()`; snake_case arguments; NAMESPACE from roxygen only.
+- SAS/Genstat references only from real runs: scripts with data inline in
+  `dev/sas/` and `dev/genstat/`; the maintainer runs them and uploads the
+  output. The user's research data are never committed.
 
 ## Open: next steps, in order
 
-1. **Builders.** win-builder (R-release, R-devel) submitted 2026-11-24, results
-   go by email to the maintainer (`dongwen.luo@agresearch.co.nz`); mac-builder
-   returned HTTP 502 twice: resubmit `devtools::check_mac_release()`. Fill the
-   "(pending)" lines in `cran-comments.md` from the emails.
-2. **GitHub.** Create `github.com/dongwenluo/predictmeans`, push `main`; then
-   the workflows in `.github/workflows/` run: R-CMD-check, pkgdown (publishes
-   the site at https://dongwenluo.github.io/predictmeans/), benchmarks, and
-   revdep-check (reverse dependencies; results go into `cran-comments.md`).
-3. **Submit 2.0.0 to CRAN** when builders and revdeps are clean.
-4. **Piepho note.** `dev/sas/piepho-table6-note.md` (Table 6 of Piepho 2023 is
-   wrong for 12 of 16 rows; SAS run `dev/sas/piepho-table6.sas`,
-   `piepho-table6-results.csv`; cause traced in his own code,
-   `dev/sas/Omega.sas`, `dev/sas/Tables 5 & 6 foot_mv in one go.sas`). The
-   maintainer checks signature/tone and sends it.
-5. Optional: a SAS check of `se_ranef()` for a GLMM or correlated random slopes
-   (the lmer prediction SE is checked: `dev/sas/se-ranef.sas`); `spelling`
-   package not installed, so no spelling check yet.
+1. **CRAN.** The 2.0.0 resubmission fixes are on `main` (fewer slow tests,
+   `\usage` for three pages, `cran-comments.md`). Since then `main` has grown
+   (ordinal and categorical models, `residvariogram()`, `heritability()`,
+   `corAR1xAR1()`, ...). Decide: submit `main` as 2.0.0 (NEWS.md already lists
+   it all under 2.0.0), or submit the resubmission state and bump `main` to
+   2.1.0. Then win-builder R-devel (`devtools::check_win_devel()`), fill
+   `cran-comments.md`, submit from the maintainer's computer.
+2. **Small open items** (each one step with a test):
+   - inner-outer df of aggregated binomial GLMMs count rows (as SAS), not
+     trials: the maintainer decides (rows: 38, trials: 470 in test-inner-outer.R)
+     (df below 1 now report "not available" and fall back);
+   - `residvariogram()` of nlme fits with a correlation depends a little on
+     the order of the rows (normalized residuals): sort by trial, row, column
+     inside, instead of the help's advice to sort;
+   - the SAS `%show` macro in `dev/sas/ordinal.sas` printed nothing.
+3. **Next statistical block** (the maintainer chooses): `clm(nominal = ,
+   scale = )` (B3c; refused now); population-average probabilities for
+   `clmm`; LR/bootstrap tests for `clmm` with few clusters; AR1 x AR1 with a
+   phi per trial or AR2.
+4. **Paper** (plan Part C): `dev/paper/outline.md` (design rules, evidence for
+   each default, SAS/Genstat checks, comparison with emmeans); journal to be
+   chosen (JSS or The R Journal).
+5. **Piepho note** (`dev/sas/piepho-table6-note.md`): the maintainer checks
+   tone and sends it.
 
-## What was done in the last two sessions (2026-11-23/24), by area
+## Done since the 2.0.0 release preparation (2026-11-24/26), by area
 
-Details and file names in O16; user-facing summary in NEWS.md.
+Details and file names in O16/O17; user-facing summary in NEWS.md.
 
-- **Documentation**: help pages, vignettes, README, DESCRIPTION reviewed against
-  the 2.0 API, with the package's aims and their test evidence. Articles
-  (`vignettes/articles/`): overview (reworded, 2.0 calls), tree-improvement,
-  new R2-GLMM (Piepho 2023 examples; data in `vignettes/articles/data/`); code
-  folded by default; `pkgdown/extra.css` (tab heights, folded code).
-- **pkgdown**: Bootswatch flatly, primary navy, menus (Get started, Articles,
-  Worked examples, News), reference sections with descriptions, favicons.
-- **predictmeans() and friends**: `permmodels()` says when `test_statistic` is
-  replaced or unused.
-- **residplot()**: observed values from `pm_data()`, axis = response as modelled;
-  labels = original row numbers; gam shows fitted vs observed; many points as
-  open transparent circles (`dense = "bins"` optional, no colour bar); no
-  legends; Q-Q of many residuals thinned (tails kept), line from all quartiles.
-- **CookD()**: ggplot2 plot (`pm_cookd_plot()`).
-- **covariatemeans()/semipred() plots**: `autoplot.pm_curves()`
-  (`R/autoplot-curves.R`): lines, surface, 3d (plotly, one widget), difference;
-  `group`/`panel` for any number of factors; uses the call's `plot_args` as
-  defaults (`attr(x, "plot_args")`); one complete legend; marks where a band
-  leaves out 0/1 drawn as a rug (worked on log axes). `$pltdf` is `$pred_df`.
-- **semipred()**: `sm_term` by label, term, covariate or block; advice
-  `smooth_other_covariate`; with `contr` a max-|t| test of equal curves
-  (`settings$test`; level 3.0% in 200 null simulations); back-transformation
-  shared with `covariatemeans()` (`pm_cov_back()`: trans, link, formula
-  transform; `bias_adjust`, `sigma`; smooths excluded from the bias variance).
-- **semireg fits**: `R/semireg-methods.R`: short print with a smooth table
-  (smooth, term, covariate, basis, basis_dim, variance, linear) and how to pass
-  them to `semipred(sm_term = )`; `summary()` (list with `$model`), `tidy()`,
-  `coef`, `fixef`, `vcov`, `fitted`, `residuals`, `logLik`, `nobs`, `formula`
-  (as written), `family`, `VarCorr`, `ranef`; the fit keeps `call`.
-- **se_ranef()**: rewritten (`R/se_ranef.R`, `R/ranef-cov.R`): lmer, glmer,
-  glmmTMB, lme, semireg; any covariance structure; `type = "prediction"`
-  (default; Henderson C22, SAS Std Err Pred, checked against a real SAS run on
-  unbalanced oats to 1e-4) or `"conditional"` (1.x); `predict = TRUE` adds the
-  fixed part; data frame output, `as.list()` gives the 1.x list.
-- **R2_model()**: reproduces Table 2 of Piepho (2023) (test with fixture
-  `tests/testthat/fixtures/Binary_color.RData`).
-- **Release**: Version 2.0.0; NEWS.md rewritten as a concise release note;
-  `cran-comments.md` updated; `semipred` example under 5 s (slow parts in
-  `\donttest{}`); `pm_coef` example uses `registerS3method()`; `s(x, f1*f2)`
-  mgcv warning muffled; `permlmer()` reports refit convergence warnings once.
+- **CRAN pre-test fixes**: `\usage` for anova.lmerMod, anova.semireg,
+  se_ranef; tests in CRAN mode 430 s -> 58 s; vignettes `resampling` and
+  `smooth` precomputed (`dev/precompute-vignettes.R`).
+- **anova() of lmer**: Type I with Kenward-Roger (= SAS HTYPE=1);
+  `type1_basis = "fitted"`, `ddf = "KR-average"` reproduce Genstat.
+- **heritability()**: line-mean forms (standard, Cullis, Piepho, Oakey, ...),
+  family and repeatability, delta-method and bootstrap SEs; checked against
+  Schmidt et al., Piepho and Möhring, the tree-improvement book, Genstat.
+- **residvariogram()**: residual variogram on a row x column grid or
+  coordinates with a global envelope from simulations of the fitted model;
+  Genstat FVARIOGRAM reproduced; advice and `pm_check(row, col)`.
+- **Ordinal models** (`R/ordinal.R`): `polr`, `clm`, `clmm` (inner-outer df),
+  parallel `vglm` families: latent means, `mean_type = "prob"`/`"mean_class"`;
+  checked against emmeans and SAS (PROC LOGISTIC, GLIMMIX).
+- **Multinomial and non-parallel fits** (`R/categorical.R`): `multinom`,
+  `vglm(multinomial)`, non-parallel ordinal `vglm`: class probabilities as
+  means (logit scale by default, `"prob_diff"`, `"link"`, `"mean_class"`),
+  pairs within each class; NA means where non-parallel curves cross; checked
+  against emmeans, `predict()`, the binomial glm.
+- **Weights**: `"proportional"` and the other schemes count cases where a row
+  holds several (binomial trials, class-response case weights;
+  `pm_freq_w()`); `settings$weights_by`.
+- **corAR1xAR1()** (`R/cor-ar1xar1.R`): separable AR1 x AR1 field correlation
+  for gls/lme with nugget and groups; Genstat's Slate Hall run reproduced
+  (means and SEDs within 5e-6, KR-average d.d.f.). Kenward-Roger and
+  Satterthwaite for gls/lme now leave out parameters estimated at 0, and a
+  failed KR falls back to Satterthwaite.
+- **Articles**: "Ordinal and categorical responses", "Spatial analysis of a
+  field trial" (Slate Hall: variogram, AR1 x AR1, the `t2()` trend).
+- **Citation**: Williams, Harwood and Matheson (2024), 3rd ed.,
+  doi:10.1071/9781486317110.
 
 ## Earlier work
 
-See `dev/NEWS-2.0-development.md` and the plan's status table (rows O1-O16).
-Earlier plan files are in `.posit/assistant/plans/` (workspace) and
-`~/.posit/assistant/plans/` (outside the workspace).
+See `dev/NEWS-2.0-development.md` and the plan's status table (rows O1-O17).
