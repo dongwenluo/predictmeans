@@ -121,5 +121,10 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     }, numeric(1))
   }
   if (!is.null(tdf)) names(tdf) <- tl
+  # a df below 1 (rows that each hold many cases, e.g. aggregated binomial counts: the strata count rows)
+  # would give NaN limits: not available, so pm_df_method() says so and uses its fallback
+  if (any(df < 1, na.rm = TRUE) || any(tdf < 1, na.rm = TRUE)) {
+    stop("some are below 1 (few rows per stratum, e.g. aggregated counts)", call. = FALSE)
+  }
   structure(df, intercept = int, terms = tdf)
 }

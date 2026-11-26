@@ -3133,3 +3133,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   settings$weights_by. Checks: aggregated housing = one row per household for
   multinom, clm, polr, vglm, binomial glm (<= 1e-8); multinom = emmeans
   proportional to 1e-16 (test-categorical.R).
+* Review of the two follow-ups (13 findings): the case-count rule is now
+  by response (pm_freq_w() generic: glm and gam binomial/quasibinomial,
+  glmer via @resp$weights (unpadded under na.exclude), glmmTMB cbind trials,
+  multinom, vglm, polr/clm/clmm with the frame rebuilt from the call when
+  model = FALSE); docs: covariates still from rows, n counts rows; summary
+  counts non-estimable pairs and gives SEDs without them; the class factor
+  is renamed (e.g. y_class) when it would collide with table or plot columns;
+  grid labels unpadded; predictmeans(semireg, weights != "equal") stops (was
+  ignored) and semireg settings have weights_by; inner-outer df below 1
+  (aggregated binomial rows) are unavailable (message, fallback) instead of
+  NaN limits. Open: inner-outer df for aggregated binomial GLMMs count rows,
+  not trials.

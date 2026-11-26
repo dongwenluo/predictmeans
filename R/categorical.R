@@ -209,7 +209,10 @@ pm_cat_carrier <- function(model, what, vars, pt = pm_cat_parts(model)) {
   if (!is.null(attr(tt, "offset"))) stop("predictmeans does not handle offsets in ", class(model)[1], " fits.", call. = FALSE)
   y <- as.character(attr(tt, "variables"))[attr(tt, "response") + 1]
   var <- if (what == "link") "predictor" else if (identical(make.names(y), y)) y else "class"
-  if (var %in% vars) var <- paste0(".", var)
+  # not a name of the factors, the columns of the tables or the plots (a response 'y' would be the plot's y)
+  taken <- c(vars, "y", "lo", "hi", "row", "x", "estimate", "std.error", "df", "statistic", "p.value", "conf.low",
+             "conf.high", "response", "n", "estimable", "group", "by", "level1", "level2")
+  if (var %in% taken) var <- paste0(var, "_class")
   structure(list(fit = model, parts = pt, what = what, var = var, call = stats::getCall(model), terms = tt,
                  contrasts = if (isS4(model)) model@contrasts else model$contrasts),
             class = "pm_catfit")
@@ -267,7 +270,7 @@ pm_cat_est <- function(opt, est) {
   } else {
     rg <- est$ctr.matrix$refgrid
     g <- as.data.frame(rg$grid)
-    at <- do.call(paste, c(Map(function(nm, v) paste0(nm, " = ", if (is.numeric(v)) format(signif(v, 4)) else v),
+    at <- do.call(paste, c(Map(function(nm, v) paste0(nm, " = ", if (is.numeric(v)) signif(v, 4) else v),
                                names(g), g), sep = ", "))
     ev <- pm_cat_eval(pt, rg$basis(rg$grid), as.matrix(rg$W[rows, , drop = FALSE]),
                       if (what == "mean_class") "mean_class" else "prob", labels = at)

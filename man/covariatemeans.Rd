@@ -66,7 +66,9 @@ smooths. See \code{\link{Kmatrix}}.}
 \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
-\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
+\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
+frequencies are cases (trials, or the case weights of class responses) where a row holds several, else rows;
+see \code{\link{Kmatrix}} and \code{settings$weights_by}.}
 
 \item{df_method, vcov_adjust}{As in \code{\link{predictmeans}} (a number in \code{df_method} is a fixed df, \code{Df} before 2.0): by default Kenward-Roger df (each point of the curves
 has its own) and adjusted standard errors for models fitted by REML (\code{lmer}, \code{lme}, \code{gls}).

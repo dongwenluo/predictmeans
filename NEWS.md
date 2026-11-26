@@ -171,9 +171,11 @@ shows 1.1.1 and 2.0 code side by side.
   probability scale; delta-method SEs, z tests; advice on separation (a class absent at some levels). Checked
   against emmeans; other functions stop for these fits. Where the cumulative curves of a non-parallel fit cross
   (negative probabilities), the means that use those points are NA with a caution.
-* `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count the frequency weights instead of rows for
-  fits whose prior weights are case or trial counts (multinom, polr, clm, clmm, vglm, binomial glm and glmer), so
-  aggregated data and one row per case give the same means (as emmeans); `settings$weights_by` says which.
+* `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count cases instead of rows where a row holds
+  several: binomial and quasibinomial responses of any class (trials) and class responses (multinom, polr, clm, clmm,
+  vglm with case weights). Aggregated data and one row per case then weight the factor combinations alike (as
+  emmeans); covariates are still set from the rows. `settings$weights_by` says which. semireg means stop for
+  weights other than `"equal"` (they were ignored).
 
 ### Mixed models and variance components
 

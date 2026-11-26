@@ -71,10 +71,12 @@
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
 #'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
-#'   frequencies count rows, except for fits whose prior weights are counts of cases or trials (\code{multinom},
-#'   \code{polr}, \code{clm}, \code{clmm}, \code{vglm}, binomial \code{glm} and \code{glmer}): there they are the
-#'   sums of the weights, so aggregated data and one row per case give the same means (as emmeans);
-#'   \code{settings$weights_by} says which.
+#'   frequencies count rows, except when a row stands for several cases or trials: binomial and quasibinomial
+#'   responses of any model class (trials) and class responses (\code{multinom}, \code{polr}, \code{clm},
+#'   \code{clmm}, \code{vglm} with case weights). There they are the sums of the cases, so aggregated data and one
+#'   row per case weight the factor combinations alike (as emmeans); \code{settings$weights_by} says which.
+#'   Covariates are still set from the rows (their mean, or the profiles of \code{cov_reduce = "average"}), and
+#'   the \code{n} column of the means counts rows.
 #' @param refgrid Return the grid of all combinations (element \code{refgrid})? The default \code{FALSE} builds
 #'   it only when it is needed (\code{semireg} models, means over empty cells). Otherwise each group of variables
 #'   that share a model term is averaged on its own grid, which gives the same \code{K} and is much smaller
@@ -611,30 +613,67 @@ pm_cell_weights <- function(weights, preddf, factor_names, nuisance, freq = NULL
 }
 
 ## Frequency weights of the rows of the fit, for the 'weights' schemes that
-## count observations (proportional, outer, cells, flat): the prior weights
-## where they are counts of cases or trials (class responses: multinom, polr,
-## clm, clmm, vglm; binomial glm and glmer), so aggregated data and one row
-## per case give the same means (as emmeans). NULL (count rows) for other
-## models, whose prior weights are usually precisions, and when there are none.
+## count observations (proportional, outer, cells, flat): what each row counts
+## when its response is counts of cases or trials (pm_freq_w()), so
+## aggregated data and one row per case give the same weights for the factor
+## combinations (as emmeans). NULL (count rows) when the rows are cases: other
+## responses (prior weights of lm, lme, gls are precisions) and all weights 1.
 pm_freq_weights <- function(model, n, weights = "proportional") {
   if (identical(weights, "equal")) return(NULL)
-  m <- pm_cat_fit(model)
-  w <- tryCatch({
-    if (inherits(m, "multinom")) m$weights
-    else if (inherits(m, "vglm")) VGAM::weights(m, type = "prior")
-    else if (inherits(m, c("polr", "clm", "clmm"))) stats::model.weights(m$model)
-    else if (inherits(m, "glm") && identical(stats::family(m)$family, "binomial")) m$prior.weights
-    else if (inherits(m, "glmerMod") && identical(stats::family(m)$family, "binomial")) stats::weights(m)
-  }, error = function(e) NULL)
+  w <- tryCatch(pm_freq_w(pm_cat_fit(pm_fit(model))), error = function(e) NULL)
   if (is.null(w)) return(NULL)
   w <- as.numeric(w)
   if (length(w) != n) {
-    warning("The frequency weights of the fit do not match its rows; the '", weights, "' weights count rows.",
-            call. = FALSE)
+    warning("predictmeans could not match the case counts (frequency weights) of the fit to the rows of its data; ",
+            "the '", weights, "' weights count rows.", call. = FALSE)
     return(NULL)
   }
   if (all(w == 1)) NULL else w
 }
+
+## The number of cases or trials each row of the fit stands for (rows used in
+## the fit, unpadded), or NULL when its rows are cases: binomial and
+## quasibinomial responses (trials: the prior weights, or the row totals of a
+## cbind() response) of any class, and class responses (multinom, polr, clm,
+## clmm, vglm: their case weights). One rule by response, not by class.
+pm_freq_w <- function(model) UseMethod("pm_freq_w")
+#' @exportS3Method NULL
+pm_freq_w.default <- function(model) NULL
+pm_binomial_family <- function(model) {
+  f <- tryCatch(stats::family(model)$family, error = function(e) "")
+  isTRUE(f %in% c("binomial", "quasibinomial"))
+}
+#' @exportS3Method NULL
+pm_freq_w.glm <- function(model) if (pm_binomial_family(model)) model$prior.weights      # (also mgcv gam)
+#' @exportS3Method NULL
+pm_freq_w.glmerMod <- function(model) if (pm_binomial_family(model)) model@resp$weights  # (unpadded by na.exclude)
+#' @exportS3Method NULL
+pm_freq_w.glmmTMB <- function(model) {
+  if (!pm_binomial_family(model)) return(NULL)
+  mf <- stats::model.frame(model)
+  y <- stats::model.response(mf)
+  w <- stats::model.weights(mf)
+  if (is.null(w)) w <- rep(1, NROW(y))
+  if (is.matrix(y)) w * rowSums(y) else w                  # cbind(successes, failures): trials
+}
+#' @exportS3Method NULL
+pm_freq_w.multinom <- function(model) model$weights
+#' @exportS3Method NULL
+pm_freq_w.vglm <- function(model) VGAM::weights(model, type = "prior")
+## (the model frame rebuilt from the call when the fit does not keep it, as polr(model = FALSE):
+## MASS's model.frame.polr() then fails)
+#' @exportS3Method NULL
+pm_freq_w.polr <- function(model) {
+  if (!is.null(model$model)) return(stats::model.weights(model$model))
+  cl <- model$call
+  cl <- cl[c(1L, match(c("formula", "data", "weights", "subset", "na.action"), names(cl), 0L))]
+  cl[[1L]] <- quote(stats::model.frame)
+  stats::model.weights(eval(cl, environment(stats::formula(model))))
+}
+#' @exportS3Method NULL
+pm_freq_w.clm <- pm_freq_w.polr
+#' @exportS3Method NULL
+pm_freq_w.clmm <- pm_freq_w.polr
 
 ## The basis of the fixed effects for rows of predictor values: list(fun,
 ## Terms). The levels of every factor of the model frame (incl. factor(x)

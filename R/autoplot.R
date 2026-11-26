@@ -531,8 +531,10 @@ print.summary.predictmeans <- function(x, ...) {
   }
   if (!is.null(p) && nrow(p) > 0) {
     within <- if (!is.null(s$atvar)) paste0(" within each level of ", paste(s$atvar, collapse = " and ")) else ""
-    cat(nrow(p), " pairwise comparisons", within, ".\n", sep = "")
-    cat("SED: min ", fmt(min(p$std.error)), ", mean ", fmt(mean(p$std.error)), ", max ", fmt(max(p$std.error)), "\n", sep = "")
+    ne <- sum(is.na(p$std.error))                          # pairs of non-estimable means
+    cat(nrow(p), " pairwise comparisons", within, if (ne) paste0(" (", ne, " not estimable)"), ".\n", sep = "")
+    if (ne < nrow(p)) cat("SED: min ", fmt(min(p$std.error, na.rm = TRUE)), ", mean ", fmt(mean(p$std.error, na.rm = TRUE)),
+                          ", max ", fmt(max(p$std.error, na.rm = TRUE)), "\n", sep = "")
     # the LSDs that go with the p-values: adjusted when 'adj' has a critical value
     adj_lsd <- !is.null(p$adj.conf.high)
     lsd <- if (adj_lsd) (p$adj.conf.high - p$adj.conf.low)/2 else p$lsd
