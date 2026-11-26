@@ -174,7 +174,8 @@ pm_inference <- function(model, df_method = "auto", vcov_adjust = TRUE, vcov_adj
   }
   structure(list(mp = mp, df_type = df_type, vcov_adj = vcov_adj, vcov_adjust = adjusted,
                  vcov_label = attr(V, "label"), per_row = per_row_kr_satt || custom || !is.null(io), label = label,
-                 df = df, ftest = ftest, df_cases = if (!is.null(io)) attr(io, "count")), class = "pm_inference")
+                 df = df, ftest = ftest, df_cases = if (!is.null(io)) attr(io, "count"), df_trials = attr(io, "trials_df")),
+            class = "pm_inference")
 }
 
 ## Resolve the df method: "auto" is Kenward-Roger for REML fits (lmer, lme,

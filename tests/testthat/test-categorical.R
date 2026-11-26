@@ -399,6 +399,17 @@ test_that("clm nominal = vglm(parallel = FALSE ~ z); averages over scale variabl
   expect_error(predictmeans(ordinal::clm(rating ~ temp + contact, nominal = ~ contact, data = wine), "temp"),
                "aliased")
   expect_error(contrastmeans(a, "temp", ctrmatrix = rbind(c(1, -1))), "clm nominal or scale effects")
+  # a factor of the nominal formula only is a term (no "not a term" note)
+  expect_silent(predictmeans(a, "contact", mean_type = "link"))
+  # model = FALSE with a missing value in a scale variable: case weights match the rows of the fit
+  w2 <- wine
+  w2$s <- w2$judge
+  w2$s[3] <- NA
+  w2$f <- rep(1:2, length.out = nrow(w2))
+  s1 <- ordinal::clm(rating ~ temp + contact, scale = ~ s, weights = f, data = w2)
+  s0 <- ordinal::clm(rating ~ temp + contact, scale = ~ s, weights = f, data = w2, model = FALSE)
+  expect_silent(r0 <- predictmeans(s0, "temp", weights = "proportional"))
+  expect_equal(r0$means$estimate, predictmeans(s1, "temp", weights = "proportional")$means$estimate, tolerance = 1e-10)
 })
 
 test_that("clm nominal effects: crossing curves give NA means or stop, as for vglm", {

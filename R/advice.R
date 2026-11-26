@@ -83,7 +83,7 @@ pm_advice_get <- function(x) {
 #'   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
 #'   \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
 #'   \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
-#'   \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0) \cr
+#'   \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0), or averaged over subjects with \code{bias_adjust = TRUE} \cr
 #'   \code{class_separation} \tab predictmeans \tab a class with no observations at some levels (probability at 0, SEs not usable) \cr
 #'   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
 #'   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr
@@ -142,9 +142,11 @@ pm_advice_limits <- list(se_ratio = 3, min_df = 5, many_tests = 6)
 pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL) {
   lim <- pm_advice_limits
   rows <- list()
-  # inner-outer df that count trials assume binomial variation within clusters: overdispersion
-  # (Pearson test of the fit) makes their tests too liberal (11.8% at 5% in dev/sim-df-io-trials.R)
-  if (length(df_cases) && df_cases %in% c("trials", "case weights")) {
+  # inner-outer df that count trials (pm_df_cases()) assume binomial variation within clusters:
+  # overdispersion makes their tests too liberal (9.25% at 5% in dev/sim-df-io-trials.R). Said when a
+  # df of this result is the trials' stratum and the fit's Pearson test rejects.
+  tdf <- attr(df_cases, "df")
+  if (length(tdf) && any(abs(df - tdf) < 1e-8, na.rm = TRUE)) {
     dp <- tryCatch(pm_check_dispersion(model), error = function(e) NULL)
     if (identical(dp$kind, "tested") && isTRUE(dp$p_over < 0.05)) {
       rows$od <- pm_advice("overdispersion_trials", paste0(
@@ -532,7 +534,7 @@ pm_slopes_advice <- function(x, model) {
   }
   pairs <- x$pairs
   rows <- c(rows, pm_advice_common(model, x$slopes$df, if (is.data.frame(pairs)) nrow(pairs) else 0, s$adjust,
-                                   "pairs of slopes"))
+                                   "pairs of slopes", s$df_cases))
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }
@@ -645,7 +647,7 @@ pm_variogram_advice <- function(x) {
 ## (R/ordinal.R): the means average over (or fix) other variables of the model,
 ## so the class probabilities are at the averaged latent mean (D2), not
 ## averages of probabilities; and the mean class scores the classes 1, 2, ...
-pm_ordinal_advice <- function(model, modelterm, what) {
+pm_ordinal_advice <- function(model, modelterm, what, pop = FALSE) {
   f <- pm_nobars(stats::formula(model))                       # (clmm: the fixed part only)
   others <- setdiff(all.vars(stats::delete.response(stats::terms(f))), strsplit(modelterm, ":")[[1]])
   rows <- list()
@@ -660,11 +662,13 @@ pm_ordinal_advice <- function(model, modelterm, what) {
     tryCatch(unlist(lapply(ordinal::VarCorr(model), function(v) sqrt(diag(as.matrix(v))))), error = function(e) NULL)
   }
   if (length(sds) && max(sds) >= 0.1) {        # (a random-effect SD near 0: typical = average)
-    rows$re <- pm_advice("ordinal_typical_subject", paste0(
+    rows$re <- pm_advice("ordinal_typical_subject", if (pop) paste0(
+      "The class probabilities are averages over subjects (random-effect SD ", format(signif(max(sds), 2)),
+      " on the latent scale): less extreme than for a typical subject (bias_adjust = FALSE); the comparisons on ",
+      "the latent scale (the pairs) are for a subject, not for these averages.") else paste0(
       "The class probabilities are for a typical subject (random effects at 0; random-effect SD ",
-      format(signif(max(sds), 2)), " on the latent scale): averaged over subjects they are less extreme. ",
-      "Population-average probabilities are not yet available; the comparisons on the latent scale (the pairs) ",
-      "hold for every subject."), "note")
+      format(signif(max(sds), 2)), " on the latent scale): averaged over subjects they are less extreme ",
+      "(bias_adjust = TRUE). The comparisons on the latent scale (the pairs) hold for every subject."), "note")
   }
   if (what == "mean_class") {
     rows$mc <- pm_advice("ordinal_mean_class", paste(

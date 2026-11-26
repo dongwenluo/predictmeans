@@ -270,3 +270,46 @@ test_that("vglm: probability SEs for a covariate with large values (analytic del
   expect_error(predictmeans(mpo, "temp"), "not poissonff")
   expect_error(residplot(mpo), "not poissonff")
 })
+
+test_that("clmm population-average class probabilities (bias_adjust = TRUE): quadrature, probit, SEs, both routes", {
+  skip_on_cran()
+  data(wine, package = "ordinal", envir = environment())
+  m <- ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine)
+  pr <- predictmeans(m, "temp", mean_type = "prob", bias_adjust = TRUE)$probs
+  expect_true(attr(pr, "population_average"))
+  s <- m$ST$judge[1, 1]
+  # the latent mean of each temp (contact averaged on the latent scale), integrated over the judges
+  xb <- c(0, m$beta[["tempwarm"]]) + m$beta[["contactyes"]] / 2
+  ref <- unlist(lapply(xb, function(v) diff(c(0, vapply(m$alpha, function(t) stats::integrate(function(u)
+    stats::plogis(t - v - u) * stats::dnorm(u, 0, s), -Inf, Inf, rel.tol = 1e-12)$value, 0), 1))))
+  expect_equal(pr$estimate, unname(ref), tolerance = 1e-10)
+  # delta-method SEs over (alpha, beta, log SD): vcov() of the default fit is for the log SD
+  gh <- pm_gh_rule(60)
+  f <- function(th) unlist(lapply(c(0, th[5]) + th[6] / 2, function(v)
+    diff(c(0, vapply(th[1:4], function(t) sum(gh$w * stats::plogis(t - v - exp(th[7]) * gh$x)), 0), 1))))
+  D <- numDeriv::jacobian(f, c(m$alpha, m$beta, log(s)))
+  expect_equal(pr$std.error, sqrt(diag(D %*% stats::vcov(m) %*% t(D))), tolerance = 1e-8)
+  # useMatrix = TRUE: vcov() for the SD itself; the same probabilities and SEs (to the fits' agreement)
+  m2 <- ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine,
+                      control = ordinal::clmm.control(useMatrix = TRUE))
+  p2 <- predictmeans(m2, "temp", mean_type = "prob", bias_adjust = TRUE)$probs
+  expect_equal(p2$std.error, pr$std.error, tolerance = 1e-4)
+  # probit: exact closed form Phi((theta - x'b) / sqrt(1 + s^2))
+  mp <- ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine, link = "probit")
+  pp <- predictmeans(mp, "temp", mean_type = "prob", bias_adjust = TRUE)$probs
+  sp <- mp$ST$judge[1, 1]
+  xp <- c(0, mp$beta[["tempwarm"]]) + mp$beta[["contactyes"]] / 2
+  expect_equal(pp$estimate, unname(unlist(lapply(xp, function(v) diff(c(0, stats::pnorm((mp$alpha - v) / sqrt(1 + sp^2)), 1))))),
+               tolerance = 1e-12)
+  # less extreme than for a typical subject; the advice says which it is
+  pt <- predictmeans(m, "temp", mean_type = "prob")
+  expect_true(max(pt$probs$estimate) > max(pr$estimate))
+  pa <- predictmeans(m, "temp", mean_type = "mean_class", bias_adjust = TRUE)
+  expect_match(advice(pa)$text[advice(pa)$id == "ordinal_typical_subject"], "averages over subjects")
+  expect_output(print(summary(pa)), "averaged over the random effects")
+  # the latent means: bias_adjust does not apply; random slopes stop
+  expect_error(predictmeans(m, "temp", bias_adjust = TRUE), "population-average class probabilities")
+  wine$x <- as.numeric(wine$temp)
+  ms <- suppressWarnings(ordinal::clmm(rating ~ temp + contact + (1 + x | judge), data = wine))
+  expect_error(predictmeans(ms, "temp", mean_type = "prob", bias_adjust = TRUE), "random slopes")
+})

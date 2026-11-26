@@ -333,7 +333,8 @@ pm_sr_ddf <- function(semireg, L, idx, terms = NULL) {
   # a row without fixed coefficients (smooth coefficients only): within groups
   df[is.na(df)] <- max(io)
   structure(df, method = paste0("inner-outer (design strata; smooths within",
-                                 if (!identical(attr(io, "count"), "rows")) paste0("; ", attr(io, "count"), " counted"), ")"))
+                                 if (!identical(attr(io, "count"), "rows")) paste0("; ", attr(io, "count"), " counted"), ")"),
+            df_cases = pm_df_cases(list(df_cases = attr(io, "count"), df_trials = attr(io, "trials_df"))))
 }
 
 ## Satterthwaite df for linear combinations L of the fixed and random

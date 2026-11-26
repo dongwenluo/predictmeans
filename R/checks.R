@@ -27,7 +27,8 @@ pm_check_modelterm <- function(model, modelterm) {
 ## A combination of factors that is not a term of the model: its means are
 ## what the model implies for it, the sum of the effects of its parts.
 pm_note_not_a_term <- function(model, modelterm) {
-  labs <- tryCatch(attr(stats::terms(model), "term.labels"), error = function(e) NULL)
+  tt <- tryCatch(if (inherits(model, "clm")) pm_clm_all_terms(model) else stats::terms(model), error = function(e) NULL)
+  labs <- if (!is.null(tt)) attr(tt, "term.labels")
   if (is.null(labs)) return(invisible(NULL))
   key <- function(x) vapply(strsplit(x, ":", fixed = TRUE), function(v) paste(sort(pm_term_vars(v)), collapse = ":"), "")
   if (key(modelterm) %in% key(labs)) return(invisible(NULL))

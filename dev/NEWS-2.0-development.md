@@ -3231,3 +3231,30 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   nominal = vglm(cumulative(parallel = FALSE ~ z)) to 1e-5 (SEs within 2%:
   vglm's expected information); averages over a scale factor = numDeriv
   delta method to 1e-6; crossing curves NA / stop as for vglm.
+* Second review of the inner-outer cases and G1 (10 findings): (1) the
+  overdispersion advice has little power (conditional Pearson of glmer:
+  fires in 15% of the row-SD-0.3 data sets): left as a decision for the
+  maintainer (rows or trials by default); (2) binomial weights that are not
+  whole numbers are not trials: rows again (sampling weights of a 0/1
+  response had shrunk the df); (3) pm_check_dispersion() takes the trials
+  from pm_freq_w() (glmmTMB proportion + weights was called binary); (4)
+  settings$df_cases in contrastmeans(), covariatemeans(), pm_slopes() and
+  semireg means (pm_df_cases()), the advice there too (semireg means now
+  carry pm_advice_common()); (5) the advice only when a df of the result is
+  the trials' stratum (attr "df" of df_cases); (6) with an observation-level
+  random effect the label is "rows" (no coefficient in the trials' stratum);
+  (7) no false "not a term" note for factors of clm's nominal/scale formulas;
+  (8) clm(model = FALSE) case weights rebuilt from all three formulas; (9)
+  numbers in comments; (10) predict.clm() agreement stated for logit,
+  probit, cloglog, loglog (cauchit: ordinal's fitted values differ by 3e-6).
+* clmm population-average class probabilities (2026-11-26, B4 G2):
+  bias_adjust = TRUE with mean_type "prob"/"mean_class" (pm_setup(): ord_pop;
+  pm_ord_pop(), pm_gh_rule() in R/ordinal.R): E F(theta - x'b - s U) by a
+  40-node Gauss-Hermite rule, s^2 the sum of the random-intercept variances;
+  delta-method SEs over (b, alpha, random-effect parameters of vcov()), whose
+  scale (log SD for one intercept fitted the default way, SD otherwise) is
+  read from optRes$par; SDs at 0 (dropped from vcov() by ordinal) fixed;
+  random slopes stop. Checks: integrate() to 1e-10 (6e-14 seen), probit
+  closed form to 1e-12, numDeriv delta method to 1e-8, both vcov() routes
+  give the same SEs (to 4e-6, the fits' agreement). Advice
+  ordinal_typical_subject says which the probabilities are.

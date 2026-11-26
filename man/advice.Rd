@@ -56,7 +56,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{variogram_incomplete} \tab residvariogram \tab more than 10\% of the grid positions empty \cr
   \code{ordinal_latent_average} \tab predictmeans \tab class probabilities at latent means averaged over other variables \cr
   \code{ordinal_mean_class} \tab predictmeans \tab the mean class scores the classes as equally spaced \cr
-  \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0) \cr
+  \code{ordinal_typical_subject} \tab predictmeans \tab clmm class probabilities for a typical subject (random effects at 0), or averaged over subjects with \code{bias_adjust = TRUE} \cr
   \code{class_separation} \tab predictmeans \tab a class with no observations at some levels (probability at 0, SEs not usable) \cr
   \code{class_prob_average} \tab predictmeans \tab class probabilities averaged over other variables on the probability scale \cr
   \code{class_prob_near_bound} \tab predictmeans \tab differences of probabilities near 0 or 1 (\code{mean_type = "prob_diff"}) \cr

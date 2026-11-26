@@ -475,11 +475,7 @@ pm_check_dispersion <- function(model) {
     return(list(kind = "estimated", family = fam, ratio = phi))
   }
   if (kind == "binomial") {
-    w <- tryCatch(stats::weights(model), error = function(e) NULL)
-    if (inherits(model, "glmmTMB")) {
-      yy <- stats::model.response(stats::model.frame(model))
-      w <- if (is.matrix(yy)) rowSums(yy) else NULL
-    }
+    w <- tryCatch(pm_freq_w(model), error = function(e) NULL)       # trials (R/Kmatrix.R), one rule
     if (is.null(w) || all(w <= 1)) return(list(kind = "binary"))
   }
   pr <- tryCatch(stats::residuals(model, type = "pearson"), error = function(e) NULL)

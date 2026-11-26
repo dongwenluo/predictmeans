@@ -143,7 +143,7 @@ pm_slopes <- function(model, covariate, modelterm, at = NULL, conf_level = 0.95,
   }
   rownames(slopes) <- NULL
   settings <- list(modelterm = modelterm, covariate = covariate, at = at, level = level, adjust = adj,
-                   df_method = inf$label, vcov_adjust = isTRUE(inf$vcov_adjust),
+                   df_method = inf$label, df_cases = pm_df_cases(inf), vcov_adjust = isTRUE(inf$vcov_adjust),
                    vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label,
                    model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
   out <- structure(list(slopes = slopes, pairs = pairs, settings = settings), class = "pm_slopes",

@@ -242,7 +242,10 @@ Gauss-Hermite quadrature: \eqn{\exp(\eta + \sigma^2/2)} for a log, \eqn{\eta^2 +
 root. \code{"taylor"} gives the second-order approximation \eqn{h(\eta) + \sigma^2 h''(\eta)/2} (emmeans'
 \code{bias.adjust}), which is too low for a log when \eqn{\sigma} is large and off for a logit. The
 response-scale SEs follow by the delta method. \code{FALSE} (the default): the back-transformed mean is that
-of a unit with all random effects zero, or the median for a transformed response.}
+of a unit with all random effects zero, or the median for a transformed response. For \code{clmm} fits with
+\code{mean_type = "prob"} or \code{"mean_class"}, \code{TRUE} gives the class probabilities averaged over the
+random intercepts (population average; SEs include the random-effect variances; random slopes stop); the
+latent means and pairs are not changed.}
 
 \item{sigma}{With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
 random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a
@@ -276,9 +279,11 @@ stay on the link scale.}
   (on the logit scale, so they stay within 0 to 1 and 1 to J). Means over other factors are averaged on the latent scale and then
   transformed; emmeans averages the probabilities instead (the same for the cells of the model).
 
-  Fits without a single latent scale, \code{nnet::multinom}, \code{VGAM::vglm} with \code{multinomial} and
-  ordinal vglm families whose slopes are not parallel (\code{parallel = FALSE}, or partly), have one linear
-  predictor per class, so each mean is a vector: the class (or predictor) becomes a factor of the means,
+  Fits without a single latent scale, \code{nnet::multinom}, \code{VGAM::vglm} with \code{multinomial},
+  ordinal vglm families whose slopes are not parallel (\code{parallel = FALSE}, or partly) and
+  \code{ordinal::clm} with nominal or scale effects (\code{nominal = }, \code{scale = }; \code{"link"} not with
+  scale effects, whose predictors are not linear in the coefficients), have one linear predictor per class, so
+  each mean is a vector: the class (or predictor) becomes a factor of the means,
   named after the response (\code{"predictor"} for \code{"link"}), and the pairs are within each class (an
   \code{atvar}; pairs of two classes are left out). \code{"prob"} (their default): the probability of each
   class on the logit scale, back-transformed in \code{response} with limits inside 0 to 1; pairs are log odds

@@ -167,9 +167,12 @@ pm_setup <- function(a) {
     }
   }
 
+  # clmm class probabilities: bias_adjust = TRUE averages them over the random effects (pm_ord_pop())
+  ord_pop <- inherits(model, "clmm") && isTRUE(a$bias_adjust) && mean_type %in% c("prob", "mean_class")
   if (inherits(model, pm_ord_classes)) {
-    pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans, bias_adjust = a$bias_adjust,
-                 sigma = a$sigma, vcov = a$vcov, permlist = a$permlist)
+    pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans,
+                 bias_adjust = if (ord_pop) FALSE else a$bias_adjust, sigma = a$sigma, vcov = a$vcov,
+                 permlist = a$permlist)
   }
   if (mean_type %in% c("prob", "mean_class") && !inherits(model, c(pm_ord_classes, "pm_catfit"))) {
     stop("mean_type = \"", mean_type, "\" is for models of a class response (MASS::polr, ordinal::clm, ordinal::clmm, ",
@@ -180,7 +183,7 @@ pm_setup <- function(a) {
        covariate = a$covariate, cov_reduce = a$cov_reduce, exclude = a$exclude, weights = a$weights,
        meandecr = if (is.logical(a$meandecr)) a$meandecr else NULL, letter_ci = a$letter_ci,
        trans = trans, trans_by = trans_by, link_scale = link_scale, count = count,
-       bias_adjust = a$bias_adjust, sigma = a$sigma, average = average,
+       bias_adjust = if (ord_pop) FALSE else a$bias_adjust, ord_pop = ord_pop, sigma = a$sigma, average = average,
        permlist = permlist, ncore = a$ncore, ndecimal = 4L,
        df_method = a$df_method, vcov = a$vcov, vcov_adjust = a$vcov_adjust,
        vcov_adjust_default = a$vcov_adjust_default, equivalence = a$equivalence)

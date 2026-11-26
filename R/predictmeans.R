@@ -222,7 +222,10 @@
 #'   root. \code{"taylor"} gives the second-order approximation \eqn{h(\eta) + \sigma^2 h''(\eta)/2} (emmeans'
 #'   \code{bias.adjust}), which is too low for a log when \eqn{\sigma} is large and off for a logit. The
 #'   response-scale SEs follow by the delta method. \code{FALSE} (the default): the back-transformed mean is that
-#'   of a unit with all random effects zero, or the median for a transformed response.
+#'   of a unit with all random effects zero, or the median for a transformed response. For \code{clmm} fits with
+#'   \code{mean_type = "prob"} or \code{"mean_class"}, \code{TRUE} gives the class probabilities averaged over the
+#'   random intercepts (population average; SEs include the random-effect variances; random slopes stop); the
+#'   latent means and pairs are not changed.
 #' @param sigma With \code{bias_adjust = TRUE}: the SD to adjust for. The default is the square root of the summed
 #'   random-intercept variances (\code{glmer}, \code{glmmTMB}, \code{lme}), plus the residual variance for a
 #'   transformed response of a linear (mixed) model; models with random slopes need it given.
@@ -455,6 +458,7 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
   res <- pm_assemble(v)
   # ordinal models: class probabilities or the mean class at each mean (R/ordinal.R)
   if (inherits(opt$model, "pm_catfit")) return(pm_cat_attach(res, opt, est))     # (R/categorical.R)
-  if (opt$mean_type %in% c("prob", "mean_class")) res <- pm_ord_attach(res, opt$model, est$K, opt$mean_type, conf_level)
+  if (opt$mean_type %in% c("prob", "mean_class")) res <- pm_ord_attach(res, opt$model, est$K, opt$mean_type, conf_level,
+                                                                       isTRUE(opt$ord_pop))
   res
 }

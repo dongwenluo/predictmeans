@@ -65,15 +65,17 @@ pm_io_row_df <- function(io, coef_names, L, terms) {
 }
 
 ## The cases of the residual stratum: when each row holds several cases
-## (binomial trials, case weights of clmm; pm_freq_w(), the counts that the
-## "proportional" weights use too) their sum, so aggregated counts and one row
-## per case get the same df; rows with no cases are left out (as a fit to
-## one row per case has none). Else the rows. Counting rows made
-## within-cluster tests far too conservative: with 12 rows of 25 trials, 1.1%
-## of true null hypotheses rejected at 5% against 4.3% counting trials
-## (dev/sim-df-io-trials.R). options(predictmeans.inner_outer_count = "rows")
-## counts rows (predictmeans before 2026-11-26). Returns list(n, keep (rows
-## used), count: "rows", "trials" or "case weights").
+## (binomial trials, case weights of clmm; pm_freq_w()) and the counts are
+## whole numbers, their sum, so aggregated counts and one row per case get
+## the same df; rows with no cases are left out (as a fit to one row per case
+## has none). Weights that are not whole numbers are not counts (sampling or
+## precision weights): rows. Counting rows made within-cluster tests far too
+## conservative for binomial data (12 rows of 25 trials: 1.1% of true null
+## hypotheses rejected at 5%, trials 4.3%; dev/sim-df-io-trials.R), but it
+## hid overdispersion the fit leaves out (row SD 0.3: rows 3.5%, trials
+## 9.25%). options(predictmeans.inner_outer_count = "rows") counts rows.
+## Returns list(n, keep (rows used), count: "rows", "trials" or
+## "case weights").
 pm_io_cases <- function(model, N) {
   how <- getOption("predictmeans.inner_outer_count", "cases")
   if (!identical(how, "cases") && !identical(how, "rows")) {
@@ -88,8 +90,19 @@ pm_io_cases <- function(model, N) {
             call. = FALSE)
     return(rows)
   }
-  if (all(w == 1)) return(rows)
+  if (all(w == 1) || any(abs(w - round(w)) > 1e-8)) return(rows)
   list(n = sum(w), keep = w > 0, count = if (inherits(model, "clmm")) "case weights" else "trials")
+}
+
+## The cases counted by the inner-outer df of an inference (pm_inference()),
+## for settings$df_cases: NA (other df), "rows", "trials" or "case weights",
+## with attribute "df" the residual stratum's df when it counts cases and a
+## coefficient uses it (the overdispersion advice compares it with the df of
+## the result: pm_advice_common()).
+pm_df_cases <- function(inf) {
+  ct <- inf$df_cases
+  if (is.null(ct)) return(NA_character_)
+  structure(ct, df = inf$df_trials)
 }
 
 ## df of each coefficient (named vector).
@@ -140,8 +153,11 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     if (!length(k)) Inf else k[which.min(nlev[k])]
   }, numeric(1))
   df <- ifelse(is.infinite(strat), res_df, sdf[pmin(strat, length(sdf))])
-  fine <- ifelse(is.infinite(strat), Inf, nlev[pmin(strat, length(nlev))])
   int <- apply(X, 2, function(x) all(abs(x - x[1]) <= 1e-12))
+  # cases counted only where a coefficient is in the residual stratum (with an observation-level random
+  # effect none is: the effects within clusters get the rows' stratum)
+  if (cs$count != "rows" && !any(is.infinite(strat) & !int)) cs$count <- "rows"
+  fine <- ifelse(is.infinite(strat), Inf, nlev[pmin(strat, length(nlev))])
   df[int] <- max(c(sdf, res_df))
   names(df) <- colnames(X)
   # term df: the stratum of the term's innermost column
@@ -159,5 +175,5 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
   if (any(df < 1, na.rm = TRUE) || any(tdf < 1, na.rm = TRUE)) {
     stop("some are below 1 (few rows or cases per stratum)", call. = FALSE)
   }
-  structure(df, intercept = int, terms = tdf, count = cs$count)
+  structure(df, intercept = int, terms = tdf, count = cs$count, trials_df = if (cs$count != "rows") res_df)
 }

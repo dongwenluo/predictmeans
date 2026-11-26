@@ -49,8 +49,7 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
    `cran-comments.md`, submit from the maintainer's computer.
 2. **SAS run** for the maintainer: `dev/sas/glimmix-trials.sas` (does GLIMMIX
    count rows or trials for events/trials data?).
-3. **B4 block** (`dev/review-b4.md`, agreed): G1 done; next G2
-   population-average probabilities for `clmm`, G4 AR1 x AR1 with a phi per
+3. **B4 block** (`dev/review-b4.md`, agreed): G1, G2 done; next G4 AR1 x AR1 with a phi per
    trial, G3 tests for `clmm` with few clusters. AR2 only if asked.
 4. **Paper** (plan Part C): `dev/paper/outline.md` (design rules, evidence for
    each default, SAS/Genstat checks, comparison with emmeans); journal to be
@@ -90,6 +89,7 @@ Details and file names in O16/O17; user-facing summary in NEWS.md.
   `overdispersion_trials`. SAS check pending: `dev/sas/glimmix-trials.sas`.
 - **clm with nominal or scale effects** (B4 G1): class probabilities,
   = `predict.clm()` with SEs.
+- **clmm population-average probabilities** (B4 G2): `bias_adjust = TRUE`.
 - **corAR1xAR1()** (`R/cor-ar1xar1.R`): separable AR1 x AR1 field correlation
   for gls/lme with nugget and groups; Genstat's Slate Hall run reproduced
   (means and SEDs within 5e-6, KR-average d.d.f.). Kenward-Roger and

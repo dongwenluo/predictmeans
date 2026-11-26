@@ -60,8 +60,17 @@ advice(pmm)$text
 ```
 
 The means are for a typical judge (random effects at 0), and so are the class probabilities: averaged over
-judges they are less extreme. The df are inner-outer: with few judges, z tests reject a true null too often
-(11% at the 5% level with 6 clusters in a simulation).
+judges they are less extreme. `bias_adjust = TRUE` gives those averages (the population-average
+probabilities, integrated over the random effects), with SEs that include the uncertainty of the judges'
+variance:
+
+```{r}
+predictmeans(mm, "temp", mean_type = "prob", bias_adjust = TRUE)$probs
+```
+
+The pairs stay on the latent scale: comparisons for a judge, the same for every judge. The df are
+inner-outer: with few judges, z tests reject a true null too often (11% at the 5% level with 6 clusters in a
+simulation).
 
 ## Multinomial and non-parallel fits: class probabilities
 
@@ -133,7 +142,9 @@ predictmeans(ch, "Infl")$means[, c("Infl", "Sat", "response", "response.conf.low
 
 ## Checks
 
-- Latent means, pairs and class probabilities equal emmeans to 1e-6 (`polr`, `clm`, `clmm`).
+- Latent means, pairs and class probabilities equal emmeans to 1e-6 (`polr`, `clm`, `clmm`). Population-average
+  `clmm` probabilities equal numerical integration to 1e-10 and, for a probit link, the closed form
+  Phi((theta - x'b) / sqrt(1 + s^2)) to 1e-12; their SEs equal a numerical delta method.
 - `clm` and `vglm` against SAS PROC LOGISTIC and GLIMMIX (logit, probit, cloglog, adjacent-category; class
   probabilities to 4e-7).
 - `multinom` class probabilities, SEs and both kinds of pairs equal emmeans to 1e-8; `vglm(multinomial)`

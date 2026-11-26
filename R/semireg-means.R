@@ -110,11 +110,16 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   zi <- pm_zi_component(semireg)
   if (!is.null(zi)) message(attr(zi, "note"))
   settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
+                   df_cases = if (is.null(attr(dfs, "df_cases"))) NA_character_ else attr(dfs, "df_cases"),
                    vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, weights_by = NA_character_,
                    component = if (is.null(pm_zi_component(semireg))) NA_character_ else "conditional", model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
-  structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
-            class = c("pm_semimeans", "predictmeans"))
+  out <- structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
+                   class = c("pm_semimeans", "predictmeans"))
+  rows <- pm_advice_common(semireg$semer, c(means$df, if (is.data.frame(pairs)) pairs$df), 0, adj, "pairs",
+                           settings$df_cases)
+  if (length(rows)) out <- pm_add_advice(out, do.call(rbind, unname(rows)))
+  out
 }
 
 #' @exportS3Method print pm_semimeans

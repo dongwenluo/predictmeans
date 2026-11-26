@@ -510,6 +510,7 @@ print.summary.predictmeans <- function(x, ...) {
   cat("\n")
   if (!is.null(x$probs)) {
     cat(if (identical(attr(x$probs, "what"), "mean_class")) "Mean class" else "Class probabilities",
+        if (isTRUE(attr(x$probs, "population_average"))) " averaged over the random effects",
         " at each mean (delta-method SEs):\n", sep = "")
     print(x$probs, row.names = FALSE, digits = x$digits)
     cat("\n")

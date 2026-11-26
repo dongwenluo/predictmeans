@@ -136,7 +136,10 @@ pm_ord_vglm_link <- function(fi) {
 pm_ord_check <- function(model, trans = NULL, bias_adjust = FALSE, sigma = NULL, vcov = NULL, permlist = NULL) {
   pm_ord_parts(model)
   pm_class_opt_stop(model, paste0("the means are on the latent scale; for the class scale use mean_type = \"prob\" ",
-                                  "or \"mean_class\" in predictmeans()"), trans, bias_adjust, sigma, vcov, permlist)
+                                  "or \"mean_class\" in predictmeans()",
+                                  if (inherits(model, "clmm") && !isFALSE(bias_adjust))
+                                    ", where bias_adjust = TRUE gives population-average class probabilities"),
+                    trans, bias_adjust, sigma, vcov, permlist)
   invisible(TRUE)
 }
 
@@ -242,9 +245,52 @@ pm_ord_link_fd <- function(link) {
          stop("link '", link, "' is not supported.", call. = FALSE))
 }
 
-pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 0.95) {
+## Gauss-Hermite rule for a standard normal (Golub-Welsch): E g(U) = sum w g(x).
+pm_gh_rule <- function(n = 40) {
+  k <- seq_len(n - 1)
+  J <- matrix(0, n, n)
+  J[cbind(k, k + 1)] <- J[cbind(k + 1, k)] <- sqrt(k)
+  e <- eigen(J, symmetric = TRUE)
+  list(x = e$values, w = e$vectors[1, ]^2)
+}
+
+## Population-average class probabilities of a clmm (B4 G2, dev/review-b4.md):
+## P(Y <= j | x) = E F(theta_j - x'b - s U), U ~ N(0, 1), s^2 the sum of the
+## random-intercept variances (z' Sigma z for intercepts: one normal number,
+## so a one-dimensional rule is exact up to its nodes; 40 nodes). Returns s,
+## its gradient in the random-effect parameters of vcov() (named), which are
+## log SDs for one random intercept fitted the default way and SDs otherwise
+## (decided from the optimiser's values, model$optRes$par); SDs at 0 (below
+## 1e-3, left out of vcov() by ordinal) are fixed. Random slopes stop: the
+## variance then depends on the covariate values.
+pm_ord_pop <- function(model) {
+  ST <- lapply(model$ST, as.matrix)
+  if (any(vapply(ST, ncol, integer(1)) > 1)) {
+    stop("Population-average probabilities (bias_adjust = TRUE) are available for random intercepts; this clmm ",
+         "has random slopes, whose variance depends on the covariate values. Use bias_adjust = FALSE (a typical ",
+         "subject).", call. = FALSE)
+  }
+  sd <- vapply(ST, function(m) m[1, 1], numeric(1))
+  s <- sqrt(sum(sd^2))
+  par <- utils::tail(as.vector(model$optRes$par), length(sd))
+  logsd <- length(par) == length(sd) && all(abs(par - log(pmax(sd, 1e-300))) < abs(par - sd))
+  free <- logsd | sd > 1e-3
+  V <- stats::vcov(model)
+  stn <- grep("^ST[0-9]+$", rownames(V), value = TRUE)
+  if (length(stn) != sum(free)) stop("internal: the random-effect parameters of the clmm fit are not matched.",
+                                     call. = FALSE)
+  ds <- if (s > 0) (sd / s * if (logsd) sd else 1)[free] else rep(0, sum(free))
+  list(s = s, ds = stats::setNames(ds, stn), gh = pm_gh_rule())
+}
+
+pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 0.95, pop = FALSE) {
   what <- match.arg(what)
   p <- pm_ord_parts(model)
+  if (pop) {                                     # population average: (b, alpha) and the random-effect SDs
+    pp <- pm_ord_pop(model)
+    nm <- c(rownames(p$V), names(pp$ds))
+    p$V <- stats::vcov(model)[nm, nm, drop = FALSE]
+  }
   Fd <- if (is.null(p$probs)) pm_ord_link_fd(p$link)
   be <- p$b[!is.na(p$b)]
   X <- as.matrix(K)[, names(be), drop = FALSE]
@@ -256,10 +302,18 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
     if (anyNA(x)) return(NULL)
     if (is.null(p$probs)) {
       zz <- th - sum(x * be)
-      f <- Fd[[2]](zz)
-      cum <- c(0, Fd[[1]](zz), 1)
-      # gradients of P(Y <= j) with respect to (b, alpha), j = 0, ..., J
-      G <- rbind(0, cbind(-outer(f, x), f * p$J), 0)
+      Gs <- NULL
+      if (pop) {                                 # E F(zz - s U), its derivatives in zz and in s
+        A <- outer(zz, pp$s * pp$gh$x, "-")
+        f <- drop(Fd[[2]](A) %*% pp$gh$w)
+        cum <- c(0, drop(Fd[[1]](A) %*% pp$gh$w), 1)
+        Gs <- outer(-drop(Fd[[2]](A) %*% (pp$gh$w * pp$gh$x)), pp$ds)
+      } else {
+        f <- Fd[[2]](zz)
+        cum <- c(0, Fd[[1]](zz), 1)
+      }
+      # gradients of P(Y <= j) with respect to (b, alpha[, random-effect SDs]), j = 0, ..., J
+      G <- rbind(0, cbind(-outer(f, x), f * p$J, Gs), 0)
       P <- diff(cum)
       GP <- G[-1, , drop = FALSE] - G[-(nj + 2), , drop = FALSE]
     } else {                                     # vglm: the family's linkinv; d eta / d(b, alpha) = [x 1', J]
@@ -291,18 +345,20 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
 ## Add the class table to a predictmeans() result: $probs, rows in the order
 ## of the means (matched by their labels, not position: atvar re-sorts them),
 ## with the factor columns of modelterm in front.
-pm_ord_attach <- function(res, model, K, what, conf_level) {
+pm_ord_attach <- function(res, model, K, what, conf_level, pop = FALSE) {
   means <- res$means
   vars <- intersect(strsplit(res$settings$modelterm, ":")[[1]], names(means))
   key <- do.call(paste, c(lapply(means[vars], as.character), sep = ":"))
   rows <- match(key, rownames(K))
   if (anyNA(rows)) stop("internal: the means do not match the rows of K.", call. = FALSE)
-  tab <- pm_ord_class(model, K[rows, , drop = FALSE], what, conf_level)
+  tab <- pm_ord_class(model, K[rows, , drop = FALSE], what, conf_level, pop)
   out <- cbind(means[tab$row, vars, drop = FALSE], tab[setdiff(names(tab), "row")])
   rownames(out) <- NULL
   attr(out, "what") <- what
+  attr(out, "population_average") <- pop
   res$probs <- out
-  pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what))
+  if (pop) res$settings$bias_adjust <- "population average over the random effects (class table)"
+  pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what, pop))
 }
 
 ## What a difference of latent means is, for the summary line: the scale of

@@ -668,6 +668,8 @@ pm_freq_w.polr <- function(model) {
   cl <- model$call
   cl <- cl[c(1L, match(c("formula", "data", "weights", "subset", "na.action"), names(cl), 0L))]
   cl[[1L]] <- quote(stats::model.frame)
+  # (clm: the variables of the nominal and scale formulas too, so rows with NA there are dropped as in the fit)
+  if (inherits(model, "clm") && !inherits(model, "clmm")) cl$formula <- stats::formula(pm_clm_all_terms(model))
   stats::model.weights(eval(cl, environment(stats::formula(model))))
 }
 #' @exportS3Method NULL
