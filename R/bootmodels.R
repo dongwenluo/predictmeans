@@ -22,7 +22,9 @@
 #'            ncore = 1, ...)
 #' @param model A model fitted by \code{lm}, \code{aov} (without \code{Error()}), \code{glm} (a family with a
 #'   distribution: gaussian, binomial, Poisson, Gamma; also \code{MASS::glm.nb}), \code{gls}, \code{lme},
-#'   \code{lmer}, \code{glmer} or \code{glmmTMB}. Responses of \code{lme} and \code{gls} models are simulated from
+#'   \code{lmer}, \code{glmer}, \code{glmmTMB} or \code{ordinal::clmm} (random intercepts, one row per
+#'   observation; Type II Wald chi-square; its \code{permlist} gives bootstrap p-values of the latent pairs in
+#'   \code{predictmeans()}). Responses of \code{lme} and \code{gls} models are simulated from
 #'   the null model's covariance of the data (random effects, correlation and variance structures).
 #' @param nsim Number of simulated data sets, the default is 999.
 #' @param type The type of ANOVA table (as in \code{\link{permmodels}}): Type I gives sequential F statistics (for a
@@ -62,15 +64,15 @@ bootmodels <- function(model, nsim = 999, type = c("I", "II", "III", "1", "2", "
     stop("bootmodels() does not handle gam models (a null model for the smooths is not defined); use permmodels().",
          call. = FALSE)
   }
-  if (!inherits(model, c("lm", "lme", "gls", "lmerMod", "glmerMod", "glmmTMB"))) {
-    stop("bootmodels() handles lm, aov, glm, gls, lme, lmer, glmer and glmmTMB models.", call. = FALSE)
+  if (!inherits(model, c("lm", "lme", "gls", "lmerMod", "glmerMod", "glmmTMB", "clmm"))) {
+    stop("bootmodels() handles lm, aov, glm, gls, lme, lmer, glmer, glmmTMB and clmm models.", call. = FALSE)
   }
   op <- options(scipen = 6)
   on.exit(options(op), add = TRUE)
   plain <- function(m) if (inherits(m, "lmerModLmerTest")) methods::as(m, "lmerMod") else m
   model <- plain(model)
-  if (inherits(model, "glmmTMB") && type %in% c("I", "1")) {
-    message("glmmTMB models have no sequential (Type I) tests; Type II Wald tests are used.")
+  if (inherits(model, c("glmmTMB", "clmm")) && type %in% c("I", "1")) {
+    message(class(model)[1], " models have no sequential (Type I) tests; Type II Wald tests are used.")
     type <- "II"
   }
   # the null model, simulation and refits of this class (R/boot-parts.R)

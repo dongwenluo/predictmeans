@@ -354,7 +354,8 @@ covariatemeans <- function (model, modelterm=NULL, covariate, as_is=FALSE, at=NU
   settings <- pm_curve_settings(model, modelterm, covariate, level, pm_cov_df_label(inf, Df_arg), mean_type,
                                 pm_curve_back_label(model, trans_arg, bt), vcov_adjust = isTRUE(inf$vcov_adjust),
                                 vcov = if (is.null(inf$vcov_label)) "model" else inf$vcov_label,
-                                response = pm_cov_response(model, trans_arg, bt), df_cases = pm_df_cases(inf))
+                                response = pm_cov_response(model, trans_arg, bt),
+                                df_cases = pm_df_cases(inf, user = !is.null(Df_arg) && !all(Df_arg %in% c("NULL", ""))))
   out <- pm_curve_result(means = means_tab, settings = settings, legacy = list(plt = FALSE, pred_df = pltdf))
   attr(out, "plot_data") <- plot_data
   out <- pm_add_advice(out, tryCatch(pm_covariatemeans_advice(out, model), error = function(e) NULL))
@@ -427,7 +428,7 @@ pm_cov_difference <- function(contr, KK, pltdf, vars, covariate, modelterm, mp, 
   names(out)[1] <- covariate
   settings <- pm_curve_settings(model, modelterm, covariate, level, pm_cov_df_label(inf, Df), mean_type,
                                 pm_curve_back_label(model, trans, bt), contr = levs[k], band = band,
-                                df_cases = pm_df_cases(inf),
+                                df_cases = pm_df_cases(inf, user = !is.null(Df) && !all(Df %in% c("NULL", ""))),
                                 test = if (!is.null(test)) data.frame(df1 = test[["numDF"]], df2 = test[["denDF"]],
                                                                       F.ratio = test[["F"]], p.value = test[["p.value"]]),
                                 vcov_adjust = isTRUE(inf$vcov_adjust),

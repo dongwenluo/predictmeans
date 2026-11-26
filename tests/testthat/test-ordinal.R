@@ -284,7 +284,11 @@ test_that("clmm population-average class probabilities (bias_adjust = TRUE): qua
     stats::plogis(t - v - u) * stats::dnorm(u, 0, s), -Inf, Inf, rel.tol = 1e-12)$value, 0), 1))))
   expect_equal(pr$estimate, unname(ref), tolerance = 1e-10)
   # delta-method SEs over (alpha, beta, log SD): vcov() of the default fit is for the log SD
-  gh <- pm_gh_rule(60)
+  k <- 1:59                                           # Gauss-Hermite, 60 nodes (Golub-Welsch)
+  J <- matrix(0, 60, 60)
+  J[cbind(k, k + 1)] <- J[cbind(k + 1, k)] <- sqrt(k)
+  e <- eigen(J, symmetric = TRUE)
+  gh <- list(x = e$values, w = e$vectors[1, ]^2)
   f <- function(th) unlist(lapply(c(0, th[5]) + th[6] / 2, function(v)
     diff(c(0, vapply(th[1:4], function(t) sum(gh$w * stats::plogis(t - v - exp(th[7]) * gh$x)), 0), 1))))
   D <- numDeriv::jacobian(f, c(m$alpha, m$beta, log(s)))
@@ -312,4 +316,27 @@ test_that("clmm population-average class probabilities (bias_adjust = TRUE): qua
   wine$x <- as.numeric(wine$temp)
   ms <- suppressWarnings(ordinal::clmm(rating ~ temp + contact + (1 + x | judge), data = wine))
   expect_error(predictmeans(ms, "temp", mean_type = "prob", bias_adjust = TRUE), "random slopes")
+})
+
+test_that("population-average integral: any SD and link; scalar random slopes stop; sigma refused", {
+  for (lk in c("logit", "cloglog")) {
+    Fd <- pm_ord_link_fd(lk)
+    z <- c(-6, 0, 3)
+    r <- pm_ord_pop_int(z, 5, Fd)
+    ref <- vapply(z, function(z0) stats::integrate(function(u) Fd[[1]](z0 - 5 * u) * stats::dnorm(u), -Inf, Inf,
+                                                   rel.tol = 1e-13, subdivisions = 2000L)$value, 0)
+    expect_equal(r$F, ref, tolerance = 1e-10)
+  }
+  expect_equal(pm_ord_pop_int(c(-2, 1), 5, pm_ord_link_fd("probit"))$F, stats::pnorm(c(-2, 1) / sqrt(26)), tolerance = 1e-12)
+  skip_on_cran()
+  data(wine, package = "ordinal", envir = environment())
+  set.seed(2)
+  wine$x <- 3 * (wine$contact == "yes") + stats::rnorm(nrow(wine), 0, 0.3)
+  ms <- suppressWarnings(ordinal::clmm(rating ~ temp + contact + (0 + x | judge), data = wine))
+  expect_error(predictmeans(ms, "temp", mean_type = "prob", bias_adjust = TRUE), "random slopes")
+  expect_false(grepl("bias_adjust", advice(predictmeans(ms, "temp", mean_type = "prob"))$text[1]))
+  m <- ordinal::clmm(rating ~ temp + contact + (1 | judge), data = wine)
+  expect_error(predictmeans(m, "temp", mean_type = "prob", bias_adjust = TRUE, sigma = 1), "'sigma' is not used")
+  p <- predictmeans(m, "temp", mean_type = "prob", bias_adjust = TRUE)
+  expect_equal(p$settings$bias_adjust, m$ST$judge[1, 1])
 })

@@ -169,10 +169,15 @@ pm_setup <- function(a) {
 
   # clmm class probabilities: bias_adjust = TRUE averages them over the random effects (pm_ord_pop())
   ord_pop <- inherits(model, "clmm") && isTRUE(a$bias_adjust) && mean_type %in% c("prob", "mean_class")
+  if (ord_pop && !is.null(a$sigma)) {
+    stop("'sigma' is not used for population-average class probabilities of a clmm: they average over the ",
+         "random-effect variances of the fit.", call. = FALSE)
+  }
   if (inherits(model, pm_ord_classes)) {
+    # (clmm: bootstrap p-values of the latent pairs from bootmodels(), B4 G3)
     pm_ord_check(model, trans = if (isTRUE(a$trans_default)) NULL else a$trans,
                  bias_adjust = if (ord_pop) FALSE else a$bias_adjust, sigma = a$sigma, vcov = a$vcov,
-                 permlist = a$permlist)
+                 permlist = if (!inherits(model, "clmm")) a$permlist)
   }
   if (mean_type %in% c("prob", "mean_class") && !inherits(model, c(pm_ord_classes, "pm_catfit"))) {
     stop("mean_type = \"", mean_type, "\" is for models of a class response (MASS::polr, ordinal::clm, ordinal::clmm, ",

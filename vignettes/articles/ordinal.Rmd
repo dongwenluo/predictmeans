@@ -136,15 +136,17 @@ predictmeans(ch, "Infl")$means[, c("Infl", "Sat", "response", "response.conf.low
   the other means are kept.
 - **Aggregated counts.** With `weights = "proportional"` the factor combinations are weighted by their
   number of cases (the sums of `Freq` here), so aggregated data and one row per case agree.
-- **Not available.** `trans`, `bias_adjust`, `vcov` and `permlist` stop for these models, and
+- **Not available.** `trans`, `vcov` and `permlist` stop for these models, and `bias_adjust` except for
+  the class probabilities of `clmm` (population averages, random intercepts), and
   `contrastmeans()`, `covariatemeans()`, `residplot()` and others stop for multinomial and non-parallel fits
   and for `clm` with nominal or scale effects.
 
 ## Checks
 
 - Latent means, pairs and class probabilities equal emmeans to 1e-6 (`polr`, `clm`, `clmm`). Population-average
-  `clmm` probabilities equal numerical integration to 1e-10 and, for a probit link, the closed form
-  Phi((theta - x'b) / sqrt(1 + s^2)) to 1e-12; their SEs equal a numerical delta method.
+  `clmm` probabilities are computed by adaptive numerical integration, accurate to about 1e-10 for any
+  random-effect SD and link (tested at SD 1.1 and 5 with logit and cloglog); for a probit link they equal the
+  closed form Phi((theta - x'b) / sqrt(1 + s^2)); their SEs equal a numerical delta method.
 - `clm` and `vglm` against SAS PROC LOGISTIC and GLIMMIX (logit, probit, cloglog, adjacent-category; class
   probabilities to 4e-7).
 - `multinom` class probabilities, SEs and both kinds of pairs equal emmeans to 1e-8; `vglm(multinomial)`

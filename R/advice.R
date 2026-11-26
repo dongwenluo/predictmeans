@@ -139,22 +139,26 @@ pm_advice_limits <- list(se_ratio = 3, min_df = 5, many_tests = 6)
 ## Rules shared by means and contrasts: singular fit, small df, many tests
 ## without adjustment. 'df': the df of the estimates; 'ntests': number of
 ## tests reported with p-values (0 when none).
+## Inner-outer df that count trials (pm_df_cases()) assume binomial variation
+## within clusters: overdispersion makes their tests too liberal (9.25% at 5%
+## in dev/sim-df-io-trials.R). A caution when a df of this result ('df') is
+## the trials' stratum and the fit's Pearson test (pm_check_dispersion())
+## rejects; NULL otherwise.
+pm_advice_overdisp <- function(model, df, df_cases) {
+  tdf <- attr(df_cases, "df")
+  if (!length(tdf) || !any(abs(df - tdf) < 1e-8, na.rm = TRUE)) return(NULL)
+  dp <- tryCatch(pm_check_dispersion(model), error = function(e) NULL)
+  if (!identical(dp$kind, "tested") || !isTRUE(dp$p_over < 0.05)) return(NULL)
+  pm_advice("overdispersion_trials", paste0(
+    "The data vary more than binomially within clusters (Pearson chi-square / df ", format(signif(dp$ratio, 3)),
+    ") and the df count trials: tests within clusters are too liberal. Add an observation-level random effect, ",
+    "(1 | obs) with obs = factor(1:nrow(data)); its df then count rows."), "caution")
+}
+
 pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL) {
   lim <- pm_advice_limits
   rows <- list()
-  # inner-outer df that count trials (pm_df_cases()) assume binomial variation within clusters:
-  # overdispersion makes their tests too liberal (9.25% at 5% in dev/sim-df-io-trials.R). Said when a
-  # df of this result is the trials' stratum and the fit's Pearson test rejects.
-  tdf <- attr(df_cases, "df")
-  if (length(tdf) && any(abs(df - tdf) < 1e-8, na.rm = TRUE)) {
-    dp <- tryCatch(pm_check_dispersion(model), error = function(e) NULL)
-    if (identical(dp$kind, "tested") && isTRUE(dp$p_over < 0.05)) {
-      rows$od <- pm_advice("overdispersion_trials", paste0(
-        "The data vary more than binomially within clusters (Pearson chi-square / df ", format(signif(dp$ratio, 3)),
-        ") and the df count trials: tests within clusters are too liberal. Add an observation-level random effect, ",
-        "(1 | obs) with obs = factor(1:nrow(data)); its df then count rows."), "caution")
-    }
-  }
+  rows$od <- pm_advice_overdisp(model, df, df_cases)
   if (isTRUE(pm_singular(model))) {
     rows$sing <- pm_advice("singular_fit", paste(
       "The fit is singular (a variance estimated as zero or a correlation as +-1): SEs and df treat it as known.",
@@ -484,7 +488,9 @@ pm_covariatemeans_advice <- function(x, model) {
       ", not the mean; bias_adjust = TRUE gives the mean", if (pm_advice_slopes(model)) " (with 'sigma': random slopes)",
       "."), "note")
   }
-  rows <- c(rows, pm_advice_common(model, numeric(0), 0, "none"))
+  s <- x$settings
+  rows <- c(rows, pm_advice_common(model, c(x$means$df, if (is.data.frame(x$pairs)) x$pairs$df), 0, "none", "pairs",
+                                   s$df_cases))
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }
@@ -667,8 +673,9 @@ pm_ordinal_advice <- function(model, modelterm, what, pop = FALSE) {
       " on the latent scale): less extreme than for a typical subject (bias_adjust = FALSE); the comparisons on ",
       "the latent scale (the pairs) are for a subject, not for these averages.") else paste0(
       "The class probabilities are for a typical subject (random effects at 0; random-effect SD ",
-      format(signif(max(sds), 2)), " on the latent scale): averaged over subjects they are less extreme ",
-      "(bias_adjust = TRUE). The comparisons on the latent scale (the pairs) hold for every subject."), "note")
+      format(signif(max(sds), 2)), " on the latent scale): averaged over subjects they are less extreme",
+      if (pm_ord_intercepts_only(model)) " (bias_adjust = TRUE)", ". The comparisons on the latent scale (the ",
+      "pairs) hold for every subject."), "note")
   }
   if (what == "mean_class") {
     rows$mc <- pm_advice("ordinal_mean_class", paste(

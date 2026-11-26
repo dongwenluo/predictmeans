@@ -53,13 +53,30 @@ pm_ord_parts <- function(model) {
     link <- model$link
     lev <- model$y.levels
   }
-  V <- stats::vcov(model)
+  V <- pm_ord_vcov(model)
   nm <- c(names(b)[!is.na(b)], names(alpha))
   if (is.null(V) || anyNA(V) || !all(nm %in% rownames(V))) {
     stop("The ", class(model)[1], " fit has no usable covariance matrix of its coefficients.", call. = FALSE)
   }
   list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev, sb = 1, st = -1,
        family = "cumulative", probs = NULL)
+}
+
+## vcov() of an ordinal fit. A clmm whose random-effect SD is estimated at 0
+## on ordinal's log-SD route has a Hessian with a zero row (the SD), and
+## vcov() stops; the covariance of the other parameters is then the inverse
+## of their block, the SD treated as known (as ordinal does on its other
+## route, where SDs at 0 are left out); attribute "sd_fixed".
+pm_ord_vcov <- function(model) {
+  V <- tryCatch(stats::vcov(model), error = function(e) e)
+  if (!inherits(V, "error")) return(V)
+  sd <- if (inherits(model, "clmm")) vapply(model$ST, function(m) as.matrix(m)[1, 1], numeric(1))
+  H <- model$Hessian
+  st <- grepl("^ST[0-9]+$", rownames(H))
+  if (is.null(sd) || !any(sd <= 1e-3) || !any(st)) stop(conditionMessage(V), call. = FALSE)
+  out <- tryCatch(solve(H[!st, !st, drop = FALSE]), error = function(e) NULL)
+  if (is.null(out)) stop(conditionMessage(V), call. = FALSE)
+  structure(out, sd_fixed = TRUE)
 }
 
 ## Links with an estimated parameter stop (clm).
@@ -245,42 +262,59 @@ pm_ord_link_fd <- function(link) {
          stop("link '", link, "' is not supported.", call. = FALSE))
 }
 
-## Gauss-Hermite rule for a standard normal (Golub-Welsch): E g(U) = sum w g(x).
-pm_gh_rule <- function(n = 40) {
-  k <- seq_len(n - 1)
-  J <- matrix(0, n, n)
-  J[cbind(k, k + 1)] <- J[cbind(k + 1, k)] <- sqrt(k)
-  e <- eigen(J, symmetric = TRUE)
-  list(x = e$values, w = e$vectors[1, ]^2)
-}
-
 ## Population-average class probabilities of a clmm (B4 G2, dev/review-b4.md):
-## P(Y <= j | x) = E F(theta_j - x'b - s U), U ~ N(0, 1), s^2 the sum of the
-## random-intercept variances (z' Sigma z for intercepts: one normal number,
-## so a one-dimensional rule is exact up to its nodes; 40 nodes). Returns s,
-## its gradient in the random-effect parameters of vcov() (named), which are
-## log SDs for one random intercept fitted the default way and SDs otherwise
-## (decided from the optimiser's values, model$optRes$par); SDs at 0 (below
-## 1e-3, left out of vcov() by ordinal) are fixed. Random slopes stop: the
+## P(Y <= j | x) = E F(z - s U), z = theta_j - x'b, U ~ N(0, 1), s^2 the sum of
+## the random-intercept variances (z' Sigma z for intercepts: one normal
+## number, so one integral). Computed by integrate(), split where z - s u = 0
+## (a fixed Gauss-Hermite rule was off by up to 5e-3 at s = 5 for cloglog),
+## with its derivatives in z and in s. Returns s, its gradient in the
+## random-effect parameters of vcov() (named), which are log SDs for one
+## random intercept fitted the default way and SDs otherwise (decided from the
+## optimiser's values, model$optRes$par); SDs at 0 (below 1e-3, left out of
+## vcov() by ordinal) are fixed; V, the covariance of (alpha, b, those
+## parameters). Random slopes (any term other than an intercept) stop: the
 ## variance then depends on the covariate values.
 pm_ord_pop <- function(model) {
-  ST <- lapply(model$ST, as.matrix)
-  if (any(vapply(ST, ncol, integer(1)) > 1)) {
+  if (!pm_ord_intercepts_only(model)) {
     stop("Population-average probabilities (bias_adjust = TRUE) are available for random intercepts; this clmm ",
          "has random slopes, whose variance depends on the covariate values. Use bias_adjust = FALSE (a typical ",
          "subject).", call. = FALSE)
   }
-  sd <- vapply(ST, function(m) m[1, 1], numeric(1))
+  sd <- vapply(model$ST, function(m) as.matrix(m)[1, 1], numeric(1))
   s <- sqrt(sum(sd^2))
   par <- utils::tail(as.vector(model$optRes$par), length(sd))
   logsd <- length(par) == length(sd) && all(abs(par - log(pmax(sd, 1e-300))) < abs(par - sd))
-  free <- logsd | sd > 1e-3
-  V <- stats::vcov(model)
+  V <- pm_ord_vcov(model)
+  free <- sd > 1e-3 | (logsd & !isTRUE(attr(V, "sd_fixed")))
   stn <- grep("^ST[0-9]+$", rownames(V), value = TRUE)
   if (length(stn) != sum(free)) stop("internal: the random-effect parameters of the clmm fit are not matched.",
                                      call. = FALSE)
   ds <- if (s > 0) (sd / s * if (logsd) sd else 1)[free] else rep(0, sum(free))
-  list(s = s, ds = stats::setNames(ds, stn), gh = pm_gh_rule())
+  list(s = s, ds = stats::setNames(ds, stn), V = V)
+}
+
+## TRUE when every random term of a clmm is an intercept, (1 | g) (a scalar
+## term (0 + x | g) has a 1 x 1 ST too, but its variance depends on x).
+pm_ord_intercepts_only <- function(model) {
+  f <- stats::formula(model)
+  bars <- pm_plain_bars(f, pm_special_terms(f))
+  all(vapply(bars, function(b) identical(deparse(b[[2]]), "1"), logical(1)))
+}
+
+## E F(z - s U), E f(z - s U) and d/ds E F(z - s U) = -E[U f(z - s U)] for
+## each z (Fd: the link's distribution function and density).
+pm_ord_pop_int <- function(z, s, Fd) {
+  if (s <= 0) return(list(F = Fd[[1]](z), f = Fd[[2]](z), ds = rep(0, length(z))))
+  one <- function(g, z0) {
+    u0 <- z0 / s                                  # where z - s u = 0: the step of F, the peak of f
+    I <- function(a, b) stats::integrate(function(u) g(u) * stats::dnorm(u), a, b, rel.tol = 1e-11,
+                                         abs.tol = 1e-14, subdivisions = 500L)$value
+    I(-Inf, u0) + I(u0, Inf)
+  }
+  out <- lapply(z, function(z0) c(one(function(u) Fd[[1]](z0 - s * u), z0), one(function(u) Fd[[2]](z0 - s * u), z0),
+                                   -one(function(u) u * Fd[[2]](z0 - s * u), z0)))
+  out <- matrix(unlist(out), 3)
+  list(F = out[1, ], f = out[2, ], ds = out[3, ])
 }
 
 pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 0.95, pop = FALSE) {
@@ -289,7 +323,7 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
   if (pop) {                                     # population average: (b, alpha) and the random-effect SDs
     pp <- pm_ord_pop(model)
     nm <- c(rownames(p$V), names(pp$ds))
-    p$V <- stats::vcov(model)[nm, nm, drop = FALSE]
+    p$V <- pp$V[nm, nm, drop = FALSE]
   }
   Fd <- if (is.null(p$probs)) pm_ord_link_fd(p$link)
   be <- p$b[!is.na(p$b)]
@@ -304,10 +338,10 @@ pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 
       zz <- th - sum(x * be)
       Gs <- NULL
       if (pop) {                                 # E F(zz - s U), its derivatives in zz and in s
-        A <- outer(zz, pp$s * pp$gh$x, "-")
-        f <- drop(Fd[[2]](A) %*% pp$gh$w)
-        cum <- c(0, drop(Fd[[1]](A) %*% pp$gh$w), 1)
-        Gs <- outer(-drop(Fd[[2]](A) %*% (pp$gh$w * pp$gh$x)), pp$ds)
+        I <- pm_ord_pop_int(zz, pp$s, Fd)
+        f <- I$f
+        cum <- c(0, I$F, 1)
+        Gs <- outer(I$ds, pp$ds)
       } else {
         f <- Fd[[2]](zz)
         cum <- c(0, Fd[[1]](zz), 1)
@@ -357,7 +391,7 @@ pm_ord_attach <- function(res, model, K, what, conf_level, pop = FALSE) {
   attr(out, "what") <- what
   attr(out, "population_average") <- pop
   res$probs <- out
-  if (pop) res$settings$bias_adjust <- "population average over the random effects (class table)"
+  if (pop) res$settings$bias_adjust <- pm_ord_pop(model)$s     # (the SD averaged over, as for other models)
   pm_add_advice(res, pm_ordinal_advice(model, res$settings$modelterm, what, pop))
 }
 

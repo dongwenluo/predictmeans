@@ -30,3 +30,14 @@ test_that("semipred(): extrapolation and pointwise regions", {
   expect_identical(ids_of(semipred(fit, "x", "x", deriv = 1)), "pointwise_regions")
   expect_length(ids_of(semipred(fit, "x", "x", deriv = 1, band = "simultaneous")), 0)
 })
+
+test_that("semireg means of aggregated binomial data: df_cases recorded, trials advice, no singular-fit noise", {
+  skip_on_cran()
+  data(cbpp, package = "lme4", envir = environment())
+  cbpp$x <- as.numeric(cbpp$period) + seq(0, 0.5, length.out = nrow(cbpp))
+  f <- suppressMessages(semireg(cbind(incidence, size - incidence) ~ period + s(x) + (1 | herd), data = cbpp,
+                                family = binomial))
+  p <- suppressMessages(predictmeans(f, "period"))
+  expect_identical(as.vector(p$settings$df_cases), "trials")
+  expect_false("singular_fit" %in% advice(p)$id)
+})

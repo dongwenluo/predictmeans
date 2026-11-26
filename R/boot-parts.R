@@ -6,6 +6,9 @@
 ##   lm, aov, glm   simulate() (gaussian, binomial, Poisson, Gamma, negative
 ##                  binomial), refitted with the response replaced
 ##   glmmTMB        simulate(), refitted with the response replaced
+##   clmm           the cut points and random intercepts of the null fit:
+##                  u drawn per level, the class from F(theta_j - u) (latent
+##                  scale; pm_boot_fit.clmm()), refitted with the response replaced
 ##   lme, gls       y = X b0 + L z, L L' the null fit's covariance of the data
 ##                  (random effects, correlation and variance structures;
 ##                  pm_nlme_reml(), checked against its vcov())
@@ -17,7 +20,7 @@ pm_boot_parts <- function(model, null = TRUE) {
   ff <- stats::formula(model)
   lhs <- paste(deparse(ff[[2]]), collapse = "")
   # random terms as written (a glmmTMB ar1() term stays ar1(), not unstructured)
-  bars <- if (inherits(model, c("merMod", "glmmTMB"))) pm_random_terms(ff) else character(0)
+  bars <- if (inherits(model, c("merMod", "glmmTMB", "clmm"))) pm_random_terms(ff) else character(0)
   # offsets in the formula stay in the null model (an offset argument stays in the call)
   tt <- stats::terms(stats::delete.response(stats::terms(pm_nobars(ff))))
   offs <- if (is.null(attr(tt, "offset"))) character(0) else
@@ -105,6 +108,44 @@ pm_boot_fit.lm <- function(model, null_f, new_lhs, quiet) {
 #' @exportS3Method NULL
 pm_boot_fit.glmmTMB <- pm_boot_fit.lm
 
+## clmm (B4 G3): random intercepts only, one row per observation (case weights
+## would need a multinomial draw per row), no offset; the null fit's cut points
+## theta and SDs; refits by clmm() with the response replaced.
+#' @exportS3Method NULL
+pm_boot_fit.clmm <- function(model, null_f, new_lhs, quiet) {
+  if (!pm_ord_intercepts_only(model)) {
+    stop("bootmodels() simulates clmm fits with random intercepts; this one has random slopes.", call. = FALSE)
+  }
+  w <- pm_freq_w(model)
+  if (!is.null(w) && any(w != 1)) {
+    stop("bootmodels() needs a clmm fit with one row per observation (no case weights).", call. = FALSE)
+  }
+  if (!is.null(model$offset) && any(model$offset != 0)) stop("bootmodels() does not handle offsets in clmm fits.",
+                                                             call. = FALSE)
+  d <- as.data.frame(pm_get_data(model))
+  null_fit <- if (is.null(null_f)) model else quiet(pm_refit(model, formula = null_f))
+  gf <- lapply(null_fit$gfList, factor)
+  sd <- vapply(null_fit$ST, function(m) as.matrix(m)[1, 1], numeric(1))
+  Fd <- pm_ord_link_fd(null_fit$link)
+  th <- as.vector(null_fit$Theta)
+  lev <- null_fit$y.levels
+  n <- length(gf[[1]])
+  if (n != nrow(d)) stop("internal: the clmm data and its fit have different rows.", call. = FALSE)
+  f_full <- new_lhs(stats::formula(model))
+  list(null_fit = null_fit,
+       simulate = function(nsim) lapply(seq_len(nsim), function(i) {
+         eta <- Reduce(`+`, Map(function(g, s) stats::rnorm(nlevels(g), 0, s)[g], gf, sd))
+         cum <- Fd[[1]](outer(-eta, th, "+"))                       # P(Y <= j), rows x (J - 1)
+         factor(lev[1 + rowSums(stats::runif(n) > cum)], levels = lev, ordered = TRUE)
+       }),
+       refit = function(y) {
+         dd <- d
+         dd$.pm_y <- y
+         quiet(pm_refit(model, data = dd, formula = f_full))
+       },
+       packages = "ordinal")
+}
+
 ## The ANOVA table whose statistic bootmodels() resamples, and that column.
 ##   Type I: sequential tests (F for lm, lme, gls, merMod; for glm the
 ##   deviance with a known dispersion, F otherwise); glmmTMB has none (Type II).
@@ -133,6 +174,12 @@ pm_boot_stat_col <- function(aT) {
 ## The coefficient table of a model (estimate, SE, statistic, p-value).
 pm_coef_table <- function(model) {
   if (inherits(model, "glmmTMB")) return(summary(model)$coefficients$cond)
+  if (inherits(model, "clmm")) {                 # the latent coefficients (pm_model_parm(), R/ordinal.R)
+    mp <- pm_model_parm(model, df = 0)
+    se <- sqrt(diag(mp$vcov))
+    z <- mp$coef / se
+    return(cbind(Estimate = mp$coef, `Std. Error` = se, `z value` = z, `Pr(>|z|)` = 2 * stats::pnorm(-abs(z))))
+  }
   if (inherits(model, c("lme", "gls"))) return(summary(model)$tTable)
   if (inherits(model, "lm") && !inherits(model, "glm")) return(stats::coef(stats::summary.lm(model)))
   stats::coef(summary(model))

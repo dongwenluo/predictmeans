@@ -218,7 +218,7 @@ pm_tidy_parts <- function(e) {
     adjust = adj,
     atvar = atvar,
     df_method = df_method,
-    df_cases = pm_df_cases(g("inf")),           # inner-outer: what the residual stratum counts (R/df-innerouter.R)
+    df_cases = pm_df_cases(g("inf"), user = perm || identical(df_method, "user")),           # inner-outer: what the residual stratum counts (R/df-innerouter.R)
     vcov_adjust = isTRUE(g("vcov_adjust")),
     vcov = if (is.null(g("vcov_label"))) "model" else g("vcov_label"),
     equivalence = pm_equiv_margins(g("equivalence")),

@@ -476,7 +476,7 @@ pm_check_dispersion <- function(model) {
   }
   if (kind == "binomial") {
     w <- tryCatch(pm_freq_w(model), error = function(e) NULL)       # trials (R/Kmatrix.R), one rule
-    if (is.null(w) || all(w <= 1)) return(list(kind = "binary"))
+    if (is.null(w) || all(w <= 1) || !pm_counts(w)) return(list(kind = "binary"))
   }
   pr <- tryCatch(stats::residuals(model, type = "pearson"), error = function(e) NULL)
   dfr <- tryCatch(stats::df.residual(model), error = function(e) NA)

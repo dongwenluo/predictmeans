@@ -37,6 +37,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   dfs <- if (!is.null(des$cov_idx)) pm_sr_ddf(semireg, rbind(D, if (n > 1) CM %*% D), des$cov_idx, modelterm) else
     structure(rep(Inf, n + if (n > 1) nrow(CM) else 0), method = "normal (semireg)")
   df_label <- attr(dfs, "method")
+  df_cases <- attr(dfs, "df_cases")
   dfs <- as.numeric(dfs)
   dfs[is.na(dfs)] <- Inf
   df_m <- dfs[seq_len(n)]
@@ -110,15 +111,15 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   zi <- pm_zi_component(semireg)
   if (!is.null(zi)) message(attr(zi, "note"))
   settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
-                   df_cases = if (is.null(attr(dfs, "df_cases"))) NA_character_ else attr(dfs, "df_cases"),
+                   df_cases = if (is.null(df_cases)) NA_character_ else df_cases,
                    vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, weights_by = NA_character_,
                    component = if (is.null(pm_zi_component(semireg))) NA_character_ else "conditional", model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
   out <- structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
                    class = c("pm_semimeans", "predictmeans"))
-  rows <- pm_advice_common(semireg$semer, c(means$df, if (is.data.frame(pairs)) pairs$df), 0, adj, "pairs",
-                           settings$df_cases)
-  if (length(rows)) out <- pm_add_advice(out, do.call(rbind, unname(rows)))
+  # (only the trials advice: a smooth at a straight line is a variance at 0, not a singular fit to simplify)
+  od <- pm_advice_overdisp(semireg$semer, c(means$df, if (is.data.frame(pairs)) pairs$df), settings$df_cases)
+  if (!is.null(od)) out <- pm_add_advice(out, od)
   out
 }
 
@@ -127,9 +128,11 @@ print.pm_semimeans <- function(x, digits = 4, ...) {
   cat("Predicted means of", sQuote(x$settings$modelterm), "from a semireg model (smooth terms included)\n\n")
   print(x$means, digits = digits, row.names = FALSE)
   if (!is.null(x$pairs)) {
-    cat("\nPairwise comparisons (", if (any(is.finite(x$pairs$df))) "t tests, Satterthwaite df" else "normal-based",
+    cat("\nPairwise comparisons (", if (any(is.finite(x$pairs$df))) paste0("t tests, ", x$settings$df_method, " df")
+        else "normal-based",
         "; p.adj: ", x$settings$adjust, ")\n\n", sep = "")
     print(x$pairs, digits = digits, row.names = FALSE)
   }
+  pm_print_advice(x)
   invisible(x)
 }

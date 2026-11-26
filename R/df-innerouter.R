@@ -90,18 +90,22 @@ pm_io_cases <- function(model, N) {
             call. = FALSE)
     return(rows)
   }
-  if (all(w == 1) || any(abs(w - round(w)) > 1e-8)) return(rows)
+  if (!pm_counts(w)) return(rows)
   list(n = sum(w), keep = w > 0, count = if (inherits(model, "clmm")) "case weights" else "trials")
 }
 
+## TRUE when weights are counts of cases: whole numbers, not all 1 (one rule
+## for the inner-outer df and the dispersion test, pm_check_dispersion()).
+pm_counts <- function(w) is.numeric(w) && !all(w == 1) && all(abs(w - round(w)) <= 1e-8)
+
 ## The cases counted by the inner-outer df of an inference (pm_inference()),
-## for settings$df_cases: NA (other df), "rows", "trials" or "case weights",
-## with attribute "df" the residual stratum's df when it counts cases and a
-## coefficient uses it (the overdispersion advice compares it with the df of
-## the result: pm_advice_common()).
-pm_df_cases <- function(inf) {
+## for settings$df_cases: NA (other df, or df given by the user: 'user'),
+## "rows", "trials" or "case weights", with attribute "df" the residual
+## stratum's df when it counts cases and a coefficient uses it (the
+## overdispersion advice compares it with the df of the result).
+pm_df_cases <- function(inf, user = FALSE) {
   ct <- inf$df_cases
-  if (is.null(ct)) return(NA_character_)
+  if (is.null(ct) || isTRUE(user)) return(NA_character_)
   structure(ct, df = inf$df_trials)
 }
 
@@ -156,7 +160,11 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
   int <- apply(X, 2, function(x) all(abs(x - x[1]) <= 1e-12))
   # cases counted only where a coefficient is in the residual stratum (with an observation-level random
   # effect none is: the effects within clusters get the rows' stratum)
-  if (cs$count != "rows" && !any(is.infinite(strat) & !int)) cs$count <- "rows"
+  if (cs$count != "rows" && !any(is.infinite(strat) & !int)) {
+    cs$count <- "rows"
+    res_df <- N - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
+    df[is.infinite(strat)] <- res_df
+  }
   fine <- ifelse(is.infinite(strat), Inf, nlev[pmin(strat, length(nlev))])
   df[int] <- max(c(sdf, res_df))
   names(df) <- colnames(X)

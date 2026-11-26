@@ -74,3 +74,52 @@ test_that("bootmodels(): lme and gls responses are simulated with the null model
   expect_equal(cov(Y[1, ], Y[5, ]), 0, tolerance = 0.06*s2)
   expect_equal(rowMeans(Y), as.numeric(fitted(bp$null_fit)), tolerance = 0.02)
 })
+
+test_that("clmm: parametric bootstrap and whole-cluster permutation of a between-cluster treatment", {
+  skip_on_cran()
+  skip_if_not_installed("ordinal")
+  set.seed(5)
+  d <- expand.grid(rep = 1:3, W = factor(1:2), clus = factor(1:8))
+  d$trt <- factor(ifelse(as.integer(d$clus) <= 4, "a", "b"))
+  eta <- rnorm(8)[d$clus] + 0.8 * (d$trt == "b") + 0.5 * (d$W == 2)
+  d$y <- cut(eta + rlogis(nrow(d)), c(-Inf, -1, 0.5, 2, Inf), labels = 1:4, ordered_result = TRUE)
+  m <- ordinal::clmm(y ~ trt * W + (1 | clus), data = d)
+  b <- suppressMessages(bootmodels(m, nsim = 19, seed = 1))
+  expect_equal(rownames(b$ANOVA), c("trt", "W", "trt:W"))
+  expect_true(all(is.finite(b$ANOVA$Boot_p_value)))
+  expect_identical(suppressMessages(bootmodels(m, nsim = 19, seed = 1))$ANOVA, b$ANOVA)    # reproducible
+  # the bootstrap p-values reach the latent pairs
+  p <- predictmeans(m, "trt", permlist = b, pairwise = TRUE)
+  expect_identical(p$pairs$p.method, "bootstrap")
+  # whole clusters: only trt is tested; the note gives the distinct allocations
+  pr <- suppressMessages(permmodels(m, perms = permindex(d, group = "clus", nsim = 19, seed = 1)))
+  pp <- suppressWarnings(as.numeric(pr$ANOVA$Perm_p_value))
+  expect_true(is.finite(pp[1]))
+  expect_true(all(is.na(pp[2:3])))
+  expect_match(pr$notes$anova, "distinct allocations")
+  expect_error(suppressMessages(permmodels(m)), "whole clusters")
+  expect_error(suppressMessages(permmodels(m, perms = permindex(d, nsim = 19, seed = 1))), "move whole clusters")
+})
+
+test_that("clmm with its random-effect SD at 0: covariance of the other parameters, the SD known", {
+  skip_on_cran()
+  skip_if_not_installed("ordinal")
+  data(wine, package = "ordinal", envir = environment())
+  m <- ordinal::clmm(rating ~ temp * contact + (1 | judge), data = wine)
+  bp <- pm_boot_parts(m)
+  ys <- pm_with_seed(1, bp$simulate(99))
+  r <- NULL
+  for (y in ys) {                                        # a refit whose vcov() fails (SD at 0, log-SD route)
+    f <- bp$refit(y)
+    if (inherits(tryCatch(stats::vcov(f), error = function(e) e), "error")) {
+      r <- f
+      break
+    }
+  }
+  skip_if(is.null(r), "no refit with a failing vcov()")
+  V <- pm_ord_vcov(r)
+  expect_true(isTRUE(attr(V, "sd_fixed")))
+  nm <- setdiff(rownames(r$Hessian), "ST1")
+  expect_equal(V, solve(r$Hessian[nm, nm]), ignore_attr = TRUE)
+  expect_s3_class(predictmeans(r, "temp"), "predictmeans")
+})

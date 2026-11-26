@@ -184,6 +184,13 @@ test_that("inner-outer cases: classes, zero trials, weights that are not counts,
   pc <- predictmeans(gc, "trt", pairwise = TRUE)
   expect_equal(pc$pairs$df, 10)
   expect_false("overdispersion_trials" %in% advice(pc)$id)
+  # df given by the user: not inner-outer, so nothing counted
+  expect_true(is.na(predictmeans(go, "trt", df_method = 5)$settings$df_cases))
+  # binary data with sampling weights: no dispersion test
+  set.seed(3)
+  db <- data.frame(y = rbinom(120, 1, 0.4), g = factor(rep(1:12, 10)), w = runif(120, 1, 3))
+  gw <- suppressWarnings(lme4::glmer(y ~ 1 + (1 | g), weights = w, family = binomial, data = db))
+  expect_identical(pm_check_dispersion(gw)$kind, "binary")
 })
 
 test_that("inner-outer cases: clmm with case weights = one row per case", {
