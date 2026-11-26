@@ -2,9 +2,9 @@
 
 Mean heights of 37 seedlots (26 Acacia, Allocasuarina and Casuarina
 species) grown at six sites in Thailand, the data of Table 5.2 of
-Williams, Matheson and Harwood, used there for a regression of each
-seedlot on the site mean (Finlay-Wilkinson regression). 30 site-seedlot
-combinations have no height.
+Williams, Harwood and Matheson (2024), used there for a regression of
+each seedlot on the site mean (Finlay-Wilkinson regression). 30
+site-seedlot combinations have no height.
 
 ## Usage
 
@@ -34,9 +34,10 @@ A data frame with 222 rows and 4 columns:
 
 ## Source
 
-Williams, E. R., Matheson, A. C. and Harwood, C. E. *Experimental Design
-and Analysis for Tree Improvement*, 3rd edition. CSIRO Publishing, Table
-5.2.
+Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024).
+*Experimental Design and Analysis for Tree Improvement* (3rd ed.). CSIRO
+Publishing, Table 5.2.
+[doi:10.1071/9781486317110](https://doi.org/10.1071/9781486317110)
 
 ## Details
 

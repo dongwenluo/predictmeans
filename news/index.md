@@ -329,6 +329,10 @@ shows 1.1.1 and 2.0 code side by side.
   `settings$weights_by` says which. semireg means stop for weights other
   than `"equal"` (they were ignored).
 
+- New article “Ordinal and categorical responses”: latent means of
+  cumulative link models, class probabilities of multinomial and
+  non-parallel fits, the scales and the checks.
+
 #### Mixed models and variance components
 
 - New

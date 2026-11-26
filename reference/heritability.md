@@ -58,7 +58,7 @@ heritability(
   or names of columns of the data: the mean of the variances, the
   harmonic mean of the numbers). The single-plant variance is then
   \\\sigma^2_f + \sum_t \sigma^2_t + (\sigma^2_e - \sigma^2_w/n) +
-  \sigma^2_w\\, as Williams et al. (2023, Example 6.2), with
+  \sigma^2_w\\, as Williams et al. (2024, Example 6.2), with
   \\\sigma^2_e - \sigma^2_w/n\\ the plot variance; \\\sigma^2_w\\ is
   taken as known in the standard error.
 
@@ -214,6 +214,11 @@ Schmidt, P., Hartung, J., Bennewitz, J. and Piepho, H.-P. (2019).
 Heritability in plant breeding on a genotype-difference basis.
 *Genetics*, 212(4), 991-1008.
 [doi:10.1534/genetics.119.302134](https://doi.org/10.1534/genetics.119.302134)
+
+Williams, E. R., Harwood, C. E. and Matheson, A. C. (2024).
+*Experimental Design and Analysis for Tree Improvement* (3rd ed.). CSIRO
+Publishing.
+[doi:10.1071/9781486317110](https://doi.org/10.1071/9781486317110)
 
 ## See also
 

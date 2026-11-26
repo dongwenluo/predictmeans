@@ -37,3 +37,5 @@
   improvement](https://dongwenluo.github.io/predictmeans/articles/tree-improvement.md):
 - [Adjusted R² for generalized linear mixed
   models](https://dongwenluo.github.io/predictmeans/articles/R2-GLMM.md):
+- [Ordinal and categorical
+  responses](https://dongwenluo.github.io/predictmeans/articles/ordinal.md):
