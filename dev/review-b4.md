@@ -53,9 +53,10 @@ Phi(eta / sqrt(1 + sigma^2)) (an exact check).
 
 ## G3. Tests for clmm with few clusters
 
-**Now.** Inner-outer df (B2): at 6 clusters a between-cluster treatment was tested at
-3.7% (z: 11%), so the default is conservative rather than liberal; within-cluster terms
-are fine.
+**Now.** Inner-outer df (B2) for a between-cluster treatment: 3.7% at the 5% level in one
+setting with 6 clusters (z: 11%), but 7.3% and 7.75% in the other two settings of that
+simulation, so with few clusters it can be too liberal as well as too conservative; an
+exact or resampling test is the robust answer.
 
 **Options.**
 - (a) **Cluster permutation** for between-cluster terms: permute the treatment labels
