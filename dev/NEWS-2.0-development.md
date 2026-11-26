@@ -3258,3 +3258,10 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   closed form to 1e-12, numDeriv delta method to 1e-8, both vcov() routes
   give the same SEs (to 4e-6, the fits' agreement). Advice
   ordinal_typical_subject says which the probabilities are.
+* corAR1xAR1(by_group = TRUE) (2026-11-26, B4 G4): parameters stacked by group
+  (2 or 3 each, named phi_row.T1, ...), replicated from 'value' in
+  Initialize (groups required); corMatrix() takes each group's parameters by
+  name (pm_ar1x_par(object, g)). Check (test-cor-ar1xar1.R): Slate Hall and
+  a noisier copy as two trials, unsorted, trial / variety + varIdent: phi of
+  the separate fits (to 1e-5), logLik = sum of theirs, SEDs and KR df of the
+  trial-1 pairs = the separate fit's (1e-6 seen).

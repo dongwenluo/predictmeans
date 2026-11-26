@@ -188,3 +188,38 @@ test_that("normalized residuals: right with grouped correlations on unsorted dat
   key <- function(x) paste(x$fieldrow, x$fieldcolumn)
   expect_equal(unname(sr(b)[match(key(d), key(sh))]), unname(sr(a)), tolerance = 1e-6)
 })
+
+test_that("by_group = TRUE: a phi pair per trial = separate fits of each trial (estimates, logLik, SEDs, KR df)", {
+  skip_on_cran()
+  d <- read.csv(system.file("extdata", "slatehall.csv", package = "predictmeans"))
+  set.seed(11)
+  d2 <- d
+  d2$yield <- d$yield + rnorm(nrow(d), 0, 0.8)
+  d$trial <- "T1"
+  d2$trial <- "T2"
+  dd <- rbind(d, d2)
+  dd$trial <- factor(dd$trial)
+  dd$variety <- factor(dd$variety)
+  dd <- dd[sample(nrow(dd)), ]                                   # not sorted by trial
+  j <- nlme::gls(yield ~ trial / variety, data = dd, weights = nlme::varIdent(form = ~ 1 | trial),
+                 correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn | trial, by_group = TRUE))
+  s <- lapply(c("T1", "T2"), function(t) nlme::gls(yield ~ variety, data = dd[dd$trial == t, ],
+                                                    correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn)))
+  ph <- coef(j$modelStruct$corStruct, unconstrained = FALSE)
+  expect_named(ph, c("phi_row.T1", "phi_col.T1", "phi_row.T2", "phi_col.T2"))
+  expect_equal(unname(ph), unname(unlist(lapply(s, function(f) coef(f$modelStruct$corStruct, unconstrained = FALSE)))),
+               tolerance = 1e-4)
+  expect_equal(as.numeric(logLik(j)), as.numeric(logLik(s[[1]]) + logLik(s[[2]])), tolerance = 1e-6)
+  pj <- predictmeans(j, "trial:variety", atvar = "trial", pairwise = TRUE)
+  p1 <- predictmeans(s[[1]], "variety", pairwise = TRUE)
+  a <- pj$pairs[which(pj$pairs$by == "T1"), ]
+  num <- function(v) as.numeric(as.character(v))
+  key <- function(l1, l2) paste(pmin(num(l1), num(l2)), pmax(num(l1), num(l2)))
+  i <- match(key(sub("^T1:", "", a$level1), sub("^T1:", "", a$level2)), key(p1$pairs$level1, p1$pairs$level2))
+  expect_false(anyNA(i))
+  expect_equal(a$std.error, p1$pairs$std.error[i], tolerance = 1e-4)
+  expect_equal(a$df, p1$pairs$df[i], tolerance = 1e-4)
+  # needs groups; the starting values are 2 (or 3) numbers
+  expect_error(nlme::gls(yield ~ variety, data = d, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn,
+                                                                            by_group = TRUE)), "needs groups")
+})

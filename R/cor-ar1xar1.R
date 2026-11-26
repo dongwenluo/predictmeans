@@ -21,6 +21,10 @@
 #'   correlation is \eqn{(1 - n)\phi_r^{|dr|}\phi_c^{|dc|}} off the diagonal, n the
 #'   share of the plot variance.
 #' @param fixed Keep the starting values (not estimated)?
+#' @param by_group With \code{form = ~ row + col | trial}: a \eqn{\phi_r}, \eqn{\phi_c} (and
+#'   nugget share) for each group, as fitting each trial alone, while the fixed effects
+#'   stay shared. For a residual variance of each trial add \code{weights = varIdent(form =
+#'   ~ 1 | trial)}. \code{value} gives the starting values of every group.
 #' @details
 #' The row and column are integer positions over the whole field, so plots
 #' missing from the grid need nothing: the correlation of the plots present is
@@ -53,6 +57,12 @@
 #' variety test with \code{df_method = "KR-average"}. Kenward-Roger and
 #' Satterthwaite leave out variance components (and a nugget) estimated at 0.
 #'
+#' With \code{by_group = TRUE} the parameters are named by group
+#' (\code{phi_row.T1}, ...). Fitting \code{yield ~ trial / variety} with
+#' \code{weights = varIdent(form = ~ 1 | trial)} and a \eqn{\phi} pair per trial gives
+#' the estimates and log-likelihood of separate fits of each trial (checked in the
+#' tests).
+#'
 #' Normalized residuals (\code{residplot()}, \code{residvariogram()}) are whitened
 #' with the plots of each group in row and column order, so they do not depend on
 #' the order of the data.
@@ -75,7 +85,7 @@
 #' residvariogram(fit, row = "fieldrow", col = "fieldcolumn", data = d, nsim = 19)   # a few seconds
 #' }
 #' @export
-corAR1xAR1 <- function(value = c(0.5, 0.5), form = ~ row + col, nugget = FALSE, fixed = FALSE) {
+corAR1xAR1 <- function(value = c(0.5, 0.5), form = ~ row + col, nugget = FALSE, fixed = FALSE, by_group = FALSE) {
   if (!inherits(form, "formula")) stop("'form' must be a formula, e.g. ~ row + col.", call. = FALSE)
   np <- 2L + nugget
   if (length(value) == 2L && nugget) value <- c(value, 0.1)
@@ -86,14 +96,26 @@ corAR1xAR1 <- function(value = c(0.5, 0.5), form = ~ row + col, nugget = FALSE, 
   attr(par, "formula") <- form
   attr(par, "fixed") <- isTRUE(fixed)
   attr(par, "nugget") <- isTRUE(nugget)
+  attr(par, "by_group") <- isTRUE(by_group)
   class(par) <- c("corAR1xAR1", "corStruct")
   par
 }
 
-## phi_r, phi_c and the nugget share from the optimiser's scale.
-pm_ar1x_par <- function(object) {
+## phi_r, phi_c and the nugget share from the optimiser's scale; with
+## by_group, those of group g (the parameters stacked by group).
+pm_ar1x_par <- function(object, g = 1L) {
   v <- as.vector(unclass(object))
-  list(phi = tanh(v[1:2]), nugget = if (isTRUE(attr(object, "nugget"))) stats::plogis(v[3]) else 0)
+  np <- 2L + isTRUE(attr(object, "nugget"))
+  v <- v[(g - 1L) * np + seq_len(np)]
+  list(phi = tanh(v[1:2]), nugget = if (np == 3L) stats::plogis(v[3]) else 0)
+}
+
+## Names of the parameters (unconstrained or not): by group with by_group.
+pm_ar1x_names <- function(object, unconstrained) {
+  nm <- if (unconstrained) c("atanh(phi_row)", "atanh(phi_col)", "logit(nugget)") else c("phi_row", "phi_col", "nugget")
+  nm <- nm[seq_len(2L + isTRUE(attr(object, "nugget")))]
+  g <- attr(object, "group_levels")
+  if (is.null(g)) nm else paste(rep(nm, length(g)), rep(g, each = length(nm)), sep = ".")
 }
 
 ## The correlation matrix of the plots at rows r, columns c.
@@ -131,6 +153,22 @@ Initialize.corAR1xAR1 <- function(object, data, ...) {
          ". With several trials (or positions numbered within blocks) give the group: form = ~ ", vars[1], " + ",
          vars[2], " | trial; else number the rows and columns over the whole field.", call. = FALSE)
   }
+  if (isTRUE(attr(object, "by_group"))) {
+    if (!is.list(cov)) {
+      stop("corAR1xAR1(by_group = TRUE) needs groups: form = ~ ", vars[1], " + ", vars[2], " | trial.", call. = FALSE)
+    }
+    np <- 2L + isTRUE(attr(object, "nugget"))
+    if (length(object) == np) {                     # the starting values for every group
+      at <- attributes(object)
+      object <- rep(as.vector(unclass(object)), length(cov))
+      attributes(object) <- at[setdiff(names(at), "names")]
+    }
+    if (length(object) != np * length(cov)) {
+      stop("corAR1xAR1(by_group = TRUE): 'value' must give ", np, " starting values (used for every group).",
+           call. = FALSE)
+    }
+    attr(object, "group_levels") <- names(cov)
+  }
   if (max(if (is.list(cov)) vapply(cov, nrow, integer(1)) else nrow(cov)) > 1000) {
     message("corAR1xAR1(): over 1000 plots in a group: each likelihood uses a dense matrix of that size (a fit takes ",
             "minutes); ",
@@ -144,9 +182,9 @@ Initialize.corAR1xAR1 <- function(object, data, ...) {
 
 #' @exportS3Method nlme::corMatrix
 corMatrix.corAR1xAR1 <- function(object, covariate = nlme::getCovariate(object), corr = TRUE, ...) {
-  p <- pm_ar1x_par(object)
-  one <- function(rc) {
-    R <- pm_ar1x_mat(rc, p)
+  byg <- isTRUE(attr(object, "by_group")) && is.list(covariate)
+  one <- function(rc, g = 1L) {
+    R <- pm_ar1x_mat(rc, pm_ar1x_par(object, g))
     if (corr) return(R)
     U <- chol(R)
     val <- t(backsolve(U, diag(nrow(R))))
@@ -154,7 +192,10 @@ corMatrix.corAR1xAR1 <- function(object, covariate = nlme::getCovariate(object),
     val
   }
   if (!is.list(covariate)) return(one(covariate))
-  val <- lapply(covariate, one)
+  # (by group: the parameters of each group, matched by name: corMatrix() may be asked for some groups)
+  gi <- if (byg) match(names(covariate), attr(object, "group_levels")) else rep(1L, length(covariate))
+  if (anyNA(gi)) stop("corAR1xAR1: unknown group in corMatrix().", call. = FALSE)
+  val <- Map(one, covariate, gi)
   if (!corr) attr(val, "logDet") <- sum(vapply(val, function(v) attr(v, "logDet"), numeric(1)))
   val
 }
@@ -175,11 +216,15 @@ coef.corAR1xAR1 <- function(object, unconstrained = TRUE, ...) {
   if (unconstrained) {
     if (isTRUE(attr(object, "fixed"))) return(numeric(0))
     v <- as.vector(unclass(object))
-    names(v) <- c("atanh(phi_row)", "atanh(phi_col)", if (isTRUE(attr(object, "nugget"))) "logit(nugget)")
+    names(v) <- pm_ar1x_names(object, TRUE)
     return(v)
   }
-  p <- pm_ar1x_par(object)
-  c(phi_row = p$phi[1], phi_col = p$phi[2], if (isTRUE(attr(object, "nugget"))) c(nugget = p$nugget))
+  ng <- max(1L, length(attr(object, "group_levels")))
+  v <- unlist(lapply(seq_len(ng), function(g) {
+    p <- pm_ar1x_par(object, g)
+    c(p$phi, if (isTRUE(attr(object, "nugget"))) p$nugget)
+  }))
+  stats::setNames(v, pm_ar1x_names(object, FALSE))
 }
 
 #' @rawNamespace S3method(nlme::"coef<-", corAR1xAR1)

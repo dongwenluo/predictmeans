@@ -90,6 +90,17 @@ VarCorr(fD)[1:2, ]
 Here the replicate variance is estimated as 0 (Genstat, which allows negative components, gives -0.078), so
 the model is the same as `fB`.
 
+Several trials are analysed together with `form = ~ row + col | trial` (the same phi in every trial), or
+with `by_group = TRUE` a phi pair for each trial and, through `varIdent()`, a residual variance for each:
+
+```r
+gls(yield ~ trial / variety, data = trials, weights = varIdent(form = ~ 1 | trial),
+    correlation = corAR1xAR1(form = ~ row + col | trial, by_group = TRUE))
+```
+
+This gives each trial the estimates and SEDs of its own fit (checked in the tests), with the means of all
+trials in one table.
+
 ## 3. A smooth trend over the field
 
 ```{r}

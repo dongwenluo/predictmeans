@@ -8,7 +8,8 @@ corAR1xAR1(
   value = c(0.5, 0.5),
   form = ~row + col,
   nugget = FALSE,
-  fixed = FALSE
+  fixed = FALSE,
+  by_group = FALSE
 )
 }
 \arguments{
@@ -24,6 +25,11 @@ correlation is \eqn{(1 - n)\phi_r^{|dr|}\phi_c^{|dc|}} off the diagonal, n the
 share of the plot variance.}
 
 \item{fixed}{Keep the starting values (not estimated)?}
+
+\item{by_group}{With \code{form = ~ row + col | trial}: a \eqn{\phi_r}, \eqn{\phi_c} (and
+nugget share) for each group, as fitting each trial alone, while the fixed effects
+stay shared. For a residual variance of each trial add \code{weights = varIdent(form =
+~ 1 | trial)}. \code{value} gives the starting values of every group.}
 }
 \value{
 An object of class \code{c("corAR1xAR1", "corStruct")} for the
@@ -67,6 +73,12 @@ variances to Genstat's printed digits; the 25 variety means and all 300 SEDs of
 each model within 5e-6 (tested to 1e-5); the Wald statistic; the d.d.f. of the
 variety test with \code{df_method = "KR-average"}. Kenward-Roger and
 Satterthwaite leave out variance components (and a nugget) estimated at 0.
+
+With \code{by_group = TRUE} the parameters are named by group
+(\code{phi_row.T1}, ...). Fitting \code{yield ~ trial / variety} with
+\code{weights = varIdent(form = ~ 1 | trial)} and a \eqn{\phi} pair per trial gives
+the estimates and log-likelihood of separate fits of each trial (checked in the
+tests).
 
 Normalized residuals (\code{residplot()}, \code{residvariogram()}) are whitened
 with the plots of each group in row and column order, so they do not depend on
