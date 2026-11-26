@@ -259,3 +259,31 @@ test_that("review of B3b: aliasing stops, settings, plots, advice and other fami
     expect_equal(rv$means$std.error, sqrt(diag(G %*% VGAM::vcov(v) %*% t(G)))[kv], tolerance = 1e-6)
   }
 })
+
+test_that("proportional weights sum frequency weights: aggregated data = one row per case = emmeans", {
+  skip_on_cran()
+  skip_if_not_installed("nnet")
+  skip_if_not_installed("emmeans")
+  data(housing, package = "MASS", envir = environment())
+  h <- housing[!(housing$Type == "Tower" & housing$Cont == "Low"), ]          # unequal margins
+  hi <- h[rep(seq_len(nrow(h)), h$Freq), ]
+  m <- nnet::multinom(Sat ~ Infl + Type + Cont, weights = Freq, data = h, trace = FALSE, reltol = 1e-12)
+  mi <- nnet::multinom(Sat ~ Infl + Type + Cont, data = hi, trace = FALSE, reltol = 1e-12)
+  r <- predictmeans(m, "Infl", mean_type = "prob_diff", weights = "proportional")
+  ri <- predictmeans(mi, "Infl", mean_type = "prob_diff", weights = "proportional")
+  expect_equal(r$means$estimate, ri$means$estimate, tolerance = 1e-6)
+  expect_equal(r$settings$weights_by, "frequency weights")
+  expect_equal(ri$settings$weights_by, "rows")
+  e <- as.data.frame(emmeans::emmeans(m, ~ Infl | Sat, mode = "prob", weights = "proportional"))
+  k <- match(paste(r$means$Infl, r$means$Sat), paste(e$Infl, e$Sat))
+  expect_equal(r$means$estimate, e$prob[k], tolerance = 1e-8)
+  h$hi <- as.numeric(h$Sat == "High")
+  hi$hi <- as.numeric(hi$Sat == "High")
+  g <- glm(hi ~ Infl + Type + Cont, weights = Freq, data = h, family = binomial)
+  gi <- glm(hi ~ Infl + Type + Cont, data = hi, family = binomial)
+  expect_equal(predictmeans(g, "Infl", weights = "proportional")$means$estimate,
+               predictmeans(gi, "Infl", weights = "proportional")$means$estimate, tolerance = 1e-6)
+  # an lm's prior weights are precisions: rows are counted
+  expect_null(predictmeans:::pm_freq_weights(lm(Freq ~ Infl, weights = rep(1:2, length.out = nrow(h)), data = h),
+                                             nrow(h)))
+})

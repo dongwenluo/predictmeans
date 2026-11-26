@@ -3122,3 +3122,14 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   refLevel 2 partly parallel, cratio, sratio (= predict(), numerical delta
   method). Open: with frequency weights (weights = Freq) "proportional"
   counts rows (as every predictmeans model), emmeans the weights.
+* After B3b (2026-11-26, the maintainer's decisions): (1) means over grid
+  points where non-parallel cumulative curves cross are NA (Kn estimable
+  FALSE and a null projection, so their pairs are NA), caution
+  class_crossing, the generic nonestimable_means line removed; the call
+  stops only when every mean is affected. (2) pm_freq_weights()
+  (R/Kmatrix.R): the weights schemes count the prior weights for fits whose
+  weights are case or trial counts (multinom, vglm, polr, clm, clmm, binomial
+  glm, glmer), rows otherwise (lm/lme/gls weights are precisions);
+  settings$weights_by. Checks: aggregated housing = one row per household for
+  multinom, clm, polr, vglm, binomial glm (<= 1e-8); multinom = emmeans
+  proportional to 1e-16 (test-categorical.R).

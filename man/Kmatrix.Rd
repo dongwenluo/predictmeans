@@ -60,7 +60,11 @@ set to zero), e.g. \code{"s(Block)"}. The default \code{NULL} excludes random-ef
 \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
-\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.}
+\code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
+frequencies count rows, except for fits whose prior weights are counts of cases or trials (\code{multinom},
+\code{polr}, \code{clm}, \code{clmm}, \code{vglm}, binomial \code{glm} and \code{glmer}): there they are the
+sums of the weights, so aggregated data and one row per case give the same means (as emmeans);
+\code{settings$weights_by} says which.}
 
 \item{refgrid}{Return the grid of all combinations (element \code{refgrid})? The default \code{FALSE} builds
 it only when it is needed (\code{semireg} models, means over empty cells). Otherwise each group of variables

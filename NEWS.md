@@ -169,7 +169,11 @@ shows 1.1.1 and 2.0 code side by side.
   binomial glm); `"prob_diff"`: differences of probabilities (as emmeans' `mode = "prob"`); `"link"`: the model's
   linear predictors; `"mean_class"` for ordinal families. Probabilities averaged over other factors on the
   probability scale; delta-method SEs, z tests; advice on separation (a class absent at some levels). Checked
-  against emmeans; other functions stop for these fits.
+  against emmeans; other functions stop for these fits. Where the cumulative curves of a non-parallel fit cross
+  (negative probabilities), the means that use those points are NA with a caution.
+* `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count the frequency weights instead of rows for
+  fits whose prior weights are case or trial counts (multinom, polr, clm, clmm, vglm, binomial glm and glmer), so
+  aggregated data and one row per case give the same means (as emmeans); `settings$weights_by` says which.
 
 ### Mixed models and variance components
 

@@ -70,7 +70,11 @@
 #'   \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
 #'   factor's own frequencies), \code{"cells"} (each mean weights the cells by their own frequencies) or
-#'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}.
+#'   \code{"flat"} (equal weights over the non-empty cells). The definitions are those of \pkg{emmeans}. The
+#'   frequencies count rows, except for fits whose prior weights are counts of cases or trials (\code{multinom},
+#'   \code{polr}, \code{clm}, \code{clmm}, \code{vglm}, binomial \code{glm} and \code{glmer}): there they are the
+#'   sums of the weights, so aggregated data and one row per case give the same means (as emmeans);
+#'   \code{settings$weights_by} says which.
 #' @param refgrid Return the grid of all combinations (element \code{refgrid})? The default \code{FALSE} builds
 #'   it only when it is needed (\code{semireg} models, means over empty cells). Otherwise each group of variables
 #'   that share a model term is averaged on its own grid, which gives the same \code{K} and is much smaller
@@ -181,7 +185,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
   declared <- vapply(nested_data, function(p) any(vapply(pm_term_sets(Terms), function(s) all(c(p$a, p$b) %in% s),
                                                          logical(1))), logical(1))
   nested <- nested_data[declared]
-  cw <- pm_cell_weights(weights, X, factor_names, setdiff(factor_names, facs))
+  fw <- pm_freq_weights(model, nrow(X), weights)
+  cw <- pm_cell_weights(weights, X, factor_names, setdiff(factor_names, facs), fw)
   Terms_rule <- Terms
 
   ## 4. The basis of the fixed effects for rows of predictor values,
@@ -343,7 +348,8 @@ Kmatrix <- function(model, modelterm, covariate=NULL, at=NULL, data=NULL, cov_re
 
   if (!is.null(rg)) rg$basis <- basis    # the basis of the grid rows (for means averaged on the response scale)
   return(list(K=K, fctnames=fctnames, response=info$yname, preddf=X, refgrid=rg, data=model_data,
-              empty_cells=empty_cells, level_covariates=lc))
+              empty_cells=empty_cells, level_covariates=lc,
+              weights_by=if (weights == "equal") NA_character_ else if (is.null(fw)) "rows" else "frequency weights"))
 }
 
 ## ---- The steps of Kmatrix() ----
@@ -573,14 +579,16 @@ pm_note_nesting <- function(undeclared, facs, weights) {
 ## Weights of the cells for the 'weights' schemes other than "equal":
 ## list(fun = function(grid) -> weight of each row's cell (NULL: equal), sets:
 ## the factors that are weighted jointly, so their combinations are needed).
-pm_cell_weights <- function(weights, preddf, factor_names, nuisance) {
+pm_cell_weights <- function(weights, preddf, factor_names, nuisance, freq = NULL) {
   if (weights == "equal" || !length(factor_names)) return(list(fun = NULL, sets = list()))
   cell_key <- function(df, vs) {
     do.call(paste, c(lapply(vs, function(v) as.character(df[[v]])), sep = "\r"))
   }
-  # number of observations in each grid row's combination of the factors 'vs'
+  # number of observations in each grid row's combination of the factors 'vs':
+  # rows, or the sum of the frequency weights (pm_freq_weights())
   count_of <- function(vs) {
-    tab <- table(cell_key(preddf, vs))
+    key <- cell_key(preddf, vs)
+    tab <- if (is.null(freq)) table(key) else rowsum(freq, key)[, 1]
     function(grid) {
       n <- as.vector(tab[cell_key(grid, vs)])
       n[is.na(n)] <- 0
@@ -600,6 +608,32 @@ pm_cell_weights <- function(weights, preddf, factor_names, nuisance) {
     # equal weights over the non-empty cells
     flat = list(fun = local({cnt <- count_of(factor_names); function(grid) as.numeric(cnt(grid) > 0)}),
                 sets = list(factor_names)))
+}
+
+## Frequency weights of the rows of the fit, for the 'weights' schemes that
+## count observations (proportional, outer, cells, flat): the prior weights
+## where they are counts of cases or trials (class responses: multinom, polr,
+## clm, clmm, vglm; binomial glm and glmer), so aggregated data and one row
+## per case give the same means (as emmeans). NULL (count rows) for other
+## models, whose prior weights are usually precisions, and when there are none.
+pm_freq_weights <- function(model, n, weights = "proportional") {
+  if (identical(weights, "equal")) return(NULL)
+  m <- pm_cat_fit(model)
+  w <- tryCatch({
+    if (inherits(m, "multinom")) m$weights
+    else if (inherits(m, "vglm")) VGAM::weights(m, type = "prior")
+    else if (inherits(m, c("polr", "clm", "clmm"))) stats::model.weights(m$model)
+    else if (inherits(m, "glm") && identical(stats::family(m)$family, "binomial")) m$prior.weights
+    else if (inherits(m, "glmerMod") && identical(stats::family(m)$family, "binomial")) stats::weights(m)
+  }, error = function(e) NULL)
+  if (is.null(w)) return(NULL)
+  w <- as.numeric(w)
+  if (length(w) != n) {
+    warning("The frequency weights of the fit do not match its rows; the '", weights, "' weights count rows.",
+            call. = FALSE)
+    return(NULL)
+  }
+  if (all(w == 1)) NULL else w
 }
 
 ## The basis of the fixed effects for rows of predictor values: list(fun,
