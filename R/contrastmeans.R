@@ -122,6 +122,12 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                           df_method=c("auto", "Kenward-Roger", "Satterthwaite", "containment", "between-within", "KR-expected", "KR-average", "inner-outer", "residual"), joint=FALSE,
                           conf_level=0.95, vcov=NULL, equivalence=NULL, ...) {
   pm_defunct("contrastmeans", match.call(), strict = TRUE, formals_of = formals(sys.function()))
+  if (inherits(model, "semireg")) {
+    # (it took the fit as a plain model: SEs neither the semireg pairs' nor the mixed model's, df Inf as "residual")
+    stop("contrastmeans() does not handle semireg() fits: use predictmeans(fit, modelterm) for their pairs (smooths ",
+         "included, Kenward-Roger for fixed-effect contrasts), or contrastmeans(fit$semer, ...) for contrasts of the ",
+         "fixed effects with the smooths at their covariates' means.", call. = FALSE)
+  }
   level <- pm_conf_alpha(conf_level)
   vcov_adjust_default <- missing(vcov_adjust)
   dfa <- pm_df_arg(df_method, eval(formals(sys.function())$df_method))

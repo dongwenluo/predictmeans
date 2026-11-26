@@ -3386,3 +3386,12 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   curve and pbkrtest::vcovAdj() as outside reference; CLAUDE.md effort note.
   Open (HANDOVER step 0): by= smooth Satterthwaite bug, sim README wording,
   contrastmeans df label for semireg.
+* HANDOVER step 0 items: (1) the "by = smooth" error was predictmeans() of
+  fit$semer: an empty contrast matrix (a term without coefficients) reached
+  pm_satt_ddf() / pm_kr_ddf() (now 0 rows in, 0 out; older bug); the test's
+  data had empty g:h cells, which showed that semireg means of cells without
+  data were NaN silently (on main too): now NA, estimable FALSE, pairs NA,
+  with a message; per-pair KR checked on the by = g design; (2)
+  dev/sim-clmm-few/README.md wording (statistic, sets used, no power claim at
+  12 clusters); (3) contrastmeans() of semireg fits stops with a pointer
+  (it gave unadjusted SEs with df Inf labelled "residual").

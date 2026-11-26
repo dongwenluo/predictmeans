@@ -27,6 +27,15 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   levs <- do.call(paste, c(lapply(lab, as.character), sep = ":"))
   D <- as.matrix(des$D_mx)
   C <- as.matrix(des$sig.epsHat^2 * des$sm_Cov)
+  # a cell without data (no covariate values to average: NaN in its row) is not estimable here: NA, said once
+  empty <- apply(is.na(D), 1, any)
+  if (any(empty)) {
+    message(sum(empty), " mean(s) of ", sQuote(modelterm), " are for cells without data (",
+            paste(utils::head(do.call(paste, c(lapply(des$pred_df[empty, vars, drop = FALSE], as.character), sep = ":")),
+                              5), collapse = ", "), if (sum(empty) > 5) ", ..." else "",
+            "): not estimable from a semireg fit, given as NA.")
+    D[empty, ] <- 0
+  }
   est <- as.numeric(D %*% des$beta_u)
   V <- D %*% C %*% t(D)
   dimnames(V) <- list(levs, levs)
@@ -57,6 +66,10 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se,
                  estimable = rep(TRUE, n))           # (the column of predictmeans()' means; summary() reads it)
   rownames(means) <- NULL
+  if (any(empty)) {
+    means[empty, c("estimate", "std.error", "conf.low", "conf.high")] <- NA
+    means$estimable[empty] <- FALSE
+  }
 
   semer <- des$semer
   fam <- tryCatch(stats::family(semer), error = function(e) NULL)
@@ -107,6 +120,11 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     if (!is.null(crit_adj)) {
       pairs$adj.conf.low <- pe - crit_adj*pse
       pairs$adj.conf.high <- pe + crit_adj*pse
+    }
+    if (any(empty)) {                                   # (pairs with a mean of a cell without data: NA)
+      bad <- empty[pp$j] | empty[pp$i]
+      num <- vapply(pairs, is.numeric, logical(1))
+      pairs[bad, num] <- NA
     }
     pairs$p.method <- if (adj == "tukey") "tukey" else if (any(is.finite(dfs))) "t" else "z"
     # a log link: ratios of the means; a logit link: odds ratios

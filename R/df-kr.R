@@ -8,6 +8,7 @@
 ## element by element.
 pm_kr_ddf <- function(L, V0, Vadj) {
   if (!is.matrix(L)) L <- matrix(L, nrow = 1)
+  if (!nrow(L)) return(stats::setNames(numeric(0), character(0)))    # (a term without coefficients)
   P <- attr(Vadj, "P")
   W <- as.matrix(attr(Vadj, "W"))
   V0 <- as.matrix(V0)

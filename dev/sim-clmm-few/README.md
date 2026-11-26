@@ -2,8 +2,10 @@
 
 `sim.R`: `clmm(y ~ trt * W + (1 | clus))`, clusters split half/half between two
 treatments, 6 rows per cluster (W within, 2 x 3), 4 classes, cluster SD 1, W
-effect 0.5. Rejection of the trt test at 5%, 300 data sets per row (a true 5%
-lies in 2.5-7.5%). Run on the code of b59ded5 (the allocations of this design
+effect 0.5. Rejection of the trt test at 5%, 300 data sets per row, 296-298
+usable (a true 5% lies in 2.5-7.5%). The t and z columns are the Type II Wald
+chi-square of trt, with the inner-outer df of trt (nclus - 2, as predictmeans
+gives it) or none; not predictmeans' pair contrast, which averages over W. Run on the code of b59ded5 (the allocations of this design
 are those of the final pm_perm_clmm(); the near-tie rule was relative 1e-6,
 now 1e-4).
 
@@ -19,5 +21,5 @@ now 1e-4).
   the parametric bootstrap (3.7-5.1%), with similar power.
 - The cluster permutation is valid but conservative and weak with 12 clusters
   or fewer (its p-values are coarse: 6 clusters cannot reject at 5%); it is
-  the test that needs no model for the clusters, useful from about 10-12
-  clusters or as a check.
+  the test that needs no model for the clusters (power at 12 clusters was not
+  simulated).

@@ -19,6 +19,7 @@ pm_satt_parts <- function(model) {
 
 pm_satt_ddf <- function(L, parts) {
   if (!is.matrix(L)) L <- matrix(L, nrow = 1)
+  if (!nrow(L)) return(stats::setNames(numeric(0), character(0)))    # (a term without coefficients)
   var_con <- rowSums((L %*% parts$vcov_beta) * L)
   grad <- vapply(parts$Jac_list, function(J) rowSums((L %*% J) * L), numeric(nrow(L)))
   grad <- matrix(grad, nrow = nrow(L))

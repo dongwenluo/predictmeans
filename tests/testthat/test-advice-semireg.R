@@ -78,6 +78,21 @@ test_that("semireg means: pairs get the Kenward-Roger SEs and df of the mixed mo
   expect_false(p0$settings$vcov_adjust)
   expect_true(all(p0$pairs$std.error < p$pairs$std.error))
   expect_equal(p0$means$std.error, p$means$std.error)        # the means keep Satterthwaite
-  # (open: a smooth for each level of g, semireg(y ~ g * h + s(x, by = g) + (1 | blk)), stops in the
-  # Satterthwaite df, "grad %*% parts$vcov_varpar: non-conformable"; see HANDOVER.md)
+  # a smooth for each level of g: pairs within g are fixed-effect contrasts (KR), the others are not
+  d$h <- factor(d$rep %% 2)
+  fb <- suppressMessages(semireg(y ~ g * h + s(x, by = g) + (1 | blk), data = d))
+  pb <- predictmeans(fb, "g:h", atvar = "g")
+  pbn <- suppressWarnings(predictmeans(fb$semer, "g:h", atvar = "g"))
+  w <- which(!is.na(pb$pairs$by))
+  kb <- match(paste(pb$pairs$level1[w], pb$pairs$level2[w]), paste(pbn$pairs$level1, pbn$pairs$level2))
+  expect_false(anyNA(kb))
+  expect_equal(pb$pairs$std.error[w], pbn$pairs$std.error[kb], tolerance = 1e-8)
+  expect_match(pb$settings$df_method, "of fixed effects only")
+  expect_error(contrastmeans(f, "g", ctrmatrix = rbind(c(1, -1, 0, 0))), "does not handle semireg")
+  # cells without data: NA with a message (were NaN)
+  d$h2 <- factor(rep(1:2, length.out = nrow(d)))                 # g and h2 confounded: half the cells empty
+  fe <- suppressMessages(semireg(y ~ g * h2 + s(x) + (1 | blk), data = d))
+  expect_message(pe <- predictmeans(fe, "g:h2"), "cells without data")
+  expect_false(any(is.nan(pe$means$estimate)))
+  expect_true(all(is.na(pe$means$estimate[!pe$means$estimable])))
 })

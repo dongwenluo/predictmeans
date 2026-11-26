@@ -210,7 +210,10 @@ shows 1.1.1 and 2.0 code side by side.
   (Slate Hall: variogram, AR1 x AR1 with and without a nugget, the `t2()` trend).
 * `predictmeans()` of gaussian `semireg()` fits: pairs (fixed-effect contrasts) get Kenward-Roger adjusted SEs and
   df, the same as the fit's mixed model (`$semer`) gives (coverage of 95% limits in simulations 94.9%, unadjusted
-  94.2-94.5%); the means keep Satterthwaite df; `vcov_adjust = FALSE` for the unadjusted results. `summary()` of these results works (it failed: no `estimable` column).
+  94.2-94.5%); the means keep Satterthwaite df; `vcov_adjust = FALSE` for the unadjusted results. `summary()` of
+  these results works (it failed: no `estimable` column); means of cells without data are NA with a message (they
+  were NaN). `contrastmeans()` of semireg fits stops with a pointer to `predictmeans(fit, )` or
+  `contrastmeans(fit$semer, )` (it gave unadjusted SEs with df Inf labelled "residual").
 * `corAR1xAR1(by_group = TRUE)` with `form = ~ row + col | trial`: a phi pair (and nugget) for each trial; with
   `trial / variety` and `varIdent(~ 1 | trial)` each trial gets the estimates, SEDs and Kenward-Roger df of
   its own fit (checked against separate fits).
