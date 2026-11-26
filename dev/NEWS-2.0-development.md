@@ -3148,3 +3148,15 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
 * Article vignettes/articles/ordinal.Rmd (2026-11-26): clm and clmm on wine,
   multinom and non-parallel vglm on housing (prob, prob_diff, mean class),
   cautions and references; in the pkgdown "Worked examples" menu.
+* corAR1xAR1() (2026-11-26; R/cor-ar1xar1.R, dev/review-ar1ar1.md D1-D7):
+  nlme corStruct (Initialize, corMatrix with both branches, corFactor, coef,
+  coef<-), atanh/logit parameters, nugget share, groups, missing plots by
+  coordinates. Checks (test-cor-ar1xar1.R, Genstat run
+  genstat-results-2026-11-26-ar1ar1-slatehall.txt; reference data in
+  _data/ar1xar1/): one row = corAR1 (1e-10); model A phi 0.4586/0.6838,
+  sigma^2 3.876; model B phi 0.6827/0.8438, units 0.486, ratio 9.420;
+  deviance A - B 7.00; 25 means and 300 SEDs of A and B (vcov_adjust = FALSE)
+  to 1e-6; KR-average d.d.f. 79.99/75.67 (Genstat 80.0/75.7); lme with
+  replicates in one group reaches the boundary = gls A; variogram of the fit
+  within its envelope. residvariogram() advice names corAR1xAR1 and t2().
+  inst/extdata/slatehall.csv for the example.

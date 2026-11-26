@@ -599,9 +599,9 @@ pm_variogram_advice <- function(x) {
       "Plots next to each other", if (grid) { if (length(dirs) == 2) " in rows and columns" else paste0(" in ", dirs) },
       " are more alike than the model allows (the variogram is below the envelope at the shortest lag",
       where(unique(low$trial)), "): the standard errors of the means ignore it. Fit a spatial covariance (",
-      if (grid) "AR1 x AR1 in ASReml or Genstat; in R, " else "", "gls() or lme() with corExp(form = ~ ",
-      if (grid) "row + col" else "x + y", ")) or a smooth surface s(", near,
-      ") in semireg(), and check its variogram."), "caution")
+      if (grid) "gls() or lme() with corAR1xAR1(form = ~ row + col)" else "gls() or lme() with corExp(form = ~ x + y)",
+      ") or a smooth surface ", if (grid) "t2(row, col)" else paste0("s(", near, ")"),
+      " in semireg(), and check its variogram."), "caution")
   }
   if (nrow(high)) {
     rows$nb <- pm_advice("variogram_neighbours", paste0(
