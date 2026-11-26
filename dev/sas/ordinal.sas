@@ -169,6 +169,8 @@ data sim6;
 ;
 run;
 
+/* (the titles contain commas: each call quotes its title with %str(), else SAS reads
+   several arguments and stops the macro, as in the first run) */
 %macro show(title);
   title "&title";
   proc print data=pe noobs; format _numeric_ best16.; run;
@@ -182,7 +184,7 @@ proc logistic data=wine;
   model rating = temp contact temp*contact / link=clogit technique=newton covb;
   output out=pp predprobs=individual;
 run;
-%show(1. Cumulative logit, Newton (observed information));
+%show(%str(1. Cumulative logit, Newton (observed information)));
 
 /* 7. predicted class probabilities of the four cells (model 1) */
 proc sort data=pp nodupkey out=cells; by temp contact; run;
@@ -195,7 +197,7 @@ proc logistic data=wine;
   class temp(ref='cold') contact(ref='no') / param=ref;
   model rating = temp contact temp*contact / link=clogit technique=fisher covb;
 run;
-%show(2. Cumulative logit, Fisher scoring (expected information));
+%show(%str(2. Cumulative logit, Fisher scoring (expected information)));
 
 /* 3. probit and complementary log-log cumulative links (Newton) */
 ods output ParameterEstimates=pe CovB=cb;
@@ -203,14 +205,14 @@ proc logistic data=wine;
   class temp(ref='cold') contact(ref='no') / param=ref;
   model rating = temp contact temp*contact / link=probit technique=newton covb;
 run;
-%show(3a. Cumulative probit, Newton);
+%show(%str(3a. Cumulative probit, Newton));
 
 ods output ParameterEstimates=pe CovB=cb;
 proc logistic data=wine;
   class temp(ref='cold') contact(ref='no') / param=ref;
   model rating = temp contact temp*contact / link=cloglog technique=newton covb;
 run;
-%show(3b. Cumulative complementary log-log, Newton);
+%show(%str(3b. Cumulative complementary log-log, Newton));
 
 /* 4. adjacent-category logit, proportional (Newton): R vglm(acat(parallel = TRUE)) */
 ods output ParameterEstimates=pe CovB=cb;
@@ -218,7 +220,7 @@ proc logistic data=wine;
   class temp(ref='cold') contact(ref='no') / param=ref;
   model rating = temp contact temp*contact / link=alogit technique=newton covb;
 run;
-%show(4. Adjacent-category logit, Newton);
+%show(%str(4. Adjacent-category logit, Newton));
 
 /* 5. cumulative logit with a random judge intercept, Laplace: R clmm() */
 ods output ParameterEstimates=pe CovB=cb CovParms=cp Tests3=t3;
@@ -227,7 +229,7 @@ proc glimmix data=wine method=laplace;
   model rating = temp contact temp*contact / dist=multinomial link=cumlogit solution covb;
   random intercept / subject=judge;
 run;
-%show(5. GLIMMIX cumulative logit, random judge intercept, Laplace);
+%show(%str(5. GLIMMIX cumulative logit, random judge intercept, Laplace));
 proc print data=cp noobs; format _numeric_ best16.; run;
 proc print data=t3 noobs; run;
 
@@ -238,7 +240,7 @@ proc glimmix data=sim6 method=laplace;
   model y = trt / dist=multinomial link=cumlogit solution covb;
   random intercept / subject=g;
 run;
-%show(6. GLIMMIX sim6, treatment between 6 clusters, Laplace);
+%show(%str(6. GLIMMIX sim6, treatment between 6 clusters, Laplace));
 proc print data=cp noobs; format _numeric_ best16.; run;
 proc print data=t3 noobs; run;
 
