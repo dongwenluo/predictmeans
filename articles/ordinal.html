@@ -211,8 +211,8 @@ advice says so.</p>
 <span><span class="va">pmm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">mm</span>, <span class="st">"temp"</span>, mean_type <span class="op">=</span> <span class="st">"prob"</span><span class="op">)</span></span>
 <span><span class="va">pmm</span><span class="op">$</span><span class="va">means</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"df"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">##   temp  estimate std.error df</span></span>
-<span><span class="co">## 1 cold -1.634307 0.5470773 58</span></span>
-<span><span class="co">## 2 warm  1.428689 0.5315314 58</span></span></code></pre>
+<span><span class="co">## 1 cold -1.634307 0.5470711 58</span></span>
+<span><span class="co">## 2 warm  1.428690 0.5315304 58</span></span></code></pre>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/advice.html">advice</a></span><span class="op">(</span><span class="va">pmm</span><span class="op">)</span><span class="op">$</span><span class="va">text</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The class probabilities are at the latent means, which average over (or fix) contact: not averages of the probabilities in each cell (as emmeans gives). Include contact in 'modelterm' for the probabilities of each cell."                                                                     </span></span>

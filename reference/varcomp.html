@@ -289,9 +289,9 @@ tests under nonstandard conditions. <em>Journal of the American Statistical Asso
 <span class="r-in"><span><span class="va">fm1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span>, random<span class="op">=</span><span class="op">~</span><span class="fl">1</span><span class="op">|</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">fm1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                         vcov       SE    2.5 %    97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1700</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Variety.(Intercept) 106.0618  67.8756  40.9773  657.7748</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> residual            177.0835  37.3325 121.8275  280.9249</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1692</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variety.(Intercept) 106.0618  67.8756  40.9772  657.7746</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> residual            177.0835  37.3325 121.8275  280.9250</span>
 <span class="r-in"><span><span class="co"># the same components by the analysis of variance</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/aov.html" class="external-link">aov</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">nitro</span><span class="op">*</span><span class="va">Variety</span> <span class="op">+</span> <span class="fu">Error</span><span class="op">(</span><span class="va">Block</span><span class="op">/</span><span class="va">Variety</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   vcov       SE    2.5 %    97.5 %</span>
@@ -303,7 +303,7 @@ tests under nonstandard conditions. <em>Journal of the American Statistical Asso
 <span class="r-in"><span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">lme</a></span><span class="op">(</span><span class="va">distance</span> <span class="op">~</span> <span class="va">age</span>, random<span class="op">=</span><span class="op">~</span><span class="va">age</span><span class="op">|</span><span class="va">Subject</span>, data<span class="op">=</span><span class="va">Orthodont</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">varcomp</span><span class="op">(</span><span class="va">mod1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                            vcov     SE   2.5 %   97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6998</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6996</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Subject.age.(Intercept) -0.3211 0.4244 -0.4943   0.1570</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Subject.age              0.0513 0.0415  0.0166   0.6844</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> residual                 1.7162 0.3303  1.2163   2.6042</span>

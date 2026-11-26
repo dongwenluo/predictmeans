@@ -872,7 +872,7 @@ print(predm_out[1:4])
     ## $`Predicted Means`
     ## seedlot
     ##       Acacia    Angophora    Casuarina    Melaleuca Petalostigma 
-    ##      10.2938       7.1000       5.5125       4.9437       2.7313 
+    ##      10.2937       7.1000       5.5125       4.9437       2.7312 
     ## 
     ## $`Standard Error of Means`
     ## All means have the same SE 
@@ -904,11 +904,11 @@ gt(predm_out$mean_table$Table,
 
 | seedlot      | Mean    | SE      | Df   | LL(95%) | UL(95%) | LetterGrp |
 |--------------|---------|---------|------|---------|---------|-----------|
-| Acacia       | 10.2938 | 0.74201 | 3.51 | 8.1151  | 12.4724 | A         |
+| Acacia       | 10.2937 | 0.74201 | 3.51 | 8.1151  | 12.4724 | A         |
 | Angophora    | 7.1000  | 0.74201 | 3.51 | 4.9213  | 9.2787  | B         |
 | Casuarina    | 5.5125  | 0.74201 | 3.51 | 3.3338  | 7.6912  | BC        |
 | Melaleuca    | 4.9437  | 0.74201 | 3.51 | 2.7651  | 7.1224  | BC        |
-| Petalostigma | 2.7313  | 0.74201 | 3.51 | 0.5526  | 4.9099  | C         |
+| Petalostigma | 2.7312  | 0.74201 | 3.51 | 0.5526  | 4.9099  | C         |
 
 Group: Letter-based representation of pairwise comparisons at
 significant level '0.05' {.table .gt_table
@@ -3747,7 +3747,7 @@ heritability(fm6.3.1, "Family", method = "all", seed = 1)
     ##       piepho   0.4698        NA       NA        NA
     ##        oakey   0.4698        NA       NA        NA
     ##  reliability   0.4583        NA       NA        NA
-    ##    simulated   0.4717        NA       NA        NA
+    ##    simulated   0.4711        NA       NA        NA
     ## 
     ## Simulated form: Monte Carlo SE 0.0011 (10000 draws; nsim for more).
 
@@ -3951,9 +3951,9 @@ print(predm_out[1:4])
     ##   Australia       Benin       China       Egypt        Fiji        Guam 
     ##      2.6313      3.3425      3.6858      2.4983      2.6117      2.3425 
     ##       India       Kenya    Malaysia   Mauritius Philippines         PNG 
-    ##      3.5746      3.4912      4.0308      3.1225      3.6117      3.6500 
+    ##      3.5746      3.4913      4.0308      3.1225      3.6117      3.6500 
     ## Puerto Rico Solomon Is.   Sri Lanka    Thailand     Vanuatu     Vietnam 
-    ##      3.3450      3.6987      3.2433      3.8413      2.7625      3.2765 
+    ##      3.3450      3.6987      3.2433      3.8412      2.7625      3.2765 
     ## 
     ## $`Standard Error of Means`
     ## country
@@ -3996,7 +3996,7 @@ gt(predm_out$mean_table)
 | Fiji        | 2.6117 | 0.22841 | 94.22  | 2.1582  | 3.0652  |
 | Guam        | 2.3425 | 0.39130 | 117.16 | 1.5676  | 3.1174  |
 | India       | 3.5746 | 0.16412 | 53.61  | 3.2455  | 3.9037  |
-| Kenya       | 3.4912 | 0.14362 | 37.28  | 3.2003  | 3.7822  |
+| Kenya       | 3.4913 | 0.14362 | 37.28  | 3.2003  | 3.7822  |
 | Malaysia    | 4.0308 | 0.13611 | 31.61  | 3.7535  | 4.3082  |
 | Mauritius   | 3.1225 | 0.39130 | 117.16 | 2.3476  | 3.8974  |
 | Philippines | 3.6117 | 0.22841 | 94.22  | 3.1582  | 4.0652  |
@@ -4004,7 +4004,7 @@ gt(predm_out$mean_table)
 | Puerto Rico | 3.3450 | 0.39130 | 117.16 | 2.5701  | 4.1199  |
 | Solomon Is. | 3.6987 | 0.27822 | 108.51 | 3.1473  | 4.2502  |
 | Sri Lanka   | 3.2433 | 0.22841 | 94.22  | 2.7898  | 3.6968  |
-| Thailand    | 3.8413 | 0.19888 | 78.86  | 3.4454  | 4.2371  |
+| Thailand    | 3.8412 | 0.19888 | 78.86  | 3.4454  | 4.2371  |
 | Vanuatu     | 2.7625 | 0.39130 | 117.16 | 1.9876  | 3.5374  |
 | Vietnam     | 3.2765 | 0.17884 | 65.04  | 2.9193  | 3.6337  |
 
@@ -4021,7 +4021,7 @@ print(predm_out[1:4])
     ## $`Predicted Means`
     ##             inoc 1 week 7 weeks
     ## country                        
-    ## Australia        2.3038  2.9588
+    ## Australia        2.3037  2.9588
     ## Benin            2.8150  3.8700
     ## China            3.3417  4.0300
     ## Egypt            2.2500  2.7467
@@ -4036,7 +4036,7 @@ print(predm_out[1:4])
     ## Puerto Rico      3.1500  3.5400
     ## Solomon Is.      3.1975  4.2000
     ## Sri Lanka        2.7917  3.6950
-    ## Thailand         4.0712  3.6113
+    ## Thailand         4.0712  3.6112
     ## Vanuatu          2.8050  2.7200
     ## Vietnam          3.1100  3.4430
     ## 
@@ -4097,7 +4097,7 @@ gt(predm_out$mean_table)
 
 | inoc    | country     | Mean   | SE      | Df     | LL(95%) | UL(95%) |
 |---------|-------------|--------|---------|--------|---------|---------|
-| 1 week  | Australia   | 2.3038 | 0.28126 | 78.86  | 1.7439  | 2.8636  |
+| 1 week  | Australia   | 2.3037 | 0.28126 | 78.86  | 1.7439  | 2.8636  |
 | 1 week  | Benin       | 2.8150 | 0.55338 | 117.16 | 1.7191  | 3.9109  |
 | 1 week  | China       | 3.3417 | 0.32302 | 94.22  | 2.7003  | 3.9830  |
 | 1 week  | Egypt       | 2.2500 | 0.32302 | 94.22  | 1.6086  | 2.8914  |
@@ -4130,7 +4130,7 @@ gt(predm_out$mean_table)
 | 7 weeks | Puerto Rico | 3.5400 | 0.55338 | 117.16 | 2.4441  | 4.6359  |
 | 7 weeks | Solomon Is. | 4.2000 | 0.39347 | 108.51 | 3.4201  | 4.9799  |
 | 7 weeks | Sri Lanka   | 3.6950 | 0.32302 | 94.22  | 3.0536  | 4.3364  |
-| 7 weeks | Thailand    | 3.6113 | 0.28126 | 78.86  | 3.0514  | 4.1711  |
+| 7 weeks | Thailand    | 3.6112 | 0.28126 | 78.86  | 3.0514  | 4.1711  |
 | 7 weeks | Vanuatu     | 2.7200 | 0.55338 | 117.16 | 1.6241  | 3.8159  |
 | 7 weeks | Vietnam     | 3.4430 | 0.25292 | 65.04  | 2.9379  | 3.9481  |
 

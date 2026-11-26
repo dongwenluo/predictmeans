@@ -145,7 +145,7 @@ advice says what to fit.</p>
 <span>          correlation <span class="op">=</span> <span class="fu"><a href="../reference/corAR1xAR1.html">corAR1xAR1</a></span><span class="op">(</span>form <span class="op">=</span> <span class="op">~</span> <span class="va">fieldrow</span> <span class="op">+</span> <span class="va">fieldcolumn</span>, nugget <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fB</span><span class="op">$</span><span class="va">modelStruct</span><span class="op">$</span><span class="va">corStruct</span>, unconstrained <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##    phi_row    phi_col     nugget </span></span>
-<span><span class="co">## 0.68269678 0.84379858 0.09596552</span></span></code></pre>
+<span><span class="co">## 0.68269678 0.84379858 0.09596553</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fA</span>, <span class="va">fB</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##    Model df      AIC      BIC    logLik   Test  L.Ratio p-value</span></span>
@@ -173,7 +173,7 @@ the envelope:</p>
 <span><span class="co">## 3       3 14.03984 1.0004145 4.607442</span></span>
 <span><span class="co">## 4       4 14.04918 0.9974440 4.633306</span></span>
 <span><span class="co">## 5       5 14.71612 1.0010578 4.661920</span></span>
-<span><span class="co">## 6       6 15.21937 0.9976045 4.570890</span></span></code></pre>
+<span><span class="co">## 6       6 15.21937 0.9976044 4.570890</span></span></code></pre>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pB</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">std.error</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
@@ -193,8 +193,8 @@ group:</p>
 <span>          correlation <span class="op">=</span> <span class="fu"><a href="../reference/corAR1xAR1.html">corAR1xAR1</a></span><span class="op">(</span>form <span class="op">=</span> <span class="op">~</span> <span class="va">fieldrow</span> <span class="op">+</span> <span class="va">fieldcolumn</span> <span class="op">|</span> <span class="va">all</span>, nugget <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/nlme/man/VarCorr.html" class="external-link">VarCorr</a></span><span class="op">(</span><span class="va">fD</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">##      Variance       StdDev        </span></span>
-<span><span class="co">## rep1 "2.398928e-08" "0.0001548847"</span></span>
-<span><span class="co">## rep2 "2.398928e-08" "0.0001548847"</span></span></code></pre>
+<span><span class="co">## rep1 "2.398791e-08" "0.0001548803"</span></span>
+<span><span class="co">## rep2 "2.398791e-08" "0.0001548803"</span></span></code></pre>
 <p>Here the replicate variance is estimated as 0 (Genstat, which allows
 negative components, gives -0.078), so the model is the same as
 <code>fB</code>.</p>

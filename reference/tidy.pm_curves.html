@@ -188,32 +188,32 @@ holds the ranges of the covariate where the band asked for leaves out zero.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> autoplot(x) draws the plot (layouts: ?autoplot.pm_curves).</span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cm</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       Variety nitro  estimate std.error        df  conf.low conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Golden Rain   0.0  81.90000  8.570714 12.849071  63.36196 100.43804</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Golden Rain   0.3 104.50000  7.797492  8.869185  86.82111 122.17889</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Golden Rain   0.6 127.10000  8.570714 12.849071 108.56196 145.63804</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Marvellous   0.0  90.41667  8.570714 12.849071  71.87863 108.95470</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Marvellous   0.3 109.79167  7.797492  8.869185  92.11278 127.47056</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Marvellous   0.6 129.16667  8.570714 12.849071 110.62863 147.70470</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7     Victory   0.0  73.30000  8.570714 12.849071  54.76196  91.83804</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8     Victory   0.3  97.62500  7.797492  8.869185  79.94611 115.30389</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9     Victory   0.6 121.95000  8.570714 12.849071 103.41196 140.48804</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Golden Rain   0.0  81.90000  8.570716 12.849059  63.36196 100.43804</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Golden Rain   0.3 104.50000  7.797494  8.869179  86.82110 122.17890</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Golden Rain   0.6 127.10000  8.570716 12.849059 108.56196 145.63804</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Marvellous   0.0  90.41667  8.570716 12.849059  71.87862 108.95471</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Marvellous   0.3 109.79167  7.797494  8.869179  92.11277 127.47056</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Marvellous   0.6 129.16667  8.570716 12.849059 110.62862 147.70471</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7     Victory   0.0  73.30000  8.570716 12.849059  54.76196  91.83804</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8     Victory   0.3  97.62500  7.797494  8.869179  79.94610 115.30390</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9     Victory   0.6 121.95000  8.570716 12.849059 103.41196 140.48804</span>
 <span class="r-in"><span>  <span class="va">cd</span> <span class="op">&lt;-</span> <span class="fu"><a href="covariatemeans.html">covariatemeans</a></span><span class="op">(</span><span class="va">fm</span>, <span class="st">"Variety"</span>, covariate<span class="op">=</span><span class="st">"nitro"</span>, contr<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Golden Rain"</span>, <span class="st">"Victory"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                       band<span class="op">=</span><span class="st">"simultaneous"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cd</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        level1  level2      nitro estimate std.error       df statistic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Golden Rain Victory 0.00000000 8.600000  8.684675 21.57463 0.9902501</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Golden Rain Victory 0.01224490 8.529592  8.567346 20.58274 0.9955932</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Golden Rain Victory 0.02448980 8.459184  8.453378 19.63655 1.0006868</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Golden Rain Victory 0.03673469 8.388776  8.342908 18.73711 1.0054977</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Golden Rain Victory 0.04897959 8.318367  8.236078 17.88507 1.0099913</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Golden Rain Victory 0.06122449 8.247959  8.133030 17.08077 1.0141311</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Golden Rain Victory 0.00000000 8.600000  8.684676 21.57462 0.9902500</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Golden Rain Victory 0.01224490 8.529592  8.567347 20.58273 0.9955931</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Golden Rain Victory 0.02448980 8.459184  8.453379 19.63654 1.0006867</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Golden Rain Victory 0.03673469 8.388776  8.342909 18.73710 1.0054976</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Golden Rain Victory 0.04897959 8.318367  8.236079 17.88507 1.0099912</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Golden Rain Victory 0.06122449 8.247959  8.133031 17.08076 1.0141310</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     p.value     p.adj  conf.low conf.high adj.conf.low adj.conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3330287 0.6191041 -9.431525  26.63152    -14.22282      31.42282</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.3310090 0.6162890 -9.309198  26.36838    -14.06392      31.12311</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.3291508 0.6136450 -9.195200  26.11357    -13.91598      30.83435</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.3274667 0.6111908 -9.089730  25.86728    -13.77921      30.55677</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.3259692 0.6089455 -8.992964  25.62970    -13.65382      30.29056</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.3246711 0.6069285 -8.905056  25.40097    -13.53996      30.03587</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3330287 0.6191042 -9.431527  26.63153    -14.22282      31.42282</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.3310091 0.6162890 -9.309200  26.36838    -14.06393      31.12311</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.3291509 0.6136450 -9.195202  26.11357    -13.91598      30.83435</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.3274667 0.6111909 -9.089732  25.86728    -13.77922      30.55677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.3259693 0.6089456 -8.992966  25.62970    -13.65382      30.29056</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.3246712 0.6069286 -8.905059  25.40098    -13.53996      30.03588</span>
 <span class="r-in"><span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cd</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="tidy.pm_curves-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>

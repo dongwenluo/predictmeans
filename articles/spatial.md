@@ -77,7 +77,7 @@ coef(fB$modelStruct$corStruct, unconstrained = FALSE)
 ```
 
     ##    phi_row    phi_col     nugget 
-    ## 0.68269678 0.84379858 0.09596552
+    ## 0.68269678 0.84379858 0.09596553
 
 ``` r
 
@@ -127,7 +127,7 @@ head(pB$means[, c("variety", "estimate", "std.error", "df")])
     ## 3       3 14.03984 1.0004145 4.607442
     ## 4       4 14.04918 0.9974440 4.633306
     ## 5       5 14.71612 1.0010578 4.661920
-    ## 6       6 15.21937 0.9976045 4.570890
+    ## 6       6 15.21937 0.9976044 4.570890
 
 ``` r
 
@@ -157,8 +157,8 @@ VarCorr(fD)[1:2, ]
 ```
 
     ##      Variance       StdDev        
-    ## rep1 "2.398928e-08" "0.0001548847"
-    ## rep2 "2.398928e-08" "0.0001548847"
+    ## rep1 "2.398791e-08" "0.0001548803"
+    ## rep2 "2.398791e-08" "0.0001548803"
 
 Here the replicate variance is estimated as 0 (Genstat, which allows
 negative components, gives -0.078), so the model is the same as `fB`.

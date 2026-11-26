@@ -296,21 +296,21 @@ predictmeans(model=fm, modelterm="nitro:Variety", atvar="Variety", adj="BH",
 #> 
 #> $`Standard Error of Differences`
 #>  Max.SED  Min.SED Aveg.SED 
-#> 9.715029 7.682957 9.160827 
+#> 9.715028 7.682958 9.160827 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.SED 9.715029 7.682957
-#> Min.SED  9.715029 7.682957
-#> Max.SED  9.715029 7.682957
+#> Aveg.SED 9.715028 7.682958
+#> Min.SED  9.715028 7.682958
+#> Max.SED  9.715028 7.682958
 #> 
 #> $`Approximated LSD`
 #>  Max.LSD  Min.LSD Aveg.LSD 
-#> 19.43006 15.36591 18.32165 
+#> 19.43006 15.36592 18.32165 
 #> attr(,"For the Same Level of Factor")
 #>             nitro  Variety
-#> Aveg.LSD 19.43006 15.36591
-#> Min.LSD  19.43006 15.36591
-#> Max.LSD  19.43006 15.36591
+#> Aveg.LSD 19.43006 15.36592
+#> Min.LSD  19.43006 15.36592
+#> Max.LSD  19.43006 15.36592
 #> attr(,"Note")
 #> [1] "This is a approximate LSD (i.e. 2*SED) at 0.05 level."
 #> 

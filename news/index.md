@@ -353,6 +353,18 @@ shows 1.1.1 and 2.0 code side by side.
   article “Spatial analysis of a field trial” (Slate Hall: variogram,
   AR1 x AR1 with and without a nugget, the `t2()` trend).
 
+- [`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
+  [`pm_check()`](https://dongwenluo.github.io/predictmeans/reference/pm_check.md)
+  and
+  [`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
+  of `gls` and `lme` fits with a grouped correlation: the normalized
+  residuals were misplaced when the data were not sorted by the groups
+  (nlme’s `residuals(type = "normalized")`, off by up to 2 standard
+  deviations); they are now whitened group by group. For
+  [`corAR1xAR1()`](https://dongwenluo.github.io/predictmeans/reference/corAR1xAR1.md)
+  fits the plots are taken in row and column order, so the residuals do
+  not depend on the order of the data.
+
 #### Mixed models and variance components
 
 - New

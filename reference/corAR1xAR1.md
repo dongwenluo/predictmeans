@@ -85,11 +85,11 @@ the d.d.f. of the variety test with `df_method = "KR-average"`.
 Kenward-Roger and Satterthwaite leave out variance components (and a
 nugget) estimated at 0.
 
-Normalized residuals, and so the
-[`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
-check of such a fit, depend a little on the order of the plots in the
-data: sort the data by trial, row and column before fitting so the check
-can be repeated.
+Normalized residuals
+([`residplot()`](https://dongwenluo.github.io/predictmeans/reference/residplot.md),
+[`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md))
+are whitened with the plots of each group in row and column order, so
+they do not depend on the order of the data.
 
 ## References
 

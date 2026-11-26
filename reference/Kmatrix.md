@@ -971,10 +971,10 @@ This function heavily depends on the codes from package "lsmeans".
   # Covariates entering through transformations or only through interactions
   fm2 <- lm(yield ~ Block + Variety + poly(nitro, 2), data=Oats)
   Kmatrix(fm2, "Variety")$K
-#>             (Intercept)       Block.L Block.Q Block.C      Block^4
-#> Golden Rain           1 -1.110223e-16       0       0 2.775558e-17
-#> Marvellous            1 -1.110223e-16       0       0 2.775558e-17
-#> Victory               1 -1.110223e-16       0       0 2.775558e-17
+#>             (Intercept)       Block.L Block.Q Block.C       Block^4
+#> Golden Rain           1 -1.110223e-16       0       0 -2.775558e-17
+#> Marvellous            1 -1.110223e-16       0       0 -2.775558e-17
+#> Victory               1 -1.110223e-16       0       0 -2.775558e-17
 #>                   Block^5 VarietyMarvellous VarietyVictory poly(nitro, 2)1
 #> Golden Rain -1.387779e-17                 0  -1.110223e-16               0
 #> Marvellous  -1.387779e-17                 1  -1.110223e-16               0

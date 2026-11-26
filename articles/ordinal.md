@@ -100,8 +100,8 @@ pmm$means[, c("temp", "estimate", "std.error", "df")]
 ```
 
     ##   temp  estimate std.error df
-    ## 1 cold -1.634307 0.5470773 58
-    ## 2 warm  1.428689 0.5315314 58
+    ## 1 cold -1.634307 0.5470711 58
+    ## 2 warm  1.428690 0.5315304 58
 
 ``` r
 
