@@ -48,7 +48,7 @@
 #' \code{semireg(y ~ variety + t2(row, col) + (1 | rowf) + (1 | colf), data = d)}, a
 #' smooth surface over the field as SpATS fits, often as good as AR1 x AR1 in
 #' practice (on Slate Hall the AR1 x AR1 means are the more precise: average SED
-#' 0.590 against 0.668). \code{\link{residvariogram}()} shows whether a fit leaves
+#' 0.617 against 0.679, both Kenward-Roger adjusted). \code{\link{residvariogram}()} shows whether a fit leaves
 #' spatial correlation.
 #'
 #' Checked against Genstat (REML Guide's Slate Hall trial): \eqn{\phi} and the

@@ -51,3 +51,24 @@ test_that("summary() of semireg means works (the means carry 'estimable')", {
   expect_true(all(p$means$estimable))
   expect_output(print(summary(p)), "Predicted means")
 })
+
+test_that("semireg means: pairs get the Kenward-Roger SEs and df of the mixed model; vcov_adjust = FALSE does not", {
+  skip_on_cran()
+  set.seed(2)
+  d <- expand.grid(g = factor(1:4), rep = 1:6)
+  d$blk <- factor(d$rep)
+  d$x <- runif(nrow(d))
+  d$y <- as.numeric(d$g) / 3 + sin(3 * d$x) + rnorm(6)[d$blk] + rnorm(nrow(d), 0, 0.4)
+  f <- suppressMessages(semireg(y ~ g + s(x) + (1 | blk), data = d))
+  p <- predictmeans(f, "g")
+  pn <- predictmeans(f$semer, "g")                         # the mixed model: KR by default
+  k <- match(paste(p$pairs$level1, p$pairs$level2), paste(pn$pairs$level1, pn$pairs$level2))
+  expect_equal(p$pairs$std.error, pn$pairs$std.error[k], tolerance = 1e-8)
+  expect_equal(p$pairs$df, pn$pairs$df[k], tolerance = 1e-8)
+  expect_true(p$settings$vcov_adjust)
+  expect_match(p$settings$df_method, "^Kenward-Roger \\(pairs")
+  p0 <- predictmeans(f, "g", vcov_adjust = FALSE)
+  expect_false(p0$settings$vcov_adjust)
+  expect_true(all(p0$pairs$std.error < p$pairs$std.error))
+  expect_equal(p0$means$std.error, p$means$std.error)        # the means keep Satterthwaite
+})

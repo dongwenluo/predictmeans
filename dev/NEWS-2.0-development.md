@@ -3359,3 +3359,16 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   "resampling" attribute, perms refused, integral comment, the failure note;
   (10) tests: nested farm/plot, baseline covariate, numeric 0/1, random
   allocations reproducible.
+* G3 simulation (dev/sim-clmm-few/README.md): 300 data sets each; size at 5%
+  with 6/8/12 clusters: inner-outer t 3.4/4.4/5.4%, z 10.5/10.8/8.7%,
+  bootstrap 4.7/5.1/3.7%, cluster permutation 0/3.4/2.7% (valid but coarse);
+  power at 8 clusters (effect 1.5): 34/47/31/11%.
+* semireg means (2026-11-26, maintainer's decision): pairs that are fixed-
+  effect contrasts get the Kenward-Roger adjusted SEs and df of the REML
+  mixed model (pm_sr_kr(), R/semireg-means.R; = predictmeans($semer) exactly;
+  Slate Hall mean SED 0.679, unadjusted 0.6675); means keep Satterthwaite
+  (they use the smooth's random coefficients, where KR is not defined);
+  vcov_adjust passed through (FALSE: unadjusted); settings$vcov_adjust says
+  which. summary() of semireg means: the means table carries 'estimable'.
+  corAR1xAR1 help: SEDs 0.617 vs 0.679 (both KR). CLAUDE.md: review effort
+  by kind of change; check the pkgdown index before and after each PR.

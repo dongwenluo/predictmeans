@@ -33,6 +33,8 @@
 #'   tests with Satterthwaite df for the combination of fixed and smooth coefficients (the means include the smooths'
 #'   random effects; SAS gives such df to estimates that involve random effects), from the design's variance
 #'   components and the residual with the smoothing parameters held at their estimates (as \code{\link{semipred}});
+#'   pairs that are contrasts of the fixed effects only (the smooths cancel) get the Kenward-Roger adjusted SEs and
+#'   df of the REML mixed model, as an \code{lmer} fit (\code{vcov_adjust = FALSE}: unadjusted, Satterthwaite);
 #'   for generalized fits the inner-outer df of the design's strata (the GLMM default; normal-based without random
 #'   terms besides the smooths).
 #' @param modelterm Name (in "quotes") for indicating which factor term's predicted mean to be calculated:
@@ -127,7 +129,8 @@
 #' @param vcov_adjust For models fitted by REML (\code{lmer}, \code{lme}, \code{gls}) with Kenward-Roger df: if \code{TRUE} (the default), standard errors use the Kenward-Roger
 #'   adjusted covariance matrix of the fixed effects, as SAS \code{DDFM=KR} and \pkg{emmeans} do, to go with the
 #'   Kenward-Roger degrees of freedom. \code{FALSE} uses the unadjusted covariance and reproduces results of
-#'   predictmeans 1.x. It has no effect for other models.
+#'   predictmeans 1.x. For gaussian \code{semireg} fits it applies to the pairs (fixed-effect contrasts). It has no
+#'   effect for other models.
 #' @param weights Passed to \code{\link{Kmatrix}}: how the cells of the factors that are not in \code{modelterm} are weighted when averaging over them:
 #'   \code{"equal"} (the default; equal weights), \code{"proportional"} (weights proportional to the frequencies of
 #'   those cells in the data, the same for every mean, as SAS \code{LSMEANS / OM}), \code{"outer"} (products of each
@@ -438,7 +441,8 @@ predictmeans <- function (model, modelterm, data=NULL, pairwise=NULL, atvar=NULL
       stop("weights = \"", match.arg(weights), "\" is not yet available for semireg() fits: their means use ",
            "equal weights.", call. = FALSE)
     }
-    return(pm_semireg_means(model, modelterm, covariate = covariate, level = level, adj = adj, atvar = atvar))
+    return(pm_semireg_means(model, modelterm, covariate = covariate, level = level, adj = adj, atvar = atvar,
+                            vcov_adjust = vcov_adjust))
   }
 
   weights <- match.arg(weights)

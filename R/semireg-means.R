@@ -7,7 +7,7 @@
 ## without strata), as semipred(). Returns the stable tables (means, pairs,
 ## settings).
 pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05, adj = "none", atvar = NULL,
-                             unconditional = getOption("predictmeans.semi_unconditional")) {
+                             unconditional = getOption("predictmeans.semi_unconditional"), vcov_adjust = TRUE) {
   adj <- pm_match_adj(adj)
   mod_df <- semireg$data
   cov_names <- covV <- NULL
@@ -40,6 +40,14 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   df_cases <- attr(dfs, "df_cases")
   dfs <- as.numeric(dfs)
   dfs[is.na(dfs)] <- Inf
+  # pairs that are contrasts of the fixed effects only (the smooth parts cancel, as between levels of a factor
+  # added to the smooth): Kenward-Roger adjusted SEs and df of the gaussian REML fit, as predictmeans() of an
+  # lmer fit (decision of 2026-11-26); means, which use the smooth's random coefficients, keep Satterthwaite
+  kr <- if (isTRUE(vcov_adjust) && n > 1 && !is.null(des$cov_idx)) pm_sr_kr(semireg, CM %*% D, des$cov_idx)
+  if (!is.null(kr)) {
+    dfs[-seq_len(n)] <- kr$df
+    df_label <- paste0("Kenward-Roger (pairs, fixed effects; adjusted SEs); ", df_label, " (means)")
+  }
   df_m <- dfs[seq_len(n)]
   tq <- stats::qt(1 - level/2, df_m)
   means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se,
@@ -60,7 +68,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
     pp <- pm_pair_index(n)
     df_p <- dfs[-seq_len(n)]
     pe <- drop(CM %*% est)
-    pV <- CM %*% V %*% t(CM)
+    pV <- if (is.null(kr)) CM %*% V %*% t(CM) else kr$V
     pse <- sqrt(diag(pV))
     stat <- pe/pse
     p <- 2*stats::pt(-abs(stat), df_p)
@@ -113,7 +121,7 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   if (!is.null(zi)) message(attr(zi, "note"))
   settings <- list(modelterm = modelterm, level = level, adjust = adj, atvar = atvar, df_method = df_label,
                    df_cases = if (is.null(df_cases)) NA_character_ else df_cases,
-                   vcov_adjust = FALSE, nperm = NA_integer_, covariates = covariate, weights_by = NA_character_,
+                   vcov_adjust = !is.null(kr), nperm = NA_integer_, covariates = covariate, weights_by = NA_character_,
                    component = if (is.null(pm_zi_component(semireg))) NA_character_ else "conditional", model_class = "semireg",
                    version = as.character(utils::packageVersion("predictmeans")))
   out <- structure(list(means = means, pairs = pairs, settings = settings), vcov = V,
@@ -138,4 +146,25 @@ print.pm_semimeans <- function(x, digits = 4, ...) {
   }
   pm_print_advice(x)
   invisible(x)
+}
+
+## Kenward-Roger for the pairs of semireg means (gaussian lme4 engine): when
+## every row of L (columns: the coefficients 'idx' of the fit, fixed effects
+## first) uses fixed effects only, list(V: their KR-adjusted covariance, df:
+## KR df), from the REML mixed model of the fit (pm_vcov_kr(), R/kr.R); NULL
+## otherwise (a row with smooth random coefficients, a glmmTMB or ML fit, or
+## a failed adjustment: then Satterthwaite, with a message for the failure).
+pm_sr_kr <- function(semireg, L, idx) {
+  semer <- semireg$semer
+  if (!inherits(semer, "lmerMod") || !isTRUE(lme4::getME(semer, "is_REML"))) return(NULL)
+  p <- length(lme4::fixef(semer))
+  L <- as.matrix(L)
+  fx <- idx <= p
+  if (any(abs(L[, !fx, drop = FALSE]) > 1e-10)) return(NULL)
+  Lf <- matrix(0, nrow(L), p)
+  Lf[, idx[fx]] <- L[, fx, drop = FALSE]
+  Vadj <- pm_try_vcov_kr(semer)
+  if (is.null(Vadj)) return(NULL)
+  V0 <- as.matrix(stats::vcov(semer))
+  list(V = Lf %*% as.matrix(Vadj) %*% t(Lf), df = as.numeric(pm_kr_ddf(Lf, V0, Vadj)))
 }
