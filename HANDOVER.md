@@ -50,7 +50,7 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
 2. **SAS run** for the maintainer: `dev/sas/glimmix-trials.sas` (does GLIMMIX
    count rows or trials for events/trials data?).
 3. **B4 block** (`dev/review-b4.md`, agreed): G1-G4 done; one PR after the
-   maintainer's decision on the trial count. AR2 only if asked.
+   remaining decisions (KR for semireg means; review effort). AR2 only if asked.
 4. **Paper** (plan Part C): `dev/paper/outline.md` (design rules, evidence for
    each default, SAS/Genstat checks, comparison with emmeans); journal to be
    chosen (JSS or The R Journal).
@@ -84,9 +84,11 @@ Details and file names in O16/O17; user-facing summary in NEWS.md.
   holds several (binomial trials, class-response case weights;
   `pm_freq_w()`); `settings$weights_by`.
 - **Inner-outer df of aggregated binomial GLMMs** count trials (cases), not
-  rows (`dev/sim-df-io-trials.R`: rows 0-2.6%, trials 3.7-4.3% at 5%);
+  rows (the maintainer's decision; `dev/sim-df-io-trials.R`: rows 0-2.6%,
+  trials 3.7-4.3% at 5%; overdispersed 9-12% vs rows 3.5%);
   `options(predictmeans.inner_outer_count = "rows")`; advice
-  `overdispersion_trials`. SAS check pending: `dev/sas/glimmix-trials.sas`.
+  `overdispersion_trials` says when to count rows. SAS check pending:
+  `dev/sas/glimmix-trials.sas`.
 - **clm with nominal or scale effects** (B4 G1): class probabilities,
   = `predict.clm()` with SEs.
 - **clmm population-average probabilities** (B4 G2): `bias_adjust = TRUE`.

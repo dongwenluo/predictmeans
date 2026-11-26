@@ -184,6 +184,15 @@ test_that("inner-outer cases: classes, zero trials, weights that are not counts,
   pc <- predictmeans(gc, "trt", pairwise = TRUE)
   expect_equal(pc$pairs$df, 10)
   expect_false("overdispersion_trials" %in% advice(pc)$id)
+  # Pearson ratio above 1 without a significant test: a note on when to count rows
+  set.seed(6)
+  dn <- expand.grid(trt = factor(1:4), blk = factor(1:6))
+  dn$m <- 25
+  dn$y <- rbinom(24, 25, plogis(rnorm(6)[dn$blk] + rnorm(24, 0, 0.2)))
+  gn <- suppressMessages(lme4::glmer(cbind(y, m - y) ~ trt + (1 | blk), family = binomial, data = dn))
+  an <- attr(predictmeans(gn, "trt"), "advice")
+  expect_identical(an$level[an$id == "overdispersion_trials"], "note")
+  expect_match(an$text[an$id == "overdispersion_trials"], "inner_outer_count = \"rows\"")
   # df given by the user: not inner-outer, so nothing counted
   expect_true(is.na(predictmeans(go, "trt", df_method = 5)$settings$df_cases))
   # binary data with sampling weights: no dispersion test

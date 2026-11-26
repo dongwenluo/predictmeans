@@ -265,9 +265,9 @@ pm_ord_link_fd <- function(link) {
 ## Population-average class probabilities of a clmm (B4 G2, dev/review-b4.md):
 ## P(Y <= j | x) = E F(z - s U), z = theta_j - x'b, U ~ N(0, 1), s^2 the sum of
 ## the random-intercept variances (z' Sigma z for intercepts: one normal
-## number, so one integral). Computed by integrate(), split where z - s u = 0
-## (a fixed Gauss-Hermite rule was off by up to 5e-3 at s = 5 for cloglog),
-## with its derivatives in z and in s. Returns s, its gradient in the
+## number, so one integral; pm_ord_pop_int(): a 60-node Gauss-Hermite rule for
+## s <= 0.5, integrate() split where z - s u = 0 above, where a fixed rule was
+## off by up to 5e-3 at s = 5 for cloglog), with its derivatives in z and s. Returns s, its gradient in the
 ## random-effect parameters of vcov() (named), which are log SDs for one
 ## random intercept fitted the default way and SDs otherwise (decided from the
 ## optimiser's values, model$optRes$par); SDs at 0 (below 1e-3, left out of

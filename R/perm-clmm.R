@@ -1,23 +1,26 @@
 ## permmodels() for ordinal::clmm (B4 G3, dev/review-b4.md): randomisation
 ## tests of the terms applied to whole clusters, one cluster-level variable
-## at a time. For a variable v (a main-effect term of the model, constant
-## within the clusters of a random-effect factor g; the finest such g),
-## v's values are relabelled among the clusters within strata: the
-## clusters that share the other variables constant within g (fixed blocks,
-## other cluster-level factors) and the coarser grouping factors g is nested
-## in (farms of plots). Under the null hypothesis that v has no effect at all
-## (main effect and interactions) every such allocation is equally likely,
-## so the test is exact whatever the within-cluster effects and cluster
-## sizes. The statistic is v's Wald chi-square (Type II or III).
-##   - Allocations: the product over strata of multinomial counts. At most
-##     nperm: all are used (exact p-values). For a factor whose levels have
-##     equal counts in every stratum, relabelling its levels gives the same
-##     statistic: one allocation per class is refitted (weight k!), which
-##     removes ties broken by optimiser noise and divides the work by k!.
-##     Otherwise nperm random allocations (seed, else the user's stream);
-##     near-ties (relative 1e-6) count as at least as large.
-##   - A refit that does not converge (pm_clmm_ok()) counts as at least as
-##     extreme as the observed allocation (conservative), with a note.
+## at a time. For a variable v (a main-effect term of the model) the unit is
+## the coarsest random-effect factor within whose clusters v is constant (a
+## farm-level treatment under (1 | farm/plot): farms); v's values are
+## relabelled among those clusters within strata: the factors (not numeric
+## covariates, which stay with their clusters) constant within the clusters,
+## and the coarser random-effect factors the clusters are nested in. Under
+## the null hypothesis that v has no effect at all (main effect and
+## interactions) every such allocation is equally likely, so the test is
+## exact whatever the within-cluster effects and cluster sizes. The statistic
+## is v's Wald chi-square (Type II or III).
+##   - Allocations: the product over strata of multinomial counts. When v
+##     has equal counts of its values in every stratum and is a factor or has
+##     two values, relabelling its values gives the same statistic: one
+##     allocation per relabelling class is used (weight k!), which removes
+##     ties broken by optimiser noise and divides the work by k!. When the
+##     classes are at most nperm all are used (exact p-values; the observed
+##     one not refitted), else nperm random allocations (seed, else the
+##     user's stream).
+##   - Ties: pm_perm_p(rel_tol = 1e-4) (clmm refits agree to about 1e-5).
+##   - A refit that does not converge or gives no statistic counts as at
+##     least as extreme as the observed allocation (conservative), with a note.
 ## Returns the permmodels() result (tables, notes, advice).
 pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
   w <- pm_freq_w(model)
@@ -36,15 +39,16 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
   fvars <- all.vars(stats::delete.response(stats::terms(ff)))
   const <- function(x, g) all(tapply(as.character(x), g, function(v) length(unique(v)) == 1L))
   nested_in <- function(g, f) nlevels(f) < nlevels(g) && const(f, g)
+  is_fac <- function(x) is.factor(x) || is.character(x) || is.logical(x)
   aT <- pm_anova(model, type = type, test_statistic = "Chisq")
   tests <- list()
   for (v in intersect(tl, fvars)) {                      # main-effect terms of one variable
     ks <- which(vapply(gf, function(g) const(d[[v]], g), logical(1)))
     if (!length(ks)) next
-    k <- ks[which.max(vapply(gf[ks], nlevels, integer(1)))]       # the finest grouping that holds v
+    k <- ks[which.min(vapply(gf[ks], nlevels, integer(1)))]       # the coarsest grouping that holds v
     g <- gf[[k]]
     first <- !duplicated(g)
-    others <- setdiff(fvars[vapply(fvars, function(u) const(d[[u]], g), logical(1))], v)
+    others <- setdiff(fvars[vapply(fvars, function(u) is_fac(d[[u]]) && const(d[[u]], g), logical(1))], v)
     coarse <- gf[vapply(gf, function(f) nested_in(g, f), logical(1))]
     strata_df <- c(lapply(d[others], function(x) x[first]), lapply(coarse, function(f) f[first]))
     strat <- if (length(strata_df)) do.call(paste, c(lapply(strata_df, as.character), sep = "\r")) else
@@ -62,16 +66,23 @@ pm_perm_clmm <- function(model, nperm, type, data, seed, ncore) {
   ANOVA[names(p), "Perm_p_value"] <- round(p, 4)
   ctab <- pm_coef_table(model)
   COEF <- round(cbind(ctab, Perm_p_value = NA_real_), 4)
-  for (v in names(p)) {                                  # one coefficient: its |z| test is the term's
-    j <- which(attr(pm_basis(model, d[1, , drop = FALSE]), "assign") == match(v, tl))
-    if (length(j) == 1) COEF[colnames(pm_basis(model, d[1, , drop = FALSE]))[j], "Perm_p_value"] <- round(p[[v]], 4)
+  X1 <- pm_basis(model, d[1, , drop = FALSE])
+  inter <- tl[grepl(":", tl, fixed = TRUE)]
+  for (v in names(p)) {
+    # one coefficient whose z^2 is the term's statistic (v in no interaction): the same test
+    j <- which(attr(X1, "assign") == match(v, tl))
+    in_int <- any(vapply(strsplit(inter, ":", fixed = TRUE), function(s) v %in% s, logical(1)))
+    if (length(j) == 1 && !in_int) COEF[colnames(X1)[j], "Perm_p_value"] <- round(p[[v]], 4)
   }
   attr(ANOVA, "heading") <- attr(aT, "heading")
   notes <- vapply(res, `[[`, "", "note")
   out <- pm_permmodels_result(list(permlist = NULL, COEFFICENTS = COEF, ANOVA = ANOVA),
-                              "Note: Perm_p_value of a single-coefficient term is that of its term (below).",
+                              "Note: Perm_p_value is given for a coefficient that alone is a tested term (below).",
                               paste(c("Note: Perm_p_value from randomisation of whole clusters:", notes),
                                     collapse = " "))
+  # (the advice on few resamples for the variables tested by random allocations)
+  B <- unlist(lapply(res, function(r) if (!r$exact) r$B))
+  if (length(B)) out <- pm_add_advice(out, pm_perm_advice(out, min(B), FALSE))
   attr(out, "resampling") <- "cluster randomisation"
   out
 }
@@ -83,21 +94,22 @@ pm_perm_clmm_one <- function(model, d, tt, aT, nperm, type, seed, ncore) {
   lev <- as.character(tt$val)
   count <- exp(sum(vapply(by_s, function(i) lfactorial(length(i)) - sum(lfactorial(table(lev[i]))), 0)))
   if (round(count) <= 1) {
-    return(list(p = NA_real_, note = paste0(tt$v, ": no other allocation within ",
-                                           paste(tt$others, collapse = ", "), " (not tested).")))
+    return(list(p = NA_real_, exact = TRUE, note = paste0(tt$v, ": no other allocation within ",
+                                                          paste(tt$others, collapse = ", "), " (not tested).")))
   }
-  # a factor with equal counts of its levels in every stratum: the statistic does not change when its levels
-  # are relabelled, so one allocation per relabelling class (levels in order of first appearance)
-  isf <- is.factor(tt$val) || is.character(tt$val)
+  # relabelling v's values changes neither the fit nor the statistic for a factor or a two-valued variable;
+  # with equal counts of each value in every stratum it maps allocations onto allocations: one per class
   lv <- unique(lev)
-  sym <- isf && all(vapply(by_s, function(i) {
-    tb <- table(factor(lev[i], levels = lv))
-    all(tb == tb[1])
-  }, logical(1)))
+  sym <- (is.factor(tt$val) || is.character(tt$val) || is.logical(tt$val) || length(lv) == 2) &&
+    all(vapply(by_s, function(i) {
+      tb <- table(factor(lev[i], levels = lv))
+      all(tb == tb[1])
+    }, logical(1)))
   wt <- if (sym) factorial(length(lv)) else 1
-  enumerate <- count <= nperm
+  ncls <- round(count / wt)
+  enumerate <- ncls <= nperm
+  obs_a <- match(lev, lv)                                 # the observed allocation (canonical: levels by first use)
   alloc <- if (enumerate) {
-    # all allocations: the product over strata of the distinct orderings of each stratum's values
     per <- lapply(by_s, function(i) pm_multiset_perms(match(lev[i], lv)))
     ix <- as.matrix(expand.grid(lapply(per, function(m) seq_len(ncol(m)))))
     A <- apply(ix, 1, function(r) {
@@ -110,7 +122,7 @@ pm_perm_clmm_one <- function(model, d, tt, aT, nperm, type, seed, ncore) {
     A
   } else {
     draw <- function() replicate(nperm, {
-      out <- match(lev, lv)
+      out <- obs_a
       for (i in by_s) out[i] <- out[i][sample.int(length(i))]
       out
     })
@@ -128,22 +140,24 @@ pm_perm_clmm_one <- function(model, d, tt, aT, nperm, type, seed, ncore) {
     tryCatch(suppressMessages(pm_anova(f, type = type, test_statistic = "Chisq"))[tt$v, "Chisq"],
              error = function(e) NA_real_)
   }
-  sims <- unlist(pm_perm_map(lapply(seq_len(ncol(alloc)), function(j) alloc[, j]), stat, ncore,
-                             packages = "ordinal"))
   obs <- aT[tt$v, "Chisq"]
-  ge <- is.na(sims) | sims >= obs * (1 - 1e-6) - 1e-10       # failed refits: as extreme (conservative)
+  is_obs <- if (enumerate) apply(alloc, 2, function(a) identical(a, obs_a)) else rep(FALSE, ncol(alloc))
+  todo <- which(!is_obs)
+  sims <- rep(obs, ncol(alloc))                           # (the observed allocation is not refitted)
+  sims[todo] <- unlist(pm_perm_map(lapply(todo, function(j) alloc[, j]), stat, ncore, packages = "ordinal"))
   nfail <- sum(is.na(sims))
-  total <- if (enumerate) round(count) else ncol(alloc) + 1
-  p <- if (enumerate) wt * sum(ge) / total else (sum(ge) + 1) / total
-  floor_p <- (if (enumerate) wt else 1) / total
+  sims[is.na(sims)] <- Inf                                # failed refits: as extreme (conservative)
+  p <- pm_perm_p(obs, sims, exact = enumerate, rel_tol = 1e-4)
+  floor_p <- if (enumerate) 1 / ncls else 1 / (ncol(alloc) + 1)
   note <- paste0(tt$v, ": relabelled among the levels of ", tt$g,
                  if (length(tt$others)) paste0(" within ", paste(tt$others, collapse = ", ")), "; ",
                  format(round(count), big.mark = ","), " allocations, ",
-                 if (enumerate) paste0("all used (exact p-value", if (sym) paste0(", ", wt, " relabellings of ",
-                                                                                  tt$v, "'s levels each"), ")")
+                 if (enumerate) paste0("all used (exact p-value", if (sym) paste0("; ", ncls, " refits, one per ",
+                                                                                  "relabelling of its values"), ")")
                  else paste0(ncol(alloc), " random ones"),
                  "; smallest attainable p-value ", format(signif(floor_p, 3), scientific = FALSE),
-                 if (nfail) paste0("; ", nfail, " refits did not converge and count as at least as extreme"),
+                 if (nfail) paste0("; ", nfail, " refits did not converge or gave no statistic and count as at ",
+                                   "least as extreme"),
                  ". The null hypothesis is no effect of ", tt$v, " at all (with its interactions).")
-  list(p = min(1, p), note = note)
+  list(p = min(1, p), note = note, exact = enumerate, B = ncol(alloc))
 }

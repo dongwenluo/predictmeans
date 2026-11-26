@@ -155,9 +155,9 @@ shows 1.1.1 and 2.0 code side by side.
   weights count the cases in the residual stratum, so aggregated data and one row per case get the same df
   (`settings$df_cases`; weights that are not whole numbers count rows). Counting rows rejected 0-2.6% of true
   null hypotheses at 5% in simulations, counting trials 3.7-4.3%; `options(predictmeans.inner_outer_count =
-  "rows")` counts rows. Trials assume binomial variation within clusters: when the fit's Pearson test finds
-  overdispersion, the advice `overdispersion_trials` says to add an observation-level random effect (its df
-  then count rows).
+  "rows")` counts rows. Trials assume binomial variation within clusters (with overdispersion the model leaves out
+  they gave 9-12%, rows 3.5%): the advice `overdispersion_trials` (a caution when the fit's Pearson test rejects, a
+  note when its ratio is above 1) says to add an observation-level random effect or to count rows.
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.
 * Kenward-Roger and Satterthwaite computed without n x n matrices; much faster.
 

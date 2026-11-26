@@ -96,7 +96,7 @@ test_that("clmm: parametric bootstrap and whole-cluster permutation of a between
   pp <- suppressWarnings(as.numeric(pr$ANOVA$Perm_p_value))
   expect_true(is.finite(pp[1]))
   expect_true(all(is.na(pp[2:3])))
-  expect_match(pr$notes$anova, "70 allocations, all used \\(exact p-value, 2 relabellings")
+  expect_match(pr$notes$anova, "70 allocations, all used \\(exact p-value; 35 refits")
   # reference: the exact p-value by hand, refitting all 70 allocations of the 8 clusters (4 + 4)
   st <- function(dd) suppressWarnings(pm_anova(ordinal::clmm(y ~ trt * W + (1 | clus), data = dd), type = "II",
                                                test_statistic = "Chisq")["trt", "Chisq"])
@@ -108,6 +108,27 @@ test_that("clmm: parametric bootstrap and whole-cluster permutation of a between
     st(dd)
   })
   expect_equal(pp[1], round(mean(sims >= obs * (1 - 1e-4)), 4))
+  # the same treatment coded 0/1: the same exact p-value (two values: one refit per relabelling too)
+  d01 <- d
+  d01$trt <- as.numeric(d$trt == "b")
+  m01 <- ordinal::clmm(y ~ trt * W + (1 | clus), data = d01)
+  expect_equal(as.numeric(suppressMessages(permmodels(m01, nperm = 99))$ANOVA["trt", "Perm_p_value"]), pp[1])
+  # a cluster-level baseline covariate stays with its cluster (not a stratum); random allocations reproducible
+  d$x <- stats::rnorm(8)[d$clus]
+  mx <- ordinal::clmm(y ~ trt + x + (1 | clus), data = d)
+  px <- suppressMessages(permmodels(mx, nperm = 19, seed = 3))
+  expect_match(px$notes$anova, "trt: relabelled among the levels of clus; 70 allocations, 19 random ones")
+  expect_identical(suppressMessages(permmodels(mx, nperm = 19, seed = 3))$ANOVA, px$ANOVA)
+  # a farm-level treatment under (1 | farm/plot): farms are the units
+  set.seed(4)
+  fd <- expand.grid(sub = 1:3, plot = factor(1:2), farm = factor(1:6))
+  fd$trt <- factor(ifelse(as.integer(fd$farm) <= 3, "a", "b"))
+  fd$y <- cut(rnorm(6)[fd$farm] + 0.7 * (fd$trt == "b") + rlogis(nrow(fd)), c(-Inf, -0.5, 0.8, Inf), labels = 1:3,
+              ordered_result = TRUE)
+  mf <- suppressWarnings(ordinal::clmm(y ~ trt + (1 | farm/plot), data = fd))
+  pf <- suppressMessages(permmodels(mf, nperm = 99))
+  expect_match(pf$notes$anova, "trt: relabelled among the levels of farm; 20 allocations")
+  expect_true(as.numeric(pf$ANOVA["trt", "Perm_p_value"]) >= 0.1)
   # an RCBD with subsamples: trt is randomised within blocks (2^3 = 8 allocations, smallest p 2/8)
   set.seed(2)
   r <- expand.grid(sub = 1:4, trt = factor(c("a", "b")), block = factor(1:3))

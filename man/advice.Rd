@@ -37,7 +37,7 @@ for. \code{advice()} returns it as a data frame, for code and AI assistants.
   \code{bias_adjust} \tab predictmeans, covariatemeans \tab back-transformed means are a typical cluster's or a median, not the mean \cr
   \code{contrast_common_cells} \tab contrastmeans \tab contrasts are estimated on the cells their means share \cr
   \code{small_df} \tab predictmeans, contrastmeans \tab degrees of freedom below 5 \cr
-  \code{overdispersion_trials} \tab predictmeans, contrastmeans \tab inner-outer df count binomial trials and the fit is overdispersed (Pearson test): add an observation-level random effect \cr
+  \code{overdispersion_trials} \tab predictmeans, contrastmeans \tab inner-outer df count binomial trials and the Pearson ratio is above 1 (caution when its test rejects): add an observation-level random effect or count rows \cr
   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr

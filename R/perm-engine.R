@@ -144,10 +144,11 @@ pm_perm_exact <- function(exact, perms) {
 ## the +1 terms when 'exact' is TRUE (all permutations enumerated).
 ## Simulated statistics that are NA are left out; an NA observed statistic
 ## gives an NA p-value.
-pm_perm_p <- function(obs, sims, exact = FALSE, digits = 6) {
+pm_perm_p <- function(obs, sims, exact = FALSE, digits = 6, rel_tol = NULL) {
   sims <- matrix(sims, nrow = length(obs))
   ok <- !is.na(sims)
-  ge <- round(sims, digits) >= round(obs, digits)
+  # ties: equal to 'digits'; or, for statistics from iterative refits (clmm), within a relative 'rel_tol'
+  ge <- if (is.null(rel_tol)) round(sims, digits) >= round(obs, digits) else sims >= obs * (1 - rel_tol) - 1e-10
   ge[!ok] <- FALSE
   p <- (rowSums(ge) + !exact) / (rowSums(ok) + !exact)
   p[is.na(obs)] <- NA

@@ -15,11 +15,13 @@ applied to whole clusters (constant within the clusters of a random effect) is t
 its values are relabelled among the clusters within strata (the other cluster-level variables, such as fixed
 blocks, and coarser random effects the clusters are nested in), the model refitted and its Wald chi-square
 compared. This is exact for the null hypothesis that the variable has no effect at all (main effect and
-interactions), whatever the within-cluster effects and cluster sizes; \code{perms} and \code{exact} are not
-used. When the allocations are at most \code{nperm} all are used (exact p-values; for equal group sizes one
-per relabelling of the levels, which give the same statistic); refits that do not converge count as at least
-as extreme. A note gives, for each variable, the strata, the number of allocations and the smallest
-attainable p-value (6 clusters split 3/3: 20 allocations, p at least 0.1); other terms get none.
+interactions), whatever the within-cluster effects and cluster sizes. The clusters are those of the coarsest
+random effect within which the variable is constant; numeric covariates stay with their clusters. \code{perms}
+is refused and \code{exact} not used. When the allocations (one per relabelling of the values, which give the
+same statistic, for equal group sizes) are at most \code{nperm} all are used (exact p-values); refits that do
+not converge count as at least as extreme. A note gives, for each variable, the strata, the number of
+allocations and the smallest attainable p-value (6 clusters split 3/3: 20 allocations, p at least 0.1);
+other terms get none. The result's attribute \code{"resampling"} is \code{"cluster randomisation"}.
 \code{\link{bootmodels}} tests every term, by a parametric bootstrap under the global null.}
 
 \item{nperm}{The number of permutations. The default is 4999.}

@@ -208,10 +208,12 @@ term the df of the term. In simulations it rejected 6-8\% of true hypotheses for
 clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
 the check with few clusters. Within clusters the cases count: the trials of aggregated binomial data and the
 case weights of \code{clmm} (\code{settings$df_cases}), so aggregated data and one row per case get the same
-df (counting rows rejected 0-2.6\% in simulations, counting trials 3.7-4.3\%; \code{options(
-predictmeans.inner_outer_count = "rows")} counts rows). Trials assume binomial variation within clusters; with
-overdispersion add an observation-level random effect (\code{(1 | obs)}), whose df count rows (the advice
-\code{overdispersion_trials} says when). \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
+df (counting rows rejected 0-2.6\% in simulations, counting trials 3.7-4.3\%). Trials assume binomial
+variation within clusters: with overdispersion the model leaves out they were too liberal (9-12\%, rows
+3.5\%). Count rows (\code{options(predictmeans.inner_outer_count = "rows")}, conservative) or add an
+observation-level random effect (\code{(1 | obs)}, whose df count rows) when the trials of a row are not
+independent (plants in a pot, animals in a pen) or the Pearson chi-square / df is above 1; the advice
+\code{overdispersion_trials} says so for the fit. \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
 and \code{"inner-outer"} for \code{lmer} and \code{lme}.
 \code{glm} models with a known dispersion (Poisson, binomial, negative binomial) get z tests
 (\code{"asymptotic (z)"}), as \pkg{emmeans} and SAS GLIMMIX; \code{"residual"} gives the t tests with the

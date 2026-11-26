@@ -3337,3 +3337,25 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   not used for clmm, with a message; (10) a bootstrap permlist given as
   b$permlist is accepted; (11) semireg means count their pairs for the
   many-tests advice; (12) plan O16.
+* Inner-outer count: the maintainer's decision (2026-11-26): trials by
+  default, with advice on when to count rows. overdispersion_trials has two
+  levels: a caution when the fit's Pearson test rejects, a note when its
+  ratio is above 1 without rejecting (the test has little power: it found
+  15% of the row-SD-0.3 data sets); both say to add (1 | obs) or count rows
+  (options(predictmeans.inner_outer_count = "rows"), conservative), e.g.
+  when the trials of a row are not independent (plants in a pot).
+* Sixth review (pm_perm_clmm, 10 findings): (1) the unit is the coarsest
+  random effect within which the variable is constant (a farm-level
+  treatment under (1 | farm/plot) was not tested); (2) only factors form
+  strata, numeric covariates stay with their clusters (a baseline covariate
+  blocked the treatment's test); (3) the relabelling reduction also for
+  two-valued variables (numeric 0/1 = factor: same p-value, tested), and
+  ties within a relative 1e-4 through pm_perm_p(rel_tol =) (one rule);
+  (4) robust = TRUE stops for clmm; (5) a coefficient's Perm_p_value only
+  when it alone is a tested term not in an interaction; (6) the few-resamples
+  advice for random allocations; (7) semireg means: ntests 0 again (their
+  pairs are always built); (8) enumeration when the classes (count / k!) are
+  at most nperm; the observed allocation is not refitted; (9) docs: the
+  "resampling" attribute, perms refused, integral comment, the failure note;
+  (10) tests: nested farm/plot, baseline covariate, numeric 0/1, random
+  allocations reproducible.
