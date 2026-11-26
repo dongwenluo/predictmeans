@@ -132,6 +132,7 @@ reference:
   - heritability
   - residplot
   - residvariogram
+  - corAR1xAR1
   - autoplot.pm_variogram
   - CookD
   - pm_check
