@@ -41,3 +41,13 @@ test_that("semireg means of aggregated binomial data: df_cases recorded, trials 
   expect_identical(as.vector(p$settings$df_cases), "trials")
   expect_false("singular_fit" %in% advice(p)$id)
 })
+
+test_that("summary() of semireg means works (the means carry 'estimable')", {
+  set.seed(1)
+  d <- data.frame(x = runif(60), g = factor(rep(1:3, 20)))
+  d$y <- sin(3 * d$x) + as.numeric(d$g) / 2 + rnorm(60, 0, 0.3)
+  f <- suppressMessages(semireg(y ~ g + s(x), data = d))
+  p <- predictmeans(f, "g")
+  expect_true(all(p$means$estimable))
+  expect_output(print(summary(p)), "Predicted means")
+})

@@ -42,7 +42,8 @@ pm_semireg_means <- function(semireg, modelterm, covariate = NULL, level = 0.05,
   dfs[is.na(dfs)] <- Inf
   df_m <- dfs[seq_len(n)]
   tq <- stats::qt(1 - level/2, df_m)
-  means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se)
+  means <- cbind(lab, estimate = est, std.error = se, df = df_m, conf.low = est - tq*se, conf.high = est + tq*se,
+                 estimable = rep(TRUE, n))           # (the column of predictmeans()' means; summary() reads it)
   rownames(means) <- NULL
 
   semer <- des$semer
