@@ -187,6 +187,11 @@ shows 1.1.1 and 2.0 code side by side.
   lme now leave out variance components (and a nugget) estimated at 0, and a failed Kenward-Roger falls back to
   Satterthwaite; `na.exclude` fits no longer break them. `residvariogram()` advice now points to it (or to a smooth `t2(row, col)` trend). New article "Spatial analysis of a field trial"
   (Slate Hall: variogram, AR1 x AR1 with and without a nugget, the `t2()` trend).
+* `residplot()`, `pm_check()` and `residvariogram()` of `gls` and `lme` fits with a grouped correlation: the
+  normalized residuals were misplaced when the data were not sorted by the groups (nlme's
+  `residuals(type = "normalized")`, off by up to 2 standard deviations); they are now whitened group by group.
+  For `corAR1xAR1()` fits the plots are taken in row and column order, so the residuals do not depend on the
+  order of the data.
 
 ### Mixed models and variance components
 

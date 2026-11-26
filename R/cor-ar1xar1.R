@@ -53,9 +53,9 @@
 #' variety test with \code{df_method = "KR-average"}. Kenward-Roger and
 #' Satterthwaite leave out variance components (and a nugget) estimated at 0.
 #'
-#' Normalized residuals, and so the \code{residvariogram()} check of such a fit,
-#' depend a little on the order of the plots in the data: sort the data by trial,
-#' row and column before fitting so the check can be repeated.
+#' Normalized residuals (\code{residplot()}, \code{residvariogram()}) are whitened
+#' with the plots of each group in row and column order, so they do not depend on
+#' the order of the data.
 #' @return An object of class \code{c("corAR1xAR1", "corStruct")} for the
 #'   \code{correlation} argument; \code{coef(fit$modelStruct$corStruct,
 #'   unconstrained = FALSE)} gives \eqn{\phi_r}, \eqn{\phi_c} (and the nugget share).

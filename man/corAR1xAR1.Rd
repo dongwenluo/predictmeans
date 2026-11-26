@@ -68,9 +68,9 @@ each model within 5e-6 (tested to 1e-5); the Wald statistic; the d.d.f. of the
 variety test with \code{df_method = "KR-average"}. Kenward-Roger and
 Satterthwaite leave out variance components (and a nugget) estimated at 0.
 
-Normalized residuals, and so the \code{residvariogram()} check of such a fit,
-depend a little on the order of the plots in the data: sort the data by trial,
-row and column before fitting so the check can be repeated.
+Normalized residuals (\code{residplot()}, \code{residvariogram()}) are whitened
+with the plots of each group in row and column order, so they do not depend on
+the order of the data.
 }
 \examples{
 \donttest{

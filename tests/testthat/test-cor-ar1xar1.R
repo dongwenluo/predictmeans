@@ -164,3 +164,27 @@ test_that("a simulated field with known phi is recovered", {
   }))
   expect_equal(unname(colMeans(est)), c(0.6, 0.4), tolerance = 0.1)
 })
+
+test_that("normalized residuals: right with grouped correlations on unsorted data, and independent of row order", {
+  skip_on_cran()
+  d <- slatehall()
+  d <- d[order(d$fieldrow, d$fieldcolumn), ]                  # not sorted by replicate
+  d$t <- ave(seq_len(nrow(d)), d$rep, FUN = seq_along)
+  ds <- d[order(d$rep, d$t), ]
+  k <- match(rownames(d), rownames(ds))
+  sr <- function(m) as.vector(predictmeans:::pm_std_resid(m))
+  # nlme's own normalized residuals are right only for data sorted by the groups
+  f <- nlme::gls(yield ~ variety, data = d, correlation = nlme::corAR1(form = ~ t | rep))
+  fs <- nlme::gls(yield ~ variety, data = ds, correlation = nlme::corAR1(form = ~ t | rep))
+  expect_equal(unname(sr(f)), as.vector(residuals(fs, type = "normalized"))[k], tolerance = 1e-10)
+  l <- nlme::lme(yield ~ variety, random = ~ 1 | rep, data = d, correlation = nlme::corAR1(form = ~ t))
+  ls <- nlme::lme(yield ~ variety, random = ~ 1 | rep, data = ds, correlation = nlme::corAR1(form = ~ t))
+  expect_equal(unname(sr(l)), as.vector(residuals(ls, type = "normalized"))[k], tolerance = 1e-10)
+  # corAR1xAR1: a plot's residual does not depend on the order of the rows
+  set.seed(1)
+  sh <- d[sample(nrow(d)), ]
+  a <- nlme::gls(yield ~ variety, data = d, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn | rep))
+  b <- nlme::gls(yield ~ variety, data = sh, correlation = corAR1xAR1(form = ~ fieldrow + fieldcolumn | rep))
+  key <- function(x) paste(x$fieldrow, x$fieldcolumn)
+  expect_equal(unname(sr(b)[match(key(d), key(sh))]), unname(sr(a)), tolerance = 1e-6)
+})

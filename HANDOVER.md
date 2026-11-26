@@ -51,9 +51,6 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
    - inner-outer df of aggregated binomial GLMMs count rows (as SAS), not
      trials: the maintainer decides (rows: 38, trials: 470 in test-inner-outer.R)
      (df below 1 now report "not available" and fall back);
-   - `residvariogram()` of nlme fits with a correlation depends a little on
-     the order of the rows (normalized residuals): sort by trial, row, column
-     inside, instead of the help's advice to sort;
    - the SAS `%show` macro in `dev/sas/ordinal.sas` printed nothing.
 3. **Next statistical block** (the maintainer chooses): `clm(nominal = ,
    scale = )` (B3c; refused now); population-average probabilities for
