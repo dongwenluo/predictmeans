@@ -66,6 +66,7 @@ Coordinates (coords): any positions. The semivariance by class of distance (clas
     <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
     <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
     <li><a class="dropdown-item" href="../articles/ordinal.html">Ordinal and categorical responses</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial.html">Spatial analysis of a field trial</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -277,10 +278,9 @@ University Press.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Advice:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ! Plots next to each other in the same column are more alike than the model</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   allows (the variogram is below the envelope at the shortest lag): the</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   standard errors of the means ignore it. Fit a spatial covariance (AR1 x</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   AR1 in ASReml or Genstat; in R, gls() or lme() with corExp(form = ~ row +</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   col)) or a smooth surface s(row, col) in semireg(), and check its</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   variogram.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   standard errors of the means ignore it. Fit a spatial covariance (gls()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   or lme() with corAR1xAR1(form = ~ row + col)) or a smooth surface t2(row,</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   col) in semireg(), and check its variogram.</span>
 <span class="r-in"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">v</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="residvariogram-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>

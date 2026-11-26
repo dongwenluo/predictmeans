@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
     <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
     <li><a class="dropdown-item" href="../articles/ordinal.html">Ordinal and categorical responses</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial.html">Spatial analysis of a field trial</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -299,18 +300,18 @@ means and their ratios.</p>
 <span class="r-in"><span>                  dispformula <span class="op">=</span> <span class="op">~</span><span class="fl">0</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="predictmeans.html">predictmeans</a></span><span class="op">(</span><span class="va">fa</span>, <span class="st">"A"</span>, covariate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, pairwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">pairs</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2   estimate std.error       df  statistic   p.value     p.adj</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2  0.2777639 0.4349906 13.49640  0.6385516 0.5338012 0.5338012</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.1610702 0.4431463 14.19657 -0.3634695 0.7216096 0.7216096</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.4388341 0.4381514 14.09415 -1.0015583 0.3334431 0.3334431</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     a1     a2  0.2777639 0.4349906 14.05310  0.6385517 0.5333837 0.5333837</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     a1     a3 -0.1610702 0.4431463 14.79034 -0.3634696 0.7213969 0.7213969</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     a2     a3 -0.4388341 0.4381514 14.13977 -1.0015583 0.3333896 0.3333896</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     conf.low conf.high       lsd p.method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.6584747 1.2140026 0.9362386        t</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -1.1102914 0.7881510 0.9492212        t</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -1.3779868 0.5003185 0.9391526        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.6548674 1.2103953 0.9326314        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -1.1067817 0.7846413 0.9457115        t</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -1.3777046 0.5000363 0.9388705        t</span>
 <span class="r-in"><span><span class="fu"><a href="varcomp.html">varcomp</a></span><span class="op">(</span><span class="va">fa</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                       vcov     SE  2.5 %       97.5 %</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> id.(Intercept)      0.0737 0.2157 0.0079 7.077491e+11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> id.1.var            0.3662 0.2435 0.1376 2.521000e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cor.id.1            0.7865 0.1441 0.3112 9.470000e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> id.(Intercept)      0.0737 0.2157 0.0079 7.071915e+11</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> id.1.var            0.3662 0.2435 0.1376 2.520800e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> cor.id.1            0.7865 0.1441 0.3113 9.470000e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa1.(Intercept) 0.0244 0.0257 0.0063 1.373100e+00</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa2.(Intercept) 0.0116 0.0160 0.0024 8.644800e+00</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> s_t_Aa3.(Intercept) 0.0425 0.0452 0.0109 2.558500e+00</span>

@@ -48,6 +48,7 @@ curves (Harezlak, Ruppert and Wand 2018, section 9.2), which semireg reproduces
     <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
     <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
     <li><a class="dropdown-item" href="../articles/ordinal.html">Ordinal and categorical responses</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial.html">Spatial analysis of a field trial</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -119,8 +120,8 @@ aldosterone excretion and plasma aldosterone concentrations in children. <em>New
 <span class="r-in"><span>                 <span class="op">(</span><span class="fu">s</span><span class="op">(</span><span class="va">age</span>, k <span class="op">=</span> <span class="fl">10</span>, xt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.5</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="va">idnum</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">gbm</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">$</span><span class="va">smooth</span>       <span class="co"># are the boys' curves straight lines?</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          term  variance    logLik logLik.without       LRT       p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1       s_age  9.067556 -935.7451      -974.5493  77.60836  6.281850e-19</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 s_age_idnum 18.185045 -935.7451     -1181.2087 490.92720 4.477477e-109</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       s_age  9.070032 -935.7451      -974.5493  77.60836  6.281847e-19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 s_age_idnum 18.184943 -935.7451     -1181.2087 490.92721 4.477475e-109</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                        test</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.5 chi2(0) + 0.5 chi2(1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.5 chi2(0) + 0.5 chi2(1)</span>

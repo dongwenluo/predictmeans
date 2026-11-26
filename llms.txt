@@ -163,6 +163,8 @@ checks.
   : Diagnostic Plots for a Fitted Model
 - [`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
   : Sample Variogram of the Residuals
+- [`corAR1xAR1()`](https://dongwenluo.github.io/predictmeans/reference/corAR1xAR1.md)
+  : Separable AR1 x AR1 correlation for field trials
 - [`autoplot(`*`<pm_variogram>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_variogram.md)
   : Plot a Residual Variogram
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)
@@ -302,3 +304,5 @@ differences and derivatives.
   models](https://dongwenluo.github.io/predictmeans/articles/R2-GLMM.md):
 - [Ordinal and categorical
   responses](https://dongwenluo.github.io/predictmeans/articles/ordinal.md):
+- [Spatial analysis of a field
+  trial](https://dongwenluo.github.io/predictmeans/articles/spatial.md):

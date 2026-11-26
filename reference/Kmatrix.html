@@ -80,6 +80,7 @@ The predicted means are built on a reference grid: every combination of the fact
     <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
     <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
     <li><a class="dropdown-item" href="../articles/ordinal.html">Ordinal and categorical responses</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial.html">Spatial analysis of a field trial</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -1025,10 +1026,10 @@ when factors do not interact: for <code>y ~ Line + Block + Site</code> with 300,
 <span class="r-in"><span>  <span class="co"># Covariates entering through transformations or only through interactions</span></span></span>
 <span class="r-in"><span>  <span class="va">fm2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">yield</span> <span class="op">~</span> <span class="va">Block</span> <span class="op">+</span> <span class="va">Variety</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">nitro</span>, <span class="fl">2</span><span class="op">)</span>, data<span class="op">=</span><span class="va">Oats</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu">Kmatrix</span><span class="op">(</span><span class="va">fm2</span>, <span class="st">"Variety"</span><span class="op">)</span><span class="op">$</span><span class="va">K</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             (Intercept)       Block.L Block.Q Block.C       Block^4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1 -1.110223e-16       0       0 -2.775558e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1 -1.110223e-16       0       0 -2.775558e-17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1 -1.110223e-16       0       0 -2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             (Intercept)       Block.L Block.Q Block.C      Block^4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain           1 -1.110223e-16       0       0 2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous            1 -1.110223e-16       0       0 2.775558e-17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Victory               1 -1.110223e-16       0       0 2.775558e-17</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   Block^5 VarietyMarvellous VarietyVictory poly(nitro, 2)1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Golden Rain -1.387779e-17                 0  -1.110223e-16               0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Marvellous  -1.387779e-17                 1  -1.110223e-16               0</span>

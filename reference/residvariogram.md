@@ -236,9 +236,8 @@ v
 #> Advice:
 #> ! Plots next to each other in the same column are more alike than the model
 #>   allows (the variogram is below the envelope at the shortest lag): the
-#>   standard errors of the means ignore it. Fit a spatial covariance (AR1 x
-#>   AR1 in ASReml or Genstat; in R, gls() or lme() with corExp(form = ~ row +
-#>   col)) or a smooth surface s(row, col) in semireg(), and check its
-#>   variogram.
+#>   standard errors of the means ignore it. Fit a spatial covariance (gls()
+#>   or lme() with corAR1xAR1(form = ~ row + col)) or a smooth surface t2(row,
+#>   col) in semireg(), and check its variogram.
 ggplot2::autoplot(v)
 ```

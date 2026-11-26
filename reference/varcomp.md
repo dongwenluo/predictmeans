@@ -282,9 +282,9 @@ varcomp(gm, test = TRUE)
 fm1 <- lme(yield ~ nitro*Variety, random=~1|Block/Variety, data=Oats)
 varcomp(fm1)
 #>                         vcov       SE    2.5 %    97.5 %
-#> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1692
-#> Variety.(Intercept) 106.0618  67.8756  40.9772  657.7746
-#> residual            177.0835  37.3325 121.8275  280.9250
+#> Block.(Intercept)   214.4745 168.8318  70.8610 2575.1700
+#> Variety.(Intercept) 106.0618  67.8756  40.9773  657.7748
+#> residual            177.0835  37.3325 121.8275  280.9249
 # the same components by the analysis of variance
 varcomp(aov(yield ~ nitro*Variety + Error(Block/Variety), data=Oats))
 #>                   vcov       SE    2.5 %    97.5 %
@@ -296,7 +296,7 @@ data(Orthodont, package="nlme")
 mod1 <- lme(distance ~ age, random=~age|Subject, data=Orthodont)
 varcomp(mod1)
 #>                            vcov     SE   2.5 %   97.5 %
-#> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6996
+#> Subject.(Intercept)      5.4151 4.9583  1.5819 128.6998
 #> Subject.age.(Intercept) -0.3211 0.4244 -0.4943   0.1570
 #> Subject.age              0.0513 0.0415  0.0166   0.6844
 #> residual                 1.7162 0.3303  1.2163   2.6042

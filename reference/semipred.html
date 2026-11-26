@@ -46,6 +46,7 @@ autoplot() returns."><meta property="og:image" content="https://dongwenluo.githu
     <li><a class="dropdown-item" href="../articles/tree-improvement.html">Experimental design and analysis for tree improvement</a></li>
     <li><a class="dropdown-item" href="../articles/R2-GLMM.html">Adjusted R² for GLMMs: Piepho (2023) examples</a></li>
     <li><a class="dropdown-item" href="../articles/ordinal.html">Ordinal and categorical responses</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial.html">Spatial analysis of a field trial</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -444,12 +445,12 @@ means and their ratios.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5    300    200    0.255 -0.9843485  1.436166 38.11365 -0.6854001 0.4972393</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6    300    200    0.260 -0.9690517  1.417671 36.61803 -0.6835519 0.4985610</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    p.adj  conf.low conf.high adj.conf.low adj.conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.9813 -4.119735  2.029805    -5.272979      3.183048</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.9812 -4.057153  1.997367    -5.196513      3.136726</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.9811 -3.998448  1.968912    -5.125290      3.095755</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.9811 -3.943306  1.944133    -5.058868      3.059695</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.9813 -3.891430  1.922733    -4.996828      3.028131</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.9815 -3.842538  1.904434    -4.938770      3.000667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.9806 -4.119735  2.029805    -5.310165      3.220235</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.9802 -4.057153  1.997367    -5.233305      3.173518</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.9801 -3.998448  1.968912    -5.161730      3.132195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.9801 -3.943306  1.944133    -5.094995      3.095822</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.9806 -3.891430  1.922733    -5.032675      3.063979</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.9810 -3.842538  1.904434    -4.974370      3.036266</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># slopes of the curves, and where they differ from zero over the whole range</span></span></span>
 <span class="r-in"><span><span class="va">slp</span> <span class="op">&lt;-</span> <span class="fu">semipred</span><span class="op">(</span><span class="va">fm</span>, <span class="st">"QB"</span>, <span class="st">"pressure"</span>, deriv <span class="op">=</span> <span class="fl">1</span>, band <span class="op">=</span> <span class="st">"simultaneous"</span><span class="op">)</span></span></span>
@@ -476,27 +477,27 @@ means and their ratios.</p>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="semipred-7.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">semipred</span><span class="op">(</span><span class="va">fbin</span>, <span class="st">"g"</span>, <span class="st">"x"</span>, contr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b"</span>, <span class="st">"a"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2          x    estimate std.error  df  statistic   p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      b      a 0.00000000 -0.45487296 0.6497841 585 -0.7000371 0.4841824</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      b      a 0.02040816 -0.33461434 0.5511433 585 -0.6071277 0.5440018</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      b      a 0.04081633 -0.22112093 0.4721953 585 -0.4682828 0.6397568</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      b      a 0.04166667 -0.21655930 0.4693425 585 -0.4614099 0.6446760</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      b      a 0.06122449 -0.11577712 0.4138061 585 -0.2797859 0.7797407</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      b      a 0.08163265 -0.01996728 0.3767866 585 -0.0529936 0.9577551</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   level1 level2          x    estimate std.error  df   statistic   p.value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      b      a 0.00000000 -0.45544553 0.6498042 585 -0.70089661 0.4836462</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      b      a 0.02040816 -0.33512989 0.5511548 585 -0.60805035 0.5433901</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      b      a 0.04081633 -0.22158170 0.4722011 585 -0.46925283 0.6390638</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      b      a 0.04166667 -0.21701785 0.4693481 585 -0.46238142 0.6439797</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      b      a 0.06122449 -0.11618598 0.4138089 585 -0.28077204 0.7789845</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      b      a 0.08163265 -0.02032772 0.3767891 585 -0.05394987 0.9569935</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     conf.low conf.high odds.ratio odds.ratio.conf.low odds.ratio.conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -1.7310667 0.8213208  0.6345286           0.1770954             2.273501</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -1.4170749 0.7478462  0.7156140           0.2424221             2.112445</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -1.1485255 0.7062836  0.8016197           0.3171040             2.026446</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 -1.1383609 0.7052423  0.8052848           0.3203437             2.024337</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.9285036 0.6969494  0.8906737           0.3951446             2.007619</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 -0.7599864 0.7200518  0.9802307           0.4676728             2.054540</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -1.7316787 0.8207876  0.6341654           0.1769871             2.272289</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -1.4176131 0.7473533  0.7152452           0.2422917             2.111404</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -1.1489976 0.7058342  0.8012505           0.3169543             2.025536</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 -1.1388304 0.7047947  0.8049156           0.3201933             2.023431</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.9289181 0.6965461  0.8903096           0.3949808             2.006809</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 -0.7603519 0.7196965  0.9798775           0.4675019             2.053810</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       response response.std.error response.conf.low response.conf.high</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.085549307         0.11998383        -0.3212008          0.1501022</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.068691318         0.11203816        -0.2887373          0.1513547</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -0.048767398         0.10372240        -0.2524810          0.1549462</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 -0.047887124         0.10338522        -0.2509385          0.1551643</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.026980641         0.09632419        -0.2161640          0.1622027</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 -0.004835853         0.09124495        -0.1840434          0.1743717</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.085658253         0.11998578        -0.3213136          0.1499971</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.068798133         0.11203980        -0.2888474          0.1512511</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -0.048869676         0.10372380        -0.2525861          0.1548467</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 -0.047989164         0.10338662        -0.2510433          0.1550650</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.027076246         0.09632543        -0.2162620          0.1621095</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 -0.004923197         0.09124626        -0.1841334          0.1742870</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

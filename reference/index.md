@@ -72,6 +72,8 @@ checks.
   : Diagnostic Plots for a Fitted Model
 - [`residvariogram()`](https://dongwenluo.github.io/predictmeans/reference/residvariogram.md)
   : Sample Variogram of the Residuals
+- [`corAR1xAR1()`](https://dongwenluo.github.io/predictmeans/reference/corAR1xAR1.md)
+  : Separable AR1 x AR1 correlation for field trials
 - [`autoplot(`*`<pm_variogram>`*`)`](https://dongwenluo.github.io/predictmeans/reference/autoplot.pm_variogram.md)
   : Plot a Residual Variogram
 - [`CookD()`](https://dongwenluo.github.io/predictmeans/reference/CookD.md)

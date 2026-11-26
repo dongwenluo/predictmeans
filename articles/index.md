@@ -39,3 +39,5 @@
   models](https://dongwenluo.github.io/predictmeans/articles/R2-GLMM.md):
 - [Ordinal and categorical
   responses](https://dongwenluo.github.io/predictmeans/articles/ordinal.md):
+- [Spatial analysis of a field
+  trial](https://dongwenluo.github.io/predictmeans/articles/spatial.md):

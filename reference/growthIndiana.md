@@ -64,8 +64,8 @@ fit <- semireg(height ~ s(age, bs = "os", k = 20, xt = list(range = c(5.5, 20)))
                  (s(age, k = 10, xt = list(range = c(5.5, 20))) | idnum), data = gbm)
 anova(fit)$smooth       # are the boys' curves straight lines?
 #>          term  variance    logLik logLik.without       LRT       p.value
-#> 1       s_age  9.067556 -935.7451      -974.5493  77.60836  6.281850e-19
-#> 2 s_age_idnum 18.185045 -935.7451     -1181.2087 490.92720 4.477477e-109
+#> 1       s_age  9.070032 -935.7451      -974.5493  77.60836  6.281847e-19
+#> 2 s_age_idnum 18.184943 -935.7451     -1181.2087 490.92721 4.477475e-109
 #>                        test
 #> 1 0.5 chi2(0) + 0.5 chi2(1)
 #> 2 0.5 chi2(0) + 0.5 chi2(1)
