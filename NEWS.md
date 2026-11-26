@@ -190,7 +190,8 @@ shows 1.1.1 and 2.0 code side by side.
   the latent pairs in `predictmeans()`; and re-randomisation of each variable applied to whole clusters, within
   strata (fixed blocks, other cluster-level variables, coarser random effects), exact (all allocations enumerated)
   when there are at most `nperm`, with a note on the smallest attainable p-value (6 clusters split 3/3: 20
-  allocations, p at least 0.1).
+  allocations, p at least 0.1). In simulations with 6-12 clusters the default inner-outer t tests (3.4-5.4% at
+  5%) and the bootstrap (3.7-5.1%) held the level, z tests did not (9-11%); the permutation was valid but weak.
 * `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count cases instead of rows where a row holds
   several: binomial and quasibinomial responses of any class (trials) and class responses (multinom, polr, clm, clmm,
   vglm with case weights). Aggregated data and one row per case then weight the factor combinations alike (as

@@ -21,7 +21,9 @@
 #'   same statistic, for equal group sizes) are at most \code{nperm} all are used (exact p-values); refits that do
 #'   not converge count as at least as extreme. A note gives, for each variable, the strata, the number of
 #'   allocations and the smallest attainable p-value (6 clusters split 3/3: 20 allocations, p at least 0.1);
-#'   other terms get none. The result's attribute \code{"resampling"} is \code{"cluster randomisation"}.
+#'   other terms get none. The result's attribute \code{"resampling"} is \code{"cluster randomisation"}. In a
+#'   simulation with 6-12 clusters (\code{dev/sim-clmm-few/}) it held the level but was weak (power 11\% where the
+#'   inner-outer t test and \code{\link{bootmodels}} had 31-34\%; z tests rejected 9-11\% of true nulls).
 #'   \code{\link{bootmodels}} tests every term, by a parametric bootstrap under the global null.
 #' @param nperm The number of permutations. The default is 4999.
 #' @param type The type of the tests: "I", "II" or "III" (or 1, 2, 3).
