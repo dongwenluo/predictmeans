@@ -332,7 +332,8 @@ pm_sr_ddf <- function(semireg, L, idx, terms = NULL) {
   df <- pm_io_row_df(io, names(io)[idx[fx]], Lf, terms)
   # a row without fixed coefficients (smooth coefficients only): within groups
   df[is.na(df)] <- max(io)
-  structure(df, method = "inner-outer (design strata; smooths within)")
+  structure(df, method = paste0("inner-outer (design strata; smooths within",
+                                 if (!identical(attr(io, "count"), "rows")) paste0("; ", attr(io, "count"), " counted"), ")"))
 }
 
 ## Satterthwaite df for linear combinations L of the fixed and random

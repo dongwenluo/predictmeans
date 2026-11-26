@@ -98,17 +98,26 @@ observed information is the default for REML `lmer`, `lme` and `gls`.
 
 `dev/sim-df-io-trials.R`: t test of a within-block treatment contrast, true
 null, `glmer(cbind(y, m - y) ~ trt + (1 | blk))`, block SD 1, p = 0.5, 1000
-data sets each. Size at 5%:
+data sets each (400 with overdispersion); the script checks that its
+"package" df equal `pm_inner_outer_df()`. Size at 5%:
 
-| design | df rows | df trials | rows | trials | z |
+| design | df rows | df package | rows | package | z |
 |---|---|---|---|---|---|
 | 4 trt x 3 blocks, 25 trials/row | 6 | 294 | 1.1% | 4.3% | 4.4% |
 | 4 trt x 3 blocks, 5 trials/row | 6 | 54 | 1.0% | 3.7% | 3.8% |
 | 4 trt x 6 blocks, 2 trials/row | 15 | 39 | 2.6% | 3.9% | 5.3% |
 | 2 trt x 3 blocks, 10 trials/row | 2 | 56 | 0.0% | 4.0% | 4.3% |
+| as row 1, extra row-level logit SD 0.3 | 6 | 294 | 3.5% | 9.25% | 9.5% |
+| the same, fit with (1 \| obs) | 6 | 6 | 2.25% | 2.25% | 7.5% |
 
-Counting rows (SAS GLIMMIX with events/trials) is far too conservative;
-counting trials (= the same data as one row per trial) holds 5%. A larger
-outside simulation (the maintainer's, 56,000 data sets) found the same
-(e.g. 0.85% rows, 4.0% trials at 12 rows). Default since 2026-11-26:
-trials; `options(predictmeans.inner_outer_count = "rows")` for SAS's df.
+Counting rows (predictmeans before 2026-11-26) is far too conservative for
+binomial data; counting trials (= the same data as one row per trial)
+holds 5%. With overdispersion that the fit leaves out, trials are too
+liberal (9.25%): the row count had hidden it. The fix is the model's: an
+observation-level random effect, whose stratum then gives the treatment
+the row df (2.25%). The advice `overdispersion_trials` says so when the
+fit's Pearson test rejects. Default since 2026-11-26: trials;
+`options(predictmeans.inner_outer_count = "rows")` counts rows. An outside
+simulation reported by the maintainer (56,000 data sets, not in this
+repository) found the same pattern. What SAS GLIMMIX counts for
+events/trials data is to be checked by a run (`dev/sas/glimmix-trials.sas`).

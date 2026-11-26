@@ -64,6 +64,7 @@ pm_advice_get <- function(x) {
 #'   \code{bias_adjust} \tab predictmeans, covariatemeans \tab back-transformed means are a typical cluster's or a median, not the mean \cr
 #'   \code{contrast_common_cells} \tab contrastmeans \tab contrasts are estimated on the cells their means share \cr
 #'   \code{small_df} \tab predictmeans, contrastmeans \tab degrees of freedom below 5 \cr
+#'   \code{overdispersion_trials} \tab predictmeans, contrastmeans \tab inner-outer df count binomial trials and the fit is overdispersed (Pearson test): add an observation-level random effect \cr
 #'   \code{many_tests_unadjusted} \tab predictmeans, contrastmeans \tab 6 or more requested tests with \code{adj = "none"} \cr
 #'   \code{singular_fit} \tab predictmeans, contrastmeans, R2_model, semireg \tab a variance at zero or a correlation at +-1 \cr
 #'   \code{anova_unbalanced_typeI}, \code{_typeII}, \code{_typeIII} \tab anova \tab unbalanced data: what the type tests \cr
@@ -138,9 +139,20 @@ pm_advice_limits <- list(se_ratio = 3, min_df = 5, many_tests = 6)
 ## Rules shared by means and contrasts: singular fit, small df, many tests
 ## without adjustment. 'df': the df of the estimates; 'ntests': number of
 ## tests reported with p-values (0 when none).
-pm_advice_common <- function(model, df, ntests, adj, what = "pairs") {
+pm_advice_common <- function(model, df, ntests, adj, what = "pairs", df_cases = NULL) {
   lim <- pm_advice_limits
   rows <- list()
+  # inner-outer df that count trials assume binomial variation within clusters: overdispersion
+  # (Pearson test of the fit) makes their tests too liberal (11.8% at 5% in dev/sim-df-io-trials.R)
+  if (length(df_cases) && df_cases %in% c("trials", "case weights")) {
+    dp <- tryCatch(pm_check_dispersion(model), error = function(e) NULL)
+    if (identical(dp$kind, "tested") && isTRUE(dp$p_over < 0.05)) {
+      rows$od <- pm_advice("overdispersion_trials", paste0(
+        "The data vary more than binomially within clusters (Pearson chi-square / df ", format(signif(dp$ratio, 3)),
+        ") and the df count trials: tests within clusters are too liberal. Add an observation-level random effect, ",
+        "(1 | obs) with obs = factor(1:nrow(data)); its df then count rows."), "caution")
+    }
+  }
   if (isTRUE(pm_singular(model))) {
     rows$sing <- pm_advice("singular_fit", paste(
       "The fit is singular (a variance estimated as zero or a correlation as +-1): SEs and df treat it as known.",
@@ -234,20 +246,21 @@ pm_means_advice <- function(v, parts) {
   pairs <- parts$pairs
   # only comparisons the user asked for (the pairs table is always there)
   ntests <- if (isTRUE(v$compare) && is.data.frame(pairs) && !is.null(pairs$p.value)) sum(!is.na(pairs$p.value)) else 0
-  rows <- c(rows, pm_advice_common(model, means$df, ntests, s$adjust, "pairs"))
+  rows <- c(rows, pm_advice_common(model, means$df, ntests, s$adjust, "pairs", s$df_cases))
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }
 
 ## Advice for a contrastmeans() result.
-pm_contrast_advice <- function(model, tab, adj) {
+pm_contrast_advice <- function(model, tab, adj, df_cases = NULL) {
   rows <- list()
   if (!is.null(tab$over) && any(!is.na(tab$over))) {
     rows$over <- pm_advice("contrast_common_cells", paste0(
       "Contrasts with empty cells are estimated on the cells their means share (column 'over'): ",
       paste(utils::head(tab$contrast[!is.na(tab$over)], 5), collapse = ", "), "."), "note")
   }
-  rows <- c(rows, pm_advice_common(model, tab$df, if (nrow(tab) > 1) sum(!is.na(tab$p.value)) else 0, adj, "contrasts"))
+  rows <- c(rows, pm_advice_common(model, tab$df, if (nrow(tab) > 1) sum(!is.na(tab$p.value)) else 0, adj, "contrasts",
+                                   df_cases))
   if (!length(rows)) return(NULL)
   do.call(rbind, unname(rows))
 }

@@ -47,11 +47,11 @@ for each block: `dev/review-*.md` (decisions agreed, then code).
    it all under 2.0.0), or submit the resubmission state and bump `main` to
    2.1.0. Then win-builder R-devel (`devtools::check_win_devel()`), fill
    `cran-comments.md`, submit from the maintainer's computer.
-2. **Small open items** (each one step with a test):
-3. **Next statistical block** (the maintainer chooses): `clm(nominal = ,
-   scale = )` (B3c; refused now); population-average probabilities for
-   `clmm`; LR/bootstrap tests for `clmm` with few clusters; AR1 x AR1 with a
-   phi per trial or AR2.
+2. **SAS run** for the maintainer: `dev/sas/glimmix-trials.sas` (does GLIMMIX
+   count rows or trials for events/trials data?).
+3. **B4 block** (`dev/review-b4.md`, agreed): G1 done; next G2
+   population-average probabilities for `clmm`, G4 AR1 x AR1 with a phi per
+   trial, G3 tests for `clmm` with few clusters. AR2 only if asked.
 4. **Paper** (plan Part C): `dev/paper/outline.md` (design rules, evidence for
    each default, SAS/Genstat checks, comparison with emmeans); journal to be
    chosen (JSS or The R Journal).
@@ -85,8 +85,11 @@ Details and file names in O16/O17; user-facing summary in NEWS.md.
   holds several (binomial trials, class-response case weights;
   `pm_freq_w()`); `settings$weights_by`.
 - **Inner-outer df of aggregated binomial GLMMs** count trials (cases), not
-  rows; `options(predictmeans.inner_outer_count = "rows")` for SAS
-  (`dev/sim-df-io-trials.R`: rows 0-2.6%, trials 3.7-4.3% at 5%).
+  rows (`dev/sim-df-io-trials.R`: rows 0-2.6%, trials 3.7-4.3% at 5%);
+  `options(predictmeans.inner_outer_count = "rows")`; advice
+  `overdispersion_trials`. SAS check pending: `dev/sas/glimmix-trials.sas`.
+- **clm with nominal or scale effects** (B4 G1): class probabilities,
+  = `predict.clm()` with SEs.
 - **corAR1xAR1()** (`R/cor-ar1xar1.R`): separable AR1 x AR1 field correlation
   for gls/lme with nugget and groups; Genstat's Slate Hall run reproduced
   (means and SEDs within 5e-6, KR-average d.d.f.). Kenward-Roger and

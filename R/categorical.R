@@ -1,6 +1,7 @@
 ## Categorical responses without a single latent scale (B3b, dev/review-vglm.md
 ## E2): nnet::multinom(), VGAM::vglm() with multinomial(), and vglm ordinal
-## families (cumulative, acat, cratio, sratio) whose slopes are not parallel.
+## families (cumulative, acat, cratio, sratio) whose slopes are not parallel,
+## and ordinal::clm() with nominal or scale effects (B4 G1, dev/review-b4.md).
 ## Each of the M = J - 1 linear predictors has its own coefficients, so a
 ## mean is a vector. predictmeans() gives, for each mean of 'modelterm':
 ##   mean_type = "prob" (the default)  the probability of each class: averaged
@@ -26,6 +27,7 @@
 ## TRUE for the fits handled here.
 pm_cat_is <- function(model) {
   if (inherits(model, "multinom")) return(TRUE)
+  if (inherits(model, "clm")) return(length(model$nom.terms) > 0 || length(model$S.terms) > 0 || length(model$zeta) > 0)
   if (!inherits(model, "vglm")) return(FALSE)
   fam <- model@family@vfamily[1]
   fam == "multinomial" || (fam %in% c("cumulative", "acat", "cratio", "sratio") && !pm_ord_vglm_parallel(model))
@@ -45,8 +47,12 @@ pm_ord_vglm_parallel <- function(model) {
 ## coefficient). pd(eta), eta a matrix (rows x M): list(P, the class
 ## probabilities (rows x J), dP their derivatives in eta (rows x J x M)). levels: the classes; predictors: the names of
 ## the linear predictors; reference: the reference class of a multinomial
-## fit; ordinal: TRUE for the ordinal families.
+## fit; ordinal: TRUE for the ordinal families. Fits whose predictors are
+## not linear in theta (clm scale effects) add 'scale' (pm_clm_cat_parts()),
+## and fits with several design matrices 'basis' (the design columns of
+## newdata).
 pm_cat_parts <- function(model) {
+  if (inherits(model, "clm")) return(pm_clm_cat_parts(model))
   if (inherits(model, "multinom")) {
     if (isTRUE(model$censored) || !isTRUE(model$softmax) && !isTRUE(model$entropy)) {
       stop("predictmeans handles multinom fits of a class response (softmax, or a two-class response); not censored ",
@@ -151,10 +157,19 @@ pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"),
   X <- as.matrix(X)[, pt$xnames, drop = FALSE]
   Xc <- X[, pt$col, drop = FALSE]                          # x[col] for each coefficient
   eta <- Xc %*% (pt$theta * t(pt$H))                        # rows x M
-  if (what == "link") {
-    D <- do.call(rbind, lapply(seq_len(nrow(pt$H)), function(j) sweep(Xc, 2, pt$H[j, ], "*")))
-    return(list(est = eta, D = D))
+  Jm <- lapply(seq_len(nrow(pt$H)), function(m) sweep(Xc, 2, pt$H[m, ], "*"))   # d eta_m / d theta
+  if (!is.null(pt$scale)) {
+    # clm scale effects: eta / exp(s'zeta); d eta_m / d zeta = -eta_m s
+    S <- X[, pt$scale$cols, drop = FALSE]
+    e <- exp(-drop(S %*% pt$theta[pt$scale$idx]))
+    eta <- eta * e
+    Jm <- lapply(seq_along(Jm), function(m) {
+      J <- Jm[[m]] * e
+      J[, pt$scale$idx] <- -eta[, m] * S
+      J
+    })
   }
+  if (what == "link") return(list(est = eta, D = do.call(rbind, Jm)))
   pd <- pt$pd(eta)
   P <- pd$P
   # non-parallel cumulative fits: the cumulative curves can cross, giving negative "probabilities" at
@@ -166,8 +181,8 @@ pm_cat_eval <- function(pt, X, W = NULL, what = c("prob", "link", "mean_class"),
     paste0("class '", pt$levels[b], "' has probability ", format(signif(P[badg[1], b], 3)), " at ", labels[badg[1]],
            if (length(badg) > 1) paste0(" (and ", length(badg) - 1, " more grid point", if (length(badg) > 2) "s", ")"))
   }
-  # d P_j / d theta = (d P_j / d eta) H, each column times x[col]: rows x q, for each class j
-  DP <- lapply(seq_len(ncol(P)), function(j) (matrix(pd$dP[, j, ], nrow(P)) %*% pt$H) * Xc)
+  # d P_j / d theta = sum_m (d P_j / d eta_m) (d eta_m / d theta): rows x q, for each class j
+  DP <- lapply(seq_len(ncol(P)), function(j) Reduce(`+`, lapply(seq_along(Jm), function(m) pd$dP[, j, m] * Jm[[m]])))
   if (what == "mean_class") {
     s <- seq_len(ncol(P))
     return(list(est = W %*% (P %*% s), D = W %*% Reduce(`+`, Map(`*`, DP, s)), affected = affected,
@@ -194,6 +209,11 @@ pm_cat_check <- function(model, a) {
     stop("mean_type = \"mean_class\" needs ordered classes; a multinomial model treats them as unordered. Use ",
          "mean_type = \"prob\", or fit an ordinal model (vglm(cumulative()), clm(), polr()).", call. = FALSE)
   }
+  if (mt == "link" && !is.null(pt$scale)) {
+    stop("mean_type = \"link\" is not available with scale effects: the predictors are not linear in the ",
+         "coefficients, so their averages over the grid are not predictors of the model. Use mean_type = \"prob\" ",
+         "(the default), \"prob_diff\" or \"mean_class\".", call. = FALSE)
+  }
   pm_class_opt_stop(model, "the class probabilities have their own scale (mean_type)",
                     trans = if (isTRUE(a$trans_default)) NULL else a$trans, bias_adjust = a$bias_adjust,
                     sigma = a$sigma, vcov = a$vcov, permlist = a$permlist)
@@ -205,7 +225,7 @@ pm_cat_check <- function(model, a) {
 ## estimates themselves come from pm_cat_est()), the mean type and the name
 ## of the factor of classes (the response's name; "predictor" for "link").
 pm_cat_carrier <- function(model, what, vars, pt = pm_cat_parts(model)) {
-  tt <- stats::terms(model)
+  tt <- if (inherits(model, "clm")) pm_clm_all_terms(model) else stats::terms(model)
   if (!is.null(attr(tt, "offset"))) stop("predictmeans does not handle offsets in ", class(model)[1], " fits.", call. = FALSE)
   y <- as.character(attr(tt, "variables"))[attr(tt, "response") + 1]
   var <- if (what == "link") "predictor" else if (identical(make.names(y), y)) y else "class"
@@ -234,6 +254,11 @@ pm_vcov.pm_catfit <- function(model, ...) {
 }
 #' @exportS3Method NULL
 pm_contrasts.pm_catfit <- function(model, ...) model$contrasts
+## the fit's own design columns when it has several design matrices (clm)
+#' @exportS3Method NULL
+pm_basis.pm_catfit <- function(model, newdata, ...) {
+  if (is.null(model$parts$basis)) pm_basis.default(model, newdata, ...) else model$parts$basis(newdata)
+}
 ## mean_type = "prob": the means are logits of the class probabilities, back-transformed as a binomial glm's
 #' @exportS3Method NULL
 pm_linkinv.pm_catfit <- function(model, ...) if (model$what == "prob") stats::plogis
@@ -366,7 +391,7 @@ pm_cat_opt <- function(opt) {
 pm_cat_attach <- function(res, opt, est) {
   cf <- opt$model
   # the factors averaged over (covariates are held at their values, settings$covariates)
-  tt <- stats::delete.response(stats::terms(cf$fit))
+  tt <- stats::delete.response(cf$terms)
   mf <- est$mdf                                  # (the data of the means; model.frame() of a vglm can fail here)
   fac <- names(mf)[vapply(mf, function(z) is.factor(z) || is.character(z) || is.logical(z), logical(1))]
   others <- setdiff(intersect(all.vars(tt), fac), strsplit(opt$modelterm, ":", fixed = TRUE)[[1]])
@@ -395,8 +420,8 @@ pm_cat_scale_text <- function(cl, name) {
 ## The stop of the functions that work on one scale (everything but
 ## predictmeans()): reached through pm_coef() and the ordinal checks.
 pm_cat_stop <- function(model) {
-  stop(class(model)[1], " fits of a class response without a single latent scale (multinomial, or slopes that are ",
-       "not parallel) have a vector of means: predictmeans() gives their class probabilities (mean_type = \"prob\"); ",
+  stop(class(model)[1], " fits of a class response without a single latent scale (multinomial, slopes that are ",
+       "not parallel, or clm nominal or scale effects) have a vector of means: predictmeans() gives their class probabilities (mean_type = \"prob\"); ",
        "this function does not handle them.", call. = FALSE)
 }
 
@@ -404,3 +429,93 @@ pm_cat_stop <- function(model) {
 pm_coef.multinom <- function(model, ...) pm_cat_stop(model)
 #' @exportS3Method NULL
 pm_vcov.multinom <- function(model, ...) pm_cat_stop(model)
+
+## ---- clm with nominal or scale effects (B4 G1) -----------------------
+
+## P(Y <= j) = F((theta_j(z) - x'b) / exp(s'zeta)): theta_j(z) = sum_c z_c
+## (tJac alpha_c)_j, alpha_c the threshold parameters of nominal column c
+## (alpha.mat; tJac maps them to the J - 1 cut points). In theta (coef()
+## order: alpha by nominal column, then b, then zeta) the numerator is
+## linear: H[, alpha_cl] = tJac[, l] on column c, H[, b] = -1; zeta enters
+## through 'scale'. The design columns: the location columns of b, then
+## "nominal:" and "scale:" columns (a variable can be in several formulas:
+## clm names its coefficients alike, so they are matched by position).
+pm_clm_cat_parts <- function(model) {
+  pm_clm_link_check(model)
+  al <- unlist(model$aliased)
+  if (any(al)) {
+    stop("The clm fit has aliased coefficients (", paste(names(al)[al], collapse = ", "), "): the means would not be ",
+         "unique. Refit without the aliased terms (a variable in both 'formula' and 'nominal' belongs in one).",
+         call. = FALSE)
+  }
+  am <- if (is.null(model$alpha.mat)) {                  # nominal columns x threshold parameters (none: the intercept)
+    matrix(model$alpha, 1, dimnames = list("(Intercept)", names(model$alpha)))
+  } else as.matrix(model$alpha.mat)
+  tJ <- as.matrix(model$tJac)                           # cut points x threshold parameters
+  b <- model$beta
+  z <- if (length(model$zeta)) model$zeta else numeric(0)
+  theta <- c(as.vector(t(am)), b, z)
+  V <- tryCatch(as.matrix(stats::vcov(model)), error = function(e) NULL)
+  cf <- stats::coef(model)
+  if (length(cf) != length(theta) || max(abs(unname(cf) - theta)) > 1e-8 * max(1, abs(theta))) {
+    stop("internal: the clm coefficients do not match alpha.mat, beta and zeta.", call. = FALSE)
+  }
+  if (is.null(V) || anyNA(V) || any(!is.finite(V)) || nrow(V) != length(theta)) {
+    stop("The clm fit has no usable covariance matrix of its coefficients (refit with Hess = TRUE; a class that ",
+         "never occurs in some cells?).", call. = FALSE)
+  }
+  names(theta) <- rownames(V) <- colnames(V) <- make.unique(names(cf))
+  nn <- paste0("nominal:", rownames(am))
+  sn <- if (length(z)) paste0("scale:", names(z)) else character(0)
+  xnames <- c(names(b), nn, sn)
+  M <- nrow(tJ)
+  L <- ncol(am)
+  H <- cbind(do.call(cbind, rep(list(tJ), nrow(am))), matrix(-1, M, length(b)), matrix(0, M, length(z)))
+  col <- c(rep(length(b) + seq_len(nrow(am)), each = L), seq_along(b), length(b) + nrow(am) + seq_along(z))
+  mm <- function(tt, ctr, xlev, nd, keep) {
+    tt <- stats::delete.response(tt)
+    m <- stats::model.frame(tt, nd, na.action = stats::na.pass, xlev = xlev)
+    stats::model.matrix(tt, m, contrasts.arg = ctr)[, keep, drop = FALSE]
+  }
+  basis <- function(nd) {
+    B <- cbind(mm(model$terms, model$contrasts, model$xlevels, nd, names(b)),
+               if (is.null(model$nom.terms)) matrix(1, nrow(nd), 1)
+               else mm(model$nom.terms, model$nom.contrasts, model$nom.xlevels, nd, rownames(am)),
+               if (length(z)) mm(model$S.terms, model$S.contrasts, model$S.xlevels, nd, names(z)))
+    colnames(B) <- xnames
+    B
+  }
+  Fd <- pm_ord_link_fd(model$link)
+  J <- M + 1
+  pd <- function(eta) {
+    Fe <- Fd[[1]](eta)
+    fe <- Fd[[2]](eta)
+    P <- cbind(Fe, 1) - cbind(0, Fe)
+    dP <- array(0, c(nrow(P), J, M))
+    for (m in seq_len(M)) {
+      dP[, m, m] <- fe[, m]
+      dP[, m + 1, m] <- -fe[, m]
+    }
+    list(P = P, dP = dP)
+  }
+  lev <- model$y.levels
+  list(theta = theta, V = V, H = H, col = col, xnames = xnames, pd = pd, levels = lev,
+       predictors = paste0(model$link, "(P(Y <= ", lev[-J], "))"),
+       reference = NULL, family = "cumulative", ordinal = TRUE, basis = basis,
+       scale = if (length(z)) list(cols = length(b) + nrow(am) + seq_along(z), idx = length(theta) - length(z) + seq_along(z)))
+}
+
+## The terms of all the variables of a clm fit (location, nominal, scale),
+## for the grid of the means.
+pm_clm_all_terms <- function(model) {
+  parts <- list(model$terms, model$nom.terms, model$S.terms)
+  parts <- parts[!vapply(parts, is.null, logical(1))]
+  if (any(vapply(parts, function(t) !is.null(attr(t, "offset")), logical(1)))) {
+    stop("predictmeans does not handle offsets in clm fits.", call. = FALSE)
+  }
+  labs <- unique(unlist(lapply(parts, attr, "term.labels")))
+  y <- as.character(attr(model$terms, "variables"))[attr(model$terms, "response") + 1]
+  f <- stats::reformulate(if (length(labs)) labs else "1", response = y)
+  environment(f) <- environment(stats::formula(model$terms))
+  stats::terms(f)
+}

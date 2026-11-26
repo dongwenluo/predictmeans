@@ -19,7 +19,7 @@ A response that is a class (a rating 1 to 5, low/medium/high satisfaction, a col
 | model | fitted by | means (default) | other `mean_type` |
 |---|---|---|---|
 | cumulative link, parallel slopes | `MASS::polr`, `ordinal::clm`, `ordinal::clmm`, `VGAM::vglm(cumulative / propodds / acat / cratio / sratio, parallel = TRUE)` | the latent scale: one mean per level | `"prob"` and `"mean_class"` add a table of class probabilities or the mean class |
-| multinomial, or slopes that are not parallel | `nnet::multinom`, `VGAM::vglm(multinomial)`, `vglm(..., parallel = FALSE)` | `"prob"`: each class probability, compared within its class | `"prob_diff"`, `"link"`, `"mean_class"` (ordinal families) |
+| multinomial, slopes that are not parallel, or scale effects | `nnet::multinom`, `VGAM::vglm(multinomial)`, `vglm(..., parallel = FALSE)`, `clm(..., nominal = , scale = )` | `"prob"`: each class probability, compared within its class | `"prob_diff"`, `"link"`, `"mean_class"` (ordinal families) |
 
 All tests are z tests (these models have no dispersion to estimate), except `clmm`, which uses the
 inner-outer df of other mixed models.
@@ -106,6 +106,15 @@ vh <- VGAM::vglm(Sat ~ Infl + Type + Cont, VGAM::cumulative(parallel = FALSE ~ I
 predictmeans(vh, "Infl", mean_type = "mean_class")$means
 ```
 
+`clm()` fits the same non-parallel model with `nominal =`, and with `scale =` a spread of the latent variable
+for each level of a factor (then the latent means of two levels are not on one scale, and the class
+probabilities are the means):
+
+```{r}
+ch <- ordinal::clm(Sat ~ Type + Cont, nominal = ~ Infl, scale = ~ Type, weights = Freq, data = housing)
+predictmeans(ch, "Infl")$means[, c("Infl", "Sat", "response", "response.conf.low", "response.conf.high")]
+```
+
 ## Things predictmeans checks
 
 - **Averaging over other factors.** Class probabilities are averaged over the other factors on the
@@ -119,7 +128,8 @@ predictmeans(vh, "Infl", mean_type = "mean_class")$means
 - **Aggregated counts.** With `weights = "proportional"` the factor combinations are weighted by their
   number of cases (the sums of `Freq` here), so aggregated data and one row per case agree.
 - **Not available.** `trans`, `bias_adjust`, `vcov` and `permlist` stop for these models, and
-  `contrastmeans()`, `covariatemeans()`, `residplot()` and others stop for multinomial and non-parallel fits.
+  `contrastmeans()`, `covariatemeans()`, `residplot()` and others stop for multinomial and non-parallel fits
+  and for `clm` with nominal or scale effects.
 
 ## Checks
 
@@ -128,6 +138,8 @@ predictmeans(vh, "Infl", mean_type = "mean_class")$means
   probabilities to 4e-7).
 - `multinom` class probabilities, SEs and both kinds of pairs equal emmeans to 1e-8; `vglm(multinomial)`
   equals `multinom`; non-parallel `cumulative`, `cratio` and `sratio` equal `predict()` with SEs by a
-  numerical delta method.
+  numerical delta method. `clm` with nominal or scale effects (logit, probit; flexible or equidistant cut
+  points) equals `predict.clm(type = "prob", se.fit = TRUE)` to 1e-8, and its nominal fits equal
+  `vglm(cumulative(parallel = FALSE ~ z))` (SEs within 2%: vglm uses the expected information).
 
 The tests are in `tests/testthat/test-ordinal.R`, `test-ordinal-sas.R` and `test-categorical.R`.

@@ -207,9 +207,11 @@ extended to crossed random effects; a contrast gets the smallest df of the coeff
 term the df of the term. In simulations it rejected 6-8\% of true hypotheses for effects that vary between
 clusters, where the residual df (\code{"residual"}, predictmeans 1.x) rejected 8-15\%; \code{bootmodels()} is
 the check with few clusters. Within clusters the cases count: the trials of aggregated binomial data and the
-case weights of \code{clmm}, so aggregated data and one row per case get the same df (counting rows, as SAS
-GLIMMIX, rejected 0-2.6\% in simulations, counting trials 3.7-4.3\%; \code{options(predictmeans.inner_outer_count
-= "rows")} gives SAS's df). \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
+case weights of \code{clmm} (\code{settings$df_cases}), so aggregated data and one row per case get the same
+df (counting rows rejected 0-2.6\% in simulations, counting trials 3.7-4.3\%; \code{options(
+predictmeans.inner_outer_count = "rows")} counts rows). Trials assume binomial variation within clusters; with
+overdispersion add an observation-level random effect (\code{(1 | obs)}), whose df count rows (the advice
+\code{overdispersion_trials} says when). \code{"containment"} and \code{"between-within"} are also available for \code{glmer},
 and \code{"inner-outer"} for \code{lmer} and \code{lme}.
 \code{glm} models with a known dispersion (Poisson, binomial, negative binomial) get z tests
 (\code{"asymptotic (z)"}), as \pkg{emmeans} and SAS GLIMMIX; \code{"residual"} gives the t tests with the

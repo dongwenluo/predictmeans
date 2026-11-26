@@ -152,9 +152,11 @@ shows 1.1.1 and 2.0 code side by side.
 * `df_method = "Kenward-Roger"`, `"KR-expected"`, `"KR-average"` (Genstat), `"Satterthwaite"`,
   `"containment"`, `"between-within"`, `"inner-outer"`, `"residual"` or a number, also for `lme` and `gls`.
 * Inner-outer df of aggregated binomial GLMMs (`cbind(y, m - y)`, `weights` = trials) and of `clmm` with case
-  weights count the cases in the residual stratum, so aggregated data and one row per case get the same df.
-  Counting rows (SAS GLIMMIX) rejected 0-2.6% of true null hypotheses at 5% in simulations, counting trials
-  3.7-4.3%. `options(predictmeans.inner_outer_count = "rows")` gives SAS's df.
+  weights count the cases in the residual stratum, so aggregated data and one row per case get the same df
+  (`settings$df_cases`). Counting rows rejected 0-2.6% of true null hypotheses at 5% in simulations, counting
+  trials 3.7-4.3%; `options(predictmeans.inner_outer_count = "rows")` counts rows. Trials assume binomial
+  variation within clusters: when the fit is overdispersed, the advice `overdispersion_trials` says to add an
+  observation-level random effect (its df then count rows).
 * `anova()` of `lmer` fits with Kenward-Roger or Satterthwaite F tests, Types I, II, III, without lmerTest.
 * Kenward-Roger and Satterthwaite computed without n x n matrices; much faster.
 
@@ -175,6 +177,9 @@ shows 1.1.1 and 2.0 code side by side.
   probability scale; delta-method SEs, z tests; advice on separation (a class absent at some levels). Checked
   against emmeans; other functions stop for these fits. Where the cumulative curves of a non-parallel fit cross
   (negative probabilities), the means that use those points are NA with a caution.
+* `ordinal::clm()` fits with nominal or scale effects (`nominal = `, `scale = `), refused before: class
+  probabilities as for non-parallel vglm fits (`"link"` only without scale effects); equal to `predict.clm()`
+  with its SEs.
 * `weights = "proportional"` (and `"outer"`, `"cells"`, `"flat"`) count cases instead of rows where a row holds
   several: binomial and quasibinomial responses of any class (trials) and class responses (multinom, polr, clm, clmm,
   vglm with case weights). Aggregated data and one row per case then weight the factor combinations alike (as

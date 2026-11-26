@@ -3198,3 +3198,36 @@ Results checked against SAS PROC MIXED, Genstat and emmeans are in the tests.
   observation-level random effect makes the rows a stratum, so effects
   within clusters then get the row df (38 in test-inner-outer.R) by the
   same rule. test-inner-outer.R: within-cluster df 38 -> 470.
+* Inner-outer cases, Rule no. 1 review (9 findings, all addressed): overdispersion
+  that the fit leaves out makes trial-counted df too liberal (simulation: 9.25%
+  at 5%, rows 3.5%; with (1 | obs) the treatment gets the row df, 2.25%): new
+  advice overdispersion_trials (trials counted and the fit's Pearson test,
+  pm_check_dispersion(), rejects at 5%) in predictmeans() and contrastmeans();
+  rows with no trials are left out (an empty cluster no longer counts as a
+  level: = one row per trial); binomial weights that are not whole numbers
+  are summed as the "proportional" weights do (one rule, was: rows); counts
+  that cannot be matched to the rows give a warning (was silent);
+  settings$df_cases ("rows", "trials", "case weights", NA) and the semireg df
+  label say what was counted; the claim "rows = SAS" removed until a run
+  (dev/sas/glimmix-trials.sas); the outside simulation cited as reported, not
+  as a reference; the script checks its df against pm_inner_outer_df() and has
+  the overdispersed designs; tests for glmmTMB (cbind, proportion + weights),
+  clmm case weights (= one row per case), lmer and Poisson weights (rows),
+  zero trials, non-integer weights, settings, advice. Intercept df: still the
+  largest stratum (nlme's rule; means of terms use their term's df).
+* clm with nominal or scale effects (2026-11-26, B4 G1, dev/review-b4.md):
+  pm_cat_is() takes them to the class-probability path (R/categorical.R).
+  pm_clm_cat_parts(): theta in coef() order (alpha by nominal column, beta,
+  zeta; matched by position: clm names a variable in two formulas alike),
+  H from tJac (flexible, equidistant, symmetric cut points) and -1 for beta,
+  design columns location / "nominal:" / "scale:" from clm's own terms,
+  contrasts and xlevels (pm_basis.pm_catfit()); scale effects through
+  pt$scale: eta / exp(s'zeta) with d eta / d zeta = -eta s. pm_cat_eval()
+  now forms the Jacobian per predictor (d eta_m / d theta), used for all
+  classes. mean_type "link" refused with scale effects; aliased fits stop;
+  link with an estimated lambda stops (pm_clm_link_check(), shared with
+  pm_ord_parts()). Checks: probabilities and SEs = predict.clm(type = "prob",
+  se.fit = TRUE) to 1e-8 (nominal, scale, both with probit, equidistant);
+  nominal = vglm(cumulative(parallel = FALSE ~ z)) to 1e-5 (SEs within 2%:
+  vglm's expected information); averages over a scale factor = numDeriv
+  delta method to 1e-6; crossing curves NA / stop as for vglm.

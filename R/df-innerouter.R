@@ -64,23 +64,32 @@ pm_io_row_df <- function(io, coef_names, L, terms) {
   })
 }
 
-## The number of cases in the residual stratum: the sum of the frequency
-## weights when each row holds several cases (binomial trials, case weights of
-## clmm; pm_freq_w()), so aggregated counts and one row per case get the same
-## df; else the rows. Counting rows (SAS GLIMMIX with events/trials) made
+## The cases of the residual stratum: when each row holds several cases
+## (binomial trials, case weights of clmm; pm_freq_w(), the counts that the
+## "proportional" weights use too) their sum, so aggregated counts and one row
+## per case get the same df; rows with no cases are left out (as a fit to
+## one row per case has none). Else the rows. Counting rows made
 ## within-cluster tests far too conservative: with 12 rows of 25 trials, 1.1%
 ## of true null hypotheses rejected at 5% against 4.3% counting trials
-## (dev/sim-df/io-trials.R). options(predictmeans.inner_outer_count = "rows")
-## gives SAS's df. Weights that are not whole numbers are not counts: rows.
+## (dev/sim-df-io-trials.R). options(predictmeans.inner_outer_count = "rows")
+## counts rows (predictmeans before 2026-11-26). Returns list(n, keep (rows
+## used), count: "rows", "trials" or "case weights").
 pm_io_cases <- function(model, N) {
   how <- getOption("predictmeans.inner_outer_count", "cases")
-  if (!how %in% c("cases", "rows")) {
+  if (!identical(how, "cases") && !identical(how, "rows")) {
     stop("options(predictmeans.inner_outer_count = ) must be \"cases\" or \"rows\".", call. = FALSE)
   }
-  if (how == "rows") return(N)
-  w <- tryCatch(pm_freq_w(model), error = function(e) NULL)
-  ok <- is.numeric(w) && length(w) == N && all(is.finite(w)) && all(w >= 0) && all(abs(w - round(w)) < 1e-8)
-  if (ok) sum(w) else N
+  rows <- list(n = N, keep = rep(TRUE, N), count = "rows")
+  if (how == "rows") return(rows)
+  w <- tryCatch(pm_freq_w(model), error = function(e) e)
+  if (is.null(w)) return(rows)
+  if (inherits(w, "error") || !is.numeric(w) || length(w) != N || !all(is.finite(w)) || any(w < 0)) {
+    warning("predictmeans could not match the case counts of the fit to its rows; the inner-outer df count rows.",
+            call. = FALSE)
+    return(rows)
+  }
+  if (all(w == 1)) return(rows)
+  list(n = sum(w), keep = w > 0, count = if (inherits(model, "clmm")) "case weights" else "trials")
 }
 
 ## df of each coefficient (named vector).
@@ -89,11 +98,17 @@ pm_io_cases <- function(model, N) {
 pm_inner_outer_df <- function(model, drop = character(0)) {
   if (inherits(model, "lme")) {                                # nlme's own
     d <- model$fixDF$X
-    return(structure(d, intercept = names(d) == "(Intercept)", terms = model$fixDF$terms))
+    return(structure(d, intercept = names(d) == "(Intercept)", terms = model$fixDF$terms, count = "rows"))
   }
   parts <- pm_io_parts(model, drop)
   X <- parts$X
-  fl <- lapply(parts$flist, function(f) factor(f))
+  cs <- pm_io_cases(model, nrow(X))
+  if (!all(cs$keep)) {                                       # rows with no cases (binomial n = 0)
+    a <- attr(X, "assign")
+    X <- X[cs$keep, , drop = FALSE]
+    attr(X, "assign") <- a
+  }
+  fl <- lapply(parts$flist, function(f) factor(f[cs$keep]))
   if (!length(fl)) stop("the model has no random effects.", call. = FALSE)
   N <- nrow(X)
   rk <- function(M) qr(M, tol = 1e-7)$rank
@@ -116,7 +131,7 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
     nlev[k] - rk(M)
   }
   Zall <- do.call(cbind, lapply(fl, function(g) stats::model.matrix(~ g - 1)))
-  res_df <- pm_io_cases(model, N) - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
+  res_df <- cs$n - rk(cbind(X, Zall)) - if (is.null(parts$extra)) 0 else parts$extra
   sdf <- vapply(seq_along(fl), stratum_df, numeric(1))
   # stratum of each column: the coarsest factor within which it is constant
   # (its number of groups), or the residual stratum (Inf)
@@ -144,5 +159,5 @@ pm_inner_outer_df <- function(model, drop = character(0)) {
   if (any(df < 1, na.rm = TRUE) || any(tdf < 1, na.rm = TRUE)) {
     stop("some are below 1 (few rows or cases per stratum)", call. = FALSE)
   }
-  structure(df, intercept = int, terms = tdf)
+  structure(df, intercept = int, terms = tdf, count = cs$count)
 }

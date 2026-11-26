@@ -307,7 +307,7 @@ contrastmeans <- function(model, modelterm, ctrmatrix, ctrnames=NULL, adj="none"
                        equivalence = eqm, nperm = if (!missing(permlist)) nsim else NA_integer_,
                        model_class = class(model)[1], version = as.character(utils::packageVersion("predictmeans")))
   class(out) <- "contrastmeans"
-  out <- pm_add_advice(out, pm_contrast_advice(model, tab, adj))
+  out <- pm_add_advice(out, pm_contrast_advice(model, tab, adj, inf$df_cases))
   out
 }
 

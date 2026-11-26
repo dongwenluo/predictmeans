@@ -341,3 +341,82 @@ test_that("class means: a response named y, summary with NA means, semireg weigh
   expect_true(any(grepl("3 pairwise comparisons within each level of y_class \\(3 not estimable\\)", out)))
   expect_false(any(grepl("SED: min NA", out)))
 })
+
+## ---- clm with nominal or scale effects (B4 G1) ----
+
+clm_check <- function(fit, term) {
+  m <- predictmeans(fit, term)$means
+  vars <- strsplit(term, ":")[[1]]
+  nd <- m[m$rating == levels(m$rating)[1], vars, drop = FALSE]
+  pr <- predict(fit, newdata = nd, type = "prob", se.fit = TRUE)
+  ij <- cbind(match(do.call(paste, m[vars]), do.call(paste, nd)), as.integer(m$rating))
+  expect_equal(m$response, unname(pr$fit[ij]), tolerance = 1e-8)
+  expect_equal(m$std.error * m$response * (1 - m$response), unname(pr$se.fit[ij]), tolerance = 1e-8)  # logit SE
+}
+
+test_that("clm nominal and scale effects: class probabilities and SEs = predict.clm()", {
+  skip_if_not_installed("ordinal")
+  data(wine, package = "ordinal", envir = environment())
+  clm_check(ordinal::clm(rating ~ temp, nominal = ~ contact, data = wine), "temp:contact")
+  skip_on_cran()
+  clm_check(ordinal::clm(rating ~ temp + contact, scale = ~ temp, data = wine), "temp:contact")
+  clm_check(ordinal::clm(rating ~ temp, nominal = ~ contact, scale = ~ temp, data = wine, link = "probit"),
+            "temp:contact")
+  clm_check(ordinal::clm(rating ~ temp, nominal = ~ contact, data = wine, threshold = "equidistant"), "temp:contact")
+})
+
+test_that("clm nominal = vglm(parallel = FALSE ~ z); averages over scale variables = delta method", {
+  skip_on_cran()
+  skip_if_not_installed("ordinal")
+  skip_if_not_installed("VGAM")
+  data(wine, package = "ordinal", envir = environment())
+  a <- ordinal::clm(rating ~ temp, nominal = ~ contact, data = wine)
+  v <- VGAM::vglm(rating ~ temp + contact, VGAM::cumulative(parallel = FALSE ~ contact), data = wine)
+  # same model (logLik), so the same means; the SEs differ by up to 2% (vglm: expected information)
+  expect_equal(predictmeans(a, "temp")$means$estimate, predictmeans(v, "temp")$means$estimate, tolerance = 1e-5)
+  la <- predictmeans(a, "temp:contact", mean_type = "link")$means
+  expect_equal(la$estimate, predictmeans(v, "temp:contact", mean_type = "link")$means$estimate, tolerance = 1e-5)
+  expect_identical(levels(la$predictor)[1], "logit(P(Y <= 1))")
+  # scale over the judges: probabilities averaged over judge and contact, numDeriv delta method on coef()
+  s <- ordinal::clm(rating ~ temp + contact, scale = ~ judge, data = wine)
+  pm <- predictmeans(s, "temp", mean_type = "prob_diff")$means
+  f <- function(th) {
+    na <- length(s$alpha); nb <- length(s$beta)
+    g <- expand.grid(temp = levels(wine$temp), contact = levels(wine$contact), judge = levels(wine$judge))
+    X <- model.matrix(~ temp + contact, g)[, -1]; S <- model.matrix(~ judge, g)[, -1]
+    cp <- stats::plogis(outer(-drop(X %*% th[na + seq_len(nb)]), th[seq_len(na)], "+") /
+                        exp(drop(S %*% th[-seq_len(na + nb)])))
+    P <- cbind(cp, 1) - cbind(0, cp)
+    as.vector(rowsum(P, g$temp) / (nrow(g) / 2))
+  }
+  D <- numDeriv::jacobian(f, stats::coef(s))
+  expect_equal(pm$estimate, f(stats::coef(s)), tolerance = 1e-10)
+  expect_equal(pm$std.error, sqrt(diag(D %*% stats::vcov(s) %*% t(D))), tolerance = 1e-6)
+  mc <- predictmeans(s, "temp", mean_type = "mean_class")$means
+  expect_equal(mc$estimate, as.vector(matrix(f(stats::coef(s)), 2) %*% (1:5)), tolerance = 1e-10)
+  # refusals: the link scale with scale effects, aliased terms, other functions
+  expect_error(predictmeans(s, "temp", mean_type = "link"), "not linear in the coefficients")
+  expect_error(predictmeans(ordinal::clm(rating ~ temp + contact, nominal = ~ contact, data = wine), "temp"),
+               "aliased")
+  expect_error(contrastmeans(a, "temp", ctrmatrix = rbind(c(1, -1))), "clm nominal or scale effects")
+})
+
+test_that("clm nominal effects: crossing curves give NA means or stop, as for vglm", {
+  skip_on_cran()
+  skip_if_not_installed("ordinal")
+  set.seed(1)
+  d <- data.frame(x = runif(300, -1, 1), f = factor(sample(c("a", "b"), 300, TRUE)))
+  u <- runif(300)
+  d$y <- ordered(ifelse(u < plogis(-1 + 3 * d$x), 1, ifelse(u < pmax(plogis(-1 + 3 * d$x), plogis(1 - 3 * d$x)), 2, 3)))
+  m <- ordinal::clm(y ~ f, nominal = ~ x, data = d)
+  expect_error(predictmeans(m, "f", covariate = list(x = 1)), "cross")
+  expect_s3_class(predictmeans(m, "f", covariate = list(x = 0)), "predictmeans")
+  pr <- list(c(0.269, 0.354, 0.377), c(0.5, 0.122, 0.378), c(0.5, 0.122, 0.378))
+  cells <- data.frame(A = factor(c(0, 1, 0)), B = factor(c(0, 0, 1)))
+  d2 <- do.call(rbind, lapply(1:3, function(i) data.frame(cells[rep(i, 3), ], y = factor(1:3), n = round(1000 * pr[[i]]))))
+  d2$y <- ordered(d2$y)
+  expect_warning(m2 <- ordinal::clm(y ~ 1, nominal = ~ A + B, weights = n, data = d2), "thresholds are increasing")
+  r2 <- predictmeans(m2, "A", pairwise = TRUE)
+  expect_equal(r2$means$estimable, rep(c(TRUE, FALSE), 3))
+  expect_true("class_crossing" %in% advice(r2)$id)
+})

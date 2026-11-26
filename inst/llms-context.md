@@ -96,7 +96,7 @@ comparison asked for: then only the SED and LSD summaries are computed, fast for
 `disagree`, `exact`; NULL without pairs), `back_transform` (what the back-transformed means are: `by` the
 inverse link, `trans` or the response transformation found in the formula; `estimate` mean, typical cluster,
 median or bias-adjusted mean; NULL when not back-transformed), `bias_adjust` (the SD
-used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `weights_by` (what the `weights` schemes count: `"rows"`, `"frequency weights"` for case-count fits, NA for equal weights), `singular` (TRUE when
+used with `bias_adjust = TRUE`, else NA), `average` (`"link"` or `"response"`), `df_cases` (inner-outer df: what the residual stratum counts, `"rows"`, `"trials"` of aggregated binomial data or `"case weights"` of `clmm`; NA for other df), `weights_by` (what the `weights` schemes count: `"rows"`, `"frequency weights"` for case-count fits, NA for equal weights), `singular` (TRUE when
 the lmer/glmer fit is singular; NA for other classes), `nperm`, `covariates`, `component`
 (glmmTMB fits with zero inflation: `"conditional"`, the means of the count part, mu, the default, or
 `"overall"`, the overall means (1 - pi) mu with `predictmeans(mean_type = "overall")`; NA otherwise), `model_class`, `version`.

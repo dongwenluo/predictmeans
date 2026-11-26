@@ -59,7 +59,7 @@ test_that("class probabilities and the mean class equal emmeans for the cells; a
   expect_equal(r$probs$estimate, as.vector(t(P)), tolerance = 1e-10)
 })
 
-test_that("the scale is labelled; mean_type checks; nominal effects stop", {
+test_that("the scale is labelled; mean_type checks; nominal effects give class probabilities", {
   skip_on_cran()
   m <- ord_fits()$clm
   r <- predictmeans(m, "temp")
@@ -68,7 +68,7 @@ test_that("the scale is labelled; mean_type checks; nominal effects stop", {
   expect_error(predictmeans(lm(breaks ~ tension, warpbreaks), "tension", mean_type = "prob"), "models of a class response")
   data(wine, package = "ordinal", envir = environment())
   mn <- ordinal::clm(rating ~ temp, nominal = ~ contact, data = wine)
-  expect_error(predictmeans(mn, "temp"), "location effects only")
+  expect_identical(predictmeans(mn, "temp")$settings$response$classes$what, "prob")    # (R/categorical.R)
 })
 
 test_that("a positive difference of latent means: higher classes more likely (log odds of P(Y > j))", {

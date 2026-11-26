@@ -108,12 +108,69 @@ test_that("inner-outer df: aggregated binomial counts get the df of one row per 
   b <- d[rep(seq_len(nrow(d)), each = 10), ]
   b$y <- unlist(lapply(d$r, function(r) rep(1:0, c(r, 10 - r))))
   gb <- lme4::glmer(y ~ Trt * W + (1 | clus), family = binomial, data = b)
-  expect_equal(pm_inner_outer_df(g), pm_inner_outer_df(gb))
-  expect_equal(pm_inner_outer_df(gp), pm_inner_outer_df(gb))
+  expect_equal(pm_inner_outer_df(g), pm_inner_outer_df(gb), ignore_attr = "count")
+  expect_equal(pm_inner_outer_df(gp), pm_inner_outer_df(gb), ignore_attr = "count")
   # an observation-level random effect (overdispersion) makes the rows a stratum: effects within clusters get 38
   d$obs <- factor(seq_len(nrow(d)))
   go <- suppressMessages(lme4::glmer(cbind(r, 10 - r) ~ Trt * W + (1 | clus) + (1 | obs), family = binomial, data = d))
   expect_equal(attr(pm_inner_outer_df(go), "terms"), c(Trt = 6, W = 38, "Trt:W" = 38))
   expect_error(io_with_options(list(predictmeans.inner_outer_count = "trials"), pm_inner_outer_df(g)),
                "\"cases\" or \"rows\"")
+})
+
+test_that("inner-outer cases: classes, zero trials, weights that are not counts, settings, advice", {
+  skip_on_cran()
+  d <- io_clusters()
+  d$n <- 10
+  b <- d[rep(seq_len(nrow(d)), d$n), ]
+  b$y <- unlist(lapply(seq_len(nrow(d)), function(i) rep(1:0, c(d$r[i], d$n[i] - d$r[i]))))
+  gb <- lme4::glmer(y ~ Trt * W + (1 | clus), family = binomial, data = b)
+  ref <- attr(pm_inner_outer_df(gb), "terms")
+  # glmmTMB: cbind and proportion + weights
+  skip_if_not_installed("glmmTMB")
+  t1 <- glmmTMB::glmmTMB(cbind(r, n - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
+  t2 <- glmmTMB::glmmTMB(r / n ~ Trt * W + (1 | clus), weights = n, family = binomial, data = d)
+  expect_equal(attr(pm_inner_outer_df(t1), "terms"), ref)
+  expect_equal(attr(pm_inner_outer_df(t2), "terms"), ref)
+  # responses that are not counts still count rows: lmer and Poisson glmer with prior weights
+  set.seed(1)
+  d$yn <- rnorm(nrow(d)); d$cnt <- rpois(nrow(d), 3); d$pw <- runif(nrow(d), 1, 3)
+  lw <- lme4::lmer(yn ~ Trt * W + (1 | clus), weights = pw, data = d)
+  pw <- suppressWarnings(lme4::glmer(cnt ~ Trt * W + (1 | clus), weights = round(pw), family = poisson, data = d))
+  expect_equal(attr(pm_inner_outer_df(lw), "count"), "rows")
+  expect_equal(attr(pm_inner_outer_df(pw), "count"), "rows")
+  expect_equal(attr(pm_inner_outer_df(lw), "terms")[["W"]], 38)
+  # a cluster with no trials: left out, as in the fit to one row per trial
+  d0 <- d; d0$n[d0$clus == 1] <- 0; d0$r[d0$clus == 1] <- 0
+  g0 <- suppressWarnings(lme4::glmer(cbind(r, n - r) ~ Trt * W + (1 | clus), family = binomial, data = d0))
+  gb0 <- lme4::glmer(y ~ Trt * W + (1 | clus), family = binomial, data = b[b$clus != 1, ])
+  expect_equal(attr(pm_inner_outer_df(g0), "terms"), attr(pm_inner_outer_df(gb0), "terms"))
+  # binomial weights that are not whole numbers count as the "proportional" weights do: their sum
+  gh <- suppressWarnings(lme4::glmer(r / n ~ Trt * W + (1 | clus), weights = n + 0.5, family = binomial, data = d))
+  expect_equal(attr(pm_inner_outer_df(gh), "terms")[["W"]], 480 + 24 - 10)
+  # the result says what was counted
+  g <- lme4::glmer(cbind(r, n - r) ~ Trt * W + (1 | clus), family = binomial, data = d)
+  expect_identical(predictmeans(g, "W")$settings$df_cases, "trials")
+  expect_identical(io_with_options(list(predictmeans.inner_outer_count = "rows"), predictmeans(g, "W"))$settings$df_cases,
+                   "rows")
+  expect_true(is.na(predictmeans(lw, "W")$settings$df_cases))
+  expect_false("overdispersion_trials" %in% advice(predictmeans(g, "W"))$id)
+  # overdispersed rows: the advice says to add an observation-level random effect
+  set.seed(7)
+  dd <- expand.grid(trt = factor(1:4), blk = factor(1:6)); dd$m <- 25
+  dd$y <- rbinom(nrow(dd), 25, plogis(rnorm(6)[dd$blk] + rnorm(nrow(dd), 0, 0.8)))
+  go <- lme4::glmer(cbind(y, m - y) ~ trt + (1 | blk), family = binomial, data = dd)
+  expect_true("overdispersion_trials" %in% advice(predictmeans(go, "trt"))$id)
+  expect_true("overdispersion_trials" %in% advice(contrastmeans(go, "trt", ctrmatrix = rbind(c(1, -1, 0, 0))))$id)
+})
+
+test_that("inner-outer cases: clmm with case weights = one row per case", {
+  skip_on_cran()
+  skip_if_not_installed("ordinal")
+  dat <- ordinal::wine
+  agg <- stats::aggregate(list(w = rep(1, nrow(dat))), dat[c("rating", "temp", "contact", "judge")], sum)
+  m1 <- ordinal::clmm(rating ~ temp * contact + (1 | judge), data = dat)
+  m2 <- ordinal::clmm(rating ~ temp * contact + (1 | judge), weights = w, data = agg)
+  expect_equal(pm_inner_outer_df(m2), pm_inner_outer_df(m1), ignore_attr = "count")
+  expect_identical(attr(pm_inner_outer_df(m2), "count"), "case weights")
 })

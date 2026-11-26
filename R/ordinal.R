@@ -46,14 +46,7 @@ pm_ord_parts <- function(model) {
     if (inherits(model, "clmm") && !is.null(model$call$nominal)) {
       stop("clmm() does not fit nominal effects: it ignored 'nominal ='; refit without it.", call. = FALSE)
     }
-    if (length(model$nom.terms) || length(model$S.terms) || length(model$zeta)) {
-      stop("predictmeans handles clm fits with location effects only; nominal and scale effects ",
-           "(nominal = , scale = ) are not supported.", call. = FALSE)
-    }
-    if (!is.null(model$lambda) || model$link %in% c("Aranda-Ordaz", "log-gamma")) {
-      stop("The ", model$link, " link has an estimated parameter (lambda), which the standard errors would treat as ",
-           "known; use a logit, probit, cloglog, loglog or cauchit link.", call. = FALSE)
-    }
+    pm_clm_link_check(model)
     b <- model$beta
     alpha <- model$alpha
     J <- model$tJac
@@ -67,6 +60,14 @@ pm_ord_parts <- function(model) {
   }
   list(b = b, alpha = alpha, J = J, V = V[nm, nm, drop = FALSE], link = link, levels = lev, sb = 1, st = -1,
        family = "cumulative", probs = NULL)
+}
+
+## Links with an estimated parameter stop (clm).
+pm_clm_link_check <- function(model) {
+  if (!is.null(model$lambda) || model$link %in% c("Aranda-Ordaz", "log-gamma")) {
+    stop("The ", model$link, " link has an estimated parameter (lambda), which the standard errors would treat as ",
+         "known; use a logit, probit, cloglog, loglog or cauchit link.", call. = FALSE)
+  }
 }
 
 ## The parts of a vglm fit (B3a): ordinal families with parallel = TRUE only.
@@ -231,15 +232,20 @@ pm_df_rule.vglm <- pm_df_rule.polr
 ## probabilities on the logit scale (they stay in (0, 1)), the mean class on
 ## its own scale. emmeans' mode = "prob" / "mean.class" give the same values
 ## for the cells of the model (they average probabilities over other factors).
+## The distribution function F of a cumulative link and its density.
+pm_ord_link_fd <- function(link) {
+  switch(link, logistic = , logit = list(stats::plogis, stats::dlogis),
+         probit = list(stats::pnorm, stats::dnorm),
+         cloglog = list(function(x) 1 - exp(-exp(x)), function(x) exp(x - exp(x))),
+         loglog = list(function(x) exp(-exp(-x)), function(x) exp(-x - exp(-x))),
+         cauchit = list(stats::pcauchy, stats::dcauchy),
+         stop("link '", link, "' is not supported.", call. = FALSE))
+}
+
 pm_ord_class <- function(model, K, what = c("prob", "mean_class"), conf_level = 0.95) {
   what <- match.arg(what)
   p <- pm_ord_parts(model)
-  Fd <- if (is.null(p$probs)) switch(p$link, logistic = , logit = list(stats::plogis, stats::dlogis),
-               probit = list(stats::pnorm, stats::dnorm),
-               cloglog = list(function(x) 1 - exp(-exp(x)), function(x) exp(x - exp(x))),
-               loglog = list(function(x) exp(-exp(-x)), function(x) exp(-x - exp(-x))),
-               cauchit = list(stats::pcauchy, stats::dcauchy),
-               stop("link '", p$link, "' is not supported.", call. = FALSE))
+  Fd <- if (is.null(p$probs)) pm_ord_link_fd(p$link)
   be <- p$b[!is.na(p$b)]
   X <- as.matrix(K)[, names(be), drop = FALSE]
   th <- as.vector(p$J %*% p$alpha)
